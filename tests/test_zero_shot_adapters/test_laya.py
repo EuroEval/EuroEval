@@ -18,7 +18,7 @@ from safetensors.numpy import save_file
 from euroeval.benchmark_modules.zero_shot_classifier import ZeroShotClassifierModel
 from euroeval.data_models import BenchmarkConfig, ModelConfig
 from euroeval.enums import InferenceBackend, ModelType
-from euroeval.exceptions import InvalidModel, NeedsExtraInstalled
+from euroeval.exceptions import InvalidBenchmark, InvalidModel, NeedsExtraInstalled
 from euroeval.zero_shot_adapters.laya import LayaAdapter
 
 
@@ -80,7 +80,7 @@ class TestClassify:
     ) -> None:
         """`classify` returns one probability dict per text, keyed by label."""
         config = dataclasses.replace(
-            model_config, model_id="convaiinnovations/laya", param=None
+            model_config, model_id="convaiinnovations/laya", param=None, revision="main"
         )
         adapter = LayaAdapter(model_config=config, benchmark_config=benchmark_config)
 
@@ -102,6 +102,94 @@ class TestClassify:
         for _state, questions in adapter.agent.calls:
             assert questions["q"]["type"] == "choice"
             assert set(questions["q"]["criteria"].keys()) == set(candidate_labels)
+
+    def test_raises_invalid_benchmark_when_label_missing_from_probabilities(
+        self,
+        fake_laya_module: types.ModuleType,
+        model_config: ModelConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """A candidate label missing from Laya's output raises `InvalidBenchmark`."""
+        config = dataclasses.replace(
+            model_config, model_id="convaiinnovations/laya", param=None, revision="main"
+        )
+        adapter = LayaAdapter(model_config=config, benchmark_config=benchmark_config)
+
+        # `FakeAgent.system_one` always returns probabilities for every criterion
+        # it was asked about, so monkeypatch it to drop one of the requested labels,
+        # simulating a Laya response that doesn't cover every candidate label.
+        def system_one_missing_label(state: object, questions: dict) -> dict:
+            criteria = list(questions["q"]["criteria"].keys())
+            probabilities = {criteria[0]: 1.0}
+            return {
+                "answers": {
+                    "q": {
+                        "type": "choice",
+                        "choice": criteria[0],
+                        "probabilities": probabilities,
+                    }
+                }
+            }
+
+        adapter.agent.system_one = system_one_missing_label
+
+        with pytest.raises(InvalidBenchmark, match="positive|negative|neutral"):
+            adapter.classify(
+                texts=["some text"],
+                candidate_labels=["positive", "negative", "neutral"],
+                instructions="Classify the sentiment.",
+            )
+
+
+class TestInit:
+    """Tests for `LayaAdapter.__init__`."""
+
+    def test_accepts_main_revision(
+        self,
+        fake_laya_module: types.ModuleType,
+        model_config: ModelConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """A revision of "main" (the only one `laya` can load) is accepted."""
+        config = dataclasses.replace(
+            model_config, model_id="convaiinnovations/laya", param=None, revision="main"
+        )
+        adapter = LayaAdapter(model_config=config, benchmark_config=benchmark_config)
+        assert isinstance(adapter.agent, FakeAgent)
+
+    def test_rejects_non_main_revision(
+        self,
+        fake_laya_module: types.ModuleType,
+        model_config: ModelConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """A revision other than "main" is rejected, since `laya` cannot load it."""
+        config = dataclasses.replace(
+            model_config,
+            model_id="convaiinnovations/laya",
+            param=None,
+            revision="some-other-branch",
+        )
+        with pytest.raises(InvalidModel, match="revision"):
+            LayaAdapter(model_config=config, benchmark_config=benchmark_config)
+
+    def test_uses_standard_hf_token_helper(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        fake_laya_module: types.ModuleType,
+        model_config: ModelConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """The agent uses the token from `get_hf_token`, not the raw api_key."""
+        monkeypatch.setattr(
+            "euroeval.zero_shot_adapters.laya.get_hf_token", lambda api_key: "a-token"
+        )
+        config = dataclasses.replace(
+            model_config, model_id="convaiinnovations/laya", param=None, revision="main"
+        )
+        adapter = LayaAdapter(model_config=config, benchmark_config=benchmark_config)
+        assert isinstance(adapter.agent, FakeAgent)
+        assert adapter.agent.token == "a-token"
 
 
 @pytest.mark.skipif(
@@ -232,6 +320,26 @@ class TestMatches:
             is True
         )
 
+    @pytest.mark.parametrize(
+        "model_id", ["convaiinnovations/layatron", "convaiinnovations/layabout"]
+    )
+    def test_does_not_match_unrelated_repo_with_laya_prefix(
+        self,
+        fake_laya_module: types.ModuleType,
+        benchmark_config: BenchmarkConfig,
+        model_id: str,
+    ) -> None:
+        """A repo that merely starts with the substring "laya" isn't matched.
+
+        E.g. `convaiinnovations/layatron` must not be treated as a Laya checkpoint
+        just because it shares the `convaiinnovations/laya` prefix; only the exact
+        bundled repo ID or a `-`-separated standalone variant should match.
+        """
+        assert (
+            LayaAdapter.matches(model_id=model_id, benchmark_config=benchmark_config)
+            is False
+        )
+
     def test_needs_extra_installed_when_laya_missing(
         self, monkeypatch: pytest.MonkeyPatch, benchmark_config: BenchmarkConfig
     ) -> None:
@@ -271,6 +379,12 @@ class TestNumParams:
         monkeypatch.setattr(
             "euroeval.safetensors_utils.internet_connection_available", lambda: True
         )
+        # `num_params` has no `benchmark_config` to draw an API key from, so it
+        # resolves a token via the standard `get_hf_token` helper (e.g. from the
+        # `HF_TOKEN` environment variable) instead of always passing None.
+        monkeypatch.setattr(
+            "euroeval.zero_shot_adapters.laya.get_hf_token", lambda api_key: "a-token"
+        )
 
         metadata = SimpleNamespace(parameter_count={"F32": 2 * 3, "F16": 4})
         parse_metadata_mock = Mock(return_value=metadata)
@@ -289,13 +403,13 @@ class TestNumParams:
             repo_id="convaiinnovations/laya",
             filename="multilingual/model.safetensors",
             revision="main",
-            token=None,
+            token="a-token",
         )
 
     def test_returns_minus_one_on_failure(
         self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """`num_params` returns -1 and logs at debug level on failure."""
+        """`num_params` returns -1 and logs at warning level on failure."""
 
         def raise_error(*args: object, **kwargs: object) -> t.NoReturn:
             raise OSError("no network in this test")
@@ -306,11 +420,14 @@ class TestNumParams:
         monkeypatch.setattr(
             "euroeval.safetensors_utils.parse_safetensors_file_metadata", raise_error
         )
-        with caplog.at_level("DEBUG", logger="euroeval"):
+        with caplog.at_level("WARNING", logger="euroeval"):
             result = LayaAdapter.num_params(
                 model_id="convaiinnovations/laya-does-not-exist", param=None
             )
         assert result == -1
+        assert any(record.levelname == "WARNING" for record in caplog.records), (
+            "Expected the failure to be logged at WARNING level."
+        )
 
 
 class TestVariants:
@@ -348,7 +465,10 @@ class TestVariants:
         enforced defensively in `LayaAdapter.__init__` instead.
         """
         config = dataclasses.replace(
-            model_config, model_id="convaiinnovations/laya-multilingual", param=param
+            model_config,
+            model_id="convaiinnovations/laya-multilingual",
+            param=param,
+            revision="main",
         )
         if raises:
             with pytest.raises(InvalidModel, match="does not accept a parameter"):
@@ -380,7 +500,10 @@ class TestVariants:
     ) -> None:
         """Each allowed parameter loads the expected subfolder and max length."""
         config = dataclasses.replace(
-            model_config, model_id="convaiinnovations/laya", param=param
+            model_config,
+            model_id="convaiinnovations/laya",
+            param=param,
+            revision="main",
         )
         adapter = LayaAdapter(model_config=config, benchmark_config=benchmark_config)
         assert isinstance(adapter.agent, FakeAgent)

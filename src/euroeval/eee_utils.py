@@ -87,9 +87,7 @@ def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
     trained_from_scratch = parse_optional_bool(
         model_additional.get("trained_from_scratch", config.get("trained_from_scratch"))
     )
-    release_date = parse_optional_str(
-        model_additional.get("release_date", config.get("release_date"))
-    )
+    release_date = model_additional.get("release_date", config.get("release_date"))
     canary_evidence: dict[str, object] | None = None
     raw_canary_evidence = eval_lib_additional.get("contamination_canary_evidence")
     if raw_canary_evidence is not None:
@@ -119,8 +117,8 @@ def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
         vocabulary_size=int(model_additional.get("vocabulary_size", "0") or "0"),
         merge=model_additional.get("merge", "false") == "true",
         generative=model_additional.get("generative", "false") == "true",
-        generative_type=parse_optional_str(model_additional.get("generative_type")),
-        model_type=parse_optional_str(model_additional.get("model_type")),
+        generative_type=model_additional.get("generative_type"),
+        model_type=model_additional.get("model_type"),
         few_shot=parse_optional_bool(eval_lib_additional.get("few_shot")),
         validation_split=parse_optional_bool(
             eval_lib_additional.get("validation_split")
@@ -128,20 +126,16 @@ def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
         use_bits_per_character=parse_optional_bool(
             eval_lib_additional.get("use_bits_per_character")
         ),
-        euroeval_version=parse_optional_str(
+        euroeval_version=(
             None
             if eval_library.get("version") == "unknown"
             else eval_library.get("version")
         ),
-        transformers_version=parse_optional_str(
-            eval_lib_additional.get("transformers_version")
-        ),
-        torch_version=parse_optional_str(eval_lib_additional.get("torch_version")),
-        vllm_version=parse_optional_str(eval_lib_additional.get("vllm_version")),
-        xgrammar_version=parse_optional_str(
-            eval_lib_additional.get("xgrammar_version")
-        ),
-        litellm_version=parse_optional_str(eval_lib_additional.get("litellm_version")),
+        transformers_version=eval_lib_additional.get("transformers_version"),
+        torch_version=eval_lib_additional.get("torch_version"),
+        vllm_version=eval_lib_additional.get("vllm_version"),
+        xgrammar_version=eval_lib_additional.get("xgrammar_version"),
+        litellm_version=eval_lib_additional.get("litellm_version"),
         commercially_licensed=commercially_licensed,
         open=open,
         trained_from_scratch=trained_from_scratch,
@@ -167,19 +161,6 @@ def parse_optional_bool(value: str | bool | None) -> bool | None:
     if isinstance(value, bool):
         return value
     return value.lower() == "true"
-
-
-def parse_optional_str(value: str | None) -> str | None:
-    """Parse a string-encoded optional string value.
-
-    Args:
-        value:
-            The string to parse.  `None` maps to `None`.
-
-    Returns:
-        `None` if value is `None`, otherwise the original string.
-    """
-    return value
 
 
 def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:

@@ -4,9 +4,18 @@ import logging
 import typing as t
 from pathlib import Path
 
-from ..exceptions import InvalidModel, NeedsExtraInstalled
+from huggingface_hub.errors import (
+    EntryNotFoundError,
+    GatedRepoError,
+    HfHubHTTPError,
+    NotASafetensorsRepoError,
+    RepositoryNotFoundError,
+)
+
+from ..exceptions import InvalidBenchmark, InvalidModel, NeedsExtraInstalled
 from ..logging_utils import log_once
 from ..safetensors_utils import get_num_params_from_safetensors_metadata
+from ..utils import get_hf_token
 from .base import ZeroShotClassifierAdapter
 
 if t.TYPE_CHECKING:
@@ -56,6 +65,12 @@ class LayaAdapter(ZeroShotClassifierAdapter):
                 The model configuration.
             benchmark_config:
                 The benchmark configuration.
+
+        Raises:
+            InvalidModel:
+                If a revision other than "main" is requested, since the `laya`
+                package cannot load a specific revision, or if a parameter is
+                given for a repo that doesn't accept one.
         """
         import laya  # noqa: PLC0415
 
@@ -64,16 +79,45 @@ class LayaAdapter(ZeroShotClassifierAdapter):
 
         model_id = model_config.model_id
         param = model_config.param
+        revision = model_config.revision
+        # `laya.Agent` loads checkpoints via `huggingface_hub.snapshot_download`
+        # without a `revision` argument, so it always fetches the repo's default
+        # branch ("main"). There is no way to pin another revision, so we reject
+        # any revision other than "main" up front, rather than silently ignoring
+        # it.
+        if revision not in ("main", ""):
+            raise InvalidModel(
+                f"The model {model_id!r} was requested at revision {revision!r}, "
+                "but the `laya` package does not support loading a specific "
+                "revision -- it always loads the repo's default branch ('main')."
+            )
         subfolder = _resolve_subfolder(model_id=model_id, param=param)
-        self.max_length = CHECKPOINTS.get(
-            _checkpoint_name(model_id=model_id, param=param), DEFAULT_MAX_LENGTH
-        )
+        checkpoint_name = _checkpoint_name(model_id=model_id, param=param)
+
+        token = get_hf_token(api_key=benchmark_config.api_key)
 
         # `Router` is intentionally not used, since it would select a checkpoint on
         # its own; we always load exactly the checkpoint the model ID asked for.
-        self.agent = laya.Agent(
-            model_id, subfolder=subfolder, token=benchmark_config.api_key
-        )
+        self.agent = laya.Agent(model_id, subfolder=subfolder, token=token)
+
+        if checkpoint_name in CHECKPOINTS:
+            self.max_length = CHECKPOINTS[checkpoint_name]
+        else:
+            # Unknown standalone `laya-*` repo (or a local checkpoint directory):
+            # the loaded agent's own config carries the context length it was
+            # trained with, so prefer that over the hardcoded default when present.
+            cfg = getattr(self.agent, "cfg", {})
+            max_len = cfg.get("max_len") if isinstance(cfg, dict) else None
+            if isinstance(max_len, int) and max_len > 0:
+                self.max_length = max_len
+            else:
+                self.max_length = DEFAULT_MAX_LENGTH
+                log_once(
+                    f"Could not determine the context length of the Laya "
+                    f"checkpoint {model_id!r} (param={param!r}) from its config; "
+                    f"falling back to the default of {DEFAULT_MAX_LENGTH} tokens.",
+                    level=logging.INFO,
+                )
 
     def classify(
         self, texts: list[str], candidate_labels: list[str], instructions: str
@@ -97,6 +141,11 @@ class LayaAdapter(ZeroShotClassifierAdapter):
         Returns:
             A list, with one dictionary per text, mapping each candidate label to
             its predicted probability.
+
+        Raises:
+            InvalidBenchmark:
+                If Laya's response is missing a probability for one of the
+                candidate labels.
         """
         question = {
             "type": "choice",
@@ -107,6 +156,16 @@ class LayaAdapter(ZeroShotClassifierAdapter):
         for text in texts:
             output = self.agent.system_one(state=text, questions={"q": question})
             probabilities = output["answers"]["q"]["probabilities"]
+            missing_labels = [
+                label for label in candidate_labels if label not in probabilities
+            ]
+            if missing_labels:
+                raise InvalidBenchmark(
+                    "Laya did not return a probability for the candidate "
+                    f"label(s) {missing_labels!r}. Expected labels: "
+                    f"{candidate_labels!r}. Returned labels: "
+                    f"{list(probabilities.keys())!r}."
+                )
             results.append(
                 {label: float(probabilities[label]) for label in candidate_labels}
             )
@@ -134,7 +193,9 @@ class LayaAdapter(ZeroShotClassifierAdapter):
         #     standalone `-multilingual`/`-typed-decisions`/future siblings), or
         #   - a local directory that itself contains `rl_agent_config.json` (a
         #     custom checkpoint a user trained or downloaded themselves).
-        is_known_hub_repo = model_id.startswith("convaiinnovations/laya")
+        is_known_hub_repo = model_id == BUNDLED_REPO_ID or model_id.startswith(
+            f"{BUNDLED_REPO_ID}-"
+        )
         is_local_checkpoint_dir = (
             Path(model_id).is_dir()
             and (Path(model_id) / "rl_agent_config.json").is_file()
@@ -173,17 +234,30 @@ class LayaAdapter(ZeroShotClassifierAdapter):
             filename = (
                 f"{subfolder}/model.safetensors" if subfolder else "model.safetensors"
             )
+            # `laya.Agent` only ever loads the "main" revision (see `__init__`), so
+            # the same revision is used here to keep the parameter count consistent
+            # with the checkpoint that will actually be loaded.
             num_params = get_num_params_from_safetensors_metadata(
-                model_id=model_id, revision="main", api_key=None, filename=filename
+                model_id=model_id,
+                revision="main",
+                api_key=get_hf_token(api_key=None),
+                filename=filename,
             )
             if num_params is None:
                 return -1
             return num_params
-        except Exception as error:
+        except (
+            EntryNotFoundError,
+            GatedRepoError,
+            HfHubHTTPError,
+            NotASafetensorsRepoError,
+            RepositoryNotFoundError,
+            OSError,
+        ) as error:
             log_once(
                 f"Could not determine the number of parameters of the Laya "
                 f"checkpoint {model_id!r} (param={param!r}): {error!r}.",
-                level=logging.DEBUG,
+                level=logging.WARNING,
             )
             return -1
 
