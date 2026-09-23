@@ -11,13 +11,13 @@ import typing as t
 
 from ..exceptions import NeedsExtraInstalled
 from .base import ZeroShotClassifierAdapter
+from .laya import LayaAdapter
 
 if t.TYPE_CHECKING:
     from ..data_models import BenchmarkConfig
 
-# The registered zero-shot classifier adapters, tried in order. Empty by default;
-# concrete adapters (e.g. `LayaAdapter`) register themselves here.
-ADAPTERS: list[type[ZeroShotClassifierAdapter]] = []
+# The registered zero-shot classifier adapters, tried in order.
+ADAPTERS: list[type[ZeroShotClassifierAdapter]] = [LayaAdapter]
 
 
 def get_adapter(
@@ -53,4 +53,4 @@ def get_adapter(
     return None
 
 
-__all__ = ["ADAPTERS", "ZeroShotClassifierAdapter", "get_adapter"]
+__all__ = ["ADAPTERS", "LayaAdapter", "ZeroShotClassifierAdapter", "get_adapter"]

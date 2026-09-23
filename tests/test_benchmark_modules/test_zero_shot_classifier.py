@@ -4,6 +4,7 @@ import dataclasses
 import math
 
 import pytest
+from datasets import Dataset, DatasetDict
 
 from euroeval.benchmark_modules.zero_shot_classifier import ZeroShotClassifierModel
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
@@ -12,7 +13,7 @@ from euroeval.exceptions import InvalidBenchmark, InvalidModel, NeedsExtraInstal
 from euroeval.languages import DANISH
 from euroeval.model_config import get_model_config
 from euroeval.model_loading import load_model
-from euroeval.tasks import HALLU, KNOW
+from euroeval.tasks import HALLU, KNOW, SENT
 from euroeval.zero_shot_adapters import ZeroShotClassifierAdapter
 
 
@@ -284,6 +285,57 @@ class TestGenerate:
         assert output.scores is not None
         assert len(output.scores[0][0]) == len(mc_dataset_config.id2label)
 
+    def test_label_extraction_matches_the_true_top_probability_label(
+        self,
+        zero_shot_model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """Regression test: the extracted label must follow the top probability.
+
+        `sequence_classification.get_closest_logprobs_labels` (the generic label
+        extractor used for all generative-style `scores` output, e.g. vLLM/LiteLLM
+        top-logprobs) assumes each sample's score list is sorted by probability
+        descending, and just takes the first entry that uniquely matches a
+        candidate label. Previously, `generate()` built `scores` in fixed
+        `candidate_labels` order rather than sorted by probability, so the
+        extracted label was always `candidate_labels[0]`, regardless of what the
+        adapter actually predicted -- this collapsed every real Laya run to a
+        single predicted class (observed as MCC 0.00%). This test picks a
+        non-first candidate label as the clear top prediction and checks that the
+        fully-extracted label (the one actually used for metrics) is that label.
+        """
+        model = ZeroShotClassifierModel(
+            model_config=zero_shot_model_config,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+        candidate_labels = [
+            dataset_config.prompt_label_mapping[label]
+            for label in dataset_config.id2label.values()
+        ]
+        assert len(candidate_labels) > 1
+        top_label = candidate_labels[-1]
+
+        def fake_classify(
+            texts: list[str], candidate_labels: list[str], instructions: str
+        ) -> list[dict[str, float]]:
+            rest = 0.01 / max(len(candidate_labels) - 1, 1)
+            probs = {label: rest for label in candidate_labels}
+            probs[top_label] = 1 - sum(v for k, v in probs.items() if k != top_label)
+            return [dict(probs) for _ in texts]
+
+        model.adapter.classify = fake_classify  # type: ignore[method-assign]
+
+        texts = ["some text"]
+        output = model.generate(inputs=dict(text=texts))
+        extracted = model.extract_labels_from_generation(
+            input_batch=dict(prompt=["prompt"], text=texts), model_output=output
+        )
+        assert extracted == [top_label]
+        assert extracted != [candidate_labels[0]]
+
     def test_unsupported_task_group_raises(
         self, zero_shot_model_config: ModelConfig, benchmark_config: BenchmarkConfig
     ) -> None:
@@ -303,6 +355,37 @@ class TestGenerate:
         )
         with pytest.raises(InvalidBenchmark, match="only support"):
             model.generate(inputs=dict(text=["some text"]))
+
+
+class TestPrepareDataset:
+    """Tests for `ZeroShotClassifierModel.prepare_dataset`."""
+
+    def test_raw_text_is_preserved_not_the_rendered_prompt(
+        self,
+        zero_shot_model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """The 'text' field stays the raw sample text, not the decoder prompt."""
+        raw_texts = ["some raw text", "some other raw text"]
+        test_split = Dataset.from_dict(
+            dict(text=raw_texts, label=["positive", "negative"])
+        )
+        dataset = DatasetDict(test=test_split)
+
+        model = ZeroShotClassifierModel(
+            model_config=zero_shot_model_config,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+        prepared = model.prepare_dataset(dataset=dataset, task=SENT, itr_idx=0)
+
+        assert list(prepared["test"]["text"]) == raw_texts
+        # The rendered prompt (with instructions and labels) is still built, but
+        # kept under a separate 'prompt' column rather than overwriting 'text'.
+        assert "prompt" in prepared["test"].column_names
+        assert prepared["test"]["prompt"][0] != raw_texts[0]
 
 
 class TestUnimplementedProperties:

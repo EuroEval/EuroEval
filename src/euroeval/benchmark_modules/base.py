@@ -60,6 +60,14 @@ class BenchmarkModule(ABC):
     fresh_model: bool
     batching_preference: "BatchingPreference"
     high_priority: bool
+    # A finer-grained tie-breaker among modules with the same `high_priority`, used
+    # by `model_config.get_model_config` so that dispatch order is explicit rather
+    # than depending on the order `benchmark_modules` happens to import its modules
+    # in. Higher values are checked first. Defaults to 0; only modules that would
+    # otherwise be misidentified by a higher-priority module (e.g.
+    # `ZeroShotClassifierModel` needing to be checked before
+    # `HuggingFaceEncoderModel`) need to raise it.
+    dispatch_priority: int = 0
     allowed_params: dict[re.Pattern[str], c.Sequence[str]] = {re.compile(r".*"): []}
     _model: nn.Module
 

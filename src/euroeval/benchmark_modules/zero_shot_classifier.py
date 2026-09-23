@@ -50,6 +50,11 @@ class ZeroShotClassifierModel(BenchmarkModule):
     # Checked before the generic encoder/generative backends, since these models
     # would otherwise be misidentified (e.g. an encoder without a root config.json).
     high_priority = True
+    # `HuggingFaceEncoderModel.model_exists` also returns True for these repos (any
+    # non-generative Hub repo, regardless of whether it has a root config.json), so
+    # this module must be checked strictly before it despite both being
+    # `high_priority`; see `model_config.get_model_config`.
+    dispatch_priority = 1
 
     def __init__(
         self,
@@ -187,15 +192,20 @@ class ZeroShotClassifierModel(BenchmarkModule):
         sequences: list[str] = []
         scores: list[list[list[tuple[str, float]]]] = []
         for probs in label_probs:
-            sample_scores: list[tuple[str, float]] = []
-            best_label = candidate_labels[0]
-            best_prob = -math.inf
-            for label in candidate_labels:
-                prob = max(probs.get(label, 0.0), 1e-12)
-                sample_scores.append((label, math.log(prob)))
-                if prob > best_prob:
-                    best_prob = prob
-                    best_label = label
+            sample_scores: list[tuple[str, float]] = [
+                (label, math.log(max(probs.get(label, 0.0), 1e-12)))
+                for label in candidate_labels
+            ]
+            # `sequence_classification.get_closest_logprobs_labels` (the generic
+            # label extractor used for all generative-style `scores` output, e.g.
+            # vLLM/LiteLLM top-logprobs) assumes each sample's list is sorted by
+            # probability descending, and just takes the first entry that uniquely
+            # matches a candidate label. Without this sort it would always pick
+            # `candidate_labels[0]`, regardless of the model's actual prediction.
+            sample_scores.sort(
+                key=lambda label_and_logprob: label_and_logprob[1], reverse=True
+            )
+            best_label = sample_scores[0][0]
             sequences.append(best_label)
             scores.append([sample_scores])
 
@@ -337,7 +347,17 @@ class ZeroShotClassifierModel(BenchmarkModule):
         Returns:
             The prepared dataset.
         """
-        return _prepare_dataset_helper(
+        # `_prepare_dataset_helper` overwrites the 'text' field with the sample
+        # rendered through the decoder prompt template (instructions, labels list,
+        # and few-shot examples included), which is meant for generative models.
+        # Zero-shot classifier adapters (e.g. Laya) build their own instructions
+        # from `_build_instructions` and expect the raw sample text -- for
+        # multiple-choice tasks, the bare question plus its options, as it appears
+        # in the dataset's 'text' column -- so the original 'text' values are
+        # restored afterwards.
+        raw_texts = list(dataset["test"]["text"])
+
+        prepared_dataset = _prepare_dataset_helper(
             dataset=dataset,
             task=task,
             model_config=self.model_config,
@@ -348,6 +368,15 @@ class ZeroShotClassifierModel(BenchmarkModule):
             always_populate_text_field=False,
             tokeniser=None,
         )
+
+        prepared_dataset["test"] = prepared_dataset["test"].map(
+            lambda examples, indices: dict(text=[raw_texts[idx] for idx in indices]),
+            with_indices=True,
+            batched=True,
+            load_from_cache_file=False,
+            keep_in_memory=True,
+        )
+        return prepared_dataset
 
     @property
     def trainer_class(self) -> t.Type["Trainer"]:
