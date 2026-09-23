@@ -30,6 +30,13 @@ class FakeAgent:
     subfolder: str | None
     token: str | None
     calls: list[tuple[object, dict]]
+    cfg: dict
+
+    # Class-level default for the loaded checkpoint's config, mimicking the real
+    # `laya.Agent.cfg` (parsed from `rl_agent_config.json`). Tests that need a
+    # specific config monkeypatch this attribute before constructing the adapter,
+    # since `LayaAdapter.__init__` instantiates `laya.Agent` itself.
+    default_cfg: t.ClassVar[dict] = {}
 
     def __init__(
         self,
@@ -43,6 +50,7 @@ class FakeAgent:
         self.subfolder = subfolder
         self.token = token
         self.calls = []
+        self.cfg = dict(FakeAgent.default_cfg)
 
     def system_one(self, state: object, questions: dict) -> dict:
         """Record the call and return a fixed `choice` answer.
@@ -509,6 +517,46 @@ class TestVariants:
         assert isinstance(adapter.agent, FakeAgent)
         assert adapter.agent.subfolder == expected_subfolder
         assert adapter.max_length == expected_max_length
+
+    def test_unknown_standalone_repo_uses_max_len_from_agent_cfg(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        fake_laya_module: types.ModuleType,
+        model_config: ModelConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """An unknown standalone repo reads its context length from `agent.cfg`."""
+        monkeypatch.setattr(FakeAgent, "default_cfg", {"max_len": 2048})
+        config = dataclasses.replace(
+            model_config,
+            model_id="convaiinnovations/laya-some-future-variant",
+            param=None,
+            revision="main",
+        )
+        adapter = LayaAdapter(model_config=config, benchmark_config=benchmark_config)
+        assert adapter.max_length == 2048
+
+    @pytest.mark.parametrize(
+        "cfg", [{}, {"max_len": 0}, {"max_len": -1}, {"max_len": "not-an-int"}]
+    )
+    def test_unknown_standalone_repo_falls_back_to_default_max_length(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        fake_laya_module: types.ModuleType,
+        model_config: ModelConfig,
+        benchmark_config: BenchmarkConfig,
+        cfg: dict,
+    ) -> None:
+        """An unknown standalone repo falls back to 512 without a usable `max_len`."""
+        monkeypatch.setattr(FakeAgent, "default_cfg", cfg)
+        config = dataclasses.replace(
+            model_config,
+            model_id="convaiinnovations/laya-some-future-variant",
+            param=None,
+            revision="main",
+        )
+        adapter = LayaAdapter(model_config=config, benchmark_config=benchmark_config)
+        assert adapter.max_length == 512
 
 
 @pytest.fixture
