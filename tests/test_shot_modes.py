@@ -612,6 +612,46 @@ def test_per_call_none_inherits_initialiser_shot_mode(
     assert config.few_shot is expected_mode
 
 
+def test_zero_shot_classifier_forces_zero_shot(
+    model_config: ModelConfig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A zero-shot classifier is always forced to zero-shot.
+
+    Requesting `AUTO` or explicit zero-shot should be silent, but explicitly
+    requesting few-shot should log a clear warning that it's being overridden.
+    `log_once` is mocked directly (rather than asserted via `caplog`) since it
+    de-duplicates identical messages process-wide, which would make repeated
+    calls with the same model ID silently no-op after the first.
+    """
+    zero_shot_classifier = replace(
+        model_config, model_type=ModelType.ZERO_SHOT_CLASSIFIER
+    )
+    log_once_mock = Mock()
+    monkeypatch.setattr("euroeval.shot_modes.log_once", log_once_mock)
+
+    assert resolve_shot_modes(
+        model_config=zero_shot_classifier, requested_mode=None
+    ) == [ShotMode.ZERO_SHOT]
+    log_once_mock.assert_not_called()
+
+    assert resolve_shot_modes(
+        model_config=zero_shot_classifier, requested_mode=ShotMode.ZERO_SHOT
+    ) == [ShotMode.ZERO_SHOT]
+    log_once_mock.assert_not_called()
+
+    assert resolve_shot_modes(
+        model_config=zero_shot_classifier, requested_mode=ShotMode.FEW_SHOT
+    ) == [ShotMode.ZERO_SHOT]
+    log_once_mock.assert_called_once()
+    assert "does not support few-shot" in log_once_mock.call_args.args[0]
+
+    log_once_mock.reset_mock()
+    assert resolve_shot_modes(
+        model_config=zero_shot_classifier, requested_mode=True
+    ) == [ShotMode.ZERO_SHOT]
+    log_once_mock.assert_called_once()
+
+
 def test_zero_shot_tasks_are_not_duplicated(
     monkeypatch: pytest.MonkeyPatch,
     benchmark_config: BenchmarkConfig,

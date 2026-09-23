@@ -179,7 +179,7 @@ def parse_optional_str(value: str | None) -> str | None:
     Returns:
         `None` if value is `None`, otherwise the original string.
     """
-    return None if value is None else value
+    return value
 
 
 def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
@@ -302,7 +302,7 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
         "generative_type": result.generative_type
         if result.generative_type is not None
         else None,
-        "model_type": result.model_type if result.model_type is not None else None,
+        "model_type": result.model_type,
     }
     # Preserve EuroEval-specific metadata fields
     if result.commercially_licensed is not None:

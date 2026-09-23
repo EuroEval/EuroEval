@@ -425,6 +425,47 @@ class BenchmarkModule(ABC):
         ...
 
 
+class NonFinetunableModuleMixin:
+    """Shared `data_collator`/`trainer_class` stubs for non-finetunable modules.
+
+    Mixed into benchmark modules that are never finetuned (e.g. `DummyModel`,
+    `ZeroShotClassifierModel`), so the identical "not implemented" properties
+    aren't duplicated in every such module.
+    """
+
+    @property
+    def data_collator(self) -> t.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
+        """The data collator used to prepare samples during finetuning.
+
+        Returns:
+            The data collator.
+
+        Raises:
+            NotImplementedError:
+                Always; this module is not finetuned.
+        """
+        raise NotImplementedError(
+            f"The `data_collator` property has not been implemented for "
+            f"{type(self).__name__}, as it is not finetuned."
+        )
+
+    @property
+    def trainer_class(self) -> t.Type["Trainer"]:
+        """The Trainer class to use for finetuning.
+
+        Returns:
+            The Trainer class.
+
+        Raises:
+            NotImplementedError:
+                Always; this module is not finetuned.
+        """
+        raise NotImplementedError(
+            f"The `trainer_class` property has not been implemented for "
+            f"{type(self).__name__}, as it is not finetuned."
+        )
+
+
 def _build_model_config_helper(
     model_id: str,
     revision: str,

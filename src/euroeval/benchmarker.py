@@ -59,6 +59,20 @@ if t.TYPE_CHECKING:
     from .data_models import BenchmarkConfig, ModelConfig, Task
 
 
+# Model types that are non-finetunable and evaluated the same way an encoder is
+# (no fresh initialisation, no BPC): the plain encoder path and zero-shot
+# classifiers both apply here.
+NON_FINETUNABLE_ENCODER_LIKE_MODEL_TYPES = (
+    ModelType.ENCODER,
+    ModelType.ZERO_SHOT_CLASSIFIER,
+)
+
+# Model types that are evaluated through `generate()` rather than finetuning:
+# generative models and zero-shot classifiers (both never finetuned, both produce
+# their predictions via `BenchmarkModule.generate`).
+GENERATE_ONLY_MODEL_TYPES = (ModelType.GENERATIVE, ModelType.ZERO_SHOT_CLASSIFIER)
+
+
 class Benchmarker:
     """Benchmarking all the language models.
 
@@ -713,10 +727,7 @@ class Benchmarker:
         """
         reference_result: BenchmarkResult | None = None
         metadata_model = loaded_model
-        if model_config.model_type in (
-            ModelType.ENCODER,
-            ModelType.ZERO_SHOT_CLASSIFIER,
-        ):
+        if model_config.model_type in NON_FINETUNABLE_ENCODER_LIKE_MODEL_TYPES:
             reference_result = self._find_ordinary_result(
                 model_config=model_config, results=current_results
             )
@@ -882,10 +893,7 @@ class Benchmarker:
     ) -> None:
         """Collect one non-ranking canary record for the selected virtual task."""
         non_generative_model_type = getattr(model_config, "model_type", None)
-        if non_generative_model_type in (
-            ModelType.ENCODER,
-            ModelType.ZERO_SHOT_CLASSIFIER,
-        ):
+        if non_generative_model_type in NON_FINETUNABLE_ENCODER_LIKE_MODEL_TYPES:
             evidence = status_evidence(
                 model_id=model_config.model_id,
                 requested_revision=model_config.revision,
@@ -1058,9 +1066,9 @@ class Benchmarker:
                 # initialised weights
                 rng = enforce_reproducibility()
 
-                if model is None or model_config.model_type not in (
-                    ModelType.GENERATIVE,
-                    ModelType.ZERO_SHOT_CLASSIFIER,
+                if (
+                    model is None
+                    or model_config.model_type not in GENERATE_ONLY_MODEL_TYPES
                 ):
                     model = load_model(
                         model_config=model_config,
@@ -1091,10 +1099,7 @@ class Benchmarker:
                     prepared_datasets = model.prepare_datasets(
                         datasets=bootstrapped_datasets, task=dataset_config.task
                     )
-                    if model_config.model_type in (
-                        ModelType.GENERATIVE,
-                        ModelType.ZERO_SHOT_CLASSIFIER,
-                    ):
+                    if model_config.model_type in GENERATE_ONLY_MODEL_TYPES:
                         scores = generate(
                             model=model,
                             datasets=prepared_datasets,

@@ -595,11 +595,7 @@ class Task:
     uses_logprobs: bool = False
     requires_logprobs: bool = False
     default_allowed_model_types: c.Sequence[ModelType] = field(
-        default_factory=lambda: [
-            ModelType.ENCODER,
-            ModelType.GENERATIVE,
-            ModelType.ZERO_SHOT_CLASSIFIER,
-        ]
+        default_factory=lambda: [ModelType.ENCODER, ModelType.GENERATIVE]
     )
     default_allowed_generative_types: c.Sequence[GenerativeType] = field(
         default_factory=lambda: [

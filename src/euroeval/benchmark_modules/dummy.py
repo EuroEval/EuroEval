@@ -28,19 +28,19 @@ from ..tokenisation_utils import get_first_label_token_mapping
 from ..types import ExtractLabelsFunction
 from .base import (
     BenchmarkModule,
+    NonFinetunableModuleMixin,
     _extract_labels_from_generation_helper,
     _prepare_dataset_helper,
 )
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
-    from transformers.trainer import Trainer
 
 
 DUMMY_MODEL_ID = "dummy"
 
 
-class DummyModel(BenchmarkModule):
+class DummyModel(NonFinetunableModuleMixin, BenchmarkModule):
     """A built-in model that predicts an even distribution over labels.
 
     This model does not download or run any real model, and requires no
@@ -92,17 +92,6 @@ class DummyModel(BenchmarkModule):
             tokeniser=None,
             generative_type=self.generative_type,
             log_metadata=self.log_metadata,
-        )
-
-    @property
-    def data_collator(self) -> t.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
-        """The data collator used to prepare samples during finetuning.
-
-        Returns:
-            The data collator.
-        """
-        raise NotImplementedError(
-            "The `data_collator` property has not been implemented for dummy models."
         )
 
     @property
@@ -302,17 +291,6 @@ class DummyModel(BenchmarkModule):
             itr_idx=itr_idx,
             always_populate_text_field=False,
             tokeniser=None,
-        )
-
-    @property
-    def trainer_class(self) -> t.Type["Trainer"]:
-        """The Trainer class to use for finetuning.
-
-        Returns:
-            The Trainer class.
-        """
-        raise NotImplementedError(
-            "The `trainer_class` property has not been implemented for dummy models."
         )
 
     @cached_property

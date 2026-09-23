@@ -21,16 +21,54 @@ class ZeroShotClassifierAdapter(ABC):
     Attributes:
         name:
             A short, human-readable name of the adapter, used in logging.
-        allowed_params:
-            The list of parameters (variants) accepted through the `model_id#param`
-            syntax. An empty list means no parameter is allowed.
+        variants:
+            The list of variants (checkpoint selectors) accepted through the
+            `model_id#param` syntax. An empty list means no parameter is allowed.
+            Not to be confused with `BenchmarkModule.allowed_params`, an unrelated
+            per-module tokeniser-regex mapping used by finetunable modules.
         max_length:
             The maximum input length (in tokens) supported by the underlying model.
     """
 
     name: str
-    allowed_params: list[str]
+    variants: list[str]
     max_length: int
+
+    @abstractmethod
+    def __init__(
+        self, model_config: "ModelConfig", benchmark_config: "BenchmarkConfig"
+    ) -> None:
+        """Load the model.
+
+        Args:
+            model_config:
+                The model configuration.
+            benchmark_config:
+                The benchmark configuration.
+        """
+        ...
+
+    @abstractmethod
+    def classify(
+        self, texts: list[str], candidate_labels: list[str], instructions: str
+    ) -> list[dict[str, float]]:
+        """Classify each text against the candidate labels.
+
+        Args:
+            texts:
+                The texts to classify.
+            candidate_labels:
+                The candidate labels to classify each text into.
+            instructions:
+                The instructions describing the classification task, derived from
+                the dataset's prompt/instruction template.
+
+        Returns:
+            A list, with one dictionary per text, mapping each candidate label to
+            its predicted probability. The probabilities for a single text need not
+            sum to exactly 1, but should be non-negative.
+        """
+        ...
 
     @classmethod
     @abstractmethod
@@ -66,41 +104,5 @@ class ZeroShotClassifierAdapter(ABC):
 
         Returns:
             The number of parameters in the model, or -1 if it is unknown.
-        """
-        ...
-
-    @abstractmethod
-    def __init__(
-        self, model_config: "ModelConfig", benchmark_config: "BenchmarkConfig"
-    ) -> None:
-        """Load the model.
-
-        Args:
-            model_config:
-                The model configuration.
-            benchmark_config:
-                The benchmark configuration.
-        """
-        ...
-
-    @abstractmethod
-    def classify(
-        self, texts: list[str], candidate_labels: list[str], instructions: str
-    ) -> list[dict[str, float]]:
-        """Classify each text against the candidate labels.
-
-        Args:
-            texts:
-                The texts to classify.
-            candidate_labels:
-                The candidate labels to classify each text into.
-            instructions:
-                The instructions describing the classification task, derived from
-                the dataset's prompt/instruction template.
-
-        Returns:
-            A list, with one dictionary per text, mapping each candidate label to
-            its predicted probability. The probabilities for a single text need not
-            sum to exactly 1, but should be non-negative.
         """
         ...

@@ -17,12 +17,15 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   are evaluated zero-shot only, and support sequence classification and
   multiple-choice classification tasks by turning each sample into a typed
   classification question over the candidate labels; other task groups are skipped
-  with a clear error. Adapters are registered in a small list, so adding support for a
-  new such model needs no changes outside its own adapter module. Added
-  `LayaAdapter`, which loads a Laya checkpoint through the `laya` package (new
-  `laya` optional extra, also included in `all`) and evaluates
-  `convaiinnovations/laya` (English), plus the `#multilingual` and
-  `#typed-decisions` checkpoint variants via the `model_id#param` syntax.
+  up front via the dataset's allowed model types. Adapters are registered in a small
+  list, so adding support for a new such model needs no changes outside its own
+  adapter module.
+- Added `LayaAdapter`, which loads a Laya checkpoint through the `laya` package (new
+  `laya` optional extra, also included in `all`). Evaluates the bundled
+  `convaiinnovations/laya` (English) repo, including its `#multilingual` and
+  `#typed-decisions` subfolder variants via the `model_id#param` syntax, as well as
+  the standalone `convaiinnovations/laya-multilingual` and
+  `convaiinnovations/laya-typed-decisions` repos and local checkpoint directories.
 - Added the `contamination-detection` task for collecting experimental private
   contamination-canary evidence. It uses a virtual dataset configuration, is included
   automatically in suite, ordinary task, and language runs without `--dataset`, and is

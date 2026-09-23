@@ -23,19 +23,19 @@ from ..model_cache import create_model_cache_dir
 from ..string_utils import split_model_id
 from ..tokenisation_utils import get_first_label_token_mapping
 from ..types import ExtractLabelsFunction
-from ..zero_shot_adapters import ADAPTERS, ZeroShotClassifierAdapter, get_adapter
+from ..zero_shot_adapters import ZeroShotClassifierAdapter, get_adapter
 from .base import (
     BenchmarkModule,
+    NonFinetunableModuleMixin,
     _extract_labels_from_generation_helper,
     _prepare_dataset_helper,
 )
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
-    from transformers.trainer import Trainer
 
 
-class ZeroShotClassifierModel(BenchmarkModule):
+class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
     """A benchmark module wrapping a non-generative zero-shot "decision" model.
 
     These models (e.g. Laya) are encoders with trained heads that answer typed
@@ -50,10 +50,8 @@ class ZeroShotClassifierModel(BenchmarkModule):
     # Checked before the generic encoder/generative backends, since these models
     # would otherwise be misidentified (e.g. an encoder without a root config.json).
     high_priority = True
-    # `HuggingFaceEncoderModel.model_exists` also returns True for these repos (any
-    # non-generative Hub repo, regardless of whether it has a root config.json), so
-    # this module must be checked strictly before it despite both being
-    # `high_priority`; see `model_config.get_model_config`.
+    # Must be checked strictly before `HuggingFaceEncoderModel` despite both being
+    # `high_priority`; see `BenchmarkModule.dispatch_priority`.
     dispatch_priority = 1
 
     def __init__(
@@ -106,18 +104,6 @@ class ZeroShotClassifierModel(BenchmarkModule):
         )
 
     @property
-    def data_collator(self) -> t.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
-        """The data collator used to prepare samples during finetuning.
-
-        Returns:
-            The data collator.
-        """
-        raise NotImplementedError(
-            "The `data_collator` property has not been implemented for zero-shot "
-            "classifier models, as they are not finetuned."
-        )
-
-    @property
     def extract_labels_from_generation(self) -> ExtractLabelsFunction:
         """The function used to extract the labels from the generated output.
 
@@ -129,18 +115,6 @@ class ZeroShotClassifierModel(BenchmarkModule):
             model_config=self.model_config,
             first_label_token_mapping=self.buffer["first_label_token_mapping"],
         )
-
-    def _build_instructions(self) -> str:
-        """Build the classification instructions from the dataset's templates.
-
-        Returns:
-            The instructions describing the classification task, with the
-            `{text}` placeholder (which is filled in per-sample by the `texts`
-            argument to `adapter.classify`) removed.
-        """
-        return self.dataset_config.instruction_prompt.format(
-            text="", labels_str=self.dataset_config.get_labels_str()
-        ).strip()
 
     def generate(self, inputs: dict) -> GenerativeModelOutput:
         """Generate outputs from the model.
@@ -211,6 +185,18 @@ class ZeroShotClassifierModel(BenchmarkModule):
 
         return GenerativeModelOutput(sequences=sequences, scores=scores)
 
+    def _build_instructions(self) -> str:
+        """Build the classification instructions from the dataset's templates.
+
+        Returns:
+            The instructions describing the classification task, with the
+            `{text}` placeholder (which is filled in per-sample by the `texts`
+            argument to `adapter.classify`) removed.
+        """
+        return self.dataset_config.instruction_prompt.format(
+            text="", labels_str=self.dataset_config.get_labels_str()
+        ).strip()
+
     @property
     def generative_type(self) -> GenerativeType | None:
         """The generative type of the model.
@@ -252,12 +238,10 @@ class ZeroShotClassifierModel(BenchmarkModule):
             )
 
         param = model_id_components.param
-        if param is not None and param not in adapter_cls.allowed_params:
+        if param is not None and param not in adapter_cls.variants:
             msg = f"Invalid parameter {param!r} for model {model_id!r}."
-            if adapter_cls.allowed_params:
-                msg += (
-                    f" Allowed parameters are: {', '.join(adapter_cls.allowed_params)}."
-                )
+            if adapter_cls.variants:
+                msg += f" Allowed parameters are: {', '.join(adapter_cls.variants)}."
             else:
                 msg += " No parameters are allowed."
             raise InvalidModel(msg)
@@ -295,18 +279,13 @@ class ZeroShotClassifierModel(BenchmarkModule):
             Whether the model exists.
         """
         model_id_components = split_model_id(model_id=model_id)
-        needs_extras: list[str] = list()
-        for adapter_cls in ADAPTERS:
-            matches_or_err = adapter_cls.matches(
+        try:
+            adapter_cls = get_adapter(
                 model_id=model_id_components.model_id, benchmark_config=benchmark_config
             )
-            if isinstance(matches_or_err, NeedsExtraInstalled):
-                needs_extras.append(matches_or_err.extra)
-            elif matches_or_err is True:
-                return True
-        if needs_extras:
-            return NeedsExtraInstalled(extra=needs_extras[0])
-        return False
+        except NeedsExtraInstalled as error:
+            return error
+        return adapter_cls is not None
 
     @cached_property
     def model_max_length(self) -> int:
@@ -378,17 +357,30 @@ class ZeroShotClassifierModel(BenchmarkModule):
         )
         return prepared_dataset
 
-    @property
-    def trainer_class(self) -> t.Type["Trainer"]:
-        """The Trainer class to use for finetuning.
+    def update_dataset_config(self, dataset_config: "DatasetConfig") -> t.Self:
+        """Update the dataset config registered in the benchmark module.
+
+        The model is reused across datasets (see `Benchmarker`), so per-dataset
+        state derived from `dataset_config` -- here, `first_label_token_mapping`,
+        computed once in `__init__` -- must be recomputed for the new dataset, the
+        same way `VLLMModel.update_dataset_config` does.
+
+        Args:
+            dataset_config:
+                The new dataset config.
 
         Returns:
-            The Trainer class.
+            The benchmark module.
         """
-        raise NotImplementedError(
-            "The `trainer_class` property has not been implemented for zero-shot "
-            "classifier models, as they are not finetuned."
+        self.dataset_config = dataset_config
+        self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
+            dataset_config=self.dataset_config,
+            model_config=self.model_config,
+            tokeniser=None,
+            generative_type=self.generative_type,
+            log_metadata=self.log_metadata,
         )
+        return self
 
     @cached_property
     def vocab_size(self) -> int:
