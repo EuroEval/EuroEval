@@ -9,6 +9,16 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added support for evaluating non-generative zero-shot "decision" models (encoders
+  with trained heads that answer typed questions with calibrated probabilities, e.g.
+  Laya) as full models, through a new `ModelType.ZERO_SHOT_CLASSIFIER` and a small
+  `ZeroShotClassifierAdapter` protocol in `euroeval.zero_shot_adapters`. These models
+  are loaded through their own package rather than `transformers`, vLLM or LiteLLM,
+  are evaluated zero-shot only, and support sequence classification and
+  multiple-choice classification tasks by turning each sample into a typed
+  classification question over the candidate labels; other task groups are skipped
+  with a clear error. Adapters are registered in a small list, so adding support for a
+  new such model needs no changes outside its own adapter module.
 - Added the `contamination-detection` task for collecting experimental private
   contamination-canary evidence. It uses a virtual dataset configuration, is included
   automatically in suite, ordinary task, and language runs without `--dataset`, and is

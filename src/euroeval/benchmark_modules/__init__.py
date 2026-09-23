@@ -6,3 +6,4 @@ from .fresh import FreshEncoderModel
 from .hf import HuggingFaceEncoderModel
 from .litellm import LiteLLMModel
 from .vllm import VLLMModel
+from .zero_shot_classifier import ZeroShotClassifierModel

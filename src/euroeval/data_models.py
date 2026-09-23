@@ -113,6 +113,7 @@ class BenchmarkResult(pydantic.BaseModel):
     merge: bool
     generative: bool
     generative_type: str | None
+    model_type: str | None = None
     few_shot: bool | None
     validation_split: bool | None
     use_bits_per_character: bool | None = None
@@ -594,7 +595,11 @@ class Task:
     uses_logprobs: bool = False
     requires_logprobs: bool = False
     default_allowed_model_types: c.Sequence[ModelType] = field(
-        default_factory=lambda: [ModelType.ENCODER, ModelType.GENERATIVE]
+        default_factory=lambda: [
+            ModelType.ENCODER,
+            ModelType.GENERATIVE,
+            ModelType.ZERO_SHOT_CLASSIFIER,
+        ]
     )
     default_allowed_generative_types: c.Sequence[GenerativeType] = field(
         default_factory=lambda: [

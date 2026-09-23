@@ -713,7 +713,10 @@ class Benchmarker:
         """
         reference_result: BenchmarkResult | None = None
         metadata_model = loaded_model
-        if model_config.model_type is ModelType.ENCODER:
+        if model_config.model_type in (
+            ModelType.ENCODER,
+            ModelType.ZERO_SHOT_CLASSIFIER,
+        ):
             reference_result = self._find_ordinary_result(
                 model_config=model_config, results=current_results
             )
@@ -878,14 +881,22 @@ class Benchmarker:
         loaded_model: "BenchmarkModule | None",
     ) -> None:
         """Collect one non-ranking canary record for the selected virtual task."""
-        if getattr(model_config, "model_type", None) is ModelType.ENCODER:
+        non_generative_model_type = getattr(model_config, "model_type", None)
+        if non_generative_model_type in (
+            ModelType.ENCODER,
+            ModelType.ZERO_SHOT_CLASSIFIER,
+        ):
             evidence = status_evidence(
                 model_id=model_config.model_id,
                 requested_revision=model_config.revision,
                 resolved_revision=model_config.revision,
                 backend=model_config.inference_backend.value,
                 status="not_applicable",
-                reason="encoder",
+                reason=(
+                    "encoder"
+                    if non_generative_model_type is ModelType.ENCODER
+                    else "zero_shot_classifier"
+                ),
             )
             self._store_canary_evidence(evidence)
             self._log_canary_status(evidence=evidence)
@@ -1047,7 +1058,10 @@ class Benchmarker:
                 # initialised weights
                 rng = enforce_reproducibility()
 
-                if model is None or model_config.model_type != ModelType.GENERATIVE:
+                if model is None or model_config.model_type not in (
+                    ModelType.GENERATIVE,
+                    ModelType.ZERO_SHOT_CLASSIFIER,
+                ):
                     model = load_model(
                         model_config=model_config,
                         dataset_config=dataset_config,
@@ -1077,7 +1091,10 @@ class Benchmarker:
                     prepared_datasets = model.prepare_datasets(
                         datasets=bootstrapped_datasets, task=dataset_config.task
                     )
-                    if model_config.model_type == ModelType.GENERATIVE:
+                    if model_config.model_type in (
+                        ModelType.GENERATIVE,
+                        ModelType.ZERO_SHOT_CLASSIFIER,
+                    ):
                         scores = generate(
                             model=model,
                             datasets=prepared_datasets,
@@ -1129,6 +1146,7 @@ class Benchmarker:
                     vocabulary_size=model.vocab_size,
                     merge=model_config.merge,
                     generative=model_config.model_type == ModelType.GENERATIVE,
+                    model_type=model_config.model_type.value,
                     generative_type=(
                         model.generative_type.value
                         if model.generative_type is not None

@@ -9,6 +9,7 @@ from .benchmark_modules import (
     HuggingFaceEncoderModel,
     LiteLLMModel,
     VLLMModel,
+    ZeroShotClassifierModel,
 )
 from .enums import DataType, GenerativeType, InferenceBackend, ModelType
 from .exceptions import InvalidModel
@@ -124,6 +125,12 @@ def load_model(
             model_class = LiteLLMModel
         case (ModelType.GENERATIVE, InferenceBackend.DUMMY, False):
             model_class = DummyModel
+        case (
+            ModelType.ZERO_SHOT_CLASSIFIER,
+            InferenceBackend.ZERO_SHOT_CLASSIFIER,
+            False,
+        ):
+            model_class = ZeroShotClassifierModel
         case (ModelType.ENCODER, InferenceBackend.TRANSFORMERS, True):
             model_class = FreshEncoderModel
         case (_, _, True):

@@ -120,6 +120,7 @@ def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
         merge=model_additional.get("merge", "false") == "true",
         generative=model_additional.get("generative", "false") == "true",
         generative_type=parse_optional_str(model_additional.get("generative_type")),
+        model_type=parse_optional_str(model_additional.get("model_type")),
         few_shot=parse_optional_bool(eval_lib_additional.get("few_shot")),
         validation_split=parse_optional_bool(
             eval_lib_additional.get("validation_split")
@@ -196,7 +197,8 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
       `evaluation_timestamp`, `retrieved_timestamp`, `source_metadata`.
     * `model_info`: model `id`/`name` plus EuroEval-specific details
       (`num_model_parameters`, `max_sequence_length`, `vocabulary_size`,
-      `merge`, `generative`, `generative_type`) in `additional_details`.
+      `merge`, `generative`, `generative_type`, `model_type`) in
+      `additional_details`.
     * `eval_library`: `name="euroeval"`, library version, and evaluation
       context (languages, task, shot config, library versions, raw per-iteration
       scores) in `additional_details`.
@@ -300,6 +302,7 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
         "generative_type": result.generative_type
         if result.generative_type is not None
         else None,
+        "model_type": result.model_type if result.model_type is not None else None,
     }
     # Preserve EuroEval-specific metadata fields
     if result.commercially_licensed is not None:

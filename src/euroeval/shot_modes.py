@@ -106,6 +106,8 @@ def resolve_shot_modes(
         Concrete modes to evaluate, in execution order.
     """
     mode = coerce_shot_mode(requested_mode=requested_mode)
+    if model_config.model_type == ModelType.ZERO_SHOT_CLASSIFIER:
+        return [ShotMode.ZERO_SHOT]
     if mode is not ShotMode.AUTO:
         return [mode]
     if model_config.model_type != ModelType.GENERATIVE:
