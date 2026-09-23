@@ -90,6 +90,7 @@ def extract_model_metadata(
             # Update presence-checked fields
             for field in (
                 "generative_type",
+                "model_type",
                 "commercial",
                 "merge",
                 "open",
@@ -141,6 +142,7 @@ def _ensure_standard_metadata_keys(metadata_dict: dict[str, dict[str, t.Any]]) -
         "vocabulary_size": math.nan,
         "context": math.nan,
         "generative_type": None,
+        "model_type": None,
         "commercial": False,
         "merge": False,
         "open": None,
@@ -187,6 +189,7 @@ def _extract_metadata_from_record(
         "vocabulary_size": _to_float_or_nan(vocab_size_raw),
         "context": _to_float_or_nan(context_raw),
         "generative_type": additional.get("generative_type", None),
+        "model_type": additional.get("model_type", None),
         "commercial": additional.get("commercially_licensed", False),
         "merge": _to_bool(additional.get("merge", "false")),
         "open": additional.get("open", None),
@@ -198,6 +201,8 @@ def _extract_metadata_from_record(
     presence_flags: dict[str, bool] = {
         "generative_type": "generative_type" in additional
         and additional["generative_type"] is not None,
+        "model_type": "model_type" in additional
+        and additional["model_type"] is not None,
         "commercial": "commercially_licensed" in additional
         and additional["commercially_licensed"] is not None,
         "merge": "merge" in additional and additional["merge"] is not None,
@@ -381,9 +386,9 @@ def _is_better_metadata(
         # Both present: don't overwrite (preserve existing)
         return False
 
-    # For generative_type, prefer non-empty over empty
+    # For generative_type and model_type, prefer non-empty over empty
     # When both are non-empty, preserve existing (don't overwrite)
-    if field == "generative_type":
+    if field in ("generative_type", "model_type"):
         if not old_value and new_value:
             return True
         if old_value and not new_value:

@@ -26,6 +26,9 @@ class Cache:
     Attributes:
         generative_type:
             A mapping from model IDs to their generative type.
+        model_type:
+            A mapping from model IDs to their raw result-record model type
+            (e.g. "encoder", "generative", "zero_shot_classifier").
         merge:
             A mapping from model IDs to whether they are merges of other models.
         commercially_licensed:
@@ -42,6 +45,7 @@ class Cache:
     """
 
     generative_type: dict[str, str | None] = field(default_factory=dict)
+    model_type: dict[str, str | None] = field(default_factory=dict)
     merge: dict[str, bool] = field(default_factory=dict)
     commercially_licensed: dict[str, bool] = field(default_factory=dict)
     open: dict[str, bool] = field(default_factory=dict)
@@ -110,6 +114,8 @@ class Cache:
             additional = record["model_info"]["additional_details"]
             if "generative_type" in additional:
                 cache.generative_type[model_id] = additional["generative_type"]
+            if "model_type" in additional:
+                cache.model_type[model_id] = additional["model_type"]
             if "merge" in additional:
                 cache.merge[model_id] = additional["merge"] == "true"
             if "commercially_licensed" in additional:

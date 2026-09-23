@@ -585,10 +585,20 @@ def _apply_display_transforms(
         "base": "🧠",
         "instruction_tuned": "📝",
         "reasoning": "🤔",
+        "zero_shot_classifier": "🎯",
     }
-    df["generative_type"] = df.generative_type.map(
+    # `model_type` (e.g. "zero_shot_classifier") takes precedence over
+    # `generative_type` (which is None for both true encoders and zero-shot
+    # classifiers) so the two are shown with distinct badges.
+    model_type_col = df.get("model_type", pd.Series(index=df.index, dtype=object))
+    effective_type = model_type_col.where(
+        model_type_col == "zero_shot_classifier", df.generative_type
+    )
+    df["generative_type"] = effective_type.map(
         lambda x: generative_type_emoji_mapping.get(x, "🔍")
     )
+    if "model_type" in df.columns:
+        df = df.drop(columns=["model_type"])
     return df
 
 
@@ -1197,6 +1207,7 @@ def _reorder_columns(
         + orthogonal_cols
         + [
             "generative_type",
+            "model_type",
             "open",
             "commercial",
             "merge",
@@ -1208,6 +1219,7 @@ def _reorder_columns(
         ]
         + rank_cols[2:]
     )
+    cols = [col for col in cols if col in df.columns]
     if include_dataset_columns:
         cols += dataset_cols
         cols += [f"{dataset}_version" for dataset in dataset_cols]

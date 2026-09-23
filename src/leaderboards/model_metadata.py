@@ -83,6 +83,10 @@ def add_missing_entries(
         model_additional["generative_type"] = _get_generative_type(
             record=record, cache=cache
         )
+    if "model_type" not in model_additional:
+        model_type = _get_model_type(record=record, cache=cache)
+        if model_type is not None:
+            model_additional["model_type"] = model_type
     if "merge" not in model_additional:
         model_additional["merge"] = is_merge(record=record, cache=cache)
 
@@ -200,6 +204,34 @@ def _get_generative_type(record: dict, cache: Cache) -> str | None:
             cache.generative_type[model_id] = parsed
             return parsed
         logger.error("Invalid input. Please try again.")
+
+
+def _get_model_type(record: dict, cache: Cache) -> str | None:
+    """Return the raw ``model_type`` recorded for a model, if any.
+
+    Unlike `_get_generative_type`, this is never inferred from keywords or
+    asked for interactively: older records simply lack the field, and that
+    absence must be preserved as ``None`` rather than guessed at.
+
+    Args:
+        record:
+            A record from the JSONL file.
+        cache:
+            The cache.
+
+    Returns:
+        The raw model type (e.g. "encoder", "generative",
+        "zero_shot_classifier"), or None if not present anywhere.
+    """
+    raw_model_id = _model_id_from_record(record=record)
+    model_id = split_model_id(model_id=plain_model_id(raw_model_id)).model_id
+
+    additional = record["model_info"]["additional_details"]
+    if "model_type" in additional and additional["model_type"] is not None:
+        cache.model_type[model_id] = additional["model_type"]
+        return additional["model_type"]
+
+    return cache.model_type.get(model_id)
 
 
 def _get_generative_type_from_keywords(model_id: str) -> str | None:
