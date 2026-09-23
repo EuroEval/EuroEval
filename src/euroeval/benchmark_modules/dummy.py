@@ -54,8 +54,9 @@ class DummyModel(NonFinetunableModuleMixin, BenchmarkModule):
     allowed_params = {re.compile(r".*"): []}
 
     # Checked before any other backend, so that benchmarking "dummy" never
-    # triggers a real HF Hub lookup for a repo literally named "dummy".
-    high_priority = True
+    # triggers a real HF Hub lookup for a repo literally named "dummy". See
+    # `model_config.get_model_config` for how `priority` determines dispatch order.
+    priority = 40
 
     def __init__(
         self,

@@ -315,7 +315,10 @@ class LiteLLMModel(BenchmarkModule):
 
     fresh_model = False
     batching_preference = BatchingPreference.ALL_AT_ONCE
-    high_priority = False
+    # See `model_config.get_model_config` for how `priority` determines dispatch
+    # order; this is deliberately the lowest, since LiteLLM's `model_exists`
+    # check is comparatively permissive.
+    priority = 10
     allowed_params: dict[re.Pattern[str], list[str]] = {
         # OpenAI models
         re.compile(r"(openai/)?gpt-5.*"): [

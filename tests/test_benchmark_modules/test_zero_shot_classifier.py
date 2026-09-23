@@ -206,6 +206,111 @@ class TestGenerate:
         assert output.scores is not None
         assert len(output.scores[0][0]) == len(mc_dataset_config.id2label)
 
+    def test_multiple_choice_uses_option_texts_as_candidate_labels(
+        self, zero_shot_model_config: ModelConfig, benchmark_config: BenchmarkConfig
+    ) -> None:
+        """The adapter is asked to classify against the option texts, not letters.
+
+        Regression test: passing bare letter labels ("a", "b", ...) to a text
+        classifier adapter gives it nothing meaningful to compare the sample
+        against. The option texts, parsed back out of the formatted 'text' column,
+        must be used as the candidate labels instead, and the returned
+        probabilities mapped back onto the letter labels afterwards so label
+        extraction and metrics (keyed by letter) are unaffected.
+        """
+        mc_dataset_config = DatasetConfig(
+            name="dataset",
+            pretty_name="Dataset",
+            source="dataset_id",
+            task=KNOW,
+            languages=[DANISH],
+        )
+        model = ZeroShotClassifierModel(
+            model_config=zero_shot_model_config,
+            dataset_config=mc_dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+
+        seen_candidate_labels: list[list[str]] = []
+
+        def fake_classify(
+            texts: list[str], candidate_labels: list[str], instructions: str
+        ) -> list[dict[str, float]]:
+            seen_candidate_labels.append(candidate_labels)
+            rest = 0.01 / max(len(candidate_labels) - 1, 1)
+            probs = {label: rest for label in candidate_labels}
+            probs[candidate_labels[-1]] = 1 - sum(
+                v for k, v in probs.items() if k != candidate_labels[-1]
+            )
+            return [dict(probs) for _ in texts]
+
+        model.adapter.classify = fake_classify  # type: ignore[method-assign]
+
+        text = (
+            "What is the capital of Denmark?\nChoices:\n"
+            "a. Oslo\n"
+            "b. Copenhagen\n"
+            "c. Stockholm\n"
+            "d. Helsinki"
+        )
+        output = model.generate(inputs=dict(text=[text]))
+
+        assert seen_candidate_labels == [
+            ["Oslo", "Copenhagen", "Stockholm", "Helsinki"]
+        ]
+
+        # The adapter's top prediction was the option text "Helsinki" (the last
+        # candidate label), which must map back to letter label "d" in `scores`.
+        assert output.scores is not None
+        sample_scores = dict(output.scores[0][0])
+        assert set(sample_scores) == {"a", "b", "c", "d"}
+        top_label = max(sample_scores, key=lambda label: sample_scores[label])
+        assert top_label == "d"
+
+    def test_multiple_choice_falls_back_to_letter_labels_when_unparseable(
+        self, zero_shot_model_config: ModelConfig, benchmark_config: BenchmarkConfig
+    ) -> None:
+        """Text that doesn't parse into options falls back to letter labels.
+
+        If the sample's 'text' can't be split into the expected number of
+        enumerated options (e.g. unexpected formatting), classification falls back
+        to the bare letter labels rather than dropping the sample.
+        """
+        mc_dataset_config = DatasetConfig(
+            name="dataset",
+            pretty_name="Dataset",
+            source="dataset_id",
+            task=KNOW,
+            languages=[DANISH],
+        )
+        model = ZeroShotClassifierModel(
+            model_config=zero_shot_model_config,
+            dataset_config=mc_dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+
+        seen_candidate_labels: list[list[str]] = []
+
+        def fake_classify(
+            texts: list[str], candidate_labels: list[str], instructions: str
+        ) -> list[dict[str, float]]:
+            seen_candidate_labels.append(candidate_labels)
+            rest = 0.01 / max(len(candidate_labels) - 1, 1)
+            probs = {label: rest for label in candidate_labels}
+            probs[candidate_labels[0]] = 1 - sum(
+                v for k, v in probs.items() if k != candidate_labels[0]
+            )
+            return [dict(probs) for _ in texts]
+
+        model.adapter.classify = fake_classify  # type: ignore[method-assign]
+
+        output = model.generate(inputs=dict(text=["some unparseable text"]))
+        assert seen_candidate_labels == [["a", "b", "c", "d"]]
+        assert output.scores is not None
+        assert len(output.scores[0][0]) == 4
+
     def test_sequence_classification_scores(
         self,
         zero_shot_model_config: ModelConfig,

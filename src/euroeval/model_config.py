@@ -36,7 +36,11 @@ def get_model_config(
         and issubclass(cls, benchmark_modules.BenchmarkModule)
         and cls is not benchmark_modules.BenchmarkModule
     ]
-    all_benchmark_modules.sort(key=lambda cls: cls.high_priority, reverse=True)
+    # Higher `priority` is checked first (see each module's `priority` class
+    # attribute for why). Sorting by `priority` alone -- rather than relying on
+    # `benchmark_modules.__dict__.values()`'s iteration order for ties -- keeps
+    # dispatch order independent of import order.
+    all_benchmark_modules.sort(key=lambda cls: cls.priority, reverse=True)
 
     needs_extras: list[str] = list()
     needs_env_vars: list[str] = list()

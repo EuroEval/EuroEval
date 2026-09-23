@@ -21,6 +21,7 @@ from ..enums import (
 from ..exceptions import InvalidBenchmark, InvalidModel, NeedsExtraInstalled
 from ..model_cache import create_model_cache_dir
 from ..string_utils import split_model_id
+from ..task_group_utils.cloze import parse_bare_question_and_choices
 from ..tokenisation_utils import get_first_label_token_mapping
 from ..types import ExtractLabelsFunction
 from ..zero_shot_adapters import ZeroShotClassifierAdapter, get_adapter
@@ -33,6 +34,11 @@ from .base import (
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
+
+# A probability floor used when taking the log of an adapter-reported probability,
+# to avoid `math.log(0.0)` raising `ValueError` for a label the adapter assigned zero
+# probability.
+_MIN_PROBABILITY = 1e-12
 
 
 class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
@@ -47,9 +53,11 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
     fresh_model = False
     batching_preference = BatchingPreference.ALL_AT_ONCE
 
-    # Checked before the generic encoder/generative backends, since these models
-    # would otherwise be misidentified (e.g. an encoder without a root config.json).
-    high_priority = True
+    # Checked before `HuggingFaceEncoderModel`/`VLLMModel` (see
+    # `model_config.get_model_config`, which sorts benchmark modules by `priority`,
+    # descending), since a matching zero-shot classifier repo (e.g. Laya) would
+    # otherwise be misidentified as a plain encoder or generative model.
+    priority = 30
 
     def __init__(
         self,
@@ -168,17 +176,23 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
                 "before using a zero-shot classifier model."
             )
 
-        label_probs = self.adapter.classify(
-            texts=texts,
-            candidate_labels=candidate_labels,
-            instructions=self.buffer["instructions"],
-        )
+        task_group = self.dataset_config.task.task_group
+        if task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
+            label_probs = self._classify_multiple_choice(
+                texts=texts, letter_labels=candidate_labels
+            )
+        else:
+            label_probs = self.adapter.classify(
+                texts=texts,
+                candidate_labels=candidate_labels,
+                instructions=self.buffer["instructions"],
+            )
 
         sequences: list[str] = []
         scores: list[list[list[tuple[str, float]]]] = []
         for probs in label_probs:
             sample_scores: list[tuple[str, float]] = [
-                (label, math.log(max(probs.get(label, 0.0), 1e-12)))
+                (label, math.log(max(probs.get(label, 0.0), _MIN_PROBABILITY)))
                 for label in candidate_labels
             ]
             # `sequence_classification.get_closest_logprobs_labels` (the generic
@@ -192,6 +206,55 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
             scores.append([sample_scores])
 
         return GenerativeModelOutput(sequences=sequences, scores=scores)
+
+    def _classify_multiple_choice(
+        self, texts: list[str], letter_labels: list[str]
+    ) -> list[dict[str, float]]:
+        """Classify multiple-choice samples, using the option texts as labels.
+
+        The adapter is a text classifier, not an MCQ solver: passing it the bare
+        letter labels ("a", "b", ...) gives it nothing to compare the sample text
+        against. Instead, each sample's actual option texts (parsed back out of the
+        formatted 'text' column, which stores the question followed by its
+        enumerated options) are used as the candidate labels, and the returned
+        probabilities are mapped back to the letter labels afterwards, so label
+        extraction and metrics -- which are keyed by letter -- are unaffected.
+
+        Args:
+            texts:
+                The formatted multiple-choice prompts (question plus options).
+            letter_labels:
+                The letter labels ("a", "b", ...), in order, that the parsed options
+                are expected to map onto.
+
+        Returns:
+            One letter-label-keyed probability dictionary per text.
+        """
+        label_probs: list[dict[str, float]] = []
+        for text in texts:
+            _, option_texts = parse_bare_question_and_choices(text)
+            if len(option_texts) != len(letter_labels):
+                # Couldn't reliably parse this sample's options (e.g. unexpected
+                # formatting) -- fall back to classifying against the letter labels
+                # directly, rather than dropping the sample.
+                option_texts = letter_labels
+
+            sample_probs = self.adapter.classify(
+                texts=[text],
+                candidate_labels=option_texts,
+                instructions=self.buffer["instructions"],
+            )[0]
+
+            if option_texts is letter_labels:
+                label_probs.append(sample_probs)
+            else:
+                label_probs.append(
+                    {
+                        letter: sample_probs.get(option_text, 0.0)
+                        for letter, option_text in zip(letter_labels, option_texts)
+                    }
+                )
+        return label_probs
 
     @property
     def generative_type(self) -> GenerativeType | None:

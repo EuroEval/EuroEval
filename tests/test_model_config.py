@@ -51,47 +51,69 @@ def test_get_model_config(
 
 
 def test_zero_shot_classifier_is_checked_before_encoder_model(
-    monkeypatch: pytest.MonkeyPatch, benchmark_config: BenchmarkConfig
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_config: BenchmarkConfig,
+    model_config: ModelConfig,
 ) -> None:
     """A Laya repo resolves to the zero-shot classifier backend, not the encoder.
 
-    `HuggingFaceEncoderModel.model_exists` used to also return True for a repo like
-    this (any non-generative Hub repo, regardless of whether it has a root
-    `config.json`), which would have made dispatch order among equally
-    `high_priority` modules ambiguous. This regression-tests the actual fix:
-    `HuggingFaceEncoderModel.model_exists` now returns False for a repo that lacks
-    a root `config.json`, so only `ZeroShotClassifierModel` (via `LayaAdapter`)
-    claims it. Hub calls are mocked so this doesn't need network access.
+    `HuggingFaceEncoderModel.model_exists` is mocked to unconditionally return
+    True here, simulating a repo shape (e.g. no root `config.json`, or a repo in a
+    subfolder) that it would also claim. Even so, `ZeroShotClassifierModel` (via
+    `LayaAdapter`) must still be the one that resolves the model, since
+    `ZeroShotClassifierModel.priority` is explicitly higher than
+    `HuggingFaceEncoderModel.priority` in `model_config.get_model_config` -- this is
+    what actually determines dispatch order, not import order or a heuristic on
+    `HuggingFaceEncoderModel.model_exists`.
     """
     # Simulate `laya` being importable, without needing it installed.
     fake_laya_module = types.ModuleType("laya")
     fake_laya_module.Agent = object  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, "laya", fake_laya_module)
 
-    # Simulate the real repo shape: a Hub repo with no root `config.json`.
-    fake_model_info = types.SimpleNamespace(
-        id="convaiinnovations/laya",
-        tags=[],
-        pipeline_tag=None,
-        siblings=[types.SimpleNamespace(rfilename="some_other_file.json")],
-    )
     monkeypatch.setattr(
-        "euroeval.benchmark_modules.hf.internet_connection_available", lambda: True
+        "euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.model_exists",
+        classmethod(lambda cls, model_id, benchmark_config: True),
     )
+    # This would raise if reached, since it isn't mocked; asserting it's never
+    # called is exactly the point -- `ZeroShotClassifierModel` must win the race.
     monkeypatch.setattr(
-        "euroeval.benchmark_modules.hf._fetch_model_info_from_hub",
-        lambda **kwargs: fake_model_info,
-    )
-    monkeypatch.setattr(
-        "euroeval.benchmark_modules.hf.get_model_release_date", lambda **kwargs: None
-    )
-    monkeypatch.setattr(
-        "euroeval.benchmark_modules.hf._infer_pipeline_tag",
-        lambda **kwargs: "feature-extraction",
+        "euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.get_model_config",
+        classmethod(lambda cls, model_id, benchmark_config: model_config),
     )
 
-    model_config = get_model_config(
+    resolved_config = get_model_config(
         model_id="convaiinnovations/laya", benchmark_config=benchmark_config
     )
-    assert model_config.inference_backend == InferenceBackend.ZERO_SHOT_CLASSIFIER
-    assert model_config.model_type == ModelType.ZERO_SHOT_CLASSIFIER
+    assert resolved_config.inference_backend == InferenceBackend.ZERO_SHOT_CLASSIFIER
+    assert resolved_config.model_type == ModelType.ZERO_SHOT_CLASSIFIER
+
+
+def test_non_matching_model_id_resolves_to_encoder_model(
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_config: BenchmarkConfig,
+    model_config: ModelConfig,
+) -> None:
+    """A normal encoder ID (no zero-shot adapter matches) still resolves via HF.
+
+    Regression test for the dispatch order fix: raising
+    `ZeroShotClassifierModel.priority` above `HuggingFaceEncoderModel.priority`
+    must not make every model resolve to the zero-shot classifier backend --
+    `ZeroShotClassifierModel.model_exists` still correctly reports False for a
+    model ID that no registered adapter matches (e.g. a plain adapter/PEFT repo,
+    which isn't a Laya checkpoint), so dispatch falls through to the encoder.
+    """
+    monkeypatch.setattr(
+        "euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.model_exists",
+        classmethod(lambda cls, model_id, benchmark_config: True),
+    )
+    monkeypatch.setattr(
+        "euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.get_model_config",
+        classmethod(lambda cls, model_id, benchmark_config: model_config),
+    )
+
+    resolved_config = get_model_config(
+        model_id="some-org/some-adapter-repo", benchmark_config=benchmark_config
+    )
+    assert resolved_config.inference_backend == InferenceBackend.TRANSFORMERS
+    assert resolved_config.model_type == ModelType.ENCODER

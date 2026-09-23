@@ -59,7 +59,7 @@ class BenchmarkModule(ABC):
 
     fresh_model: bool
     batching_preference: "BatchingPreference"
-    high_priority: bool
+    priority: int
     allowed_params: dict[re.Pattern[str], c.Sequence[str]] = {re.compile(r".*"): []}
     _model: nn.Module
 
@@ -639,13 +639,14 @@ def _prepare_dataset_helper(
         tokeniser:
             The tokeniser to use, or None if not applicable.
         preserve_raw_text:
-            Whether to restore the original 'text' column afterwards. The mapping
-            below overwrites 'text' with the sample rendered through the decoder
-            prompt template (instructions, labels list, and few-shot examples
-            included), which is meant for generative models. Non-generative
-            callers (e.g. `ZeroShotClassifierModel`) build their own instructions
-            separately and expect the raw sample text, so they set this to True.
-            Defaults to False.
+            Whether to keep the original 'text' column instead of overwriting it
+            with the sample rendered through the decoder prompt template
+            (instructions, labels list, and few-shot examples included), which is
+            meant for generative models. Non-generative callers (e.g.
+            `ZeroShotClassifierModel`) build their own instructions separately and
+            expect the raw sample text, so they set this to True. The rendered
+            prompt is still built and made available under the separate 'prompt'
+            column either way. Defaults to False.
 
     Returns:
         The prepared dataset.
@@ -682,11 +683,10 @@ def _prepare_dataset_helper(
     else:
         few_shot_examples = list()
 
-    raw_texts = list(dataset["test"]["text"]) if preserve_raw_text else None
-
+    map_fn = _apply_prompt_preserving_text if preserve_raw_text else apply_prompt
     mapped_dataset = dataset["test"].map(
         partial(
-            apply_prompt,
+            map_fn,
             few_shot_examples=few_shot_examples,
             model_config=model_config,
             dataset_config=dataset_config,
@@ -704,16 +704,56 @@ def _prepare_dataset_helper(
     )
     dataset["test"] = mapped_dataset
 
-    if raw_texts is not None:
-        texts_to_restore = raw_texts
-        dataset["test"] = dataset["test"].map(
-            lambda examples, indices: dict(
-                text=[texts_to_restore[idx] for idx in indices]
-            ),
-            with_indices=True,
-            batched=True,
-            load_from_cache_file=False,
-            keep_in_memory=True,
-        )
-
     return dataset
+
+
+def _apply_prompt_preserving_text(
+    examples: dict[str, t.Any],
+    few_shot_examples: c.Sequence[dict[str, t.Any]],
+    model_config: "ModelConfig",
+    dataset_config: "DatasetConfig",
+    generative_type: "GenerativeType | None",
+    always_populate_text_field: bool,
+    tokeniser: "PreTrainedTokenizer | None",
+    use_bits_per_character: bool = False,
+) -> dict[str, t.Any]:
+    """Apply the prompt template, but keep the original 'text' column as-is.
+
+    Takes the same arguments as `apply_prompt`, which it wraps.
+
+    Args:
+        examples:
+            The examples to apply the prompt template to.
+        few_shot_examples:
+            The few-shot examples to apply.
+        model_config:
+            The model configuration.
+        dataset_config:
+            The dataset configuration.
+        generative_type:
+            The generative type of the model.
+        always_populate_text_field:
+            Whether to always populate the 'text' field in the examples, as opposed
+            to the 'messages' field.
+        tokeniser:
+            The tokeniser to use for the model. If None, the tokeniser is not used.
+        use_bits_per_character:
+            Whether to use bits-per-character (BPC) scoring. Defaults to False.
+
+    Returns:
+        The examples with the prompt template applied, except for 'text', which is
+        left unchanged.
+    """
+    original_text = list(examples["text"])
+    examples = apply_prompt(
+        examples,
+        few_shot_examples=few_shot_examples,
+        model_config=model_config,
+        dataset_config=dataset_config,
+        generative_type=generative_type,
+        always_populate_text_field=always_populate_text_field,
+        tokeniser=tokeniser,
+        use_bits_per_character=use_bits_per_character,
+    )
+    examples["text"] = original_text
+    return examples
