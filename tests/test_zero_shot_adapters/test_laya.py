@@ -369,7 +369,9 @@ class TestNumParams:
             {"a": numpy.zeros((2, 3), dtype=numpy.float32), "b": numpy.zeros(4)},
             str(tmp_path / "model.safetensors"),
         )
-        num_params = LayaAdapter.num_params(model_id=str(tmp_path), param=None)
+        num_params = LayaAdapter.num_params(
+            model_id=str(tmp_path), param=None, api_key=None
+        )
         assert num_params == 2 * 3 + 4
 
     def test_does_not_download_the_full_checkpoint(
@@ -387,9 +389,9 @@ class TestNumParams:
         monkeypatch.setattr(
             "euroeval.safetensors_utils.internet_connection_available", lambda: True
         )
-        # `num_params` has no `benchmark_config` to draw an API key from, so it
-        # resolves a token via the standard `get_hf_token` helper (e.g. from the
-        # `HF_TOKEN` environment variable) instead of always passing None.
+        # `num_params` resolves the token via the standard `get_hf_token` helper
+        # (e.g. from the `HF_TOKEN` environment variable, or the `api_key` argument
+        # if one is passed) rather than always passing None.
         monkeypatch.setattr(
             "euroeval.zero_shot_adapters.laya.get_hf_token", lambda api_key: "a-token"
         )
@@ -402,7 +404,7 @@ class TestNumParams:
         )
 
         num_params = LayaAdapter.num_params(
-            model_id="convaiinnovations/laya", param="multilingual"
+            model_id="convaiinnovations/laya", param="multilingual", api_key=None
         )
 
         assert num_params == 2 * 3 + 4
@@ -430,7 +432,9 @@ class TestNumParams:
         )
         with caplog.at_level("WARNING", logger="euroeval"):
             result = LayaAdapter.num_params(
-                model_id="convaiinnovations/laya-does-not-exist", param=None
+                model_id="convaiinnovations/laya-does-not-exist",
+                param=None,
+                api_key=None,
             )
         assert result == -1
         assert any(record.levelname == "WARNING" for record in caplog.records), (

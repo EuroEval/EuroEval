@@ -76,7 +76,12 @@ from ..task_group_utils import (
 from ..tokenisation_utils import get_bos_token, get_eos_token
 from ..types import Tokeniser
 from ..utils import get_hf_token, internet_connection_available
-from .base import BenchmarkModule, _build_model_config_helper, _lookup_model_info
+from .base import (
+    PRIORITY_HF_ENCODER,
+    BenchmarkModule,
+    _build_model_config_helper,
+    _lookup_model_info,
+)
 
 try:
     from transformers.tokenization_mistral_common import MistralCommonTokenizer
@@ -99,9 +104,9 @@ class HuggingFaceEncoderModel(BenchmarkModule):
 
     fresh_model = False
     batching_preference = BatchingPreference.NO_PREFERENCE
-    # See `model_config.get_model_config` for how `priority` determines dispatch
-    # order; this must be lower than `ZeroShotClassifierModel.priority`.
-    priority = 20
+    # See the priority table in `benchmark_modules.base` for the full dispatch
+    # order.
+    priority = PRIORITY_HF_ENCODER
     allowed_params = {re.compile(r".*"): ["slow-tokenizer"]}
 
     def __init__(

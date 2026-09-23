@@ -92,7 +92,7 @@ class ZeroShotClassifierAdapter(ABC):
 
     @classmethod
     @abstractmethod
-    def num_params(cls, model_id: str, param: str | None) -> int:
+    def num_params(cls, model_id: str, param: str | None, api_key: str | None) -> int:
         """Get the number of parameters of the given model variant.
 
         Args:
@@ -101,6 +101,9 @@ class ZeroShotClassifierAdapter(ABC):
             param:
                 The parameter (variant) of the model, or None if no parameter was
                 specified.
+            api_key:
+                The API key/token to use for authenticated Hub lookups (e.g. gated
+                or private repos), or None to use the ambient/anonymous token.
 
         Returns:
             The number of parameters in the model, or -1 if it is unknown.

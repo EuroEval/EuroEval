@@ -4,13 +4,7 @@ import logging
 import typing as t
 from pathlib import Path
 
-from huggingface_hub.errors import (
-    EntryNotFoundError,
-    GatedRepoError,
-    HfHubHTTPError,
-    NotASafetensorsRepoError,
-    RepositoryNotFoundError,
-)
+from huggingface_hub.errors import EntryNotFoundError, NotASafetensorsRepoError
 
 from ..exceptions import InvalidBenchmark, InvalidModel, NeedsExtraInstalled
 from ..logging_utils import log_once
@@ -209,7 +203,7 @@ class LayaAdapter(ZeroShotClassifierAdapter):
         return True
 
     @classmethod
-    def num_params(cls, model_id: str, param: str | None) -> int:
+    def num_params(cls, model_id: str, param: str | None, api_key: str | None) -> int:
         """Get the number of parameters of the given Laya checkpoint.
 
         Reads only the safetensors header (a small range request), rather than
@@ -221,6 +215,9 @@ class LayaAdapter(ZeroShotClassifierAdapter):
             param:
                 The parameter (variant) of the model, or None if no parameter was
                 specified.
+            api_key:
+                The API key/token to use for the Hub lookup, or None to use the
+                ambient/anonymous token.
 
         Returns:
             The number of parameters in the model, or -1 if it could not be
@@ -240,20 +237,16 @@ class LayaAdapter(ZeroShotClassifierAdapter):
             num_params = get_num_params_from_safetensors_metadata(
                 model_id=model_id,
                 revision="main",
-                api_key=get_hf_token(api_key=None),
+                api_key=get_hf_token(api_key=api_key),
                 filename=filename,
             )
             if num_params is None:
                 return -1
             return num_params
-        except (
-            EntryNotFoundError,
-            GatedRepoError,
-            HfHubHTTPError,
-            NotASafetensorsRepoError,
-            RepositoryNotFoundError,
-            OSError,
-        ) as error:
+        # `HfHubHTTPError` (from which `GatedRepoError` and `RepositoryNotFoundError`
+        # inherit) is itself a subclass of `OSError`, so only the error types that
+        # aren't already covered by `OSError` need to be listed explicitly.
+        except (EntryNotFoundError, NotASafetensorsRepoError, OSError) as error:
             log_once(
                 f"Could not determine the number of parameters of the Laya "
                 f"checkpoint {model_id!r} (param={param!r}): {error!r}.",

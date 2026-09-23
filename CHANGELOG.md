@@ -17,7 +17,12 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   are evaluated zero-shot only, and support sequence classification and
   multiple-choice classification tasks by turning each sample into a typed
   classification question over the candidate labels; other task groups are skipped
-  up front via the dataset's allowed model types. Adapters are registered in a small
+  up front via the dataset's allowed model types. For multiple-choice tasks, the
+  candidates are the sample's own option texts (parsed back out of the formatted
+  prompt), not the bare letter labels, with the resulting probabilities mapped back
+  onto the letters; if the parsed options can't be reliably matched to the letter
+  labels (wrong count, marker mismatch, or duplicate option texts), it falls back to
+  classifying against the letter labels directly. Adapters are registered in a small
   list, so adding support for a new such model needs no changes outside its own
   adapter module.
 - Added `LayaAdapter`, which loads a Laya checkpoint through the `laya` package (new
@@ -48,6 +53,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Benchmark module dispatch priority is now an integer `priority` attribute (higher
+  is checked first), replacing the boolean `high_priority`. `high_priority` is
+  deprecated but still honoured on third-party `BenchmarkModule` subclasses that
+  haven't been updated yet.
 - Generative benchmarking now defaults to automatic shot selection: local
   instruction-tuned and reasoning models run zero-shot and few-shot evaluations, base
   models run few-shot, and API-backed models run zero-shot. The explicit `--few-shot`

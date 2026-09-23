@@ -1,5 +1,6 @@
 """A benchmark module wrapping non-generative zero-shot "decision" models."""
 
+import logging
 import math
 import typing as t
 from functools import cached_property
@@ -19,13 +20,15 @@ from ..enums import (
     TaskGroup,
 )
 from ..exceptions import InvalidBenchmark, InvalidModel, NeedsExtraInstalled
+from ..logging_utils import log_once
 from ..model_cache import create_model_cache_dir
 from ..string_utils import split_model_id
-from ..task_group_utils.cloze import parse_bare_question_and_choices
+from ..task_group_utils.cloze import parse_bare_question_and_choices_with_markers
 from ..tokenisation_utils import get_first_label_token_mapping
 from ..types import ExtractLabelsFunction
 from ..zero_shot_adapters import ZeroShotClassifierAdapter, get_adapter
 from .base import (
+    PRIORITY_ZERO_SHOT_CLASSIFIER,
     BenchmarkModule,
     NonFinetunableModuleMixin,
     _extract_labels_from_generation_helper,
@@ -53,11 +56,11 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
     fresh_model = False
     batching_preference = BatchingPreference.ALL_AT_ONCE
 
-    # Checked before `HuggingFaceEncoderModel`/`VLLMModel` (see
-    # `model_config.get_model_config`, which sorts benchmark modules by `priority`,
-    # descending), since a matching zero-shot classifier repo (e.g. Laya) would
-    # otherwise be misidentified as a plain encoder or generative model.
-    priority = 30
+    # Checked before `FreshEncoderModel`/`HuggingFaceEncoderModel`/`VLLMModel` (see
+    # the priority table in `benchmark_modules.base`), since a matching zero-shot
+    # classifier repo (e.g. Laya) would otherwise be misidentified as a plain
+    # encoder or generative model.
+    priority = PRIORITY_ZERO_SHOT_CLASSIFIER
 
     def __init__(
         self,
@@ -232,11 +235,37 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
         """
         label_probs: list[dict[str, float]] = []
         for text in texts:
-            _, option_texts = parse_bare_question_and_choices(text)
+            _, option_texts, markers = parse_bare_question_and_choices_with_markers(
+                text
+            )
+
+            fallback_reason: str | None = None
             if len(option_texts) != len(letter_labels):
-                # Couldn't reliably parse this sample's options (e.g. unexpected
-                # formatting) -- fall back to classifying against the letter labels
-                # directly, rather than dropping the sample.
+                fallback_reason = (
+                    f"the sample has {len(option_texts)} parsed option(s), but "
+                    f"{len(letter_labels)} letter label(s) were expected"
+                )
+            elif markers != letter_labels:
+                fallback_reason = (
+                    f"the parsed option markers {markers!r} do not match the "
+                    f"expected letter labels {letter_labels!r} in order"
+                )
+            elif len(set(option_texts)) != len(option_texts):
+                fallback_reason = (
+                    f"the parsed option texts {option_texts!r} contain duplicates, "
+                    "which would make two letters share the same probability"
+                )
+
+            if fallback_reason is not None:
+                # Couldn't reliably use this sample's parsed options -- fall back to
+                # classifying against the letter labels directly, rather than
+                # dropping the sample or silently mismapping probabilities.
+                log_once(
+                    "Falling back to classifying multiple-choice options by their "
+                    f"letter labels for dataset {self.dataset_config.name!r}, "
+                    f"since {fallback_reason}.",
+                    level=logging.WARNING,
+                )
                 option_texts = letter_labels
 
             sample_probs = self.adapter.classify(
@@ -366,7 +395,9 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
             return self.benchmark_config.num_parameters
         adapter_cls = type(self.adapter)
         return adapter_cls.num_params(
-            model_id=self.model_config.model_id, param=self.model_config.param
+            model_id=self.model_config.model_id,
+            param=self.model_config.param,
+            api_key=self.benchmark_config.api_key,
         )
 
     def prepare_dataset(

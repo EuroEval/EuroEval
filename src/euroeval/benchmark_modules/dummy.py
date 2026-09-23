@@ -27,6 +27,7 @@ from ..task_group_utils.token_classification import serialise_ner_tags
 from ..tokenisation_utils import get_first_label_token_mapping
 from ..types import ExtractLabelsFunction
 from .base import (
+    PRIORITY_DUMMY,
     BenchmarkModule,
     NonFinetunableModuleMixin,
     _extract_labels_from_generation_helper,
@@ -54,9 +55,9 @@ class DummyModel(NonFinetunableModuleMixin, BenchmarkModule):
     allowed_params = {re.compile(r".*"): []}
 
     # Checked before any other backend, so that benchmarking "dummy" never
-    # triggers a real HF Hub lookup for a repo literally named "dummy". See
-    # `model_config.get_model_config` for how `priority` determines dispatch order.
-    priority = 40
+    # triggers a real HF Hub lookup for a repo literally named "dummy". See the
+    # priority table in `benchmark_modules.base` for the full dispatch order.
+    priority = PRIORITY_DUMMY
 
     def __init__(
         self,

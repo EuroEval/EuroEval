@@ -43,6 +43,39 @@ if t.TYPE_CHECKING:
     from ..types import ComputeMetricsFunction, ExtractLabelsFunction
 
 
+# Dispatch priority table for `model_config.get_model_config`. Higher `priority` is
+# checked first. Built-in modules each set a distinct value below, so ties never
+# depend on `benchmark_modules.__dict__` iteration order. The gaps between values are
+# intentional headroom for third-party subclasses to slot in between built-ins.
+#
+#     Module               Priority   Notes
+#     ------               --------   -----
+#     DummyModel               60     Must win before any real Hub/API lookup.
+#     ZeroShotClassifierModel  50     Ahead of the generic encoder/decoder modules.
+#     FreshEncoderModel        40     Subclasses HuggingFaceEncoderModel; must be
+#                                     checked before it since it's more specific.
+#     HuggingFaceEncoderModel  30
+#     VLLMModel                20
+#     LiteLLMModel             10     Catch-all API backend, checked last.
+PRIORITY_DUMMY = 60
+PRIORITY_ZERO_SHOT_CLASSIFIER = 50
+PRIORITY_FRESH_ENCODER = 40
+PRIORITY_HF_ENCODER = 30
+PRIORITY_VLLM = 20
+PRIORITY_LITELLM = 10
+
+# Effective priorities used for subclasses that only set the deprecated
+# `high_priority: bool` attribute (from released versions of EuroEval) instead of the
+# new `priority: int` attribute. These sit below the built-in modules with specific
+# model-matching logic, but `high_priority = True` still ranks above the LiteLLM
+# catch-all, matching the old semantics of "checked before generic API backends".
+_LEGACY_HIGH_PRIORITY = 15
+_LEGACY_LOW_PRIORITY = 5
+
+# Default `priority` for a module that sets neither `priority` nor `high_priority`.
+_DEFAULT_PRIORITY = 0
+
+
 class BenchmarkModule(ABC):
     """Abstract class for a benchmark module.
 
@@ -59,9 +92,51 @@ class BenchmarkModule(ABC):
 
     fresh_model: bool
     batching_preference: "BatchingPreference"
-    priority: int
+
+    # Dispatch priority; higher is checked first. See the module-level table above.
+    priority: int = _DEFAULT_PRIORITY
+
+    # Deprecated alias for `priority`, kept for backwards compatibility with
+    # third-party subclasses written against released EuroEval versions. Only
+    # honoured when a subclass does not also set `priority`. Use `priority` instead.
+    high_priority: bool | None = None
+
     allowed_params: dict[re.Pattern[str], c.Sequence[str]] = {re.compile(r".*"): []}
     _model: nn.Module
+
+    @classmethod
+    def get_dispatch_priority(cls) -> int:
+        """Compute the effective dispatch priority used by `get_model_config`.
+
+        Prefers `priority` if the class (or any of its ancestors, other than
+        `BenchmarkModule` itself) sets it explicitly. Otherwise falls back to the
+        deprecated `high_priority` attribute, if set, emitting a deprecation warning.
+
+        Returns:
+            The effective priority; higher values are checked first.
+        """
+        for klass in cls.__mro__:
+            if klass is BenchmarkModule:
+                break
+            if "priority" in klass.__dict__:
+                return klass.__dict__["priority"]
+        for klass in cls.__mro__:
+            if klass is BenchmarkModule:
+                break
+            if "high_priority" in klass.__dict__:
+                log_once(
+                    f"The benchmark module {cls.__name__!r} sets the deprecated "
+                    "`high_priority` attribute rather than `priority`. Please "
+                    "update it to set `priority: int` instead, where a higher "
+                    "value is checked first.",
+                    level=logging.WARNING,
+                )
+                return (
+                    _LEGACY_HIGH_PRIORITY
+                    if klass.__dict__["high_priority"]
+                    else _LEGACY_LOW_PRIORITY
+                )
+        return cls.priority
 
     def __init__(
         self,
@@ -92,7 +167,12 @@ class BenchmarkModule(ABC):
 
     def _log_metadata(self) -> None:
         """Log the metadata of the model."""
+        # Include the `#param` variant suffix (e.g. "#multilingual"), matching how
+        # the model ID is stored in the resulting `BenchmarkResult` -- otherwise this
+        # log line would be ambiguous between variants of the same base model ID.
         model_id = self.model_config.model_id
+        if self.model_config.param is not None:
+            model_id += f"#{self.model_config.param}"
         logging_msg: str = "    ↳ "
         if self.num_params < 0:
             logging_msg += f"The model {model_id} has an unknown number of parameters, "
@@ -644,9 +724,10 @@ def _prepare_dataset_helper(
             (instructions, labels list, and few-shot examples included), which is
             meant for generative models. Non-generative callers (e.g.
             `ZeroShotClassifierModel`) build their own instructions separately and
-            expect the raw sample text, so they set this to True. The rendered
-            prompt is still built and made available under the separate 'prompt'
-            column either way. Defaults to False.
+            expect the raw sample text, so they set this to True. In that case the
+            decoder prompt template is not rendered into 'text'/'messages' at all;
+            only the separate 'prompt' column is still built, since downstream
+            label extraction reads it regardless of caller. Defaults to False.
 
     Returns:
         The prepared dataset.
@@ -683,10 +764,9 @@ def _prepare_dataset_helper(
     else:
         few_shot_examples = list()
 
-    map_fn = _apply_prompt_preserving_text if preserve_raw_text else apply_prompt
     mapped_dataset = dataset["test"].map(
         partial(
-            map_fn,
+            apply_prompt,
             few_shot_examples=few_shot_examples,
             model_config=model_config,
             dataset_config=dataset_config,
@@ -694,6 +774,7 @@ def _prepare_dataset_helper(
             always_populate_text_field=always_populate_text_field,
             tokeniser=tokeniser,
             use_bits_per_character=benchmark_config.use_bits_per_character,
+            skip_text_prompt=preserve_raw_text,
         ),
         batched=True,
         load_from_cache_file=False,
@@ -705,55 +786,3 @@ def _prepare_dataset_helper(
     dataset["test"] = mapped_dataset
 
     return dataset
-
-
-def _apply_prompt_preserving_text(
-    examples: dict[str, t.Any],
-    few_shot_examples: c.Sequence[dict[str, t.Any]],
-    model_config: "ModelConfig",
-    dataset_config: "DatasetConfig",
-    generative_type: "GenerativeType | None",
-    always_populate_text_field: bool,
-    tokeniser: "PreTrainedTokenizer | None",
-    use_bits_per_character: bool = False,
-) -> dict[str, t.Any]:
-    """Apply the prompt template, but keep the original 'text' column as-is.
-
-    Takes the same arguments as `apply_prompt`, which it wraps.
-
-    Args:
-        examples:
-            The examples to apply the prompt template to.
-        few_shot_examples:
-            The few-shot examples to apply.
-        model_config:
-            The model configuration.
-        dataset_config:
-            The dataset configuration.
-        generative_type:
-            The generative type of the model.
-        always_populate_text_field:
-            Whether to always populate the 'text' field in the examples, as opposed
-            to the 'messages' field.
-        tokeniser:
-            The tokeniser to use for the model. If None, the tokeniser is not used.
-        use_bits_per_character:
-            Whether to use bits-per-character (BPC) scoring. Defaults to False.
-
-    Returns:
-        The examples with the prompt template applied, except for 'text', which is
-        left unchanged.
-    """
-    original_text = list(examples["text"])
-    examples = apply_prompt(
-        examples,
-        few_shot_examples=few_shot_examples,
-        model_config=model_config,
-        dataset_config=dataset_config,
-        generative_type=generative_type,
-        always_populate_text_field=always_populate_text_field,
-        tokeniser=tokeniser,
-        use_bits_per_character=use_bits_per_character,
-    )
-    examples["text"] = original_text
-    return examples

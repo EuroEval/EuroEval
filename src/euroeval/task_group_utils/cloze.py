@@ -63,12 +63,36 @@ def parse_bare_question_and_choices(text: str) -> tuple[str, list[str]]:
         list of choice texts. If no enumerated options are found, ``choices`` is empty
         and ``bare_question`` is the original text unchanged.
     """
+    bare_question, choices, _ = parse_bare_question_and_choices_with_markers(text)
+    return bare_question, choices
+
+
+def parse_bare_question_and_choices_with_markers(
+    text: str,
+) -> tuple[str, list[str], list[str]]:
+    """Like `parse_bare_question_and_choices`, but also returns the choice markers.
+
+    The marker is the enumeration label a choice was parsed under (e.g. "a" in
+    "a. Paris"), lower-cased. Callers that map choices back onto letter labels (e.g.
+    `ZeroShotClassifierModel`) need this to verify the parsed choices are actually in
+    "a", "b", "c", ... order, rather than just matching in count.
+
+    Args:
+        text:
+            The formatted multiple-choice prompt.
+
+    Returns:
+        A triple ``(bare_question, choices, markers)``; see
+        `parse_bare_question_and_choices` for `bare_question` and `choices`.
+        ``markers`` is the ordered list of lower-cased enumeration labels the choices
+        were parsed under, one per entry in `choices`.
+    """
     lines = text.split("\n")
     candidate_idxs = [
         idx for idx, line in enumerate(lines) if _CHOICE_LINE_REGEX.match(line)
     ]
     if not candidate_idxs:
-        return text, []
+        return text, [], []
 
     # Only the final contiguous block of enumerated lines counts as choices: the
     # question itself can contain lines that start with e.g. "1." or "a.", so we walk
@@ -83,9 +107,11 @@ def parse_bare_question_and_choices(text: str) -> tuple[str, list[str]]:
     first_choice_idx = block_idxs[0]
 
     choices: list[str] = []
+    markers: list[str] = []
     for idx in block_idxs:
         match = _CHOICE_LINE_REGEX.match(lines[idx])
         assert match is not None  # guaranteed by candidate_idxs construction
+        markers.append(match.group(1).strip().lower())
         choices.append(match.group(2).strip())
 
     # Everything before the first option is the question, minus a trailing choices-label
@@ -97,4 +123,4 @@ def parse_bare_question_and_choices(text: str) -> tuple[str, list[str]]:
     ):
         head_lines.pop()
     bare_question = "\n".join(head_lines).strip()
-    return bare_question, choices
+    return bare_question, choices, markers

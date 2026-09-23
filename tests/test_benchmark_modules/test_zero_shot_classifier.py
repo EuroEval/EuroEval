@@ -57,7 +57,7 @@ class FakeAdapter(ZeroShotClassifierAdapter):
         return model_id.startswith("fake-zero-shot")
 
     @classmethod
-    def num_params(cls, model_id: str, param: str | None) -> int:
+    def num_params(cls, model_id: str, param: str | None, api_key: str | None) -> int:
         """Return a fixed parameter count."""
         return 123
 
@@ -95,7 +95,7 @@ class NeedsExtraAdapter(ZeroShotClassifierAdapter):
         return False
 
     @classmethod
-    def num_params(cls, model_id: str, param: str | None) -> int:
+    def num_params(cls, model_id: str, param: str | None, api_key: str | None) -> int:
         """Unknown parameter count.
 
         Returns:
@@ -311,6 +311,130 @@ class TestGenerate:
         assert output.scores is not None
         assert len(output.scores[0][0]) == 4
 
+    def test_multiple_choice_falls_back_when_markers_do_not_match_letters(
+        self,
+        zero_shot_model_config: ModelConfig,
+        benchmark_config: BenchmarkConfig,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """A correct option count with mismatched markers still falls back.
+
+        Regression test: the parsed option count matching the number of letter
+        labels isn't enough -- the markers themselves ("a", "b", ...) must also
+        match the expected letter labels in order, otherwise the returned
+        probabilities would be silently mismapped onto the wrong letters. Here the
+        parsed markers are "1", "2", "3", "4" instead of "a", "b", "c", "d", so it
+        must fall back to the letter labels and log a warning.
+        """
+        mc_dataset_config = DatasetConfig(
+            name="dataset",
+            pretty_name="Dataset",
+            source="dataset_id",
+            task=KNOW,
+            languages=[DANISH],
+        )
+        model = ZeroShotClassifierModel(
+            model_config=zero_shot_model_config,
+            dataset_config=mc_dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+
+        seen_candidate_labels: list[list[str]] = []
+
+        def fake_classify(
+            texts: list[str], candidate_labels: list[str], instructions: str
+        ) -> list[dict[str, float]]:
+            seen_candidate_labels.append(candidate_labels)
+            rest = 0.01 / max(len(candidate_labels) - 1, 1)
+            probs = {label: rest for label in candidate_labels}
+            probs[candidate_labels[0]] = 1 - sum(
+                v for k, v in probs.items() if k != candidate_labels[0]
+            )
+            return [dict(probs) for _ in texts]
+
+        model.adapter.classify = fake_classify  # type: ignore[method-assign]
+
+        text = (
+            "What is the capital of Denmark?\nChoices:\n"
+            "1. Oslo\n"
+            "2. Copenhagen\n"
+            "3. Stockholm\n"
+            "4. Helsinki"
+        )
+        with caplog.at_level("WARNING", logger="euroeval"):
+            output = model.generate(inputs=dict(text=[text]))
+
+        assert seen_candidate_labels == [["a", "b", "c", "d"]]
+        assert output.scores is not None
+        assert len(output.scores[0][0]) == 4
+        assert any(
+            "falling back" in record.message.lower()
+            and "marker" in record.message.lower()
+            for record in caplog.records
+        )
+
+    def test_multiple_choice_falls_back_when_option_texts_are_duplicated(
+        self,
+        zero_shot_model_config: ModelConfig,
+        benchmark_config: BenchmarkConfig,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Duplicate option texts fall back rather than colliding on probability.
+
+        Regression test: if two options have the same text (e.g. "None of the
+        above" appearing twice due to a data issue), mapping probabilities back by
+        option text would give both letters the same probability. It must instead
+        fall back to the letter labels and log a warning.
+        """
+        mc_dataset_config = DatasetConfig(
+            name="dataset",
+            pretty_name="Dataset",
+            source="dataset_id",
+            task=KNOW,
+            languages=[DANISH],
+        )
+        model = ZeroShotClassifierModel(
+            model_config=zero_shot_model_config,
+            dataset_config=mc_dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+
+        seen_candidate_labels: list[list[str]] = []
+
+        def fake_classify(
+            texts: list[str], candidate_labels: list[str], instructions: str
+        ) -> list[dict[str, float]]:
+            seen_candidate_labels.append(candidate_labels)
+            rest = 0.01 / max(len(candidate_labels) - 1, 1)
+            probs = {label: rest for label in candidate_labels}
+            probs[candidate_labels[0]] = 1 - sum(
+                v for k, v in probs.items() if k != candidate_labels[0]
+            )
+            return [dict(probs) for _ in texts]
+
+        model.adapter.classify = fake_classify  # type: ignore[method-assign]
+
+        text = (
+            "What is the capital of Denmark?\nChoices:\n"
+            "a. Copenhagen\n"
+            "b. Copenhagen\n"
+            "c. Stockholm\n"
+            "d. Helsinki"
+        )
+        with caplog.at_level("WARNING", logger="euroeval"):
+            output = model.generate(inputs=dict(text=[text]))
+
+        assert seen_candidate_labels == [["a", "b", "c", "d"]]
+        assert output.scores is not None
+        assert len(output.scores[0][0]) == 4
+        assert any(
+            "falling back" in record.message.lower()
+            and "duplicate" in record.message.lower()
+            for record in caplog.records
+        )
+
     def test_sequence_classification_scores(
         self,
         zero_shot_model_config: ModelConfig,
@@ -460,7 +584,8 @@ class TestPrepareDataset:
 
         assert list(prepared["test"]["text"]) == raw_texts
         # The rendered prompt (with instructions and labels) is still built, but
-        # kept under a separate 'prompt' column rather than overwriting 'text'.
+        # kept under a separate 'prompt' column rather than overwriting 'text' --
+        # downstream label extraction reads 'prompt' regardless of caller.
         assert "prompt" in prepared["test"].column_names
         assert prepared["test"]["prompt"][0] != raw_texts[0]
 

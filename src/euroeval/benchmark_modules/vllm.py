@@ -72,6 +72,7 @@ from ..utils import (
     resolve_model_path,
 )
 from .base import (
+    PRIORITY_VLLM,
     _build_model_config_helper,
     _extract_labels_from_generation_helper,
     _lookup_model_info,
@@ -127,9 +128,9 @@ class VLLMModel(HuggingFaceEncoderModel):
 
     fresh_model = False
     batching_preference = BatchingPreference.ALL_AT_ONCE
-    # See `model_config.get_model_config` for how `priority` determines dispatch
-    # order; this must be lower than `ZeroShotClassifierModel.priority`.
-    priority = 20
+    # See the priority table in `benchmark_modules.base` for the full dispatch
+    # order.
+    priority = PRIORITY_VLLM
     allowed_params: dict[re.Pattern[str], list[str]] = {
         re.compile(r".*"): ["thinking", "no-thinking", "slow-tokenizer"],
         re.compile(r".*gpt-oss.*", flags=re.IGNORECASE): ["low", "medium", "high"],

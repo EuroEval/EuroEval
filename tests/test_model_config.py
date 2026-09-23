@@ -6,6 +6,8 @@ import types
 
 import pytest
 
+from euroeval import benchmark_modules
+from euroeval.benchmark_modules.base import BenchmarkModule
 from euroeval.data_models import BenchmarkConfig, ModelConfig
 from euroeval.enums import InferenceBackend, ModelType
 from euroeval.exceptions import InvalidModel
@@ -117,3 +119,78 @@ def test_non_matching_model_id_resolves_to_encoder_model(
     )
     assert resolved_config.inference_backend == InferenceBackend.TRANSFORMERS
     assert resolved_config.model_type == ModelType.ENCODER
+
+
+class TestDispatchPriority:
+    """Tests for the built-in `priority` ordering and the legacy `high_priority`."""
+
+    def test_built_in_modules_have_distinct_priorities_in_expected_order(self) -> None:
+        """Built-in benchmark modules sort into the documented dispatch order.
+
+        Regression test for the tie between `HuggingFaceEncoderModel` and
+        `VLLMModel` (both previously `priority = 20`) and for
+        `FreshEncoderModel` silently inheriting `HuggingFaceEncoderModel`'s
+        priority instead of being checked before it.
+        """
+        all_benchmark_modules = [
+            cls
+            for cls in benchmark_modules.__dict__.values()
+            if isinstance(cls, type)
+            and issubclass(cls, benchmark_modules.BenchmarkModule)
+            and cls is not benchmark_modules.BenchmarkModule
+        ]
+        priorities = [cls.get_dispatch_priority() for cls in all_benchmark_modules]
+        assert len(set(priorities)) == len(priorities), (
+            "Every built-in benchmark module must have a distinct priority."
+        )
+
+        ordered = sorted(
+            all_benchmark_modules,
+            key=lambda cls: cls.get_dispatch_priority(),
+            reverse=True,
+        )
+        ordered_names = [cls.__name__ for cls in ordered]
+        assert ordered_names == [
+            "DummyModel",
+            "ZeroShotClassifierModel",
+            "FreshEncoderModel",
+            "HuggingFaceEncoderModel",
+            "VLLMModel",
+            "LiteLLMModel",
+        ]
+
+    def test_legacy_high_priority_is_honoured_with_deprecation_warning(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """A subclass that only sets `high_priority` still gets a usable priority."""
+
+        class LegacyHighPriorityModule(BenchmarkModule):
+            """A stand-in for a third-party subclass written against an old release."""
+
+            high_priority = True
+
+        class LegacyLowPriorityModule(BenchmarkModule):
+            """A stand-in for a third-party subclass written against an old release."""
+
+            high_priority = False
+
+        with caplog.at_level("WARNING", logger="euroeval"):
+            high_priority_value = LegacyHighPriorityModule.get_dispatch_priority()
+            low_priority_value = LegacyLowPriorityModule.get_dispatch_priority()
+
+        assert high_priority_value > low_priority_value
+        assert any(
+            "deprecated" in record.message and "high_priority" in record.message
+            for record in caplog.records
+        )
+
+    def test_priority_takes_precedence_over_high_priority(self) -> None:
+        """A subclass setting both `priority` and `high_priority` uses `priority`."""
+
+        class BothSetModule(BenchmarkModule):
+            """A subclass explicitly setting the new attribute."""
+
+            priority = 1000
+            high_priority = False
+
+        assert BothSetModule.get_dispatch_priority() == 1000
