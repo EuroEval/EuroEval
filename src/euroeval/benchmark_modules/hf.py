@@ -318,6 +318,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         return (
             model_info is not None
             and model_info.pipeline_tag not in GENERATIVE_PIPELINE_TAGS
+            and model_info.has_config_json
         )
 
     @cached_property
@@ -1463,6 +1464,16 @@ def get_model_repo_info(
             hf_api=hf_api, model_id=model_id, revision=revision, token=token
         )
 
+    # Whether the repo has a root `config.json`. Only meaningful when we actually
+    # fetched the repo's file list from the Hub (i.e. not for local models, and not
+    # when offline and falling back to a dummy `model_info`) -- in those cases we
+    # have no way to know, so we assume it's present.
+    has_config_json = True
+    if not is_local_model and model_info.siblings is not None:
+        has_config_json = any(
+            sibling.rfilename == "config.json" for sibling in model_info.siblings
+        )
+
     # Handle adapter models - get base model tags
     tags = model_info.tags or list()
     base_model_id: str | None = None
@@ -1506,6 +1517,7 @@ def get_model_repo_info(
         tags=tags,
         adapter_base_model_id=base_model_id,
         release_date=release_date,
+        has_config_json=has_config_json,
     )
 
 

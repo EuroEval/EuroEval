@@ -60,14 +60,6 @@ class BenchmarkModule(ABC):
     fresh_model: bool
     batching_preference: "BatchingPreference"
     high_priority: bool
-    # A finer-grained tie-breaker among modules with the same `high_priority`, used
-    # by `model_config.get_model_config` so that dispatch order is explicit rather
-    # than depending on the order `benchmark_modules` happens to import its modules
-    # in. Higher values are checked first. Defaults to 0; only modules that would
-    # otherwise be misidentified by a higher-priority module (e.g.
-    # `ZeroShotClassifierModel` needing to be checked before
-    # `HuggingFaceEncoderModel`) need to raise it.
-    dispatch_priority: int = 0
     allowed_params: dict[re.Pattern[str], c.Sequence[str]] = {re.compile(r".*"): []}
     _model: nn.Module
 
@@ -623,6 +615,7 @@ def _prepare_dataset_helper(
     itr_idx: int,
     always_populate_text_field: bool,
     tokeniser: "PreTrainedTokenizer | None",
+    preserve_raw_text: bool = False,
 ) -> DatasetDict:
     """Helper function to prepare a dataset for a generative model.
 
@@ -645,6 +638,14 @@ def _prepare_dataset_helper(
             Whether to always populate the text field.
         tokeniser:
             The tokeniser to use, or None if not applicable.
+        preserve_raw_text:
+            Whether to restore the original 'text' column afterwards. The mapping
+            below overwrites 'text' with the sample rendered through the decoder
+            prompt template (instructions, labels list, and few-shot examples
+            included), which is meant for generative models. Non-generative
+            callers (e.g. `ZeroShotClassifierModel`) build their own instructions
+            separately and expect the raw sample text, so they set this to True.
+            Defaults to False.
 
     Returns:
         The prepared dataset.
@@ -681,6 +682,8 @@ def _prepare_dataset_helper(
     else:
         few_shot_examples = list()
 
+    raw_texts = list(dataset["test"]["text"]) if preserve_raw_text else None
+
     mapped_dataset = dataset["test"].map(
         partial(
             apply_prompt,
@@ -700,5 +703,17 @@ def _prepare_dataset_helper(
         "Mapped dataset is not a Dataset instance."
     )
     dataset["test"] = mapped_dataset
+
+    if raw_texts is not None:
+        texts_to_restore = raw_texts
+        dataset["test"] = dataset["test"].map(
+            lambda examples, indices: dict(
+                text=[texts_to_restore[idx] for idx in indices]
+            ),
+            with_indices=True,
+            batched=True,
+            load_from_cache_file=False,
+            keep_in_memory=True,
+        )
 
     return dataset

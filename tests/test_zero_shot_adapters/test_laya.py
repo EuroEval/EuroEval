@@ -268,11 +268,15 @@ class TestNumParams:
         """
         download_mock = Mock(side_effect=AssertionError("must not download the file"))
         monkeypatch.setattr("huggingface_hub.hf_hub_download", download_mock)
+        monkeypatch.setattr(
+            "euroeval.safetensors_utils.internet_connection_available", lambda: True
+        )
 
         metadata = SimpleNamespace(parameter_count={"F32": 2 * 3, "F16": 4})
         parse_metadata_mock = Mock(return_value=metadata)
         monkeypatch.setattr(
-            "huggingface_hub.parse_safetensors_file_metadata", parse_metadata_mock
+            "euroeval.safetensors_utils.parse_safetensors_file_metadata",
+            parse_metadata_mock,
         )
 
         num_params = LayaAdapter.num_params(
@@ -282,7 +286,10 @@ class TestNumParams:
         assert num_params == 2 * 3 + 4
         download_mock.assert_not_called()
         parse_metadata_mock.assert_called_once_with(
-            repo_id="convaiinnovations/laya", filename="multilingual/model.safetensors"
+            repo_id="convaiinnovations/laya",
+            filename="multilingual/model.safetensors",
+            revision="main",
+            token=None,
         )
 
     def test_returns_minus_one_on_failure(
@@ -294,7 +301,10 @@ class TestNumParams:
             raise OSError("no network in this test")
 
         monkeypatch.setattr(
-            "huggingface_hub.parse_safetensors_file_metadata", raise_error
+            "euroeval.safetensors_utils.internet_connection_available", lambda: True
+        )
+        monkeypatch.setattr(
+            "euroeval.safetensors_utils.parse_safetensors_file_metadata", raise_error
         )
         with caplog.at_level("DEBUG", logger="euroeval"):
             result = LayaAdapter.num_params(
@@ -316,41 +326,40 @@ class TestVariants:
                 benchmark_config=benchmark_config,
             )
 
-    def test_param_on_standalone_repo_raises(
+    @pytest.mark.parametrize(
+        ("param", "raises"),
+        [(None, False), ("multilingual", True)],
+        ids=["no param: loads at its own root", "param: rejected"],
+    )
+    def test_standalone_repo_param_handling(
         self,
         fake_laya_module: types.ModuleType,
         model_config: ModelConfig,
         benchmark_config: BenchmarkConfig,
+        param: str | None,
+        raises: bool,
     ) -> None:
-        """A `#param` on a standalone repo (which doesn't accept one) is rejected.
+        """A standalone repo loads at its own root and rejects a `#param`.
 
         `variants` is a class-level attribute shared by every
         `convaiinnovations/laya*` repo ID (so the generic `#param` validation in
-        `ZeroShotClassifierModel.get_model_config` can't tell them apart), so this
-        is enforced defensively in `LayaAdapter.__init__` instead.
+        `ZeroShotClassifierModel.get_model_config` can't tell them apart), so
+        rejecting a `#param` on a standalone repo (which doesn't accept one) is
+        enforced defensively in `LayaAdapter.__init__` instead.
         """
         config = dataclasses.replace(
-            model_config,
-            model_id="convaiinnovations/laya-multilingual",
-            param="multilingual",
+            model_config, model_id="convaiinnovations/laya-multilingual", param=param
         )
-        with pytest.raises(InvalidModel, match="does not accept a parameter"):
-            LayaAdapter(model_config=config, benchmark_config=benchmark_config)
-
-    def test_standalone_repo_loads_at_its_root(
-        self,
-        fake_laya_module: types.ModuleType,
-        model_config: ModelConfig,
-        benchmark_config: BenchmarkConfig,
-    ) -> None:
-        """A standalone repo (e.g. `laya-multilingual`) loads at its own root."""
-        config = dataclasses.replace(
-            model_config, model_id="convaiinnovations/laya-multilingual", param=None
-        )
-        adapter = LayaAdapter(model_config=config, benchmark_config=benchmark_config)
-        assert isinstance(adapter.agent, FakeAgent)
-        assert adapter.agent.subfolder is None
-        assert adapter.max_length == 1024
+        if raises:
+            with pytest.raises(InvalidModel, match="does not accept a parameter"):
+                LayaAdapter(model_config=config, benchmark_config=benchmark_config)
+        else:
+            adapter = LayaAdapter(
+                model_config=config, benchmark_config=benchmark_config
+            )
+            assert isinstance(adapter.agent, FakeAgent)
+            assert adapter.agent.subfolder is None
+            assert adapter.max_length == 1024
 
     @pytest.mark.parametrize(
         ("param", "expected_subfolder", "expected_max_length"),

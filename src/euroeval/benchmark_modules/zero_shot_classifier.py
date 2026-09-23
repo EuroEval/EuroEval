@@ -50,9 +50,6 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
     # Checked before the generic encoder/generative backends, since these models
     # would otherwise be misidentified (e.g. an encoder without a root config.json).
     high_priority = True
-    # Must be checked strictly before `HuggingFaceEncoderModel` despite both being
-    # `high_priority`; see `BenchmarkModule.dispatch_priority`.
-    dispatch_priority = 1
 
     def __init__(
         self,
@@ -102,6 +99,19 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
             generative_type=self.generative_type,
             log_metadata=self.log_metadata,
         )
+        self.buffer["instructions"] = self._build_instructions()
+
+    def _build_instructions(self) -> str:
+        """Build the classification instructions from the dataset's templates.
+
+        Returns:
+            The instructions describing the classification task, with the
+            `{text}` placeholder (which is filled in per-sample by the `texts`
+            argument to `adapter.classify`) removed.
+        """
+        return self.dataset_config.instruction_prompt.format(
+            text="", labels_str=self.dataset_config.get_labels_str()
+        ).strip()
 
     @property
     def extract_labels_from_generation(self) -> ExtractLabelsFunction:
@@ -158,9 +168,10 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
                 "before using a zero-shot classifier model."
             )
 
-        instructions = self._build_instructions()
         label_probs = self.adapter.classify(
-            texts=texts, candidate_labels=candidate_labels, instructions=instructions
+            texts=texts,
+            candidate_labels=candidate_labels,
+            instructions=self.buffer["instructions"],
         )
 
         sequences: list[str] = []
@@ -172,30 +183,15 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
             ]
             # `sequence_classification.get_closest_logprobs_labels` (the generic
             # label extractor used for all generative-style `scores` output, e.g.
-            # vLLM/LiteLLM top-logprobs) assumes each sample's list is sorted by
-            # probability descending, and just takes the first entry that uniquely
-            # matches a candidate label. Without this sort it would always pick
-            # `candidate_labels[0]`, regardless of the model's actual prediction.
-            sample_scores.sort(
-                key=lambda label_and_logprob: label_and_logprob[1], reverse=True
-            )
-            best_label = sample_scores[0][0]
+            # vLLM/LiteLLM top-logprobs) sorts each sample's list by logprob
+            # descending itself, so we don't need to pre-sort here.
+            best_label = max(
+                sample_scores, key=lambda label_and_logprob: label_and_logprob[1]
+            )[0]
             sequences.append(best_label)
             scores.append([sample_scores])
 
         return GenerativeModelOutput(sequences=sequences, scores=scores)
-
-    def _build_instructions(self) -> str:
-        """Build the classification instructions from the dataset's templates.
-
-        Returns:
-            The instructions describing the classification task, with the
-            `{text}` placeholder (which is filled in per-sample by the `texts`
-            argument to `adapter.classify`) removed.
-        """
-        return self.dataset_config.instruction_prompt.format(
-            text="", labels_str=self.dataset_config.get_labels_str()
-        ).strip()
 
     @property
     def generative_type(self) -> GenerativeType | None:
@@ -326,17 +322,12 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
         Returns:
             The prepared dataset.
         """
-        # `_prepare_dataset_helper` overwrites the 'text' field with the sample
-        # rendered through the decoder prompt template (instructions, labels list,
-        # and few-shot examples included), which is meant for generative models.
         # Zero-shot classifier adapters (e.g. Laya) build their own instructions
         # from `_build_instructions` and expect the raw sample text -- for
         # multiple-choice tasks, the bare question plus its options, as it appears
-        # in the dataset's 'text' column -- so the original 'text' values are
-        # restored afterwards.
-        raw_texts = list(dataset["test"]["text"])
-
-        prepared_dataset = _prepare_dataset_helper(
+        # in the dataset's 'text' column -- rather than the decoder prompt
+        # template `_prepare_dataset_helper` would otherwise render into 'text'.
+        return _prepare_dataset_helper(
             dataset=dataset,
             task=task,
             model_config=self.model_config,
@@ -346,24 +337,17 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
             itr_idx=itr_idx,
             always_populate_text_field=False,
             tokeniser=None,
+            preserve_raw_text=True,
         )
-
-        prepared_dataset["test"] = prepared_dataset["test"].map(
-            lambda examples, indices: dict(text=[raw_texts[idx] for idx in indices]),
-            with_indices=True,
-            batched=True,
-            load_from_cache_file=False,
-            keep_in_memory=True,
-        )
-        return prepared_dataset
 
     def update_dataset_config(self, dataset_config: "DatasetConfig") -> t.Self:
         """Update the dataset config registered in the benchmark module.
 
         The model is reused across datasets (see `Benchmarker`), so per-dataset
-        state derived from `dataset_config` -- here, `first_label_token_mapping`,
-        computed once in `__init__` -- must be recomputed for the new dataset, the
-        same way `VLLMModel.update_dataset_config` does.
+        state derived from `dataset_config` -- here, `first_label_token_mapping`
+        and `instructions`, both computed once in `__init__` -- must be
+        recomputed for the new dataset, the same way `VLLMModel.
+        update_dataset_config` does.
 
         Args:
             dataset_config:
@@ -380,6 +364,7 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
             generative_type=self.generative_type,
             log_metadata=self.log_metadata,
         )
+        self.buffer["instructions"] = self._build_instructions()
         return self
 
     @cached_property

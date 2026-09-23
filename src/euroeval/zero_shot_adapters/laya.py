@@ -6,33 +6,27 @@ from pathlib import Path
 
 from ..exceptions import InvalidModel, NeedsExtraInstalled
 from ..logging_utils import log_once
+from ..safetensors_utils import get_num_params_from_safetensors_metadata
 from .base import ZeroShotClassifierAdapter
 
 if t.TYPE_CHECKING:
     from ..data_models import BenchmarkConfig, ModelConfig
 
 # `convaiinnovations/laya` bundles several checkpoints in one Hub repo, selected
-# through the `model_id#param` syntax, each in its own subfolder (`None` means the
-# repo root, the English checkpoint). Other `convaiinnovations/laya-*` repos (e.g.
-# `laya-multilingual`, `laya-typed-decisions`) are standalone, single-checkpoint
-# repos with the same files at their root and take no parameter.
+# through the `model_id#param` syntax, each in its own subfolder named after the
+# checkpoint (the root/English checkpoint's name is ""). Other
+# `convaiinnovations/laya-*` repos (e.g. `laya-multilingual`, `laya-typed-decisions`)
+# are standalone, single-checkpoint repos with the same files at their root -- one
+# per non-root checkpoint here -- and take no parameter.
 BUNDLED_REPO_ID = "convaiinnovations/laya"
-BUNDLED_PARAM_TO_SUBFOLDER: dict[str, str] = {
-    "multilingual": "multilingual",
-    "typed-decisions": "typed-decisions",
-}
 
-# The context length (in tokens) of each checkpoint. Keyed by (repo_id, param) for
-# the bundled repo's variants, and by repo_id alone for standalone repos (where
-# param is always None).
-MAX_LENGTH_BY_CHECKPOINT: dict[tuple[str, str | None], int] = {
-    (BUNDLED_REPO_ID, None): 512,
-    (BUNDLED_REPO_ID, "multilingual"): 1024,
-    (BUNDLED_REPO_ID, "typed-decisions"): 512,
-    ("convaiinnovations/laya-multilingual", None): 1024,
-    ("convaiinnovations/laya-typed-decisions", None): 512,
-}
-DEFAULT_MAX_LENGTH = 512
+# Each checkpoint's context length (in tokens), keyed by checkpoint name. "" is the
+# root/English checkpoint, also used as the fallback for unrecognised checkpoints
+# (e.g. a local checkpoint directory). A non-root name doubles as both the
+# `model_id#param` value for the bundled repo and the `laya-<name>` suffix of the
+# corresponding standalone repo, since the subfolder equals the param name.
+CHECKPOINTS: dict[str, int] = {"": 512, "multilingual": 1024, "typed-decisions": 512}
+DEFAULT_MAX_LENGTH = CHECKPOINTS[""]
 
 
 class LayaAdapter(ZeroShotClassifierAdapter):
@@ -49,7 +43,7 @@ class LayaAdapter(ZeroShotClassifierAdapter):
     # Variants of the bundled `convaiinnovations/laya` repo only; standalone repos
     # (`convaiinnovations/laya-multilingual`, `-typed-decisions`, a local checkpoint
     # directory) take no parameter, which `__init__` enforces.
-    variants = list(BUNDLED_PARAM_TO_SUBFOLDER)
+    variants = [checkpoint_name for checkpoint_name in CHECKPOINTS if checkpoint_name]
     max_length = DEFAULT_MAX_LENGTH
 
     def __init__(
@@ -71,8 +65,8 @@ class LayaAdapter(ZeroShotClassifierAdapter):
         model_id = model_config.model_id
         param = model_config.param
         subfolder = _resolve_subfolder(model_id=model_id, param=param)
-        self.max_length = MAX_LENGTH_BY_CHECKPOINT.get(
-            (model_id, param), DEFAULT_MAX_LENGTH
+        self.max_length = CHECKPOINTS.get(
+            _checkpoint_name(model_id=model_id, param=param), DEFAULT_MAX_LENGTH
         )
 
         # `Router` is intentionally not used, since it would select a checkpoint on
@@ -172,19 +166,19 @@ class LayaAdapter(ZeroShotClassifierAdapter):
             determined.
         """
         try:
-            from huggingface_hub import parse_safetensors_file_metadata  # noqa: PLC0415
-
             if Path(model_id).is_dir():
                 return _num_params_from_local_checkpoint(checkpoint_dir=Path(model_id))
 
             subfolder = _resolve_subfolder(model_id=model_id, param=param)
             filename = (
-                f"{subfolder}/model.safetensors" if subfolder else ("model.safetensors")
+                f"{subfolder}/model.safetensors" if subfolder else "model.safetensors"
             )
-            metadata = parse_safetensors_file_metadata(
-                repo_id=model_id, filename=filename
+            num_params = get_num_params_from_safetensors_metadata(
+                model_id=model_id, revision="main", api_key=None, filename=filename
             )
-            return sum(metadata.parameter_count.values())
+            if num_params is None:
+                return -1
+            return num_params
         except Exception as error:
             log_once(
                 f"Could not determine the number of parameters of the Laya "
@@ -192,6 +186,28 @@ class LayaAdapter(ZeroShotClassifierAdapter):
                 level=logging.DEBUG,
             )
             return -1
+
+
+def _checkpoint_name(model_id: str, param: str | None) -> str:
+    """Resolve the checkpoint name (a key into `CHECKPOINTS`) for a model/param pair.
+
+    Args:
+        model_id:
+            The Hub repo ID, or a local checkpoint directory.
+        param:
+            The parameter (variant) requested through `model_id#param`.
+
+    Returns:
+        The checkpoint name: `param` for the bundled repo's variants, the
+        `laya-<name>` suffix for a recognised standalone repo, or "" (the
+        root/default checkpoint) otherwise.
+    """
+    if param is not None:
+        return param
+    prefix = f"{BUNDLED_REPO_ID}-"
+    if model_id.startswith(prefix):
+        return model_id.removeprefix(prefix)
+    return ""
 
 
 def _num_params_from_local_checkpoint(checkpoint_dir: Path) -> int:
@@ -228,7 +244,9 @@ def _resolve_subfolder(model_id: str, param: str | None) -> str | None:
             The parameter (variant) requested through `model_id#param`.
 
     Returns:
-        The subfolder to pass to `laya.Agent`, or None for the repo root.
+        The subfolder to pass to `laya.Agent`, or None for the repo root. The
+        subfolder is always equal to `param` itself, since checkpoint names are
+        chosen to match the bundled repo's subfolder layout.
 
     Raises:
         InvalidModel:
@@ -243,4 +261,4 @@ def _resolve_subfolder(model_id: str, param: str | None) -> str | None:
             f"bundled {BUNDLED_REPO_ID!r} repo does, via {BUNDLED_REPO_ID}#"
             f"{param!r})."
         )
-    return BUNDLED_PARAM_TO_SUBFOLDER[param]
+    return param

@@ -362,12 +362,17 @@ class HFModelInfo:
         release_date (optional):
             The date when model weights were first publicly available, formatted as
             ISO 8601. Defaults to None when it cannot be determined.
+        has_config_json (optional):
+            Whether the repository has a root `config.json` file. Only meaningful
+            for Hub repositories whose file list was fetched; defaults to True
+            otherwise (e.g. local models, or when the file list is unknown).
     """
 
     pipeline_tag: str
     tags: c.Sequence[str]
     adapter_base_model_id: str | None
     release_date: str | None = None
+    has_config_json: bool = True
 
 
 @dataclass

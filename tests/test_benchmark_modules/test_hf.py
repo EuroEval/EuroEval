@@ -240,6 +240,51 @@ def test_get_model_release_date_waits_out_the_rate_limit_window() -> None:
     mock_sleep.assert_called_once_with(30)
 
 
+@pytest.mark.parametrize(
+    argnames=["siblings", "has_config_json"],
+    argvalues=[
+        ([MagicMock(rfilename="config.json")], True),
+        ([MagicMock(rfilename="some_other_file.json")], False),
+        ([], False),
+    ],
+    ids=["has config.json", "no config.json", "empty repo"],
+)
+def test_get_model_repo_info_has_config_json(
+    siblings: list[MagicMock], has_config_json: bool, benchmark_config: BenchmarkConfig
+) -> None:
+    """`get_model_repo_info` reports whether the Hub repo has a root config.json.
+
+    This is the root-cause fix for `HuggingFaceEncoderModel.model_exists`
+    misidentifying repos with no root `config.json` (e.g. Laya repos) as plain
+    encoder models. The check reuses the file list already fetched from
+    `HfApi.model_info`, so it requires no extra Hub call.
+    """
+    with (
+        patch.object(HfApi, "list_repo_commits") as mock_list_commits,
+        patch.object(HfApi, "model_info") as mock_model_info,
+    ):
+        mock_list_commits.return_value = [
+            MagicMock(
+                commit_id="weights",
+                created_at=datetime.datetime(2024, 2, 3, tzinfo=datetime.timezone.utc),
+            )
+        ]
+        mock_model_info.return_value = MagicMock(
+            id="test-model", tags=["test"], pipeline_tag="fill-mask", siblings=siblings
+        )
+        result = get_model_repo_info(
+            model_id="test-model-has-config-json",
+            revision="main",
+            api_key=benchmark_config.api_key,
+            cache_dir=benchmark_config.cache_dir,
+            trust_remote_code=benchmark_config.trust_remote_code,
+            requires_safetensors=False,
+            run_with_cli=benchmark_config.run_with_cli,
+        )
+        assert result is not None
+        assert result.has_config_json == has_config_json
+
+
 def test_load_model_from_pretrained_keyerror_retry_and_message() -> None:
     """Test KeyError retry and final message for _load_model_from_pretrained.
 
