@@ -3,9 +3,8 @@
 import logging
 from pathlib import Path
 
-from huggingface_hub import get_safetensors_metadata, parse_safetensors_file_metadata
+from huggingface_hub import get_safetensors_metadata
 from huggingface_hub.errors import (
-    EntryNotFoundError,
     GatedRepoError,
     HfHubHTTPError,
     NotASafetensorsRepoError,
@@ -18,7 +17,7 @@ from .utils import get_hf_token, internet_connection_available
 
 
 def get_num_params_from_safetensors_metadata(
-    model_id: str, revision: str, api_key: str | None, filename: str | None = None
+    model_id: str, revision: str, api_key: str | None
 ) -> int | None:
     """Get the number of parameters from the safetensors metadata.
 
@@ -30,12 +29,6 @@ def get_num_params_from_safetensors_metadata(
         api_key:
             The API key to use for authentication with the Hugging Face Hub. Can be
             None if no API key is needed.
-        filename:
-            The path (optionally including a subfolder) to a single safetensors
-            file to read the metadata from, relative to the repo root, e.g.
-            `"multilingual/model.safetensors"`. If None (the default), the
-            repo-root safetensors metadata is fetched instead, handling both
-            single-file and sharded models.
 
     Returns:
         The number of parameters, or None if the metadata could not be found.
@@ -45,23 +38,10 @@ def get_num_params_from_safetensors_metadata(
     if not internet_connection_available() or Path(model_id).exists():
         return None
 
-    token = get_hf_token(api_key=api_key)
     try:
-        if filename is not None:
-            metadata = parse_safetensors_file_metadata(
-                repo_id=model_id, filename=filename, revision=revision, token=token
-            )
-        else:
-            metadata = get_safetensors_metadata(
-                repo_id=model_id, revision=revision, token=token
-            )
-    except EntryNotFoundError:
-        log_once(
-            f"The safetensors file {filename!r} could not be found in the model "
-            f"{model_id}.",
-            level=logging.WARNING,
+        metadata = get_safetensors_metadata(
+            repo_id=model_id, revision=revision, token=get_hf_token(api_key=api_key)
         )
-        return None
     except NotASafetensorsRepoError:
         log_once(
             "The number of parameters could not be determined for the model "

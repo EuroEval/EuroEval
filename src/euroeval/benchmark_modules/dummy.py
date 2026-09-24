@@ -27,21 +27,20 @@ from ..task_group_utils.token_classification import serialise_ner_tags
 from ..tokenisation_utils import get_first_label_token_mapping
 from ..types import ExtractLabelsFunction
 from .base import (
-    PRIORITY_DUMMY,
     BenchmarkModule,
-    NonFinetunableModuleMixin,
     _extract_labels_from_generation_helper,
     _prepare_dataset_helper,
 )
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
+    from transformers.trainer import Trainer
 
 
 DUMMY_MODEL_ID = "dummy"
 
 
-class DummyModel(NonFinetunableModuleMixin, BenchmarkModule):
+class DummyModel(BenchmarkModule):
     """A built-in model that predicts an even distribution over labels.
 
     This model does not download or run any real model, and requires no
@@ -55,9 +54,8 @@ class DummyModel(NonFinetunableModuleMixin, BenchmarkModule):
     allowed_params = {re.compile(r".*"): []}
 
     # Checked before any other backend, so that benchmarking "dummy" never
-    # triggers a real HF Hub lookup for a repo literally named "dummy". See the
-    # priority table in `benchmark_modules.base` for the full dispatch order.
-    priority = PRIORITY_DUMMY
+    # triggers a real HF Hub lookup for a repo literally named "dummy".
+    high_priority = True
 
     def __init__(
         self,
@@ -94,6 +92,17 @@ class DummyModel(NonFinetunableModuleMixin, BenchmarkModule):
             tokeniser=None,
             generative_type=self.generative_type,
             log_metadata=self.log_metadata,
+        )
+
+    @property
+    def data_collator(self) -> t.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
+        """The data collator used to prepare samples during finetuning.
+
+        Returns:
+            The data collator.
+        """
+        raise NotImplementedError(
+            "The `data_collator` property has not been implemented for dummy models."
         )
 
     @property
@@ -293,6 +302,17 @@ class DummyModel(NonFinetunableModuleMixin, BenchmarkModule):
             itr_idx=itr_idx,
             always_populate_text_field=False,
             tokeniser=None,
+        )
+
+    @property
+    def trainer_class(self) -> t.Type["Trainer"]:
+        """The Trainer class to use for finetuning.
+
+        Returns:
+            The Trainer class.
+        """
+        raise NotImplementedError(
+            "The `trainer_class` property has not been implemented for dummy models."
         )
 
     @cached_property

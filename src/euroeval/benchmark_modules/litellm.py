@@ -73,7 +73,6 @@ from ..tasks import LOGIC
 from ..tokenisation_utils import get_first_label_token_mapping
 from ..types import ExtractLabelsFunction
 from .base import (
-    PRIORITY_LITELLM,
     BenchmarkModule,
     _extract_labels_from_generation_helper,
     _prepare_dataset_helper,
@@ -316,10 +315,7 @@ class LiteLLMModel(BenchmarkModule):
 
     fresh_model = False
     batching_preference = BatchingPreference.ALL_AT_ONCE
-    # See the priority table in `benchmark_modules.base` for the full dispatch
-    # order; this is deliberately the lowest, since LiteLLM's `model_exists`
-    # check is comparatively permissive.
-    priority = PRIORITY_LITELLM
+    high_priority = False
     allowed_params: dict[re.Pattern[str], list[str]] = {
         # OpenAI models
         re.compile(r"(openai/)?gpt-5.*"): [

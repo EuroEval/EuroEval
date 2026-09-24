@@ -33,7 +33,6 @@ from ..logging_utils import block_terminal_output
 from ..model_cache import create_model_cache_dir
 from ..types import Tokeniser
 from ..utils import get_hf_token
-from .base import PRIORITY_FRESH_ENCODER
 from .hf import (
     HuggingFaceEncoderModel,
     align_model_and_tokeniser,
@@ -52,11 +51,6 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
 
     fresh_model = True
     allowed_params = {re.compile(r".*"): ["slow-tokenizer"]}
-
-    # Must be checked before `HuggingFaceEncoderModel` (which this class
-    # subclasses), since a fresh-init request is more specific. See the priority
-    # table in `benchmark_modules.base` for the full dispatch order.
-    priority = PRIORITY_FRESH_ENCODER
 
     def __init__(
         self,
