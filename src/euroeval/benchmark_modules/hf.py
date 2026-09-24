@@ -312,13 +312,22 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             Whether the model exists, or an error describing why we cannot check
             whether the model exists.
         """
-        _, _, model_info = _lookup_model_info(
+        bare_model_id, revision, model_info = _lookup_model_info(
             model_id=model_id, benchmark_config=benchmark_config
         )
-        return (
-            model_info is not None
-            and model_info.pipeline_tag not in GENERATIVE_PIPELINE_TAGS
-        )
+        if model_info is None or model_info.pipeline_tag in GENERATIVE_PIPELINE_TAGS:
+            return False
+        if model_info.adapter_base_model_id is not None or Path(bare_model_id).is_dir():
+            return True
+        if not internet_connection_available():
+            return True
+
+        # A repo with no root `config.json` isn't loadable as an encoder (e.g. one
+        # that only ships its config in a subfolder for a custom, non-`transformers`
+        # loader).
+        hf_api = HfApi(token=get_hf_token(api_key=benchmark_config.api_key))
+        repo_files = hf_api.list_repo_files(repo_id=bare_model_id, revision=revision)
+        return "config.json" in repo_files
 
     @cached_property
     def model_max_length(self) -> int:
@@ -1477,19 +1486,6 @@ def get_model_repo_info(
             hf_api=hf_api,
             token=token,
         )
-
-    # A repo with no root `config.json` (and no `adapter_config.json`) isn't
-    # loadable by `transformers.AutoConfig`, e.g. a repo that only ships its config
-    # in a subfolder for a custom, non-`transformers` loader.
-    has_root_config = model_info.siblings is not None and any(
-        sibling.rfilename == "config.json" for sibling in model_info.siblings
-    )
-    if (
-        model_info.siblings is not None
-        and not has_root_config
-        and not has_adapter_config
-    ):
-        return None
 
     # Infer pipeline tag if not specified
     pipeline_tag = model_info.pipeline_tag
