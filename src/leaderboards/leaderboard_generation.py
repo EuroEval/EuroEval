@@ -587,9 +587,7 @@ def _apply_display_transforms(
         "reasoning": "🤔",
         "zero_shot_classifier": "🎯",
     }
-    # `model_type` (e.g. "zero_shot_classifier") takes precedence over
-    # `generative_type` (which is None for both true encoders and zero-shot
-    # classifiers) so the two are shown with distinct badges.
+    # Show zero-shot classifiers with their own badge, distinct from encoders.
     model_type_col = df.get("model_type", pd.Series(index=df.index, dtype=object))
     effective_type = model_type_col.where(
         model_type_col == "zero_shot_classifier", df.generative_type
