@@ -191,11 +191,7 @@ EEE_SCHEMA_VERSION = "0.2.1"
 # Tasks that don't contribute to the main rank score and are evaluated separately.
 ORTHOGONAL_TASKS: frozenset[str] = frozenset({"european-values"})
 
-# Constants for the Laya zero-shot classifier model.
-# `convaiinnovations/laya` bundles several checkpoints in one Hub repo, selected
-# through the `model_id#param` syntax, each in its own subfolder named after the
-# checkpoint ("" is the root/English checkpoint). Other `convaiinnovations/laya-*`
-# repos are standalone, single-checkpoint repos and take no parameter.
+# Constants for the Laya zero-shot classifier.
 LAYA_BUNDLED_REPO_ID = "convaiinnovations/laya"
 
 # Each checkpoint's context length (in tokens), keyed by checkpoint name.
@@ -206,6 +202,5 @@ LAYA_CHECKPOINTS: dict[str, int] = {
 }
 LAYA_DEFAULT_MAX_LENGTH = LAYA_CHECKPOINTS[""]
 
-# A probability floor used when taking the log of a probability Laya reports, to
-# avoid `math.log(0.0)` raising `ValueError`.
+# A probability floor, to avoid taking the log of zero.
 LAYA_MIN_PROBABILITY = 1e-12

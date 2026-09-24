@@ -39,7 +39,6 @@ def apply_prompt(
     always_populate_text_field: bool,
     tokeniser: "PreTrainedTokenizer | None",
     use_bits_per_character: bool = False,
-    skip_text_prompt: bool = False,
 ) -> dict[str, t.Any]:
     """Apply prompt template to an example, potentially with few-shot examples.
 
@@ -63,11 +62,6 @@ def apply_prompt(
             Whether to use bits-per-character (BPC) scoring. For multiple-choice tasks,
             treats benchmark as text-to-text with bare question → full answer text.
             Defaults to False.
-        skip_text_prompt:
-            Whether to skip rendering the decoder prompt template into 'text',
-            keeping the dataset's raw text instead. Used by non-generative callers
-            (e.g. `ZeroShotClassifierModel`) that build their own instructions
-            separately. Defaults to False.
 
     Returns:
         The example with the few-shot examples applied.
@@ -107,30 +101,29 @@ def apply_prompt(
         list(few_shot_examples), examples, create_prompt
     )
 
-    # Build outputs based on model type, unless skipped for non-generative callers.
-    if not skip_text_prompt:
-        if is_instruction_tuned and always_populate_text_field:
-            assert tokeniser is not None
-        if is_instruction_tuned:
-            outputs = _build_instruction_tuned_outputs(
-                few_shot_sections=few_shot_sections,
-                new_sections=new_sections,
-                model_config=model_config,
-                dataset_config=dataset_config,
-                generative_type=generative_type,
-                tokeniser=tokeniser,
-                always_populate_text_field=always_populate_text_field,
-            )
-            examples.update(outputs)
-        else:
-            outputs = _build_standard_outputs(
-                few_shot_sections=few_shot_sections,
-                new_sections=new_sections,
-                dataset_config=dataset_config,
-            )
-            examples.update(outputs)
+    # Build outputs based on model type
+    if is_instruction_tuned and always_populate_text_field:
+        assert tokeniser is not None
+    if is_instruction_tuned:
+        outputs = _build_instruction_tuned_outputs(
+            few_shot_sections=few_shot_sections,
+            new_sections=new_sections,
+            model_config=model_config,
+            dataset_config=dataset_config,
+            generative_type=generative_type,
+            tokeniser=tokeniser,
+            always_populate_text_field=always_populate_text_field,
+        )
+        examples.update(outputs)
+    else:
+        outputs = _build_standard_outputs(
+            few_shot_sections=few_shot_sections,
+            new_sections=new_sections,
+            dataset_config=dataset_config,
+        )
+        examples.update(outputs)
 
-    # Always add the final prompts without few-shot examples, too, for analysis.
+    # Always add the final prompts without few-shot examples, too, for analysis
     examples["prompt"] = [new_prompt for new_prompt, _ in new_sections]
 
     # Create bpc_prompt column for BPC scoring when requested

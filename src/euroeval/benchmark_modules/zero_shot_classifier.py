@@ -1,5 +1,6 @@
 """A benchmark module wrapping the Laya zero-shot classifier model."""
 
+import collections.abc as c
 import math
 import typing as t
 from functools import cached_property
@@ -102,7 +103,9 @@ class ZeroShotClassifierModel(BenchmarkModule):
         checkpoint_name = _checkpoint_name(model_id=model_id, param=param)
         token = get_hf_token(api_key=benchmark_config.api_key)
 
-        self.agent = laya.Agent(model_id, subfolder=subfolder, token=token)
+        self.agent = laya.Agent(
+            model_id_or_path=model_id, subfolder=subfolder, token=token
+        )
         self.max_length = LAYA_CHECKPOINTS.get(checkpoint_name, LAYA_DEFAULT_MAX_LENGTH)
 
         super().__init__(
@@ -131,7 +134,7 @@ class ZeroShotClassifierModel(BenchmarkModule):
         ).strip()
 
     @property
-    def data_collator(self) -> t.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
+    def data_collator(self) -> c.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
         """The data collator used to prepare samples during finetuning.
 
         Raises:
@@ -207,12 +210,15 @@ class ZeroShotClassifierModel(BenchmarkModule):
         sequences: list[str] = []
         scores: list[list[list[tuple[str, float]]]] = []
         for probs in label_probs:
-            sample_scores = [
-                (label, math.log(max(probs.get(label, 0.0), LAYA_MIN_PROBABILITY)))
-                for label in candidate_labels
-            ]
-            best_label = max(sample_scores, key=lambda pair: pair[1])[0]
-            sequences.append(best_label)
+            sample_scores = sorted(
+                (
+                    (label, math.log(max(probs.get(label, 0.0), LAYA_MIN_PROBABILITY)))
+                    for label in candidate_labels
+                ),
+                key=lambda pair: pair[1],
+                reverse=True,
+            )
+            sequences.append(sample_scores[0][0])
             scores.append([sample_scores])
 
         return GenerativeModelOutput(sequences=sequences, scores=scores)
@@ -275,10 +281,13 @@ class ZeroShotClassifierModel(BenchmarkModule):
         """
         label_probs: list[dict[str, float]] = []
         for text in texts:
-            _, option_texts = parse_bare_question_and_choices(text)
-            if len(option_texts) != len(letter_labels):
-                # Couldn't reliably parse this sample's options -- fall back to
-                # classifying against the letter labels directly.
+            _, option_texts = parse_bare_question_and_choices(text=text)
+            unparseable = len(option_texts) != len(letter_labels) or len(
+                set(option_texts)
+            ) != len(option_texts)
+            if unparseable:
+                # Couldn't reliably parse this sample's options (or two options share
+                # the same text) -- fall back to classifying against the letters.
                 option_texts = letter_labels
 
             sample_probs = self._classify(texts=[text], candidate_labels=option_texts)[
@@ -432,9 +441,11 @@ class ZeroShotClassifierModel(BenchmarkModule):
         Returns:
             The prepared dataset.
         """
-        # Laya builds its own instructions from `_build_instructions` and expects
-        # the raw sample text, rather than the decoder prompt template.
-        return _prepare_dataset_helper(
+        # Laya builds its own instructions and expects the raw sample text, so the
+        # rendered decoder prompt that `_prepare_dataset_helper` writes to 'text' is
+        # swapped back out for the original text afterwards.
+        raw_text = list(dataset["test"]["text"])
+        prepared = _prepare_dataset_helper(
             dataset=dataset,
             task=task,
             model_config=self.model_config,
@@ -444,8 +455,11 @@ class ZeroShotClassifierModel(BenchmarkModule):
             itr_idx=itr_idx,
             always_populate_text_field=False,
             tokeniser=None,
-            preserve_raw_text=True,
         )
+        prepared["test"] = (
+            prepared["test"].remove_columns("text").add_column("text", raw_text)
+        )
+        return prepared
 
     @property
     def trainer_class(self) -> t.Type["Trainer"]:

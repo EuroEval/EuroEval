@@ -276,13 +276,9 @@ def get_closest_logprobs_labels(
     output_labels: list[str] = list()
     for idx, sample in enumerate(generation_logprobs):
         for logprob_list in sample:
-            # Sort by logprob descending; a no-op for already-sorted callers.
-            sorted_logprob_list = sorted(
-                logprob_list, key=lambda pair: pair[1], reverse=True
-            )
             generated_labels = [
                 clean_label_token(label, preserve_spaces=True)
-                for label, _ in sorted_logprob_list
+                for label, _ in logprob_list
             ]
             generated_labels = [label for label in generated_labels if label != ""]
 

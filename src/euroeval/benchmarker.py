@@ -888,19 +888,17 @@ class Benchmarker:
         loaded_model: "BenchmarkModule | None",
     ) -> None:
         """Collect one non-ranking canary record for the selected virtual task."""
-        non_generative_model_type = getattr(model_config, "model_type", None)
-        if non_generative_model_type in NON_FINETUNABLE_ENCODER_LIKE_MODEL_TYPES:
+        if (
+            getattr(model_config, "model_type", None)
+            in NON_FINETUNABLE_ENCODER_LIKE_MODEL_TYPES
+        ):
             evidence = status_evidence(
                 model_id=model_config.model_id,
                 requested_revision=model_config.revision,
                 resolved_revision=model_config.revision,
                 backend=model_config.inference_backend.value,
                 status="not_applicable",
-                reason=(
-                    "encoder"
-                    if non_generative_model_type is ModelType.ENCODER
-                    else "zero_shot_classifier"
-                ),
+                reason="encoder",
             )
             self._store_canary_evidence(evidence)
             self._log_canary_status(evidence=evidence)
@@ -1147,7 +1145,6 @@ class Benchmarker:
                     vocabulary_size=model.vocab_size,
                     merge=model_config.merge,
                     generative=model_config.model_type == ModelType.GENERATIVE,
-                    model_type=model_config.model_type.value,
                     generative_type=(
                         model.generative_type.value
                         if model.generative_type is not None

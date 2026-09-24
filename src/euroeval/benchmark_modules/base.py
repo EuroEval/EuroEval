@@ -574,7 +574,6 @@ def _prepare_dataset_helper(
     itr_idx: int,
     always_populate_text_field: bool,
     tokeniser: "PreTrainedTokenizer | None",
-    preserve_raw_text: bool = False,
 ) -> DatasetDict:
     """Helper function to prepare a dataset for a generative model.
 
@@ -597,10 +596,6 @@ def _prepare_dataset_helper(
             Whether to always populate the text field.
         tokeniser:
             The tokeniser to use, or None if not applicable.
-        preserve_raw_text:
-            Whether to keep the dataset's raw 'text' column instead of rendering
-            the decoder prompt template into it. Used by non-generative callers
-            (e.g. `ZeroShotClassifierModel`). Defaults to False.
 
     Returns:
         The prepared dataset.
@@ -647,7 +642,6 @@ def _prepare_dataset_helper(
             always_populate_text_field=always_populate_text_field,
             tokeniser=tokeniser,
             use_bits_per_character=benchmark_config.use_bits_per_character,
-            skip_text_prompt=preserve_raw_text,
         ),
         batched=True,
         load_from_cache_file=False,
