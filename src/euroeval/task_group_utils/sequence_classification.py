@@ -276,11 +276,7 @@ def get_closest_logprobs_labels(
     output_labels: list[str] = list()
     for idx, sample in enumerate(generation_logprobs):
         for logprob_list in sample:
-            # Sort by logprob descending, so that the most likely label is checked
-            # first below. This is a no-op for vLLM/LiteLLM, whose logprobs are
-            # already sorted, but matters for callers (e.g.
-            # `ZeroShotClassifierModel`) that pass in an unsorted list of
-            # (label, logprob) pairs.
+            # Sort by logprob descending; a no-op for already-sorted callers.
             sorted_logprob_list = sorted(
                 logprob_list, key=lambda pair: pair[1], reverse=True
             )
