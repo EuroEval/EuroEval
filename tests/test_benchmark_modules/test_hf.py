@@ -275,6 +275,50 @@ def test_load_model_from_pretrained_keyerror_retry_and_message() -> None:
 
 
 @pytest.mark.parametrize(
+    argnames=["siblings", "model_exists"],
+    argvalues=[
+        (["config.json", "model.safetensors"], True),
+        (["encoder/config.json", "model.safetensors"], False),
+    ],
+    ids=["root config.json", "config.json only in a subfolder"],
+)
+def test_root_config_requirement(
+    siblings: list[str], model_exists: bool, benchmark_config: BenchmarkConfig
+) -> None:
+    """A repo with no root `config.json` (and no adapter config) doesn't exist here.
+
+    Regression test: this is what keeps `HuggingFaceEncoderModel` from claiming a
+    repo like Laya's, which only ships its config in a subfolder.
+    """
+    with (
+        patch.object(HfApi, "list_repo_commits") as mock_list_commits,
+        patch.object(HfApi, "model_info") as mock_model_info,
+    ):
+        mock_list_commits.return_value = [
+            MagicMock(
+                commit_id="weights",
+                created_at=datetime.datetime(2024, 2, 3, tzinfo=datetime.timezone.utc),
+            )
+        ]
+        mock_model_info.return_value = MagicMock(
+            id="test-model",
+            tags=["test"],
+            pipeline_tag="fill-mask",
+            siblings=[MagicMock(rfilename=f) for f in siblings],
+        )
+        result = get_model_repo_info(
+            model_id="some-model",
+            revision="main",
+            api_key=benchmark_config.api_key,
+            cache_dir=benchmark_config.cache_dir,
+            trust_remote_code=benchmark_config.trust_remote_code,
+            requires_safetensors=False,
+            run_with_cli=benchmark_config.run_with_cli,
+        )
+        assert (result is not None) == model_exists
+
+
+@pytest.mark.parametrize(
     argnames=["repo_files", "requires_safetensors", "model_exists"],
     argvalues=[
         (["model.safetensors", "config.json"], True, True),
@@ -309,7 +353,10 @@ def test_safetensors_check(
             )
         ]
         mock_model_info.return_value = MagicMock(
-            id="test-model", tags=["test"], pipeline_tag="fill-mask", siblings=[]
+            id="test-model",
+            tags=["test"],
+            pipeline_tag="fill-mask",
+            siblings=[MagicMock(rfilename=f) for f in repo_files],
         )
         hash_model_id = hashlib.md5(
             ",".join(repo_files).encode("utf-8")

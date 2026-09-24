@@ -72,25 +72,22 @@ def test_non_matching_model_id_resolves_to_encoder_model(
     assert resolved_config.model_type == ModelType.ENCODER
 
 
-def test_zero_shot_classifier_is_checked_before_encoder_model(
-    monkeypatch: pytest.MonkeyPatch,
-    benchmark_config: BenchmarkConfig,
-    model_config: ModelConfig,
+def test_zero_shot_classifier_is_checked_regardless_of_dispatch_order(
+    monkeypatch: pytest.MonkeyPatch, benchmark_config: BenchmarkConfig
 ) -> None:
-    """A Laya repo resolves to the zero-shot classifier backend, not the encoder."""
+    """A Laya repo resolves to the zero-shot classifier backend, not the encoder.
+
+    Unlike `test_non_matching_model_id_resolves_to_encoder_model`, this doesn't
+    mock `HuggingFaceEncoderModel.model_exists` at all: dispatch correctness here
+    relies on `HuggingFaceEncoderModel` genuinely not claiming a Laya-style repo
+    (no root `config.json`), not on being checked in any particular order.
+    """
     fake_laya_module = types.ModuleType("laya")
     fake_laya_module.Agent = object  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, "laya", fake_laya_module)
 
-    # This would raise if reached, since it isn't mocked; asserting it's never
-    # called is exactly the point -- `ZeroShotClassifierModel` must win the race.
     monkeypatch.setattr(
-        "euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.model_exists",
-        classmethod(lambda cls, model_id, benchmark_config: True),
-    )
-    monkeypatch.setattr(
-        "euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.get_model_config",
-        classmethod(lambda cls, model_id, benchmark_config: model_config),
+        "euroeval.benchmark_modules.hf.get_model_repo_info", lambda **kwargs: None
     )
 
     resolved_config = get_model_config(

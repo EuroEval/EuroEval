@@ -1478,6 +1478,19 @@ def get_model_repo_info(
             token=token,
         )
 
+    # A repo with no root `config.json` (and no `adapter_config.json`) isn't
+    # loadable by `transformers.AutoConfig`, e.g. a repo that only ships its config
+    # in a subfolder for a custom, non-`transformers` loader.
+    has_root_config = model_info.siblings is not None and any(
+        sibling.rfilename == "config.json" for sibling in model_info.siblings
+    )
+    if (
+        model_info.siblings is not None
+        and not has_root_config
+        and not has_adapter_config
+    ):
+        return None
+
     # Infer pipeline tag if not specified
     pipeline_tag = model_info.pipeline_tag
     if pipeline_tag is None:
