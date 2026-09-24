@@ -113,7 +113,6 @@ class BenchmarkResult(pydantic.BaseModel):
     merge: bool
     generative: bool
     generative_type: str | None
-    model_type: str | None = None
     few_shot: bool | None
     validation_split: bool | None
     use_bits_per_character: bool | None = None

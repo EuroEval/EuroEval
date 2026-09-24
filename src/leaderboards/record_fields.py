@@ -18,8 +18,7 @@ def deduplicate_records(records: list[dict[str, t.Any]]) -> list[dict[str, t.Any
     on the same leaderboard row, so only one should survive. Among records with
     an equal (newest) version, the one with richer metadata wins (more non-default
     fields for commercially_licensed, open, merge, trained_from_scratch,
-    generative_type, model_type, model_url, and release_date). If still tied,
-    the first one in
+    generative_type, model_url, and release_date). If still tied, the first one in
     input order is kept to preserve explicit boolean values against conflicting later
     duplicates.
     Output is ordered by hash for stable, diff-friendly downstream files.
@@ -62,7 +61,7 @@ def _metadata_richness_score(record: dict) -> int:
     Returns:
         An integer score: +1 for each non-default metadata field found among
         ``commercially_licensed``, ``open``, ``merge``, ``trained_from_scratch``,
-        ``generative_type``, ``model_type``, ``model_url``, and ``release_date``.
+        ``generative_type``, ``model_url``, and ``release_date``.
     """
     additional = record.get("model_info", {}).get("additional_details", {})
     score = 0
@@ -85,10 +84,6 @@ def _metadata_richness_score(record: dict) -> int:
 
     # generative_type: non-null
     if additional.get("generative_type") is not None:
-        score += 1
-
-    # model_type: non-null
-    if additional.get("model_type") is not None:
         score += 1
 
     # model_url: non-null

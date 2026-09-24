@@ -76,7 +76,6 @@ class ModelType(enum.StrEnum):
     BASE_DECODER = "base_decoder"
     INSTRUCTION_TUNED_DECODER = "instruction_tuned_decoder"
     REASONING_DECODER = "reasoning_decoder"
-    ZERO_SHOT_CLASSIFIER = "zero_shot_classifier"
     API = "api"
 
 
@@ -246,8 +245,6 @@ def _classify_model(model_id: str, metadata: dict) -> ModelType:
     plain = plain_model_id(model_id).split("#")[0]
     if any(p.fullmatch(plain) for p in API_MODEL_PATTERNS):
         return ModelType.API
-    if metadata.get("model_type") == "zero_shot_classifier":
-        return ModelType.ZERO_SHOT_CLASSIFIER
     generative_type = metadata.get("generative_type")
     if generative_type is None:
         return ModelType.ENCODER
@@ -300,7 +297,6 @@ def _pareto_categories_per_model(
                 bootstrap_scores.setdefault(model_id, {}).update(model_scores)
     categories_for_type: dict[ModelType, tuple[LeaderboardCategory, ...]] = {
         ModelType.ENCODER: (LeaderboardCategory.ALL_MODELS,),
-        ModelType.ZERO_SHOT_CLASSIFIER: (LeaderboardCategory.ALL_MODELS,),
         ModelType.BASE_DECODER: (
             LeaderboardCategory.GENERATIVE,
             LeaderboardCategory.ALL_MODELS,
@@ -448,7 +444,7 @@ def _size_bucket(model_type: ModelType, parameters: float) -> SizeBucket:
     Returns:
         The bucket label used to group models in the issue body.
     """
-    if model_type in (ModelType.ENCODER, ModelType.ZERO_SHOT_CLASSIFIER):
+    if model_type == ModelType.ENCODER:
         return SizeBucket.ENCODER
     if model_type == ModelType.API:
         return SizeBucket.API
