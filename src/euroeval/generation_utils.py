@@ -64,13 +64,10 @@ def apply_prompt(
             treats benchmark as text-to-text with bare question → full answer text.
             Defaults to False.
         skip_text_prompt:
-            Whether to skip rendering the decoder prompt template into the 'text'
-            and 'prompt' columns entirely, leaving both untouched. Used by callers
-            (e.g. `ZeroShotClassifierModel`, via `_prepare_dataset_helper`'s
-            `preserve_raw_text`) that need the raw sample text and never read the
-            rendered prompt. Other outputs (e.g. BPC columns) are still built, since
-            those are used downstream regardless of the decoder prompt rendering.
-            Defaults to False.
+            Whether to skip rendering the decoder prompt template into 'text',
+            keeping the dataset's raw text instead. Used by non-generative callers
+            (e.g. `ZeroShotClassifierModel`) that build their own instructions
+            separately. Defaults to False.
 
     Returns:
         The example with the few-shot examples applied.
@@ -110,11 +107,7 @@ def apply_prompt(
         list(few_shot_examples), examples, create_prompt
     )
 
-    # Build outputs based on model type. The 'text'/'messages' rendering is skipped
-    # when `skip_text_prompt` is set, since such callers keep the dataset's original
-    # 'text' column instead -- but 'prompt' is still built below regardless, since
-    # downstream label extraction (`extract_labels_from_generation_helper`) reads it
-    # for every caller, including these.
+    # Build outputs based on model type, unless skipped for non-generative callers.
     if not skip_text_prompt:
         if is_instruction_tuned and always_populate_text_field:
             assert tokeniser is not None
@@ -137,8 +130,7 @@ def apply_prompt(
             )
             examples.update(outputs)
 
-    # Always add the final prompts without few-shot examples, too, for analysis (and,
-    # for `skip_text_prompt` callers, since it's the only rendered output they get).
+    # Always add the final prompts without few-shot examples, too, for analysis.
     examples["prompt"] = [new_prompt for new_prompt, _ in new_sections]
 
     # Create bpc_prompt column for BPC scoring when requested

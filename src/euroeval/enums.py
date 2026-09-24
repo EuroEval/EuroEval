@@ -101,16 +101,15 @@ class InferenceBackend(AutoStrEnum):
             LiteLLM library.
         DUMMY:
             The built-in dummy model, used for debugging.
-        ZERO_SHOT_CLASSIFIER:
-            A zero-shot classifier model, loaded through a dedicated adapter package
-            (e.g. Laya), rather than through `transformers`, vLLM or LiteLLM directly.
+        LAYA:
+            The Laya zero-shot classifier model, loaded through the `laya` package.
     """
 
     TRANSFORMERS = auto()
     VLLM = auto()
     LITELLM = auto()
     DUMMY = auto()
-    ZERO_SHOT_CLASSIFIER = auto()
+    LAYA = auto()
 
 
 class ModelType(AutoStrEnum):
@@ -122,10 +121,8 @@ class ModelType(AutoStrEnum):
         GENERATIVE:
             A generative model. Can be either decoder or encoder-decoder (aka seq2seq).
         ZERO_SHOT_CLASSIFIER:
-            A non-generative "decision" model (e.g. an encoder with trained heads,
-            such as Laya) that is evaluated zero-shot through a dedicated adapter,
-            returning calibrated per-label probabilities directly rather than by
-            generating text or being fine-tuned.
+            A non-generative zero-shot classifier model (e.g. Laya) that answers
+            typed questions with calibrated per-label probabilities.
     """
 
     ENCODER = auto()

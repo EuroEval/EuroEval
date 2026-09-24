@@ -43,39 +43,6 @@ if t.TYPE_CHECKING:
     from ..types import ComputeMetricsFunction, ExtractLabelsFunction
 
 
-# Dispatch priority table for `model_config.get_model_config`. Higher `priority` is
-# checked first. Built-in modules each set a distinct value below, so ties never
-# depend on `benchmark_modules.__dict__` iteration order. The gaps between values are
-# intentional headroom for third-party subclasses to slot in between built-ins.
-#
-#     Module               Priority   Notes
-#     ------               --------   -----
-#     DummyModel               60     Must win before any real Hub/API lookup.
-#     ZeroShotClassifierModel  50     Ahead of the generic encoder/decoder modules.
-#     FreshEncoderModel        40     Subclasses HuggingFaceEncoderModel; must be
-#                                     checked before it since it's more specific.
-#     HuggingFaceEncoderModel  30
-#     VLLMModel                20
-#     LiteLLMModel             10     Catch-all API backend, checked last.
-PRIORITY_DUMMY = 60
-PRIORITY_ZERO_SHOT_CLASSIFIER = 50
-PRIORITY_FRESH_ENCODER = 40
-PRIORITY_HF_ENCODER = 30
-PRIORITY_VLLM = 20
-PRIORITY_LITELLM = 10
-
-# Effective priorities used for subclasses that only set the deprecated
-# `high_priority: bool` attribute (from released versions of EuroEval) instead of the
-# new `priority: int` attribute. These sit below the built-in modules with specific
-# model-matching logic, but `high_priority = True` still ranks above the LiteLLM
-# catch-all, matching the old semantics of "checked before generic API backends".
-_LEGACY_HIGH_PRIORITY = 15
-_LEGACY_LOW_PRIORITY = 5
-
-# Default `priority` for a module that sets neither `priority` nor `high_priority`.
-_DEFAULT_PRIORITY = 0
-
-
 class BenchmarkModule(ABC):
     """Abstract class for a benchmark module.
 
@@ -92,51 +59,9 @@ class BenchmarkModule(ABC):
 
     fresh_model: bool
     batching_preference: "BatchingPreference"
-
-    # Dispatch priority; higher is checked first. See the module-level table above.
-    priority: int = _DEFAULT_PRIORITY
-
-    # Deprecated alias for `priority`, kept for backwards compatibility with
-    # third-party subclasses written against released EuroEval versions. Only
-    # honoured when a subclass does not also set `priority`. Use `priority` instead.
-    high_priority: bool | None = None
-
+    high_priority: bool
     allowed_params: dict[re.Pattern[str], c.Sequence[str]] = {re.compile(r".*"): []}
     _model: nn.Module
-
-    @classmethod
-    def get_dispatch_priority(cls) -> int:
-        """Compute the effective dispatch priority used by `get_model_config`.
-
-        Prefers `priority` if the class (or any of its ancestors, other than
-        `BenchmarkModule` itself) sets it explicitly. Otherwise falls back to the
-        deprecated `high_priority` attribute, if set, emitting a deprecation warning.
-
-        Returns:
-            The effective priority; higher values are checked first.
-        """
-        for klass in cls.__mro__:
-            if klass is BenchmarkModule:
-                break
-            if "priority" in klass.__dict__:
-                return klass.__dict__["priority"]
-        for klass in cls.__mro__:
-            if klass is BenchmarkModule:
-                break
-            if "high_priority" in klass.__dict__:
-                log_once(
-                    f"The benchmark module {cls.__name__!r} sets the deprecated "
-                    "`high_priority` attribute rather than `priority`. Please "
-                    "update it to set `priority: int` instead, where a higher "
-                    "value is checked first.",
-                    level=logging.WARNING,
-                )
-                return (
-                    _LEGACY_HIGH_PRIORITY
-                    if klass.__dict__["high_priority"]
-                    else _LEGACY_LOW_PRIORITY
-                )
-        return cls.priority
 
     def __init__(
         self,
@@ -167,12 +92,7 @@ class BenchmarkModule(ABC):
 
     def _log_metadata(self) -> None:
         """Log the metadata of the model."""
-        # Include the `#param` variant suffix (e.g. "#multilingual"), matching how
-        # the model ID is stored in the resulting `BenchmarkResult` -- otherwise this
-        # log line would be ambiguous between variants of the same base model ID.
         model_id = self.model_config.model_id
-        if self.model_config.param is not None:
-            model_id += f"#{self.model_config.param}"
         logging_msg: str = "    ↳ "
         if self.num_params < 0:
             logging_msg += f"The model {model_id} has an unknown number of parameters, "
@@ -497,47 +417,6 @@ class BenchmarkModule(ABC):
         ...
 
 
-class NonFinetunableModuleMixin:
-    """Shared `data_collator`/`trainer_class` stubs for non-finetunable modules.
-
-    Mixed into benchmark modules that are never finetuned (e.g. `DummyModel`,
-    `ZeroShotClassifierModel`), so the identical "not implemented" properties
-    aren't duplicated in every such module.
-    """
-
-    @property
-    def data_collator(self) -> t.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
-        """The data collator used to prepare samples during finetuning.
-
-        Returns:
-            The data collator.
-
-        Raises:
-            NotImplementedError:
-                Always; this module is not finetuned.
-        """
-        raise NotImplementedError(
-            f"The `data_collator` property has not been implemented for "
-            f"{type(self).__name__}, as it is not finetuned."
-        )
-
-    @property
-    def trainer_class(self) -> t.Type["Trainer"]:
-        """The Trainer class to use for finetuning.
-
-        Returns:
-            The Trainer class.
-
-        Raises:
-            NotImplementedError:
-                Always; this module is not finetuned.
-        """
-        raise NotImplementedError(
-            f"The `trainer_class` property has not been implemented for "
-            f"{type(self).__name__}, as it is not finetuned."
-        )
-
-
 def _build_model_config_helper(
     model_id: str,
     revision: str,
@@ -719,15 +598,9 @@ def _prepare_dataset_helper(
         tokeniser:
             The tokeniser to use, or None if not applicable.
         preserve_raw_text:
-            Whether to keep the original 'text' column instead of overwriting it
-            with the sample rendered through the decoder prompt template
-            (instructions, labels list, and few-shot examples included), which is
-            meant for generative models. Non-generative callers (e.g.
-            `ZeroShotClassifierModel`) build their own instructions separately and
-            expect the raw sample text, so they set this to True. In that case the
-            decoder prompt template is not rendered into 'text'/'messages' at all;
-            only the separate 'prompt' column is still built, since downstream
-            label extraction reads it regardless of caller. Defaults to False.
+            Whether to keep the dataset's raw 'text' column instead of rendering
+            the decoder prompt template into it. Used by non-generative callers
+            (e.g. `ZeroShotClassifierModel`). Defaults to False.
 
     Returns:
         The prepared dataset.

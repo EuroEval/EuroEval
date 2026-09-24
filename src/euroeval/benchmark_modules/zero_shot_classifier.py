@@ -1,10 +1,18 @@
-"""A benchmark module wrapping non-generative zero-shot "decision" models."""
+"""A benchmark module wrapping the Laya zero-shot classifier model."""
 
-import logging
 import math
 import typing as t
 from functools import cached_property
+from pathlib import Path
 
+from huggingface_hub.errors import NotASafetensorsRepoError
+
+from ..constants import (
+    LAYA_BUNDLED_REPO_ID,
+    LAYA_CHECKPOINTS,
+    LAYA_DEFAULT_MAX_LENGTH,
+    LAYA_MIN_PROBABILITY,
+)
 from ..data_models import (
     BenchmarkConfig,
     DatasetConfig,
@@ -20,47 +28,39 @@ from ..enums import (
     TaskGroup,
 )
 from ..exceptions import InvalidBenchmark, InvalidModel, NeedsExtraInstalled
-from ..logging_utils import log_once
 from ..model_cache import create_model_cache_dir
+from ..safetensors_utils import get_num_params_from_safetensors_metadata
 from ..string_utils import split_model_id
-from ..task_group_utils.cloze import parse_bare_question_and_choices_with_markers
+from ..task_group_utils.cloze import parse_bare_question_and_choices
 from ..tokenisation_utils import get_first_label_token_mapping
 from ..types import ExtractLabelsFunction
-from ..zero_shot_adapters import ZeroShotClassifierAdapter, get_adapter
+from ..utils import get_hf_token
 from .base import (
-    PRIORITY_ZERO_SHOT_CLASSIFIER,
     BenchmarkModule,
-    NonFinetunableModuleMixin,
     _extract_labels_from_generation_helper,
     _prepare_dataset_helper,
 )
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
-
-# A probability floor used when taking the log of an adapter-reported probability,
-# to avoid `math.log(0.0)` raising `ValueError` for a label the adapter assigned zero
-# probability.
-_MIN_PROBABILITY = 1e-12
+    from transformers.trainer import Trainer
 
 
-class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
-    """A benchmark module wrapping a non-generative zero-shot "decision" model.
+class ZeroShotClassifierModel(BenchmarkModule):
+    """Laya, a non-generative zero-shot "decision" model.
 
-    These models (e.g. Laya) are encoders with trained heads that answer typed
-    questions with calibrated probabilities. They are loaded through their own
-    package, via one of the adapters in `euroeval.zero_shot_adapters.ADAPTERS`, and
-    are evaluated zero-shot only: no finetuning, no few-shot demonstrations.
+    Laya (https://pypi.org/project/laya/) is an encoder with trained decision heads,
+    loaded through its own `laya` package rather than `transformers`. It answers
+    typed `choice` questions with calibrated per-label probabilities, and is
+    evaluated zero-shot only: no finetuning, no few-shot demonstrations.
     """
 
     fresh_model = False
     batching_preference = BatchingPreference.ALL_AT_ONCE
 
-    # Checked before `FreshEncoderModel`/`HuggingFaceEncoderModel`/`VLLMModel` (see
-    # the priority table in `benchmark_modules.base`), since a matching zero-shot
-    # classifier repo (e.g. Laya) would otherwise be misidentified as a plain
-    # encoder or generative model.
-    priority = PRIORITY_ZERO_SHOT_CLASSIFIER
+    # Checked before the generic encoder/generative modules, so that a Laya repo
+    # isn't misidentified as a plain encoder.
+    high_priority = True
 
     def __init__(
         self,
@@ -83,19 +83,27 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
 
         Raises:
             InvalidModel:
-                If no adapter matches the model.
+                If a revision other than "main" is requested, since the `laya`
+                package cannot load a specific revision.
         """
-        adapter_cls = get_adapter(
-            model_id=model_config.model_id, benchmark_config=benchmark_config
-        )
-        if adapter_cls is None:
+        import laya  # noqa: PLC0415
+
+        model_id = model_config.model_id
+        param = model_config.param
+        revision = model_config.revision
+        if revision not in ("main", ""):
             raise InvalidModel(
-                f"No zero-shot classifier adapter matches the model "
-                f"{model_config.model_id!r}."
+                f"The model {model_id!r} was requested at revision {revision!r}, "
+                "but the `laya` package does not support loading a specific "
+                "revision -- it always loads the repo's default branch ('main')."
             )
-        self.adapter: ZeroShotClassifierAdapter = adapter_cls(
-            model_config=model_config, benchmark_config=benchmark_config
-        )
+
+        subfolder = _resolve_subfolder(model_id=model_id, param=param)
+        checkpoint_name = _checkpoint_name(model_id=model_id, param=param)
+        token = get_hf_token(api_key=benchmark_config.api_key)
+
+        self.agent = laya.Agent(model_id, subfolder=subfolder, token=token)
+        self.max_length = LAYA_CHECKPOINTS.get(checkpoint_name, LAYA_DEFAULT_MAX_LENGTH)
 
         super().__init__(
             model_config=model_config,
@@ -116,13 +124,24 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
         """Build the classification instructions from the dataset's templates.
 
         Returns:
-            The instructions describing the classification task, with the
-            `{text}` placeholder (which is filled in per-sample by the `texts`
-            argument to `adapter.classify`) removed.
+            The instructions describing the classification task.
         """
         return self.dataset_config.instruction_prompt.format(
             text="", labels_str=self.dataset_config.get_labels_str()
         ).strip()
+
+    @property
+    def data_collator(self) -> t.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
+        """The data collator used to prepare samples during finetuning.
+
+        Raises:
+            NotImplementedError:
+                Always; Laya is not finetuned.
+        """
+        raise NotImplementedError(
+            "The `data_collator` property has not been implemented for Laya, as "
+            "it is not finetuned."
+        )
 
     @property
     def extract_labels_from_generation(self) -> ExtractLabelsFunction:
@@ -157,17 +176,15 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
             TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
         ):
             raise InvalidBenchmark(
-                "Zero-shot classifier models only support sequence classification "
-                "and multiple-choice classification tasks, but the task group of "
-                f"the dataset {self.dataset_config.name!r} is "
+                "Laya only supports sequence classification and multiple-choice "
+                f"classification tasks, but the task group of the dataset "
+                f"{self.dataset_config.name!r} is "
                 f"{self.dataset_config.task.task_group!r}."
             )
-
         if "text" not in inputs:
             raise InvalidBenchmark("The inputs must contain a 'text' key.")
 
         texts = list(inputs["text"])
-
         candidate_labels = [
             self.dataset_config.prompt_label_mapping[label]
             for label in self.dataset_config.id2label.values()
@@ -175,8 +192,8 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
         if not candidate_labels:
             raise InvalidBenchmark(
                 "No candidate labels found for this dataset. Set "
-                "DatasetConfig.labels/prompt_label_mapping for classification tasks "
-                "before using a zero-shot classifier model."
+                "DatasetConfig.labels/prompt_label_mapping for classification "
+                "tasks before using Laya."
             )
 
         task_group = self.dataset_config.task.task_group
@@ -185,95 +202,88 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
                 texts=texts, letter_labels=candidate_labels
             )
         else:
-            label_probs = self.adapter.classify(
-                texts=texts,
-                candidate_labels=candidate_labels,
-                instructions=self.buffer["instructions"],
-            )
+            label_probs = self._classify(texts=texts, candidate_labels=candidate_labels)
 
         sequences: list[str] = []
         scores: list[list[list[tuple[str, float]]]] = []
         for probs in label_probs:
-            sample_scores: list[tuple[str, float]] = [
-                (label, math.log(max(probs.get(label, 0.0), _MIN_PROBABILITY)))
+            sample_scores = [
+                (label, math.log(max(probs.get(label, 0.0), LAYA_MIN_PROBABILITY)))
                 for label in candidate_labels
             ]
-            # `sequence_classification.get_closest_logprobs_labels` (the generic
-            # label extractor used for all generative-style `scores` output, e.g.
-            # vLLM/LiteLLM top-logprobs) sorts each sample's list by logprob
-            # descending itself, so we don't need to pre-sort here.
-            best_label = max(
-                sample_scores, key=lambda label_and_logprob: label_and_logprob[1]
-            )[0]
+            best_label = max(sample_scores, key=lambda pair: pair[1])[0]
             sequences.append(best_label)
             scores.append([sample_scores])
 
         return GenerativeModelOutput(sequences=sequences, scores=scores)
+
+    def _classify(
+        self, texts: list[str], candidate_labels: list[str]
+    ) -> list[dict[str, float]]:
+        """Classify each text against the candidate labels, using Laya.
+
+        Args:
+            texts:
+                The texts to classify.
+            candidate_labels:
+                The candidate labels to classify each text into.
+
+        Returns:
+            A list, with one dictionary per text, mapping each candidate label to
+            its predicted probability.
+
+        Raises:
+            InvalidBenchmark:
+                If Laya's response is missing a probability for one of the
+                candidate labels.
+        """
+        question = {
+            "type": "choice",
+            "instructions": self.buffer["instructions"],
+            "criteria": {label: None for label in candidate_labels},
+        }
+        results = []
+        for text in texts:
+            output = self.agent.system_one(state=text, questions={"q": question})
+            probabilities = output["answers"]["q"]["probabilities"]
+            missing_labels = [
+                label for label in candidate_labels if label not in probabilities
+            ]
+            if missing_labels:
+                raise InvalidBenchmark(
+                    "Laya did not return a probability for the candidate "
+                    f"label(s) {missing_labels!r}."
+                )
+            results.append(
+                {label: float(probabilities[label]) for label in candidate_labels}
+            )
+        return results
 
     def _classify_multiple_choice(
         self, texts: list[str], letter_labels: list[str]
     ) -> list[dict[str, float]]:
         """Classify multiple-choice samples, using the option texts as labels.
 
-        The adapter is a text classifier, not an MCQ solver: passing it the bare
-        letter labels ("a", "b", ...) gives it nothing to compare the sample text
-        against. Instead, each sample's actual option texts (parsed back out of the
-        formatted 'text' column, which stores the question followed by its
-        enumerated options) are used as the candidate labels, and the returned
-        probabilities are mapped back to the letter labels afterwards, so label
-        extraction and metrics -- which are keyed by letter -- are unaffected.
-
         Args:
             texts:
                 The formatted multiple-choice prompts (question plus options).
             letter_labels:
-                The letter labels ("a", "b", ...), in order, that the parsed options
-                are expected to map onto.
+                The letter labels ("a", "b", ...), in order.
 
         Returns:
             One letter-label-keyed probability dictionary per text.
         """
         label_probs: list[dict[str, float]] = []
         for text in texts:
-            _, option_texts, markers = parse_bare_question_and_choices_with_markers(
-                text
-            )
-
-            fallback_reason: str | None = None
+            _, option_texts = parse_bare_question_and_choices(text)
             if len(option_texts) != len(letter_labels):
-                fallback_reason = (
-                    f"the sample has {len(option_texts)} parsed option(s), but "
-                    f"{len(letter_labels)} letter label(s) were expected"
-                )
-            elif markers != letter_labels:
-                fallback_reason = (
-                    f"the parsed option markers {markers!r} do not match the "
-                    f"expected letter labels {letter_labels!r} in order"
-                )
-            elif len(set(option_texts)) != len(option_texts):
-                fallback_reason = (
-                    f"the parsed option texts {option_texts!r} contain duplicates, "
-                    "which would make two letters share the same probability"
-                )
-
-            if fallback_reason is not None:
-                # Couldn't reliably use this sample's parsed options -- fall back to
-                # classifying against the letter labels directly, rather than
-                # dropping the sample or silently mismapping probabilities.
-                log_once(
-                    "Falling back to classifying multiple-choice options by their "
-                    f"letter labels for dataset {self.dataset_config.name!r}, "
-                    f"since {fallback_reason}.",
-                    level=logging.WARNING,
-                )
+                # Couldn't reliably parse this sample's options -- fall back to
+                # classifying against the letter labels directly.
                 option_texts = letter_labels
 
-            sample_probs = self.adapter.classify(
-                texts=[text],
-                candidate_labels=option_texts,
-                instructions=self.buffer["instructions"],
-            )[0]
-
+            sample_probs = self._classify(texts=[text], candidate_labels=option_texts)[
+                0
+            ]
             if option_texts is letter_labels:
                 label_probs.append(sample_probs)
             else:
@@ -289,10 +299,8 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
     def generative_type(self) -> GenerativeType | None:
         """The generative type of the model.
 
-        Zero-shot classifier models are not generative, so this is always None.
-
         Returns:
-            The generative type of the model.
+            None, since Laya is not generative.
         """
         return None
 
@@ -313,26 +321,16 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
 
         Raises:
             InvalidModel:
-                If no adapter matches the model, or the given parameter is not
-                allowed for the matching adapter.
+                If the given parameter is not allowed for the model.
         """
         model_id_components = split_model_id(model_id=model_id)
-        adapter_cls = get_adapter(
-            model_id=model_id_components.model_id, benchmark_config=benchmark_config
-        )
-        if adapter_cls is None:
-            raise InvalidModel(
-                f"No zero-shot classifier adapter matches the model {model_id!r}."
-            )
-
         param = model_id_components.param
-        if param is not None and param not in adapter_cls.variants:
-            msg = f"Invalid parameter {param!r} for model {model_id!r}."
-            if adapter_cls.variants:
-                msg += f" Allowed parameters are: {', '.join(adapter_cls.variants)}."
-            else:
-                msg += " No parameters are allowed."
-            raise InvalidModel(msg)
+        variants = [name for name in LAYA_CHECKPOINTS if name]
+        if param is not None and param not in variants:
+            raise InvalidModel(
+                f"Invalid parameter {param!r} for model {model_id!r}. Allowed "
+                f"parameters are: {', '.join(variants)}."
+            )
 
         return ModelConfig(
             model_id=model_id_components.model_id,
@@ -341,7 +339,7 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
             task="text-classification",
             languages=list(),
             merge=False,
-            inference_backend=InferenceBackend.ZERO_SHOT_CLASSIFIER,
+            inference_backend=InferenceBackend.LAYA,
             model_type=ModelType.ZERO_SHOT_CLASSIFIER,
             fresh=False,
             model_cache_dir=create_model_cache_dir(
@@ -367,13 +365,23 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
             Whether the model exists.
         """
         model_id_components = split_model_id(model_id=model_id)
+        bare_model_id = model_id_components.model_id
+
+        is_known_hub_repo = bare_model_id == LAYA_BUNDLED_REPO_ID or (
+            bare_model_id.startswith(f"{LAYA_BUNDLED_REPO_ID}-")
+        )
+        is_local_checkpoint_dir = (
+            Path(bare_model_id).is_dir()
+            and (Path(bare_model_id) / "rl_agent_config.json").is_file()
+        )
+        if not (is_known_hub_repo or is_local_checkpoint_dir):
+            return False
+
         try:
-            adapter_cls = get_adapter(
-                model_id=model_id_components.model_id, benchmark_config=benchmark_config
-            )
-        except NeedsExtraInstalled as error:
-            return error
-        return adapter_cls is not None
+            import laya  # noqa: F401,PLC0415
+        except ImportError:
+            return NeedsExtraInstalled(extra="laya")
+        return True
 
     @cached_property
     def model_max_length(self) -> int:
@@ -382,7 +390,7 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
         Returns:
             The maximum length of the model.
         """
-        return self.adapter.max_length
+        return self.max_length
 
     @cached_property
     def num_params(self) -> int:
@@ -393,12 +401,20 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
         """
         if self.benchmark_config.num_parameters is not None:
             return self.benchmark_config.num_parameters
-        adapter_cls = type(self.adapter)
-        return adapter_cls.num_params(
-            model_id=self.model_config.model_id,
-            param=self.model_config.param,
-            api_key=self.benchmark_config.api_key,
-        )
+
+        model_id = self.model_config.model_id
+        if Path(model_id).is_dir():
+            return _num_params_from_local_checkpoint(checkpoint_dir=Path(model_id))
+
+        try:
+            num_params = get_num_params_from_safetensors_metadata(
+                model_id=model_id,
+                revision="main",
+                api_key=get_hf_token(api_key=self.benchmark_config.api_key),
+            )
+        except (NotASafetensorsRepoError, OSError):
+            return -1
+        return num_params if num_params is not None else -1
 
     def prepare_dataset(
         self, dataset: "DatasetDict", task: Task, itr_idx: int
@@ -416,11 +432,8 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
         Returns:
             The prepared dataset.
         """
-        # Zero-shot classifier adapters (e.g. Laya) build their own instructions
-        # from `_build_instructions` and expect the raw sample text -- for
-        # multiple-choice tasks, the bare question plus its options, as it appears
-        # in the dataset's 'text' column -- rather than the decoder prompt
-        # template `_prepare_dataset_helper` would otherwise render into 'text'.
+        # Laya builds its own instructions from `_build_instructions` and expects
+        # the raw sample text, rather than the decoder prompt template.
         return _prepare_dataset_helper(
             dataset=dataset,
             task=task,
@@ -434,14 +447,21 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
             preserve_raw_text=True,
         )
 
+    @property
+    def trainer_class(self) -> t.Type["Trainer"]:
+        """The Trainer class to use for finetuning.
+
+        Raises:
+            NotImplementedError:
+                Always; Laya is not finetuned.
+        """
+        raise NotImplementedError(
+            "The `trainer_class` property has not been implemented for Laya, as "
+            "it is not finetuned."
+        )
+
     def update_dataset_config(self, dataset_config: "DatasetConfig") -> t.Self:
         """Update the dataset config registered in the benchmark module.
-
-        The model is reused across datasets (see `Benchmarker`), so per-dataset
-        state derived from `dataset_config` -- here, `first_label_token_mapping`
-        and `instructions`, both computed once in `__init__` -- must be
-        recomputed for the new dataset, the same way `VLLMModel.
-        update_dataset_config` does.
 
         Args:
             dataset_config:
@@ -469,3 +489,74 @@ class ZeroShotClassifierModel(NonFinetunableModuleMixin, BenchmarkModule):
             The vocabulary size of the model.
         """
         return -1
+
+
+def _checkpoint_name(model_id: str, param: str | None) -> str:
+    """Resolve the checkpoint name (a key into `LAYA_CHECKPOINTS`).
+
+    Args:
+        model_id:
+            The Hub repo ID, or a local checkpoint directory.
+        param:
+            The parameter (variant) requested through `model_id#param`.
+
+    Returns:
+        The checkpoint name.
+    """
+    if param is not None:
+        return param
+    prefix = f"{LAYA_BUNDLED_REPO_ID}-"
+    if model_id.startswith(prefix):
+        return model_id.removeprefix(prefix)
+    return ""
+
+
+def _num_params_from_local_checkpoint(checkpoint_dir: Path) -> int:
+    """Get the number of parameters of a local Laya checkpoint directory.
+
+    Args:
+        checkpoint_dir:
+            The local checkpoint directory, containing `model.safetensors`.
+
+    Returns:
+        The number of parameters in the model.
+    """
+    from safetensors import safe_open  # noqa: PLC0415
+
+    weights_path = checkpoint_dir / "model.safetensors"
+    num_params = 0
+    with safe_open(str(weights_path), framework="numpy") as f:
+        for key in f.keys():
+            shape = f.get_slice(key).get_shape()
+            n = 1
+            for dim in shape:
+                n *= dim
+            num_params += n
+    return num_params
+
+
+def _resolve_subfolder(model_id: str, param: str | None) -> str | None:
+    """Resolve the subfolder to load within a Laya Hub repo.
+
+    Args:
+        model_id:
+            The Hub repo ID.
+        param:
+            The parameter (variant) requested through `model_id#param`.
+
+    Returns:
+        The subfolder to pass to `laya.Agent`, or None for the repo root.
+
+    Raises:
+        InvalidModel:
+            If a parameter is given for a repo other than the bundled
+            `convaiinnovations/laya` repo.
+    """
+    if param is None:
+        return None
+    if model_id != LAYA_BUNDLED_REPO_ID:
+        raise InvalidModel(
+            f"The model {model_id!r} does not accept a parameter (only the "
+            f"bundled {LAYA_BUNDLED_REPO_ID!r} repo does)."
+        )
+    return param

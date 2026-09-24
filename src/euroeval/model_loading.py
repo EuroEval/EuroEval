@@ -125,11 +125,7 @@ def load_model(
             model_class = LiteLLMModel
         case (ModelType.GENERATIVE, InferenceBackend.DUMMY, False):
             model_class = DummyModel
-        case (
-            ModelType.ZERO_SHOT_CLASSIFIER,
-            InferenceBackend.ZERO_SHOT_CLASSIFIER,
-            False,
-        ):
+        case (ModelType.ZERO_SHOT_CLASSIFIER, InferenceBackend.LAYA, False):
             model_class = ZeroShotClassifierModel
         case (ModelType.ENCODER, InferenceBackend.TRANSFORMERS, True):
             model_class = FreshEncoderModel

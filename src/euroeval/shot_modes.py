@@ -113,7 +113,7 @@ def resolve_shot_modes(
             log_once(
                 f"The model {model_config.model_id!r} is a zero-shot classifier "
                 "and does not support few-shot evaluation. Forcing zero-shot.",
-                level=logging.WARNING,
+                level=logging.DEBUG,
             )
         return [ShotMode.ZERO_SHOT]
     if mode is not ShotMode.AUTO:

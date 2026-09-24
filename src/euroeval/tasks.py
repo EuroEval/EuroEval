@@ -25,17 +25,6 @@ from .prompt_templates import (
 )
 from .prompt_templates.tool_calling import TOOL_CALLING_TEMPLATES, ToolCallingResponse
 
-# Repeated `default_allowed_model_types` values, factored out to avoid duplication.
-# These are immutable tuples rather than lists so that they can be safely shared as
-# a base; each `Task` below gets its own `list(...)` copy, so mutating one Task's
-# `default_allowed_model_types` can never affect another Task or these constants.
-CLASSIFICATION_MODEL_TYPES = (
-    ModelType.ENCODER,
-    ModelType.GENERATIVE,
-    ModelType.ZERO_SHOT_CLASSIFIER,
-)
-GENERATIVE_ONLY_MODEL_TYPES = (ModelType.GENERATIVE,)
-
 
 def get_all_tasks() -> dict[str, "Task"]:
     """Get a list of all the tasks.
@@ -57,7 +46,11 @@ LA = Task(
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["correct", "incorrect"],
     uses_logprobs=True,
-    default_allowed_model_types=list(CLASSIFICATION_MODEL_TYPES),
+    default_allowed_model_types=[
+        ModelType.ENCODER,
+        ModelType.GENERATIVE,
+        ModelType.ZERO_SHOT_CLASSIFIER,
+    ],
 )
 
 
@@ -70,7 +63,11 @@ NLI = Task(
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["entailment", "neutral", "contradiction"],
     uses_logprobs=True,
-    default_allowed_model_types=list(CLASSIFICATION_MODEL_TYPES),
+    default_allowed_model_types=[
+        ModelType.ENCODER,
+        ModelType.GENERATIVE,
+        ModelType.ZERO_SHOT_CLASSIFIER,
+    ],
 )
 
 
@@ -128,7 +125,11 @@ SENT = Task(
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["positive", "neutral", "negative"],
     uses_logprobs=True,
-    default_allowed_model_types=list(CLASSIFICATION_MODEL_TYPES),
+    default_allowed_model_types=[
+        ModelType.ENCODER,
+        ModelType.GENERATIVE,
+        ModelType.ZERO_SHOT_CLASSIFIER,
+    ],
 )
 
 
@@ -141,7 +142,11 @@ WIC = Task(
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["same_sense", "different_sense"],
     uses_logprobs=True,
-    default_allowed_model_types=list(CLASSIFICATION_MODEL_TYPES),
+    default_allowed_model_types=[
+        ModelType.ENCODER,
+        ModelType.GENERATIVE,
+        ModelType.ZERO_SHOT_CLASSIFIER,
+    ],
 )
 
 
@@ -154,7 +159,11 @@ KNOW = Task(
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["a", "b", "c", "d"],
     uses_logprobs=True,
-    default_allowed_model_types=list(CLASSIFICATION_MODEL_TYPES),
+    default_allowed_model_types=[
+        ModelType.ENCODER,
+        ModelType.GENERATIVE,
+        ModelType.ZERO_SHOT_CLASSIFIER,
+    ],
 )
 
 
@@ -167,7 +176,11 @@ MCRC = Task(
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["a", "b", "c", "d"],
     uses_logprobs=True,
-    default_allowed_model_types=list(CLASSIFICATION_MODEL_TYPES),
+    default_allowed_model_types=[
+        ModelType.ENCODER,
+        ModelType.GENERATIVE,
+        ModelType.ZERO_SHOT_CLASSIFIER,
+    ],
 )
 
 
@@ -180,7 +193,11 @@ COMMON_SENSE = Task(
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["a", "b", "c", "d"],
     uses_logprobs=True,
-    default_allowed_model_types=list(CLASSIFICATION_MODEL_TYPES),
+    default_allowed_model_types=[
+        ModelType.ENCODER,
+        ModelType.GENERATIVE,
+        ModelType.ZERO_SHOT_CLASSIFIER,
+    ],
 )
 
 
@@ -194,7 +211,7 @@ GEC = Task(
     default_num_few_shot_examples=5,
     default_max_generated_tokens=256,
     default_labels=[],
-    default_allowed_model_types=list(GENERATIVE_ONLY_MODEL_TYPES),
+    default_allowed_model_types=[ModelType.GENERATIVE],
 )
 
 
@@ -206,7 +223,7 @@ SIMPL = Task(
     default_num_few_shot_examples=3,
     default_max_generated_tokens=256,
     default_labels=[],
-    default_allowed_model_types=list(GENERATIVE_ONLY_MODEL_TYPES),
+    default_allowed_model_types=[ModelType.GENERATIVE],
 )
 
 
@@ -218,7 +235,7 @@ SUMM = Task(
     default_num_few_shot_examples=1,
     default_max_generated_tokens=256,
     default_labels=[],
-    default_allowed_model_types=list(GENERATIVE_ONLY_MODEL_TYPES),
+    default_allowed_model_types=[ModelType.GENERATIVE],
 )
 
 LOGIC = Task(
@@ -230,7 +247,7 @@ LOGIC = Task(
     default_max_generated_tokens=256,
     default_labels=[],
     uses_structured_output=True,
-    default_allowed_model_types=list(GENERATIVE_ONLY_MODEL_TYPES),
+    default_allowed_model_types=[ModelType.GENERATIVE],
     default_allowed_generative_types=[
         GenerativeType.INSTRUCTION_TUNED,
         GenerativeType.REASONING,
@@ -246,7 +263,7 @@ TRANSLATION = Task(
     default_num_few_shot_examples=5,
     default_max_generated_tokens=256,
     default_labels=[],
-    default_allowed_model_types=list(GENERATIVE_ONLY_MODEL_TYPES),
+    default_allowed_model_types=[ModelType.GENERATIVE],
 )
 
 
@@ -260,7 +277,7 @@ INSTRUCTION_FOLLOWING = Task(
     default_num_few_shot_examples=0,
     default_max_generated_tokens=2048,
     default_labels=None,
-    default_allowed_model_types=list(GENERATIVE_ONLY_MODEL_TYPES),
+    default_allowed_model_types=[ModelType.GENERATIVE],
     default_allowed_generative_types=[
         GenerativeType.INSTRUCTION_TUNED,
         GenerativeType.REASONING,
@@ -278,7 +295,7 @@ TOOL_CALLING = Task(
     default_num_few_shot_examples=0,
     default_max_generated_tokens=500,
     default_labels=[],
-    default_allowed_model_types=list(GENERATIVE_ONLY_MODEL_TYPES),
+    default_allowed_model_types=[ModelType.GENERATIVE],
     default_allowed_generative_types=[
         GenerativeType.INSTRUCTION_TUNED,
         GenerativeType.REASONING,
@@ -319,7 +336,7 @@ EUROPEAN_VALUES = Task(
     default_num_few_shot_examples=0,
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"],
-    default_allowed_model_types=list(GENERATIVE_ONLY_MODEL_TYPES),
+    default_allowed_model_types=[ModelType.GENERATIVE],
     default_allowed_generative_types=[
         GenerativeType.INSTRUCTION_TUNED,
         GenerativeType.REASONING,
@@ -342,7 +359,7 @@ MCSTEREO = Task(
     default_num_few_shot_examples=0,
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["a", "b", "c"],
-    default_allowed_model_types=list(GENERATIVE_ONLY_MODEL_TYPES),
+    default_allowed_model_types=[ModelType.GENERATIVE],
     default_allowed_generative_types=[
         GenerativeType.INSTRUCTION_TUNED,
         GenerativeType.REASONING,
@@ -360,7 +377,7 @@ HALLU = Task(
     default_num_few_shot_examples=0,
     default_max_generated_tokens=512,
     default_labels=[],
-    default_allowed_model_types=list(GENERATIVE_ONLY_MODEL_TYPES),
+    default_allowed_model_types=[ModelType.GENERATIVE],
     default_allowed_generative_types=[
         GenerativeType.INSTRUCTION_TUNED,
         GenerativeType.REASONING,
@@ -379,7 +396,11 @@ TEXT_CLASSIFICATION = Task(
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=None,
     uses_logprobs=True,
-    default_allowed_model_types=list(CLASSIFICATION_MODEL_TYPES),
+    default_allowed_model_types=[
+        ModelType.ENCODER,
+        ModelType.GENERATIVE,
+        ModelType.ZERO_SHOT_CLASSIFIER,
+    ],
 )
 
 TOKEN_CLASSIFICATION = Task(
@@ -402,7 +423,11 @@ MULTIPLE_CHOICE = Task(
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=None,
     uses_logprobs=True,
-    default_allowed_model_types=list(CLASSIFICATION_MODEL_TYPES),
+    default_allowed_model_types=[
+        ModelType.ENCODER,
+        ModelType.GENERATIVE,
+        ModelType.ZERO_SHOT_CLASSIFIER,
+    ],
 )
 
 
@@ -414,7 +439,7 @@ OPEN_ENDED_QA = Task(
     default_num_few_shot_examples=5,
     default_max_generated_tokens=256,
     default_labels=[],
-    default_allowed_model_types=list(GENERATIVE_ONLY_MODEL_TYPES),
+    default_allowed_model_types=[ModelType.GENERATIVE],
 )
 
 
@@ -426,7 +451,7 @@ REFERENCE_FREE_QA = Task(
     default_num_few_shot_examples=0,
     default_max_generated_tokens=2048,
     default_labels=None,
-    default_allowed_model_types=list(GENERATIVE_ONLY_MODEL_TYPES),
+    default_allowed_model_types=[ModelType.GENERATIVE],
     default_allowed_generative_types=[
         GenerativeType.INSTRUCTION_TUNED,
         GenerativeType.REASONING,
@@ -449,7 +474,7 @@ MATH = Task(
     default_num_few_shot_examples=0,
     default_max_generated_tokens=1024,
     default_labels=None,
-    default_allowed_model_types=list(GENERATIVE_ONLY_MODEL_TYPES),
+    default_allowed_model_types=[ModelType.GENERATIVE],
     default_allowed_generative_types=[
         GenerativeType.INSTRUCTION_TUNED,
         GenerativeType.REASONING,

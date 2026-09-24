@@ -59,17 +59,13 @@ if t.TYPE_CHECKING:
     from .data_models import BenchmarkConfig, ModelConfig, Task
 
 
-# Model types that are non-finetunable and evaluated the same way an encoder is
-# (no fresh initialisation, no BPC): the plain encoder path and zero-shot
-# classifiers both apply here.
+# Model types evaluated the same way an encoder is (no finetuning, no BPC).
 NON_FINETUNABLE_ENCODER_LIKE_MODEL_TYPES = (
     ModelType.ENCODER,
     ModelType.ZERO_SHOT_CLASSIFIER,
 )
 
-# Model types that are evaluated through `generate()` rather than finetuning:
-# generative models and zero-shot classifiers (both never finetuned, both produce
-# their predictions via `BenchmarkModule.generate`).
+# Model types evaluated through `generate()` rather than finetuning.
 GENERATE_ONLY_MODEL_TYPES = (ModelType.GENERATIVE, ModelType.ZERO_SHOT_CLASSIFIER)
 
 
