@@ -312,22 +312,18 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             Whether the model exists, or an error describing why we cannot check
             whether the model exists.
         """
-        bare_model_id, revision, model_info = _lookup_model_info(
+        _, _, model_info = _lookup_model_info(
             model_id=model_id, benchmark_config=benchmark_config
         )
         if model_info is None or model_info.pipeline_tag in GENERATIVE_PIPELINE_TAGS:
             return False
-        if model_info.adapter_base_model_id is not None or Path(bare_model_id).is_dir():
-            return True
-        if not internet_connection_available():
+        if model_info.adapter_base_model_id is not None or model_info.siblings is None:
             return True
 
         # A repo with no root `config.json` isn't loadable as an encoder (e.g. one
         # that only ships its config in a subfolder for a custom, non-`transformers`
         # loader).
-        hf_api = HfApi(token=get_hf_token(api_key=benchmark_config.api_key))
-        repo_files = hf_api.list_repo_files(repo_id=bare_model_id, revision=revision)
-        return "config.json" in repo_files
+        return any(f == "config.json" for f in model_info.siblings)
 
     @cached_property
     def model_max_length(self) -> int:
@@ -1515,6 +1511,11 @@ def get_model_repo_info(
         tags=tags,
         adapter_base_model_id=base_model_id,
         release_date=release_date,
+        siblings=(
+            [sibling.rfilename for sibling in model_info.siblings]
+            if model_info.siblings is not None
+            else None
+        ),
     )
 
 

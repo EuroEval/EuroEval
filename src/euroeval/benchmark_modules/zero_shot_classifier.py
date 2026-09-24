@@ -228,6 +228,9 @@ class ZeroShotClassifierModel(BenchmarkModule):
     ) -> list[dict[str, float]]:
         """Classify each text against the candidate labels, using Laya.
 
+        `laya.Agent.system_one` only batches multiple questions for a single text,
+        not multiple texts in one call, so each text still needs its own call.
+
         Args:
             texts:
                 The texts to classify.
@@ -237,6 +240,23 @@ class ZeroShotClassifierModel(BenchmarkModule):
         Returns:
             A list, with one dictionary per text, mapping each candidate label to
             its predicted probability.
+        """
+        return [
+            self._classify_one(text=text, candidate_labels=candidate_labels)
+            for text in texts
+        ]
+
+    def _classify_one(self, text: str, candidate_labels: list[str]) -> dict[str, float]:
+        """Classify a single text against the candidate labels, using Laya.
+
+        Args:
+            text:
+                The text to classify.
+            candidate_labels:
+                The candidate labels to classify the text into.
+
+        Returns:
+            A dictionary mapping each candidate label to its predicted probability.
 
         Raises:
             InvalidBenchmark:
@@ -248,22 +268,17 @@ class ZeroShotClassifierModel(BenchmarkModule):
             "instructions": self.buffer["instructions"],
             "criteria": {label: None for label in candidate_labels},
         }
-        results = []
-        for text in texts:
-            output = self.agent.system_one(state=text, questions={"q": question})
-            probabilities = output["answers"]["q"]["probabilities"]
-            missing_labels = [
-                label for label in candidate_labels if label not in probabilities
-            ]
-            if missing_labels:
-                raise InvalidBenchmark(
-                    "Laya did not return a probability for the candidate "
-                    f"label(s) {missing_labels!r}."
-                )
-            results.append(
-                {label: float(probabilities[label]) for label in candidate_labels}
+        output = self.agent.system_one(state=text, questions={"q": question})
+        probabilities = output["answers"]["q"]["probabilities"]
+        missing_labels = [
+            label for label in candidate_labels if label not in probabilities
+        ]
+        if missing_labels:
+            raise InvalidBenchmark(
+                "Laya did not return a probability for the candidate "
+                f"label(s) {missing_labels!r}."
             )
-        return results
+        return {label: float(probabilities[label]) for label in candidate_labels}
 
     def _classify_multiple_choice(
         self, texts: list[str], letter_labels: list[str]
@@ -285,15 +300,14 @@ class ZeroShotClassifierModel(BenchmarkModule):
             unparseable = len(option_texts) != len(letter_labels) or len(
                 set(option_texts)
             ) != len(option_texts)
-            if unparseable:
+            used_letter_fallback = unparseable
+            if used_letter_fallback:
                 # Couldn't reliably parse this sample's options (or two options share
                 # the same text) -- fall back to classifying against the letters.
                 option_texts = letter_labels
 
-            sample_probs = self._classify(texts=[text], candidate_labels=option_texts)[
-                0
-            ]
-            if option_texts is letter_labels:
+            sample_probs = self._classify_one(text=text, candidate_labels=option_texts)
+            if used_letter_fallback:
                 label_probs.append(sample_probs)
             else:
                 label_probs.append(

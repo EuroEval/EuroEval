@@ -75,7 +75,6 @@ def test_encoder_model_exists_requires_root_config(
     with (
         patch.object(HfApi, "list_repo_commits") as mock_list_commits,
         patch.object(HfApi, "model_info") as mock_model_info,
-        patch.object(HfApi, "list_repo_files") as mock_list_repo_files,
     ):
         mock_list_commits.return_value = [
             MagicMock(
@@ -84,9 +83,11 @@ def test_encoder_model_exists_requires_root_config(
             )
         ]
         mock_model_info.return_value = MagicMock(
-            id="test-model", tags=["test"], pipeline_tag="fill-mask", siblings=[]
+            id="test-model",
+            tags=["test"],
+            pipeline_tag="fill-mask",
+            siblings=[MagicMock(rfilename=f) for f in repo_files],
         )
-        mock_list_repo_files.return_value = repo_files
         result = HuggingFaceEncoderModel.model_exists(
             model_id="some-model", benchmark_config=benchmark_config
         )
