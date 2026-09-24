@@ -62,16 +62,7 @@ class TestCreateModelDatasetMapping:
     def test_unsupported_task_group_is_filtered_out_for_zero_shot_classifier(
         self, benchmarker: Benchmarker, model_config: ModelConfig
     ) -> None:
-        """A NER dataset is filtered out up front for a zero-shot classifier model.
-
-        `NER.default_allowed_model_types` doesn't include
-        `ModelType.ZERO_SHOT_CLASSIFIER` (only sequence-classification and
-        multiple-choice-classification tasks do), so the benchmarker's dataset
-        filter should drop it before any benchmarking is attempted -- this is what
-        keeps a `--raise-errors` run from crashing on an unsupported dataset,
-        rather than relying on `ZeroShotClassifierModel.generate`'s defensive
-        `InvalidBenchmark` fallback.
-        """
+        """A NER dataset is filtered out up front for a zero-shot classifier model."""
         zero_shot_model_config = replace(
             model_config, model_type=ModelType.ZERO_SHOT_CLASSIFIER
         )
