@@ -6,6 +6,8 @@ import typing as t
 from functools import cached_property
 from pathlib import Path
 
+from huggingface_hub.errors import EntryNotFoundError
+
 from ..constants import (
     LAYA_BUNDLED_REPO_ID,
     LAYA_CHECKPOINTS,
@@ -460,7 +462,7 @@ class ZeroShotClassifierModel(BenchmarkModule):
                 weights_path = huggingface_hub.hf_hub_download(
                     repo_id=model_id, filename=f"{param}/model.safetensors", token=token
                 )
-            except OSError:
+            except (OSError, EntryNotFoundError):
                 return -1
             return _num_params_from_local_checkpoint(
                 checkpoint_dir=Path(weights_path).parent

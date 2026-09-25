@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy
 import pytest
 from datasets import Dataset, DatasetDict
+from huggingface_hub.errors import EntryNotFoundError
 from safetensors.numpy import save_file
 
 from euroeval.benchmark_modules.zero_shot_classifier import ZeroShotClassifierModel
@@ -599,6 +600,39 @@ class TestNumParams:
         )
         model = ZeroShotClassifierModel(
             model_config=laya_model_config,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+        assert model.num_params == -1
+
+    @pytest.mark.parametrize(
+        "exception_factory",
+        [lambda: OSError("network error"), lambda: EntryNotFoundError("missing")],
+        ids=["oserror", "entrynotfound"],
+    )
+    def test_variant_num_params_returns_minus_one_on_missing_file(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        fake_laya_module: types.ModuleType,
+        laya_model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+        exception_factory: t.Callable[[], BaseException],
+    ) -> None:
+        """Variant `num_params` returns -1 when hf_hub_download raises errors.
+
+        Tested with both OSError and EntryNotFoundError exceptions.
+        """
+        exc_to_raise = exception_factory()
+
+        def raise_error(*args: object, **kwargs: object) -> t.NoReturn:
+            raise exc_to_raise
+
+        monkeypatch.setattr("huggingface_hub.hf_hub_download", raise_error)
+        config = dataclasses.replace(laya_model_config, param="multilingual")
+        model = ZeroShotClassifierModel(
+            model_config=config,
             dataset_config=dataset_config,
             benchmark_config=benchmark_config,
             log_metadata=False,
