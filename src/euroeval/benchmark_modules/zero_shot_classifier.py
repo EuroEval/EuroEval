@@ -6,8 +6,6 @@ import typing as t
 from functools import cached_property
 from pathlib import Path
 
-from huggingface_hub.errors import NotASafetensorsRepoError
-
 from ..constants import (
     LAYA_BUNDLED_REPO_ID,
     LAYA_CHECKPOINTS,
@@ -99,7 +97,7 @@ class ZeroShotClassifierModel(BenchmarkModule):
                 "revision -- it always loads the repo's default branch ('main')."
             )
 
-        subfolder = _resolve_subfolder(model_id=model_id, param=param)
+        subfolder = param
         checkpoint_name = _checkpoint_name(model_id=model_id, param=param)
         token = get_hf_token(api_key=benchmark_config.api_key)
 
@@ -126,9 +124,29 @@ class ZeroShotClassifierModel(BenchmarkModule):
     def _build_instructions(self) -> str:
         """Build the classification instructions from the dataset's templates.
 
+        Also validates that the dataset has candidate labels, since this is
+        checked once per dataset config rather than on every `generate` call.
+
         Returns:
             The instructions describing the classification task.
+
+        Raises:
+            InvalidBenchmark:
+                If the dataset has no candidate labels.
         """
+        supported_task_groups = (
+            TaskGroup.SEQUENCE_CLASSIFICATION,
+            TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+        )
+        if (
+            self.dataset_config.task.task_group in supported_task_groups
+            and not self.dataset_config.id2label
+        ):
+            raise InvalidBenchmark(
+                "No candidate labels found for this dataset. Set "
+                "DatasetConfig.labels/prompt_label_mapping for classification "
+                "tasks before using Laya."
+            )
         return self.dataset_config.instruction_prompt.format(
             text="", labels_str=self.dataset_config.get_labels_str()
         ).strip()
@@ -192,12 +210,6 @@ class ZeroShotClassifierModel(BenchmarkModule):
             self.dataset_config.prompt_label_mapping[label]
             for label in self.dataset_config.id2label.values()
         ]
-        if not candidate_labels:
-            raise InvalidBenchmark(
-                "No candidate labels found for this dataset. Set "
-                "DatasetConfig.labels/prompt_label_mapping for classification "
-                "tasks before using Laya."
-            )
 
         task_group = self.dataset_config.task.task_group
         if task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
@@ -300,14 +312,13 @@ class ZeroShotClassifierModel(BenchmarkModule):
             unparseable = len(option_texts) != len(letter_labels) or len(
                 set(option_texts)
             ) != len(option_texts)
-            used_letter_fallback = unparseable
-            if used_letter_fallback:
+            if unparseable:
                 # Couldn't reliably parse this sample's options (or two options share
                 # the same text) -- fall back to classifying against the letters.
                 option_texts = letter_labels
 
             sample_probs = self._classify_one(text=text, candidate_labels=option_texts)
-            if used_letter_fallback:
+            if unparseable:
                 label_probs.append(sample_probs)
             else:
                 label_probs.append(
@@ -348,12 +359,19 @@ class ZeroShotClassifierModel(BenchmarkModule):
         """
         model_id_components = split_model_id(model_id=model_id)
         param = model_id_components.param
-        variants = [name for name in LAYA_CHECKPOINTS if name]
-        if param is not None and param not in variants:
-            raise InvalidModel(
-                f"Invalid parameter {param!r} for model {model_id!r}. Allowed "
-                f"parameters are: {', '.join(variants)}."
-            )
+        bare_model_id = model_id_components.model_id
+        if param is not None:
+            variants = [name for name in LAYA_CHECKPOINTS if name]
+            if param not in variants:
+                raise InvalidModel(
+                    f"Invalid parameter {param!r} for model {model_id!r}. Allowed "
+                    f"parameters are: {', '.join(variants)}."
+                )
+            if bare_model_id != LAYA_BUNDLED_REPO_ID:
+                raise InvalidModel(
+                    f"The model {bare_model_id!r} does not accept a parameter "
+                    f"(only the bundled {LAYA_BUNDLED_REPO_ID!r} repo does)."
+                )
 
         return ModelConfig(
             model_id=model_id_components.model_id,
@@ -390,8 +408,10 @@ class ZeroShotClassifierModel(BenchmarkModule):
         model_id_components = split_model_id(model_id=model_id)
         bare_model_id = model_id_components.model_id
 
-        is_known_hub_repo = bare_model_id == LAYA_BUNDLED_REPO_ID or (
-            bare_model_id.startswith(f"{LAYA_BUNDLED_REPO_ID}-")
+        variant_suffixes = {name for name in LAYA_CHECKPOINTS if name}
+        is_known_hub_repo = bare_model_id == LAYA_BUNDLED_REPO_ID or any(
+            bare_model_id == f"{LAYA_BUNDLED_REPO_ID}-{name}"
+            for name in variant_suffixes
         )
         is_local_checkpoint_dir = (
             Path(bare_model_id).is_dir()
@@ -426,16 +446,31 @@ class ZeroShotClassifierModel(BenchmarkModule):
             return self.benchmark_config.num_parameters
 
         model_id = self.model_config.model_id
+        param = self.model_config.param
         if Path(model_id).is_dir():
             return _num_params_from_local_checkpoint(checkpoint_dir=Path(model_id))
 
+        token = get_hf_token(api_key=self.benchmark_config.api_key)
+        if param is not None:
+            # A variant's weights live in a subfolder, separate from the root
+            # checkpoint, so its parameter count must be fetched from there.
+            import huggingface_hub  # noqa: PLC0415
+
+            try:
+                weights_path = huggingface_hub.hf_hub_download(
+                    repo_id=model_id, filename=f"{param}/model.safetensors", token=token
+                )
+            except OSError:
+                return -1
+            return _num_params_from_local_checkpoint(
+                checkpoint_dir=Path(weights_path).parent
+            )
+
         try:
             num_params = get_num_params_from_safetensors_metadata(
-                model_id=model_id,
-                revision="main",
-                api_key=get_hf_token(api_key=self.benchmark_config.api_key),
+                model_id=model_id, revision="main", api_key=token
             )
-        except (NotASafetensorsRepoError, OSError):
+        except OSError:
             return -1
         return num_params if num_params is not None else -1
 
@@ -552,39 +587,5 @@ def _num_params_from_local_checkpoint(checkpoint_dir: Path) -> int:
     from safetensors import safe_open  # noqa: PLC0415
 
     weights_path = checkpoint_dir / "model.safetensors"
-    num_params = 0
     with safe_open(str(weights_path), framework="numpy") as f:
-        for key in f.keys():
-            shape = f.get_slice(key).get_shape()
-            n = 1
-            for dim in shape:
-                n *= dim
-            num_params += n
-    return num_params
-
-
-def _resolve_subfolder(model_id: str, param: str | None) -> str | None:
-    """Resolve the subfolder to load within a Laya Hub repo.
-
-    Args:
-        model_id:
-            The Hub repo ID.
-        param:
-            The parameter (variant) requested through `model_id#param`.
-
-    Returns:
-        The subfolder to pass to `laya.Agent`, or None for the repo root.
-
-    Raises:
-        InvalidModel:
-            If a parameter is given for a repo other than the bundled
-            `convaiinnovations/laya` repo.
-    """
-    if param is None:
-        return None
-    if model_id != LAYA_BUNDLED_REPO_ID:
-        raise InvalidModel(
-            f"The model {model_id!r} does not accept a parameter (only the "
-            f"bundled {LAYA_BUNDLED_REPO_ID!r} repo does)."
-        )
-    return param
+        return sum(math.prod(f.get_slice(key).get_shape()) for key in f.keys())

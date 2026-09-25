@@ -151,6 +151,33 @@ class TestDispatch:
         assert isinstance(model, ZeroShotClassifierModel)
 
 
+class TestEmptyLabels:
+    """Tests for the early candidate-label check."""
+
+    def test_init_rejects_dataset_without_labels(
+        self,
+        fake_laya_module: types.ModuleType,
+        laya_model_config: ModelConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """Constructing the model raises immediately for a labelless dataset."""
+        sent_dataset_config = DatasetConfig(
+            name="dataset",
+            pretty_name="Dataset",
+            source="dataset_id",
+            task=SENT,
+            languages=[DANISH],
+            labels=[],
+        )
+        with pytest.raises(InvalidBenchmark, match="No candidate labels"):
+            ZeroShotClassifierModel(
+                model_config=laya_model_config,
+                dataset_config=sent_dataset_config,
+                benchmark_config=benchmark_config,
+                log_metadata=False,
+            )
+
+
 class TestGenerate:
     """Tests for `ZeroShotClassifierModel.generate`."""
 
@@ -264,6 +291,16 @@ class TestGetModelConfig:
             )
             assert config.param == param
 
+    def test_standalone_repo_rejects_param(
+        self, benchmark_config: BenchmarkConfig
+    ) -> None:
+        """A standalone repo (not the bundled one) rejects a `#param` early."""
+        with pytest.raises(InvalidModel, match="does not accept a parameter"):
+            ZeroShotClassifierModel.get_model_config(
+                model_id="convaiinnovations/laya-multilingual#multilingual",
+                benchmark_config=benchmark_config,
+            )
+
 
 class TestInit:
     """Tests for `ZeroShotClassifierModel.__init__`."""
@@ -278,27 +315,6 @@ class TestInit:
         """A revision other than "main" is rejected."""
         config = dataclasses.replace(laya_model_config, revision="some-other-branch")
         with pytest.raises(InvalidModel, match="revision"):
-            ZeroShotClassifierModel(
-                model_config=config,
-                dataset_config=dataset_config,
-                benchmark_config=benchmark_config,
-                log_metadata=False,
-            )
-
-    def test_standalone_repo_rejects_param(
-        self,
-        fake_laya_module: types.ModuleType,
-        laya_model_config: ModelConfig,
-        dataset_config: DatasetConfig,
-        benchmark_config: BenchmarkConfig,
-    ) -> None:
-        """A standalone repo (not the bundled one) rejects a `#param`."""
-        config = dataclasses.replace(
-            laya_model_config,
-            model_id="convaiinnovations/laya-multilingual",
-            param="multilingual",
-        )
-        with pytest.raises(InvalidModel, match="does not accept a parameter"):
             ZeroShotClassifierModel(
                 model_config=config,
                 dataset_config=dataset_config,
@@ -345,6 +361,8 @@ class TestModelExists:
             "some-other-model",
             "convaiinnovations/layatron",
             "convaiinnovations/layabout",
+            "convaiinnovations/laya-multilingul",
+            "convaiinnovations/laya-",
         ],
     )
     def test_does_not_match_unrelated_model(
@@ -522,6 +540,36 @@ class TestNumParams:
             param=None,
             revision="main",
         )
+        model = ZeroShotClassifierModel(
+            model_config=config,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+        assert model.num_params == 2 * 3 + 4
+
+    def test_counts_parameters_from_variant_checkpoint(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        fake_laya_module: types.ModuleType,
+        laya_model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+        tmp_path: Path,
+    ) -> None:
+        """A variant's parameter count is read from its own subfolder checkpoint."""
+        variant_dir = tmp_path / "multilingual"
+        variant_dir.mkdir()
+        save_file(
+            {"a": numpy.zeros((2, 3), dtype=numpy.float32), "b": numpy.zeros(4)},
+            str(variant_dir / "model.safetensors"),
+        )
+
+        def fake_hf_hub_download(repo_id: str, filename: str, token: str | None) -> str:
+            return str(tmp_path / filename)
+
+        monkeypatch.setattr("huggingface_hub.hf_hub_download", fake_hf_hub_download)
+        config = dataclasses.replace(laya_model_config, param="multilingual")
         model = ZeroShotClassifierModel(
             model_config=config,
             dataset_config=dataset_config,
