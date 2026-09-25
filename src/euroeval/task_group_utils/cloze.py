@@ -60,10 +60,8 @@ def parse_bare_question_and_choices(text: str) -> tuple[str, list[str]]:
     Returns:
         A pair ``(bare_question, choices)`` where ``bare_question`` is the prompt with
         the choices label and enumerated options removed, and ``choices`` is the ordered
-        list of choice texts. ``choices`` is empty (and ``bare_question`` is the
-        original text unchanged) if no enumerated options are found, or if the option
-        markers aren't a sequential "a", "b", "c", ... run (every EuroEval-generated
-        prompt satisfies this, so this only guards against unexpected input).
+        list of choice texts. If no sequential "a", "b", "c", ... options are found,
+        ``choices`` is empty and ``bare_question`` is the original text unchanged.
     """
     lines = text.split("\n")
     candidate_idxs = [
