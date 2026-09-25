@@ -28,7 +28,7 @@ from euroeval.data_models import (
 from euroeval.enums import InferenceBackend, ModelType
 from euroeval.exceptions import HuggingFaceHubDown
 from euroeval.result_cache import get_record
-from euroeval.tasks import CONTAMINATION_DETECTION
+from euroeval.tasks import CONTAMINATION_DETECTION, NER, SENT
 
 
 class TestClearCacheFn:
@@ -54,6 +54,39 @@ class TestClearCacheFn:
         """Test that no errors are thrown when clearing a non-existing cache."""
         clear_model_cache_fn(cache_dir="does-not-exist")
         rmtree(path="does-not-exist", ignore_errors=True)
+
+
+class TestCreateModelDatasetMapping:
+    """Tests for `Benchmarker._create_model_dataset_mapping`."""
+
+    def test_unsupported_task_group_is_filtered_out_for_zero_shot_classifier(
+        self, benchmarker: Benchmarker, model_config: ModelConfig
+    ) -> None:
+        """A NER dataset is filtered out up front for a zero-shot classifier model."""
+        zero_shot_model_config = replace(
+            model_config, model_type=ModelType.ZERO_SHOT_CLASSIFIER
+        )
+        ner_dataset_config = DatasetConfig(
+            name="ner-dataset",
+            pretty_name="NER dataset",
+            source="dataset_id",
+            task=NER,
+            languages=[Language(code="da", name="Danish")],
+        )
+        sent_dataset_config = DatasetConfig(
+            name="sent-dataset",
+            pretty_name="Sentiment dataset",
+            source="dataset_id",
+            task=SENT,
+            languages=[Language(code="da", name="Danish")],
+        )
+
+        mapping = benchmarker._create_model_dataset_mapping(
+            model_configs=[zero_shot_model_config],
+            dataset_configs=[ner_dataset_config, sent_dataset_config],
+        )
+
+        assert mapping[zero_shot_model_config] == [sent_dataset_config]
 
 
 class TestDatasetArgumentConflicts:

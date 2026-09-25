@@ -9,6 +9,15 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added support for evaluating Laya (<https://pypi.org/project/laya/>), a non-generative
+  zero-shot "decision" model, through a new `ZeroShotClassifierModel` benchmark module
+  and `ModelType.ZERO_SHOT_CLASSIFIER`. Laya is loaded through its own `laya` package
+  (new `laya` optional extra, also included in `all`) rather than `transformers`, vLLM
+  or LiteLLM, and is evaluated zero-shot only on sequence classification and
+  multiple-choice classification tasks. Supports the bundled `convaiinnovations/laya`
+  repo (including its `#multilingual` and `#typed-decisions` subfolder variants via the
+  `model_id#param` syntax), the standalone `convaiinnovations/laya-multilingual` and
+  `convaiinnovations/laya-typed-decisions` repos, and local checkpoint directories.
 - Added the `contamination-detection` task for collecting experimental private
   contamination-canary evidence. It uses a virtual dataset configuration, is included
   automatically in suite, ordinary task, and language runs without `--dataset`, and is

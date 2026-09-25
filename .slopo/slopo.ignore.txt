@@ -115,3 +115,5 @@ ed74fe79644a  # euroeval/private_canary.py, scripts/canary/run_private_canary_ex
 2ecc52a710c4  # euroeval/benchmark_modules backend interface wrappers
 350ac6421952  # scripts/canary atomic JSON writers
 0fab7ac216e4  # scripts/canary staged output validation phases
+3f38679ad63b  # euroeval/benchmark_modules prepare_dataset helper wrappers (incl. zero-shot classifier)
+b80c76a4c146  # hf/vllm model_exists: parallel checks, intentionally separate

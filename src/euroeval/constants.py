@@ -190,3 +190,18 @@ EEE_SCHEMA_VERSION = "0.2.1"
 
 # Tasks that don't contribute to the main rank score and are evaluated separately.
 ORTHOGONAL_TASKS: frozenset[str] = frozenset({"european-values"})
+
+# Constants for the Laya zero-shot classifier.
+LAYA_BUNDLED_REPO_ID = "convaiinnovations/laya"
+
+# Each checkpoint's context length (in tokens), keyed by checkpoint name.
+LAYA_CHECKPOINTS: dict[str, int] = {
+    "": 512,
+    "multilingual": 1024,
+    "typed-decisions": 512,
+}
+LAYA_DEFAULT_MAX_LENGTH = LAYA_CHECKPOINTS[""]
+LAYA_VARIANTS = [name for name in LAYA_CHECKPOINTS if name]
+
+# A probability floor, to avoid taking the log of zero.
+LAYA_MIN_PROBABILITY = 1e-12

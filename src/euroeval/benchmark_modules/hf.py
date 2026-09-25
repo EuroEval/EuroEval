@@ -315,10 +315,15 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         _, _, model_info = _lookup_model_info(
             model_id=model_id, benchmark_config=benchmark_config
         )
-        return (
-            model_info is not None
-            and model_info.pipeline_tag not in GENERATIVE_PIPELINE_TAGS
-        )
+        if model_info is None or model_info.pipeline_tag in GENERATIVE_PIPELINE_TAGS:
+            return False
+        if model_info.adapter_base_model_id is not None or model_info.siblings is None:
+            return True
+
+        # A repo with no root `config.json` isn't loadable as an encoder (e.g. one
+        # that only ships its config in a subfolder for a custom, non-`transformers`
+        # loader).
+        return "config.json" in model_info.siblings
 
     @cached_property
     def model_max_length(self) -> int:
@@ -1506,6 +1511,11 @@ def get_model_repo_info(
         tags=tags,
         adapter_base_model_id=base_model_id,
         release_date=release_date,
+        siblings=(
+            [sibling.rfilename for sibling in model_info.siblings]
+            if model_info.siblings is not None
+            else None
+        ),
     )
 
 

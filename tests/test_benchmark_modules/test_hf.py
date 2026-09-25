@@ -15,6 +15,7 @@ from transformers.models.xlm_roberta import (
 )
 
 from euroeval.benchmark_modules.hf import (
+    HuggingFaceEncoderModel,
     _load_model_from_pretrained,
     get_dtype,
     get_model_release_date,
@@ -47,6 +48,82 @@ class TestBPCGating:
                 dataset_config=dataset_config,
                 benchmark_config=bpc_config,
             )
+
+
+@pytest.mark.parametrize(
+    argnames=["repo_files", "expected"],
+    argvalues=[
+        (["config.json", "model.safetensors"], True),
+        (["model.safetensors"], False),
+    ],
+    ids=["root config.json", "config.json only in a subfolder"],
+)
+def test_encoder_model_exists_requires_root_config(
+    monkeypatch: pytest.MonkeyPatch,
+    repo_files: list[str],
+    expected: bool,
+    benchmark_config: BenchmarkConfig,
+) -> None:
+    """`HuggingFaceEncoderModel.model_exists` requires a root `config.json`.
+
+    Regression test: this is what keeps it from claiming a repo like Laya's, which
+    only ships its config in a subfolder (e.g. `encoder/config.json`).
+    """
+    monkeypatch.setattr(
+        "euroeval.benchmark_modules.hf.internet_connection_available", lambda: True
+    )
+    with (
+        patch.object(HfApi, "list_repo_commits") as mock_list_commits,
+        patch.object(HfApi, "model_info") as mock_model_info,
+    ):
+        mock_list_commits.return_value = [
+            MagicMock(
+                commit_id="weights",
+                created_at=datetime.datetime(2024, 2, 3, tzinfo=datetime.timezone.utc),
+            )
+        ]
+        mock_model_info.return_value = MagicMock(
+            id="test-model",
+            tags=["test"],
+            pipeline_tag="fill-mask",
+            siblings=[MagicMock(rfilename=f) for f in repo_files],
+        )
+        result = HuggingFaceEncoderModel.model_exists(
+            model_id="some-model", benchmark_config=benchmark_config
+        )
+        assert result == expected
+
+
+def test_generative_model_exists_does_not_require_root_config(
+    benchmark_config: BenchmarkConfig,
+) -> None:
+    """`VLLMModel.model_exists` doesn't require a root `config.json`.
+
+    Regression test: a generative repo without one (e.g. GGUF-only, or using
+    Mistral's `params.json` format) must still resolve, since the root-config
+    requirement only applies to `HuggingFaceEncoderModel`.
+    """
+    from euroeval.benchmark_modules.vllm import VLLMModel  # noqa: PLC0415
+
+    with (
+        patch.object(HfApi, "list_repo_commits") as mock_list_commits,
+        patch.object(HfApi, "model_info") as mock_model_info,
+    ):
+        mock_list_commits.return_value = [
+            MagicMock(
+                commit_id="weights",
+                created_at=datetime.datetime(2024, 2, 3, tzinfo=datetime.timezone.utc),
+            )
+        ]
+        mock_model_info.return_value = MagicMock(
+            id="test-model", tags=["test"], pipeline_tag="text-generation", siblings=[]
+        )
+        assert (
+            VLLMModel.model_exists(
+                model_id="some-generative-model", benchmark_config=benchmark_config
+            )
+            is True
+        )
 
 
 @pytest.mark.parametrize(
