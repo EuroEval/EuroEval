@@ -59,11 +59,8 @@ if t.TYPE_CHECKING:
     from .data_models import BenchmarkConfig, ModelConfig, Task
 
 
-# Model types evaluated the same way an encoder is (no finetuning, no BPC).
-NON_FINETUNABLE_ENCODER_LIKE_MODEL_TYPES = (
-    ModelType.ENCODER,
-    ModelType.ZERO_SHOT_CLASSIFIER,
-)
+# Model types whose contamination canary reuses an ordinary result's metadata.
+CANARY_REFERENCE_MODEL_TYPES = (ModelType.ENCODER, ModelType.ZERO_SHOT_CLASSIFIER)
 
 # Model types evaluated through `generate()` rather than finetuning.
 GENERATE_ONLY_MODEL_TYPES = (ModelType.GENERATIVE, ModelType.ZERO_SHOT_CLASSIFIER)
@@ -723,7 +720,7 @@ class Benchmarker:
         """
         reference_result: BenchmarkResult | None = None
         metadata_model = loaded_model
-        if model_config.model_type in NON_FINETUNABLE_ENCODER_LIKE_MODEL_TYPES:
+        if model_config.model_type in CANARY_REFERENCE_MODEL_TYPES:
             reference_result = self._find_ordinary_result(
                 model_config=model_config, results=current_results
             )
@@ -888,10 +885,7 @@ class Benchmarker:
         loaded_model: "BenchmarkModule | None",
     ) -> None:
         """Collect one non-ranking canary record for the selected virtual task."""
-        if (
-            getattr(model_config, "model_type", None)
-            in NON_FINETUNABLE_ENCODER_LIKE_MODEL_TYPES
-        ):
+        if getattr(model_config, "model_type", None) in CANARY_REFERENCE_MODEL_TYPES:
             evidence = status_evidence(
                 model_id=model_config.model_id,
                 requested_revision=model_config.revision,

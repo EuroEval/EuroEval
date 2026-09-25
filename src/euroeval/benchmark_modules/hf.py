@@ -323,7 +323,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         # A repo with no root `config.json` isn't loadable as an encoder (e.g. one
         # that only ships its config in a subfolder for a custom, non-`transformers`
         # loader).
-        return any(f == "config.json" for f in model_info.siblings)
+        return "config.json" in model_info.siblings
 
     @cached_property
     def model_max_length(self) -> int:
