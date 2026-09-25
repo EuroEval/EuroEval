@@ -6,13 +6,15 @@ import typing as t
 from functools import cached_property
 from pathlib import Path
 
-from huggingface_hub.errors import EntryNotFoundError
+from huggingface_hub import HfApi
+from huggingface_hub.errors import EntryNotFoundError, SafetensorsParsingError
 
 from ..constants import (
     LAYA_BUNDLED_REPO_ID,
     LAYA_CHECKPOINTS,
     LAYA_DEFAULT_MAX_LENGTH,
     LAYA_MIN_PROBABILITY,
+    LAYA_VARIANTS,
 )
 from ..data_models import (
     BenchmarkConfig,
@@ -121,16 +123,21 @@ class ZeroShotClassifierModel(BenchmarkModule):
             generative_type=self.generative_type,
             log_metadata=self.log_metadata,
         )
+        self._validate_labels()
         self.buffer["instructions"] = self._build_instructions()
 
     def _build_instructions(self) -> str:
         """Build the classification instructions from the dataset's templates.
 
-        Also validates that the dataset has candidate labels, since this is
-        checked once per dataset config rather than on every `generate` call.
-
         Returns:
             The instructions describing the classification task.
+        """
+        return self.dataset_config.instruction_prompt.format(
+            text="", labels_str=self.dataset_config.get_labels_str()
+        ).strip()
+
+    def _validate_labels(self) -> None:
+        """Check that a supported dataset has candidate labels.
 
         Raises:
             InvalidBenchmark:
@@ -149,9 +156,6 @@ class ZeroShotClassifierModel(BenchmarkModule):
                 "DatasetConfig.labels/prompt_label_mapping for classification "
                 "tasks before using Laya."
             )
-        return self.dataset_config.instruction_prompt.format(
-            text="", labels_str=self.dataset_config.get_labels_str()
-        ).strip()
 
     @property
     def data_collator(self) -> c.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
@@ -362,18 +366,16 @@ class ZeroShotClassifierModel(BenchmarkModule):
         model_id_components = split_model_id(model_id=model_id)
         param = model_id_components.param
         bare_model_id = model_id_components.model_id
-        if param is not None:
-            variants = [name for name in LAYA_CHECKPOINTS if name]
-            if param not in variants:
-                raise InvalidModel(
-                    f"Invalid parameter {param!r} for model {model_id!r}. Allowed "
-                    f"parameters are: {', '.join(variants)}."
-                )
-            if bare_model_id != LAYA_BUNDLED_REPO_ID:
-                raise InvalidModel(
-                    f"The model {bare_model_id!r} does not accept a parameter "
-                    f"(only the bundled {LAYA_BUNDLED_REPO_ID!r} repo does)."
-                )
+        if param is not None and param not in LAYA_VARIANTS:
+            raise InvalidModel(
+                f"Invalid parameter {param!r} for model {model_id!r}. Allowed "
+                f"parameters are: {', '.join(LAYA_VARIANTS)}."
+            )
+        if param is not None and bare_model_id != LAYA_BUNDLED_REPO_ID:
+            raise InvalidModel(
+                f"The model {bare_model_id!r} does not accept a parameter "
+                f"(only the bundled {LAYA_BUNDLED_REPO_ID!r} repo does)."
+            )
 
         return ModelConfig(
             model_id=model_id_components.model_id,
@@ -410,10 +412,8 @@ class ZeroShotClassifierModel(BenchmarkModule):
         model_id_components = split_model_id(model_id=model_id)
         bare_model_id = model_id_components.model_id
 
-        variant_suffixes = {name for name in LAYA_CHECKPOINTS if name}
         is_known_hub_repo = bare_model_id == LAYA_BUNDLED_REPO_ID or any(
-            bare_model_id == f"{LAYA_BUNDLED_REPO_ID}-{name}"
-            for name in variant_suffixes
+            bare_model_id == f"{LAYA_BUNDLED_REPO_ID}-{name}" for name in LAYA_VARIANTS
         )
         is_local_checkpoint_dir = (
             Path(bare_model_id).is_dir()
@@ -454,19 +454,14 @@ class ZeroShotClassifierModel(BenchmarkModule):
 
         token = get_hf_token(api_key=self.benchmark_config.api_key)
         if param is not None:
-            # A variant's weights live in a subfolder, separate from the root
-            # checkpoint, so its parameter count must be fetched from there.
-            import huggingface_hub  # noqa: PLC0415
-
+            # A variant's weights live in its own subfolder; read only the header.
             try:
-                weights_path = huggingface_hub.hf_hub_download(
+                metadata = HfApi().parse_safetensors_file_metadata(
                     repo_id=model_id, filename=f"{param}/model.safetensors", token=token
                 )
-            except (OSError, EntryNotFoundError):
+            except (OSError, EntryNotFoundError, SafetensorsParsingError):
                 return -1
-            return _num_params_from_local_checkpoint(
-                checkpoint_dir=Path(weights_path).parent
-            )
+            return sum(metadata.parameter_count.values())
 
         try:
             num_params = get_num_params_from_safetensors_metadata(
@@ -543,6 +538,7 @@ class ZeroShotClassifierModel(BenchmarkModule):
             generative_type=self.generative_type,
             log_metadata=self.log_metadata,
         )
+        self._validate_labels()
         self.buffer["instructions"] = self._build_instructions()
         return self
 

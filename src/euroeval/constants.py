@@ -201,6 +201,7 @@ LAYA_CHECKPOINTS: dict[str, int] = {
     "typed-decisions": 512,
 }
 LAYA_DEFAULT_MAX_LENGTH = LAYA_CHECKPOINTS[""]
+LAYA_VARIANTS = [name for name in LAYA_CHECKPOINTS if name]
 
 # A probability floor, to avoid taking the log of zero.
 LAYA_MIN_PROBABILITY = 1e-12

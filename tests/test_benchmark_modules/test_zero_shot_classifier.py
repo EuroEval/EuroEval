@@ -556,20 +556,19 @@ class TestNumParams:
         laya_model_config: ModelConfig,
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
-        tmp_path: Path,
     ) -> None:
         """A variant's parameter count is read from its own subfolder checkpoint."""
-        variant_dir = tmp_path / "multilingual"
-        variant_dir.mkdir()
-        save_file(
-            {"a": numpy.zeros((2, 3), dtype=numpy.float32), "b": numpy.zeros(4)},
-            str(variant_dir / "model.safetensors"),
+        requested: list[str] = []
+
+        def fake_parse(
+            self: object, repo_id: str, filename: str, token: str | None
+        ) -> types.SimpleNamespace:
+            requested.append(filename)
+            return types.SimpleNamespace(parameter_count={"F32": 6, "F64": 4})
+
+        monkeypatch.setattr(
+            "huggingface_hub.HfApi.parse_safetensors_file_metadata", fake_parse
         )
-
-        def fake_hf_hub_download(repo_id: str, filename: str, token: str | None) -> str:
-            return str(tmp_path / filename)
-
-        monkeypatch.setattr("huggingface_hub.hf_hub_download", fake_hf_hub_download)
         config = dataclasses.replace(laya_model_config, param="multilingual")
         model = ZeroShotClassifierModel(
             model_config=config,
@@ -577,7 +576,8 @@ class TestNumParams:
             benchmark_config=benchmark_config,
             log_metadata=False,
         )
-        assert model.num_params == 2 * 3 + 4
+        assert model.num_params == 10
+        assert requested == ["multilingual/model.safetensors"]
 
     def test_returns_minus_one_on_failure(
         self,
@@ -620,16 +620,15 @@ class TestNumParams:
         benchmark_config: BenchmarkConfig,
         exception_factory: t.Callable[[], BaseException],
     ) -> None:
-        """Variant `num_params` returns -1 when hf_hub_download raises errors.
-
-        Tested with both OSError and EntryNotFoundError exceptions.
-        """
+        """Variant `num_params` returns -1 when the header can't be read."""
         exc_to_raise = exception_factory()
 
         def raise_error(*args: object, **kwargs: object) -> t.NoReturn:
             raise exc_to_raise
 
-        monkeypatch.setattr("huggingface_hub.hf_hub_download", raise_error)
+        monkeypatch.setattr(
+            "huggingface_hub.HfApi.parse_safetensors_file_metadata", raise_error
+        )
         config = dataclasses.replace(laya_model_config, param="multilingual")
         model = ZeroShotClassifierModel(
             model_config=config,
