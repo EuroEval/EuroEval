@@ -357,17 +357,16 @@ class ZeroShotClassifierModel(BenchmarkModule):
             unparseable = len(option_texts) != len(letter_labels) or len(
                 set(option_texts)
             ) != len(option_texts)
+            criteria: dict[str, str | None]
             if unparseable:
                 # Couldn't reliably parse this sample's options (or two options share
                 # the same text) -- fall back to classifying against the letters,
                 # with the original (unparsed) text as the question.
                 question_text = text
-                criteria: dict[str, str | None] = {
-                    letter: None for letter in letter_labels
-                }
+                criteria = {letter: None for letter in letter_labels}
             else:
                 criteria = {
-                    letter: t.cast(str | None, option_text)
+                    letter: option_text
                     for letter, option_text in zip(
                         letter_labels, option_texts, strict=True
                     )
