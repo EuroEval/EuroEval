@@ -51,6 +51,55 @@ class TestBPCGating:
 
 
 @pytest.mark.parametrize(
+    argnames=["is_laya", "expected"],
+    argvalues=[(True, False), (False, True)],
+    ids=["laya checkpoint", "not a laya checkpoint"],
+)
+def test_encoder_model_exists_defers_to_laya_when_offline(
+    monkeypatch: pytest.MonkeyPatch,
+    is_laya: bool,
+    expected: bool,
+    benchmark_config: BenchmarkConfig,
+) -> None:
+    """`HuggingFaceEncoderModel.model_exists` defers to Laya when `siblings` is None.
+
+    Regression test: offline (or whenever the Hub lookup can't list a repo's files),
+    `model_info.siblings` is None. Previously this unconditionally returned True,
+    which meant the generic HF encoder could win the dispatch race against the Laya
+    zero-shot module purely because of import order. Now it defers to the Laya
+    module's own (network-free) structural detection first.
+    """
+    monkeypatch.setattr(
+        "euroeval.benchmark_modules.hf.internet_connection_available", lambda: True
+    )
+    monkeypatch.setattr(
+        "euroeval.benchmark_modules.zero_shot_classifier.is_laya_checkpoint",
+        lambda model_id: is_laya,
+    )
+    with (
+        patch.object(HfApi, "list_repo_commits") as mock_list_commits,
+        patch.object(HfApi, "model_info") as mock_model_info,
+    ):
+        mock_list_commits.return_value = [
+            MagicMock(
+                commit_id="weights",
+                created_at=datetime.datetime(2024, 2, 3, tzinfo=datetime.timezone.utc),
+            )
+        ]
+        mock_model_info.return_value = MagicMock(
+            id="test-model",
+            tags=["test"],
+            pipeline_tag="fill-mask",
+            adapter_base_model_id=None,
+            siblings=None,
+        )
+        result = HuggingFaceEncoderModel.model_exists(
+            model_id="convaiinnovations/laya", benchmark_config=benchmark_config
+        )
+        assert result == expected
+
+
+@pytest.mark.parametrize(
     argnames=["repo_files", "expected"],
     argvalues=[
         (["config.json", "model.safetensors"], True),

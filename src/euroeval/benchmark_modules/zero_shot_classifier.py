@@ -1,21 +1,19 @@
 """A benchmark module wrapping the Laya zero-shot classifier model."""
 
 import collections.abc as c
+import json
 import math
 import typing as t
 from functools import cached_property
 from pathlib import Path
 
 from huggingface_hub import HfApi
-from huggingface_hub.errors import EntryNotFoundError, SafetensorsParsingError
-
-from ..constants import (
-    LAYA_BUNDLED_REPO_ID,
-    LAYA_CHECKPOINTS,
-    LAYA_DEFAULT_MAX_LENGTH,
-    LAYA_MIN_PROBABILITY,
-    LAYA_VARIANTS,
+from huggingface_hub.errors import (
+    EntryNotFoundError,
+    RepositoryNotFoundError,
+    SafetensorsParsingError,
 )
+
 from ..data_models import (
     BenchmarkConfig,
     DatasetConfig,
@@ -47,6 +45,17 @@ from .base import (
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
     from transformers.trainer import Trainer
+
+
+# A probability floor, to avoid taking the log of zero.
+_LOGPROB_FLOOR = 1e-12
+
+# The marker file that ships with every Laya checkpoint (root or subfolder), used to
+# detect Laya checkpoints structurally rather than through a fixed repo/name list.
+_LAYA_CONFIG_FILENAME = "rl_agent_config.json"
+
+# Laya's own fallback when a checkpoint config doesn't set `max_len`.
+_DEFAULT_MAX_LENGTH = 512
 
 
 class ZeroShotClassifierModel(BenchmarkModule):
@@ -102,13 +111,29 @@ class ZeroShotClassifierModel(BenchmarkModule):
             )
 
         subfolder = param
-        checkpoint_name = _checkpoint_name(model_id=model_id, param=param)
         token = get_hf_token(api_key=benchmark_config.api_key)
 
-        self.agent = laya.Agent(
-            model_id_or_path=model_id, subfolder=subfolder, token=token
+        # Resolve/download the requested repo (or `#subfolder`) through EuroEval's
+        # configured cache, so `--download-only`, evaluation, and `clear_model_cache`
+        # all agree on where the checkpoint lives, and so that other variants bundled
+        # in the same repo aren't downloaded.
+        checkpoint_path = _resolve_checkpoint_path(
+            model_id=model_id,
+            subfolder=subfolder,
+            cache_dir=model_config.model_cache_dir,
+            token=token,
         )
-        self.max_length = LAYA_CHECKPOINTS.get(checkpoint_name, LAYA_DEFAULT_MAX_LENGTH)
+        config = _local_laya_config(
+            directory=Path(checkpoint_path), subfolder=subfolder
+        )
+        self.max_length = (config or {}).get("max_len", _DEFAULT_MAX_LENGTH)
+
+        self.agent = laya.Agent(
+            model_id_or_path=checkpoint_path,
+            subfolder=subfolder,
+            token=token,
+            device=str(benchmark_config.device),
+        )
 
         super().__init__(
             model_config=model_config,
@@ -230,7 +255,7 @@ class ZeroShotClassifierModel(BenchmarkModule):
         for probs in label_probs:
             sample_scores = sorted(
                 (
-                    (label, math.log(max(probs.get(label, 0.0), LAYA_MIN_PROBABILITY)))
+                    (label, math.log(max(probs.get(label, 0.0), _LOGPROB_FLOOR)))
                     for label in candidate_labels
                 ),
                 key=lambda pair: pair[1],
@@ -259,19 +284,26 @@ class ZeroShotClassifierModel(BenchmarkModule):
             A list, with one dictionary per text, mapping each candidate label to
             its predicted probability.
         """
-        return [
-            self._classify_one(text=text, candidate_labels=candidate_labels)
-            for text in texts
-        ]
+        criteria = {label: None for label in candidate_labels}
+        return [self._classify_one(state=text, criteria=criteria) for text in texts]
 
-    def _classify_one(self, text: str, candidate_labels: list[str]) -> dict[str, float]:
-        """Classify a single text against the candidate labels, using Laya.
+    def _classify_one(
+        self, state: str, criteria: dict[str, str | None]
+    ) -> dict[str, float]:
+        """Classify a single state against the candidate criteria, using Laya.
+
+        This is the only place that talks to Laya, so it's the only place that
+        translates a backend-agnostic representation -- stable labels mapped to
+        (optional) candidate descriptions -- into Laya's own `{label: description}`
+        `criteria` format. The returned probabilities stay keyed by those same
+        stable labels.
 
         Args:
-            text:
-                The text to classify.
-            candidate_labels:
-                The candidate labels to classify the text into.
+            state:
+                The state (text) to classify.
+            criteria:
+                A mapping from each stable candidate label to its (optional)
+                description.
 
         Returns:
             A dictionary mapping each candidate label to its predicted probability.
@@ -284,24 +316,27 @@ class ZeroShotClassifierModel(BenchmarkModule):
         question = {
             "type": "choice",
             "instructions": self.buffer["instructions"],
-            "criteria": {label: None for label in candidate_labels},
+            "criteria": criteria,
         }
-        output = self.agent.system_one(state=text, questions={"q": question})
+        output = self.agent.system_one(state=state, questions={"q": question})
         probabilities = output["answers"]["q"]["probabilities"]
-        missing_labels = [
-            label for label in candidate_labels if label not in probabilities
-        ]
+        missing_labels = [label for label in criteria if label not in probabilities]
         if missing_labels:
             raise InvalidBenchmark(
                 "Laya did not return a probability for the candidate "
                 f"label(s) {missing_labels!r}."
             )
-        return {label: float(probabilities[label]) for label in candidate_labels}
+        return {label: float(probabilities[label]) for label in criteria}
 
     def _classify_multiple_choice(
         self, texts: list[str], letter_labels: list[str]
     ) -> list[dict[str, float]]:
-        """Classify multiple-choice samples, using the option texts as labels.
+        """Classify multiple-choice samples, using the option texts as descriptions.
+
+        The stable label for each option is its letter ("a", "b", ...); the option
+        text is only ever passed once, as that label's description in `criteria` --
+        not also baked into the question text, which would otherwise pass the same
+        options to Laya twice.
 
         Args:
             texts:
@@ -314,25 +349,29 @@ class ZeroShotClassifierModel(BenchmarkModule):
         """
         label_probs: list[dict[str, float]] = []
         for text in texts:
-            _, option_texts = parse_bare_question_and_choices(text=text)
+            question_text, option_texts = parse_bare_question_and_choices(text=text)
             unparseable = len(option_texts) != len(letter_labels) or len(
                 set(option_texts)
             ) != len(option_texts)
             if unparseable:
                 # Couldn't reliably parse this sample's options (or two options share
-                # the same text) -- fall back to classifying against the letters.
-                option_texts = letter_labels
-
-            sample_probs = self._classify_one(text=text, candidate_labels=option_texts)
-            if unparseable:
-                label_probs.append(sample_probs)
+                # the same text) -- fall back to classifying against the letters,
+                # with the original (unparsed) text as the question.
+                question_text = text
+                criteria: dict[str, str | None] = {
+                    letter: None for letter in letter_labels
+                }
             else:
-                label_probs.append(
-                    {
-                        letter: sample_probs.get(option_text, 0.0)
-                        for letter, option_text in zip(letter_labels, option_texts)
-                    }
-                )
+                criteria = {
+                    letter: t.cast(str | None, option_text)
+                    for letter, option_text in zip(
+                        letter_labels, option_texts, strict=True
+                    )
+                }
+
+            label_probs.append(
+                self._classify_one(state=question_text, criteria=criteria)
+            )
         return label_probs
 
     @property
@@ -366,16 +405,16 @@ class ZeroShotClassifierModel(BenchmarkModule):
         model_id_components = split_model_id(model_id=model_id)
         param = model_id_components.param
         bare_model_id = model_id_components.model_id
-        if param is not None and param not in LAYA_VARIANTS:
-            raise InvalidModel(
-                f"Invalid parameter {param!r} for model {model_id!r}. Allowed "
-                f"parameters are: {', '.join(LAYA_VARIANTS)}."
+        if param is not None:
+            token = get_hf_token(api_key=benchmark_config.api_key)
+            config = _find_laya_config(
+                model_id=bare_model_id, subfolder=param, token=token
             )
-        if param is not None and bare_model_id != LAYA_BUNDLED_REPO_ID:
-            raise InvalidModel(
-                f"The model {bare_model_id!r} does not accept a parameter "
-                f"(only the bundled {LAYA_BUNDLED_REPO_ID!r} repo does)."
-            )
+            if config is None:
+                raise InvalidModel(
+                    f"Invalid parameter {param!r} for model {bare_model_id!r}: no "
+                    f"{_laya_config_filename(param)!r} was found in that repo."
+                )
 
         return ModelConfig(
             model_id=model_id_components.model_id,
@@ -411,15 +450,13 @@ class ZeroShotClassifierModel(BenchmarkModule):
         """
         model_id_components = split_model_id(model_id=model_id)
         bare_model_id = model_id_components.model_id
+        subfolder = model_id_components.param
+        token = get_hf_token(api_key=benchmark_config.api_key)
 
-        is_known_hub_repo = bare_model_id == LAYA_BUNDLED_REPO_ID or any(
-            bare_model_id == f"{LAYA_BUNDLED_REPO_ID}-{name}" for name in LAYA_VARIANTS
+        config = _find_laya_config(
+            model_id=bare_model_id, subfolder=subfolder, token=token
         )
-        is_local_checkpoint_dir = (
-            Path(bare_model_id).is_dir()
-            and (Path(bare_model_id) / "rl_agent_config.json").is_file()
-        )
-        if not (is_known_hub_repo or is_local_checkpoint_dir):
+        if config is None:
             return False
 
         try:
@@ -552,24 +589,114 @@ class ZeroShotClassifierModel(BenchmarkModule):
         return -1
 
 
-def _checkpoint_name(model_id: str, param: str | None) -> str:
-    """Resolve the checkpoint name (a key into `LAYA_CHECKPOINTS`).
+def _find_laya_config(
+    model_id: str, subfolder: str | None, token: str | None
+) -> dict[str, t.Any] | None:
+    """Locate a Laya checkpoint's config, structurally, wherever it lives.
+
+    Checks, in order, a local directory, the local Hub cache, and finally the Hub
+    itself -- the same `rl_agent_config.json` marker in every case.
 
     Args:
         model_id:
             The Hub repo ID, or a local checkpoint directory.
-        param:
-            The parameter (variant) requested through `model_id#param`.
+        subfolder:
+            The requested `#subfolder`, if any.
+        token:
+            The Hugging Face Hub API token, if any.
 
     Returns:
-        The checkpoint name.
+        The parsed config, or None if no Laya checkpoint was found.
     """
-    if param is not None:
-        return param
-    prefix = f"{LAYA_BUNDLED_REPO_ID}-"
-    if model_id.startswith(prefix):
-        return model_id.removeprefix(prefix)
-    return ""
+    if Path(model_id).is_dir():
+        return _local_laya_config(directory=Path(model_id), subfolder=subfolder)
+    return _cached_laya_config(
+        repo_id=model_id, subfolder=subfolder
+    ) or _remote_laya_config(repo_id=model_id, subfolder=subfolder, token=token)
+
+
+def _cached_laya_config(repo_id: str, subfolder: str | None) -> dict[str, t.Any] | None:
+    """Read a Laya checkpoint config from the local Hub cache, without a network call.
+
+    Args:
+        repo_id:
+            The Hub repo ID.
+        subfolder:
+            The requested `#subfolder`, if any.
+
+    Returns:
+        The parsed config, or None if it isn't cached locally.
+    """
+    from huggingface_hub import try_to_load_from_cache  # noqa: PLC0415
+
+    cached = try_to_load_from_cache(
+        repo_id=repo_id, filename=_laya_config_filename(subfolder)
+    )
+    if not isinstance(cached, str):
+        return None
+    return json.loads(Path(cached).read_text())
+
+
+def _laya_config_filename(subfolder: str | None) -> str:
+    """The path (relative to a repo or local directory) of a Laya checkpoint config.
+
+    Args:
+        subfolder:
+            The requested `#subfolder`, if any.
+
+    Returns:
+        The relative path to `rl_agent_config.json`.
+    """
+    return (
+        f"{subfolder}/{_LAYA_CONFIG_FILENAME}" if subfolder else _LAYA_CONFIG_FILENAME
+    )
+
+
+def _local_laya_config(
+    directory: Path, subfolder: str | None
+) -> dict[str, t.Any] | None:
+    """Read a Laya checkpoint config from a local directory, if present.
+
+    Args:
+        directory:
+            The local checkpoint directory (repo root or clone).
+        subfolder:
+            The requested `#subfolder`, if any.
+
+    Returns:
+        The parsed config, or None if no marker file is present.
+    """
+    path = directory / _laya_config_filename(subfolder)
+    if not path.is_file():
+        return None
+    return json.loads(path.read_text())
+
+
+def _remote_laya_config(
+    repo_id: str, subfolder: str | None, token: str | None
+) -> dict[str, t.Any] | None:
+    """Fetch a Laya checkpoint config from the Hub, if that repo/subfolder has one.
+
+    Args:
+        repo_id:
+            The Hub repo ID.
+        subfolder:
+            The requested `#subfolder`, if any.
+        token:
+            The Hugging Face Hub API token, if any.
+
+    Returns:
+        The parsed config, or None if it can't be found or reached.
+    """
+    from huggingface_hub import hf_hub_download  # noqa: PLC0415
+
+    try:
+        path = hf_hub_download(
+            repo_id=repo_id, filename=_laya_config_filename(subfolder), token=token
+        )
+    except (EntryNotFoundError, RepositoryNotFoundError, OSError):
+        return None
+    return json.loads(Path(path).read_text())
 
 
 def _num_params_from_local_checkpoint(checkpoint_dir: Path) -> int:
@@ -587,3 +714,75 @@ def _num_params_from_local_checkpoint(checkpoint_dir: Path) -> int:
     weights_path = checkpoint_dir / "model.safetensors"
     with safe_open(str(weights_path), framework="numpy") as f:
         return sum(math.prod(f.get_slice(key).get_shape()) for key in f.keys())
+
+
+def _resolve_checkpoint_path(
+    model_id: str, subfolder: str | None, cache_dir: str, token: str | None
+) -> str:
+    """Resolve the requested checkpoint through EuroEval's own configured cache.
+
+    A local directory is returned unchanged. Otherwise, only the requested repo root
+    (or `#subfolder`) is downloaded into `cache_dir`, so `--download-only`, evaluation,
+    and `clear_model_cache` all agree on where the checkpoint lives, and unrelated
+    variants bundled in the same repo aren't downloaded.
+
+    Args:
+        model_id:
+            The Hub repo ID, or a local checkpoint directory.
+        subfolder:
+            The requested `#subfolder`, if any.
+        cache_dir:
+            EuroEval's configured model cache directory for this model.
+        token:
+            The Hugging Face Hub API token, if any.
+
+    Returns:
+        The local path to the downloaded (or already-local) checkpoint.
+    """
+    if Path(model_id).is_dir():
+        return model_id
+
+    from huggingface_hub import snapshot_download  # noqa: PLC0415
+
+    prefix = f"{subfolder}/" if subfolder else ""
+    allow_patterns = [
+        prefix + name
+        for name in (
+            "rl_agent_config.json",
+            "model.safetensors",
+            "tokenizer/*",
+            "encoder/*",
+        )
+    ]
+    return snapshot_download(
+        repo_id=model_id,
+        cache_dir=cache_dir,
+        allow_patterns=allow_patterns,
+        token=token,
+    )
+
+
+def is_laya_checkpoint(model_id: str) -> bool:
+    """Detect, without a network call, whether a model ID is a Laya checkpoint.
+
+    Used by other benchmark modules (namely the generic HF encoder) to defer to the
+    zero-shot classifier module when they can't otherwise tell -- e.g. offline, where
+    `siblings` isn't available.
+
+    Args:
+        model_id:
+            The model ID, optionally with a `#subfolder`.
+
+    Returns:
+        Whether this looks like a Laya checkpoint, judging only by a local directory
+        or the local Hub cache.
+    """
+    model_id_components = split_model_id(model_id=model_id)
+    bare_model_id = model_id_components.model_id
+    subfolder = model_id_components.param
+    if Path(bare_model_id).is_dir():
+        return (
+            _local_laya_config(directory=Path(bare_model_id), subfolder=subfolder)
+            is not None
+        )
+    return _cached_laya_config(repo_id=bare_model_id, subfolder=subfolder) is not None

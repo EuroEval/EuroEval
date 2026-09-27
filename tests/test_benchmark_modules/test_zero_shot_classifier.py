@@ -14,6 +14,7 @@ from datasets import Dataset, DatasetDict
 from huggingface_hub.errors import EntryNotFoundError
 from safetensors.numpy import save_file
 
+import euroeval.benchmark_modules.zero_shot_classifier as zero_shot_classifier_module
 from euroeval.benchmark_modules.zero_shot_classifier import ZeroShotClassifierModel
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 from euroeval.enums import InferenceBackend, ModelType
@@ -23,6 +24,16 @@ from euroeval.model_config import get_model_config
 from euroeval.model_loading import load_model
 from euroeval.tasks import HALLU, KNOW, SENT
 
+# A minimal fake Hub, mapping (repo_id, subfolder) -> Laya checkpoint config, used to
+# keep these tests off the network and the local Hub cache.
+_FAKE_LAYA_REPOS: dict[tuple[str, str | None], dict[str, int]] = {
+    ("convaiinnovations/laya", None): {"max_len": 512},
+    ("convaiinnovations/laya", "multilingual"): {"max_len": 1024},
+    ("convaiinnovations/laya", "typed-decisions"): {"max_len": 512},
+    ("convaiinnovations/laya-multilingual", None): {"max_len": 1024},
+    ("convaiinnovations/laya-typed-decisions", None): {"max_len": 512},
+}
+
 
 @dataclass
 class FakeAgent:
@@ -31,6 +42,7 @@ class FakeAgent:
     model_id_or_path: str
     subfolder: str | None
     token: str | None
+    device: str | None
     calls: list[tuple[object, dict]]
     top_criterion_index: int = 0
 
@@ -45,6 +57,7 @@ class FakeAgent:
         self.model_id_or_path = model_id_or_path
         self.subfolder = subfolder
         self.token = token
+        self.device = device
         self.calls = []
 
     def system_one(self, state: object, questions: dict) -> dict:
@@ -296,7 +309,7 @@ class TestGetModelConfig:
         self, benchmark_config: BenchmarkConfig
     ) -> None:
         """A standalone repo (not the bundled one) rejects a `#param` early."""
-        with pytest.raises(InvalidModel, match="does not accept a parameter"):
+        with pytest.raises(InvalidModel, match="Invalid parameter"):
             ZeroShotClassifierModel.get_model_config(
                 model_id="convaiinnovations/laya-multilingual#multilingual",
                 benchmark_config=benchmark_config,
@@ -305,6 +318,22 @@ class TestGetModelConfig:
 
 class TestInit:
     """Tests for `ZeroShotClassifierModel.__init__`."""
+
+    def test_forwards_configured_device_to_laya_agent(
+        self,
+        fake_laya_module: types.ModuleType,
+        laya_model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """The EuroEval-configured device is passed on to `laya.Agent`, explicitly."""
+        model = ZeroShotClassifierModel(
+            model_config=laya_model_config,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+        assert model.agent.device == str(benchmark_config.device)
 
     def test_rejects_non_main_revision(
         self,
@@ -493,10 +522,14 @@ class TestMultipleChoice:
         assert output.scores is not None
         assert len(output.scores[0][0]) == 4
 
-    def test_uses_option_texts_as_candidate_labels(
+    def test_uses_option_texts_as_criteria_descriptions(
         self, mc_model: ZeroShotClassifierModel
     ) -> None:
-        """The model classifies against option texts, not bare letters."""
+        """Laya's criteria are keyed by the stable letter labels, not option texts.
+
+        The option texts are passed once, as each letter's description -- not also
+        duplicated into the question state.
+        """
         text = (
             "What is the capital of Denmark?\nChoices:\n"
             "a. Oslo\nb. Copenhagen\nc. Stockholm\nd. Helsinki"
@@ -504,12 +537,15 @@ class TestMultipleChoice:
         mc_model.agent.top_criterion_index = 3
         output = mc_model.generate(inputs=dict(text=[text]))
 
-        assert set(mc_model.agent.calls[0][1]["q"]["criteria"].keys()) == {
-            "Oslo",
-            "Copenhagen",
-            "Stockholm",
-            "Helsinki",
+        criteria = mc_model.agent.calls[0][1]["q"]["criteria"]
+        assert criteria == {
+            "a": "Oslo",
+            "b": "Copenhagen",
+            "c": "Stockholm",
+            "d": "Helsinki",
         }
+        state, _ = mc_model.agent.calls[0]
+        assert "Oslo" not in state
         assert output.scores is not None
         sample_scores = dict(output.scores[0][0])
         top_label = max(sample_scores, key=lambda label: sample_scores[label])
@@ -723,6 +759,42 @@ class TestUpdateDatasetConfig:
         output = model.generate(inputs=dict(text=["some text"]))
         assert output.scores is not None
         assert len(output.scores[0][0]) == len(other_dataset_config.id2label)
+
+
+@pytest.fixture(autouse=True)
+def _no_network_laya_config(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep Laya config lookups off the network and the local Hub cache.
+
+    A local checkpoint directory still resolves for real (a real file is read from
+    disk); anything else is looked up in `_FAKE_LAYA_REPOS`.
+    """
+    real_local_laya_config = zero_shot_classifier_module._local_laya_config
+
+    def fake_local_laya_config(
+        directory: Path, subfolder: str | None
+    ) -> dict[str, int] | None:
+        if directory.is_dir():
+            return real_local_laya_config(directory, subfolder)
+        return _FAKE_LAYA_REPOS.get((str(directory), subfolder))
+
+    monkeypatch.setattr(
+        zero_shot_classifier_module, "_local_laya_config", fake_local_laya_config
+    )
+    monkeypatch.setattr(
+        zero_shot_classifier_module,
+        "_cached_laya_config",
+        lambda repo_id, subfolder: _FAKE_LAYA_REPOS.get((repo_id, subfolder)),
+    )
+    monkeypatch.setattr(
+        zero_shot_classifier_module,
+        "_remote_laya_config",
+        lambda repo_id, subfolder, token: None,
+    )
+    monkeypatch.setattr(
+        zero_shot_classifier_module,
+        "_resolve_checkpoint_path",
+        lambda model_id, subfolder, cache_dir, token: model_id,
+    )
 
 
 @pytest.fixture

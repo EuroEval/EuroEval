@@ -317,7 +317,17 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         )
         if model_info is None or model_info.pipeline_tag in GENERATIVE_PIPELINE_TAGS:
             return False
-        if model_info.adapter_base_model_id is not None or model_info.siblings is None:
+        if model_info.adapter_base_model_id is not None:
+            return True
+        if model_info.siblings is None:
+            # Offline (or the Hub lookup otherwise couldn't list the repo's files):
+            # defer to the Laya zero-shot module if this looks like a Laya
+            # checkpoint (a local directory, or one cached from a previous run), so
+            # it isn't misclaimed here independent of module import order.
+            from .zero_shot_classifier import is_laya_checkpoint  # noqa: PLC0415
+
+            if is_laya_checkpoint(model_id=model_id):
+                return False
             return True
 
         # A repo with no root `config.json` isn't loadable as an encoder (e.g. one
