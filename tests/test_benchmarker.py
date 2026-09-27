@@ -258,6 +258,75 @@ class TestDebugStartupVerbosity:
         )
 
 
+class TestZeroShotClassifierModelReuse:
+    """Tests that zero-shot classifier models are preloaded and reused."""
+
+    def test_zero_shot_classifier_model_is_loaded_once_across_datasets(
+        self,
+        benchmarker: Benchmarker,
+        benchmark_config: BenchmarkConfig,
+        dataset_config: DatasetConfig,
+        model_config: ModelConfig,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """`load_model` is called once and reused across two datasets."""
+        zero_shot_model_config = replace(
+            model_config, model_type=ModelType.ZERO_SHOT_CLASSIFIER
+        )
+        second_dataset_config = DatasetConfig(
+            name="dataset-2",
+            pretty_name="Dataset 2",
+            source="dataset_id",
+            task=dataset_config.task,
+            languages=dataset_config.languages,
+        )
+
+        loaded_model = MagicMock()
+        loaded_model.generative_type = None
+        loaded_model.num_params = 100
+        loaded_model.model_max_length = 512
+        loaded_model.vocab_size = 32_000
+        loaded_model.prepare_datasets.return_value = MagicMock()
+
+        load_model_mock = MagicMock(return_value=loaded_model)
+        monkeypatch.setattr("euroeval.benchmarker.load_model", load_model_mock)
+        monkeypatch.setattr("euroeval.benchmarker.enforce_reproducibility", MagicMock())
+        monkeypatch.setattr("euroeval.benchmarker.initial_logging", MagicMock())
+        monkeypatch.setattr("euroeval.benchmarker.load_data", MagicMock())
+        monkeypatch.setattr("euroeval.benchmarker.generate", MagicMock(return_value={}))
+        monkeypatch.setattr(
+            "euroeval.benchmarker.log_scores", MagicMock(return_value={})
+        )
+
+        prepared_model, pending_benchmarks, _, load_error = (
+            benchmarker._prepare_pending_benchmarks(
+                model_config=zero_shot_model_config,
+                datasets=[dataset_config, second_dataset_config],
+                benchmark_config=benchmark_config,
+                existing_results=[],
+            )
+        )
+
+        assert load_error is None
+        assert prepared_model is loaded_model
+        assert load_model_mock.call_count == 1
+        assert len(pending_benchmarks) == 2
+
+        for _shot_mode, pending_dataset_config in pending_benchmarks:
+            result = benchmarker._benchmark_single(
+                model=prepared_model,
+                model_config=zero_shot_model_config,
+                dataset_config=pending_dataset_config,
+                benchmark_config=benchmark_config,
+                num_finished_benchmarks=0,
+                num_total_benchmarks=len(pending_benchmarks),
+            )
+            assert isinstance(result, BenchmarkResult)
+
+        assert load_model_mock.call_count == 1
+        assert loaded_model.update_dataset_config.call_count == 2
+
+
 @pytest.fixture(scope="module")
 def benchmarker() -> Generator[Benchmarker, None, None]:
     """A `Benchmarker` instance.

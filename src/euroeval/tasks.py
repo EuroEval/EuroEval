@@ -46,11 +46,6 @@ LA = Task(
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["correct", "incorrect"],
     uses_logprobs=True,
-    default_allowed_model_types=[
-        ModelType.ENCODER,
-        ModelType.GENERATIVE,
-        ModelType.ZERO_SHOT_CLASSIFIER,
-    ],
 )
 
 
@@ -63,11 +58,6 @@ NLI = Task(
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["entailment", "neutral", "contradiction"],
     uses_logprobs=True,
-    default_allowed_model_types=[
-        ModelType.ENCODER,
-        ModelType.GENERATIVE,
-        ModelType.ZERO_SHOT_CLASSIFIER,
-    ],
 )
 
 
@@ -125,11 +115,6 @@ SENT = Task(
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["positive", "neutral", "negative"],
     uses_logprobs=True,
-    default_allowed_model_types=[
-        ModelType.ENCODER,
-        ModelType.GENERATIVE,
-        ModelType.ZERO_SHOT_CLASSIFIER,
-    ],
 )
 
 
@@ -142,11 +127,6 @@ WIC = Task(
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["same_sense", "different_sense"],
     uses_logprobs=True,
-    default_allowed_model_types=[
-        ModelType.ENCODER,
-        ModelType.GENERATIVE,
-        ModelType.ZERO_SHOT_CLASSIFIER,
-    ],
 )
 
 
@@ -159,11 +139,6 @@ KNOW = Task(
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["a", "b", "c", "d"],
     uses_logprobs=True,
-    default_allowed_model_types=[
-        ModelType.ENCODER,
-        ModelType.GENERATIVE,
-        ModelType.ZERO_SHOT_CLASSIFIER,
-    ],
 )
 
 
@@ -176,11 +151,6 @@ MCRC = Task(
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["a", "b", "c", "d"],
     uses_logprobs=True,
-    default_allowed_model_types=[
-        ModelType.ENCODER,
-        ModelType.GENERATIVE,
-        ModelType.ZERO_SHOT_CLASSIFIER,
-    ],
 )
 
 
@@ -193,11 +163,6 @@ COMMON_SENSE = Task(
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["a", "b", "c", "d"],
     uses_logprobs=True,
-    default_allowed_model_types=[
-        ModelType.ENCODER,
-        ModelType.GENERATIVE,
-        ModelType.ZERO_SHOT_CLASSIFIER,
-    ],
 )
 
 
@@ -396,11 +361,6 @@ TEXT_CLASSIFICATION = Task(
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=None,
     uses_logprobs=True,
-    default_allowed_model_types=[
-        ModelType.ENCODER,
-        ModelType.GENERATIVE,
-        ModelType.ZERO_SHOT_CLASSIFIER,
-    ],
 )
 
 TOKEN_CLASSIFICATION = Task(
@@ -423,11 +383,6 @@ MULTIPLE_CHOICE = Task(
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=None,
     uses_logprobs=True,
-    default_allowed_model_types=[
-        ModelType.ENCODER,
-        ModelType.GENERATIVE,
-        ModelType.ZERO_SHOT_CLASSIFIER,
-    ],
 )
 
 
