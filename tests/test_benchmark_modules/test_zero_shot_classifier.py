@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy
 import pytest
 from datasets import Dataset, DatasetDict
-from huggingface_hub.errors import EntryNotFoundError
+from huggingface_hub.errors import EntryNotFoundError, LocalEntryNotFoundError
 from safetensors.numpy import save_file
 
 import euroeval.benchmark_modules.zero_shot_classifier as zero_shot_classifier_module
@@ -23,6 +23,9 @@ from euroeval.languages import DANISH
 from euroeval.model_config import get_model_config
 from euroeval.model_loading import load_model
 from euroeval.tasks import HALLU, KNOW, SENT
+
+# The real helper, captured before the autouse fixture stubs it out.
+_REAL_REMOTE_LAYA_CONFIG = zero_shot_classifier_module._remote_laya_config
 
 # A minimal fake Hub, mapping (repo_id, subfolder) -> Laya checkpoint config, used to
 # keep these tests off the network and the local Hub cache.
@@ -830,3 +833,25 @@ def laya_model_config(model_config: ModelConfig) -> ModelConfig:
         revision="main",
         fresh=False,
     )
+
+
+@pytest.mark.parametrize(
+    argnames=["error", "expected_definitely_absent"],
+    argvalues=[
+        (LocalEntryNotFoundError("offline"), False),
+        (EntryNotFoundError("missing"), True),
+    ],
+    ids=["offline-cache-miss", "hub-says-missing"],
+)
+def test_remote_laya_config_offline_is_not_definitely_absent(
+    monkeypatch: pytest.MonkeyPatch, error: Exception, expected_definitely_absent: bool
+) -> None:
+    """An offline cache miss is 'unknown', not 'absent', despite subclassing."""
+
+    def raise_error(**_: object) -> str:
+        raise error
+
+    monkeypatch.setattr(zero_shot_classifier_module, "hf_hub_download", raise_error)
+    assert _REAL_REMOTE_LAYA_CONFIG(
+        repo_id="org/repo", subfolder="variant", token=None
+    ) == (None, expected_definitely_absent)

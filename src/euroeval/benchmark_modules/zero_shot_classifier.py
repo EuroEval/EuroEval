@@ -15,6 +15,7 @@ from huggingface_hub import (
 )
 from huggingface_hub.errors import (
     EntryNotFoundError,
+    LocalEntryNotFoundError,
     RepositoryNotFoundError,
     SafetensorsParsingError,
 )
@@ -174,12 +175,10 @@ class ZeroShotClassifierModel(BenchmarkModule):
             InvalidBenchmark:
                 If the dataset has no candidate labels.
         """
-        supported_task_groups = (
-            TaskGroup.SEQUENCE_CLASSIFICATION,
-            TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
-        )
         if (
-            self.dataset_config.task.task_group in supported_task_groups
+            ModelType.ZERO_SHOT_CLASSIFIER.supports_task_group(
+                task_group=self.dataset_config.task.task_group
+            )
             and not self.dataset_config.id2label
         ):
             raise InvalidBenchmark(
@@ -229,9 +228,8 @@ class ZeroShotClassifierModel(BenchmarkModule):
                 If the inputs do not contain a 'text' key, or if the dataset's task
                 group is not supported.
         """
-        if self.dataset_config.task.task_group not in (
-            TaskGroup.SEQUENCE_CLASSIFICATION,
-            TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+        if not ModelType.ZERO_SHOT_CLASSIFIER.supports_task_group(
+            task_group=self.dataset_config.task.task_group
         ):
             raise InvalidBenchmark(
                 "Laya only supports sequence classification and multiple-choice "
@@ -753,6 +751,10 @@ def _remote_laya_config(
             filename=_laya_config_filename(subfolder=subfolder),
             token=token,
         )
+    except LocalEntryNotFoundError:
+        # Offline and not cached: a subclass of `EntryNotFoundError`, but it means we
+        # couldn't ask the Hub, not that the file is absent.
+        return None, False
     except EntryNotFoundError:
         return None, True
     except (RepositoryNotFoundError, OSError):
