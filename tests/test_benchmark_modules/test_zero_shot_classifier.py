@@ -835,6 +835,13 @@ def laya_model_config(model_config: ModelConfig) -> ModelConfig:
     )
 
 
+def test_find_laya_config_invalid_repo_id_is_definitely_absent() -> None:
+    """A non-Hub model ID (e.g. a LiteLLM ID) is not a Laya checkpoint."""
+    assert zero_shot_classifier_module._find_laya_config(
+        model_id="ollama_chat/smollm2:135m", subfolder=None, token=None
+    ) == (None, True)
+
+
 def test_read_json_malformed_raises_invalid_model(tmp_path: Path) -> None:
     """Malformed JSON in a Laya config file raises `InvalidModel`."""
     path = tmp_path / "rl_agent_config.json"

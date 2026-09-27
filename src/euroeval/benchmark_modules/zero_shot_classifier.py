@@ -15,10 +15,12 @@ from huggingface_hub import (
 )
 from huggingface_hub.errors import (
     EntryNotFoundError,
+    HFValidationError,
     LocalEntryNotFoundError,
     RepositoryNotFoundError,
     SafetensorsParsingError,
 )
+from huggingface_hub.utils import validate_repo_id
 
 from ..data_models import (
     BenchmarkConfig,
@@ -638,6 +640,12 @@ def _find_laya_config(
     """
     if Path(model_id).is_dir():
         return _local_laya_config(directory=Path(model_id), subfolder=subfolder), True
+    try:
+        validate_repo_id(model_id)
+    except HFValidationError:
+        # Not a valid Hub repo ID (e.g. a LiteLLM ID like `ollama_chat/model:tag`),
+        # so it can't be a Hub Laya checkpoint.
+        return None, True
     cached = _cached_laya_config(
         repo_id=model_id, subfolder=subfolder, cache_dir=cache_dir
     )
