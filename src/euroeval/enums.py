@@ -102,7 +102,7 @@ class InferenceBackend(AutoStrEnum):
         DUMMY:
             The built-in dummy model, used for debugging.
         LAYA:
-            The Laya zero-shot classifier model, loaded through the `laya` package.
+            The Laya zero-shot classifier model. The `laya` library.
     """
 
     TRANSFORMERS = auto()

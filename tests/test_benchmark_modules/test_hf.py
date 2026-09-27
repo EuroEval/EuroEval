@@ -25,6 +25,7 @@ from euroeval.benchmark_modules.hf import (
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 from euroeval.enums import TaskGroup
 from euroeval.exceptions import InvalidModel
+from euroeval.model_cache import create_model_cache_dir
 from euroeval.model_loading import load_model
 
 
@@ -72,9 +73,15 @@ def test_encoder_model_exists_defers_to_laya_when_offline(
     monkeypatch.setattr(
         "euroeval.benchmark_modules.hf.internet_connection_available", lambda: True
     )
+    recorded_cache_dirs: list[str | None] = []
+
+    def fake_is_laya_checkpoint(model_id: str, cache_dir: str | None = None) -> bool:
+        recorded_cache_dirs.append(cache_dir)
+        return is_laya
+
     monkeypatch.setattr(
         "euroeval.benchmark_modules.zero_shot_classifier.is_laya_checkpoint",
-        lambda model_id: is_laya,
+        fake_is_laya_checkpoint,
     )
     with (
         patch.object(HfApi, "list_repo_commits") as mock_list_commits,
@@ -97,6 +104,15 @@ def test_encoder_model_exists_defers_to_laya_when_offline(
             model_id="convaiinnovations/laya", benchmark_config=benchmark_config
         )
         assert result == expected
+
+        # `is_laya_checkpoint` must be consulted with EuroEval's own configured
+        # model cache directory, so a checkpoint downloaded by EuroEval is found
+        # offline and the dispatch is deterministic rather than depending on the
+        # default Hub cache also happening to hold it.
+        expected_cache_dir = create_model_cache_dir(
+            cache_dir=benchmark_config.cache_dir, model_id="convaiinnovations/laya"
+        )
+        assert recorded_cache_dirs == [expected_cache_dir]
 
 
 @pytest.mark.parametrize(

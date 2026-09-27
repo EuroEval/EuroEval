@@ -783,12 +783,14 @@ def _no_network_laya_config(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         zero_shot_classifier_module,
         "_cached_laya_config",
-        lambda repo_id, subfolder: _FAKE_LAYA_REPOS.get((repo_id, subfolder)),
+        lambda repo_id, subfolder, cache_dir=None: _FAKE_LAYA_REPOS.get(
+            (repo_id, subfolder)
+        ),
     )
     monkeypatch.setattr(
         zero_shot_classifier_module,
         "_remote_laya_config",
-        lambda repo_id, subfolder, token: None,
+        lambda repo_id, subfolder, token: (None, True),
     )
     monkeypatch.setattr(
         zero_shot_classifier_module,

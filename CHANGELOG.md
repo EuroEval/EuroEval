@@ -18,6 +18,14 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   repo (including its `#multilingual` and `#typed-decisions` subfolder variants via the
   `model_id#param` syntax), the standalone `convaiinnovations/laya-multilingual` and
   `convaiinnovations/laya-typed-decisions` repos, and local checkpoint directories.
+  Laya checkpoints are detected structurally, via the `rl_agent_config.json` marker
+  file every checkpoint ships with, rather than through a fixed repo/name list, so any
+  published or fine-tuned Laya checkpoint works. EuroEval's device and cache settings
+  are honoured: the checkpoint is downloaded into (and later found offline from)
+  EuroEval's own configured model cache directory, and the model runs on the
+  configured device. `Task.default_allowed_model_types` now defaults to all model
+  types, with per-task-group compatibility instead expressed on `ModelType` via
+  `ModelType.supports_task_group`.
 - Added the `contamination-detection` task for collecting experimental private
   contamination-canary evidence. It uses a virtual dataset configuration, is included
   automatically in suite, ordinary task, and language runs without `--dataset`, and is

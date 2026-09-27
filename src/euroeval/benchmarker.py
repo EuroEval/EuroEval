@@ -1379,7 +1379,7 @@ class Benchmarker:
                 for ds_config in dataset_configs
                 if model_config.model_type in ds_config.allowed_model_types
                 and model_config.model_type.supports_task_group(
-                    ds_config.task.task_group
+                    task_group=ds_config.task.task_group
                 )
             ]
             for model_config in model_configs

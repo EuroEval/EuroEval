@@ -326,7 +326,12 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             # it isn't misclaimed here independent of module import order.
             from .zero_shot_classifier import is_laya_checkpoint  # noqa: PLC0415
 
-            if is_laya_checkpoint(model_id=model_id):
+            model_id_components = split_model_id(model_id=model_id)
+            cache_dir = create_model_cache_dir(
+                cache_dir=benchmark_config.cache_dir,
+                model_id=model_id_components.model_id,
+            )
+            if is_laya_checkpoint(model_id=model_id, cache_dir=cache_dir):
                 return False
             return True
 
