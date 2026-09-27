@@ -795,7 +795,7 @@ def _no_network_laya_config(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         zero_shot_classifier_module,
         "_remote_laya_config",
-        lambda repo_id, subfolder, token: (None, True),
+        lambda repo_id, subfolder, token, cache_dir=None: (None, True),
     )
     monkeypatch.setattr(
         zero_shot_classifier_module,
@@ -833,6 +833,22 @@ def laya_model_config(model_config: ModelConfig) -> ModelConfig:
         revision="main",
         fresh=False,
     )
+
+
+def test_read_json_malformed_raises_invalid_model(tmp_path: Path) -> None:
+    """Malformed JSON in a Laya config file raises `InvalidModel`."""
+    path = tmp_path / "rl_agent_config.json"
+    path.write_text("{not valid json")
+    with pytest.raises(InvalidModel):
+        zero_shot_classifier_module._read_json(path=path)
+
+
+def test_read_json_non_object_raises_invalid_model(tmp_path: Path) -> None:
+    """A JSON value that isn't an object raises `InvalidModel`."""
+    path = tmp_path / "rl_agent_config.json"
+    path.write_text("[1, 2, 3]")
+    with pytest.raises(InvalidModel):
+        zero_shot_classifier_module._read_json(path=path)
 
 
 @pytest.mark.parametrize(

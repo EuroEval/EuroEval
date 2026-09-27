@@ -644,7 +644,9 @@ def _find_laya_config(
     )
     if cached is not None:
         return cached, True
-    return _remote_laya_config(repo_id=model_id, subfolder=subfolder, token=token)
+    return _remote_laya_config(
+        repo_id=model_id, subfolder=subfolder, token=token, cache_dir=cache_dir
+    )
 
 
 def _cached_laya_config(
@@ -702,8 +704,18 @@ def _read_json(path: str | Path) -> dict[str, t.Any]:
 
     Returns:
         The parsed JSON content.
+
+    Raises:
+        InvalidModel:
+            If the file isn't valid JSON, or doesn't contain a JSON object.
     """
-    return json.loads(Path(path).read_text())
+    try:
+        parsed = json.loads(Path(path).read_text())
+    except json.JSONDecodeError as err:
+        raise InvalidModel(f"The file {path!r} isn't valid JSON.") from err
+    if not isinstance(parsed, dict):
+        raise InvalidModel(f"The file {path!r} doesn't contain a JSON object.")
+    return parsed
 
 
 def _local_laya_config(
@@ -727,7 +739,7 @@ def _local_laya_config(
 
 
 def _remote_laya_config(
-    repo_id: str, subfolder: str | None, token: str | None
+    repo_id: str, subfolder: str | None, token: str | None, cache_dir: str | None = None
 ) -> tuple[dict[str, t.Any] | None, bool]:
     """Fetch a Laya checkpoint config from the Hub, if that repo/subfolder has one.
 
@@ -738,6 +750,10 @@ def _remote_laya_config(
             The requested `#subfolder`, if any.
         token:
             The Hugging Face Hub API token, if any.
+        cache_dir:
+            EuroEval's configured model cache directory for this model, if any. The
+            download is stored here rather than the default Hub cache, so
+            `clear_model_cache` removes it too.
 
     Returns:
         A tuple `(config, definitely_absent)`. `definitely_absent` is True only when
@@ -750,6 +766,7 @@ def _remote_laya_config(
             repo_id=repo_id,
             filename=_laya_config_filename(subfolder=subfolder),
             token=token,
+            cache_dir=cache_dir,
         )
     except LocalEntryNotFoundError:
         # Offline and not cached: a subclass of `EntryNotFoundError`, but it means we
