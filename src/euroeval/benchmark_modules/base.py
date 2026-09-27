@@ -60,6 +60,13 @@ class BenchmarkModule(ABC):
     fresh_model: bool
     batching_preference: "BatchingPreference"
     high_priority: bool
+
+    # Generic modules that may claim any model when metadata is unavailable (e.g.
+    # `model_info.siblings` is None, offline). Checked after specific modules of the
+    # same `high_priority`, so a specific module gets first refusal on ambiguous
+    # cases instead of the outcome depending on import order.
+    is_fallback: bool = False
+
     allowed_params: dict[re.Pattern[str], c.Sequence[str]] = {re.compile(r".*"): []}
     _model: nn.Module
 

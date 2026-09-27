@@ -25,7 +25,6 @@ from euroeval.benchmark_modules.hf import (
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 from euroeval.enums import TaskGroup
 from euroeval.exceptions import InvalidModel
-from euroeval.model_cache import create_model_cache_dir
 from euroeval.model_loading import load_model
 
 
@@ -49,70 +48,6 @@ class TestBPCGating:
                 dataset_config=dataset_config,
                 benchmark_config=bpc_config,
             )
-
-
-@pytest.mark.parametrize(
-    argnames=["is_laya", "expected"],
-    argvalues=[(True, False), (False, True)],
-    ids=["laya checkpoint", "not a laya checkpoint"],
-)
-def test_encoder_model_exists_defers_to_laya_when_offline(
-    monkeypatch: pytest.MonkeyPatch,
-    is_laya: bool,
-    expected: bool,
-    benchmark_config: BenchmarkConfig,
-) -> None:
-    """`HuggingFaceEncoderModel.model_exists` defers to Laya when `siblings` is None.
-
-    Regression test: offline (or whenever the Hub lookup can't list a repo's files),
-    `model_info.siblings` is None. Previously this unconditionally returned True,
-    which meant the generic HF encoder could win the dispatch race against the Laya
-    zero-shot module purely because of import order. Now it defers to the Laya
-    module's own (network-free) structural detection first.
-    """
-    monkeypatch.setattr(
-        "euroeval.benchmark_modules.hf.internet_connection_available", lambda: True
-    )
-    recorded_cache_dirs: list[str | None] = []
-
-    def fake_is_laya_checkpoint(model_id: str, cache_dir: str | None = None) -> bool:
-        recorded_cache_dirs.append(cache_dir)
-        return is_laya
-
-    monkeypatch.setattr(
-        "euroeval.benchmark_modules.zero_shot_classifier.is_laya_checkpoint",
-        fake_is_laya_checkpoint,
-    )
-    with (
-        patch.object(HfApi, "list_repo_commits") as mock_list_commits,
-        patch.object(HfApi, "model_info") as mock_model_info,
-    ):
-        mock_list_commits.return_value = [
-            MagicMock(
-                commit_id="weights",
-                created_at=datetime.datetime(2024, 2, 3, tzinfo=datetime.timezone.utc),
-            )
-        ]
-        mock_model_info.return_value = MagicMock(
-            id="test-model",
-            tags=["test"],
-            pipeline_tag="fill-mask",
-            adapter_base_model_id=None,
-            siblings=None,
-        )
-        result = HuggingFaceEncoderModel.model_exists(
-            model_id="convaiinnovations/laya", benchmark_config=benchmark_config
-        )
-        assert result == expected
-
-        # `is_laya_checkpoint` must be consulted with EuroEval's own configured
-        # model cache directory, so a checkpoint downloaded by EuroEval is found
-        # offline and the dispatch is deterministic rather than depending on the
-        # default Hub cache also happening to hold it.
-        expected_cache_dir = create_model_cache_dir(
-            cache_dir=benchmark_config.cache_dir, model_id="convaiinnovations/laya"
-        )
-        assert recorded_cache_dirs == [expected_cache_dir]
 
 
 @pytest.mark.parametrize(

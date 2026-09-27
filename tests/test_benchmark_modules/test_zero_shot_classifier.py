@@ -768,6 +768,8 @@ def _no_network_laya_config(monkeypatch: pytest.MonkeyPatch) -> None:
     A local checkpoint directory still resolves for real (a real file is read from
     disk); anything else is looked up in `_FAKE_LAYA_REPOS`.
     """
+    zero_shot_classifier_module._find_laya_config.cache_clear()
+
     real_local_laya_config = zero_shot_classifier_module._local_laya_config
 
     def fake_local_laya_config(

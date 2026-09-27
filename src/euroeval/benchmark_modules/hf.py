@@ -100,6 +100,12 @@ class HuggingFaceEncoderModel(BenchmarkModule):
     fresh_model = False
     batching_preference = BatchingPreference.NO_PREFERENCE
     high_priority = True
+
+    # A generic encoder module: checked after specific modules of the same
+    # `high_priority` (e.g. the zero-shot classifier module), so it doesn't
+    # misclaim a repo those modules would otherwise recognise.
+    is_fallback = True
+
     allowed_params = {re.compile(r".*"): ["slow-tokenizer"]}
 
     def __init__(
@@ -321,18 +327,10 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             return True
         if model_info.siblings is None:
             # Offline (or the Hub lookup otherwise couldn't list the repo's files):
-            # defer to the Laya zero-shot module if this looks like a Laya
-            # checkpoint (a local directory, or one cached from a previous run), so
-            # it isn't misclaimed here independent of module import order.
-            from .zero_shot_classifier import is_laya_checkpoint  # noqa: PLC0415
-
-            model_id_components = split_model_id(model_id=model_id)
-            cache_dir = create_model_cache_dir(
-                cache_dir=benchmark_config.cache_dir,
-                model_id=model_id_components.model_id,
-            )
-            if is_laya_checkpoint(model_id=model_id, cache_dir=cache_dir):
-                return False
+            # a specific module recognising this repo structurally (e.g. the
+            # zero-shot classifier module, which is checked before this one -- see
+            # `is_fallback`) would already have claimed it, so if we get here the
+            # model is presumed to be a plain encoder.
             return True
 
         # A repo with no root `config.json` isn't loadable as an encoder (e.g. one

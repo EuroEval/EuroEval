@@ -1,12 +1,13 @@
 """Tests for the `model_config` module."""
 
+import dataclasses
 import os
 import sys
 import types
 
 import pytest
 
-from euroeval.data_models import BenchmarkConfig, ModelConfig
+from euroeval.data_models import BenchmarkConfig, HFModelInfo, ModelConfig
 from euroeval.enums import InferenceBackend, ModelType
 from euroeval.exceptions import InvalidModel
 from euroeval.model_config import get_model_config
@@ -48,6 +49,65 @@ def test_get_model_config(
             assert isinstance(model_config, ModelConfig)
         except InvalidModel as e:
             pytest.skip(f"Model {model_id} is not supported: {e}")
+
+
+def test_laya_resolves_correctly_offline_regardless_of_module_order(
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_config: BenchmarkConfig,
+    model_config: ModelConfig,
+) -> None:
+    """Offline, a Laya model still resolves to the zero-shot classifier module.
+
+    Regression test: offline (or whenever the Hub lookup can't list a repo's
+    files), `model_info.siblings` is None, and `HuggingFaceEncoderModel` used to
+    defer to Laya's own structural detection to decide whether to claim the
+    model. Now `HuggingFaceEncoderModel.is_fallback` makes the dispatch sort key
+    `(high_priority, not is_fallback)` order it after other high-priority modules
+    (like the zero-shot classifier module) regardless of import/declaration
+    order, so it never needs to know about Laya at all.
+
+    Both modules are `high_priority`, so this only passes if the sort also keys
+    on `is_fallback` -- sorting on `high_priority` alone leaves the two tied, and
+    ties are broken by import order, which this test doesn't control.
+    """
+    monkeypatch.setattr(
+        "euroeval.benchmark_modules.hf._lookup_model_info",
+        lambda model_id, benchmark_config: (
+            model_id,
+            "main",
+            HFModelInfo(
+                pipeline_tag="fill-mask",
+                tags=[],
+                adapter_base_model_id=None,
+                siblings=None,
+            ),
+        ),
+    )
+    monkeypatch.setattr(
+        "euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.get_model_config",
+        classmethod(lambda cls, model_id, benchmark_config: model_config),
+    )
+    monkeypatch.setattr(
+        "euroeval.benchmark_modules.zero_shot_classifier.ZeroShotClassifierModel"
+        ".model_exists",
+        classmethod(lambda cls, model_id, benchmark_config: True),
+    )
+    laya_model_config = dataclasses.replace(
+        model_config,
+        inference_backend=InferenceBackend.LAYA,
+        model_type=ModelType.ZERO_SHOT_CLASSIFIER,
+    )
+    monkeypatch.setattr(
+        "euroeval.benchmark_modules.zero_shot_classifier.ZeroShotClassifierModel"
+        ".get_model_config",
+        classmethod(lambda cls, model_id, benchmark_config: laya_model_config),
+    )
+
+    resolved_config = get_model_config(
+        model_id="convaiinnovations/laya", benchmark_config=benchmark_config
+    )
+    assert resolved_config.inference_backend == InferenceBackend.LAYA
+    assert resolved_config.model_type == ModelType.ZERO_SHOT_CLASSIFIER
 
 
 def test_non_matching_model_id_resolves_to_encoder_model(

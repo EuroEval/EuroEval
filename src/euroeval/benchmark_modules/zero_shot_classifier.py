@@ -4,7 +4,7 @@ import collections.abc as c
 import json
 import math
 import typing as t
-from functools import cached_property
+from functools import cached_property, lru_cache
 from pathlib import Path
 
 from huggingface_hub import (
@@ -416,7 +416,7 @@ class ZeroShotClassifierModel(BenchmarkModule):
         )
         if param is not None:
             token = get_hf_token(api_key=benchmark_config.api_key)
-            config, definitely_absent = _find_laya_config_with_certainty(
+            config, definitely_absent = _find_laya_config(
                 model_id=bare_model_id,
                 subfolder=param,
                 token=token,
@@ -470,7 +470,7 @@ class ZeroShotClassifierModel(BenchmarkModule):
             cache_dir=benchmark_config.cache_dir, model_id=bare_model_id
         )
 
-        config = _find_laya_config(
+        config, _ = _find_laya_config(
             model_id=bare_model_id,
             subfolder=subfolder,
             token=token,
@@ -609,44 +609,18 @@ class ZeroShotClassifierModel(BenchmarkModule):
         return -1
 
 
+@lru_cache(maxsize=None)
 def _find_laya_config(
-    model_id: str,
-    subfolder: str | None,
-    token: str | None,
-    cache_dir: str | None = None,
-) -> dict[str, t.Any] | None:
-    """Locate a Laya checkpoint's config, structurally, wherever it lives.
-
-    Checks, in order, a local directory, the local Hub cache, and finally the Hub
-    itself -- the same `rl_agent_config.json` marker in every case.
-
-    Args:
-        model_id:
-            The Hub repo ID, or a local checkpoint directory.
-        subfolder:
-            The requested `#subfolder`, if any.
-        token:
-            The Hugging Face Hub API token, if any.
-        cache_dir:
-            EuroEval's configured model cache directory for this model, checked
-            before falling back to the default Hub cache. Optional.
-
-    Returns:
-        The parsed config, or None if no Laya checkpoint was found.
-    """
-    config, _ = _find_laya_config_with_certainty(
-        model_id=model_id, subfolder=subfolder, token=token, cache_dir=cache_dir
-    )
-    return config
-
-
-def _find_laya_config_with_certainty(
     model_id: str,
     subfolder: str | None,
     token: str | None,
     cache_dir: str | None = None,
 ) -> tuple[dict[str, t.Any] | None, bool]:
     """Locate a Laya checkpoint's config, also reporting how certain that is.
+
+    Memoised per `(model_id, subfolder, token, cache_dir)`, since both
+    `get_model_config` and `model_exists` perform this same lookup (which may
+    involve a Hub round-trip) for the same model during dispatch.
 
     Args:
         model_id:
@@ -702,7 +676,7 @@ def _cached_laya_config(
             repo_id=repo_id, filename=filename, cache_dir=candidate_cache_dir
         )
         if isinstance(cached, str):
-            return json.loads(Path(cached).read_text())
+            return _read_json(cached)
     return None
 
 
@@ -719,6 +693,19 @@ def _laya_config_filename(subfolder: str | None) -> str:
     return (
         f"{subfolder}/{_LAYA_CONFIG_FILENAME}" if subfolder else _LAYA_CONFIG_FILENAME
     )
+
+
+def _read_json(path: str | Path) -> dict[str, t.Any]:
+    """Read and parse a JSON file.
+
+    Args:
+        path:
+            The path to the JSON file.
+
+    Returns:
+        The parsed JSON content.
+    """
+    return json.loads(Path(path).read_text())
 
 
 def _local_laya_config(
@@ -738,7 +725,7 @@ def _local_laya_config(
     path = directory / _laya_config_filename(subfolder=subfolder)
     if not path.is_file():
         return None
-    return json.loads(path.read_text())
+    return _read_json(path)
 
 
 def _remote_laya_config(
@@ -770,7 +757,7 @@ def _remote_laya_config(
         return None, True
     except (RepositoryNotFoundError, OSError):
         return None, False
-    return json.loads(Path(path).read_text()), True
+    return _read_json(path), True
 
 
 def _num_params_from_local_checkpoint(checkpoint_dir: Path) -> int:
@@ -831,40 +818,4 @@ def _resolve_checkpoint_path(
         cache_dir=cache_dir,
         allow_patterns=allow_patterns,
         token=token,
-    )
-
-
-def is_laya_checkpoint(model_id: str, cache_dir: str | None = None) -> bool:
-    """Detect, without a network call, whether a model ID is a Laya checkpoint.
-
-    Used by other benchmark modules (namely the generic HF encoder) to defer to the
-    zero-shot classifier module when they can't otherwise tell -- e.g. offline, where
-    `siblings` isn't available.
-
-    Args:
-        model_id:
-            The model ID, optionally with a `#subfolder`.
-        cache_dir:
-            EuroEval's configured model cache directory for this model -- the same
-            one `_resolve_checkpoint_path` downloads into -- checked before falling
-            back to the default Hub cache, so a checkpoint downloaded by EuroEval is
-            found here too. Optional.
-
-    Returns:
-        Whether this looks like a Laya checkpoint, judging only by a local directory
-        or the local Hub cache.
-    """
-    model_id_components = split_model_id(model_id=model_id)
-    bare_model_id = model_id_components.model_id
-    subfolder = model_id_components.param
-    if Path(bare_model_id).is_dir():
-        return (
-            _local_laya_config(directory=Path(bare_model_id), subfolder=subfolder)
-            is not None
-        )
-    return (
-        _cached_laya_config(
-            repo_id=bare_model_id, subfolder=subfolder, cache_dir=cache_dir
-        )
-        is not None
     )
