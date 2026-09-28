@@ -163,6 +163,25 @@ def apply_prompt(
     return examples
 
 
+def _add_bare_inputs_for_bpc(
+    examples: dict[str, t.Any], few_shot_examples: list[dict[str, t.Any]]
+) -> None:
+    """Add bare_input and raw_choices for BPC scoring on MCQ tasks."""
+    bare_inputs: list[str] = []
+    raw_choices_list: list[list[str]] = []
+    for text in examples["text"]:
+        bare_input, raw_choices = parse_bare_question_and_choices(text)
+        bare_inputs.append(bare_input)
+        raw_choices_list.append(raw_choices)
+    examples["bare_input"] = bare_inputs
+    examples["raw_choices"] = raw_choices_list
+    for fs_example in few_shot_examples:
+        if "raw_choices" not in fs_example:
+            fs_bare, fs_choices = parse_bare_question_and_choices(fs_example["text"])
+            fs_example["bare_input"] = fs_bare
+            fs_example["raw_choices"] = fs_choices
+
+
 def _add_structured_classification_output(
     few_shot_sections: list[tuple[str, str]],
     new_sections: list[tuple[str, str]],
@@ -184,37 +203,16 @@ def _add_structured_classification_output(
     Returns:
         The sections with matching JSON instructions and few-shot answers.
     """
-    allowed_labels = json.dumps(output_labels, ensure_ascii=False)
-    suffix = (
-        "\n\nIgnore any output-format instructions above. "
-        f'Allowed values for "{output_key}": {allowed_labels}. '
-        f'Output JSON only: {{"{output_key}": "<label>"}}'
+    valid_outputs = " | ".join(
+        json.dumps({output_key: label}, ensure_ascii=False) for label in output_labels
     )
+    suffix = f"\n\n{valid_outputs}"
     few_shot_sections = [
         (prompt + suffix, json.dumps({output_key: label}, ensure_ascii=False))
         for prompt, label in few_shot_sections
     ]
     new_sections = [(prompt + suffix, label) for prompt, label in new_sections]
     return few_shot_sections, new_sections
-
-
-def _add_bare_inputs_for_bpc(
-    examples: dict[str, t.Any], few_shot_examples: list[dict[str, t.Any]]
-) -> None:
-    """Add bare_input and raw_choices for BPC scoring on MCQ tasks."""
-    bare_inputs: list[str] = []
-    raw_choices_list: list[list[str]] = []
-    for text in examples["text"]:
-        bare_input, raw_choices = parse_bare_question_and_choices(text)
-        bare_inputs.append(bare_input)
-        raw_choices_list.append(raw_choices)
-    examples["bare_input"] = bare_inputs
-    examples["raw_choices"] = raw_choices_list
-    for fs_example in few_shot_examples:
-        if "raw_choices" not in fs_example:
-            fs_bare, fs_choices = parse_bare_question_and_choices(fs_example["text"])
-            fs_example["bare_input"] = fs_bare
-            fs_example["raw_choices"] = fs_choices
 
 
 def _build_bpc_outputs(
