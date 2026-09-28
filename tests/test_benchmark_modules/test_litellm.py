@@ -125,7 +125,7 @@ class TestClassificationStructuredOutput:
         label_mapping: dict[str, str],
         few_shot: bool,
     ) -> None:
-        """Prepared messages append a language-neutral JSON output contract."""
+        """Prepared messages embed JSON choices in the localised sentence."""
         num_few_shot_examples = 2
         config = _classification_dataset_config(
             dataset_config=dataset_config,
@@ -156,14 +156,22 @@ class TestClassificationStructuredOutput:
         assert len(assistant_messages) == (num_few_shot_examples if few_shot else 0)
         final_prompt = user_messages[-1]["content"]
         assert "Classification text" in final_prompt or "Question" in final_prompt
-        valid_outputs = " | ".join(
+        valid_outputs = [
             json.dumps({LITELLM_CLASSIFICATION_OUTPUT_KEY: label}, ensure_ascii=False)
             for label in label_mapping.values()
+        ]
+        assert all(output in final_prompt for output in valid_outputs)
+        bare_labels = config.get_labels_str(
+            labels=(
+                labels
+                if task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+                else list(label_mapping.values())
+            )
         )
-        assert final_prompt.endswith(valid_outputs)
-        assert "Ignore any output-format instructions above" not in final_prompt
-        assert "Allowed values" not in final_prompt
-        assert "Output JSON only" not in final_prompt
+        assert all(bare_labels not in message["content"] for message in user_messages)
+        assert config.main_language.or_separator in final_prompt
+        assert final_prompt.startswith("Classify")
+        assert final_prompt.endswith("Reply with only the label.")
 
         if few_shot:
             assistant_labels = [
