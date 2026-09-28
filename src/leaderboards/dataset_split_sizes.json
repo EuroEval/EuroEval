@@ -345,6 +345,191 @@
     "train": 348,
     "val": 87
   },
+  "EuroEval/flores-be-en": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-bs-en": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-be": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-bg": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-bs": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-ca": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-cs": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-da": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-de": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-el": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-es": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-et": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-fi": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-fo": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-fr": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-hr": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-hu": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-is": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-it": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-lb": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-lt": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-lv": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-nl": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-no": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-pl": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-pt": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-ro": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-sk": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-sl": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-sq": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-sr": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-sv": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-en-uk": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-es-en": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-fo-en": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-lb-en": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
+  "EuroEval/flores-sq-en": {
+    "test": 1012,
+    "train": 128,
+    "val": 256
+  },
   "EuroEval/fone-mini": {
     "test": 2048,
     "train": 1024,
@@ -1783,6 +1968,36 @@
     "train": 47,
     "val": 128
   },
+  "EuroEval/wmt24pp-bg-en": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-ca-en": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-cs-en": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-da-en": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-de-en": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-el-en": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
   "EuroEval/wmt24pp-en-bg": {
     "test": 768,
     "train": 64,
@@ -1904,6 +2119,101 @@
     "val": 128
   },
   "EuroEval/wmt24pp-en-uk": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-et-en": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-fi-en": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-fr-en": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-hr-en": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-hu-en": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-is-en": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-it-en": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-lt-en": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-lv-en": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-nl-en": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-no-en": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-pl-en": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-pt-en": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-ro-en": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-sk-en": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-sl-en": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-sr-en": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-sv-en": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-uk-en": {
     "test": 768,
     "train": 64,
     "val": 128
