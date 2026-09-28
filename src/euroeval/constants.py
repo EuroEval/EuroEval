@@ -87,9 +87,6 @@ CUSTOM_STOP_TOKENS = ["<sep>"]
 # For generative classification tasks we request a JSON object with a single key and
 # values restricted to the allowed labels.
 CLASSIFICATION_OUTPUT_KEY = "label"
-# Kept as an import-compatible alias for downstream users of the old backend-specific
-# name.
-LITELLM_CLASSIFICATION_OUTPUT_KEY = CLASSIFICATION_OUTPUT_KEY
 
 # These characters are stripped from JSON output when trying to identify the label
 JSON_STRIP_CHARACTERS = ' {}\n\r":'
