@@ -119,6 +119,7 @@ def apply_prompt(
                 dataset_config.prompt_label_mapping[label]
                 for label in dataset_config.labels
             ],
+            label_mapping=dataset_config.prompt_label_mapping,
         )
 
     # Build outputs based on model type
@@ -187,8 +188,9 @@ def _add_structured_classification_output(
     new_sections: list[tuple[str, str]],
     output_key: str,
     output_labels: list[str],
+    label_mapping: c.Mapping[str, str],
 ) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
-    """Add a JSON output contract to classification prompt sections.
+    """Embed JSON choices in classification prompt sections.
 
     Args:
         few_shot_sections:
@@ -199,19 +201,33 @@ def _add_structured_classification_output(
             The JSON key required by the backend response schema.
         output_labels:
             The allowed values for the JSON output field.
+        label_mapping:
+            The mapping from labels rendered in prompts to JSON output values.
 
     Returns:
-        The sections with matching JSON instructions and few-shot answers.
+        The sections with JSON choices in their existing prompt sentences and matching
+        few-shot answers.
     """
-    valid_outputs = " | ".join(
-        json.dumps({output_key: label}, ensure_ascii=False) for label in output_labels
-    )
-    suffix = f"\n\n{valid_outputs}"
+    prompt_label_mapping = dict(label_mapping)
+    for label in output_labels:
+        prompt_label_mapping.setdefault(label, label)
+
+    def add_json_choices(prompt: str) -> str:
+        """Replace quoted bare-label choices without changing surrounding wording.
+
+        Returns:
+            The prompt with quoted choices replaced by JSON objects.
+        """
+        for prompt_label, output_label in prompt_label_mapping.items():
+            json_choice = json.dumps({output_key: output_label}, ensure_ascii=False)
+            prompt = prompt.replace(f"'{prompt_label}'", json_choice)
+        return prompt
+
     few_shot_sections = [
-        (prompt + suffix, json.dumps({output_key: label}, ensure_ascii=False))
+        (add_json_choices(prompt), json.dumps({output_key: label}, ensure_ascii=False))
         for prompt, label in few_shot_sections
     ]
-    new_sections = [(prompt + suffix, label) for prompt, label in new_sections]
+    new_sections = [(add_json_choices(prompt), label) for prompt, label in new_sections]
     return few_shot_sections, new_sections
 
 

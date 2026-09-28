@@ -49,8 +49,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- Fixed LiteLLM classification prompts and structured outputs to use a scalar JSON label
-  contract, avoiding truncated responses from the previous token budget (#2197).
+- Fixed LiteLLM instruction-tuned classification prompts to put mapped JSON objects in
+  the existing localised choice sentence, avoiding a bare-label list followed by appended
+  JSON alternatives (#2197).
 - LiteLLM contamination-canary collection now probes API capabilities with one request,
   preserves the six-token output bound across token-limit fallbacks and reused-model
   parameter adjustments, and reports collection status and failure reasons without
