@@ -2,6 +2,7 @@
 
 import collections.abc as c
 import itertools as it
+import json
 import logging
 import random
 import re
@@ -39,6 +40,7 @@ def apply_prompt(
     always_populate_text_field: bool,
     tokeniser: "PreTrainedTokenizer | None",
     use_bits_per_character: bool = False,
+    structured_classification_output_key: str | None = None,
 ) -> dict[str, t.Any]:
     """Apply prompt template to an example, potentially with few-shot examples.
 
@@ -62,6 +64,10 @@ def apply_prompt(
             Whether to use bits-per-character (BPC) scoring. For multiple-choice tasks,
             treats benchmark as text-to-text with bare question → full answer text.
             Defaults to False.
+        structured_classification_output_key:
+            Optional JSON key to request for instruction-tuned classification outputs.
+            This is backend-specific and should only be set when the backend enforces
+            the same structured response format. Defaults to None.
 
     Returns:
         The example with the few-shot examples applied.
@@ -100,6 +106,16 @@ def apply_prompt(
     few_shot_sections, new_sections = sections_builder(
         list(few_shot_examples), examples, create_prompt
     )
+    if (
+        structured_classification_output_key is not None
+        and dataset_config.task.task_group
+        in {TaskGroup.SEQUENCE_CLASSIFICATION, TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION}
+    ):
+        few_shot_sections, new_sections = _add_structured_classification_output(
+            few_shot_sections=few_shot_sections,
+            new_sections=new_sections,
+            output_key=structured_classification_output_key,
+        )
 
     # Build outputs based on model type
     if is_instruction_tuned and always_populate_text_field:
@@ -141,6 +157,33 @@ def apply_prompt(
         examples.update(bpc_data)
 
     return examples
+
+
+def _add_structured_classification_output(
+    few_shot_sections: list[tuple[str, str]],
+    new_sections: list[tuple[str, str]],
+    output_key: str,
+) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
+    """Add a JSON output contract to classification prompt sections.
+
+    Args:
+        few_shot_sections:
+            Prompt and answer pairs used as in-context examples.
+        new_sections:
+            Prompt and empty-answer pairs to evaluate.
+        output_key:
+            The JSON key required by the backend response schema.
+
+    Returns:
+        The sections with matching JSON instructions and few-shot answers.
+    """
+    suffix = f'\n\nOutput JSON only: {{"{output_key}": "<label>"}}'
+    few_shot_sections = [
+        (prompt + suffix, json.dumps({output_key: label}, ensure_ascii=False))
+        for prompt, label in few_shot_sections
+    ]
+    new_sections = [(prompt + suffix, label) for prompt, label in new_sections]
+    return few_shot_sections, new_sections
 
 
 def _add_bare_inputs_for_bpc(

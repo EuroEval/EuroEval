@@ -2,12 +2,14 @@
 
 import copy
 import dataclasses
+import json
 import re
 import typing as t
 from contextlib import contextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from datasets import Dataset, DatasetDict
 from litellm.exceptions import BadRequestError, UnsupportedParamsError
 from litellm.llms.deepseek.chat.transformation import DeepSeekChatConfig
 from litellm.types.utils import Choices
@@ -22,9 +24,14 @@ from euroeval.benchmark_modules.litellm import (
     clean_model_id,
     get_api_model_release_date,
 )
-from euroeval.constants import MAX_LITELLM_LOGPROBS, REASONING_MAX_TOKENS
+from euroeval.constants import (
+    LITELLM_CLASSIFICATION_OUTPUT_KEY,
+    MAX_LITELLM_LOGPROBS,
+    NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
+    REASONING_MAX_TOKENS,
+)
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
-from euroeval.enums import ParameterAdjustment
+from euroeval.enums import GenerativeType, ParameterAdjustment
 from euroeval.exceptions import InvalidBenchmark, InvalidModel
 from euroeval.model_loading import load_model
 
@@ -49,6 +56,141 @@ class TestBPCGating:
                 dataset_config=dataset_config,
                 benchmark_config=bpc_config,
             )
+
+
+class TestClassificationStructuredOutput:
+    """Tests for LiteLLM classification JSON prompts and schemas."""
+
+    def test_prepared_instruction_prompt_matches_json_contract(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """Prepared prompts and few-shot answers use the response JSON shape."""
+        model = object.__new__(LiteLLMModel)
+        model.model_config = model_config
+        model.dataset_config = dataset_config
+        model.benchmark_config = dataclasses.replace(
+            benchmark_config, generative_type=GenerativeType.INSTRUCTION_TUNED
+        )
+        model.is_ollama = False
+        model.log_metadata = False
+        model.buffer = {}
+
+        dataset = DatasetDict(
+            {
+                "train": Dataset.from_dict(
+                    {
+                        "text": ["positive text", "negative text"],
+                        "label": ["positive", "negative"],
+                    }
+                ),
+                "test": Dataset.from_dict(
+                    {"text": ["test text"], "label": ["positive"]}
+                ),
+            }
+        )
+        prepared = model.prepare_dataset(
+            dataset=dataset, task=dataset_config.task, itr_idx=0
+        )
+        messages = prepared["test"]["messages"][0]
+
+        assert messages[-1]["content"].endswith(
+            f'{{"{LITELLM_CLASSIFICATION_OUTPUT_KEY}": "<label>"}}'
+        )
+        assistant_messages = [
+            message for message in messages if message["role"] == "assistant"
+        ]
+        assert assistant_messages
+        mapped_labels = set(dataset_config.prompt_label_mapping.values())
+        assistant_labels = [
+            json.loads(message["content"]) for message in assistant_messages
+        ]
+        assert all(
+            set(answer) == {LITELLM_CLASSIFICATION_OUTPUT_KEY}
+            for answer in assistant_labels
+        )
+        assert all(
+            answer[LITELLM_CLASSIFICATION_OUTPUT_KEY] in mapped_labels
+            for answer in assistant_labels
+        )
+
+    def test_reasoning_prepared_prompt_has_no_json_contract(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """Reasoning LiteLLM prompts retain the shared label-only contract."""
+        model = object.__new__(LiteLLMModel)
+        model.model_config = model_config
+        model.dataset_config = dataset_config
+        model.benchmark_config = dataclasses.replace(
+            benchmark_config, generative_type=GenerativeType.REASONING
+        )
+        model.is_ollama = False
+        model.log_metadata = False
+        model.buffer = {}
+
+        dataset = DatasetDict(
+            {
+                "train": Dataset.from_dict(
+                    {"text": ["positive text"], "label": ["positive"]}
+                ),
+                "test": Dataset.from_dict(
+                    {"text": ["test text"], "label": ["positive"]}
+                ),
+            }
+        )
+        prepared = model.prepare_dataset(
+            dataset=dataset, task=dataset_config.task, itr_idx=0
+        )
+        messages = prepared["test"]["messages"][0]
+
+        assert all(
+            f'{{"{LITELLM_CLASSIFICATION_OUTPUT_KEY}": "<label>"}}'
+            not in message["content"]
+            for message in messages
+        )
+
+    def test_classification_response_schema_is_scalar_enum(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """The response schema restricts one label, rather than an array."""
+        model = LiteLLMModel(
+            model_config=dataclasses.replace(model_config, model_id="openai/gpt-4o"),
+            dataset_config=dataset_config,
+            benchmark_config=dataclasses.replace(
+                benchmark_config, generative_type=GenerativeType.INSTRUCTION_TUNED
+            ),
+            log_metadata=False,
+        )
+        with patch.object(
+            model,
+            "_probe_generation_kwargs",
+            side_effect=lambda generation_kwargs, test_input: generation_kwargs,
+        ):
+            generation_kwargs = model.get_generation_kwargs(
+                dataset_config=dataset_config
+            )
+
+        schema = generation_kwargs["response_format"].model_json_schema()
+        label_schema = schema["properties"][LITELLM_CLASSIFICATION_OUTPUT_KEY]
+        expected_labels = [
+            dataset_config.prompt_label_mapping[label]
+            for label in dataset_config.labels
+        ]
+        assert label_schema["type"] == "string"
+        assert label_schema["enum"] == expected_labels
+        assert "items" not in label_schema
+        assert (
+            dataset_config.max_generated_tokens
+            == NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
+        )
 
 
 class TestCreateModelOutput:

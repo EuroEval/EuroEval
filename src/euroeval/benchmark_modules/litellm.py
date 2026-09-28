@@ -1818,12 +1818,13 @@ class LiteLLMModel(BenchmarkModule):
                 dataset_config=dataset_config, generation_kwargs=generation_kwargs
             )
         elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
-            [
+            mapped_labels = [
                 self.dataset_config.prompt_label_mapping[label]
                 for label in self.dataset_config.labels
             ]
+            label_type = t.Literal.__getitem__(tuple(mapped_labels))
             keys_and_their_types = {
-                LITELLM_CLASSIFICATION_OUTPUT_KEY: (c.Sequence[str], ...)
+                LITELLM_CLASSIFICATION_OUTPUT_KEY: (label_type, ...)
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class
@@ -2372,6 +2373,20 @@ class LiteLLMModel(BenchmarkModule):
             itr_idx=itr_idx,
             always_populate_text_field=False,
             tokeniser=None,
+            structured_classification_output_key=(
+                LITELLM_CLASSIFICATION_OUTPUT_KEY
+                if (
+                    self.generative_type == GenerativeType.INSTRUCTION_TUNED
+                    and self.dataset_config.task.task_group
+                    in {
+                        TaskGroup.SEQUENCE_CLASSIFICATION,
+                        TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+                    }
+                    and self.dataset_config.task.uses_logprobs
+                    and self.dataset_config.labels
+                )
+                else None
+            ),
         )
 
     @property
