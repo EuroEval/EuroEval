@@ -180,6 +180,62 @@ def extract_multiple_choice_labels(
     return sample_candidate_labels
 
 
+def find_label_logprob_start(
+    logprobs_list: c.Sequence[c.Sequence[tuple[str, float]]], value: str
+) -> int | None:
+    """Find the token position where a JSON label value starts.
+
+    Logprob APIs return alternatives for each generated position. Matching only the
+    first token of every candidate is ambiguous when one label is a prefix or suffix
+    of another, so this matches the complete decoded value across positions.
+
+    Args:
+        logprobs_list:
+            Token alternatives in generated order.
+        value:
+            The decoded JSON label value.
+
+    Returns:
+        The first position that can produce the complete value, or None if it cannot be
+        recovered from the alternatives.
+    """
+    target = clean_label_token(value, preserve_spaces=True).lstrip()
+    if not target:
+        return None
+    for start in range(len(logprobs_list)):
+        offsets = {0}
+        for position in range(start, len(logprobs_list)):
+            pieces = {
+                _normalise_logprob_piece(token, first=position == start)
+                for token, _ in logprobs_list[position]
+            }
+            pieces.discard("")
+            offsets = {
+                offset + len(piece)
+                for offset in offsets
+                for piece in pieces
+                if target.startswith(piece, offset)
+            }
+            if len(target) in offsets:
+                return start
+            if not offsets:
+                break
+    return None
+
+
+def _normalise_logprob_piece(token: str, *, first: bool) -> str:
+    """Normalise one logprob token while retaining label-internal spaces.
+
+    Returns:
+        The normalised token text.
+    """
+    has_boundary_marker = token.startswith(("Ġ", "▁"))
+    piece = clean_label_token(token, preserve_spaces=True)
+    if has_boundary_marker and piece and not piece.startswith(" "):
+        piece = f" {piece}"
+    return piece.lstrip() if first else piece
+
+
 def scramble(text: str) -> str:
     """Scramble a string in a bijective manner.
 
