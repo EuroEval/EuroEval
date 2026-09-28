@@ -51,7 +51,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 - Fixed generative classification prompts across LiteLLM and vLLM to put mapped JSON
   objects in the existing localised choice sentence, use scalar `label` objects for
-  decoding and few-shot answers, and preserve label logprob scoring (#2197).
+  base-model few-shot answers, and preserve label logprob scoring for overlapping and
+  Unicode labels (#2197).
 - LiteLLM contamination-canary collection now probes API capabilities with one request,
   preserves the six-token output bound across token-limit fallbacks and reused-model
   parameter adjustments, and reports collection status and failure reasons without

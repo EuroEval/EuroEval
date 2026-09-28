@@ -53,8 +53,8 @@ from ..exceptions import (
 from ..generation_utils import raise_if_wrong_params
 from ..logging_utils import get_pbar, log, log_once, no_terminal_output
 from ..string_utils import (
-    clean_label_token,
     extract_classification_label,
+    find_label_logprob_start,
     split_model_id,
 )
 from ..tasks import LOGIC
@@ -636,26 +636,19 @@ class VLLMModel(HuggingFaceEncoderModel):
                 for raw_output in raw_outputs
             ]
             if isinstance(self.buffer["first_label_token_mapping"], dict):
-                label_tokens = {
-                    clean_label_token(token)
-                    for token in self.buffer["first_label_token_mapping"].values()
-                }
                 trimmed_scores = []
                 for completion, sample_scores in zip(completions, scores):
-                    if extract_classification_label(completion) is None:
-                        trimmed_scores.append(sample_scores)
-                        continue
-                    matching_indices = [
-                        index
-                        for index, token_logprobs in enumerate(sample_scores)
-                        if any(
-                            clean_label_token(token) in label_tokens
-                            for token, _ in token_logprobs
+                    value = extract_classification_label(completion)
+                    value_start = (
+                        find_label_logprob_start(
+                            logprobs_list=sample_scores, value=value
                         )
-                    ]
+                        if value is not None
+                        else None
+                    )
                     trimmed_scores.append(
-                        sample_scores[max(matching_indices) :]
-                        if matching_indices
+                        sample_scores[value_start:]
+                        if value_start is not None
                         else sample_scores
                     )
                 scores = trimmed_scores

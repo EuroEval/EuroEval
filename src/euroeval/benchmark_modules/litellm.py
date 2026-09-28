@@ -70,6 +70,7 @@ from ..safetensors_utils import get_num_params_from_safetensors_metadata
 from ..string_utils import (
     clean_label_token,
     extract_classification_label,
+    find_label_logprob_start,
     split_model_id,
 )
 from ..tasks import LOGIC
@@ -811,6 +812,9 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             Logprob entries beginning with the label value.
         """
+        value_start = find_label_logprob_start(logprobs_list=logprobs_list, value=value)
+        if value_start is not None:
+            return logprobs_list[value_start:]
         label_tokens = {
             clean_label_token(value),
             *(
@@ -826,7 +830,7 @@ class LiteLLMModel(BenchmarkModule):
             )
         ]
         if matching_indices:
-            return logprobs_list[max(matching_indices) :]
+            return logprobs_list[min(matching_indices) :]
         return [
             token_logprobs
             for token_logprobs in logprobs_list

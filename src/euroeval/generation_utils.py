@@ -105,20 +105,36 @@ def apply_prompt(
     few_shot_sections, new_sections = sections_builder(
         list(few_shot_examples), examples, create_prompt
     )
+    structured_labels: list[str] = []
     if (
         classification_output_key is not None
         and dataset_config.task.task_group
         in {TaskGroup.SEQUENCE_CLASSIFICATION, TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION}
         and not use_bits_per_character
     ):
+        structured_labels = [
+            dataset_config.prompt_label_mapping[label]
+            for label in dataset_config.labels
+        ]
+        if dataset_config.task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
+            dynamic_labels = [
+                label
+                for prompt, _ in [*few_shot_sections, *new_sections]
+                for label in extract_multiple_choice_labels(
+                    prompt=prompt, candidate_labels=[]
+                )
+            ]
+            structured_labels.extend(
+                dataset_config.prompt_label_mapping.get(label, label)
+                for label in dynamic_labels
+                if dataset_config.prompt_label_mapping.get(label, label)
+                not in structured_labels
+            )
         few_shot_sections, new_sections = _add_structured_classification_output(
             few_shot_sections=few_shot_sections,
             new_sections=new_sections,
             output_key=classification_output_key,
-            output_labels=[
-                dataset_config.prompt_label_mapping[label]
-                for label in dataset_config.labels
-            ],
+            output_labels=structured_labels,
             label_mapping=dataset_config.prompt_label_mapping,
         )
 
@@ -143,6 +159,9 @@ def apply_prompt(
             dataset_config=dataset_config,
             classification_output_key=(
                 classification_output_key if not use_bits_per_character else None
+            ),
+            classification_labels=(
+                structured_labels if not use_bits_per_character else None
             ),
         )
         examples.update(outputs)
@@ -560,6 +579,7 @@ def _build_standard_outputs(
     new_sections: list[tuple[str, str]],
     dataset_config: "DatasetConfig",
     classification_output_key: str | None = None,
+    classification_labels: c.Sequence[str] | None = None,
 ) -> dict[str, t.Any]:
     """Build outputs for non-instruction-tuned models.
 
@@ -572,6 +592,8 @@ def _build_standard_outputs(
             The dataset configuration.
         classification_output_key (optional):
             JSON key for label-based classification prompts. Defaults to None.
+        classification_labels (optional):
+            Mapped labels to include in the JSON choices. Defaults to None.
 
     Returns:
         A dictionary of outputs.
@@ -579,15 +601,24 @@ def _build_standard_outputs(
     prompt_prefix = ""
     if dataset_config.prompt_prefix:
         labels_str = dataset_config.get_labels_str()
-        if classification_output_key is not None and dataset_config.labels:
+        if classification_output_key is not None and classification_labels:
             labels_str = _get_json_labels_str(
-                dataset_config=dataset_config, output_key=classification_output_key
+                dataset_config=dataset_config,
+                output_key=classification_output_key,
+                labels=classification_labels,
             )
         prompt_prefix = (
             dataset_config.prompt_prefix.format(labels_str=labels_str) + "\n\n"
         )
 
-    few_shot_prompt = "\n\n".join([prompt for prompt, _ in few_shot_sections])
+    few_shot_prompt = "\n\n".join(
+        _complete_base_classification_section(
+            prompt=prompt,
+            answer=answer,
+            classification_output_key=classification_output_key,
+        )
+        for prompt, answer in few_shot_sections
+    )
     if few_shot_prompt:
         few_shot_prompt += "\n\n"
 
@@ -599,15 +630,39 @@ def _build_standard_outputs(
     }
 
 
-def _get_json_labels_str(dataset_config: "DatasetConfig", output_key: str) -> str:
+def _complete_base_classification_section(
+    prompt: str, answer: str, classification_output_key: str | None
+) -> str:
+    """Ensure a base-model classification example has a JSON answer.
+
+    Returns:
+        The section with a JSON answer when it does not already contain one.
+    """
+    if classification_output_key is None or not answer:
+        return prompt
+    if prompt.rstrip().endswith(answer):
+        return prompt
+    return f"{prompt}\n{answer}"
+
+
+def _get_json_labels_str(
+    dataset_config: "DatasetConfig",
+    output_key: str,
+    labels: c.Sequence[str] | None = None,
+) -> str:
     """Render mapped classification labels as JSON alternatives.
 
     Returns:
         The localised JSON alternatives.
     """
-    labels = [
-        dataset_config.prompt_label_mapping[label] for label in dataset_config.labels
-    ]
+    labels = (
+        list(labels)
+        if labels is not None
+        else [
+            dataset_config.prompt_label_mapping[label]
+            for label in dataset_config.labels
+        ]
+    )
     labels_str = dataset_config.get_labels_str(labels=labels)
     for label in labels:
         labels_str = labels_str.replace(

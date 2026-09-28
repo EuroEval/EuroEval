@@ -379,6 +379,23 @@ class TestCreateModelOutput:
         assert len(output.scores[0]) == 1
         assert output.scores[1] == []
 
+    def test_trim_classification_logprobs_matches_complete_label(self) -> None:
+        """Overlapping labels trim scores at the complete JSON value."""
+        scores = [
+            [('"', -0.1)],
+            [("New", -0.2), ("York", -0.3)],
+            [(" York", -0.4)],
+            [('"', -0.5)],
+        ]
+
+        trimmed = LiteLLMModel._trim_classification_logprobs(
+            logprobs_list=scores,
+            value="New York",
+            classification_label_tokens=("New", "York"),
+        )
+
+        assert trimmed == scores[1:]
+
 
 class TestParameterErrorHandling:
     """Tests for unsupported generation parameter handling."""
