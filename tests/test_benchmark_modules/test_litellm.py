@@ -240,6 +240,26 @@ def test_huggingface_model_id_is_preserved_for_custom_api(
     )
 
 
+def test_deepseek_provider_prefix_is_preserved_for_custom_api(
+    benchmark_config: BenchmarkConfig,
+) -> None:
+    """Only the ``deepseek/`` provider prefix bypasses custom API rewriting."""
+    benchmark_config = dataclasses.replace(
+        benchmark_config, api_base="https://api.example.com/v1"
+    )
+
+    assert (
+        clean_model_id(
+            model_id="deepseek/deepseek-chat", benchmark_config=benchmark_config
+        )
+        == "deepseek/deepseek-chat"
+    )
+    assert (
+        clean_model_id(model_id="deepseek-chat", benchmark_config=benchmark_config)
+        == "openai/deepseek-chat"
+    )
+
+
 def test_litellm_model_config_includes_release_date(
     benchmark_config: BenchmarkConfig,
 ) -> None:
@@ -350,6 +370,15 @@ class TestDeepSeekParams:
         prefixed_result = prefixed_model._setup_model_params(generation_kwargs={})
         assert prefixed_result["thinking"] == {"type": "enabled"}
 
+        openrouter_model = object.__new__(LiteLLMModel)
+        openrouter_model.buffer = {"first_label_token_mapping": False}
+        openrouter_model.model_config = dataclasses.replace(
+            model_config, model_id="openrouter/deepseek-flash", param="thinking"
+        )
+        openrouter_result = openrouter_model._setup_model_params(generation_kwargs={})
+        assert openrouter_result["thinking"]["type"] == "enabled"
+        assert "budget_tokens" in openrouter_result["thinking"]
+
         deepseek_mappings = [
             VOCAB_SIZE_MAPPING,
             MODEL_MAX_LENGTH_MAPPING,
@@ -396,7 +425,9 @@ class TestDeepSeekParams:
         assert deepseek_allowed_param_patterns
         for compiled in deepseek_allowed_param_patterns:
             assert compiled.fullmatch(string="deepseek-flash") is None
+            assert compiled.fullmatch(string="openrouter/deepseek-flash") is None
             assert compiled.fullmatch(string="deepseek/deepseek-flash") is not None
+            assert compiled.fullmatch(string="deepseek/another-model") is not None
 
 
 class TestDuplicateErrorHandling:
