@@ -1,4 +1,7 @@
 {
+  "git": {
+    "deploymentEnabled": false
+  },
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": null,
