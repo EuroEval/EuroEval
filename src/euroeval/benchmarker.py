@@ -622,6 +622,7 @@ class Benchmarker:
                         continue
                     if (
                         loaded_model is not None
+                        and model_config.model_type is ModelType.GENERATIVE
                         and loaded_model.generative_type
                         not in dataset_config.allowed_generative_types
                     ):

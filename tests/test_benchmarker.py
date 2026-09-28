@@ -25,7 +25,7 @@ from euroeval.data_models import (
     ModelConfig,
     Task,
 )
-from euroeval.enums import InferenceBackend, ModelType
+from euroeval.enums import InferenceBackend, ModelType, ShotMode
 from euroeval.exceptions import HuggingFaceHubDown
 from euroeval.result_cache import get_record
 from euroeval.tasks import CONTAMINATION_DETECTION, NER, SENT
@@ -260,6 +260,56 @@ class TestDebugStartupVerbosity:
 
 class TestZeroShotClassifierModelReuse:
     """Tests that zero-shot classifier models are preloaded and reused."""
+
+    def test_zero_shot_classifier_is_not_skipped_by_generative_type_check(
+        self,
+        benchmarker: Benchmarker,
+        dataset_config: DatasetConfig,
+        model_config: ModelConfig,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A preloaded zero-shot model without a generative type is benchmarked."""
+        zero_shot_model_config = replace(
+            model_config, model_type=ModelType.ZERO_SHOT_CLASSIFIER
+        )
+        loaded_model = MagicMock()
+        loaded_model.generative_type = None
+        assert None not in dataset_config.allowed_generative_types
+
+        monkeypatch.setattr(
+            benchmarker,
+            "_fetch_model_configs",
+            MagicMock(return_value=[zero_shot_model_config]),
+        )
+        monkeypatch.setattr(
+            benchmarker,
+            "_create_model_dataset_mapping",
+            MagicMock(return_value={zero_shot_model_config: [dataset_config]}),
+        )
+        monkeypatch.setattr(
+            benchmarker,
+            "_prepare_pending_benchmarks",
+            MagicMock(
+                return_value=(
+                    loaded_model,
+                    [(ShotMode.ZERO_SHOT, dataset_config)],
+                    [],
+                    None,
+                )
+            ),
+        )
+        monkeypatch.setattr(benchmarker, "_check_adapter_requirements", MagicMock())
+        benchmark_single_mock = MagicMock()
+        monkeypatch.setattr(benchmarker, "_benchmark_single", benchmark_single_mock)
+        monkeypatch.setattr(
+            benchmarker,
+            "_handle_benchmark_result",
+            MagicMock(return_value=(1, 0, 0, False)),
+        )
+
+        benchmarker.benchmark(model="test_model", dataset="sst5")
+
+        benchmark_single_mock.assert_called_once()
 
     def test_zero_shot_classifier_model_is_loaded_once_across_datasets(
         self,
