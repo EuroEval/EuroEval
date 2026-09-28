@@ -14,7 +14,6 @@ danish-foundation-models/munin-7b-core-pt-3: false
 danish-foundation-models/munin-7b-open-it: false
 danish-foundation-models/munin-7b-open-pt: false
 danish-foundation-models/munin-7b-v0.1dev0: false
-deepseek/deepseek-flash: false
 fresh-electra-small: false
 fresh-xlm-roberta-base: false
 hosted_vllm/openai/gpt-oss-120b: false
