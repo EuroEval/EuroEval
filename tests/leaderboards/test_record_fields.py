@@ -133,6 +133,17 @@ def test_deduplicate_keeps_newest_version() -> None:
     assert deduped[0]["eval_library"]["version"] == "17.6.0"
 
 
+@pytest.mark.parametrize("version", ["18.1.0.dev", "18.1.0.dev0"])
+def test_deduplicate_accepts_development_versions(version: str) -> None:
+    """Development suffixes do not prevent numeric version comparisons."""
+    old = _record(version="18.0.0")
+    new = _record(version=version)
+
+    deduped = deduplicate_records(records=[old, new])
+
+    assert deduped[0]["eval_library"]["version"] == version
+
+
 def test_deduplicate_prefers_record_with_release_date() -> None:
     """Release metadata survives deduplication against an otherwise equal record."""
     without_date = _record(version="18.0.0")
