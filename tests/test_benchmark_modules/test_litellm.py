@@ -91,9 +91,10 @@ class TestClassificationStructuredOutput:
                 ),
             }
         )
-        prepared = model.prepare_dataset(
-            dataset=dataset, task=dataset_config.task, itr_idx=0
-        )
+        with patch.object(dataset_config, "num_few_shot_examples", 2):
+            prepared = model.prepare_dataset(
+                dataset=dataset, task=dataset_config.task, itr_idx=0
+            )
         messages = prepared["test"]["messages"][0]
 
         assert messages[-1]["content"].endswith(
@@ -143,9 +144,10 @@ class TestClassificationStructuredOutput:
                 ),
             }
         )
-        prepared = model.prepare_dataset(
-            dataset=dataset, task=dataset_config.task, itr_idx=0
-        )
+        with patch.object(dataset_config, "num_few_shot_examples", 1):
+            prepared = model.prepare_dataset(
+                dataset=dataset, task=dataset_config.task, itr_idx=0
+            )
         messages = prepared["test"]["messages"][0]
 
         assert all(
