@@ -581,7 +581,7 @@ def _prepare_dataset_helper(
     itr_idx: int,
     always_populate_text_field: bool,
     tokeniser: "PreTrainedTokenizer | None",
-    structured_classification_output_key: str | None = None,
+    classification_output_key: str | None = None,
 ) -> DatasetDict:
     """Helper function to prepare a dataset for a generative model.
 
@@ -604,9 +604,8 @@ def _prepare_dataset_helper(
             Whether to always populate the text field.
         tokeniser:
             The tokeniser to use, or None if not applicable.
-        structured_classification_output_key:
-            Optional JSON key to request for classification outputs. This is only set by
-            backends that enforce the corresponding structured response format.
+        classification_output_key:
+            Optional JSON key to request for label-based classification outputs.
 
     Returns:
         The prepared dataset.
@@ -653,7 +652,7 @@ def _prepare_dataset_helper(
             always_populate_text_field=always_populate_text_field,
             tokeniser=tokeniser,
             use_bits_per_character=benchmark_config.use_bits_per_character,
-            structured_classification_output_key=structured_classification_output_key,
+            classification_output_key=classification_output_key,
         ),
         batched=True,
         load_from_cache_file=False,

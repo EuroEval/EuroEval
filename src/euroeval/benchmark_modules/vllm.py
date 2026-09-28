@@ -24,6 +24,7 @@ from urllib3.exceptions import RequestError
 
 from ..constants import (
     BPC_LOGPROBS,
+    CLASSIFICATION_OUTPUT_KEY,
     CUSTOM_STOP_TOKENS,
     GENERATION_KWARGS,
     GENERATIVE_PIPELINE_TAGS,
@@ -51,7 +52,11 @@ from ..exceptions import (
 )
 from ..generation_utils import raise_if_wrong_params
 from ..logging_utils import get_pbar, log, log_once, no_terminal_output
-from ..string_utils import split_model_id
+from ..string_utils import (
+    clean_label_token,
+    extract_classification_label,
+    split_model_id,
+)
 from ..tasks import LOGIC
 from ..tokenisation_utils import (
     apply_chat_template,
@@ -630,6 +635,30 @@ class VLLMModel(HuggingFaceEncoderModel):
                 ]
                 for raw_output in raw_outputs
             ]
+            if isinstance(self.buffer["first_label_token_mapping"], dict):
+                label_tokens = {
+                    clean_label_token(token)
+                    for token in self.buffer["first_label_token_mapping"].values()
+                }
+                trimmed_scores = []
+                for completion, sample_scores in zip(completions, scores):
+                    if extract_classification_label(completion) is None:
+                        trimmed_scores.append(sample_scores)
+                        continue
+                    matching_indices = [
+                        index
+                        for index, token_logprobs in enumerate(sample_scores)
+                        if any(
+                            clean_label_token(token) in label_tokens
+                            for token, _ in token_logprobs
+                        )
+                    ]
+                    trimmed_scores.append(
+                        sample_scores[max(matching_indices) :]
+                        if matching_indices
+                        else sample_scores
+                    )
+                scores = trimmed_scores
             return GenerativeModelOutput(sequences=completions, scores=scores)
         return GenerativeModelOutput(sequences=completions)
 
@@ -970,9 +999,14 @@ class VLLMModel(HuggingFaceEncoderModel):
         Returns:
             StructuredOutputsParams if structured output is enabled, or None otherwise.
         """
+        is_label_classification = self.dataset_config.task.task_group in {
+            TaskGroup.SEQUENCE_CLASSIFICATION,
+            TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+        } and bool(self.dataset_config.labels)
+        if "bpc_prompt" in inputs:
+            return None
         if (
-            self.dataset_config.task.uses_structured_output
-            or (self.dataset_config.task.uses_logprobs and self.dataset_config.labels)
+            self.dataset_config.task.uses_structured_output or is_label_classification
         ) and self.generative_type == GenerativeType.REASONING:
             log_once(
                 "The dataset uses structured output, but we are not using it as the "
@@ -982,11 +1016,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             return None
         if self.dataset_config.task.uses_structured_output:
             return self._structured_output_for_task(inputs)
-        if (
-            self.dataset_config.task.uses_logprobs
-            and self.dataset_config.labels
-            and self.buffer.get("first_label_token_mapping", False)
-        ):
+        if is_label_classification:
             return self._structured_output_for_logprobs()
         log_once(
             "Not using structured generation as the dataset does not require it.",
@@ -1000,18 +1030,21 @@ class VLLMModel(HuggingFaceEncoderModel):
         Returns:
             StructuredOutputsParams for logprobs-based tasks.
         """
-        choice_labels = [
+        mapped_labels = [
             self.dataset_config.prompt_label_mapping[label]
             for label in self.dataset_config.labels
         ]
-        if isinstance(self.buffer["first_label_token_mapping"], dict):
-            choice_labels = [
-                self.buffer["first_label_token_mapping"][label]
-                for label in choice_labels
-            ]
-        struct_output = StructuredOutputsParams(choice=choice_labels)
+        schema = {
+            "type": "object",
+            "properties": {
+                CLASSIFICATION_OUTPUT_KEY: {"type": "string", "enum": mapped_labels}
+            },
+            "required": [CLASSIFICATION_OUTPUT_KEY],
+            "additionalProperties": False,
+        }
+        struct_output = StructuredOutputsParams(json=schema)
         log_once(
-            f"Using structured generation with the choices: {struct_output.choice!r}.",
+            f"Using structured generation with the JSON labels: {mapped_labels!r}.",
             level=logging.DEBUG,
         )
         return struct_output
@@ -1271,6 +1304,18 @@ class VLLMModel(HuggingFaceEncoderModel):
             itr_idx=itr_idx,
             always_populate_text_field=True,
             tokeniser=self._tokeniser,
+            classification_output_key=(
+                CLASSIFICATION_OUTPUT_KEY
+                if (
+                    self.dataset_config.task.task_group
+                    in {
+                        TaskGroup.SEQUENCE_CLASSIFICATION,
+                        TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+                    }
+                    and self.dataset_config.labels
+                )
+                else None
+            ),
         )
 
     def score(self, inputs: dict) -> "GenerativeModelOutput":

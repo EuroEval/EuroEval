@@ -40,7 +40,7 @@ def apply_prompt(
     always_populate_text_field: bool,
     tokeniser: "PreTrainedTokenizer | None",
     use_bits_per_character: bool = False,
-    structured_classification_output_key: str | None = None,
+    classification_output_key: str | None = None,
 ) -> dict[str, t.Any]:
     """Apply prompt template to an example, potentially with few-shot examples.
 
@@ -64,10 +64,9 @@ def apply_prompt(
             Whether to use bits-per-character (BPC) scoring. For multiple-choice tasks,
             treats benchmark as text-to-text with bare question → full answer text.
             Defaults to False.
-        structured_classification_output_key:
-            Optional JSON key to request for instruction-tuned classification outputs.
-            This is backend-specific and should only be set when the backend enforces
-            the same structured response format. Defaults to None.
+        classification_output_key:
+            Optional JSON key to request for label-based classification outputs.
+            Defaults to None.
 
     Returns:
         The example with the few-shot examples applied.
@@ -107,14 +106,15 @@ def apply_prompt(
         list(few_shot_examples), examples, create_prompt
     )
     if (
-        structured_classification_output_key is not None
+        classification_output_key is not None
         and dataset_config.task.task_group
         in {TaskGroup.SEQUENCE_CLASSIFICATION, TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION}
+        and not use_bits_per_character
     ):
         few_shot_sections, new_sections = _add_structured_classification_output(
             few_shot_sections=few_shot_sections,
             new_sections=new_sections,
-            output_key=structured_classification_output_key,
+            output_key=classification_output_key,
             output_labels=[
                 dataset_config.prompt_label_mapping[label]
                 for label in dataset_config.labels
@@ -141,6 +141,9 @@ def apply_prompt(
             few_shot_sections=few_shot_sections,
             new_sections=new_sections,
             dataset_config=dataset_config,
+            classification_output_key=(
+                classification_output_key if not use_bits_per_character else None
+            ),
         )
         examples.update(outputs)
 
@@ -223,8 +226,27 @@ def _add_structured_classification_output(
             prompt = prompt.replace(f"'{prompt_label}'", json_choice)
         return prompt
 
+    def add_json_answer(prompt: str, label: str) -> str:
+        """Replace a standard prompt's trailing bare answer with a JSON object.
+
+        Returns:
+            The prompt with its trailing answer converted when applicable.
+        """
+        stripped_prompt = prompt.rstrip()
+        if label and stripped_prompt.endswith(label):
+            json_answer = json.dumps({output_key: label}, ensure_ascii=False)
+            return (
+                stripped_prompt[: -len(label)]
+                + json_answer
+                + prompt[len(stripped_prompt) :]
+            )
+        return prompt
+
     few_shot_sections = [
-        (add_json_choices(prompt), json.dumps({output_key: label}, ensure_ascii=False))
+        (
+            add_json_answer(add_json_choices(prompt), label),
+            json.dumps({output_key: label}, ensure_ascii=False),
+        )
         for prompt, label in few_shot_sections
     ]
     new_sections = [(add_json_choices(prompt), label) for prompt, label in new_sections]
@@ -537,6 +559,7 @@ def _build_standard_outputs(
     few_shot_sections: list[tuple[str, str]],
     new_sections: list[tuple[str, str]],
     dataset_config: "DatasetConfig",
+    classification_output_key: str | None = None,
 ) -> dict[str, t.Any]:
     """Build outputs for non-instruction-tuned models.
 
@@ -547,6 +570,8 @@ def _build_standard_outputs(
             The new sections.
         dataset_config:
             The dataset configuration.
+        classification_output_key (optional):
+            JSON key for label-based classification prompts. Defaults to None.
 
     Returns:
         A dictionary of outputs.
@@ -554,6 +579,10 @@ def _build_standard_outputs(
     prompt_prefix = ""
     if dataset_config.prompt_prefix:
         labels_str = dataset_config.get_labels_str()
+        if classification_output_key is not None and dataset_config.labels:
+            labels_str = _get_json_labels_str(
+                dataset_config=dataset_config, output_key=classification_output_key
+            )
         prompt_prefix = (
             dataset_config.prompt_prefix.format(labels_str=labels_str) + "\n\n"
         )
@@ -568,6 +597,23 @@ def _build_standard_outputs(
             for new_prompt, _ in new_sections
         ]
     }
+
+
+def _get_json_labels_str(dataset_config: "DatasetConfig", output_key: str) -> str:
+    """Render mapped classification labels as JSON alternatives.
+
+    Returns:
+        The localised JSON alternatives.
+    """
+    labels = [
+        dataset_config.prompt_label_mapping[label] for label in dataset_config.labels
+    ]
+    labels_str = dataset_config.get_labels_str(labels=labels)
+    for label in labels:
+        labels_str = labels_str.replace(
+            f"'{label}'", json.dumps({output_key: label}, ensure_ascii=False)
+        )
+    return labels_str
 
 
 def _create_prompt_creator(
