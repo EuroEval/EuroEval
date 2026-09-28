@@ -245,27 +245,38 @@ def _add_structured_classification_output(
             prompt = prompt.replace(f"'{prompt_label}'", json_choice)
         return prompt
 
-    def add_json_answer(prompt: str, label: str) -> str:
-        """Replace a standard prompt's trailing bare answer with a JSON object.
+    def add_json_answer(prompt: str, label: str) -> tuple[str, str]:
+        """Replace a trailing bare answer with a JSON object.
+
+        Base-model prompts already contain their answer, so their section label is
+        empty. In that case, recover the answer from the prompt rather than appending
+        an empty JSON object later.
 
         Returns:
-            The prompt with its trailing answer converted when applicable.
+            The prompt and JSON answer for the section.
         """
         stripped_prompt = prompt.rstrip()
-        if label and stripped_prompt.endswith(label):
-            json_answer = json.dumps({output_key: label}, ensure_ascii=False)
-            return (
-                stripped_prompt[: -len(label)]
+        answer_label = label or next(
+            (
+                candidate
+                for candidate in sorted(output_labels, key=len, reverse=True)
+                if stripped_prompt.endswith(candidate)
+            ),
+            "",
+        )
+        if not answer_label:
+            return prompt, ""
+        json_answer = json.dumps({output_key: answer_label}, ensure_ascii=False)
+        if stripped_prompt.endswith(answer_label):
+            prompt = (
+                stripped_prompt[: -len(answer_label)]
                 + json_answer
                 + prompt[len(stripped_prompt) :]
             )
-        return prompt
+        return prompt, json_answer
 
     few_shot_sections = [
-        (
-            add_json_answer(add_json_choices(prompt), label),
-            json.dumps({output_key: label}, ensure_ascii=False),
-        )
+        add_json_answer(add_json_choices(prompt), label)
         for prompt, label in few_shot_sections
     ]
     new_sections = [(add_json_choices(prompt), label) for prompt, label in new_sections]

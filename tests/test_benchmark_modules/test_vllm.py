@@ -1354,7 +1354,7 @@ class TestVLLMClassification:
             else label_mapping
         )
         config.prompt_prefix = "Choose one of {labels_str}."
-        config.prompt_template = "Text: {text}\\nLabel: {label}"
+        config.prompt_template = "Text: {text}\nLabel: {label}"
         config.instruction_prompt = "Classify {text} as one of {labels_str}."
         return config
 
@@ -1368,9 +1368,9 @@ class TestVLLMClassification:
             labels=[],
             label_mapping={},
         )
-        config.prompt_template = "{text}\\nChoose {labels_str}. Answer: {label}"
+        config.prompt_template = "{text}\nChoose {labels_str}. Answer: {label}"
         prepared = apply_prompt(
-            examples={"text": ["Question?\\na. first\\nb. second"]},
+            examples={"text": ["Question?\na. first\nb. second"]},
             few_shot_examples=[],
             model_config=MagicMock(),
             dataset_config=config,
@@ -1475,6 +1475,7 @@ class TestVLLMClassification:
         with patch(
             "euroeval.benchmark_modules.vllm.StructuredOutputsParams",
             side_effect=lambda **kwargs: SimpleNamespace(**kwargs),
+            create=True,
         ):
             structured = model._setup_structured_outputs(inputs={"text": ["prompt"]})
 
