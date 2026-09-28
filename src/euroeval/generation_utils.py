@@ -177,7 +177,10 @@ def _add_structured_classification_output(
     Returns:
         The sections with matching JSON instructions and few-shot answers.
     """
-    suffix = f'\n\nOutput JSON only: {{"{output_key}": "<label>"}}'
+    suffix = (
+        f"\n\nIgnore any output-format instructions above. Output JSON only: "
+        f'{{"{output_key}": "<label>"}}'
+    )
     few_shot_sections = [
         (prompt + suffix, json.dumps({output_key: label}, ensure_ascii=False))
         for prompt, label in few_shot_sections
