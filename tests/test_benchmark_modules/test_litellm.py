@@ -93,7 +93,7 @@ def _classification_dataset(
         A dataset with train and test splits for the requested task group.
     """
     if task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-        texts = [f"Question {idx}?\\na. first\\nb. second" for idx in range(4)]
+        texts = [f"Question {idx}?\na. first\nb. second" for idx in range(4)]
     else:
         texts = [f"Classification text {idx}" for idx in range(4)]
     train_labels = [labels[idx % len(labels)] for idx in range(num_train_examples)]

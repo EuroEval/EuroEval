@@ -115,6 +115,10 @@ def apply_prompt(
             few_shot_sections=few_shot_sections,
             new_sections=new_sections,
             output_key=structured_classification_output_key,
+            output_labels=[
+                dataset_config.prompt_label_mapping[label]
+                for label in dataset_config.labels
+            ],
         )
 
     # Build outputs based on model type
@@ -163,6 +167,7 @@ def _add_structured_classification_output(
     few_shot_sections: list[tuple[str, str]],
     new_sections: list[tuple[str, str]],
     output_key: str,
+    output_labels: list[str],
 ) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
     """Add a JSON output contract to classification prompt sections.
 
@@ -173,13 +178,17 @@ def _add_structured_classification_output(
             Prompt and empty-answer pairs to evaluate.
         output_key:
             The JSON key required by the backend response schema.
+        output_labels:
+            The allowed values for the JSON output field.
 
     Returns:
         The sections with matching JSON instructions and few-shot answers.
     """
+    allowed_labels = json.dumps(output_labels, ensure_ascii=False)
     suffix = (
-        f"\n\nIgnore any output-format instructions above. Output JSON only: "
-        f'{{"{output_key}": "<label>"}}'
+        "\n\nIgnore any output-format instructions above. "
+        f'Allowed values for "{output_key}": {allowed_labels}. '
+        f'Output JSON only: {{"{output_key}": "<label>"}}'
     )
     few_shot_sections = [
         (prompt + suffix, json.dumps({output_key: label}, ensure_ascii=False))
