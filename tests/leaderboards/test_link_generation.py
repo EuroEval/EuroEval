@@ -23,14 +23,6 @@ def test_deepseek_provider_models_use_pricing_url(model_id: str) -> None:
     assert generate_model_url(model_id=model_id) == expected_url
 
 
-@pytest.mark.parametrize(
-    "model_id", ["deepseek-chat", "deepseek-ai/DeepSeek-V3", "openrouter/deepseek-chat"]
-)
-def test_non_provider_deepseek_models_have_no_deepseek_url(model_id: str) -> None:
-    """Model names without the DeepSeek provider prefix are not API models."""
-    assert generate_deepseek_url(model_id=model_id) is None
-
-
 def test_deepseek_url_overrides_stale_missing_url_decision(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -41,3 +33,11 @@ def test_deepseek_url_overrides_stale_missing_url_decision(
         generate_model_url(model_id="deepseek/stale-cache-model")
         == "https://api-docs.deepseek.com/quick_start/pricing/"
     )
+
+
+@pytest.mark.parametrize(
+    "model_id", ["deepseek-chat", "deepseek-ai/DeepSeek-V3", "openrouter/deepseek-chat"]
+)
+def test_non_provider_deepseek_models_have_no_deepseek_url(model_id: str) -> None:
+    """Model names without the DeepSeek provider prefix are not API models."""
+    assert generate_deepseek_url(model_id=model_id) is None

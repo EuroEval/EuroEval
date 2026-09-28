@@ -24,8 +24,9 @@ from euroeval.model_config import get_model_config
 from euroeval.model_loading import load_model
 from euroeval.tasks import HALLU, KNOW, SENT
 
-# The real helper, captured before the autouse fixture stubs it out.
+# The real helpers, captured before the autouse fixture stubs them out.
 _REAL_REMOTE_LAYA_CONFIG = zero_shot_classifier_module._remote_laya_config
+_REAL_RESOLVE_CHECKPOINT_PATH = zero_shot_classifier_module._resolve_checkpoint_path
 
 # A minimal fake Hub, mapping (repo_id, subfolder) -> Laya checkpoint config, used to
 # keep these tests off the network and the local Hub cache.
@@ -36,6 +37,12 @@ _FAKE_LAYA_REPOS: dict[tuple[str, str | None], dict[str, int]] = {
     ("convaiinnovations/laya-multilingual", None): {"max_len": 1024},
     ("convaiinnovations/laya-typed-decisions", None): {"max_len": 512},
 }
+_ROOT_CHECKPOINT_PATTERNS = (
+    "rl_agent_config.json",
+    "model.safetensors",
+    "tokenizer/**",
+    "encoder/**",
+)
 
 
 @dataclass
@@ -588,6 +595,39 @@ class TestNumParams:
         )
         assert model.num_params == 2 * 3 + 4
 
+    def test_counts_parameters_from_local_subfolder_checkpoint(
+        self,
+        fake_laya_module: types.ModuleType,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+        model_config: ModelConfig,
+        tmp_path: Path,
+    ) -> None:
+        """A local `#subfolder` model counts parameters in that checkpoint."""
+        checkpoint_dir = tmp_path / "multilingual"
+        checkpoint_dir.mkdir()
+        save_file(
+            {"weights": numpy.zeros((5, 7), dtype=numpy.float32)},
+            str(checkpoint_dir / "model.safetensors"),
+        )
+        (checkpoint_dir / "rl_agent_config.json").write_text("{}")
+        config = dataclasses.replace(
+            model_config,
+            model_id=str(tmp_path),
+            inference_backend=InferenceBackend.LAYA,
+            model_type=ModelType.ZERO_SHOT_CLASSIFIER,
+            param="multilingual",
+            revision="main",
+        )
+        model = ZeroShotClassifierModel(
+            model_config=config,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+
+        assert model.num_params == 5 * 7
+
     def test_counts_parameters_from_variant_checkpoint(
         self,
         monkeypatch: pytest.MonkeyPatch,
@@ -878,3 +918,39 @@ def test_remote_laya_config_offline_is_not_definitely_absent(
     assert _REAL_REMOTE_LAYA_CONFIG(
         repo_id="org/repo", subfolder="variant", token=None
     ) == (None, expected_definitely_absent)
+
+
+@pytest.mark.parametrize("subfolder", [None, "multilingual"], ids=["root", "subfolder"])
+def test_resolve_checkpoint_downloads_only_requested_checkpoint(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, subfolder: str | None
+) -> None:
+    """Root and subfolder resolution do not download sibling checkpoints."""
+    calls: list[dict[str, object]] = []
+    expected_patterns = (
+        ["multilingual/**"] if subfolder else list(_ROOT_CHECKPOINT_PATTERNS)
+    )
+
+    def fake_snapshot_download(**kwargs: object) -> str:
+        calls.append(kwargs)
+        return str(tmp_path)
+
+    monkeypatch.setattr(
+        zero_shot_classifier_module, "snapshot_download", fake_snapshot_download
+    )
+    cache_dir = tmp_path / "cache"
+    (cache_dir / "typed-decisions").mkdir(parents=True)
+    (cache_dir / "typed-decisions" / "model.safetensors").touch()
+
+    result = _REAL_RESOLVE_CHECKPOINT_PATH(
+        model_id="org/laya", subfolder=subfolder, cache_dir=str(cache_dir), token=None
+    )
+
+    assert result == str(tmp_path)
+    assert calls == [
+        {
+            "repo_id": "org/laya",
+            "cache_dir": str(cache_dir),
+            "allow_patterns": expected_patterns,
+            "token": None,
+        }
+    ]

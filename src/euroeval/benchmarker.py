@@ -718,15 +718,16 @@ class Benchmarker:
             reference_result = self._find_ordinary_result(
                 model_config=model_config, results=current_results
             )
-            metadata_model = None
             if reference_result is None:
-                metadata_model = load_model(
-                    model_config=model_config,
-                    dataset_config=self._canary_metadata_dataset(
-                        benchmark_config=benchmark_config
-                    ),
-                    benchmark_config=benchmark_config,
-                )
+                metadata_model = loaded_model
+                if metadata_model is None:
+                    metadata_model = load_model(
+                        model_config=model_config,
+                        dataset_config=self._canary_metadata_dataset(
+                            benchmark_config=benchmark_config
+                        ),
+                        benchmark_config=benchmark_config,
+                    )
             self._record_contamination_canary(
                 model_config=model_config,
                 benchmark_config=benchmark_config,
@@ -1379,12 +1380,19 @@ class Benchmarker:
                 ds_config
                 for ds_config in dataset_configs
                 if model_config.model_type in ds_config.allowed_model_types
-                and model_config.model_type.supports_task_group(
-                    task_group=ds_config.task.task_group
+                and (
+                    self._is_canary_dataset(ds_config)
+                    or model_config.model_type.supports_task_group(
+                        task_group=ds_config.task.task_group
+                    )
                 )
             ]
             for model_config in model_configs
         }
+
+    def _is_canary_dataset(self, dataset_config: "DatasetConfig") -> bool:
+        """Return whether a dataset config represents the virtual canary task."""
+        return dataset_config.task.name == CANARY_RESULT_TASK
 
     def _download(
         self,
@@ -1415,8 +1423,19 @@ class Benchmarker:
         )
         del dataset
 
-        # Skip download if model is a local path
-        if not Path(model_config.model_id).exists():
+        if model_config.model_type is ModelType.ZERO_SHOT_CLASSIFIER:
+            from .benchmark_modules.zero_shot_classifier import (  # noqa: PLC0415
+                _resolve_checkpoint_path,
+            )
+
+            _resolve_checkpoint_path(
+                model_id=model_config.model_id,
+                subfolder=model_config.param,
+                cache_dir=model_config.model_cache_dir,
+                token=get_hf_token(api_key=benchmark_config.api_key),
+            )
+        # Skip download if the model is a local path
+        elif not Path(model_config.model_id).exists():
             # Check if model is already cached before downloading
             cache_path = Path(model_config.model_cache_dir)
             has_cached = cache_path.exists() and any(cache_path.rglob("*.safetensors"))
@@ -1471,6 +1490,18 @@ class Benchmarker:
         self, *, model_config: "ModelConfig", benchmark_config: "BenchmarkConfig"
     ) -> None:
         """Download model weights without loading virtual-task data."""
+        if model_config.model_type is ModelType.ZERO_SHOT_CLASSIFIER:
+            from .benchmark_modules.zero_shot_classifier import (  # noqa: PLC0415
+                _resolve_checkpoint_path,
+            )
+
+            _resolve_checkpoint_path(
+                model_id=model_config.model_id,
+                subfolder=model_config.param,
+                cache_dir=model_config.model_cache_dir,
+                token=get_hf_token(api_key=benchmark_config.api_key),
+            )
+            return
         if Path(model_config.model_id).exists():
             log_once(
                 f"Model {model_config.model_id!r} is a local path, skipping download",
@@ -1496,10 +1527,6 @@ class Benchmarker:
                 cache_dir=model_config.model_cache_dir,
                 token=get_hf_token(api_key=benchmark_config.api_key),
             )
-
-    def _is_canary_dataset(self, dataset_config: "DatasetConfig") -> bool:
-        """Return whether a dataset config represents the virtual canary task."""
-        return dataset_config.task.name == CANARY_RESULT_TASK
 
     def _fetch_model_configs(
         self, model_ids: c.Sequence[str], benchmark_config: "BenchmarkConfig"
@@ -1728,6 +1755,10 @@ class Benchmarker:
             return None, pending_benchmarks, cached_results, None
 
         first_mode, first_dataset = (pending_benchmarks or benchmark_plan)[0]
+        if self._is_canary_dataset(first_dataset):
+            first_dataset = self._canary_metadata_dataset(
+                benchmark_config=benchmark_config
+            )
         try:
             loaded_model = load_model(
                 model_config=model_config,

@@ -59,6 +59,58 @@ class TestClearCacheFn:
 class TestCreateModelDatasetMapping:
     """Tests for `Benchmarker._create_model_dataset_mapping`."""
 
+    def test_canary_is_preserved_alongside_supported_zero_shot_dataset(
+        self, benchmarker: Benchmarker, model_config: ModelConfig
+    ) -> None:
+        """The virtual canary bypasses task-group filtering for Laya models."""
+        zero_shot_model_config = replace(
+            model_config, model_type=ModelType.ZERO_SHOT_CLASSIFIER
+        )
+        canary_dataset_config = DatasetConfig(
+            name="contamination-canary",
+            pretty_name="Contamination canary",
+            task=CONTAMINATION_DETECTION,
+            languages=[Language(code="da", name="Danish")],
+        )
+        sent_dataset_config = DatasetConfig(
+            name="sent-dataset",
+            pretty_name="Sentiment dataset",
+            source="dataset_id",
+            task=SENT,
+            languages=[Language(code="da", name="Danish")],
+        )
+
+        mapping = benchmarker._create_model_dataset_mapping(
+            model_configs=[zero_shot_model_config],
+            dataset_configs=[canary_dataset_config, sent_dataset_config],
+        )
+
+        assert mapping[zero_shot_model_config] == [
+            canary_dataset_config,
+            sent_dataset_config,
+        ]
+
+    def test_standalone_canary_is_preserved_for_zero_shot_model(
+        self, benchmarker: Benchmarker, model_config: ModelConfig
+    ) -> None:
+        """A Laya-only canary run still includes its virtual dataset."""
+        zero_shot_model_config = replace(
+            model_config, model_type=ModelType.ZERO_SHOT_CLASSIFIER
+        )
+        canary_dataset_config = DatasetConfig(
+            name="contamination-canary",
+            pretty_name="Contamination canary",
+            task=CONTAMINATION_DETECTION,
+            languages=[Language(code="da", name="Danish")],
+        )
+
+        mapping = benchmarker._create_model_dataset_mapping(
+            model_configs=[zero_shot_model_config],
+            dataset_configs=[canary_dataset_config],
+        )
+
+        assert mapping[zero_shot_model_config] == [canary_dataset_config]
+
     def test_unsupported_task_group_is_filtered_out_for_zero_shot_classifier(
         self, benchmarker: Benchmarker, model_config: ModelConfig
     ) -> None:
@@ -1040,3 +1092,88 @@ def test_get_record(
         is not None
     )
     assert benchmarked == expected
+
+
+@pytest.mark.parametrize("param", [None, "multilingual"])
+def test_laya_download_only_resolves_requested_checkpoint(
+    benchmarker: Benchmarker,
+    benchmark_config: BenchmarkConfig,
+    model_config: ModelConfig,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    param: str | None,
+) -> None:
+    """Laya downloads use the parameter-aware resolver, not cache globbing."""
+    model_cache_dir = tmp_path / "model-cache"
+    (model_cache_dir / "other-variant").mkdir(parents=True)
+    (model_cache_dir / "other-variant" / "model.safetensors").touch()
+    zero_shot_config = replace(
+        model_config,
+        model_type=ModelType.ZERO_SHOT_CLASSIFIER,
+        model_cache_dir=str(model_cache_dir),
+        param=param,
+    )
+    resolver_mock = MagicMock()
+    monkeypatch.setattr(
+        "euroeval.benchmark_modules.zero_shot_classifier._resolve_checkpoint_path",
+        resolver_mock,
+    )
+    monkeypatch.setattr("euroeval.benchmarker.get_hf_token", lambda **kwargs: None)
+
+    benchmarker._download_model_only(
+        model_config=zero_shot_config, benchmark_config=benchmark_config
+    )
+
+    resolver_mock.assert_called_once_with(
+        model_id=zero_shot_config.model_id,
+        subfolder=param,
+        cache_dir=str(model_cache_dir),
+        token=benchmark_config.api_key,
+    )
+
+
+def test_zero_shot_canary_standalone_reuses_loaded_model_metadata(
+    benchmarker: Benchmarker,
+    benchmark_config: BenchmarkConfig,
+    model_config: ModelConfig,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A standalone Laya canary does not load the model a second time."""
+    canary_dataset = DatasetConfig(
+        task=CONTAMINATION_DETECTION,
+        languages=benchmark_config.languages,
+        name="contamination-canary",
+    )
+    run_config = replace(
+        benchmark_config, datasets=[canary_dataset], force=True, save_results=False
+    )
+    zero_shot_config = replace(
+        model_config,
+        model_id="laya-model",
+        revision="main",
+        fresh=False,
+        model_type=ModelType.ZERO_SHOT_CLASSIFIER,
+    )
+    metadata_model = MagicMock(
+        num_params=123, model_max_length=512, vocab_size=32_000, generative_type=None
+    )
+    load_model_mock = MagicMock(return_value=metadata_model)
+
+    monkeypatch.setattr(benchmarker, "results_path", tmp_path / "results.jsonl")
+    monkeypatch.setattr(
+        benchmarker, "_build_benchmark_config", lambda **kwargs: run_config
+    )
+    monkeypatch.setattr(
+        benchmarker, "_fetch_model_configs", lambda *args, **kwargs: [zero_shot_config]
+    )
+    monkeypatch.setattr("euroeval.benchmarker.load_model", load_model_mock)
+
+    results = benchmarker.benchmark(model=zero_shot_config.model_id)
+
+    assert len(results) == 1
+    assert results[0].task == CONTAMINATION_DETECTION.name
+    assert load_model_mock.call_count == 1
+    assert load_model_mock.call_args.kwargs["dataset_config"].task != (
+        CONTAMINATION_DETECTION
+    )

@@ -506,7 +506,10 @@ class ZeroShotClassifierModel(BenchmarkModule):
         model_id = self.model_config.model_id
         param = self.model_config.param
         if Path(model_id).is_dir():
-            return _num_params_from_local_checkpoint(checkpoint_dir=Path(model_id))
+            checkpoint_dir = Path(model_id)
+            if param is not None:
+                checkpoint_dir /= param
+            return _num_params_from_local_checkpoint(checkpoint_dir=checkpoint_dir)
 
         token = get_hf_token(api_key=self.benchmark_config.api_key)
         if param is not None:
