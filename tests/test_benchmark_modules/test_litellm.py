@@ -25,7 +25,7 @@ from euroeval.benchmark_modules.litellm import (
     get_api_model_release_date,
 )
 from euroeval.constants import (
-    LITELLM_CLASSIFICATION_OUTPUT_KEY,
+    CLASSIFICATION_OUTPUT_KEY,
     MAX_LITELLM_LOGPROBS,
     NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     REASONING_MAX_TOKENS,
@@ -93,7 +93,7 @@ class TestClassificationStructuredOutput:
             generation_kwargs = model.get_generation_kwargs(dataset_config=config)
 
         schema = generation_kwargs["response_format"].model_json_schema()
-        label_schema = schema["properties"][LITELLM_CLASSIFICATION_OUTPUT_KEY]
+        label_schema = schema["properties"][CLASSIFICATION_OUTPUT_KEY]
         assert label_schema["type"] == "string"
         assert label_schema["enum"] == list(label_mapping.values())
         assert "items" not in label_schema
@@ -157,7 +157,7 @@ class TestClassificationStructuredOutput:
         final_prompt = user_messages[-1]["content"]
         assert "Classification text" in final_prompt or "Question" in final_prompt
         valid_outputs = [
-            json.dumps({LITELLM_CLASSIFICATION_OUTPUT_KEY: label}, ensure_ascii=False)
+            json.dumps({CLASSIFICATION_OUTPUT_KEY: label}, ensure_ascii=False)
             for label in label_mapping.values()
         ]
         assert all(output in final_prompt for output in valid_outputs)
@@ -175,18 +175,18 @@ class TestClassificationStructuredOutput:
 
         if few_shot:
             assistant_labels = [
-                json.loads(message["content"])[LITELLM_CLASSIFICATION_OUTPUT_KEY]
+                json.loads(message["content"])[CLASSIFICATION_OUTPUT_KEY]
                 for message in assistant_messages
             ]
             assert set(assistant_labels) == set(label_mapping.values())
 
-    def test_reasoning_prepared_messages_keep_bare_labels(
+    def test_reasoning_prepared_messages_use_json_contract(
         self,
         model_config: ModelConfig,
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """Reasoning models retain the original bare-label few-shot contract."""
+        """Reasoning models receive JSON prompts without schema decoding."""
         labels = ["positive", "negative"]
         label_mapping = {"positive": "agree", "negative": "disagree"}
         config = _classification_dataset_config(
@@ -216,7 +216,10 @@ class TestClassificationStructuredOutput:
         assistant_labels = [
             message["content"] for message in messages if message["role"] == "assistant"
         ]
-        assert set(assistant_labels) == set(label_mapping.values())
+        assert {
+            json.loads(content)[CLASSIFICATION_OUTPUT_KEY]
+            for content in assistant_labels
+        } == set(label_mapping.values())
         assert len(assistant_labels) == config.num_few_shot_examples
         final_prompt = [
             message["content"] for message in messages if message["role"] == "user"
@@ -224,8 +227,8 @@ class TestClassificationStructuredOutput:
         assert final_prompt.endswith("Reply with only the label.")
         assert "Ignore any output-format instructions above" not in final_prompt
         assert (
-            json.dumps({LITELLM_CLASSIFICATION_OUTPUT_KEY: "agree"}, ensure_ascii=False)
-            not in final_prompt
+            json.dumps({CLASSIFICATION_OUTPUT_KEY: "agree"}, ensure_ascii=False)
+            in final_prompt
         )
 
 

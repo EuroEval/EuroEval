@@ -8,6 +8,7 @@ import typing as t
 import demjson3
 import numpy as np
 
+from .constants import CLASSIFICATION_OUTPUT_KEY
 from .exceptions import InvalidBenchmark, InvalidModel
 from .logging_utils import log
 
@@ -63,6 +64,30 @@ def clean_label_token(token: str, *, preserve_spaces: bool = False) -> str:
 
 if t.TYPE_CHECKING:
     from .data_models import ModelIdComponents
+
+
+def extract_classification_label(s: str) -> str | None:
+    """Extract the final scalar classification label from a JSON object.
+
+    Args:
+        s:
+            Model output, optionally containing reasoning before the JSON object.
+
+    Returns:
+        The JSON ``label`` value when it is a string, otherwise None.
+    """
+    matches = list(re.finditer(pattern=r"\{[^{}]*?\}", string=s, flags=re.DOTALL))
+    for match in reversed(matches):
+        try:
+            value = demjson3.decode(txt=match.group())
+        except demjson3.JSONDecodeError:
+            continue
+        if not isinstance(value, dict):
+            continue
+        label = value.get(CLASSIFICATION_OUTPUT_KEY)
+        if isinstance(label, str):
+            return label.strip()
+    return None
 
 
 def extract_json_dict_from_string(s: str) -> dict | None:

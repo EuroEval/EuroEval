@@ -6,6 +6,7 @@ from euroeval.data_models import ModelIdComponents
 from euroeval.exceptions import InvalidBenchmark, InvalidModel
 from euroeval.string_utils import (
     clean_label_token,
+    extract_classification_label,
     extract_json_dict_from_string,
     extract_multiple_choice_labels,
     scramble,
@@ -36,6 +37,19 @@ from euroeval.string_utils import (
 def test_clean_label_token_issue_examples(token: str, expected: str) -> None:
     """Clean the exact label tokens reported in issue 2180."""
     assert clean_label_token(token) == expected
+
+
+def test_extract_classification_label_ignores_non_scalar_values() -> None:
+    """Classification extraction only accepts scalar string labels."""
+    assert extract_classification_label('{"label": ["a"]}') is None
+
+
+def test_extract_classification_label_uses_final_json_object() -> None:
+    """Reasoning before the final scalar label does not affect extraction."""
+    assert (
+        extract_classification_label('analysis {"label": "wrong"} final {"label": "é"}')
+        == "é"
+    )
 
 
 def test_extract_json_dict_from_string_invalid_json_returns_none() -> None:

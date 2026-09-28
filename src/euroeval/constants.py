@@ -84,10 +84,12 @@ REASONING_TOKENS: list[tuple[str | re.Pattern, str | re.Pattern]] = [
 # output
 CUSTOM_STOP_TOKENS = ["<sep>"]
 
-# For classification tasks we force LiteLLM models to output a JSON dictionary with a
-# single key and the values being restricted to the allowed labels. This is the key we
-# use
-LITELLM_CLASSIFICATION_OUTPUT_KEY = "label"
+# For generative classification tasks we request a JSON object with a single key and
+# values restricted to the allowed labels.
+CLASSIFICATION_OUTPUT_KEY = "label"
+# Kept as an import-compatible alias for downstream users of the old backend-specific
+# name.
+LITELLM_CLASSIFICATION_OUTPUT_KEY = CLASSIFICATION_OUTPUT_KEY
 
 # These characters are stripped from JSON output when trying to identify the label
 JSON_STRIP_CHARACTERS = ' {}\n\r":'
