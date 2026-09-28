@@ -622,6 +622,7 @@ class Benchmarker:
                         continue
                     if (
                         loaded_model is not None
+                        and model_config.model_type is ModelType.GENERATIVE
                         and loaded_model.generative_type
                         not in dataset_config.allowed_generative_types
                     ):
@@ -713,7 +714,7 @@ class Benchmarker:
         """
         reference_result: BenchmarkResult | None = None
         metadata_model = loaded_model
-        if model_config.model_type is ModelType.ENCODER:
+        if model_config.model_type.requires_canary_reference:
             reference_result = self._find_ordinary_result(
                 model_config=model_config, results=current_results
             )
@@ -878,7 +879,8 @@ class Benchmarker:
         loaded_model: "BenchmarkModule | None",
     ) -> None:
         """Collect one non-ranking canary record for the selected virtual task."""
-        if getattr(model_config, "model_type", None) is ModelType.ENCODER:
+        model_type = getattr(model_config, "model_type", None)
+        if model_type is not None and model_type.requires_canary_reference:
             evidence = status_evidence(
                 model_id=model_config.model_id,
                 requested_revision=model_config.revision,
@@ -1047,7 +1049,10 @@ class Benchmarker:
                 # initialised weights
                 rng = enforce_reproducibility()
 
-                if model is None or model_config.model_type != ModelType.GENERATIVE:
+                if (
+                    model is None
+                    or not model_config.model_type.uses_generation_pipeline
+                ):
                     model = load_model(
                         model_config=model_config,
                         dataset_config=dataset_config,
@@ -1077,7 +1082,7 @@ class Benchmarker:
                     prepared_datasets = model.prepare_datasets(
                         datasets=bootstrapped_datasets, task=dataset_config.task
                     )
-                    if model_config.model_type == ModelType.GENERATIVE:
+                    if model_config.model_type.uses_generation_pipeline:
                         scores = generate(
                             model=model,
                             datasets=prepared_datasets,
@@ -1374,6 +1379,9 @@ class Benchmarker:
                 ds_config
                 for ds_config in dataset_configs
                 if model_config.model_type in ds_config.allowed_model_types
+                and model_config.model_type.supports_task_group(
+                    task_group=ds_config.task.task_group
+                )
             ]
             for model_config in model_configs
         }
@@ -1705,9 +1713,16 @@ class Benchmarker:
             )
 
         needs_load = (
-            model_config.model_type == ModelType.GENERATIVE
+            model_config.model_type.uses_generation_pipeline
             and not benchmark_config.download_only
-            and (bool(pending_benchmarks) or (resolved_type is None and auto_requested))
+            and (
+                bool(pending_benchmarks)
+                or (
+                    model_config.model_type == ModelType.GENERATIVE
+                    and resolved_type is None
+                    and auto_requested
+                )
+            )
         )
         if not needs_load:
             return None, pending_benchmarks, cached_results, None

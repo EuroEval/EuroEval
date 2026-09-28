@@ -101,12 +101,15 @@ class InferenceBackend(AutoStrEnum):
             LiteLLM library.
         DUMMY:
             The built-in dummy model, used for debugging.
+        LAYA:
+            The Laya zero-shot classifier model. The `laya` library.
     """
 
     TRANSFORMERS = auto()
     VLLM = auto()
     LITELLM = auto()
     DUMMY = auto()
+    LAYA = auto()
 
 
 class ModelType(AutoStrEnum):
@@ -117,14 +120,55 @@ class ModelType(AutoStrEnum):
             An encoder (i.e., BERT-style) model.
         GENERATIVE:
             A generative model. Can be either decoder or encoder-decoder (aka seq2seq).
+        ZERO_SHOT_CLASSIFIER:
+            A non-generative zero-shot classifier model (e.g. Laya) that answers
+            typed questions with per-label probabilities.
     """
 
     ENCODER = auto()
     GENERATIVE = auto()
+    ZERO_SHOT_CLASSIFIER = auto()
 
     def __repr__(self) -> str:
         """Return the value in upper case for better readability."""
         return self.value.upper()
+
+    @property
+    def requires_canary_reference(self) -> bool:
+        """Whether the contamination canary reuses an ordinary result's metadata.
+
+        Returns:
+            Whether the model type does not support standalone contamination canary
+            collection, and instead reuses the metadata of an ordinary result.
+        """
+        return self in {ModelType.ENCODER, ModelType.ZERO_SHOT_CLASSIFIER}
+
+    def supports_task_group(self, task_group: "TaskGroup") -> bool:
+        """Whether the model type can be evaluated on the given task group.
+
+        Args:
+            task_group:
+                The task group to check support for.
+
+        Returns:
+            Whether the model type supports the task group.
+        """
+        if self is ModelType.ZERO_SHOT_CLASSIFIER:
+            return task_group in {
+                TaskGroup.SEQUENCE_CLASSIFICATION,
+                TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+            }
+        return True
+
+    @property
+    def uses_generation_pipeline(self) -> bool:
+        """Whether the model type is evaluated through the generation pipeline.
+
+        Returns:
+            Whether the model is run through `generate()` (as opposed to
+            `finetune()`), and has its loaded instance reused across datasets.
+        """
+        return self in {ModelType.GENERATIVE, ModelType.ZERO_SHOT_CLASSIFIER}
 
 
 class ParameterAdjustment(AutoStrEnum):

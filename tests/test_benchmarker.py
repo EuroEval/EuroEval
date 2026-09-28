@@ -25,10 +25,10 @@ from euroeval.data_models import (
     ModelConfig,
     Task,
 )
-from euroeval.enums import InferenceBackend, ModelType
+from euroeval.enums import InferenceBackend, ModelType, ShotMode
 from euroeval.exceptions import HuggingFaceHubDown
 from euroeval.result_cache import get_record
-from euroeval.tasks import CONTAMINATION_DETECTION
+from euroeval.tasks import CONTAMINATION_DETECTION, NER, SENT
 
 
 class TestClearCacheFn:
@@ -54,6 +54,39 @@ class TestClearCacheFn:
         """Test that no errors are thrown when clearing a non-existing cache."""
         clear_model_cache_fn(cache_dir="does-not-exist")
         rmtree(path="does-not-exist", ignore_errors=True)
+
+
+class TestCreateModelDatasetMapping:
+    """Tests for `Benchmarker._create_model_dataset_mapping`."""
+
+    def test_unsupported_task_group_is_filtered_out_for_zero_shot_classifier(
+        self, benchmarker: Benchmarker, model_config: ModelConfig
+    ) -> None:
+        """A NER dataset is filtered out up front for a zero-shot classifier model."""
+        zero_shot_model_config = replace(
+            model_config, model_type=ModelType.ZERO_SHOT_CLASSIFIER
+        )
+        ner_dataset_config = DatasetConfig(
+            name="ner-dataset",
+            pretty_name="NER dataset",
+            source="dataset_id",
+            task=NER,
+            languages=[Language(code="da", name="Danish")],
+        )
+        sent_dataset_config = DatasetConfig(
+            name="sent-dataset",
+            pretty_name="Sentiment dataset",
+            source="dataset_id",
+            task=SENT,
+            languages=[Language(code="da", name="Danish")],
+        )
+
+        mapping = benchmarker._create_model_dataset_mapping(
+            model_configs=[zero_shot_model_config],
+            dataset_configs=[ner_dataset_config, sent_dataset_config],
+        )
+
+        assert mapping[zero_shot_model_config] == [sent_dataset_config]
 
 
 class TestDatasetArgumentConflicts:
@@ -223,6 +256,125 @@ class TestDebugStartupVerbosity:
             "Run with `--verbose` for more information" in msg
             for msg in logged_messages
         )
+
+
+class TestZeroShotClassifierModelReuse:
+    """Tests that zero-shot classifier models are preloaded and reused."""
+
+    def test_zero_shot_classifier_is_not_skipped_by_generative_type_check(
+        self,
+        benchmarker: Benchmarker,
+        dataset_config: DatasetConfig,
+        model_config: ModelConfig,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A preloaded zero-shot model without a generative type is benchmarked."""
+        zero_shot_model_config = replace(
+            model_config, model_type=ModelType.ZERO_SHOT_CLASSIFIER
+        )
+        loaded_model = MagicMock()
+        loaded_model.generative_type = None
+        assert None not in dataset_config.allowed_generative_types
+
+        monkeypatch.setattr(
+            benchmarker,
+            "_fetch_model_configs",
+            MagicMock(return_value=[zero_shot_model_config]),
+        )
+        monkeypatch.setattr(
+            benchmarker,
+            "_create_model_dataset_mapping",
+            MagicMock(return_value={zero_shot_model_config: [dataset_config]}),
+        )
+        monkeypatch.setattr(
+            benchmarker,
+            "_prepare_pending_benchmarks",
+            MagicMock(
+                return_value=(
+                    loaded_model,
+                    [(ShotMode.ZERO_SHOT, dataset_config)],
+                    [],
+                    None,
+                )
+            ),
+        )
+        monkeypatch.setattr(benchmarker, "_check_adapter_requirements", MagicMock())
+        benchmark_single_mock = MagicMock()
+        monkeypatch.setattr(benchmarker, "_benchmark_single", benchmark_single_mock)
+        monkeypatch.setattr(
+            benchmarker,
+            "_handle_benchmark_result",
+            MagicMock(return_value=(1, 0, 0, False)),
+        )
+
+        benchmarker.benchmark(model="test_model", dataset="sst5")
+
+        benchmark_single_mock.assert_called_once()
+
+    def test_zero_shot_classifier_model_is_loaded_once_across_datasets(
+        self,
+        benchmarker: Benchmarker,
+        benchmark_config: BenchmarkConfig,
+        dataset_config: DatasetConfig,
+        model_config: ModelConfig,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """`load_model` is called once and reused across two datasets."""
+        zero_shot_model_config = replace(
+            model_config, model_type=ModelType.ZERO_SHOT_CLASSIFIER
+        )
+        second_dataset_config = DatasetConfig(
+            name="dataset-2",
+            pretty_name="Dataset 2",
+            source="dataset_id",
+            task=dataset_config.task,
+            languages=dataset_config.languages,
+        )
+
+        loaded_model = MagicMock()
+        loaded_model.generative_type = None
+        loaded_model.num_params = 100
+        loaded_model.model_max_length = 512
+        loaded_model.vocab_size = 32_000
+        loaded_model.prepare_datasets.return_value = MagicMock()
+
+        load_model_mock = MagicMock(return_value=loaded_model)
+        monkeypatch.setattr("euroeval.benchmarker.load_model", load_model_mock)
+        monkeypatch.setattr("euroeval.benchmarker.enforce_reproducibility", MagicMock())
+        monkeypatch.setattr("euroeval.benchmarker.initial_logging", MagicMock())
+        monkeypatch.setattr("euroeval.benchmarker.load_data", MagicMock())
+        monkeypatch.setattr("euroeval.benchmarker.generate", MagicMock(return_value={}))
+        monkeypatch.setattr(
+            "euroeval.benchmarker.log_scores", MagicMock(return_value={})
+        )
+
+        prepared_model, pending_benchmarks, _, load_error = (
+            benchmarker._prepare_pending_benchmarks(
+                model_config=zero_shot_model_config,
+                datasets=[dataset_config, second_dataset_config],
+                benchmark_config=benchmark_config,
+                existing_results=[],
+            )
+        )
+
+        assert load_error is None
+        assert prepared_model is loaded_model
+        assert load_model_mock.call_count == 1
+        assert len(pending_benchmarks) == 2
+
+        for _shot_mode, pending_dataset_config in pending_benchmarks:
+            result = benchmarker._benchmark_single(
+                model=prepared_model,
+                model_config=zero_shot_model_config,
+                dataset_config=pending_dataset_config,
+                benchmark_config=benchmark_config,
+                num_finished_benchmarks=0,
+                num_total_benchmarks=len(pending_benchmarks),
+            )
+            assert isinstance(result, BenchmarkResult)
+
+        assert load_model_mock.call_count == 1
+        assert loaded_model.update_dataset_config.call_count == 2
 
 
 @pytest.fixture(scope="module")

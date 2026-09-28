@@ -612,6 +612,38 @@ def test_per_call_none_inherits_initialiser_shot_mode(
     assert config.few_shot is expected_mode
 
 
+@pytest.mark.parametrize(
+    ("requested_mode", "expect_log"),
+    [
+        (None, False),
+        (ShotMode.ZERO_SHOT, False),
+        (ShotMode.FEW_SHOT, True),
+        (True, True),
+    ],
+    ids=["auto", "explicit-zero-shot", "explicit-few-shot", "bool-true"],
+)
+def test_zero_shot_classifier_forces_zero_shot(
+    model_config: ModelConfig,
+    monkeypatch: pytest.MonkeyPatch,
+    requested_mode: ShotMode | bool | None,
+    expect_log: bool,
+) -> None:
+    """A zero-shot classifier is always forced to zero-shot, logging if overridden."""
+    zero_shot_classifier = replace(
+        model_config, model_type=ModelType.ZERO_SHOT_CLASSIFIER
+    )
+    log_once_mock = Mock()
+    monkeypatch.setattr("euroeval.shot_modes.log_once", log_once_mock)
+
+    assert resolve_shot_modes(
+        model_config=zero_shot_classifier, requested_mode=requested_mode
+    ) == [ShotMode.ZERO_SHOT]
+    if expect_log:
+        log_once_mock.assert_called_once()
+    else:
+        log_once_mock.assert_not_called()
+
+
 def test_zero_shot_tasks_are_not_duplicated(
     monkeypatch: pytest.MonkeyPatch,
     benchmark_config: BenchmarkConfig,

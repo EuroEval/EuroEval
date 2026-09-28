@@ -1,9 +1,11 @@
 """Shot-mode policy and benchmark planning."""
 
 import collections.abc as c
+import logging
 import typing as t
 
 from .enums import GenerativeType, InferenceBackend, ModelType, ShotMode
+from .logging_utils import log_once
 from .types import ShotModeRequest
 
 if t.TYPE_CHECKING:
@@ -106,6 +108,14 @@ def resolve_shot_modes(
         Concrete modes to evaluate, in execution order.
     """
     mode = coerce_shot_mode(requested_mode=requested_mode)
+    if model_config.model_type == ModelType.ZERO_SHOT_CLASSIFIER:
+        if mode == ShotMode.FEW_SHOT:
+            log_once(
+                f"The model {model_config.model_id!r} is a zero-shot classifier "
+                "and does not support few-shot evaluation. Forcing zero-shot.",
+                level=logging.DEBUG,
+            )
+        return [ShotMode.ZERO_SHOT]
     if mode is not ShotMode.AUTO:
         return [mode]
     if model_config.model_type != ModelType.GENERATIVE:

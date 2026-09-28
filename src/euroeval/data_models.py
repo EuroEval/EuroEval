@@ -361,12 +361,15 @@ class HFModelInfo:
         release_date (optional):
             The date when model weights were first publicly available, formatted as
             ISO 8601. Defaults to None when it cannot be determined.
+        siblings (optional):
+            The repo's file names, or None if not fetched (e.g. offline, local).
     """
 
     pipeline_tag: str
     tags: c.Sequence[str]
     adapter_base_model_id: str | None
     release_date: str | None = None
+    siblings: c.Sequence[str] | None = None
 
 
 @dataclass
@@ -594,7 +597,7 @@ class Task:
     uses_logprobs: bool = False
     requires_logprobs: bool = False
     default_allowed_model_types: c.Sequence[ModelType] = field(
-        default_factory=lambda: [ModelType.ENCODER, ModelType.GENERATIVE]
+        default_factory=lambda: list(ModelType)
     )
     default_allowed_generative_types: c.Sequence[GenerativeType] = field(
         default_factory=lambda: [

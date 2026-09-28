@@ -187,6 +187,26 @@ def _make_response(content: str = "positive") -> MagicMock:
     return response
 
 
+def test_deepseek_provider_prefix_is_preserved_for_custom_api(
+    benchmark_config: BenchmarkConfig,
+) -> None:
+    """Only the ``deepseek/`` provider prefix bypasses custom API rewriting."""
+    benchmark_config = dataclasses.replace(
+        benchmark_config, api_base="https://api.example.com/v1"
+    )
+
+    assert (
+        clean_model_id(
+            model_id="deepseek/deepseek-chat", benchmark_config=benchmark_config
+        )
+        == "deepseek/deepseek-chat"
+    )
+    assert (
+        clean_model_id(model_id="deepseek-chat", benchmark_config=benchmark_config)
+        == "openai/deepseek-chat"
+    )
+
+
 @pytest.mark.parametrize(
     ("model_id", "expected"),
     [
@@ -237,26 +257,6 @@ def test_huggingface_model_id_is_preserved_for_custom_api(
 
     assert (
         clean_model_id(model_id=model_id, benchmark_config=benchmark_config) == model_id
-    )
-
-
-def test_deepseek_provider_prefix_is_preserved_for_custom_api(
-    benchmark_config: BenchmarkConfig,
-) -> None:
-    """Only the ``deepseek/`` provider prefix bypasses custom API rewriting."""
-    benchmark_config = dataclasses.replace(
-        benchmark_config, api_base="https://api.example.com/v1"
-    )
-
-    assert (
-        clean_model_id(
-            model_id="deepseek/deepseek-chat", benchmark_config=benchmark_config
-        )
-        == "deepseek/deepseek-chat"
-    )
-    assert (
-        clean_model_id(model_id="deepseek-chat", benchmark_config=benchmark_config)
-        == "openai/deepseek-chat"
     )
 
 

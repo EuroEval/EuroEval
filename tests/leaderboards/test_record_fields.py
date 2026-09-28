@@ -7,14 +7,15 @@ import pytest
 from leaderboards.record_fields import _metadata_richness_score, deduplicate_records
 
 
-def test_deduplicate_collapses_generative_flag_variants() -> None:
-    """Records differing only in the ``generative`` flag collapse to one.
+@pytest.mark.parametrize("version", ["18.1.0.dev", "18.1.0.dev0"])
+def test_deduplicate_accepts_development_versions(version: str) -> None:
+    """Development suffixes do not prevent numeric version comparisons."""
+    old = _record(version="18.0.0")
+    new = _record(version=version)
 
-    This is the Apertus v1.1 regression (issue #1970): the two records render
-    on the same leaderboard row, so only one must survive deduplication.
-    """
-    records = [_record(generative=True), _record(generative=None)]
-    assert len(deduplicate_records(records=records)) == 1
+    deduped = deduplicate_records(records=[old, new])
+
+    assert deduped[0]["eval_library"]["version"] == version
 
 
 def _record(
@@ -50,6 +51,16 @@ def _record(
     if version is not None:
         library["version"] = version
     return {"model_info": model_info, "eval_library": library}
+
+
+def test_deduplicate_collapses_generative_flag_variants() -> None:
+    """Records differing only in the ``generative`` flag collapse to one.
+
+    This is the Apertus v1.1 regression (issue #1970): the two records render
+    on the same leaderboard row, so only one must survive deduplication.
+    """
+    records = [_record(generative=True), _record(generative=None)]
+    assert len(deduplicate_records(records=records)) == 1
 
 
 def test_deduplicate_equal_richness_preserves_first_record() -> None:
@@ -131,17 +142,6 @@ def test_deduplicate_keeps_newest_version() -> None:
 
     assert len(deduped) == 1
     assert deduped[0]["eval_library"]["version"] == "17.6.0"
-
-
-@pytest.mark.parametrize("version", ["18.1.0.dev", "18.1.0.dev0"])
-def test_deduplicate_accepts_development_versions(version: str) -> None:
-    """Development suffixes do not prevent numeric version comparisons."""
-    old = _record(version="18.0.0")
-    new = _record(version=version)
-
-    deduped = deduplicate_records(records=[old, new])
-
-    assert deduped[0]["eval_library"]["version"] == version
 
 
 def test_deduplicate_prefers_record_with_release_date() -> None:
