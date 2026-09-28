@@ -110,7 +110,7 @@ def get_version(record: dict) -> str | None:
     """
     version = record.get("eval_library", {}).get("version")
     if version:
-        return re.sub(r"\.dev\d+", "", version)
+        return re.sub(r"\.dev\d*$", "", version)
     return None
 
 

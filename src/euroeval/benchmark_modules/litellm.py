@@ -297,6 +297,7 @@ BASE_DECODER_MODELS = [
 ]
 
 CUSTOM_INFERENCE_API_PREFIXES = [
+    "deepseek/",
     "huggingface/",
     "hosted_vllm/",
     "vllm/",
@@ -341,13 +342,7 @@ class LiteLLMModel(BenchmarkModule):
         # xAI models
         re.compile(r"(xai/)?grok-3-mini(-fast)?(-beta)?"): ["low", "medium", "high"],
         # DeepSeek models
-        re.compile(r"deepseek/deepseek-flash.*"): [
-            "no-thinking",
-            "thinking",
-            "low",
-            "high",
-            "max",
-        ],
+        re.compile(r"deepseek/.*"): ["no-thinking", "thinking", "low", "high", "max"],
     }
 
     def __init__(
@@ -1597,7 +1592,7 @@ class LiteLLMModel(BenchmarkModule):
         # `deepseek/` prefix is required to distinguish the official DeepSeek API
         # from open-weight deployments (e.g. vLLM, Ollama, OpenRouter), which do not
         # get this DeepSeek-API-specific param shaping.
-        if self.model_config.model_id.lower().startswith("deepseek/"):
+        if self.model_config.model_id.startswith("deepseek/"):
             if param == "thinking":
                 generation_kwargs["thinking"] = dict(type="enabled")
             elif param == "no-thinking":

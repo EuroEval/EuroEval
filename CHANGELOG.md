@@ -48,6 +48,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- DeepSeek API model IDs now use the `deepseek/` provider prefix without being
+  rewritten for custom API endpoints, and all such models link to DeepSeek's pricing
+  documentation on generated leaderboards.
 - Generative benchmarking now defaults to automatic shot selection: local
   instruction-tuned and reasoning models run zero-shot and few-shot evaluations, base
   models run few-shot, and API-backed models run zero-shot. The explicit `--few-shot`
