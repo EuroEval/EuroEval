@@ -20,7 +20,13 @@ const props = withDefaults(
   { xAxis: "parameters" },
 );
 
-type ModelKind = "instruct" | "reasoning" | "base" | "zero-shot classifier" | "encoder" | "other";
+type ModelKind =
+  | "instruct"
+  | "reasoning"
+  | "base"
+  | "zero-shot classifier"
+  | "encoder"
+  | "other";
 
 interface MetaItem {
   label: string;
@@ -204,9 +210,15 @@ const allPoints = computed<Point[]>(() => {
 const presentKinds = computed<ModelKind[]>(() => {
   const seen = new Set<ModelKind>();
   for (const p of allPoints.value) seen.add(p.kind);
-  return (["instruct", "reasoning", "base", "zero-shot classifier", "encoder", "other"] as const).filter(
-    (k) => seen.has(k),
-  );
+  const order = [
+    "instruct",
+    "reasoning",
+    "base",
+    "zero-shot classifier",
+    "encoder",
+    "other",
+  ] as const;
+  return order.filter((k) => seen.has(k));
 });
 
 const hasCommercial = computed(() =>
