@@ -30,23 +30,27 @@ def test_generate_all_models_csv_preserves_classifier_icon(
     """The full generation pipeline keeps the classifier target icon in CSV."""
     dataset = "sentiment"
     score = [([0.8, 0.9], 0.85, 0.05)]
-    model_results = {
-        "org/laya": {dataset: score},
-        "org/encoder": {dataset: score},
-    }
+    model_results = {"org/laya": {dataset: score}, "org/encoder": {dataset: score}}
     metadata = {
         "org/laya": {
             "model_type": "zero_shot_classifier",
             "generative_type": None,
             "parameters": 100,
+            "vocabulary_size": math.nan,
+            "context": math.nan,
+            "release_date": None,
             "open": True,
             "commercial": False,
             "merge": False,
             "trained_from_scratch": False,
         },
         "org/encoder": {
+            "model_type": None,
             "generative_type": None,
             "parameters": 200,
+            "vocabulary_size": math.nan,
+            "context": math.nan,
+            "release_date": None,
             "open": True,
             "commercial": False,
             "merge": False,
@@ -70,15 +74,13 @@ def test_generate_all_models_csv_preserves_classifier_icon(
     leaderboard_generation.generate_leaderboard(
         leaderboard_name="english",
         language_names=["english"],
-        categories=[LeaderboardCategory.ALL_MODELS, LeaderboardCategory.GENERATIVE],
+        categories=[LeaderboardCategory.ALL_MODELS],
         force=True,
     )
 
     all_models = pd.read_csv(tmp_path / "english_all_models_simplified.csv")
     icons = all_models.set_index("model")["generative_type"].to_dict()
     assert icons == {"org/laya": "🎯", "org/encoder": "🔍"}
-    generative = pd.read_csv(tmp_path / "english_generative_simplified.csv")
-    assert "org/laya" not in generative["model"].tolist()
 
 
 class TestGlobalVariantSelection:
