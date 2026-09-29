@@ -304,7 +304,9 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
         metric_config: dict = {"lower_is_better": False}
         if not is_speed_metric:
             metric_config["score_type"] = "continuous"
-            metric_config["min_score"] = 0
+            metric_config["min_score"] = (
+                -100 if metric_name.removeprefix("test_") == "mcc" else 0
+            )
             metric_config["max_score"] = 100
 
         evaluation_results.append(

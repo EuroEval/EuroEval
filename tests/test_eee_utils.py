@@ -178,7 +178,7 @@ class TestEeeUtils:
         # Verify metric_config for regular metrics
         assert mcc_result["metric_config"]["lower_is_better"] is False
         assert mcc_result["metric_config"]["score_type"] == "continuous"
-        assert mcc_result["metric_config"]["min_score"] == 0
+        assert mcc_result["metric_config"]["min_score"] == -100
         assert mcc_result["metric_config"]["max_score"] == 100
 
         # Verify round-trip restores results
@@ -207,7 +207,7 @@ class TestEeeUtils:
         """Old EEE data without provenance continues to load and round-trip."""
         eee_dict = benchmark_result.to_eee_dict()
         del eee_dict["model_info"]["inference_engine"]
-        del eee_dict["model_info"]["additional_details"]["model_type"]
+        eee_dict["model_info"]["additional_details"].pop("model_type", None)
 
         restored = BenchmarkResult.from_dict(eee_dict)
 

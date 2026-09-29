@@ -51,7 +51,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 - Benchmark results now retain the model type and the actual inference backend used;
   EEE output no longer mislabels Laya zero-shot classifiers as Transformers models and
-  records the installed Laya version when available.
+  records the installed Laya version when available. Leaderboards display zero-shot
+  classifiers separately and retain valid negative MCC iterations; EEE metadata now
+  gives MCC its correct -100 minimum score.
 - LiteLLM contamination-canary collection now probes API capabilities with one request,
   preserves the six-token output bound across token-limit fallbacks and reused-model
   parameter adjustments, and reports collection status and failure reasons without
