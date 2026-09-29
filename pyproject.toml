@@ -143,8 +143,8 @@ environments = [
   # (https://github.com/vllm-project/vllm/blob/d7de043d55d1dd629554467e23874097e1c48993/requirements/cpu.txt#L9-L10)
   # This could be solved by them disallowing darwin in their cpu deps
   "platform_system == 'Darwin' and platform_machine == 'arm64'",
-  # And any combination of other platforms
-  "platform_system != 'Darwin'",
+  # And any combination of other platforms except Emscripten, where torch is unavailable
+  "platform_system != 'Darwin' and platform_system != 'Emscripten'",
 ]
 required-environments = [
   "platform_system == 'Darwin' and platform_machine == 'arm64'",
