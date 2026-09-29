@@ -470,10 +470,7 @@ def _generate_dataframe(
                 generative_type is None or zero_shot_classifier
             ):
                 continue
-            if (
-                category == LeaderboardCategory.UNDERSTANDING
-                and zero_shot_classifier
-            ):
+            if category == LeaderboardCategory.UNDERSTANDING and zero_shot_classifier:
                 continue
             model_values = _build_model_row_data(
                 model_id=model_id,
@@ -901,6 +898,9 @@ def _compute_eligible_models_and_ranks(
             The leaderboard configurations.
         language_rank_cache (optional):
             Shared cache for monolingual rank-score confidence intervals.
+        metadata_dict (optional):
+            Model metadata used to exclude zero-shot classifiers from the
+            understanding leaderboard.
 
     Returns:
         Tuple of (eligible_model_results, language_to_required_datasets,
@@ -913,6 +913,7 @@ def _compute_eligible_models_and_ranks(
         for ds in sorted(category_to_datasets[category])
         if ds not in category_to_orthogonal_datasets[category]
     ]
+
     # Sort for deterministic iteration.
     def is_eligible_understanding_model(model_id: str) -> bool:
         return not (

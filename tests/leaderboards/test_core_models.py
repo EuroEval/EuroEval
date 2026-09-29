@@ -286,10 +286,7 @@ def test_pipeline_excludes_partial_models_before_bootstrap(
         {"strong", "peer"},
     ]
     assert all(call.kwargs["configs"] == configs for call in bootstrap.call_args_list)
-    assert {
-        call.kwargs["categories"][0]
-        for call in bootstrap.call_args_list
-    } == {
+    assert {call.kwargs["categories"][0] for call in bootstrap.call_args_list} == {
         LeaderboardCategory.GENERATIVE,
         LeaderboardCategory.UNDERSTANDING,
         LeaderboardCategory.ALL_MODELS,
@@ -330,14 +327,18 @@ def test_understanding_uses_its_task_and_model_eligibility_pool(
     captured: dict[LeaderboardCategory, set[str]] = {}
 
     def fake_bootstrap_rank_scores(
-        *, model_results, configs, n_bootstraps, seed, categories
-    ):
+        *,
+        model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
+        configs: dict[str, dict[str, list[str]]],
+        n_bootstraps: int,
+        seed: int,
+        categories: tuple[LeaderboardCategory, ...],
+    ) -> dict[str, dict[LeaderboardCategory, dict[str, np.ndarray]]]:
         del configs, n_bootstraps, seed
         category = categories[0]
         captured[category] = set(model_results)
         return {
-            model_id: {category: {"overall": np.ones(4)}}
-            for model_id in model_results
+            model_id: {category: {"overall": np.ones(4)}} for model_id in model_results
         }
 
     monkeypatch.setattr(
