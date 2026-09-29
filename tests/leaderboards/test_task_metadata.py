@@ -49,6 +49,43 @@ def test_category_includes_task_only_chat_shows_orthogonal_tasks() -> None:
     assert not category_includes_task(
         category=LeaderboardCategory.ALL_MODELS, task="european-values"
     )
+    assert not category_includes_task(
+        category=LeaderboardCategory.UNDERSTANDING, task="european-values"
+    )
+
+
+def test_understanding_includes_classification_qa_and_multiple_choice() -> None:
+    """Understanding covers eligible NLU and multiple-choice tasks."""
+    for task in (
+        "sentiment-classification",
+        "named-entity-recognition",
+        "reading-comprehension",
+        "knowledge",
+    ):
+        assert category_includes_task(LeaderboardCategory.UNDERSTANDING, task)
+    assert not category_includes_task(
+        LeaderboardCategory.UNDERSTANDING, "summarization"
+    )
+    assert not category_includes_task(
+        LeaderboardCategory.UNDERSTANDING, "instruction-following"
+    )
+    assert not category_includes_task(
+        LeaderboardCategory.UNDERSTANDING, "multiple-choice-stereotype-bias"
+    )
+
+
+def test_all_models_includes_only_sequence_and_multiple_choice() -> None:
+    """All Models includes its encoder-compatible task groups."""
+    assert category_includes_task(
+        LeaderboardCategory.ALL_MODELS, "sentiment-classification"
+    )
+    assert category_includes_task(LeaderboardCategory.ALL_MODELS, "knowledge")
+    assert not category_includes_task(
+        LeaderboardCategory.ALL_MODELS, "named-entity-recognition"
+    )
+    assert not category_includes_task(
+        LeaderboardCategory.ALL_MODELS, "reading-comprehension"
+    )
 
 
 def test_dataset_sources_omits_blank_sources_but_maps_valid_sources(

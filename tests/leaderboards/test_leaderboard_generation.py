@@ -585,6 +585,44 @@ class TestOrthogonalDatasetsByCategory:
         }
         assert category_to_orthogonal_datasets[LeaderboardCategory.GENERATIVE] == {}
         assert category_to_orthogonal_datasets[LeaderboardCategory.ALL_MODELS] == {}
+        assert category_to_orthogonal_datasets[LeaderboardCategory.UNDERSTANDING] == {}
+
+
+def test_understanding_rank_pool_excludes_zero_shot_classifier(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Laya may have scores but must not affect Understanding bootstrap ranks."""
+    observed_model_ids: list[set[str]] = []
+
+    def fake_bootstrap_rank_scores(model_results: dict, **_: object) -> dict:
+        observed_model_ids.append(set(model_results))
+        return {}
+
+    monkeypatch.setattr(
+        leaderboard_generation, "bootstrap_rank_scores", fake_bootstrap_rank_scores
+    )
+    monkeypatch.setattr(
+        leaderboard_generation, "bootstrap_confidence_intervals", lambda _: {}
+    )
+    monkeypatch.setattr(
+        leaderboard_generation,
+        "compute_standard_ranks_from_bootstrap_scores",
+        lambda **_: {},
+    )
+
+    _compute_eligible_models_and_ranks(
+        model_results={
+            "encoder": {"sentiment": []},
+            "Laya": {"sentiment": []},
+        },
+        category=LeaderboardCategory.UNDERSTANDING,
+        category_to_datasets={LeaderboardCategory.UNDERSTANDING: ["sentiment"]},
+        category_to_orthogonal_datasets={LeaderboardCategory.UNDERSTANDING: {}},
+        leaderboard_configs={"english": {"sentiment-classification": ["sentiment"]}},
+        metadata_dict={"Laya": {"model_type": "zero_shot_classifier"}},
+    )
+
+    assert observed_model_ids == [{"encoder"}]
 
 
 class TestPerLanguageRankScoreFormat:

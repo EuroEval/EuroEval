@@ -8,4 +8,5 @@ class LeaderboardCategory(enum.StrEnum):
 
     CHAT = "chat"
     GENERATIVE = "generative"
+    UNDERSTANDING = "understanding"
     ALL_MODELS = "all_models"

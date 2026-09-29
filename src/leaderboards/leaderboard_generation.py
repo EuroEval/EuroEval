@@ -438,6 +438,7 @@ def _generate_dataframe(
             category_to_orthogonal_datasets=category_to_orthogonal_datasets,
             leaderboard_configs=leaderboard_configs,
             language_rank_cache=language_rank_cache,
+            metadata_dict=metadata_dict,
         )
 
         orthogonal_scores_by_plain = _collect_orthogonal_scores(
@@ -467,6 +468,11 @@ def _generate_dataframe(
             # Skip encoders (generative_type is None) for generative category
             if category == LeaderboardCategory.GENERATIVE and (
                 generative_type is None or zero_shot_classifier
+            ):
+                continue
+            if (
+                category == LeaderboardCategory.UNDERSTANDING
+                and zero_shot_classifier
             ):
                 continue
             model_values = _build_model_row_data(
@@ -869,6 +875,7 @@ def _compute_eligible_models_and_ranks(
     leaderboard_configs: dict[str, dict[str, list[str]]],
     language_rank_cache: dict[tuple[str, str, tuple[str, ...], tuple[str, ...]], dict]
     | None = None,
+    metadata_dict: dict[str, dict] | None = None,
 ) -> "tuple[dict[str, dict[str, list[tuple[list[float], float, float]]]], dict[str, list[str]], dict, dict]":  # noqa: E501
     """Compute eligible models and bootstrap ranks for a category.
 
@@ -911,6 +918,11 @@ def _compute_eligible_models_and_ranks(
         mid: model_results[mid]
         for mid in sorted(model_results.keys())
         if all(ds in model_results[mid] for ds in required_datasets)
+        and not (
+            category == LeaderboardCategory.UNDERSTANDING
+            and metadata_dict is not None
+            and metadata_dict.get(mid, {}).get("model_type") == "zero_shot_classifier"
+        )
     }
 
     language_to_required_datasets = {

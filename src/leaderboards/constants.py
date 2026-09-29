@@ -223,14 +223,15 @@ LEADERBOARD_TASKS: list[str] = [
     "multiple-choice-stereotype-bias",
 ]
 
-# The three leaderboard categories that every model is ranked within. The
-# "chat" variant scores every task and only ranks instruction-tuned/
-# reasoning models; "generative" scores all tasks except the instruct-
-# exclusive ones; "all_models" only scores NLU tasks so non-generative models
-# can compete.
+# The leaderboard categories that every model is ranked within. Chat ranks
+# instruction-tuned/reasoning models across all tasks; generative excludes
+# instruct-exclusive tasks; understanding focuses on non-orthogonal NLU and
+# multiple-choice classification; all_models lets encoders, generative models,
+# and zero-shot classifiers compete on sequence and multiple-choice tasks.
 LEADERBOARD_CATEGORIES: tuple[LeaderboardCategory, ...] = (
     LeaderboardCategory.CHAT,
     LeaderboardCategory.GENERATIVE,
+    LeaderboardCategory.UNDERSTANDING,
     LeaderboardCategory.ALL_MODELS,
 )
 MINIMUM_NUMBER_OF_RANKED_ENTRIES: int = 100
