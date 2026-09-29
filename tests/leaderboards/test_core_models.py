@@ -13,9 +13,7 @@ from leaderboards.core_models import (
     CoreModel,
     ModelType,
     SizeBucket,
-    _classify_model,
     _pareto_categories_per_model,
-    _size_bucket,
     build_core_model_list,
 )
 from leaderboards.enums import LeaderboardCategory
@@ -83,32 +81,55 @@ def test_aggregate_pareto_requires_complete_coverage_and_unions_categories() -> 
     assert "partial" not in pareto
 
 
-def test_classifier_metadata_keeps_encoder_bucket_and_all_models_pareto() -> None:
-    """A zero-shot classifier is neither a decoder nor a generic encoder."""
-    model_type = _classify_model(
-        model_id="org/classifier",
-        metadata={"model_type": "zero_shot_classifier", "generative_type": "base"},
-    )
-    assert model_type == ModelType.ZERO_SHOT_CLASSIFIER
-    assert (
-        _size_bucket(model_type=model_type, parameters=7_000_000_000)
-        == SizeBucket.ENCODER
-    )
-    assert _classify_model(model_id="org/old", metadata={}) == ModelType.ENCODER
-
-    pareto = _pareto_categories_per_model(
-        model_results={"org/classifier": _model_results("sentiment")},
-        configs={"europe": {"sentiment-classification": ["sentiment"]}},
-        metadata={"org/classifier": {"parameters": 7_000_000_000}},
-        model_types={"org/classifier": model_type},
-        bootstrap_scores={
-            "org/classifier": {
-                LeaderboardCategory.ALL_MODELS: {"overall": np.array([1.0, 1.0])},
-                LeaderboardCategory.GENERATIVE: {"overall": np.array([1.0, 1.0])},
-            }
+def test_build_classifies_zero_shot_model_and_legacy_encoder(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The public builder preserves classifier and legacy encoder semantics."""
+    dataset = "sentiment"
+    model_results = {
+        "org/laya": {dataset: [([0.8, 0.9], 0.85, 0.05)]},
+        "org/legacy": {dataset: [([0.7, 0.8], 0.75, 0.05)]},
+    }
+    metadata = {
+        "org/laya": {
+            "model_type": "zero_shot_classifier",
+            "generative_type": "base",
+            "parameters": 7_000_000_000,
         },
+        "org/legacy": {"parameters": 1_000_000_000},
+    }
+    monkeypatch.setattr(
+        core_models, "languages_with_official_datasets", lambda: ["english"]
     )
-    assert pareto["org/classifier"] == {LeaderboardCategory.ALL_MODELS.value}
+    monkeypatch.setattr(
+        core_models,
+        "official_datasets_for_language",
+        lambda language: {"sentiment-classification": [dataset]},
+    )
+    monkeypatch.setattr(
+        core_models,
+        "load_raw_results",
+        lambda: [{"eval_library": {"additional_details": {"dataset": dataset}}}],
+    )
+    monkeypatch.setattr(
+        core_models, "group_results_by_model", lambda results: model_results
+    )
+    monkeypatch.setattr(
+        core_models, "drop_val_duplicates", lambda model_results: model_results
+    )
+    monkeypatch.setattr(core_models, "extract_model_metadata", lambda results: metadata)
+    monkeypatch.setattr(core_models, "osai_top_models", lambda limit, overrides: [])
+
+    models = {model.model_id: model for model in build_core_model_list()}
+
+    laya = models["org/laya"]
+    assert laya.model_type == ModelType.ZERO_SHOT_CLASSIFIER
+    assert laya.size_bucket == SizeBucket.ENCODER
+    assert laya.pareto_categories == (LeaderboardCategory.ALL_MODELS.value,)
+
+    legacy = models["org/legacy"]
+    assert legacy.model_type == ModelType.ENCODER
+    assert legacy.size_bucket == SizeBucket.ENCODER
 
 
 def _model_results(*datasets: str) -> dict[str, list[tuple[list[float], float, float]]]:
