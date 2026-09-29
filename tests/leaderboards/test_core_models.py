@@ -283,13 +283,80 @@ def test_pipeline_excludes_partial_models_before_bootstrap(
     assert [set(call.kwargs["model_results"]) for call in bootstrap.call_args_list] == [
         {"strong", "peer"},
         {"strong", "peer"},
+        {"strong", "peer"},
     ]
     assert all(call.kwargs["configs"] == configs for call in bootstrap.call_args_list)
+    assert {
+        call.kwargs["categories"][0]
+        for call in bootstrap.call_args_list
+    } == {
+        LeaderboardCategory.GENERATIVE,
+        LeaderboardCategory.UNDERSTANDING,
+        LeaderboardCategory.ALL_MODELS,
+    }
     assert pareto == {
         "strong": {
             LeaderboardCategory.GENERATIVE.value,
             LeaderboardCategory.ALL_MODELS.value,
         }
+    }
+
+
+def test_understanding_uses_its_task_and_model_eligibility_pool(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Understanding scores exclude zero-shot models and unrelated tasks."""
+    configs = {
+        "english": {
+            "sentiment-classification": ["sentiment"],
+            "summarization": ["summary"],
+        }
+    }
+    results = {
+        "encoder": _model_results("sentiment", "summary"),
+        "decoder": _model_results("sentiment", "summary"),
+        "laya": _model_results("sentiment", "summary"),
+        "understanding_only": _model_results("sentiment"),
+    }
+    model_types = {
+        "encoder": ModelType.ENCODER,
+        "decoder": ModelType.INSTRUCTION_TUNED_DECODER,
+        "laya": ModelType.ZERO_SHOT_CLASSIFIER,
+        "understanding_only": ModelType.INSTRUCTION_TUNED_DECODER,
+    }
+    metadata = {model_id: {"parameters": 1.0} for model_id in results}
+    captured: dict[LeaderboardCategory, set[str]] = {}
+
+    def fake_bootstrap_rank_scores(
+        *, model_results, configs, n_bootstraps, seed, categories
+    ):
+        del configs, n_bootstraps, seed
+        category = categories[0]
+        captured[category] = set(model_results)
+        return {
+            model_id: {category: {"overall": np.ones(4)}}
+            for model_id in model_results
+        }
+
+    monkeypatch.setattr(
+        core_models, "bootstrap_rank_scores", fake_bootstrap_rank_scores
+    )
+    _pareto_categories_per_model(
+        model_results=results,
+        configs=configs,
+        metadata=metadata,
+        model_types=model_types,
+    )
+
+    assert captured[LeaderboardCategory.UNDERSTANDING] == {
+        "encoder",
+        "decoder",
+        "understanding_only",
+    }
+    assert captured[LeaderboardCategory.ALL_MODELS] == {
+        "encoder",
+        "decoder",
+        "laya",
     }
 
 
