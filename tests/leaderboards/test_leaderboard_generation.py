@@ -17,11 +17,32 @@ import pytest
 from src.leaderboards import leaderboard_generation
 from src.leaderboards.enums import LeaderboardCategory
 from src.leaderboards.leaderboard_generation import (
+    _apply_display_transforms,
     _build_category_dataset_maps,
     _compute_eligible_models_and_ranks,
     _create_simplified_and_rename,
     _reorder_columns,
 )
+
+
+def test_classifier_uses_distinct_type_icon() -> None:
+    """The All Models CSV must distinguish classifiers from encoders."""
+    df = pd.DataFrame(
+        {
+            "model_type": ["zero_shot_classifier", None],
+            "generative_type": [None, None],
+            "commercial": [False, False],
+            "merge": [False, False],
+            "open": [False, False],
+            "trained_from_scratch": [False, False],
+        }
+    )
+    result = _apply_display_transforms(
+        df=df,
+        category=LeaderboardCategory.ALL_MODELS,
+        category_to_orthogonal_datasets={LeaderboardCategory.ALL_MODELS: {}},
+    )
+    assert result["generative_type"].tolist() == ["🎯", "🔍"]
 
 
 class TestGlobalVariantSelection:

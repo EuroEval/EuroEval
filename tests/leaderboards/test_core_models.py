@@ -13,7 +13,9 @@ from leaderboards.core_models import (
     CoreModel,
     ModelType,
     SizeBucket,
+    _classify_model,
     _pareto_categories_per_model,
+    _size_bucket,
     build_core_model_list,
 )
 from leaderboards.enums import LeaderboardCategory
@@ -79,6 +81,34 @@ def test_aggregate_pareto_requires_complete_coverage_and_unions_categories() -> 
     }
     assert "large" not in pareto
     assert "partial" not in pareto
+
+
+def test_classifier_metadata_keeps_encoder_bucket_and_all_models_pareto() -> None:
+    """A zero-shot classifier is neither a decoder nor a generic encoder."""
+    model_type = _classify_model(
+        model_id="org/classifier",
+        metadata={"model_type": "zero_shot_classifier", "generative_type": "base"},
+    )
+    assert model_type == ModelType.ZERO_SHOT_CLASSIFIER
+    assert (
+        _size_bucket(model_type=model_type, parameters=7_000_000_000)
+        == SizeBucket.ENCODER
+    )
+    assert _classify_model(model_id="org/old", metadata={}) == ModelType.ENCODER
+
+    pareto = _pareto_categories_per_model(
+        model_results={"org/classifier": _model_results("sentiment")},
+        configs={"europe": {"sentiment-classification": ["sentiment"]}},
+        metadata={"org/classifier": {"parameters": 7_000_000_000}},
+        model_types={"org/classifier": model_type},
+        bootstrap_scores={
+            "org/classifier": {
+                LeaderboardCategory.ALL_MODELS: {"overall": np.array([1.0, 1.0])},
+                LeaderboardCategory.GENERATIVE: {"overall": np.array([1.0, 1.0])},
+            }
+        },
+    )
+    assert pareto["org/classifier"] == {LeaderboardCategory.ALL_MODELS.value}
 
 
 def _model_results(*datasets: str) -> dict[str, list[tuple[list[float], float, float]]]:

@@ -20,7 +20,7 @@ const props = withDefaults(
   { xAxis: "parameters" },
 );
 
-type ModelKind = "instruct" | "reasoning" | "base" | "encoder" | "other";
+type ModelKind = "instruct" | "reasoning" | "base" | "classifier" | "encoder" | "other";
 
 interface MetaItem {
   label: string;
@@ -104,6 +104,7 @@ const KIND_FROM_ICON: Record<string, ModelKind> = {
   "🤔": "reasoning",
   "🧠": "base",
   "🔍": "encoder",
+  "🎯": "classifier",
 };
 
 const KIND_LABEL: Record<ModelKind, string> = {
@@ -111,6 +112,7 @@ const KIND_LABEL: Record<ModelKind, string> = {
   reasoning: "Reasoning",
   base: "Base generative",
   encoder: "Encoder",
+  classifier: "Zero-shot classifier",
   other: "Other",
 };
 
@@ -119,6 +121,7 @@ const KIND_COLOR: Record<ModelKind, string> = {
   reasoning: "#f0a040", // amber
   base: "#5cb874", // green
   encoder: "#b07ad8", // purple
+  classifier: "#db7093", // pink
   other: "#9aa0a6", // muted
 };
 
@@ -201,7 +204,7 @@ const allPoints = computed<Point[]>(() => {
 const presentKinds = computed<ModelKind[]>(() => {
   const seen = new Set<ModelKind>();
   for (const p of allPoints.value) seen.add(p.kind);
-  return (["instruct", "reasoning", "base", "encoder", "other"] as const).filter(
+  return (["instruct", "reasoning", "base", "classifier", "encoder", "other"] as const).filter(
     (k) => seen.has(k),
   );
 });

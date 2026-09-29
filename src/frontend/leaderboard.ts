@@ -146,6 +146,7 @@ const splitDisplaySort = (
 
 const ICONS = new Set([
   "🔍",
+  "🎯",
   "🧠",
   "📝",
   "🤔",
@@ -298,6 +299,7 @@ export function parseCell(raw: string, kind: CellKind): ParsedCell {
       "🤔": 4,
       "📝": 3,
       "🧠": 2,
+      "🎯": 2,
       "🔍": 1,
     };
     sortKey = order[text] ?? 0;
