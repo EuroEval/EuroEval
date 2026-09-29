@@ -192,6 +192,10 @@ def parse_optional_str(value: str | None) -> str | None:
 def _result_inference_engine(result: "BenchmarkResult") -> dict:
     """Build inference-engine provenance, falling back for legacy records.
 
+    Args:
+        result:
+            The benchmark result whose inference backend is recorded.
+
     Returns:
         The EEE inference-engine object, or an empty dict when unknown.
     """
