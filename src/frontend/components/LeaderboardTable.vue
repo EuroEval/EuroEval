@@ -383,6 +383,7 @@ const TYPE_EMOJI_TOOLTIPS: Record<string, string> = {
   "📝": "Instruction-tuned decoder",
   "🤔": "Reasoning decoder",
   "🔍": "Encoder",
+  "🎯": "Zero-shot classifier",
 };
 
 /** Format an icon value with its label for display in dropdowns. */

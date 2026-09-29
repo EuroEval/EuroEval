@@ -421,6 +421,59 @@ class TestExtractModelMetadata:
 class TestGroupResultsByModel:
     """Tests for the `group_results_by_model` function."""
 
+    @pytest.mark.parametrize(
+        ("raw", "expected"),
+        [
+            ([-0.6, -0.8, float("nan"), float("inf"), -101, "bad"], [-60.0, -80.0]),
+            ([-60, -80, 101, None], [-60.0, -80.0]),
+        ],
+    )
+    def test_negative_mcc_and_invalid_iterations(
+        self, raw: list, expected: list[float]
+    ) -> None:
+        """Retain valid negative MCC without allowing invalid iterations through."""
+        record = {
+            "model_info": {"name": "org/model"},
+            "eval_library": {
+                "additional_details": {
+                    "dataset": "angry-tweets",
+                    "task": "sentiment-classification",
+                    "raw_results": [{"test_mcc": value} for value in raw],
+                }
+            },
+            "evaluation_results": [
+                {"evaluation_name": "test_mcc", "score_details": {"score": -70.0}}
+            ],
+        }
+
+        scores = group_results_by_model(results=[record])["org/model"]["angry-tweets"]
+        assert scores[0][0] == expected
+        assert scores[0][1] == -70.0
+        assert scores[0][2] == 10.0
+
+    def test_non_mcc_rejects_negative_and_out_of_range_scores(self) -> None:
+        """Unsigned percentage metrics reject negative and over-100 samples."""
+        record = {
+            "model_info": {"name": "org/model"},
+            "eval_library": {
+                "additional_details": {
+                    "dataset": "angry-tweets",
+                    "task": "sentiment-classification",
+                    "raw_results": [
+                        {"test_macro_f1": value}
+                        for value in (-1, 0.7, 0.8, 101, float("nan"))
+                    ],
+                }
+            },
+            "evaluation_results": [
+                {"evaluation_name": "test_macro_f1", "score_details": {"score": 70.0}}
+            ],
+        }
+
+        scores = group_results_by_model(results=[record])["org/model"]["angry-tweets"]
+        assert scores[0][0] == [70.0, 80.0]
+        assert scores[0][1] == 70.0
+
     def test_split_agnostic_dataset_mirrored_onto_val_variant(self) -> None:
         """Regression: a no-validation-split dataset shows on both variant rows.
 
@@ -658,3 +711,19 @@ class TestIsBetterMetadata:
         assert (
             _is_better_metadata(new_value=False, old_value=False, field=field) is False
         )
+
+
+def test_explicit_zero_shot_classifier_metadata_survives_stale_records() -> None:
+    """Use the EEE model type even when an older result lacks it."""
+    enriched = {
+        "model_info": {
+            "name": "ollama/classifier",
+            "additional_details": {"model_type": "zero_shot_classifier"},
+            "inference_engine": {"name": "laya"},
+        }
+    }
+    stale = {"model_info": {"name": "ollama/classifier"}}
+
+    metadata = extract_model_metadata(results=[stale, enriched, stale])
+
+    assert metadata["ollama/classifier"]["model_type"] == "zero_shot_classifier"

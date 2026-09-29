@@ -28,7 +28,6 @@ def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
     Returns:
         The reconstructed benchmark result.
     """
-    # Importing here to avoid circular imports
     from .data_models import BenchmarkResult  # noqa: PLC0415
 
     model_info = config.get("model_info", {})
@@ -37,6 +36,7 @@ def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
 
     model = model_info.get("name", "")
     model_additional = model_info.get("additional_details", {})
+    inference_engine = model_info.get("inference_engine") or {}
     eval_lib_additional = eval_library.get("additional_details", {})
 
     if evaluation_results:
@@ -141,6 +141,13 @@ def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
             eval_lib_additional.get("xgrammar_version")
         ),
         litellm_version=parse_optional_str(eval_lib_additional.get("litellm_version")),
+        laya_version=parse_optional_str(
+            inference_engine.get("version")
+            if inference_engine.get("name") == "laya"
+            else None
+        ),
+        model_type=parse_optional_str(model_additional.get("model_type")),
+        inference_engine=parse_optional_str(inference_engine.get("name")),
         commercially_licensed=commercially_licensed,
         open=open,
         trained_from_scratch=trained_from_scratch,
@@ -265,7 +272,9 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
         metric_config: dict = {"lower_is_better": False}
         if not is_speed_metric:
             metric_config["score_type"] = "continuous"
-            metric_config["min_score"] = 0
+            metric_config["min_score"] = (
+                -100 if metric_name.removeprefix("test_") == "mcc" else 0
+            )
             metric_config["max_score"] = 100
 
         evaluation_results.append(
@@ -280,17 +289,7 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
             }
         )
 
-    inference_engine: dict = {}
-    if result.litellm_version:
-        inference_engine = {"name": "litellm", "version": result.litellm_version}
-    elif result.vllm_version:
-        inference_engine = {"name": "vllm", "version": result.vllm_version}
-    elif result.transformers_version:
-        inference_engine = {
-            "name": "transformers",
-            "version": result.transformers_version,
-        }
-
+    inference_engine = _result_inference_engine(result=result)
     model_additional_details: dict = {
         "num_model_parameters": str(result.num_model_parameters),
         "max_sequence_length": str(result.max_sequence_length),
@@ -301,6 +300,9 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
         if result.generative_type is not None
         else None,
     }
+    if result.model_type is not None:
+        model_additional_details["model_type"] = result.model_type
+
     # Preserve EuroEval-specific metadata fields
     if result.commercially_licensed is not None:
         model_additional_details["commercially_licensed"] = result.commercially_licensed
@@ -337,6 +339,7 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
         "vllm_version": result.vllm_version or None,
         "xgrammar_version": result.xgrammar_version or None,
         "litellm_version": result.litellm_version or None,
+        "laya_version": result.laya_version or None,
         "raw_results": json.dumps(raw_results, ensure_ascii=False),
     }
     if result.contamination_canary_evidence is not None:
@@ -367,3 +370,39 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
         },
         "evaluation_results": evaluation_results,
     }
+
+
+def _result_inference_engine(result: "BenchmarkResult") -> dict:
+    """Build inference-engine provenance, falling back for legacy records.
+
+    Args:
+        result:
+            The benchmark result whose inference backend is recorded.
+
+    Returns:
+        The EEE inference-engine object, or an empty dict when unknown.
+    """
+    engine_name = result.inference_engine
+
+    # Infer the backend for older result records which did not store it.
+    if engine_name is None:
+        if result.litellm_version:
+            engine_name = "litellm"
+        elif result.vllm_version:
+            engine_name = "vllm"
+        elif result.transformers_version:
+            engine_name = "transformers"
+    engine_versions = {
+        "litellm": result.litellm_version,
+        "vllm": result.vllm_version,
+        "transformers": result.transformers_version,
+        "laya": result.laya_version,
+    }
+    engine_version = engine_versions.get(engine_name) if engine_name else None
+    if engine_name is None:
+        return {}
+    return (
+        {"name": engine_name, "version": engine_version}
+        if engine_version
+        else {"name": engine_name}
+    )

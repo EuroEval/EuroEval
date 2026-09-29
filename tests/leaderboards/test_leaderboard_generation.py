@@ -653,6 +653,65 @@ class TestRegressionForReportedIssue:
     """Tests directly addressing the reported issue (Qwen model score mismatch)."""
 
 
+def test_generate_all_models_csv_preserves_classifier_icon(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The full generation pipeline keeps the classifier target icon in CSV."""
+    dataset = "sentiment"
+    score = [([0.8, 0.9], 0.85, 0.05)]
+    model_results = {"org/laya": {dataset: score}, "org/encoder": {dataset: score}}
+    metadata = {
+        "org/laya": {
+            "model_type": "zero_shot_classifier",
+            "generative_type": None,
+            "parameters": 100,
+            "vocabulary_size": math.nan,
+            "context": math.nan,
+            "release_date": None,
+            "open": True,
+            "commercial": False,
+            "merge": False,
+            "trained_from_scratch": False,
+        },
+        "org/encoder": {
+            "model_type": None,
+            "generative_type": None,
+            "parameters": 200,
+            "vocabulary_size": math.nan,
+            "context": math.nan,
+            "release_date": None,
+            "open": True,
+            "commercial": False,
+            "merge": False,
+            "trained_from_scratch": False,
+        },
+    }
+    monkeypatch.setattr(leaderboard_generation, "OUTPUT_DIR", tmp_path)
+    monkeypatch.setattr(leaderboard_generation, "load_raw_results", lambda: [{}])
+    monkeypatch.setattr(
+        leaderboard_generation, "group_results_by_model", lambda results: model_results
+    )
+    monkeypatch.setattr(
+        leaderboard_generation, "extract_model_metadata", lambda results: metadata
+    )
+    monkeypatch.setattr(
+        leaderboard_generation,
+        "official_datasets_for_language",
+        lambda language: {"sentiment-classification": [dataset]},
+    )
+
+    leaderboard_generation.generate_leaderboard(
+        leaderboard_name="english",
+        language_names=["english"],
+        categories=[LeaderboardCategory.ALL_MODELS],
+        force=True,
+    )
+
+    all_models = pd.read_csv(tmp_path / "english_all_models_simplified.csv")
+    icons = all_models.set_index("model")["generative_type"].to_dict()
+    assert icons == {"org/laya": "🎯", "org/encoder": "🔍"}
+
+
 def test_release_date_is_emitted_for_frontend_visualizations() -> None:
     """The existing result metadata reaches the full leaderboard CSV."""
     df = pd.DataFrame(
