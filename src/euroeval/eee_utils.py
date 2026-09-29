@@ -28,7 +28,6 @@ def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
     Returns:
         The reconstructed benchmark result.
     """
-    # Importing here to avoid circular imports
     from .data_models import BenchmarkResult  # noqa: PLC0415
 
     model_info = config.get("model_info", {})
@@ -200,8 +199,9 @@ def _result_inference_engine(result: "BenchmarkResult") -> dict:
         The EEE inference-engine object, or an empty dict when unknown.
     """
     engine_name = result.inference_engine
+
+    # Infer the backend for older result records which did not store it.
     if engine_name is None:
-        # Infer the backend for older result records which did not store it.
         if result.litellm_version:
             engine_name = "litellm"
         elif result.vllm_version:
@@ -338,6 +338,7 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
     }
     if result.model_type is not None:
         model_additional_details["model_type"] = result.model_type
+
     # Preserve EuroEval-specific metadata fields
     if result.commercially_licensed is not None:
         model_additional_details["commercially_licensed"] = result.commercially_licensed
