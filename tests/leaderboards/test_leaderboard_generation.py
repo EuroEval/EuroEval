@@ -17,7 +17,6 @@ import pytest
 from src.leaderboards import leaderboard_generation
 from src.leaderboards.enums import LeaderboardCategory
 from src.leaderboards.leaderboard_generation import (
-    _apply_display_transforms,
     _build_category_dataset_maps,
     _compute_eligible_models_and_ranks,
     _create_simplified_and_rename,
@@ -25,40 +24,61 @@ from src.leaderboards.leaderboard_generation import (
 )
 
 
-def test_classifier_uses_distinct_type_icon() -> None:
-    """The All Models CSV must distinguish classifiers from encoders."""
-    category = LeaderboardCategory.ALL_MODELS.value
-    orthogonal: dict[str, dict[str, str]] = {category: {}}
-    df = pd.DataFrame(
-        {
-            "rank": [1, 2],
-            "model": ["org/laya", "org/encoder"],
-            "mean_rank_score": ["-", "-"],
-            "model_type": ["zero_shot_classifier", None],
-            "generative_type": [None, None],
-            "commercial": [False, False],
-            "merge": [False, False],
-            "open": [False, False],
-            "trained_from_scratch": [False, False],
-            "release_date": [None, None],
-            "parameters": [100, 200],
-            "vocabulary_size": [None, None],
-            "context": [512, 512],
-        }
+def test_generate_all_models_csv_preserves_classifier_icon(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The full generation pipeline keeps the classifier target icon in CSV."""
+    dataset = "sentiment"
+    score = [([0.8, 0.9], 0.85, 0.05)]
+    model_results = {
+        "org/laya": {dataset: score},
+        "org/encoder": {dataset: score},
+    }
+    metadata = {
+        "org/laya": {
+            "model_type": "zero_shot_classifier",
+            "generative_type": None,
+            "parameters": 100,
+            "open": True,
+            "commercial": False,
+            "merge": False,
+            "trained_from_scratch": False,
+        },
+        "org/encoder": {
+            "generative_type": None,
+            "parameters": 200,
+            "open": True,
+            "commercial": False,
+            "merge": False,
+            "trained_from_scratch": False,
+        },
+    }
+    monkeypatch.setattr(leaderboard_generation, "OUTPUT_DIR", tmp_path)
+    monkeypatch.setattr(leaderboard_generation, "load_raw_results", lambda: [{}])
+    monkeypatch.setattr(
+        leaderboard_generation, "group_results_by_model", lambda results: model_results
     )
-    reordered = _reorder_columns(
-        df=df,
-        category=category,
-        category_to_orthogonal_datasets=orthogonal,
-        category_to_datasets={category: []},
-        rank_cols=["rank", "mean_rank_score"],
-        include_dataset_columns=True,
+    monkeypatch.setattr(
+        leaderboard_generation, "extract_model_metadata", lambda results: metadata
     )
-    result = _apply_display_transforms(
-        df=reordered, category=category, category_to_orthogonal_datasets=orthogonal
+    monkeypatch.setattr(
+        leaderboard_generation,
+        "official_datasets_for_language",
+        lambda language: {"sentiment-classification": [dataset]},
     )
-    assert result["generative_type"].tolist() == ["🎯", "🔍"]
-    assert "model_type" not in result.columns
+
+    leaderboard_generation.generate_leaderboard(
+        leaderboard_name="english",
+        language_names=["english"],
+        categories=[LeaderboardCategory.ALL_MODELS, LeaderboardCategory.GENERATIVE],
+        force=True,
+    )
+
+    all_models = pd.read_csv(tmp_path / "english_all_models_simplified.csv")
+    icons = all_models.set_index("model")["generative_type"].to_dict()
+    assert icons == {"org/laya": "🎯", "org/encoder": "🔍"}
+    generative = pd.read_csv(tmp_path / "english_generative_simplified.csv")
+    assert "org/laya" not in generative["model"].tolist()
 
 
 class TestGlobalVariantSelection:
