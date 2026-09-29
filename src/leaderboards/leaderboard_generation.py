@@ -914,15 +914,19 @@ def _compute_eligible_models_and_ranks(
         if ds not in category_to_orthogonal_datasets[category]
     ]
     # Sort for deterministic iteration.
+    def is_eligible_understanding_model(model_id: str) -> bool:
+        return not (
+            category == LeaderboardCategory.UNDERSTANDING
+            and metadata_dict is not None
+            and metadata_dict.get(model_id, {}).get("model_type")
+            == "zero_shot_classifier"
+        )
+
     eligible_model_results = {
         mid: model_results[mid]
         for mid in sorted(model_results.keys())
         if all(ds in model_results[mid] for ds in required_datasets)
-        and not (
-            category == LeaderboardCategory.UNDERSTANDING
-            and metadata_dict is not None
-            and metadata_dict.get(mid, {}).get("model_type") == "zero_shot_classifier"
-        )
+        and is_eligible_understanding_model(mid)
     }
 
     language_to_required_datasets = {
@@ -975,6 +979,7 @@ def _compute_eligible_models_and_ranks(
                 mid: model_results[mid]
                 for mid in sorted(model_results.keys())
                 if all(ds in model_results[mid] for ds in lang_required)
+                and is_eligible_understanding_model(mid)
             }
             cache_key = _language_rank_cache_key(
                 language=language,

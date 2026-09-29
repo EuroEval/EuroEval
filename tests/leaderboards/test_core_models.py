@@ -297,6 +297,7 @@ def test_pipeline_excludes_partial_models_before_bootstrap(
     assert pareto == {
         "strong": {
             LeaderboardCategory.GENERATIVE.value,
+            LeaderboardCategory.UNDERSTANDING.value,
             LeaderboardCategory.ALL_MODELS.value,
         }
     }
@@ -309,14 +310,15 @@ def test_understanding_uses_its_task_and_model_eligibility_pool(
     configs = {
         "english": {
             "sentiment-classification": ["sentiment"],
+            "reading-comprehension": ["qa"],
             "summarization": ["summary"],
         }
     }
     results = {
-        "encoder": _model_results("sentiment", "summary"),
-        "decoder": _model_results("sentiment", "summary"),
-        "laya": _model_results("sentiment", "summary"),
-        "understanding_only": _model_results("sentiment"),
+        "encoder": _model_results("sentiment", "qa", "summary"),
+        "decoder": _model_results("sentiment", "qa", "summary"),
+        "laya": _model_results("sentiment", "qa", "summary"),
+        "understanding_only": _model_results("sentiment", "qa"),
     }
     model_types = {
         "encoder": ModelType.ENCODER,
@@ -357,6 +359,7 @@ def test_understanding_uses_its_task_and_model_eligibility_pool(
         "encoder",
         "decoder",
         "laya",
+        "understanding_only",
     }
 
 

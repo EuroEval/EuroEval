@@ -576,6 +576,7 @@ class TestOrthogonalDatasetsByCategory:
                 LeaderboardCategory.CHAT,
                 LeaderboardCategory.GENERATIVE,
                 LeaderboardCategory.ALL_MODELS,
+                LeaderboardCategory.UNDERSTANDING,
             ],
             leaderboard_configs=leaderboard_configs,
         )
@@ -602,7 +603,9 @@ def test_understanding_rank_pool_excludes_zero_shot_classifier(
         leaderboard_generation, "bootstrap_rank_scores", fake_bootstrap_rank_scores
     )
     monkeypatch.setattr(
-        leaderboard_generation, "bootstrap_confidence_intervals", lambda _: {}
+        leaderboard_generation,
+        "bootstrap_confidence_intervals",
+        lambda *_args, **_kwargs: {},
     )
     monkeypatch.setattr(
         leaderboard_generation,
@@ -614,15 +617,29 @@ def test_understanding_rank_pool_excludes_zero_shot_classifier(
         model_results={
             "encoder": {"sentiment": []},
             "Laya": {"sentiment": []},
+            "zero_shot_generative": {"sentiment": []},
         },
         category=LeaderboardCategory.UNDERSTANDING,
         category_to_datasets={LeaderboardCategory.UNDERSTANDING: ["sentiment"]},
         category_to_orthogonal_datasets={LeaderboardCategory.UNDERSTANDING: {}},
-        leaderboard_configs={"english": {"sentiment-classification": ["sentiment"]}},
-        metadata_dict={"Laya": {"model_type": "zero_shot_classifier"}},
+        leaderboard_configs={
+            "english": {"sentiment-classification": ["sentiment"]},
+            "danish": {"sentiment-classification": ["sentiment"]},
+        },
+        metadata_dict={
+            "Laya": {"model_type": "zero_shot_classifier"},
+            "zero_shot_generative": {
+                "model_type": "instruction_tuned_decoder",
+                "zero_shot": True,
+            },
+        },
     )
 
-    assert observed_model_ids == [{"encoder"}]
+    assert observed_model_ids == [
+        {"encoder", "zero_shot_generative"},
+        {"encoder", "zero_shot_generative"},
+        {"encoder", "zero_shot_generative"},
+    ]
 
 
 class TestPerLanguageRankScoreFormat:
