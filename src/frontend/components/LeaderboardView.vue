@@ -19,6 +19,7 @@ const props = defineProps<{
 const categoryTabs = [
   { id: "chat", label: "Chat" },
   { id: "generative", label: "Generative" },
+  { id: "understanding", label: "Understanding" },
   { id: "all_models", label: "All Models" },
 ] as const;
 

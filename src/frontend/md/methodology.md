@@ -310,15 +310,21 @@ display standard accuracy scores for consistency.
 The public leaderboards add a few rules on top of the per-model evaluation described
 above:
 
-- **Model categories.** Each language has a *chat* leaderboard, restricted to
-  instruction-tuned and reasoning models and covering every task, including a handful
-  that only make sense for these kinds of models (e.g. instruction following, tool use,
-  bias evaluation); a *generative* leaderboard, covering the standard NLU and NLG tasks
-  and open to any generative model; and an *all models* leaderboard restricted to the
-  NLU tasks, so that encoder models can be compared on an equal footing. Models also
-  carry metadata - generative type, open vs. closed weights, commercial-use permission,
-  whether the model is a merge, parameter count and context length - which can be
-  filtered on the site.
+- **Model categories.** Each language has four leaderboards with distinct task scopes.
+  The *chat* leaderboard covers every task (including instruction following, tool use,
+  and bias evaluation) for instruction-tuned and reasoning models, using zero-shot
+  evaluations. The *generative* leaderboard covers the standard NLU and NLG tasks for
+  generative models, generally with few-shot evaluations. The *understanding* leaderboard
+  covers sequence/token classification, extractive question answering, and eligible
+  multiple-choice tasks for encoder and generative models. The *all models* leaderboard
+  covers sequence/token classification and eligible multiple-choice tasks across all
+  supported model types, including zero-shot classifiers such as Laya. Evaluation modes
+  vary by model and result: encoders are typically finetuned, generative results may be
+  few-shot or labelled zero-shot, and zero-shot classifiers use their classifier mode.
+  Each leaderboard's rank score and rank are computed over its own task set, so ranks
+  across categories are not directly comparable. Models also carry metadata - generative
+  type, open vs. closed weights, commercial-use permission, whether the model is a merge,
+  parameter count and context length - which can be filtered on the site.
 - **One result per model.** When several result records exist for the same model and
   dataset, EuroEval keeps the one produced by the newest framework version and drops
   validation-split results whenever a test-split result is available, so no model is
