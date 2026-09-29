@@ -28,7 +28,7 @@ Each language has four leaderboards:
   text generation.
 - **All Models Leaderboard**: This leaderboard compares all eligible model families,
   including encoders, generative models, and zero-shot classifiers such as Laya, on
-  sequence/token classification and eligible multiple-choice tasks. Evaluation modes
+  sequence classification and eligible multiple-choice tasks. Evaluation modes
   differ by model: encoders may be finetuned, generative models may be few-shot or
   labelled zero-shot, and zero-shot classifiers use their classifier inference mode.
 

@@ -112,9 +112,8 @@ hardware essentially doesn't matter — the bottleneck is the API.
 
 To make them comparable on tasks they can all attempt. The **Understanding** leaderboard
 compares encoder and generative models on sequence/token classification, extractive
-question answering, and eligible multiple-choice tasks. **All Models** extends the
-sequence/token-classification and eligible multiple-choice comparison to all supported
-model types, including zero-shot classifiers such as Laya. These rankings are computed
+question answering, and eligible multiple-choice tasks. **All Models** compares sequence classification and eligible multiple-choice tasks
+across all supported model types, including zero-shot classifiers such as Laya. These rankings are computed
 separately from the Chat and Generative rankings, which cover different task sets and
 may use different evaluation modes. Within a leaderboard, the `Type` column lets you
 filter to a single architecture.

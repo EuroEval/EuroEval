@@ -2,201 +2,241 @@
   "albanian": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "baltic": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "belarusian": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "bosnian": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "bulgarian": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "catalan": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "croatian": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "czech": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "danish": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "dutch": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "english": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "estonian": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "european": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "faroese": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "finnic": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "finnish": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "french": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "german": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "germanic": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "greek": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "hungarian": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "icelandic": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "italian": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "latvian": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "lithuanian": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "luxembourgish": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "norwegian": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "polish": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "portuguese": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "romance": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "romanian": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "scandinavian": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "serbian": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "slavic": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "slovak": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "slovene": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "spanish": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "swedish": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "ukrainian": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   },
   "west_germanic": {
     "all_models": true,
     "chat": false,
-    "generative": true
+    "generative": true,
+    "understanding": true
   }
 }
