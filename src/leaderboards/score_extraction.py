@@ -478,6 +478,7 @@ def group_results_by_model(
     model_scores: dict[str, dict[str, list[tuple[list[float], float, float]]]] = (
         defaultdict(lambda: defaultdict(list))
     )
+
     # Some datasets (e.g. MultiLoKo) have no validation split, so their records
     # carry ``validation_split=None`` and are grouped under the test-split
     # variant id (``... (zero-shot)``) — never under the ``(..., val)`` variant.
@@ -513,6 +514,7 @@ def group_results_by_model(
             for result_dict in raw_results:
                 if isinstance(result_dict, dict):
                     score = result_dict.get(f"test_{metric}", result_dict.get(metric))
+
                     # Signed correlations/bias may be negative; reject out-of-range
                     # percentage scores and malformed iterations.
                     if (
@@ -562,6 +564,7 @@ def group_results_by_model(
             # EEE records don't carry a std err, so compute it from raw scores.
             # Fallback computed after scaling so std_err matches the displayed scores.
             std_err: float = total_scores.get(std_err_key, 0.0)
+
             # Scale std_err to match the scaled raw scores
             std_err = std_err * scale_factor
             if std_err == 0.0 and len(raw_scores) > 1:
@@ -606,6 +609,7 @@ def _mirror_split_agnostic_datasets(
     """
     for model_id in list(model_scores):
         test_variant_id = strip_note_item(model_id=model_id, note_item="val")
+
         # ``strip_note_item`` returns None unless the id carries a ``val`` note,
         # so this only fires for validation-split variant rows.
         if test_variant_id is None:
