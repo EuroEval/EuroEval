@@ -1128,7 +1128,7 @@ def test_laya_download_only_resolves_requested_checkpoint(
         model_id=zero_shot_config.model_id,
         subfolder=param,
         cache_dir=str(model_cache_dir),
-        token=benchmark_config.api_key,
+        token=None,
     )
 
 

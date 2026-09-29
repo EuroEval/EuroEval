@@ -188,42 +188,6 @@ def parse_optional_str(value: str | None) -> str | None:
     return None if value is None else value
 
 
-def _result_inference_engine(result: "BenchmarkResult") -> dict:
-    """Build inference-engine provenance, falling back for legacy records.
-
-    Args:
-        result:
-            The benchmark result whose inference backend is recorded.
-
-    Returns:
-        The EEE inference-engine object, or an empty dict when unknown.
-    """
-    engine_name = result.inference_engine
-
-    # Infer the backend for older result records which did not store it.
-    if engine_name is None:
-        if result.litellm_version:
-            engine_name = "litellm"
-        elif result.vllm_version:
-            engine_name = "vllm"
-        elif result.transformers_version:
-            engine_name = "transformers"
-    engine_versions = {
-        "litellm": result.litellm_version,
-        "vllm": result.vllm_version,
-        "transformers": result.transformers_version,
-        "laya": result.laya_version,
-    }
-    engine_version = engine_versions.get(engine_name) if engine_name else None
-    if engine_name is None:
-        return {}
-    return (
-        {"name": engine_name, "version": engine_version}
-        if engine_version
-        else {"name": engine_name}
-    )
-
-
 def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
     """Convert a BenchmarkResult to the Every Eval Ever (EEE) format.
 
@@ -406,3 +370,39 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
         },
         "evaluation_results": evaluation_results,
     }
+
+
+def _result_inference_engine(result: "BenchmarkResult") -> dict:
+    """Build inference-engine provenance, falling back for legacy records.
+
+    Args:
+        result:
+            The benchmark result whose inference backend is recorded.
+
+    Returns:
+        The EEE inference-engine object, or an empty dict when unknown.
+    """
+    engine_name = result.inference_engine
+
+    # Infer the backend for older result records which did not store it.
+    if engine_name is None:
+        if result.litellm_version:
+            engine_name = "litellm"
+        elif result.vllm_version:
+            engine_name = "vllm"
+        elif result.transformers_version:
+            engine_name = "transformers"
+    engine_versions = {
+        "litellm": result.litellm_version,
+        "vllm": result.vllm_version,
+        "transformers": result.transformers_version,
+        "laya": result.laya_version,
+    }
+    engine_version = engine_versions.get(engine_name) if engine_name else None
+    if engine_name is None:
+        return {}
+    return (
+        {"name": engine_name, "version": engine_version}
+        if engine_version
+        else {"name": engine_name}
+    )

@@ -105,6 +105,25 @@ class TestEeeUtils:
 
         results_path.unlink(missing_ok=True)
 
+    def test_older_eee_records_without_provenance_remain_readable(
+        self, benchmark_result: BenchmarkResult
+    ) -> None:
+        """Old EEE data without provenance continues to load and round-trip."""
+        eee_dict = benchmark_result.to_eee_dict()
+        model_info = eee_dict["model_info"]
+        assert isinstance(model_info, dict)
+        model_info.pop("inference_engine", None)
+        additional_details = model_info["additional_details"]
+        assert isinstance(additional_details, dict)
+        additional_details.pop("model_type", None)
+
+        restored = BenchmarkResult.from_dict(eee_dict)
+
+        assert restored.model_type is None
+        assert restored.inference_engine is None
+        assert restored.few_shot is benchmark_result.few_shot
+        assert restored.validation_split is benchmark_result.validation_split
+
     def test_round_trip_with_scores(self, results_path: Path) -> None:
         """Test EEE round-trip fidelity with realistic metric scores and raw results."""
         results_path.unlink(missing_ok=True)
@@ -200,25 +219,6 @@ class TestEeeUtils:
         assert len(restored.results["raw"]) == 2  # ty: ignore[index]  # ty:ignore[ignore-comment-unknown-rule]
 
         results_path.unlink(missing_ok=True)
-
-    def test_older_eee_records_without_provenance_remain_readable(
-        self, benchmark_result: BenchmarkResult
-    ) -> None:
-        """Old EEE data without provenance continues to load and round-trip."""
-        eee_dict = benchmark_result.to_eee_dict()
-        model_info = eee_dict["model_info"]
-        assert isinstance(model_info, dict)
-        model_info.pop("inference_engine", None)
-        additional_details = model_info["additional_details"]
-        assert isinstance(additional_details, dict)
-        additional_details.pop("model_type", None)
-
-        restored = BenchmarkResult.from_dict(eee_dict)
-
-        assert restored.model_type is None
-        assert restored.inference_engine is None
-        assert restored.few_shot is benchmark_result.few_shot
-        assert restored.validation_split is benchmark_result.validation_split
 
     def test_speed_metric_config(self, results_path: Path) -> None:
         """Test that speed metrics don't get a hardcoded 0-100 range in EEE output."""

@@ -81,6 +81,10 @@ def test_aggregate_pareto_requires_complete_coverage_and_unions_categories() -> 
     assert "partial" not in pareto
 
 
+def _model_results(*datasets: str) -> dict[str, list[tuple[list[float], float, float]]]:
+    return {dataset: [([1.0], 1.0, 1.0)] for dataset in datasets}
+
+
 def test_build_classifies_zero_shot_model_and_legacy_encoder(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -130,10 +134,6 @@ def test_build_classifies_zero_shot_model_and_legacy_encoder(
     legacy = models["org/legacy"]
     assert legacy.model_type == ModelType.ENCODER
     assert legacy.size_bucket == SizeBucket.ENCODER
-
-
-def _model_results(*datasets: str) -> dict[str, list[tuple[list[float], float, float]]]:
-    return {dataset: [([1.0], 1.0, 1.0)] for dataset in datasets}
 
 
 def test_build_retains_osai_and_api_but_not_eu_source(
