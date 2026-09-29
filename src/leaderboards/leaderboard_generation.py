@@ -600,7 +600,7 @@ def _apply_display_transforms(
         ),
         axis=1,
     )
-    return df
+    return df.drop(columns="model_type")
 
 
 def _build_category_dataset_maps(
@@ -1208,6 +1208,7 @@ def _reorder_columns(
         + orthogonal_cols
         + [
             "generative_type",
+            "model_type",
             "open",
             "commercial",
             "merge",
@@ -1224,4 +1225,6 @@ def _reorder_columns(
         cols += [f"{dataset}_version" for dataset in dataset_cols]
         cols += [f"{dataset}_failures" for dataset in dataset_cols]
         cols += [f"{dataset}_scored" for dataset in dataset_cols]
+    if "model_type" not in df:
+        df = df.assign(model_type=None)
     return df[cols]

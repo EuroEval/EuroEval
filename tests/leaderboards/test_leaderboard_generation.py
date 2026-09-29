@@ -27,22 +27,38 @@ from src.leaderboards.leaderboard_generation import (
 
 def test_classifier_uses_distinct_type_icon() -> None:
     """The All Models CSV must distinguish classifiers from encoders."""
+    category = LeaderboardCategory.ALL_MODELS.value
+    orthogonal: dict[str, dict[str, str]] = {category: {}}
     df = pd.DataFrame(
         {
+            "rank": [1, 2],
+            "model": ["org/laya", "org/encoder"],
+            "mean_rank_score": ["-", "-"],
             "model_type": ["zero_shot_classifier", None],
             "generative_type": [None, None],
             "commercial": [False, False],
             "merge": [False, False],
             "open": [False, False],
             "trained_from_scratch": [False, False],
+            "release_date": [None, None],
+            "parameters": [100, 200],
+            "vocabulary_size": [None, None],
+            "context": [512, 512],
         }
     )
-    result = _apply_display_transforms(
+    reordered = _reorder_columns(
         df=df,
-        category=LeaderboardCategory.ALL_MODELS,
-        category_to_orthogonal_datasets={LeaderboardCategory.ALL_MODELS: {}},
+        category=category,
+        category_to_orthogonal_datasets=orthogonal,
+        category_to_datasets={category: []},
+        rank_cols=["rank", "mean_rank_score"],
+        include_dataset_columns=True,
+    )
+    result = _apply_display_transforms(
+        df=reordered, category=category, category_to_orthogonal_datasets=orthogonal
     )
     assert result["generative_type"].tolist() == ["🎯", "🔍"]
+    assert "model_type" not in result.columns
 
 
 class TestGlobalVariantSelection:

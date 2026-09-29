@@ -206,8 +206,12 @@ class TestEeeUtils:
     ) -> None:
         """Old EEE data without provenance continues to load and round-trip."""
         eee_dict = benchmark_result.to_eee_dict()
-        del eee_dict["model_info"]["inference_engine"]
-        eee_dict["model_info"]["additional_details"].pop("model_type", None)
+        model_info = eee_dict["model_info"]
+        assert isinstance(model_info, dict)
+        model_info.pop("inference_engine", None)
+        additional_details = model_info["additional_details"]
+        assert isinstance(additional_details, dict)
+        additional_details.pop("model_type", None)
 
         restored = BenchmarkResult.from_dict(eee_dict)
 
