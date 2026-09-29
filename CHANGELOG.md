@@ -7,6 +7,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [v18.2.0] - 2026-09-29
+
 ### Added
 
 - Added Laya zero-shot classifier support through the `laya` extra and
