@@ -916,6 +916,15 @@ def _compute_eligible_models_and_ranks(
 
     # Sort for deterministic iteration.
     def is_eligible_understanding_model(model_id: str) -> bool:
+        """Check the category's model-type restriction for a model.
+
+        Args:
+            model_id:
+                The model identifier.
+
+        Returns:
+            Whether the model is permitted in this category's rank pool.
+        """
         return not (
             category == LeaderboardCategory.UNDERSTANDING
             and metadata_dict is not None
