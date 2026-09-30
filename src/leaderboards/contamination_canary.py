@@ -244,8 +244,6 @@ def load_canary_exclusions() -> set[str]:
     path = _private_directory() / _EXCLUSIONS_FILENAME
     if not path.exists():
         return set()
-    if not path.exists():
-        return set()
     try:
         _validate_private_file(path)
         value = json.loads(path.read_text(encoding="utf-8"))
