@@ -1,7 +1,11 @@
 """Unit tests for the `vllm` module."""
 
+import copy
+import dataclasses
 import importlib.util
+import json
 import shutil
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -21,8 +25,10 @@ from euroeval.benchmark_modules.vllm import (
 from euroeval.bpc_scoring import compute_bpc_scores
 from euroeval.constants import MAX_CONTEXT_LENGTH, REASONING_MAX_TOKENS
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
-from euroeval.enums import GenerativeType
+from euroeval.enums import GenerativeType, TaskGroup
 from euroeval.exceptions import InvalidBenchmark, InvalidModel, NeedsSystemDependency
+from euroeval.generation_utils import apply_prompt
+from euroeval.string_utils import find_label_logprob_start
 
 
 class TestComputeBPCFromPromptLogprobs:
@@ -1300,6 +1306,227 @@ class TestSkipImageProcessorContext:
                     AutoImageProcessor.from_pretrained("any-model")
         finally:
             AutoImageProcessor.from_pretrained = classmethod(real_func)  # ty: ignore[invalid-assignment]
+
+
+class TestVLLMClassification:
+    """Tests for vLLM classification schemas, prompts, and logprobs."""
+
+    def test_base_few_shot_prompt_uses_json_answer(
+        self, dataset_config: DatasetConfig
+    ) -> None:
+        """Base few-shot examples include the same JSON answer contract."""
+        config = self._classification_config(
+            dataset_config=dataset_config,
+            label_mapping={"positive": "agree", "negative": "disagree"},
+        )
+        examples = {"text": ["new text"]}
+        prepared = apply_prompt(
+            examples=examples,
+            few_shot_examples=[{"text": "old text", "label": "positive"}],
+            model_config=MagicMock(),
+            dataset_config=config,
+            generative_type=GenerativeType.BASE,
+            always_populate_text_field=True,
+            tokeniser=None,
+            classification_output_key="label",
+        )
+
+        assert json.dumps({"label": "agree"}) in prepared["text"][0]
+        assert prepared["text"][0].count('Label: {"label": "agree"}') == 1
+
+    @staticmethod
+    def _classification_config(
+        dataset_config: DatasetConfig,
+        task_group: TaskGroup = TaskGroup.SEQUENCE_CLASSIFICATION,
+        labels: list[str] | None = None,
+        label_mapping: dict[str, str] | None = None,
+    ) -> DatasetConfig:
+        """Return a small classification configuration for prompt tests."""
+        config = copy.copy(dataset_config)
+        labels = ["positive", "negative"] if labels is None else labels
+        config.task = dataclasses.replace(
+            dataset_config.task, task_group=task_group, default_labels=labels
+        )
+        config.labels = labels
+        config.prompt_label_mapping = (
+            {label: label for label in labels}
+            if label_mapping is None
+            else label_mapping
+        )
+        config.prompt_prefix = "Choose one of {labels_str}."
+        config.prompt_template = "Text: {text}\nLabel: {label}"
+        config.instruction_prompt = "Classify {text} as one of {labels_str}."
+        return config
+
+    def test_dynamic_classification_uses_open_json_schema(
+        self, dataset_config: DatasetConfig
+    ) -> None:
+        """Variable-choice classifications require a JSON object without enum."""
+        config = self._classification_config(
+            dataset_config=dataset_config,
+            task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+            labels=[],
+            label_mapping={},
+        )
+        model = self._model(config=config, generative_type=GenerativeType.BASE)
+        with patch(
+            "euroeval.benchmark_modules.vllm.StructuredOutputsParams",
+            side_effect=lambda **kwargs: SimpleNamespace(**kwargs),
+            create=True,
+        ):
+            structured = model._setup_structured_outputs(inputs={"text": ["prompt"]})
+
+        assert structured is not None
+        schema = structured.json
+        assert isinstance(schema, dict)
+        assert schema["properties"]["label"] == {"type": "string"}
+        assert "enum" not in schema["properties"]["label"]
+
+    @staticmethod
+    def _model(config: DatasetConfig, generative_type: GenerativeType) -> VLLMModel:
+        """Return an uninitialised vLLM model for configuration-only tests."""
+        model = object.__new__(VLLMModel)
+        model.dataset_config = config
+        model.benchmark_config = MagicMock(generative_type=generative_type)
+        model.model_config = MagicMock(model_id="test-model", param=None)
+        model.log_metadata = False
+        return model
+
+    def test_dynamic_mcq_choices_are_json_objects(
+        self, dataset_config: DatasetConfig
+    ) -> None:
+        """Variable-length MCQ choices are included in the JSON prompt contract."""
+        config = self._classification_config(
+            dataset_config=dataset_config,
+            task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+            labels=[],
+            label_mapping={},
+        )
+        config.prompt_template = "{text}\nChoose {labels_str}. Answer: {label}"
+        prepared = apply_prompt(
+            examples={"text": ["Question?\na. first\nb. second"]},
+            few_shot_examples=[],
+            model_config=MagicMock(),
+            dataset_config=config,
+            generative_type=GenerativeType.BASE,
+            always_populate_text_field=True,
+            tokeniser=None,
+            classification_output_key="label",
+        )
+
+        assert '{"label": "a"}' in prepared["text"][0]
+        assert '{"label": "b"}' in prepared["text"][0]
+
+    def test_logprob_trimming_matches_the_complete_label(self) -> None:
+        """Overlapping and mapped labels start scoring at the actual JSON value."""
+        scores = [
+            [('"', -0.1)],
+            [("New", -0.2), ("York", -0.3)],
+            [(" York", -0.4)],
+            [('"', -0.5)],
+        ]
+        assert find_label_logprob_start(logprobs_list=scores, value="New York") == 1
+        unicode_scores = [[('"', -0.1)], [("▁Å", -0.2)], [("land", -0.3)]]
+        assert (
+            find_label_logprob_start(logprobs_list=unicode_scores, value="Åland") == 1
+        )
+
+    def test_non_classification_bypasses_structured_schema(
+        self, dataset_config: DatasetConfig
+    ) -> None:
+        """Unlabelled text generation does not receive a classification schema."""
+        config = self._classification_config(
+            dataset_config=dataset_config,
+            task_group=TaskGroup.TEXT_TO_TEXT,
+            labels=[],
+            label_mapping={},
+        )
+        model = self._model(config=config, generative_type=GenerativeType.BASE)
+        assert model._setup_structured_outputs(inputs={"text": ["prompt"]}) is None
+
+    def test_parse_json_completion(self) -> None:
+        """VLLM completion parsing preserves the JSON response for extraction."""
+        model = object.__new__(VLLMModel)
+        model._tokeniser = MagicMock()
+        model._tokeniser.batch_decode.side_effect = [
+            ['{"label": "café"}'],
+            ['{"label": "café"}'],
+        ]
+        model._tokeniser.return_value = SimpleNamespace(input_ids=[[1]])
+        model._remove_reasoning_content = MagicMock(
+            side_effect=lambda completions: completions
+        )
+        model._remove_stop_tokens = MagicMock(
+            side_effect=lambda completions: completions
+        )
+        raw_output = SimpleNamespace(outputs=[SimpleNamespace(token_ids=[1])])
+        sampling_params = MagicMock(prompt_logprobs=None)
+
+        completions, _ = model._parse_completions(
+            raw_outputs=[raw_output], sampling_params=sampling_params
+        )
+
+        assert completions == ['{"label": "café"}']
+
+    @pytest.mark.parametrize(
+        ("generative_type", "inputs"),
+        [
+            (GenerativeType.REASONING, {"text": ["prompt"]}),
+            (GenerativeType.BASE, {"bpc_prompt": ["prompt"]}),
+        ],
+    )
+    def test_structured_schema_bypass(
+        self,
+        dataset_config: DatasetConfig,
+        generative_type: GenerativeType,
+        inputs: dict[str, list[str]],
+    ) -> None:
+        """Reasoning and BPC generation bypass structured decoding."""
+        config = self._classification_config(dataset_config=dataset_config)
+        model = self._model(config=config, generative_type=generative_type)
+        assert model._setup_structured_outputs(inputs=inputs) is None
+
+    def test_structured_schema_uses_mapped_labels(
+        self, dataset_config: DatasetConfig
+    ) -> None:
+        """Classification schemas enumerate mapped Unicode-safe scalar labels."""
+        config = self._classification_config(
+            dataset_config=dataset_config,
+            labels=["positive", "negative"],
+            label_mapping={"positive": "café", "negative": "нет"},
+        )
+        model = self._model(config=config, generative_type=GenerativeType.BASE)
+        with patch(
+            "euroeval.benchmark_modules.vllm.StructuredOutputsParams",
+            side_effect=lambda **kwargs: SimpleNamespace(**kwargs),
+            create=True,
+        ):
+            structured = model._setup_structured_outputs(inputs={"text": ["prompt"]})
+
+        assert structured is not None
+        schema = structured.json
+        assert isinstance(schema, dict)
+        assert schema["properties"]["label"]["enum"] == ["café", "нет"]
+
+    def test_variable_choice_backend_passes_json_contract(
+        self, dataset_config: DatasetConfig
+    ) -> None:
+        """The vLLM backend passes the JSON key to dataset preparation."""
+        config = self._classification_config(
+            dataset_config=dataset_config,
+            task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+            labels=[],
+            label_mapping={},
+        )
+        model = self._model(config=config, generative_type=GenerativeType.BASE)
+        model._tokeniser = MagicMock()
+        with patch(
+            "euroeval.benchmark_modules.vllm._prepare_dataset_helper",
+            return_value=MagicMock(),
+        ) as prepare:
+            model.prepare_dataset(dataset=MagicMock(), task=config.task, itr_idx=0)
+
+        assert prepare.call_args.kwargs["classification_output_key"] == "label"
 
 
 class TestVLLMPromptTruncation:

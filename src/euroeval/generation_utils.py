@@ -2,6 +2,7 @@
 
 import collections.abc as c
 import itertools as it
+import json
 import logging
 import random
 import re
@@ -39,6 +40,7 @@ def apply_prompt(
     always_populate_text_field: bool,
     tokeniser: "PreTrainedTokenizer | None",
     use_bits_per_character: bool = False,
+    classification_output_key: str | None = None,
 ) -> dict[str, t.Any]:
     """Apply prompt template to an example, potentially with few-shot examples.
 
@@ -62,6 +64,9 @@ def apply_prompt(
             Whether to use bits-per-character (BPC) scoring. For multiple-choice tasks,
             treats benchmark as text-to-text with bare question → full answer text.
             Defaults to False.
+        classification_output_key:
+            Optional JSON key to request for label-based classification outputs.
+            Defaults to None.
 
     Returns:
         The example with the few-shot examples applied.
@@ -100,6 +105,38 @@ def apply_prompt(
     few_shot_sections, new_sections = sections_builder(
         list(few_shot_examples), examples, create_prompt
     )
+    structured_labels: list[str] = []
+    if (
+        classification_output_key is not None
+        and dataset_config.task.task_group
+        in {TaskGroup.SEQUENCE_CLASSIFICATION, TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION}
+        and not use_bits_per_character
+    ):
+        structured_labels = [
+            dataset_config.prompt_label_mapping[label]
+            for label in dataset_config.labels
+        ]
+        if dataset_config.task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
+            dynamic_labels = [
+                label
+                for prompt, _ in [*few_shot_sections, *new_sections]
+                for label in extract_multiple_choice_labels(
+                    prompt=prompt, candidate_labels=[]
+                )
+            ]
+            structured_labels.extend(
+                dataset_config.prompt_label_mapping.get(label, label)
+                for label in dynamic_labels
+                if dataset_config.prompt_label_mapping.get(label, label)
+                not in structured_labels
+            )
+        few_shot_sections, new_sections = _add_structured_classification_output(
+            few_shot_sections=few_shot_sections,
+            new_sections=new_sections,
+            output_key=classification_output_key,
+            output_labels=structured_labels,
+            label_mapping=dataset_config.prompt_label_mapping,
+        )
 
     # Build outputs based on model type
     if is_instruction_tuned and always_populate_text_field:
@@ -120,6 +157,12 @@ def apply_prompt(
             few_shot_sections=few_shot_sections,
             new_sections=new_sections,
             dataset_config=dataset_config,
+            classification_output_key=(
+                classification_output_key if not use_bits_per_character else None
+            ),
+            classification_labels=(
+                structured_labels if not use_bits_per_character else None
+            ),
         )
         examples.update(outputs)
 
@@ -160,6 +203,84 @@ def _add_bare_inputs_for_bpc(
             fs_bare, fs_choices = parse_bare_question_and_choices(fs_example["text"])
             fs_example["bare_input"] = fs_bare
             fs_example["raw_choices"] = fs_choices
+
+
+def _add_structured_classification_output(
+    few_shot_sections: list[tuple[str, str]],
+    new_sections: list[tuple[str, str]],
+    output_key: str,
+    output_labels: list[str],
+    label_mapping: c.Mapping[str, str],
+) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
+    """Embed JSON choices in classification prompt sections.
+
+    Args:
+        few_shot_sections:
+            Prompt and answer pairs used as in-context examples.
+        new_sections:
+            Prompt and empty-answer pairs to evaluate.
+        output_key:
+            The JSON key required by the backend response schema.
+        output_labels:
+            The allowed values for the JSON output field.
+        label_mapping:
+            The mapping from labels rendered in prompts to JSON output values.
+
+    Returns:
+        The sections with JSON choices in their existing prompt sentences and matching
+        few-shot answers.
+    """
+    prompt_label_mapping = dict(label_mapping)
+    for label in output_labels:
+        prompt_label_mapping.setdefault(label, label)
+
+    def add_json_choices(prompt: str) -> str:
+        """Replace quoted bare-label choices without changing surrounding wording.
+
+        Returns:
+            The prompt with quoted choices replaced by JSON objects.
+        """
+        for prompt_label, output_label in prompt_label_mapping.items():
+            json_choice = json.dumps({output_key: output_label}, ensure_ascii=False)
+            prompt = prompt.replace(f"'{prompt_label}'", json_choice)
+        return prompt
+
+    def add_json_answer(prompt: str, label: str) -> tuple[str, str]:
+        """Replace a trailing bare answer with a JSON object.
+
+        Base-model prompts already contain their answer, so their section label is
+        empty. In that case, recover the answer from the prompt rather than appending
+        an empty JSON object later.
+
+        Returns:
+            The prompt and JSON answer for the section.
+        """
+        stripped_prompt = prompt.rstrip()
+        answer_label = label or next(
+            (
+                candidate
+                for candidate in sorted(output_labels, key=len, reverse=True)
+                if stripped_prompt.endswith(candidate)
+            ),
+            "",
+        )
+        if not answer_label:
+            return prompt, ""
+        json_answer = json.dumps({output_key: answer_label}, ensure_ascii=False)
+        if stripped_prompt.endswith(answer_label):
+            prompt = (
+                stripped_prompt[: -len(answer_label)]
+                + json_answer
+                + prompt[len(stripped_prompt) :]
+            )
+        return prompt, json_answer
+
+    few_shot_sections = [
+        add_json_answer(add_json_choices(prompt), label)
+        for prompt, label in few_shot_sections
+    ]
+    new_sections = [(add_json_choices(prompt), label) for prompt, label in new_sections]
+    return few_shot_sections, new_sections
 
 
 def _build_bpc_outputs(
@@ -468,6 +589,8 @@ def _build_standard_outputs(
     few_shot_sections: list[tuple[str, str]],
     new_sections: list[tuple[str, str]],
     dataset_config: "DatasetConfig",
+    classification_output_key: str | None = None,
+    classification_labels: c.Sequence[str] | None = None,
 ) -> dict[str, t.Any]:
     """Build outputs for non-instruction-tuned models.
 
@@ -478,6 +601,10 @@ def _build_standard_outputs(
             The new sections.
         dataset_config:
             The dataset configuration.
+        classification_output_key (optional):
+            JSON key for label-based classification prompts. Defaults to None.
+        classification_labels (optional):
+            Mapped labels to include in the JSON choices. Defaults to None.
 
     Returns:
         A dictionary of outputs.
@@ -485,11 +612,24 @@ def _build_standard_outputs(
     prompt_prefix = ""
     if dataset_config.prompt_prefix:
         labels_str = dataset_config.get_labels_str()
+        if classification_output_key is not None and classification_labels:
+            labels_str = _get_json_labels_str(
+                dataset_config=dataset_config,
+                output_key=classification_output_key,
+                labels=classification_labels,
+            )
         prompt_prefix = (
             dataset_config.prompt_prefix.format(labels_str=labels_str) + "\n\n"
         )
 
-    few_shot_prompt = "\n\n".join([prompt for prompt, _ in few_shot_sections])
+    few_shot_prompt = "\n\n".join(
+        _complete_base_classification_section(
+            prompt=prompt,
+            answer=answer,
+            classification_output_key=classification_output_key,
+        )
+        for prompt, answer in few_shot_sections
+    )
     if few_shot_prompt:
         few_shot_prompt += "\n\n"
 
@@ -499,6 +639,47 @@ def _build_standard_outputs(
             for new_prompt, _ in new_sections
         ]
     }
+
+
+def _complete_base_classification_section(
+    prompt: str, answer: str, classification_output_key: str | None
+) -> str:
+    """Ensure a base-model classification example has a JSON answer.
+
+    Returns:
+        The section with a JSON answer when it does not already contain one.
+    """
+    if classification_output_key is None or not answer:
+        return prompt
+    if prompt.rstrip().endswith(answer):
+        return prompt
+    return f"{prompt}\n{answer}"
+
+
+def _get_json_labels_str(
+    dataset_config: "DatasetConfig",
+    output_key: str,
+    labels: c.Sequence[str] | None = None,
+) -> str:
+    """Render mapped classification labels as JSON alternatives.
+
+    Returns:
+        The localised JSON alternatives.
+    """
+    labels = (
+        list(labels)
+        if labels is not None
+        else [
+            dataset_config.prompt_label_mapping[label]
+            for label in dataset_config.labels
+        ]
+    )
+    labels_str = dataset_config.get_labels_str(labels=labels)
+    for label in labels:
+        labels_str = labels_str.replace(
+            f"'{label}'", json.dumps({output_key: label}, ensure_ascii=False)
+        )
+    return labels_str
 
 
 def _create_prompt_creator(

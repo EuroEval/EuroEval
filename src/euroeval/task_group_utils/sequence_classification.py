@@ -10,7 +10,11 @@ from transformers.trainer_utils import EvalPrediction
 from ..closest_match import get_closest_match
 from ..enums import TaskGroup
 from ..exceptions import InvalidBenchmark
-from ..string_utils import clean_label_token, extract_multiple_choice_labels
+from ..string_utils import (
+    clean_label_token,
+    extract_classification_label,
+    extract_multiple_choice_labels,
+)
 from ..types import Predictions
 from ..utils import log_once
 from ._common import compute_simple_metrics, normalise_model_outputs
@@ -168,6 +172,11 @@ def extract_labels_from_generation(
     new_predicted_labels: list[str] = list()
     num_predictions_being_very_off = 0
     for idx, predicted_label in enumerate(model_output.sequences):
+        # Reasoning models may place the final JSON object after their analysis. The
+        # object is authoritative, while bare labels remain supported for compatibility.
+        if (json_label := extract_classification_label(predicted_label)) is not None:
+            predicted_label = json_label
+
         # If the prediction includes a boxed answer, use that instead of the full
         # generation
         if (m := re.search(r"boxed\{(.*?)\}", predicted_label)) is not None:

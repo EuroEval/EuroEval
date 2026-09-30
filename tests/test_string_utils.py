@@ -6,8 +6,10 @@ from euroeval.data_models import ModelIdComponents
 from euroeval.exceptions import InvalidBenchmark, InvalidModel
 from euroeval.string_utils import (
     clean_label_token,
+    extract_classification_label,
     extract_json_dict_from_string,
     extract_multiple_choice_labels,
+    find_label_logprob_start,
     scramble,
     split_model_id,
     unscramble,
@@ -36,6 +38,19 @@ from euroeval.string_utils import (
 def test_clean_label_token_issue_examples(token: str, expected: str) -> None:
     """Clean the exact label tokens reported in issue 2180."""
     assert clean_label_token(token) == expected
+
+
+def test_extract_classification_label_ignores_non_scalar_values() -> None:
+    """Classification extraction only accepts scalar string labels."""
+    assert extract_classification_label('{"label": ["a"]}') is None
+
+
+def test_extract_classification_label_uses_final_json_object() -> None:
+    """Reasoning before the final scalar label does not affect extraction."""
+    assert (
+        extract_classification_label('analysis {"label": "wrong"} final {"label": "é"}')
+        == "é"
+    )
 
 
 def test_extract_json_dict_from_string_invalid_json_returns_none() -> None:
@@ -116,6 +131,24 @@ def test_extract_multiple_choice_labels_without_labels() -> None:
     prompt = "Choose one: a. option1 b. option2 c. option3"
     result = extract_multiple_choice_labels(prompt=prompt, candidate_labels=[])
     assert result == ["a", "b", "c"]
+
+
+def test_find_label_logprob_start_uses_emitted_json_value() -> None:
+    """A key-position alternative must not be mistaken for the emitted label."""
+    generated = ['{"', "label", '": "', "label", '"}']
+    scores = [
+        [('{"', -0.1)],
+        [("label", -0.2), ("other", -0.3)],
+        [('": "', -0.1)],
+        [("label", -0.4)],
+        [('"}', -0.1)],
+    ]
+    assert (
+        find_label_logprob_start(
+            logprobs_list=scores, value="label", generated_tokens=generated
+        )
+        == 3
+    )
 
 
 @pytest.mark.parametrize(
