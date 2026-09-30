@@ -589,59 +589,6 @@ class TestOrthogonalDatasetsByCategory:
         assert category_to_orthogonal_datasets[LeaderboardCategory.UNDERSTANDING] == {}
 
 
-def test_understanding_rank_pool_excludes_zero_shot_classifier(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Laya may have scores but must not affect Understanding bootstrap ranks."""
-    observed_model_ids: list[set[str]] = []
-
-    def fake_bootstrap_rank_scores(model_results: dict, **_: object) -> dict:
-        observed_model_ids.append(set(model_results))
-        return {}
-
-    monkeypatch.setattr(
-        leaderboard_generation, "bootstrap_rank_scores", fake_bootstrap_rank_scores
-    )
-    monkeypatch.setattr(
-        leaderboard_generation,
-        "bootstrap_confidence_intervals",
-        lambda *_args, **_kwargs: {},
-    )
-    monkeypatch.setattr(
-        leaderboard_generation,
-        "compute_standard_ranks_from_bootstrap_scores",
-        lambda **_: {},
-    )
-
-    _compute_eligible_models_and_ranks(
-        model_results={
-            "encoder": {"sentiment": []},
-            "Laya": {"sentiment": []},
-            "zero_shot_generative": {"sentiment": []},
-        },
-        category=LeaderboardCategory.UNDERSTANDING,
-        category_to_datasets={LeaderboardCategory.UNDERSTANDING: ["sentiment"]},
-        category_to_orthogonal_datasets={LeaderboardCategory.UNDERSTANDING: {}},
-        leaderboard_configs={
-            "english": {"sentiment-classification": ["sentiment"]},
-            "danish": {"sentiment-classification": ["sentiment"]},
-        },
-        metadata_dict={
-            "Laya": {"model_type": "zero_shot_classifier"},
-            "zero_shot_generative": {
-                "model_type": "instruction_tuned_decoder",
-                "zero_shot": True,
-            },
-        },
-    )
-
-    assert observed_model_ids == [
-        {"encoder", "zero_shot_generative"},
-        {"encoder", "zero_shot_generative"},
-        {"encoder", "zero_shot_generative"},
-    ]
-
-
 class TestPerLanguageRankScoreFormat:
     """Tests for per-language rank score formatting and structure."""
 
@@ -802,3 +749,56 @@ def test_release_date_is_emitted_for_frontend_visualizations() -> None:
     )
 
     assert full.loc[0, "Release Date"] == "2024-02-03"
+
+
+def test_understanding_rank_pool_excludes_zero_shot_classifier(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Laya may have scores but must not affect Understanding bootstrap ranks."""
+    observed_model_ids: list[set[str]] = []
+
+    def fake_bootstrap_rank_scores(model_results: dict, **_: object) -> dict:
+        observed_model_ids.append(set(model_results))
+        return {}
+
+    monkeypatch.setattr(
+        leaderboard_generation, "bootstrap_rank_scores", fake_bootstrap_rank_scores
+    )
+    monkeypatch.setattr(
+        leaderboard_generation,
+        "bootstrap_confidence_intervals",
+        lambda *_args, **_kwargs: {},
+    )
+    monkeypatch.setattr(
+        leaderboard_generation,
+        "compute_standard_ranks_from_bootstrap_scores",
+        lambda **_: {},
+    )
+
+    _compute_eligible_models_and_ranks(
+        model_results={
+            "encoder": {"sentiment": []},
+            "Laya": {"sentiment": []},
+            "zero_shot_generative": {"sentiment": []},
+        },
+        category=LeaderboardCategory.UNDERSTANDING,
+        category_to_datasets={LeaderboardCategory.UNDERSTANDING: ["sentiment"]},
+        category_to_orthogonal_datasets={LeaderboardCategory.UNDERSTANDING: {}},
+        leaderboard_configs={
+            "english": {"sentiment-classification": ["sentiment"]},
+            "danish": {"sentiment-classification": ["sentiment"]},
+        },
+        metadata_dict={
+            "Laya": {"model_type": "zero_shot_classifier"},
+            "zero_shot_generative": {
+                "model_type": "instruction_tuned_decoder",
+                "zero_shot": True,
+            },
+        },
+    )
+
+    assert observed_model_ids == [
+        {"encoder", "zero_shot_generative"},
+        {"encoder", "zero_shot_generative"},
+        {"encoder", "zero_shot_generative"},
+    ]
