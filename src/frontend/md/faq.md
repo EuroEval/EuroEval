@@ -110,12 +110,14 @@ hardware essentially doesn't matter — the bottleneck is the API.
 
 ## Why are encoder, decoder, and instruction-tuned models all ranked together?
 
-To make them comparable! Many EuroEval tasks (sentiment classification, NER, NLI,
-reading comprehension, …) can be solved by all three model families, and one of the
-most interesting questions a benchmark can answer is *which architecture actually
-performs best on this task for this language*. Mixing them in one leaderboard makes
-that comparison direct rather than hypothetical. The `Type` column lets you filter to a
-single architecture if you only care about one.
+To make them comparable on tasks they can all attempt. The **Understanding** leaderboard
+compares encoder and generative models on sequence/token classification, extractive
+question answering, and eligible multiple-choice tasks. **All Models** compares sequence
+classification and eligible multiple-choice tasks across all supported model types,
+including zero-shot classifiers such as Laya. These rankings are computed
+separately from the Chat and Generative rankings, which cover different task sets and
+may use different evaluation modes. Within a leaderboard, the `Type` column lets you
+filter to a single architecture.
 
 ## What do the "Merge" and "Trained from scratch" columns mean?
 

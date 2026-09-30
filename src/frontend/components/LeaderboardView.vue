@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import LeaderboardTable from "@/components/LeaderboardTable.vue";
 import LeaderboardScatter from "@/components/LeaderboardScatter.vue";
 import {
+  csvKeys,
   loadLeaderboard,
   loadLeaderboardCsv,
   loadLeaderboardMetadata,
@@ -19,30 +20,43 @@ const props = defineProps<{
 const categoryTabs = [
   { id: "chat", label: "Chat" },
   { id: "generative", label: "Generative" },
+  { id: "understanding", label: "Understanding" },
   { id: "all_models", label: "All Models" },
 ] as const;
 
 type CategoryId = (typeof categoryTabs)[number]["id"];
 type ViewId = "table" | "modelSize" | "releaseDate";
 
-// Precomputed at leaderboard-generation time (which leaderboards/categories
-// have ranked models) and bundled statically, so it's known synchronously
-// from `stem` alone whether a category has ranked models - no need to wait
-// for that category's leaderboard data to load before deciding whether its
-// tab is clickable. All tabs always render, in a fixed order, for every
-// leaderboard - only ranked-ness varies - so the tab set's shape never
-// changes between languages.
+// A category is available only when the generated manifest marks it ranked
+// and its full CSV stem is present in Vite's build-time CSV keys. Both gates
+// are known synchronously, so tabs never flash enabled while data loads. All
+// tabs always render, in a fixed order, for every leaderboard - only
+// ranked-ness varies - so the tab set's shape never changes between languages.
 type CategoryRankedManifest = Record<string, Partial<Record<CategoryId, boolean>>>;
 const categoryRanked = categoryRankedData as CategoryRankedManifest;
 
 const isCategoryRanked = (id: CategoryId): boolean =>
-  categoryRanked[props.stem]?.[id] ?? false;
+  (categoryRanked[props.stem]?.[id] ?? false) &&
+  csvKeys.includes(`${props.stem}_${id}`);
 
 const firstRankedCategory = (): CategoryId =>
   categoryTabs.find((t) => isCategoryRanked(t.id))?.id ?? categoryTabs[0].id;
 
 const activeCategory = ref<CategoryId>(categoryTabs[0].id);
 const activeView = ref<ViewId>("table");
+
+const categoryDescription = computed(() => {
+  switch (activeCategory.value) {
+    case "chat":
+      return "This leaderboard contains only the models that have the ability to chat, and are all evaluated zero-shot.";
+    case "generative":
+      return "This leaderboard contains only the generative models, and are all evaluated few-shot (unless zero-shot is stated).";
+    case "understanding":
+      return "This leaderboard contains only the models which can handle all language understanding tasks.";
+    case "all_models":
+      return "This leaderboard contains all the models that EuroEval supports.";
+  }
+});
 
 type CategoryEntry = { table: LBTable | null; metadata: LeaderboardMetadata | null };
 
@@ -151,13 +165,8 @@ const viewTabs: { id: ViewId; label: string }[] = [
   { id: "releaseDate", label: "Release Date" },
 ];
 
-// Sliding-pill indicators for the two tab groups. Each indicator is a
-// separate absolutely-positioned element measured off the active button's
-// own layout, so it works regardless of label width - a plain CSS
-// transition can't do this on its own since the buttons aren't fixed-width.
-const categoryTabRefs = ref<HTMLButtonElement[]>([]);
+// The view toggle's underline follows its active option regardless of label width.
 const viewTabRefs = ref<HTMLButtonElement[]>([]);
-const categoryIndicator = ref({ left: "0px", width: "0px" });
 const viewIndicator = ref({ left: "0px", width: "0px" });
 
 const measureIndicator = (
@@ -173,11 +182,6 @@ const measureIndicator = (
 
 const syncIndicators = async () => {
   await nextTick();
-  measureIndicator(
-    categoryTabRefs.value,
-    categoryTabs.findIndex((t) => t.id === activeCategory.value),
-    categoryIndicator.value,
-  );
   measureIndicator(
     viewTabRefs.value,
     viewTabs.findIndex((t) => t.id === activeView.value),
@@ -270,24 +274,79 @@ const downloadCsv = async () => {
       </p>
     </aside>
 
-    <nav class="lb-tabs" role="tablist">
-      <span class="lb-tab-indicator" :style="categoryIndicator" />
-      <button
-        v-for="t in categoryTabs"
-        ref="categoryTabRefs"
-        :key="t.id"
-        type="button"
-        role="tab"
-        :disabled="!isCategoryRanked(t.id)"
-        :title="isCategoryRanked(t.id) ? undefined : 'Coming soon'"
-        :aria-selected="activeCategory === t.id"
-        :class="['lb-tab', { active: activeCategory === t.id }]"
-        @click="activeCategory = t.id"
-      >
-        {{ t.label }}
-        <span v-if="!isCategoryRanked(t.id)" class="lb-tab-soon">Soon</span>
-      </button>
+    <nav
+      class="lb-tabs"
+      role="tablist"
+      aria-orientation="vertical"
+      aria-label="Model categories nested from All Models to Chat"
+    >
+      <div class="lb-category-box lb-category-box-all" role="presentation">
+        <button
+          type="button"
+          role="tab"
+          :disabled="!isCategoryRanked('all_models')"
+          :title="isCategoryRanked('all_models') ? undefined : 'Coming soon'"
+          :aria-label="isCategoryRanked('all_models') ? undefined : 'All Models (coming soon)'"
+          :aria-selected="activeCategory === 'all_models'"
+          :class="['lb-tab', { active: activeCategory === 'all_models' }]"
+          @click="activeCategory = 'all_models'"
+        >
+          All Models
+          <span v-if="!isCategoryRanked('all_models')" class="lb-tab-soon">Soon</span>
+        </button>
+        <div class="lb-category-box lb-category-box-understanding" role="presentation">
+          <button
+            type="button"
+            role="tab"
+            :disabled="!isCategoryRanked('understanding')"
+            :title="isCategoryRanked('understanding') ? undefined : 'Coming soon'"
+            :aria-label="isCategoryRanked('understanding') ? undefined : 'Understanding (coming soon)'"
+            :aria-selected="activeCategory === 'understanding'"
+            :class="['lb-tab', { active: activeCategory === 'understanding' }]"
+            @click="activeCategory = 'understanding'"
+          >
+            Understanding
+            <span v-if="!isCategoryRanked('understanding')" class="lb-tab-soon">Soon</span>
+          </button>
+          <div class="lb-category-box lb-category-box-generative" role="presentation">
+            <button
+              type="button"
+              role="tab"
+              :disabled="!isCategoryRanked('generative')"
+              :title="isCategoryRanked('generative') ? undefined : 'Coming soon'"
+              :aria-label="isCategoryRanked('generative') ? undefined : 'Generative (coming soon)'"
+              :aria-selected="activeCategory === 'generative'"
+              :class="['lb-tab', { active: activeCategory === 'generative' }]"
+              @click="activeCategory = 'generative'"
+            >
+              Generative
+              <span v-if="!isCategoryRanked('generative')" class="lb-tab-soon">Soon</span>
+            </button>
+            <div class="lb-category-box lb-category-box-chat" role="presentation">
+              <button
+                type="button"
+                role="tab"
+                :disabled="!isCategoryRanked('chat')"
+                :title="isCategoryRanked('chat') ? undefined : 'Coming soon'"
+                :aria-label="isCategoryRanked('chat') ? undefined : 'Chat (coming soon)'"
+                :aria-selected="activeCategory === 'chat'"
+                :class="['lb-tab', { active: activeCategory === 'chat' }]"
+                @click="activeCategory = 'chat'"
+              >
+                Chat
+                <span v-if="!isCategoryRanked('chat')" class="lb-tab-soon">Soon</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </nav>
+
+    <div class="lb-category-context">
+      <p v-if="categoryDescription" class="lb-category-description">
+        {{ categoryDescription }}
+      </p>
+    </div>
 
     <div class="lb-view-toggle" role="tablist">
       <span class="lb-view-indicator" :style="viewIndicator" />
@@ -505,64 +564,137 @@ const downloadCsv = async () => {
 }
 
 .lb-tabs {
-  position: relative;
-  display: inline-flex;
-  gap: 0.2rem;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  padding: 0.25rem;
+  width: min(100%, 32rem);
   margin-top: 0.5rem;
-  width: fit-content;
-  max-width: 100%;
-  overflow-x: auto;
-  scrollbar-width: none;
 }
 
-.lb-tab-indicator {
-  position: absolute;
-  top: 0.25rem;
-  bottom: 0.25rem;
-  left: 0;
-  border-radius: 999px;
-  background: var(--color-link);
-  filter: brightness(0.85);
-  transition:
-    left 0.25s ease,
-    width 0.25s ease;
+.lb-category-box {
+  min-width: 0;
+}
+
+.lb-category-box-all {
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  padding: 0.4rem;
+  background: var(--color-surface);
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--color-text) 7%, transparent);
+}
+
+.lb-category-box-understanding {
+  margin: 0.15rem 0 0 0.5rem;
+  padding: 0.1rem 0 0.1rem 0.55rem;
+  border-left: 2px solid color-mix(in srgb, var(--color-link) 24%, var(--color-border));
+  background: color-mix(in srgb, var(--color-bg) 22%, var(--color-surface));
+}
+
+.lb-category-box-generative {
+  margin: 0.1rem 0 0 0.45rem;
+  padding: 0.1rem 0 0.1rem 0.5rem;
+  border-left: 2px solid color-mix(in srgb, var(--color-link) 20%, var(--color-border));
+  background: color-mix(in srgb, var(--color-bg) 38%, var(--color-surface));
+}
+
+.lb-category-box-chat {
+  margin: 0.1rem 0 0 0.4rem;
+  padding: 0.1rem 0 0.1rem 0.45rem;
+  border-left: 2px solid color-mix(in srgb, var(--color-link) 17%, var(--color-border));
+  background: color-mix(in srgb, var(--color-bg) 54%, var(--color-surface));
 }
 
 .lb-tab {
   position: relative;
-  z-index: 1;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 2.45rem;
+  max-width: 100%;
   background: transparent;
   border: 0;
-  border-radius: 999px;
-  color: var(--color-muted);
-  padding: 0.4rem 0.85rem;
+  border-radius: 0.4rem;
+  color: var(--color-text);
+  padding: 0.45rem 0.7rem;
   cursor: pointer;
+  text-align: left;
   font: inherit;
-  font-size: 0.85rem;
-  font-weight: 500;
-  white-space: nowrap;
-  transition: color 0.2s ease;
+  font-size: 0.9rem;
+  font-weight: 550;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease;
 }
 
-.lb-tab:hover {
-  color: var(--color-text);
+.lb-tab:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-link) 9%, transparent);
+}
+
+.lb-tab:focus-visible {
+  outline: 2px solid var(--color-link);
+  outline-offset: 1px;
+  z-index: 1;
 }
 
 .lb-tab.active {
-  color: #fff;
+  background: color-mix(in srgb, var(--color-link) 13%, transparent);
+  color: var(--color-link);
+  font-weight: 650;
+}
+
+.lb-tab.active::before {
+  position: absolute;
+  top: 0.4rem;
+  bottom: 0.4rem;
+  left: 0;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--color-link);
+  content: "";
 }
 
 .lb-tab:disabled {
   color: var(--color-muted);
-  opacity: 0.6;
+  opacity: 0.68;
   cursor: not-allowed;
+}
+
+@media (max-width: 24rem) {
+  .lb-category-box-all {
+    padding: 0.3rem;
+  }
+
+  .lb-category-box-understanding {
+    margin-left: 0.3rem;
+    padding-left: 0.4rem;
+  }
+
+  .lb-category-box-generative {
+    margin-left: 0.3rem;
+    padding-left: 0.35rem;
+  }
+
+  .lb-category-box-chat {
+    margin-left: 0.25rem;
+    padding-left: 0.3rem;
+  }
+
+  .lb-tab {
+    padding-inline: 0.55rem;
+    font-size: 0.84rem;
+  }
+}
+
+.lb-category-context {
+  display: grid;
+  gap: 0.45rem;
+  max-width: 100%;
+  margin-top: 0.15rem;
+}
+
+.lb-category-description {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.84rem;
+  line-height: 1.4;
 }
 
 .lb-tab-soon {

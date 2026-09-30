@@ -10,23 +10,30 @@ left menu to see the results.</span>
 
 ## 🏷️ Types of Leaderboards
 
-Each language has three leaderboards:
+Each language has four leaderboards:
 
-- **Chat Leaderboard**: This leaderboard shows the performance of instruction-tuned and
-  reasoning models, evaluated on _all_ [tasks](/tasks) - both the standard NLU and NLG
-  tasks and a handful of additional tasks that only make sense for these kinds of models
-  (e.g. instruction following, tool use, bias evaluation). All evaluations here are
+- **Chat Leaderboard**: This leaderboard shows instruction-tuned and reasoning models
+  on _all_ [tasks](/tasks): standard NLU and NLG tasks plus tasks specific to these
+  models (e.g. instruction following, tool use, bias evaluation). Evaluations here are
   **zero-shot**.
-- **Generative Leaderboard**: This leaderboard shows the performance of models that can
-  generate text, evaluated on the standard set of NLU and NLG [tasks](/tasks). Any
-  generative model can appear here, whether base, instruction-tuned, or reasoning.
-  Evaluations here are **few-shot** by default, unless specified otherwise, in
-  which case it's noted next to the model name (e.g. `model-name (zero-shot)`).
-- **All Models Leaderboard**: This leaderboard shows the performance of models that
-  can understand text (but not necessarily generate it), which includes both
-  generative and non-generative models. Generative models are evaluated **few-shot**
-  by default, unless specified otherwise (noted next to the model name), while
-  encoder models are **finetuned**.
+- **Generative Leaderboard**: This leaderboard covers the standard NLU and NLG
+  [tasks](/tasks) for any text-generating model, whether base, instruction-tuned, or
+  reasoning. Evaluations are **few-shot** by default, unless specified otherwise; the
+  model name notes exceptions (e.g. `model-name (zero-shot)`).
+- **Understanding Leaderboard**: This leaderboard compares encoder and generative
+  models on sequence/token classification, extractive question answering, and the
+  multiple-choice tasks eligible for this comparison. Encoder models are evaluated by
+  finetuning; generative models use their recorded evaluation mode, including labelled
+  zero-shot results where available. It focuses on language understanding rather than
+  text generation.
+- **All Models Leaderboard**: This leaderboard compares all eligible model families,
+  including encoders, generative models, and zero-shot classifiers such as Laya, on
+  sequence classification and eligible multiple-choice tasks. Evaluation modes
+  differ by model: encoders may be finetuned, generative models may be few-shot or
+  labelled zero-shot, and zero-shot classifiers use their classifier inference mode.
+
+Each leaderboard computes its ranking over its own task set. Rank scores and positions
+should therefore be compared within a category, not across categories.
 
 ## 📊 How to Read the Leaderboards
 

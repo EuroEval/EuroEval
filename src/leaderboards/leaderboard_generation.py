@@ -438,6 +438,7 @@ def _generate_dataframe(
             category_to_orthogonal_datasets=category_to_orthogonal_datasets,
             leaderboard_configs=leaderboard_configs,
             language_rank_cache=language_rank_cache,
+            metadata_dict=metadata_dict,
         )
 
         orthogonal_scores_by_plain = _collect_orthogonal_scores(
@@ -468,6 +469,8 @@ def _generate_dataframe(
             if category == LeaderboardCategory.GENERATIVE and (
                 generative_type is None or zero_shot_classifier
             ):
+                continue
+            if category == LeaderboardCategory.UNDERSTANDING and zero_shot_classifier:
                 continue
             model_values = _build_model_row_data(
                 model_id=model_id,
@@ -869,6 +872,7 @@ def _compute_eligible_models_and_ranks(
     leaderboard_configs: dict[str, dict[str, list[str]]],
     language_rank_cache: dict[tuple[str, str, tuple[str, ...], tuple[str, ...]], dict]
     | None = None,
+    metadata_dict: dict[str, dict] | None = None,
 ) -> "tuple[dict[str, dict[str, list[tuple[list[float], float, float]]]], dict[str, list[str]], dict, dict]":  # noqa: E501
     """Compute eligible models and bootstrap ranks for a category.
 
@@ -894,6 +898,9 @@ def _compute_eligible_models_and_ranks(
             The leaderboard configurations.
         language_rank_cache (optional):
             Shared cache for monolingual rank-score confidence intervals.
+        metadata_dict (optional):
+            Model metadata used to exclude zero-shot classifiers from the
+            understanding leaderboard.
 
     Returns:
         Tuple of (eligible_model_results, language_to_required_datasets,
@@ -906,11 +913,30 @@ def _compute_eligible_models_and_ranks(
         for ds in sorted(category_to_datasets[category])
         if ds not in category_to_orthogonal_datasets[category]
     ]
+
     # Sort for deterministic iteration.
+    def is_eligible_understanding_model(model_id: str) -> bool:
+        """Check the category's model-type restriction for a model.
+
+        Args:
+            model_id:
+                The model identifier.
+
+        Returns:
+            Whether the model is permitted in this category's rank pool.
+        """
+        return not (
+            category == LeaderboardCategory.UNDERSTANDING
+            and metadata_dict is not None
+            and metadata_dict.get(model_id, {}).get("model_type")
+            == "zero_shot_classifier"
+        )
+
     eligible_model_results = {
         mid: model_results[mid]
         for mid in sorted(model_results.keys())
         if all(ds in model_results[mid] for ds in required_datasets)
+        and is_eligible_understanding_model(mid)
     }
 
     language_to_required_datasets = {
@@ -963,6 +989,7 @@ def _compute_eligible_models_and_ranks(
                 mid: model_results[mid]
                 for mid in sorted(model_results.keys())
                 if all(ds in model_results[mid] for ds in lang_required)
+                and is_eligible_understanding_model(mid)
             }
             cache_key = _language_rank_cache_key(
                 language=language,
