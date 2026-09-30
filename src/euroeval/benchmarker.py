@@ -54,6 +54,29 @@ from .tasks import LA, SPEED
 from .types import ShotModeRequest
 from .utils import enforce_reproducibility, get_hf_token, internet_connection_available
 
+_VERIFIED_MODEL_METADATA = {
+    "convaiinnovations/laya-multilingual": {
+        "commercially_licensed": True,
+        "open": True,
+        "trained_from_scratch": False,
+    },
+    "convaiinnovations/laya": {
+        "commercially_licensed": True,
+        "open": True,
+        "trained_from_scratch": False,
+    },
+}
+
+
+def _verified_model_metadata(model_id: str) -> dict[str, bool]:
+    """Return verified metadata for explicitly recognised model repositories.
+
+    Returns:
+        The known metadata fields, or an empty mapping for other models.
+    """
+    return _VERIFIED_MODEL_METADATA.get(model_id, {}).copy()
+
+
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
     from .data_models import BenchmarkConfig, ModelConfig, Task
@@ -804,6 +827,13 @@ class Benchmarker:
             generative=model_config.model_type is ModelType.GENERATIVE,
             model_type=model_config.model_type.value,
             inference_engine=model_config.inference_backend.value,
+            commercially_licensed=_verified_model_metadata(model_config.model_id).get(
+                "commercially_licensed"
+            ),
+            open=_verified_model_metadata(model_config.model_id).get("open"),
+            trained_from_scratch=_verified_model_metadata(model_config.model_id).get(
+                "trained_from_scratch"
+            ),
             generative_type=(
                 loaded_model.generative_type.value
                 if loaded_model is not None and loaded_model.generative_type is not None
@@ -1144,6 +1174,13 @@ class Benchmarker:
                     generative=model_config.model_type == ModelType.GENERATIVE,
                     model_type=model_config.model_type.value,
                     inference_engine=model_config.inference_backend.value,
+                    commercially_licensed=_verified_model_metadata(
+                        model_config.model_id
+                    ).get("commercially_licensed"),
+                    open=_verified_model_metadata(model_config.model_id).get("open"),
+                    trained_from_scratch=_verified_model_metadata(
+                        model_config.model_id
+                    ).get("trained_from_scratch"),
                     generative_type=(
                         model.generative_type.value
                         if model.generative_type is not None
