@@ -55,8 +55,9 @@ def configure_canary_result_filter() -> None:
     )
     if canary_report.get("status") == "unavailable":
         logger.warning(
-            "Contamination-canary evidence could not be scored: %s.",
-            canary_report.get("reason", "unknown error"),
+            "Contamination-canary scoring unavailable at stage %s (%s).",
+            canary_report.get("stage", "unknown"),
+            canary_report.get("reason", "unknown_error"),
         )
     configure_leaderboard_result_filter(excluded_models=excluded_models)
     load_raw_results.cache_clear()
@@ -99,8 +100,9 @@ def process_results(
     )
     if canary_report.get("status") == "unavailable":
         logger.warning(
-            "Contamination-canary evidence could not be scored: %s.",
-            canary_report.get("reason", "unknown error"),
+            "Contamination-canary scoring unavailable at stage %s (%s).",
+            canary_report.get("stage", "unknown"),
+            canary_report.get("reason", "unknown_error"),
         )
 
     # Build the metadata cache from the synced per-model result files.
@@ -154,14 +156,20 @@ def process_results(
     )
     # Completion-bearing evidence remains local/private and is never uploaded to
     # the public canonical results bucket.
-    _upload_per_model_files(processed_records=canary_records, upload_to_bucket=False)
+    _upload_per_model_files(
+        processed_records=canary_records,
+        upload_to_bucket=False,
+        local_only_label="private contamination-canary",
+    )
     configure_leaderboard_result_filter(excluded_models=excluded_models)
     load_raw_results.cache_clear()
     logger.info("Cleared load_raw_results cache.")
 
 
 def _upload_per_model_files(
-    processed_records: list[dict[str, t.Any]], upload_to_bucket: bool = False
+    processed_records: list[dict[str, t.Any]],
+    upload_to_bucket: bool = False,
+    local_only_label: str | None = None,
 ) -> None:
     """Write one JSON file per logical result and optionally sync to the HF bucket.
 
@@ -178,6 +186,9 @@ def _upload_per_model_files(
             Whether to sync the written files to the Hugging Face results
             bucket. If False, files are only written locally to RESULTS_DIR,
             and no HF_TOKEN is required. Defaults to False.
+        local_only_label (optional):
+            Safe description for local-only files, such as private canary
+            results, included in the non-upload log message.
 
     Raises:
         RuntimeError:
@@ -247,10 +258,16 @@ def _upload_per_model_files(
             f"Uploaded {len(written_files):,} result files to {hf_results_bucket}."
         )
     else:
-        logger.info(
-            f"Skipped uploading {len(written_files):,} result file(s) to "
-            f"{hf_results_bucket} (upload_to_bucket=False)."
-        )
+        if local_only_label is not None:
+            logger.info(
+                f"Wrote {len(written_files):,} {local_only_label} result file(s) "
+                "locally; not uploaded to the public results bucket."
+            )
+        else:
+            logger.info(
+                f"Skipped uploading {len(written_files):,} result file(s) to "
+                f"{hf_results_bucket} (upload_to_bucket=False)."
+            )
 
     if dropped_count > 0:
         logger.info(f"Dropped {dropped_count:,} records with unresolvable identities.")
