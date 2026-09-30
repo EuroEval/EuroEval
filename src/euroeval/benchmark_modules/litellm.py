@@ -746,7 +746,11 @@ class LiteLLMModel(BenchmarkModule):
                     )
 
                 logprobs_list: c.Sequence[c.Sequence[tuple[str, float]]]
+                generated_tokens: list[str] | None = None
                 if isinstance(logprobs_obj, ChoiceLogprobs):
+                    generated_tokens = [
+                        content.token for content in logprobs_obj.content or list()
+                    ]
                     logprobs_list = [
                         [
                             (top_logprob.token, top_logprob.logprob)
@@ -755,6 +759,7 @@ class LiteLLMModel(BenchmarkModule):
                         for content in logprobs_obj.content or list()
                     ]
                 else:
+                    generated_tokens = logprobs_obj.tokens
                     logprobs_list = [
                         [
                             (token, logprob)
@@ -771,6 +776,7 @@ class LiteLLMModel(BenchmarkModule):
                         logprobs_list=logprobs_list,
                         value=str(generation_dct[CLASSIFICATION_OUTPUT_KEY]),
                         classification_label_tokens=classification_label_tokens,
+                        generated_tokens=generated_tokens,
                     )
 
                 sample_scores = logprobs_list
@@ -806,13 +812,16 @@ class LiteLLMModel(BenchmarkModule):
         logprobs_list: c.Sequence[c.Sequence[tuple[str, float]]],
         value: str,
         classification_label_tokens: c.Collection[str] | None,
+        generated_tokens: c.Sequence[str] | None = None,
     ) -> c.Sequence[c.Sequence[tuple[str, float]]]:
         """Remove JSON syntax tokens from classification logprobs.
 
         Returns:
             Logprob entries beginning with the label value.
         """
-        value_start = find_label_logprob_start(logprobs_list=logprobs_list, value=value)
+        value_start = find_label_logprob_start(
+            logprobs_list=logprobs_list, value=value, generated_tokens=generated_tokens
+        )
         if value_start is not None:
             return logprobs_list[value_start:]
         label_tokens = {
@@ -1848,9 +1857,16 @@ class LiteLLMModel(BenchmarkModule):
         )
 
         # Set up response_format for structured generation
+        is_label_classification = dataset_config.task.task_group in {
+            TaskGroup.SEQUENCE_CLASSIFICATION,
+            TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+        } and (
+            bool(dataset_config.labels)
+            or dataset_config.task.task_group
+            == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+        )
         if self.generative_type == GenerativeType.REASONING and (
-            dataset_config.task.uses_structured_output
-            or (self.dataset_config.task.uses_logprobs and self.dataset_config.labels)
+            dataset_config.task.uses_structured_output or is_label_classification
         ):
             log_once(
                 f"The model {self.model_config.model_id!r} is a reasoning model "
@@ -1862,19 +1878,14 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs = self._setup_response_format(
                 dataset_config=dataset_config, generation_kwargs=generation_kwargs
             )
-        elif (
-            dataset_config.task.task_group
-            in {
-                TaskGroup.SEQUENCE_CLASSIFICATION,
-                TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
-            }
-            and dataset_config.labels
-        ):
+        elif is_label_classification:
             mapped_labels = [
                 dataset_config.prompt_label_mapping[label]
                 for label in dataset_config.labels
             ]
-            label_type = t.Literal.__getitem__(tuple(mapped_labels))
+            label_type = (
+                t.Literal.__getitem__(tuple(mapped_labels)) if mapped_labels else str
+            )
             keys_and_their_types = {CLASSIFICATION_OUTPUT_KEY: (label_type, ...)}
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class

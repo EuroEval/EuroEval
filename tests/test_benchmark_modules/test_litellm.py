@@ -231,6 +231,72 @@ class TestClassificationStructuredOutput:
             in final_prompt
         )
 
+    def test_variable_choice_backend_prepares_json_prompts(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """The backend passes JSON formatting to variable-choice MCQ prompts."""
+        config = _classification_dataset_config(
+            dataset_config=dataset_config,
+            task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+            labels=[],
+            label_mapping={},
+            num_few_shot_examples=0,
+        )
+        model = _new_litellm_model(
+            model_config=model_config,
+            dataset_config=config,
+            benchmark_config=dataclasses.replace(benchmark_config, few_shot=False),
+            generative_type=GenerativeType.INSTRUCTION_TUNED,
+        )
+        prepared = model.prepare_dataset(
+            dataset=_classification_dataset(
+                task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+                labels=["a", "b"],
+                num_train_examples=0,
+            ),
+            task=config.task,
+            itr_idx=0,
+        )
+        prompt = prepared["test"]["messages"][0][-1]["content"]
+        assert '{"label": "a"}' in prompt
+        assert '{"label": "b"}' in prompt
+
+    def test_variable_choice_response_schema_is_open(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """Dynamic MCQ uses a scalar JSON schema without a fixed-label enum."""
+        config = _classification_dataset_config(
+            dataset_config=dataset_config,
+            task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+            labels=[],
+            label_mapping={},
+            num_few_shot_examples=0,
+        )
+        model = LiteLLMModel(
+            model_config=dataclasses.replace(model_config, model_id="openai/gpt-4o"),
+            dataset_config=config,
+            benchmark_config=dataclasses.replace(
+                benchmark_config, generative_type=GenerativeType.INSTRUCTION_TUNED
+            ),
+            log_metadata=False,
+        )
+        with patch.object(
+            model,
+            "_probe_generation_kwargs",
+            side_effect=lambda generation_kwargs, test_input: generation_kwargs,
+        ):
+            kwargs = model.get_generation_kwargs(dataset_config=config)
+
+        schema = kwargs["response_format"].model_json_schema()
+        assert schema["properties"][CLASSIFICATION_OUTPUT_KEY]["type"] == "string"
+        assert "enum" not in schema["properties"][CLASSIFICATION_OUTPUT_KEY]
+
 
 def _classification_dataset(
     task_group: TaskGroup, labels: list[str], num_train_examples: int

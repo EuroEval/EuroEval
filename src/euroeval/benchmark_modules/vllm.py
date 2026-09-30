@@ -637,11 +637,32 @@ class VLLMModel(HuggingFaceEncoderModel):
             ]
             if isinstance(self.buffer["first_label_token_mapping"], dict):
                 trimmed_scores = []
-                for completion, sample_scores in zip(completions, scores):
+                for completion, sample_scores, raw_output in zip(
+                    completions, scores, raw_outputs
+                ):
+                    output = raw_output.outputs[0]
+                    selected_tokens = [
+                        token_scores[token_id].decoded_token
+                        if token_scores and token_id in token_scores
+                        else None
+                        for token_id, token_scores in zip(
+                            output.token_ids, output.logprobs or list()
+                        )
+                    ]
+                    emitted_tokens = [
+                        token for token in selected_tokens if isinstance(token, str)
+                    ]
+                    generated_tokens = (
+                        emitted_tokens
+                        if len(emitted_tokens) == len(sample_scores)
+                        else None
+                    )
                     value = extract_classification_label(completion)
                     value_start = (
                         find_label_logprob_start(
-                            logprobs_list=sample_scores, value=value
+                            logprobs_list=sample_scores,
+                            value=value,
+                            generated_tokens=generated_tokens,
                         )
                         if value is not None
                         else None
@@ -995,7 +1016,11 @@ class VLLMModel(HuggingFaceEncoderModel):
         is_label_classification = self.dataset_config.task.task_group in {
             TaskGroup.SEQUENCE_CLASSIFICATION,
             TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
-        }
+        } and (
+            bool(self.dataset_config.labels)
+            or self.dataset_config.task.task_group
+            == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+        )
         if "bpc_prompt" in inputs:
             return None
         if (

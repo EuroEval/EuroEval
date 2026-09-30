@@ -1377,8 +1377,10 @@ class TestVLLMClassification:
             structured = model._setup_structured_outputs(inputs={"text": ["prompt"]})
 
         assert structured is not None
-        assert structured.json["properties"]["label"] == {"type": "string"}
-        assert "enum" not in structured.json["properties"]["label"]
+        schema = structured.json
+        assert isinstance(schema, dict)
+        assert schema["properties"]["label"] == {"type": "string"}
+        assert "enum" not in schema["properties"]["label"]
 
     @staticmethod
     def _model(config: DatasetConfig, generative_type: GenerativeType) -> VLLMModel:
@@ -1505,6 +1507,26 @@ class TestVLLMClassification:
         schema = structured.json
         assert isinstance(schema, dict)
         assert schema["properties"]["label"]["enum"] == ["café", "нет"]
+
+    def test_variable_choice_backend_passes_json_contract(
+        self, dataset_config: DatasetConfig
+    ) -> None:
+        """The vLLM backend passes the JSON key to dataset preparation."""
+        config = self._classification_config(
+            dataset_config=dataset_config,
+            task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+            labels=[],
+            label_mapping={},
+        )
+        model = self._model(config=config, generative_type=GenerativeType.BASE)
+        model._tokeniser = MagicMock()
+        with patch(
+            "euroeval.benchmark_modules.vllm._prepare_dataset_helper",
+            return_value=MagicMock(),
+        ) as prepare:
+            model.prepare_dataset(dataset=MagicMock(), task=config.task, itr_idx=0)
+
+        assert prepare.call_args.kwargs["classification_output_key"] == "label"
 
 
 class TestVLLMPromptTruncation:

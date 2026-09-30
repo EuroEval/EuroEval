@@ -9,6 +9,7 @@ from euroeval.string_utils import (
     extract_classification_label,
     extract_json_dict_from_string,
     extract_multiple_choice_labels,
+    find_label_logprob_start,
     scramble,
     split_model_id,
     unscramble,
@@ -130,6 +131,24 @@ def test_extract_multiple_choice_labels_without_labels() -> None:
     prompt = "Choose one: a. option1 b. option2 c. option3"
     result = extract_multiple_choice_labels(prompt=prompt, candidate_labels=[])
     assert result == ["a", "b", "c"]
+
+
+def test_find_label_logprob_start_uses_emitted_json_value() -> None:
+    """A key-position alternative must not be mistaken for the emitted label."""
+    generated = ['{"', "label", '": "', "label", '"}']
+    scores = [
+        [('{"', -0.1)],
+        [("label", -0.2), ("other", -0.3)],
+        [('": "', -0.1)],
+        [("label", -0.4)],
+        [('"}', -0.1)],
+    ]
+    assert (
+        find_label_logprob_start(
+            logprobs_list=scores, value="label", generated_tokens=generated
+        )
+        == 3
+    )
 
 
 @pytest.mark.parametrize(

@@ -181,24 +181,40 @@ def extract_multiple_choice_labels(
 
 
 def find_label_logprob_start(
-    logprobs_list: c.Sequence[c.Sequence[tuple[str, float]]], value: str
+    logprobs_list: c.Sequence[c.Sequence[tuple[str, float]]],
+    value: str,
+    generated_tokens: c.Sequence[str] | None = None,
 ) -> int | None:
     """Find the token position where a JSON label value starts.
 
-    Logprob APIs return alternatives for each generated position. Matching only the
-    first token of every candidate is ambiguous when one label is a prefix or suffix
-    of another, so this matches the complete decoded value across positions.
+    Prefer emitted tokens when available: an alternative matching the label can occur
+    while the model is still emitting the JSON key. For providers that omit emitted
+    tokens, match the complete value across alternatives as a fallback.
 
     Args:
         logprobs_list:
             Token alternatives in generated order.
         value:
             The decoded JSON label value.
+        generated_tokens (optional):
+            Actually emitted tokens, aligned with logprob positions. Defaults to None.
 
     Returns:
-        The first position that can produce the complete value, or None if it cannot be
-        recovered from the alternatives.
+        The position of the JSON label value, or None when it cannot be recovered.
     """
+    if generated_tokens is not None and len(generated_tokens) == len(logprobs_list):
+        emitted = "".join(generated_tokens)
+        key_pattern = rf'"{re.escape(CLASSIFICATION_OUTPUT_KEY)}"\s*:\s*"'
+        matches = list(re.finditer(key_pattern, emitted))
+        if matches:
+            value_offset = matches[-1].end()
+            offset = 0
+            for index, token in enumerate(generated_tokens):
+                offset += len(token)
+                if offset > value_offset:
+                    return index
+        return None
+
     target = clean_label_token(value, preserve_spaces=True).lstrip()
     if not target:
         return None
