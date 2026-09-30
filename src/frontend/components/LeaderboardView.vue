@@ -566,76 +566,117 @@ const downloadCsv = async () => {
 
 .lb-category-box {
   min-width: 0;
+}
+
+.lb-category-box-all {
   border: 1px solid var(--color-border);
-  border-radius: 0.65rem;
-  padding: 0.55rem;
-  background: var(--color-bg);
+  border-radius: 0.75rem;
+  padding: 0.4rem;
+  background: var(--color-surface);
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--color-text) 7%, transparent);
 }
 
 .lb-category-box-understanding {
-  margin-top: 0.45rem;
+  margin: 0.15rem 0 0 0.5rem;
+  padding: 0.1rem 0 0.1rem 0.55rem;
+  border-left: 2px solid color-mix(in srgb, var(--color-link) 24%, var(--color-border));
+  background: color-mix(in srgb, var(--color-bg) 22%, var(--color-surface));
 }
 
 .lb-category-box-generative {
-  margin-top: 0.4rem;
+  margin: 0.1rem 0 0 0.45rem;
+  padding: 0.1rem 0 0.1rem 0.5rem;
+  border-left: 2px solid color-mix(in srgb, var(--color-link) 20%, var(--color-border));
+  background: color-mix(in srgb, var(--color-bg) 38%, var(--color-surface));
 }
 
 .lb-category-box-chat {
-  margin-top: 0.35rem;
+  margin: 0.1rem 0 0 0.4rem;
+  padding: 0.1rem 0 0.1rem 0.45rem;
+  border-left: 2px solid color-mix(in srgb, var(--color-link) 17%, var(--color-border));
+  background: color-mix(in srgb, var(--color-bg) 54%, var(--color-surface));
 }
 
 .lb-tab {
-  display: inline-flex;
+  position: relative;
+  display: flex;
   align-items: center;
-  gap: 0.45rem;
-  min-height: 2.35rem;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 2.45rem;
   max-width: 100%;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 0.45rem;
+  background: transparent;
+  border: 0;
+  border-radius: 0.4rem;
   color: var(--color-text);
-  padding: 0.4rem 0.75rem;
+  padding: 0.45rem 0.7rem;
   cursor: pointer;
+  text-align: left;
   font: inherit;
   font-size: 0.9rem;
-  font-weight: 600;
-  white-space: nowrap;
+  font-weight: 550;
   transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease,
-    box-shadow 0.2s ease;
+    background-color 0.18s ease,
+    color 0.18s ease;
 }
 
 .lb-tab:hover:not(:disabled) {
-  border-color: var(--color-link);
-  background: color-mix(in srgb, var(--color-link) 9%, var(--color-surface));
+  background: color-mix(in srgb, var(--color-link) 9%, transparent);
 }
 
 .lb-tab:focus-visible {
-  outline: 3px solid var(--color-link);
-  outline-offset: 2px;
+  outline: 2px solid var(--color-link);
+  outline-offset: 1px;
+  z-index: 1;
 }
 
 .lb-tab.active {
+  background: color-mix(in srgb, var(--color-link) 13%, transparent);
+  color: var(--color-link);
+  font-weight: 650;
+}
+
+.lb-tab.active::before {
+  position: absolute;
+  top: 0.4rem;
+  bottom: 0.4rem;
+  left: 0;
+  width: 3px;
+  border-radius: 3px;
   background: var(--color-link);
-  border-color: var(--color-link);
-  color: #fff;
-  box-shadow: 0 2px 6px color-mix(in srgb, var(--color-link) 28%, transparent);
+  content: "";
 }
 
 .lb-tab:disabled {
   color: var(--color-muted);
-  opacity: 0.6;
+  opacity: 0.68;
   cursor: not-allowed;
 }
 
 @media (max-width: 24rem) {
-  .lb-tab {
-    padding-inline: 0.45rem;
-    font-size: 0.84rem;
+  .lb-category-box-all {
+    padding: 0.3rem;
   }
 
+  .lb-category-box-understanding {
+    margin-left: 0.3rem;
+    padding-left: 0.4rem;
+  }
+
+  .lb-category-box-generative {
+    margin-left: 0.3rem;
+    padding-left: 0.35rem;
+  }
+
+  .lb-category-box-chat {
+    margin-left: 0.25rem;
+    padding-left: 0.3rem;
+  }
+
+  .lb-tab {
+    padding-inline: 0.55rem;
+    font-size: 0.84rem;
+  }
 }
 
 .lb-category-context {
