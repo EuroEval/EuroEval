@@ -72,6 +72,7 @@ d32d3549fd4b  # scripts/dataset_creation/create_sklep_nli.py, scripts/dataset_cr
 06bf2c0c305a  # euroeval/benchmark_modules/vllm.py, euroeval/benchmark_modules/litellm.py
 0964ffc78620  # euroeval/benchmark_modules/vllm.py, euroeval/benchmark_modules/litellm.py
 29a4b5a07f71  # euroeval/benchmark_modules/dummy.py, euroeval/benchmark_modules/litellm.py, euroeval/benchmark_modules/vllm.py
+6d59063d4e81  # euroeval/benchmark_modules/dummy.py, euroeval/benchmark_modules/litellm.py, euroeval/benchmark_modules/vllm.py, euroeval/benchmark_modules/zero_shot_classifier.py
 a52d4598fe08  # euroeval/task_group_utils/question_answering.py, euroeval/task_group_utils/sequence_classification.py
 
 
