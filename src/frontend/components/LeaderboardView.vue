@@ -45,6 +45,19 @@ const firstRankedCategory = (): CategoryId =>
 const activeCategory = ref<CategoryId>(categoryTabs[0].id);
 const activeView = ref<ViewId>("table");
 
+const categoryDescription = computed(() => {
+  switch (activeCategory.value) {
+    case "chat":
+      return "This leaderboard contains only the models that have the ability to chat, and are all evaluated zero-shot.";
+    case "generative":
+      return "This leaderboard contains only the generative models, and are all evaluated few-shot (unless zero-shot is stated).";
+    case "understanding":
+      return "This leaderboard contains only the models which can handle all language understanding tasks.";
+    case "all_models":
+      return "";
+  }
+});
+
 type CategoryEntry = { table: LBTable | null; metadata: LeaderboardMetadata | null };
 
 const categoryState = ref<Record<CategoryId, CategoryEntry>>(
@@ -289,6 +302,26 @@ const downloadCsv = async () => {
         <span v-if="!isCategoryRanked(t.id)" class="lb-tab-soon">Soon</span>
       </button>
     </nav>
+
+    <div class="lb-category-context">
+      <p v-if="categoryDescription" class="lb-category-description">
+        {{ categoryDescription }}
+      </p>
+      <div
+        class="lb-task-scope"
+        role="img"
+        aria-label="Task scope narrows from Chat through Generative and Understanding to All Models. This describes task coverage, not model membership."
+      >
+        <span class="lb-task-scope-label">Task scope</span>
+        <span class="lb-task-scope-direction" aria-hidden="true">broader</span>
+        <div class="lb-task-scope-steps" aria-hidden="true">
+          <span v-for="t in categoryTabs" :key="t.id" class="lb-task-scope-step">
+            {{ t.label }}
+          </span>
+        </div>
+        <span class="lb-task-scope-direction" aria-hidden="true">narrower</span>
+      </div>
+    </div>
 
     <div class="lb-view-toggle" role="tablist">
       <span class="lb-view-indicator" :style="viewIndicator" />
@@ -564,6 +597,67 @@ const downloadCsv = async () => {
   color: var(--color-muted);
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.lb-category-context {
+  display: grid;
+  gap: 0.45rem;
+  max-width: 100%;
+  margin-top: 0.15rem;
+}
+
+.lb-category-description {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.lb-task-scope {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  color: var(--color-muted);
+  font-size: 0.68rem;
+}
+
+.lb-task-scope-label {
+  color: var(--color-text);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.lb-task-scope-direction {
+  font-size: 0.65rem;
+}
+
+.lb-task-scope-steps {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.lb-task-scope-step {
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-surface);
+  padding: 0.15rem 0.4rem;
+  white-space: nowrap;
+}
+
+.lb-task-scope-step:nth-child(2) {
+  margin-left: 0.25rem;
+}
+
+.lb-task-scope-step:nth-child(3) {
+  margin-left: 0.5rem;
+}
+
+.lb-task-scope-step:nth-child(4) {
+  margin-left: 0.75rem;
 }
 
 .lb-tab-soon {
