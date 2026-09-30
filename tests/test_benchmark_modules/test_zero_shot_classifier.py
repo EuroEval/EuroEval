@@ -138,6 +138,16 @@ class TestDispatch:
         assert config.inference_backend == InferenceBackend.LAYA
         assert config.model_type == ModelType.ZERO_SHOT_CLASSIFIER
 
+    def test_laya_variant_dispatch_fails_with_root_only_message(
+        self, benchmark_config: BenchmarkConfig
+    ) -> None:
+        """A recognized Laya variant reaches its explicit config validation."""
+        with pytest.raises(InvalidModel, match="do not support #"):
+            get_model_config(
+                model_id="convaiinnovations/laya#multilingual",
+                benchmark_config=benchmark_config,
+            )
+
     def test_load_model_returns_zero_shot_classifier_model(
         self,
         fake_laya_module: types.ModuleType,
@@ -152,6 +162,14 @@ class TestDispatch:
             benchmark_config=benchmark_config,
         )
         assert isinstance(model, ZeroShotClassifierModel)
+
+    def test_model_exists_does_not_claim_parameterized_non_laya_id(
+        self, benchmark_config: BenchmarkConfig
+    ) -> None:
+        """Backend dispatch must leave arbitrary `#` parameters to their owner."""
+        assert not ZeroShotClassifierModel.model_exists(
+            model_id="openai/gpt-5#high", benchmark_config=benchmark_config
+        )
 
 
 class TestEmptyLabels:
@@ -683,13 +701,23 @@ class TestUpdateDatasetConfig:
 
 
 @pytest.fixture(autouse=True)
-def _no_network_laya_config(monkeypatch: pytest.MonkeyPatch) -> None:
+def _no_network_laya_config(
+    monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest
+) -> None:
     """Keep Laya config lookups off the network and local Hub cache."""
+    if request.node.name == "test_checkpoint_download_is_root_only":
+        return
 
-    def fake_local_laya_config(directory: Path) -> dict[str, int]:
+    def fake_local_laya_config(
+        directory: Path, subfolder: str | None = None
+    ) -> dict[str, int] | None:
         if directory.is_dir():
             config_path = directory / "rl_agent_config.json"
-            return {"max_len": 512} if config_path.is_file() else {}
+            return (
+                zero_shot_classifier_module._read_json(config_path)
+                if config_path.is_file()
+                else None
+            )
         return {"max_len": 512}
 
     monkeypatch.setattr(
@@ -703,8 +731,10 @@ def _no_network_laya_config(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         zero_shot_classifier_module,
         "_remote_laya_config",
-        lambda repo_id, token, cache_dir: (
-            {"max_len": 512} if repo_id in recognised_repositories else None
+        lambda repo_id, subfolder, token, cache_dir=None: (
+            ({"max_len": 512}, True)
+            if repo_id in recognised_repositories
+            else (None, True)
         ),
     )
     monkeypatch.setattr(
@@ -745,6 +775,30 @@ def laya_model_config(model_config: ModelConfig) -> ModelConfig:
     )
 
 
+def test_cached_config_falls_back_to_default_hub_cache(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Lookups try the default Hub cache after EuroEval's model cache."""
+    calls: list[str | None] = []
+
+    def cached_config(
+        *, repo_id: str, filename: str, cache_dir: str | None
+    ) -> str | None:
+        calls.append(cache_dir)
+        return "/cached/config.json" if cache_dir is None else None
+
+    monkeypatch.setattr(
+        zero_shot_classifier_module, "try_to_load_from_cache", cached_config
+    )
+    monkeypatch.setattr(
+        zero_shot_classifier_module, "_read_json", lambda path: {"max_len": 512}
+    )
+    assert zero_shot_classifier_module._cached_laya_config(
+        repo_id="org/repo", subfolder=None, cache_dir="/euroeval/cache"
+    ) == {"max_len": 512}
+    assert calls == ["/euroeval/cache", None]
+
+
 def test_checkpoint_download_is_root_only(monkeypatch: pytest.MonkeyPatch) -> None:
     """A bundled checkpoint downloads the root files without sibling folders."""
     requested: dict[str, object] = {}
@@ -766,3 +820,30 @@ def test_checkpoint_download_is_root_only(monkeypatch: pytest.MonkeyPatch) -> No
         "tokenizer/**",
         "encoder/**",
     ]
+
+
+def test_empty_config_is_valid_marker(tmp_path: Path) -> None:
+    """An empty config still proves that the repository is a Laya checkpoint."""
+    marker = tmp_path / "rl_agent_config.json"
+    marker.write_text("{}")
+    assert (
+        zero_shot_classifier_module._local_laya_config(
+            directory=tmp_path, subfolder=None
+        )
+        == {}
+    )
+
+
+def test_find_laya_config_rejects_invalid_hub_id() -> None:
+    """Non-Hub IDs are not mistaken for Laya repositories."""
+    assert zero_shot_classifier_module._find_laya_config(
+        model_id="ollama_chat/smollm2:135m", subfolder=None, token=None
+    ) == (None, True)
+
+
+def test_malformed_config_raises_invalid_model(tmp_path: Path) -> None:
+    """Malformed checkpoint metadata is reported as an invalid model."""
+    path = tmp_path / "rl_agent_config.json"
+    path.write_text("{not valid json")
+    with pytest.raises(InvalidModel):
+        zero_shot_classifier_module._read_json(path=path)
