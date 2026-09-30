@@ -11,7 +11,6 @@ from pathlib import Path
 import numpy
 import pytest
 from datasets import Dataset, DatasetDict
-from huggingface_hub.errors import EntryNotFoundError, LocalEntryNotFoundError
 from safetensors.numpy import save_file
 
 import euroeval.benchmark_modules.zero_shot_classifier as zero_shot_classifier_module
@@ -23,26 +22,6 @@ from euroeval.languages import DANISH
 from euroeval.model_config import get_model_config
 from euroeval.model_loading import load_model
 from euroeval.tasks import HALLU, KNOW, SENT
-
-# The real helpers, captured before the autouse fixture stubs them out.
-_REAL_REMOTE_LAYA_CONFIG = zero_shot_classifier_module._remote_laya_config
-_REAL_RESOLVE_CHECKPOINT_PATH = zero_shot_classifier_module._resolve_checkpoint_path
-
-# A minimal fake Hub, mapping (repo_id, subfolder) -> Laya checkpoint config, used to
-# keep these tests off the network and the local Hub cache.
-_FAKE_LAYA_REPOS: dict[tuple[str, str | None], dict[str, int]] = {
-    ("convaiinnovations/laya", None): {"max_len": 512},
-    ("convaiinnovations/laya", "multilingual"): {"max_len": 1024},
-    ("convaiinnovations/laya", "typed-decisions"): {"max_len": 512},
-    ("convaiinnovations/laya-multilingual", None): {"max_len": 1024},
-    ("convaiinnovations/laya-typed-decisions", None): {"max_len": 512},
-}
-_ROOT_CHECKPOINT_PATTERNS = (
-    "rl_agent_config.json",
-    "model.safetensors",
-    "tokenizer/**",
-    "encoder/**",
-)
 
 
 @dataclass
@@ -296,33 +275,21 @@ class TestGetModelConfig:
         assert config.param is None
 
     @pytest.mark.parametrize(
-        ("param", "raises"), [("multilingual", False), ("not-a-real-variant", True)]
+        "model_id",
+        [
+            "convaiinnovations/laya#multilingual",
+            "convaiinnovations/laya#anything",
+            "convaiinnovations/laya-multilingual#multilingual",
+            "./local-laya#anything",
+        ],
     )
-    def test_param_validation(
-        self, benchmark_config: BenchmarkConfig, param: str, raises: bool
+    def test_laya_rejects_all_parameters(
+        self, benchmark_config: BenchmarkConfig, model_id: str
     ) -> None:
-        """Only recognised parameters are accepted."""
-        if raises:
-            with pytest.raises(InvalidModel, match="Invalid parameter"):
-                ZeroShotClassifierModel.get_model_config(
-                    model_id=f"convaiinnovations/laya#{param}",
-                    benchmark_config=benchmark_config,
-                )
-        else:
-            config = ZeroShotClassifierModel.get_model_config(
-                model_id=f"convaiinnovations/laya#{param}",
-                benchmark_config=benchmark_config,
-            )
-            assert config.param == param
-
-    def test_standalone_repo_rejects_param(
-        self, benchmark_config: BenchmarkConfig
-    ) -> None:
-        """A standalone repo (not the bundled one) rejects a `#param` early."""
-        with pytest.raises(InvalidModel, match="Invalid parameter"):
+        """Bundled, standalone and local Laya IDs reject every # parameter."""
+        with pytest.raises(InvalidModel, match="do not support #"):
             ZeroShotClassifierModel.get_model_config(
-                model_id="convaiinnovations/laya-multilingual#multilingual",
-                benchmark_config=benchmark_config,
+                model_id=model_id, benchmark_config=benchmark_config
             )
 
 
@@ -345,6 +312,24 @@ class TestInit:
         )
         assert model.agent.device == str(benchmark_config.device)
 
+    def test_init_rejects_parameter(
+        self,
+        fake_laya_module: types.ModuleType,
+        laya_model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """Direct construction cannot bypass Laya's root-only restriction."""
+        with pytest.raises(InvalidModel, match="do not support #"):
+            ZeroShotClassifierModel(
+                model_config=dataclasses.replace(
+                    laya_model_config, param="multilingual"
+                ),
+                dataset_config=dataset_config,
+                benchmark_config=benchmark_config,
+                log_metadata=False,
+            )
+
     def test_rejects_non_main_revision(
         self,
         fake_laya_module: types.ModuleType,
@@ -362,34 +347,22 @@ class TestInit:
                 log_metadata=False,
             )
 
-    @pytest.mark.parametrize(
-        ("param", "expected_subfolder", "expected_max_length"),
-        [
-            (None, None, 512),
-            ("multilingual", "multilingual", 1024),
-            ("typed-decisions", "typed-decisions", 512),
-        ],
-    )
-    def test_variant_maps_to_subfolder_and_max_length(
+    def test_root_checkpoint_loads_without_subfolder(
         self,
         fake_laya_module: types.ModuleType,
         laya_model_config: ModelConfig,
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
-        param: str | None,
-        expected_subfolder: str | None,
-        expected_max_length: int,
     ) -> None:
-        """Each allowed parameter loads the expected subfolder and max length."""
-        config = dataclasses.replace(laya_model_config, param=param)
+        """A plain root checkpoint continues to load as a standalone model."""
         model = ZeroShotClassifierModel(
-            model_config=config,
+            model_config=laya_model_config,
             dataset_config=dataset_config,
             benchmark_config=benchmark_config,
             log_metadata=False,
         )
-        assert model.agent.subfolder == expected_subfolder
-        assert model.model_max_length == expected_max_length
+        assert model.agent.subfolder is None
+        assert model.model_max_length == 512
 
 
 class TestModelExists:
@@ -595,69 +568,6 @@ class TestNumParams:
         )
         assert model.num_params == 2 * 3 + 4
 
-    def test_counts_parameters_from_local_subfolder_checkpoint(
-        self,
-        fake_laya_module: types.ModuleType,
-        dataset_config: DatasetConfig,
-        benchmark_config: BenchmarkConfig,
-        model_config: ModelConfig,
-        tmp_path: Path,
-    ) -> None:
-        """A local `#subfolder` model counts parameters in that checkpoint."""
-        checkpoint_dir = tmp_path / "multilingual"
-        checkpoint_dir.mkdir()
-        save_file(
-            {"weights": numpy.zeros((5, 7), dtype=numpy.float32)},
-            str(checkpoint_dir / "model.safetensors"),
-        )
-        (checkpoint_dir / "rl_agent_config.json").write_text("{}")
-        config = dataclasses.replace(
-            model_config,
-            model_id=str(tmp_path),
-            inference_backend=InferenceBackend.LAYA,
-            model_type=ModelType.ZERO_SHOT_CLASSIFIER,
-            param="multilingual",
-            revision="main",
-        )
-        model = ZeroShotClassifierModel(
-            model_config=config,
-            dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
-            log_metadata=False,
-        )
-
-        assert model.num_params == 5 * 7
-
-    def test_counts_parameters_from_variant_checkpoint(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-        fake_laya_module: types.ModuleType,
-        laya_model_config: ModelConfig,
-        dataset_config: DatasetConfig,
-        benchmark_config: BenchmarkConfig,
-    ) -> None:
-        """A variant's parameter count is read from its own subfolder checkpoint."""
-        requested: list[str] = []
-
-        def fake_parse(
-            self: object, repo_id: str, filename: str, token: str | None
-        ) -> types.SimpleNamespace:
-            requested.append(filename)
-            return types.SimpleNamespace(parameter_count={"F32": 6, "F64": 4})
-
-        monkeypatch.setattr(
-            "huggingface_hub.HfApi.parse_safetensors_file_metadata", fake_parse
-        )
-        config = dataclasses.replace(laya_model_config, param="multilingual")
-        model = ZeroShotClassifierModel(
-            model_config=config,
-            dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
-            log_metadata=False,
-        )
-        assert model.num_params == 10
-        assert requested == ["multilingual/model.safetensors"]
-
     def test_returns_minus_one_on_failure(
         self,
         monkeypatch: pytest.MonkeyPatch,
@@ -679,38 +589,6 @@ class TestNumParams:
         )
         model = ZeroShotClassifierModel(
             model_config=laya_model_config,
-            dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
-            log_metadata=False,
-        )
-        assert model.num_params == -1
-
-    @pytest.mark.parametrize(
-        "exception_factory",
-        [lambda: OSError("network error"), lambda: EntryNotFoundError("missing")],
-        ids=["oserror", "entrynotfound"],
-    )
-    def test_variant_num_params_returns_minus_one_on_missing_file(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-        fake_laya_module: types.ModuleType,
-        laya_model_config: ModelConfig,
-        dataset_config: DatasetConfig,
-        benchmark_config: BenchmarkConfig,
-        exception_factory: t.Callable[[], BaseException],
-    ) -> None:
-        """Variant `num_params` returns -1 when the header can't be read."""
-        exc_to_raise = exception_factory()
-
-        def raise_error(*args: object, **kwargs: object) -> t.NoReturn:
-            raise exc_to_raise
-
-        monkeypatch.setattr(
-            "huggingface_hub.HfApi.parse_safetensors_file_metadata", raise_error
-        )
-        config = dataclasses.replace(laya_model_config, param="multilingual")
-        model = ZeroShotClassifierModel(
-            model_config=config,
             dataset_config=dataset_config,
             benchmark_config=benchmark_config,
             log_metadata=False,
@@ -806,41 +684,33 @@ class TestUpdateDatasetConfig:
 
 @pytest.fixture(autouse=True)
 def _no_network_laya_config(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Keep Laya config lookups off the network and the local Hub cache.
+    """Keep Laya config lookups off the network and local Hub cache."""
 
-    A local checkpoint directory still resolves for real (a real file is read from
-    disk); anything else is looked up in `_FAKE_LAYA_REPOS`.
-    """
-    zero_shot_classifier_module._find_laya_config.cache_clear()
-
-    real_local_laya_config = zero_shot_classifier_module._local_laya_config
-
-    def fake_local_laya_config(
-        directory: Path, subfolder: str | None
-    ) -> dict[str, int] | None:
+    def fake_local_laya_config(directory: Path) -> dict[str, int]:
         if directory.is_dir():
-            return real_local_laya_config(directory, subfolder)
-        return _FAKE_LAYA_REPOS.get((str(directory), subfolder))
+            config_path = directory / "rl_agent_config.json"
+            return {"max_len": 512} if config_path.is_file() else {}
+        return {"max_len": 512}
 
     monkeypatch.setattr(
         zero_shot_classifier_module, "_local_laya_config", fake_local_laya_config
     )
+    recognised_repositories = {
+        "convaiinnovations/laya",
+        "convaiinnovations/laya-multilingual",
+        "convaiinnovations/laya-typed-decisions",
+    }
     monkeypatch.setattr(
         zero_shot_classifier_module,
-        "_cached_laya_config",
-        lambda repo_id, subfolder, cache_dir=None: _FAKE_LAYA_REPOS.get(
-            (repo_id, subfolder)
+        "_remote_laya_config",
+        lambda repo_id, token, cache_dir: (
+            {"max_len": 512} if repo_id in recognised_repositories else None
         ),
     )
     monkeypatch.setattr(
         zero_shot_classifier_module,
-        "_remote_laya_config",
-        lambda repo_id, subfolder, token, cache_dir=None: (None, True),
-    )
-    monkeypatch.setattr(
-        zero_shot_classifier_module,
         "_resolve_checkpoint_path",
-        lambda model_id, subfolder, cache_dir, token: model_id,
+        lambda model_id, cache_dir, token: model_id,
     )
 
 
@@ -875,82 +745,24 @@ def laya_model_config(model_config: ModelConfig) -> ModelConfig:
     )
 
 
-def test_find_laya_config_invalid_repo_id_is_definitely_absent() -> None:
-    """A non-Hub model ID (e.g. a LiteLLM ID) is not a Laya checkpoint."""
-    assert zero_shot_classifier_module._find_laya_config(
-        model_id="ollama_chat/smollm2:135m", subfolder=None, token=None
-    ) == (None, True)
-
-
-def test_read_json_malformed_raises_invalid_model(tmp_path: Path) -> None:
-    """Malformed JSON in a Laya config file raises `InvalidModel`."""
-    path = tmp_path / "rl_agent_config.json"
-    path.write_text("{not valid json")
-    with pytest.raises(InvalidModel):
-        zero_shot_classifier_module._read_json(path=path)
-
-
-def test_read_json_non_object_raises_invalid_model(tmp_path: Path) -> None:
-    """A JSON value that isn't an object raises `InvalidModel`."""
-    path = tmp_path / "rl_agent_config.json"
-    path.write_text("[1, 2, 3]")
-    with pytest.raises(InvalidModel):
-        zero_shot_classifier_module._read_json(path=path)
-
-
-@pytest.mark.parametrize(
-    argnames=["error", "expected_definitely_absent"],
-    argvalues=[
-        (LocalEntryNotFoundError("offline"), False),
-        (EntryNotFoundError("missing"), True),
-    ],
-    ids=["offline-cache-miss", "hub-says-missing"],
-)
-def test_remote_laya_config_offline_is_not_definitely_absent(
-    monkeypatch: pytest.MonkeyPatch, error: Exception, expected_definitely_absent: bool
-) -> None:
-    """An offline cache miss is 'unknown', not 'absent', despite subclassing."""
-
-    def raise_error(**_: object) -> str:
-        raise error
-
-    monkeypatch.setattr(zero_shot_classifier_module, "hf_hub_download", raise_error)
-    assert _REAL_REMOTE_LAYA_CONFIG(
-        repo_id="org/repo", subfolder="variant", token=None
-    ) == (None, expected_definitely_absent)
-
-
-@pytest.mark.parametrize("subfolder", [None, "multilingual"], ids=["root", "subfolder"])
-def test_resolve_checkpoint_downloads_only_requested_checkpoint(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, subfolder: str | None
-) -> None:
-    """Root and subfolder resolution do not download sibling checkpoints."""
-    calls: list[dict[str, object]] = []
-    expected_patterns = (
-        ["multilingual/**"] if subfolder else list(_ROOT_CHECKPOINT_PATTERNS)
-    )
+def test_checkpoint_download_is_root_only(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A bundled checkpoint downloads the root files without sibling folders."""
+    requested: dict[str, object] = {}
 
     def fake_snapshot_download(**kwargs: object) -> str:
-        calls.append(kwargs)
-        return str(tmp_path)
+        requested.update(kwargs)
+        return "/cache/laya"
 
     monkeypatch.setattr(
         zero_shot_classifier_module, "snapshot_download", fake_snapshot_download
     )
-    cache_dir = tmp_path / "cache"
-    (cache_dir / "typed-decisions").mkdir(parents=True)
-    (cache_dir / "typed-decisions" / "model.safetensors").touch()
-
-    result = _REAL_RESOLVE_CHECKPOINT_PATH(
-        model_id="org/laya", subfolder=subfolder, cache_dir=str(cache_dir), token=None
+    result = zero_shot_classifier_module._resolve_checkpoint_path(
+        model_id="convaiinnovations/laya", cache_dir="/cache", token=None
     )
-
-    assert result == str(tmp_path)
-    assert calls == [
-        {
-            "repo_id": "org/laya",
-            "cache_dir": str(cache_dir),
-            "allow_patterns": expected_patterns,
-            "token": None,
-        }
+    assert result == "/cache/laya"
+    assert requested["allow_patterns"] == [
+        "rl_agent_config.json",
+        "model.safetensors",
+        "tokenizer/**",
+        "encoder/**",
     ]
