@@ -594,9 +594,6 @@ const downloadCsv = async () => {
     font-size: 0.84rem;
   }
 
-  .lb-tab-all_models {
-    width: 76%;
-  }
 }
 
 .lb-category-context {
