@@ -165,13 +165,8 @@ const viewTabs: { id: ViewId; label: string }[] = [
   { id: "releaseDate", label: "Release Date" },
 ];
 
-// Sliding-pill indicators for the two tab groups. Each indicator is a
-// separate absolutely-positioned element measured off the active button's
-// own layout, so it works regardless of label width - a plain CSS
-// transition can't do this on its own since the buttons aren't fixed-width.
-const categoryTabRefs = ref<HTMLButtonElement[]>([]);
+// The view toggle's underline follows its active option regardless of label width.
 const viewTabRefs = ref<HTMLButtonElement[]>([]);
-const categoryIndicator = ref({ left: "0px", width: "0px" });
 const viewIndicator = ref({ left: "0px", width: "0px" });
 
 const measureIndicator = (
@@ -187,11 +182,6 @@ const measureIndicator = (
 
 const syncIndicators = async () => {
   await nextTick();
-  measureIndicator(
-    categoryTabRefs.value,
-    categoryTabs.findIndex((t) => t.id === activeCategory.value),
-    categoryIndicator.value,
-  );
   measureIndicator(
     viewTabRefs.value,
     viewTabs.findIndex((t) => t.id === activeView.value),
@@ -284,18 +274,21 @@ const downloadCsv = async () => {
       </p>
     </aside>
 
-    <nav class="lb-tabs" role="tablist">
-      <span class="lb-tab-indicator" :style="categoryIndicator" />
+    <nav
+      class="lb-tabs"
+      role="tablist"
+      aria-orientation="vertical"
+      aria-label="Task coverage categories, from broadest to narrowest"
+    >
       <button
         v-for="t in categoryTabs"
-        ref="categoryTabRefs"
         :key="t.id"
         type="button"
         role="tab"
         :disabled="!isCategoryRanked(t.id)"
         :title="isCategoryRanked(t.id) ? undefined : 'Coming soon'"
         :aria-selected="activeCategory === t.id"
-        :class="['lb-tab', { active: activeCategory === t.id }]"
+        :class="['lb-tab', `lb-tab-${t.id}`, { active: activeCategory === t.id }]"
         @click="activeCategory = t.id"
       >
         {{ t.label }}
@@ -307,20 +300,6 @@ const downloadCsv = async () => {
       <p v-if="categoryDescription" class="lb-category-description">
         {{ categoryDescription }}
       </p>
-      <div
-        class="lb-task-scope"
-        role="img"
-        aria-label="Task coverage narrows from Chat through Generative and Understanding to All Models. Model eligibility does not follow this nesting."
-      >
-        <span class="lb-task-scope-nesting" aria-hidden="true">
-          <span
-            v-for="t in categoryTabs"
-            :key="t.id"
-            :class="['lb-task-scope-ring', { active: activeCategory === t.id }]"
-          />
-        </span>
-        <span>Task coverage: broader → narrower</span>
-      </div>
     </div>
 
     <div class="lb-view-toggle" role="tablist">
@@ -539,64 +518,85 @@ const downloadCsv = async () => {
 }
 
 .lb-tabs {
-  position: relative;
-  display: inline-flex;
-  gap: 0.2rem;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  padding: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  width: min(100%, 32rem);
   margin-top: 0.5rem;
-  width: fit-content;
-  max-width: 100%;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.lb-tab-indicator {
-  position: absolute;
-  top: 0.25rem;
-  bottom: 0.25rem;
-  left: 0;
-  border-radius: 999px;
-  background: var(--color-link);
-  filter: brightness(0.85);
-  transition:
-    left 0.25s ease,
-    width 0.25s ease;
 }
 
 .lb-tab {
-  position: relative;
-  z-index: 1;
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  background: transparent;
-  border: 0;
-  border-radius: 999px;
-  color: var(--color-muted);
-  padding: 0.4rem 0.85rem;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 2.55rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  color: var(--color-text);
+  padding: 0.5rem 0.85rem;
   cursor: pointer;
   font: inherit;
-  font-size: 0.85rem;
-  font-weight: 500;
+  font-size: 0.9rem;
+  font-weight: 600;
   white-space: nowrap;
-  transition: color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.lb-tab:hover {
-  color: var(--color-text);
+.lb-tab-chat {
+  width: 100%;
+}
+
+.lb-tab-generative {
+  width: 84%;
+}
+
+.lb-tab-understanding {
+  width: 72%;
+}
+
+.lb-tab-all_models {
+  width: 62%;
+}
+
+.lb-tab:hover:not(:disabled) {
+  border-color: var(--color-link);
+  background: color-mix(in srgb, var(--color-link) 9%, var(--color-surface));
+}
+
+.lb-tab:focus-visible {
+  outline: 3px solid var(--color-link);
+  outline-offset: 2px;
 }
 
 .lb-tab.active {
+  background: var(--color-link);
+  border-color: var(--color-link);
   color: #fff;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--color-link) 28%, transparent);
 }
 
 .lb-tab:disabled {
   color: var(--color-muted);
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+@media (max-width: 24rem) {
+  .lb-tab {
+    padding-inline: 0.45rem;
+    font-size: 0.84rem;
+  }
+
+  .lb-tab-all_models {
+    width: 76%;
+  }
 }
 
 .lb-category-context {
@@ -611,48 +611,6 @@ const downloadCsv = async () => {
   color: var(--color-muted);
   font-size: 0.84rem;
   line-height: 1.4;
-}
-
-.lb-task-scope {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  color: var(--color-muted);
-  font-size: 0.7rem;
-}
-
-.lb-task-scope-nesting {
-  position: relative;
-  flex: none;
-  width: 34px;
-  height: 26px;
-}
-
-.lb-task-scope-ring {
-  position: absolute;
-  border: 1px solid var(--color-border);
-  border-radius: 3px;
-}
-
-.lb-task-scope-ring:nth-child(1) {
-  inset: 0;
-}
-
-.lb-task-scope-ring:nth-child(2) {
-  inset: 3px 4px;
-}
-
-.lb-task-scope-ring:nth-child(3) {
-  inset: 6px 8px;
-}
-
-.lb-task-scope-ring:nth-child(4) {
-  inset: 9px 12px;
-}
-
-.lb-task-scope-ring.active {
-  border-color: var(--color-link);
-  border-width: 2px;
 }
 
 .lb-tab-soon {
