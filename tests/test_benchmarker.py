@@ -1094,16 +1094,14 @@ def test_get_record(
     assert benchmarked == expected
 
 
-@pytest.mark.parametrize("param", [None, "multilingual"])
-def test_laya_download_only_resolves_requested_checkpoint(
+def test_laya_download_only_resolves_root_checkpoint(
     benchmarker: Benchmarker,
     benchmark_config: BenchmarkConfig,
     model_config: ModelConfig,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
-    param: str | None,
 ) -> None:
-    """Laya downloads use the parameter-aware resolver, not cache globbing."""
+    """Laya downloads resolve only the root checkpoint, not cache globbing."""
     model_cache_dir = tmp_path / "model-cache"
     (model_cache_dir / "other-variant").mkdir(parents=True)
     (model_cache_dir / "other-variant" / "model.safetensors").touch()
@@ -1111,7 +1109,7 @@ def test_laya_download_only_resolves_requested_checkpoint(
         model_config,
         model_type=ModelType.ZERO_SHOT_CLASSIFIER,
         model_cache_dir=str(model_cache_dir),
-        param=param,
+        param=None,
     )
     resolver_mock = MagicMock()
     monkeypatch.setattr(
@@ -1125,10 +1123,7 @@ def test_laya_download_only_resolves_requested_checkpoint(
     )
 
     resolver_mock.assert_called_once_with(
-        model_id=zero_shot_config.model_id,
-        subfolder=param,
-        cache_dir=str(model_cache_dir),
-        token=None,
+        model_id=zero_shot_config.model_id, cache_dir=str(model_cache_dir), token=None
     )
 
 
