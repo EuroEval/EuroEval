@@ -69,10 +69,10 @@ def test_development_policy_version_uses_pep440_normalisation() -> None:
 
 
 def test_package_version_matches_authoritative_release() -> None:
-    """The package uses the current development release notation."""
+    """The declared package version matches the current release."""
     project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
 
-    assert project["project"]["version"] == "18.1.0.dev"
+    assert project["project"]["version"] == "18.2.0"
 
 
 def test_policy_does_not_share_a_group_scope() -> None:
