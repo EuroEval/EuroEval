@@ -300,6 +300,28 @@ def test_pipeline_excludes_partial_models_before_bootstrap(
     }
 
 
+def test_statistical_ties_remain_on_the_frontier() -> None:
+    """Do not remove a model when paired bootstrap samples tie."""
+    configs = {"europe": {"sentiment-classification": ["sentiment"]}}
+    results = {"a": _model_results("sentiment"), "b": _model_results("sentiment")}
+    metadata = {"a": {"parameters": 1.0}, "b": {"parameters": 2.0}}
+    model_types = {"a": ModelType.ENCODER, "b": ModelType.ENCODER}
+    scores = {
+        model: {LeaderboardCategory.ALL_MODELS.value: {"overall": np.array([1.0, 1.0])}}
+        for model in results
+    }
+
+    pareto = _pareto_categories_per_model(
+        bootstrap_scores=scores,
+        model_results=results,
+        configs=configs,
+        metadata=metadata,
+        model_types=model_types,
+    )
+
+    assert set(pareto) == {"a", "b"}
+
+
 def test_understanding_uses_its_task_and_model_eligibility_pool(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -362,25 +384,3 @@ def test_understanding_uses_its_task_and_model_eligibility_pool(
         "laya",
         "understanding_only",
     }
-
-
-def test_statistical_ties_remain_on_the_frontier() -> None:
-    """Do not remove a model when paired bootstrap samples tie."""
-    configs = {"europe": {"sentiment-classification": ["sentiment"]}}
-    results = {"a": _model_results("sentiment"), "b": _model_results("sentiment")}
-    metadata = {"a": {"parameters": 1.0}, "b": {"parameters": 2.0}}
-    model_types = {"a": ModelType.ENCODER, "b": ModelType.ENCODER}
-    scores = {
-        model: {LeaderboardCategory.ALL_MODELS.value: {"overall": np.array([1.0, 1.0])}}
-        for model in results
-    }
-
-    pareto = _pareto_categories_per_model(
-        bootstrap_scores=scores,
-        model_results=results,
-        configs=configs,
-        metadata=metadata,
-        model_types=model_types,
-    )
-
-    assert set(pareto) == {"a", "b"}
