@@ -1358,6 +1358,38 @@ class TestVLLMClassification:
         config.instruction_prompt = "Classify {text} as one of {labels_str}."
         return config
 
+    def test_dynamic_classification_uses_open_json_schema(
+        self, dataset_config: DatasetConfig
+    ) -> None:
+        """Variable-choice classifications require a JSON object without enum."""
+        config = self._classification_config(
+            dataset_config=dataset_config,
+            task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+            labels=[],
+            label_mapping={},
+        )
+        model = self._model(config=config, generative_type=GenerativeType.BASE)
+        with patch(
+            "euroeval.benchmark_modules.vllm.StructuredOutputsParams",
+            side_effect=lambda **kwargs: SimpleNamespace(**kwargs),
+            create=True,
+        ):
+            structured = model._setup_structured_outputs(inputs={"text": ["prompt"]})
+
+        assert structured is not None
+        assert structured.json["properties"]["label"] == {"type": "string"}
+        assert "enum" not in structured.json["properties"]["label"]
+
+    @staticmethod
+    def _model(config: DatasetConfig, generative_type: GenerativeType) -> VLLMModel:
+        """Return an uninitialised vLLM model for configuration-only tests."""
+        model = object.__new__(VLLMModel)
+        model.dataset_config = config
+        model.benchmark_config = MagicMock(generative_type=generative_type)
+        model.model_config = MagicMock(model_id="test-model", param=None)
+        model.log_metadata = False
+        return model
+
     def test_dynamic_mcq_choices_are_json_objects(
         self, dataset_config: DatasetConfig
     ) -> None:
@@ -1409,16 +1441,6 @@ class TestVLLMClassification:
         )
         model = self._model(config=config, generative_type=GenerativeType.BASE)
         assert model._setup_structured_outputs(inputs={"text": ["prompt"]}) is None
-
-    @staticmethod
-    def _model(config: DatasetConfig, generative_type: GenerativeType) -> VLLMModel:
-        """Return an uninitialised vLLM model for configuration-only tests."""
-        model = object.__new__(VLLMModel)
-        model.dataset_config = config
-        model.benchmark_config = MagicMock(generative_type=generative_type)
-        model.model_config = MagicMock(model_id="test-model", param=None)
-        model.log_metadata = False
-        return model
 
     def test_parse_json_completion(self) -> None:
         """VLLM completion parsing preserves the JSON response for extraction."""
