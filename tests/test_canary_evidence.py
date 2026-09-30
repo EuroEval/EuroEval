@@ -111,24 +111,73 @@ def _sha256(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
-def test_canary_evidence_round_trips_through_eee_jsonl(tmp_path: Path) -> None:
-    """Preserve all 256 observations through ordinary EEE JSON serialisation."""
-    evidence = _evidence()
-    result = _canary_result(evidence)
-
-    encoded = benchmark_result_to_eee_dict(result=result)
-    path = tmp_path / "euroeval_benchmark_results.jsonl"
-    path.write_text(json.dumps(encoded) + "\n", encoding="utf-8")
-    decoded = benchmark_result_from_eee_dict(json.loads(path.read_text()))
-
-    assert decoded.contamination_canary_evidence == evidence.to_dict()
-    observations = t.cast(
-        list[dict[str, object]], decoded.contamination_canary_evidence["observations"]
+def test_canary_defaults_are_discovered_from_home(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Score synthetic private fixtures from the CLI's documented default paths."""
+    monkeypatch.delenv("EUROEVAL_CANARY_PRIVATE_DIR", raising=False)
+    monkeypatch.delenv("EUROEVAL_CANARY_KEY", raising=False)
+    monkeypatch.setenv("HOME", str(tmp_path))
+    private_dir = tmp_path / ".local/share/euroeval/private-canary-v5"
+    private_dir.mkdir(parents=True, mode=0o700)
+    key_path = tmp_path / ".config/euroeval/watermark-audit-v1.key"
+    key_path.parent.mkdir(parents=True)
+    key = b"k" * 32
+    key_path.write_bytes(key)
+    key_path.chmod(0o600)
+    records = [
+        {
+            "row_id": f"row-{index:03d}",
+            "group_id": f"group-{index // 8:02d}",
+            "exposed_target": "amber forest",
+            "control_target": "silver harbour",
+        }
+        for index in range(CANARY_ROW_COUNT)
+    ]
+    records_path = private_dir / "canary-records.jsonl"
+    records_path.write_text(
+        "".join(json.dumps(item, sort_keys=True) + "\n" for item in records),
+        encoding="utf-8",
     )
-    assert len(observations) == CANARY_ROW_COUNT
-    ordinary, canaries = partition_canary_records(records=[encoded])
-    assert ordinary == []
-    assert canaries == [encoded]
+    records_path.chmod(0o600)
+    canonical = json.dumps(
+        {"hash_version": 3, "records": records}, sort_keys=True, separators=(",", ":")
+    ).encode()
+    (private_dir / "canary-manifest.json").write_text(
+        json.dumps(
+            {
+                "row_count": 256,
+                "group_count": 32,
+                "hash_version": 3,
+                "key_sha256": _sha256(key),
+                "canary_records_sha256": _sha256(canonical),
+            }
+        ),
+        encoding="utf-8",
+    )
+    (private_dir / "canary-manifest.json").chmod(0o600)
+    exclusions = private_dir / "leaderboard-exclusions.json"
+    exclusions.write_text(
+        json.dumps(
+            {
+                "schema_version": "contamination-canary-exclusions/v1",
+                "models": ["old-model"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    exclusions.chmod(0o600)
+    monkeypatch.setattr(
+        "leaderboards.contamination_canary.load_canary_prompts",
+        lambda **kwargs: _prompts(),
+    )
+
+    report = score_canary_records(
+        records=[benchmark_result_to_eee_dict(result=_canary_result(_evidence()))]
+    )
+
+    assert report["status"] == "scored"
+    assert canary_scoring.load_canary_exclusions() == {"old-model"}
 
 
 def _canary_result(evidence: CanaryEvidence) -> BenchmarkResult:
@@ -159,6 +208,26 @@ def _evidence() -> CanaryEvidence:
         prompts=_prompts(),
         completions=[" amber forest."] * CANARY_ROW_COUNT,
     )
+
+
+def test_canary_evidence_round_trips_through_eee_jsonl(tmp_path: Path) -> None:
+    """Preserve all 256 observations through ordinary EEE JSON serialisation."""
+    evidence = _evidence()
+    result = _canary_result(evidence)
+
+    encoded = benchmark_result_to_eee_dict(result=result)
+    path = tmp_path / "euroeval_benchmark_results.jsonl"
+    path.write_text(json.dumps(encoded) + "\n", encoding="utf-8")
+    decoded = benchmark_result_from_eee_dict(json.loads(path.read_text()))
+
+    assert decoded.contamination_canary_evidence == evidence.to_dict()
+    observations = t.cast(
+        list[dict[str, object]], decoded.contamination_canary_evidence["observations"]
+    )
+    assert len(observations) == CANARY_ROW_COUNT
+    ordinary, canaries = partition_canary_records(records=[encoded])
+    assert ordinary == []
+    assert canaries == [encoded]
 
 
 def test_canary_setup_failure_reports_safe_stage_and_category(
@@ -609,6 +678,29 @@ def test_private_corpus_download_uses_packaged_token(
     prompts = load_canary_prompts(cache_dir=tmp_path)
 
     assert len(prompts) == CANARY_ROW_COUNT
+
+
+def test_private_exclusion_override_is_resolved_by_public_loader(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An explicit private directory overrides the home-directory default."""
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    private_dir = tmp_path / "override"
+    private_dir.mkdir(mode=0o700)
+    exclusions = private_dir / "leaderboard-exclusions.json"
+    exclusions.write_text(
+        json.dumps(
+            {
+                "schema_version": "contamination-canary-exclusions/v1",
+                "models": ["override-model"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    exclusions.chmod(0o600)
+    monkeypatch.setenv("EUROEVAL_CANARY_PRIVATE_DIR", str(private_dir))
+
+    assert canary_scoring.load_canary_exclusions() == {"override-model"}
 
 
 def test_private_exclusion_state_fails_closed_when_corrupt(
