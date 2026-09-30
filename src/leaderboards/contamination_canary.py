@@ -299,22 +299,32 @@ def score_canary_records(records: c.Sequence[dict[str, object]]) -> dict[str, ob
     """Score embedded evidence using private maintainer-only targets and controls."""
     if not records:
         return _base_report(status="missing", models=[])
+    setup_stage = "private_directory"
     try:
         private_dir = _private_directory()
         _validate_private_directory(private_dir)
+        setup_stage = "private_key"
         key = _load_private_key(_key_path())
+        setup_stage = "private_records"
         private_records, manifest_hash = _load_private_records(
             private_dir=private_dir, key=key
         )
+        setup_stage = "prompt_corpus"
         prompts = load_canary_prompts(
             cache_dir=Path(
                 os.getenv("HF_HOME", str(Path.home() / ".cache" / "huggingface"))
             )
         )
         prompt_digests = {item.row_id: item.prompt_sha256 for item in prompts}
-    except Exception as error:  # noqa: BLE001 - audit setup is non-fatal
+    except Exception:  # noqa: BLE001 - audit setup is non-fatal
         report = _base_report(status="unavailable", models=[])
-        report["reason"] = type(error).__name__
+        report["stage"] = setup_stage
+        report["reason"] = {
+            "private_directory": "private_data_configuration_failed",
+            "private_key": "private_key_configuration_failed",
+            "private_records": "private_data_validation_failed",
+            "prompt_corpus": "prompt_corpus_unavailable",
+        }[setup_stage]
         _write_report(report=report)
         return report
 

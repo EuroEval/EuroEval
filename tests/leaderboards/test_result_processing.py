@@ -472,7 +472,11 @@ def test_process_results_keeps_canary_records_out_of_public_uploads() -> None:
 
     assert upload.call_args_list == [
         call(processed_records=[], upload_to_bucket=True),
-        call(processed_records=[canary], upload_to_bucket=False),
+        call(
+            processed_records=[canary],
+            upload_to_bucket=False,
+            local_only_label="private contamination-canary",
+        ),
     ]
 
 

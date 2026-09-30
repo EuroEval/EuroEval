@@ -161,6 +161,26 @@ def _evidence() -> CanaryEvidence:
     )
 
 
+def test_canary_setup_failure_reports_safe_stage_and_category(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Keep setup failures non-fatal and omit private exception details."""
+    secret = "/private/key-path and private evidence"
+
+    def fail_setup() -> Path:
+        raise ValueError(secret)
+
+    monkeypatch.setattr(canary_scoring, "_private_directory", fail_setup)
+
+    report = score_canary_records(records=[{"private": "submitted evidence"}])
+
+    assert report["status"] == "unavailable"
+    assert report["stage"] == "private_directory"
+    assert report["reason"] == "private_data_configuration_failed"
+    assert secret not in json.dumps(report)
+    assert "submitted evidence" not in json.dumps(report)
+
+
 def test_completion_normaliser_is_versioned_and_bounded() -> None:
     """Normalise only the first two lexical words."""
     assert normalise_completion("  ÅBEN—havn, second! ignored third") == "ÅBEN havn"
