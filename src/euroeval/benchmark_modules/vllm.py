@@ -995,7 +995,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         is_label_classification = self.dataset_config.task.task_group in {
             TaskGroup.SEQUENCE_CLASSIFICATION,
             TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
-        } and bool(self.dataset_config.labels)
+        }
         if "bpc_prompt" in inputs:
             return None
         if (
@@ -1010,7 +1010,16 @@ class VLLMModel(HuggingFaceEncoderModel):
         if self.dataset_config.task.uses_structured_output:
             return self._structured_output_for_task(inputs)
         if is_label_classification:
-            return self._structured_output_for_logprobs()
+            if self.dataset_config.labels:
+                return self._structured_output_for_logprobs()
+            return StructuredOutputsParams(
+                json={
+                    "type": "object",
+                    "properties": {CLASSIFICATION_OUTPUT_KEY: {"type": "string"}},
+                    "required": [CLASSIFICATION_OUTPUT_KEY],
+                    "additionalProperties": False,
+                }
+            )
         log_once(
             "Not using structured generation as the dataset does not require it.",
             level=logging.DEBUG,
@@ -1305,7 +1314,6 @@ class VLLMModel(HuggingFaceEncoderModel):
                         TaskGroup.SEQUENCE_CLASSIFICATION,
                         TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
                     }
-                    and self.dataset_config.labels
                 )
                 else None
             ),

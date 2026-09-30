@@ -2431,7 +2431,6 @@ class LiteLLMModel(BenchmarkModule):
                         TaskGroup.SEQUENCE_CLASSIFICATION,
                         TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
                     }
-                    and self.dataset_config.labels
                 )
                 else None
             ),
