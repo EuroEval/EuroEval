@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import LeaderboardTable from "@/components/LeaderboardTable.vue";
 import LeaderboardScatter from "@/components/LeaderboardScatter.vue";
 import {
+  csvKeys,
   loadLeaderboard,
   loadLeaderboardCsv,
   loadLeaderboardMetadata,
@@ -26,18 +27,17 @@ const categoryTabs = [
 type CategoryId = (typeof categoryTabs)[number]["id"];
 type ViewId = "table" | "modelSize" | "releaseDate";
 
-// Precomputed at leaderboard-generation time (which leaderboards/categories
-// have ranked models) and bundled statically, so it's known synchronously
-// from `stem` alone whether a category has ranked models - no need to wait
-// for that category's leaderboard data to load before deciding whether its
-// tab is clickable. All tabs always render, in a fixed order, for every
-// leaderboard - only ranked-ness varies - so the tab set's shape never
-// changes between languages.
+// A category is available only when the generated manifest marks it ranked
+// and its full CSV stem is present in Vite's build-time CSV keys. Both gates
+// are known synchronously, so tabs never flash enabled while data loads. All
+// tabs always render, in a fixed order, for every leaderboard - only
+// ranked-ness varies - so the tab set's shape never changes between languages.
 type CategoryRankedManifest = Record<string, Partial<Record<CategoryId, boolean>>>;
 const categoryRanked = categoryRankedData as CategoryRankedManifest;
 
 const isCategoryRanked = (id: CategoryId): boolean =>
-  categoryRanked[props.stem]?.[id] ?? false;
+  (categoryRanked[props.stem]?.[id] ?? false) &&
+  csvKeys.includes(`${props.stem}_${id}`);
 
 const firstRankedCategory = (): CategoryId =>
   categoryTabs.find((t) => isCategoryRanked(t.id))?.id ?? categoryTabs[0].id;
