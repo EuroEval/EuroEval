@@ -280,20 +280,62 @@ const downloadCsv = async () => {
       aria-orientation="vertical"
       aria-label="Task coverage categories, from broadest to narrowest"
     >
-      <button
-        v-for="t in categoryTabs"
-        :key="t.id"
-        type="button"
-        role="tab"
-        :disabled="!isCategoryRanked(t.id)"
-        :title="isCategoryRanked(t.id) ? undefined : 'Coming soon'"
-        :aria-selected="activeCategory === t.id"
-        :class="['lb-tab', `lb-tab-${t.id}`, { active: activeCategory === t.id }]"
-        @click="activeCategory = t.id"
-      >
-        {{ t.label }}
-        <span v-if="!isCategoryRanked(t.id)" class="lb-tab-soon">Soon</span>
-      </button>
+      <div class="lb-category-box lb-category-box-all" role="presentation">
+        <button
+          type="button"
+          role="tab"
+          :disabled="!isCategoryRanked('all_models')"
+          :title="isCategoryRanked('all_models') ? undefined : 'Coming soon'"
+          :aria-selected="activeCategory === 'all_models'"
+          :class="['lb-tab', { active: activeCategory === 'all_models' }]"
+          @click="activeCategory = 'all_models'"
+        >
+          All Models
+          <span v-if="!isCategoryRanked('all_models')" class="lb-tab-soon">Soon</span>
+        </button>
+        <div class="lb-category-box lb-category-box-understanding" role="presentation">
+          <button
+            type="button"
+            role="tab"
+            :disabled="!isCategoryRanked('understanding')"
+            :title="isCategoryRanked('understanding') ? undefined : 'Coming soon'"
+            :aria-selected="activeCategory === 'understanding'"
+            :class="['lb-tab', { active: activeCategory === 'understanding' }]"
+            @click="activeCategory = 'understanding'"
+          >
+            Understanding
+            <span v-if="!isCategoryRanked('understanding')" class="lb-tab-soon">Soon</span>
+          </button>
+          <div class="lb-category-box lb-category-box-generative" role="presentation">
+            <button
+              type="button"
+              role="tab"
+              :disabled="!isCategoryRanked('generative')"
+              :title="isCategoryRanked('generative') ? undefined : 'Coming soon'"
+              :aria-selected="activeCategory === 'generative'"
+              :class="['lb-tab', { active: activeCategory === 'generative' }]"
+              @click="activeCategory = 'generative'"
+            >
+              Generative
+              <span v-if="!isCategoryRanked('generative')" class="lb-tab-soon">Soon</span>
+            </button>
+            <div class="lb-category-box lb-category-box-chat" role="presentation">
+              <button
+                type="button"
+                role="tab"
+                :disabled="!isCategoryRanked('chat')"
+                :title="isCategoryRanked('chat') ? undefined : 'Coming soon'"
+                :aria-selected="activeCategory === 'chat'"
+                :class="['lb-tab', { active: activeCategory === 'chat' }]"
+                @click="activeCategory = 'chat'"
+              >
+                Chat
+                <span v-if="!isCategoryRanked('chat')" class="lb-tab-soon">Soon</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </nav>
 
     <div class="lb-category-context">
@@ -518,25 +560,41 @@ const downloadCsv = async () => {
 }
 
 .lb-tabs {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.35rem;
   width: min(100%, 32rem);
   margin-top: 0.5rem;
+}
+
+.lb-category-box {
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 0.65rem;
+  padding: 0.55rem;
+  background: var(--color-bg);
+}
+
+.lb-category-box-understanding {
+  margin-top: 0.45rem;
+}
+
+.lb-category-box-generative {
+  margin-top: 0.4rem;
+}
+
+.lb-category-box-chat {
+  margin-top: 0.35rem;
 }
 
 .lb-tab {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 0.45rem;
-  min-height: 2.55rem;
+  min-height: 2.35rem;
+  max-width: 100%;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
+  border-radius: 0.45rem;
   color: var(--color-text);
-  padding: 0.5rem 0.85rem;
+  padding: 0.4rem 0.75rem;
   cursor: pointer;
   font: inherit;
   font-size: 0.9rem;
@@ -547,22 +605,6 @@ const downloadCsv = async () => {
     border-color 0.2s ease,
     color 0.2s ease,
     box-shadow 0.2s ease;
-}
-
-.lb-tab-chat {
-  width: 100%;
-}
-
-.lb-tab-generative {
-  width: 84%;
-}
-
-.lb-tab-understanding {
-  width: 72%;
-}
-
-.lb-tab-all_models {
-  width: 62%;
 }
 
 .lb-tab:hover:not(:disabled) {
