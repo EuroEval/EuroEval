@@ -85,6 +85,57 @@ def _model_results(*datasets: str) -> dict[str, list[tuple[list[float], float, f
     return {dataset: [([1.0], 1.0, 1.0)] for dataset in datasets}
 
 
+def test_build_classifies_zero_shot_model_and_legacy_encoder(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The public builder preserves classifier and legacy encoder semantics."""
+    dataset = "sentiment"
+    model_results = {
+        "org/laya": {dataset: [([0.8, 0.9], 0.85, 0.05)]},
+        "org/legacy": {dataset: [([0.7, 0.8], 0.75, 0.05)]},
+    }
+    metadata = {
+        "org/laya": {
+            "model_type": "zero_shot_classifier",
+            "generative_type": "base",
+            "parameters": 7_000_000_000,
+        },
+        "org/legacy": {"parameters": 1_000_000_000},
+    }
+    monkeypatch.setattr(
+        core_models, "languages_with_official_datasets", lambda: ["english"]
+    )
+    monkeypatch.setattr(
+        core_models,
+        "official_datasets_for_language",
+        lambda language: {"sentiment-classification": [dataset]},
+    )
+    monkeypatch.setattr(
+        core_models,
+        "load_raw_results",
+        lambda: [{"eval_library": {"additional_details": {"dataset": dataset}}}],
+    )
+    monkeypatch.setattr(
+        core_models, "group_results_by_model", lambda results: model_results
+    )
+    monkeypatch.setattr(
+        core_models, "drop_val_duplicates", lambda model_results: model_results
+    )
+    monkeypatch.setattr(core_models, "extract_model_metadata", lambda results: metadata)
+    monkeypatch.setattr(core_models, "osai_top_models", lambda limit, overrides: [])
+
+    models = {model.model_id: model for model in build_core_model_list()}
+
+    laya = models["org/laya"]
+    assert laya.model_type == ModelType.ZERO_SHOT_CLASSIFIER
+    assert laya.size_bucket == SizeBucket.ENCODER
+    assert laya.pareto_categories == (LeaderboardCategory.ALL_MODELS.value,)
+
+    legacy = models["org/legacy"]
+    assert legacy.model_type == ModelType.ENCODER
+    assert legacy.size_bucket == SizeBucket.ENCODER
+
+
 def test_build_retains_osai_and_api_but_not_eu_source(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -232,11 +283,18 @@ def test_pipeline_excludes_partial_models_before_bootstrap(
     assert [set(call.kwargs["model_results"]) for call in bootstrap.call_args_list] == [
         {"strong", "peer"},
         {"strong", "peer"},
+        {"strong", "peer"},
     ]
     assert all(call.kwargs["configs"] == configs for call in bootstrap.call_args_list)
+    assert {call.kwargs["categories"][0] for call in bootstrap.call_args_list} == {
+        LeaderboardCategory.GENERATIVE,
+        LeaderboardCategory.UNDERSTANDING,
+        LeaderboardCategory.ALL_MODELS,
+    }
     assert pareto == {
         "strong": {
             LeaderboardCategory.GENERATIVE.value,
+            LeaderboardCategory.UNDERSTANDING.value,
             LeaderboardCategory.ALL_MODELS.value,
         }
     }
@@ -262,3 +320,67 @@ def test_statistical_ties_remain_on_the_frontier() -> None:
     )
 
     assert set(pareto) == {"a", "b"}
+
+
+def test_understanding_uses_its_task_and_model_eligibility_pool(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Understanding scores exclude zero-shot models and unrelated tasks."""
+    configs = {
+        "english": {
+            "sentiment-classification": ["sentiment"],
+            "reading-comprehension": ["qa"],
+            "summarization": ["summary"],
+        }
+    }
+    results = {
+        "encoder": _model_results("sentiment", "qa", "summary"),
+        "decoder": _model_results("sentiment", "qa", "summary"),
+        "laya": _model_results("sentiment", "qa", "summary"),
+        "understanding_only": _model_results("sentiment", "qa"),
+    }
+    model_types = {
+        "encoder": ModelType.ENCODER,
+        "decoder": ModelType.INSTRUCTION_TUNED_DECODER,
+        "laya": ModelType.ZERO_SHOT_CLASSIFIER,
+        "understanding_only": ModelType.INSTRUCTION_TUNED_DECODER,
+    }
+    metadata = {model_id: {"parameters": 1.0} for model_id in results}
+    captured: dict[LeaderboardCategory, set[str]] = {}
+
+    def fake_bootstrap_rank_scores(
+        *,
+        model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
+        configs: dict[str, dict[str, list[str]]],
+        n_bootstraps: int,
+        seed: int,
+        categories: tuple[LeaderboardCategory, ...],
+    ) -> dict[str, dict[LeaderboardCategory, dict[str, np.ndarray]]]:
+        del configs, n_bootstraps, seed
+        category = categories[0]
+        captured[category] = set(model_results)
+        return {
+            model_id: {category: {"overall": np.ones(4)}} for model_id in model_results
+        }
+
+    monkeypatch.setattr(
+        core_models, "bootstrap_rank_scores", fake_bootstrap_rank_scores
+    )
+    _pareto_categories_per_model(
+        model_results=results,
+        configs=configs,
+        metadata=metadata,
+        model_types=model_types,
+    )
+
+    assert captured[LeaderboardCategory.UNDERSTANDING] == {
+        "encoder",
+        "decoder",
+        "understanding_only",
+    }
+    assert captured[LeaderboardCategory.ALL_MODELS] == {
+        "encoder",
+        "decoder",
+        "laya",
+        "understanding_only",
+    }

@@ -802,6 +802,8 @@ class Benchmarker:
             vocabulary_size=vocabulary_size,
             merge=model_config.merge,
             generative=model_config.model_type is ModelType.GENERATIVE,
+            model_type=model_config.model_type.value,
+            inference_engine=model_config.inference_backend.value,
             generative_type=(
                 loaded_model.generative_type.value
                 if loaded_model is not None and loaded_model.generative_type is not None
@@ -822,6 +824,11 @@ class Benchmarker:
             litellm_version=(
                 get_package_version("litellm")
                 if model_config.inference_backend is InferenceBackend.LITELLM
+                else None
+            ),
+            laya_version=(
+                get_package_version("laya")
+                if model_config.inference_backend is InferenceBackend.LAYA
                 else None
             ),
             contamination_canary_evidence=evidence.to_dict(),
@@ -1135,6 +1142,8 @@ class Benchmarker:
                     vocabulary_size=model.vocab_size,
                     merge=model_config.merge,
                     generative=model_config.model_type == ModelType.GENERATIVE,
+                    model_type=model_config.model_type.value,
+                    inference_engine=model_config.inference_backend.value,
                     generative_type=(
                         model.generative_type.value
                         if model.generative_type is not None
@@ -1152,6 +1161,11 @@ class Benchmarker:
                     litellm_version=(
                         get_package_version("litellm")
                         if model_config.inference_backend == InferenceBackend.LITELLM
+                        else None
+                    ),
+                    laya_version=(
+                        get_package_version("laya")
+                        if model_config.inference_backend == InferenceBackend.LAYA
                         else None
                     ),
                 )
@@ -1430,7 +1444,6 @@ class Benchmarker:
 
             _resolve_checkpoint_path(
                 model_id=model_config.model_id,
-                subfolder=model_config.param,
                 cache_dir=model_config.model_cache_dir,
                 token=get_hf_token(api_key=benchmark_config.api_key),
             )
@@ -1497,7 +1510,6 @@ class Benchmarker:
 
             _resolve_checkpoint_path(
                 model_id=model_config.model_id,
-                subfolder=model_config.param,
                 cache_dir=model_config.model_cache_dir,
                 token=get_hf_token(api_key=benchmark_config.api_key),
             )

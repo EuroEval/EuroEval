@@ -93,9 +93,12 @@ print `.env`; `.env` is the selected local secret store.
 
 ### Tests
 
-All evaluation framework tests are in `tests` and can be run with `make test`. This
-takes a very long time though, so prefer to just running the tests in the modules you
-have changed. There are no tests for the frontend or leaderboard generation.
+Python tests are in `tests` and can be run with `make test`. This takes a very long
+time, so prefer running tests for the modules you have changed. There are no frontend
+component tests.
+
+Only write tests for public functions and classes. Exercise private helpers through
+public interfaces; do not import them directly in tests.
 
 ## Formatting, linting, and type checking
 
@@ -110,6 +113,16 @@ tools are used:
 
 The pre-commit hooks also include basic quality checks (end-of-file fixer, trailing
 whitespace, debug statements, type annotation enforcement, and notebook stripping).
+
+### Python conventions
+
+- Require a module docstring in every Python module and Google-style docstrings for
+  every function and class, including private ones. Include `Args` and `Returns`
+  sections whenever relevant.
+- Call functions with keyword arguments instead of positional arguments wherever
+  possible.
+- Never import private functions. If a function must be imported, make it public
+  instead of retaining its leading underscore.
 
 ### Code Duplication Detection (Slopo)
 

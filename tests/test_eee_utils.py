@@ -105,6 +105,25 @@ class TestEeeUtils:
 
         results_path.unlink(missing_ok=True)
 
+    def test_older_eee_records_without_provenance_remain_readable(
+        self, benchmark_result: BenchmarkResult
+    ) -> None:
+        """Old EEE data without provenance continues to load and round-trip."""
+        eee_dict = benchmark_result.to_eee_dict()
+        model_info = eee_dict["model_info"]
+        assert isinstance(model_info, dict)
+        model_info.pop("inference_engine", None)
+        additional_details = model_info["additional_details"]
+        assert isinstance(additional_details, dict)
+        additional_details.pop("model_type", None)
+
+        restored = BenchmarkResult.from_dict(eee_dict)
+
+        assert restored.model_type is None
+        assert restored.inference_engine is None
+        assert restored.few_shot is benchmark_result.few_shot
+        assert restored.validation_split is benchmark_result.validation_split
+
     def test_round_trip_with_scores(self, results_path: Path) -> None:
         """Test EEE round-trip fidelity with realistic metric scores and raw results."""
         results_path.unlink(missing_ok=True)
@@ -115,8 +134,8 @@ class TestEeeUtils:
             model="some-model",
             generative=True,
             generative_type="instruction_tuned",
-            few_shot=False,
-            validation_split=False,
+            few_shot=None,
+            validation_split=None,
             num_model_parameters=8_000_000_000,
             max_sequence_length=4096,
             vocabulary_size=32000,
@@ -124,6 +143,9 @@ class TestEeeUtils:
             languages=["da"],
             task="sentiment-classification",
             release_date="2024-02-03",
+            model_type="zero_shot_classifier",
+            inference_engine="laya",
+            laya_version="1.2.3",
             results={
                 "total": {
                     "test_mcc": 42.5,
@@ -145,6 +167,18 @@ class TestEeeUtils:
         assert (
             eee_dict["model_info"]["additional_details"]["release_date"] == "2024-02-03"
         )
+        assert (
+            eee_dict["model_info"]["additional_details"]["model_type"]
+            == "zero_shot_classifier"
+        )
+        assert eee_dict["model_info"]["inference_engine"] == {
+            "name": "laya",
+            "version": "1.2.3",
+        }
+        assert eee_dict["eval_library"]["additional_details"]["few_shot"] is None
+        assert (
+            eee_dict["eval_library"]["additional_details"]["validation_split"] is None
+        )
 
         # Verify confidence intervals are stored correctly for each metric
         eval_results = {
@@ -163,12 +197,17 @@ class TestEeeUtils:
         # Verify metric_config for regular metrics
         assert mcc_result["metric_config"]["lower_is_better"] is False
         assert mcc_result["metric_config"]["score_type"] == "continuous"
-        assert mcc_result["metric_config"]["min_score"] == 0
+        assert mcc_result["metric_config"]["min_score"] == -100
         assert mcc_result["metric_config"]["max_score"] == 100
 
         # Verify round-trip restores results
         restored = BenchmarkResult.from_dict(eee_dict)
         assert restored.release_date == "2024-02-03"
+        assert restored.model_type == "zero_shot_classifier"
+        assert restored.inference_engine == "laya"
+        assert restored.laya_version == "1.2.3"
+        assert restored.few_shot is None
+        assert restored.validation_split is None
         assert restored.results["total"]["test_mcc"] == 42.5  # ty: ignore[index]  # ty:ignore[ignore-comment-unknown-rule, invalid-argument-type]
         assert (
             abs(

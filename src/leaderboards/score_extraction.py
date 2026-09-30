@@ -90,6 +90,7 @@ def extract_model_metadata(
             # Update presence-checked fields
             for field in (
                 "generative_type",
+                "model_type",
                 "commercial",
                 "merge",
                 "open",
@@ -141,6 +142,7 @@ def _ensure_standard_metadata_keys(metadata_dict: dict[str, dict[str, t.Any]]) -
         "vocabulary_size": math.nan,
         "context": math.nan,
         "generative_type": None,
+        "model_type": None,
         "commercial": False,
         "merge": False,
         "open": None,
@@ -187,6 +189,7 @@ def _extract_metadata_from_record(
         "vocabulary_size": _to_float_or_nan(vocab_size_raw),
         "context": _to_float_or_nan(context_raw),
         "generative_type": additional.get("generative_type", None),
+        "model_type": additional.get("model_type"),
         "commercial": additional.get("commercially_licensed", False),
         "merge": _to_bool(additional.get("merge", "false")),
         "open": additional.get("open", None),
@@ -198,6 +201,7 @@ def _extract_metadata_from_record(
     presence_flags: dict[str, bool] = {
         "generative_type": "generative_type" in additional
         and additional["generative_type"] is not None,
+        "model_type": bool(additional.get("model_type")),
         "commercial": "commercially_licensed" in additional
         and additional["commercially_licensed"] is not None,
         "merge": "merge" in additional and additional["merge"] is not None,
@@ -383,7 +387,7 @@ def _is_better_metadata(
 
     # For generative_type, prefer non-empty over empty
     # When both are non-empty, preserve existing (don't overwrite)
-    if field == "generative_type":
+    if field in ("generative_type", "model_type"):
         if not old_value and new_value:
             return True
         if old_value and not new_value:
@@ -474,6 +478,7 @@ def group_results_by_model(
     model_scores: dict[str, dict[str, list[tuple[list[float], float, float]]]] = (
         defaultdict(lambda: defaultdict(list))
     )
+
     # Some datasets (e.g. MultiLoKo) have no validation split, so their records
     # carry ``validation_split=None`` and are grouped under the test-split
     # variant id (``... (zero-shot)``) — never under the ``(..., val)`` variant.
@@ -503,13 +508,22 @@ def group_results_by_model(
             # Raw per-iteration scores are keyed by the bare metric name (e.g.
             # "mcc"), occasionally with a "test_" prefix.
             raw_scores: list[float] = []
+            unbounded_metric = metric in {"speed", "speed_short", "bits_per_character"}
+            lower = -100 if metric in {"mcc", "bias_ambig"} else 0
+            upper = math.inf if unbounded_metric else 100
             for result_dict in raw_results:
                 if isinstance(result_dict, dict):
-                    score = result_dict.get(
-                        f"test_{metric}", result_dict.get(metric, -1)
-                    )
-                    if score >= 0:
-                        raw_scores.append(score)
+                    score = result_dict.get(f"test_{metric}", result_dict.get(metric))
+
+                    # Signed correlations/bias may be negative; reject out-of-range
+                    # percentage scores and malformed iterations.
+                    if (
+                        isinstance(score, int | float)
+                        and not isinstance(score, bool)
+                        and math.isfinite(score)
+                        and lower <= score <= upper
+                    ):
+                        raw_scores.append(float(score))
 
             if not raw_scores:
                 continue
@@ -538,14 +552,19 @@ def group_results_by_model(
 
             total_score: float = float(total_score_val)
 
-            # Sometimes the raw scores are normalised to [0, 1], so we need to scale
-            # them back to [0, 100]
-            scale_factor = 100.0 if max(raw_scores) <= 1 else 1.0
+            # Percentage scores can arrive in unit range (including negative MCC).
+            # Absolute values detect negative-only unit-range series correctly.
+            scale_factor = (
+                100.0
+                if not unbounded_metric and max(map(abs, raw_scores)) <= 1
+                else 1.0
+            )
             raw_scores = [score * scale_factor for score in raw_scores]
 
             # EEE records don't carry a std err, so compute it from raw scores.
             # Fallback computed after scaling so std_err matches the displayed scores.
             std_err: float = total_scores.get(std_err_key, 0.0)
+
             # Scale std_err to match the scaled raw scores
             std_err = std_err * scale_factor
             if std_err == 0.0 and len(raw_scores) > 1:
@@ -590,6 +609,7 @@ def _mirror_split_agnostic_datasets(
     """
     for model_id in list(model_scores):
         test_variant_id = strip_note_item(model_id=model_id, note_item="val")
+
         # ``strip_note_item`` returns None unless the id carries a ``val`` note,
         # so this only fires for validation-split variant rows.
         if test_variant_id is None:

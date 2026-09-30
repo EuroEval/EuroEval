@@ -21,7 +21,7 @@ from functools import cache
 from euroeval import dataset_configs as _ds_module
 from euroeval.constants import ORTHOGONAL_TASKS
 from euroeval.data_models import DatasetConfig
-from euroeval.enums import GenerativeType
+from euroeval.enums import GenerativeType, TaskGroup
 from euroeval.languages import get_all_languages
 from euroeval.tasks import get_all_tasks
 
@@ -47,7 +47,18 @@ def category_includes_task(category: LeaderboardCategory, task: str) -> bool:
         return True
     if category == LeaderboardCategory.GENERATIVE:
         return task_category(task) != "instruct_exclusive"
-    return task_category(task) == "nlu"
+    task_group = get_all_tasks()[task].task_group
+    if category == LeaderboardCategory.UNDERSTANDING:
+        return task_category(task) != "instruct_exclusive" and task_group in {
+            TaskGroup.SEQUENCE_CLASSIFICATION,
+            TaskGroup.TOKEN_CLASSIFICATION,
+            TaskGroup.QUESTION_ANSWERING,
+            TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+        }
+    return task_category(task) != "instruct_exclusive" and task_group in {
+        TaskGroup.SEQUENCE_CLASSIFICATION,
+        TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+    }
 
 
 def task_category(task_name: str) -> str:

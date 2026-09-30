@@ -73,6 +73,7 @@ class ModelType(enum.StrEnum):
     """The architectural / training-stage category of a core model."""
 
     ENCODER = "encoder"
+    ZERO_SHOT_CLASSIFIER = "zero_shot_classifier"
     BASE_DECODER = "base_decoder"
     INSTRUCTION_TUNED_DECODER = "instruction_tuned_decoder"
     REASONING_DECODER = "reasoning_decoder"
@@ -245,6 +246,8 @@ def _classify_model(model_id: str, metadata: dict) -> ModelType:
     plain = plain_model_id(model_id).split("#")[0]
     if any(p.fullmatch(plain) for p in API_MODEL_PATTERNS):
         return ModelType.API
+    if metadata.get("model_type") == ModelType.ZERO_SHOT_CLASSIFIER:
+        return ModelType.ZERO_SHOT_CLASSIFIER
     generative_type = metadata.get("generative_type")
     if generative_type is None:
         return ModelType.ENCODER
@@ -285,10 +288,14 @@ def _pareto_categories_per_model(
         bootstrap_scores = {}
         for category in (
             LeaderboardCategory.GENERATIVE,
+            LeaderboardCategory.UNDERSTANDING,
             LeaderboardCategory.ALL_MODELS,
         ):
             eligible_results = _complete_coverage_model_results(
-                model_results=model_results, configs=configs, category=category
+                model_results=model_results,
+                configs=configs,
+                category=category,
+                model_types=model_types,
             )
             category_scores = _aggregate_bootstrap_scores(
                 model_results=eligible_results, configs=configs, category=category
@@ -296,17 +303,24 @@ def _pareto_categories_per_model(
             for model_id, model_scores in category_scores.items():
                 bootstrap_scores.setdefault(model_id, {}).update(model_scores)
     categories_for_type: dict[ModelType, tuple[LeaderboardCategory, ...]] = {
-        ModelType.ENCODER: (LeaderboardCategory.ALL_MODELS,),
+        ModelType.ENCODER: (
+            LeaderboardCategory.UNDERSTANDING,
+            LeaderboardCategory.ALL_MODELS,
+        ),
+        ModelType.ZERO_SHOT_CLASSIFIER: (LeaderboardCategory.ALL_MODELS,),
         ModelType.BASE_DECODER: (
             LeaderboardCategory.GENERATIVE,
+            LeaderboardCategory.UNDERSTANDING,
             LeaderboardCategory.ALL_MODELS,
         ),
         ModelType.INSTRUCTION_TUNED_DECODER: (
             LeaderboardCategory.GENERATIVE,
+            LeaderboardCategory.UNDERSTANDING,
             LeaderboardCategory.ALL_MODELS,
         ),
         ModelType.REASONING_DECODER: (
             LeaderboardCategory.GENERATIVE,
+            LeaderboardCategory.UNDERSTANDING,
             LeaderboardCategory.ALL_MODELS,
         ),
     }
@@ -389,13 +403,19 @@ def _complete_coverage_model_results(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     configs: dict[str, dict[str, list[str]]],
     category: LeaderboardCategory,
+    model_types: dict[str, ModelType] | None = None,
 ) -> dict[str, dict[str, list[tuple[list[float], float, float]]]]:
-    """Return models with every non-orthogonal dataset for a category."""
+    """Return category-eligible models with every required dataset."""
     required_datasets = _required_datasets(configs=configs, category=category)
     return {
         model_id: model_results[model_id]
         for model_id in sorted(model_results)
         if all(dataset in model_results[model_id] for dataset in required_datasets)
+        and not (
+            category == LeaderboardCategory.UNDERSTANDING
+            and model_types is not None
+            and model_types.get(model_id) == ModelType.ZERO_SHOT_CLASSIFIER
+        )
     }
 
 
@@ -444,7 +464,7 @@ def _size_bucket(model_type: ModelType, parameters: float) -> SizeBucket:
     Returns:
         The bucket label used to group models in the issue body.
     """
-    if model_type == ModelType.ENCODER:
+    if model_type in (ModelType.ENCODER, ModelType.ZERO_SHOT_CLASSIFIER):
         return SizeBucket.ENCODER
     if model_type == ModelType.API:
         return SizeBucket.API

@@ -438,6 +438,7 @@ def _generate_dataframe(
             category_to_orthogonal_datasets=category_to_orthogonal_datasets,
             leaderboard_configs=leaderboard_configs,
             language_rank_cache=language_rank_cache,
+            metadata_dict=metadata_dict,
         )
 
         orthogonal_scores_by_plain = _collect_orthogonal_scores(
@@ -448,7 +449,11 @@ def _generate_dataframe(
 
         data_dict: dict[str, list] = defaultdict(list)
         for model_id, results in model_results.items():
-            generative_type = metadata_dict.get(model_id, {}).get("generative_type")
+            model_metadata = metadata_dict.get(model_id, {})
+            generative_type = model_metadata.get("generative_type")
+            zero_shot_classifier = (
+                model_metadata.get("model_type") == "zero_shot_classifier"
+            )
             if category == LeaderboardCategory.CHAT:
                 # Only include zero-shot rows for the Chat category
                 suffix_match = VARIANT_SUFFIX_RE.search(model_id)
@@ -461,7 +466,11 @@ def _generate_dataframe(
                 ):
                     continue
             # Skip encoders (generative_type is None) for generative category
-            if category == LeaderboardCategory.GENERATIVE and generative_type is None:
+            if category == LeaderboardCategory.GENERATIVE and (
+                generative_type is None or zero_shot_classifier
+            ):
+                continue
+            if category == LeaderboardCategory.UNDERSTANDING and zero_shot_classifier:
                 continue
             model_values = _build_model_row_data(
                 model_id=model_id,
@@ -586,10 +595,15 @@ def _apply_display_transforms(
         "instruction_tuned": "📝",
         "reasoning": "🤔",
     }
-    df["generative_type"] = df.generative_type.map(
-        lambda x: generative_type_emoji_mapping.get(x, "🔍")
+    df["generative_type"] = df.apply(
+        lambda row: (
+            "🎯"
+            if row.get("model_type") == "zero_shot_classifier"
+            else generative_type_emoji_mapping.get(row.generative_type, "🔍")
+        ),
+        axis=1,
     )
-    return df
+    return df.drop(columns="model_type")
 
 
 def _build_category_dataset_maps(
@@ -858,6 +872,7 @@ def _compute_eligible_models_and_ranks(
     leaderboard_configs: dict[str, dict[str, list[str]]],
     language_rank_cache: dict[tuple[str, str, tuple[str, ...], tuple[str, ...]], dict]
     | None = None,
+    metadata_dict: dict[str, dict] | None = None,
 ) -> "tuple[dict[str, dict[str, list[tuple[list[float], float, float]]]], dict[str, list[str]], dict, dict]":  # noqa: E501
     """Compute eligible models and bootstrap ranks for a category.
 
@@ -883,6 +898,9 @@ def _compute_eligible_models_and_ranks(
             The leaderboard configurations.
         language_rank_cache (optional):
             Shared cache for monolingual rank-score confidence intervals.
+        metadata_dict (optional):
+            Model metadata used to exclude zero-shot classifiers from the
+            understanding leaderboard.
 
     Returns:
         Tuple of (eligible_model_results, language_to_required_datasets,
@@ -895,11 +913,30 @@ def _compute_eligible_models_and_ranks(
         for ds in sorted(category_to_datasets[category])
         if ds not in category_to_orthogonal_datasets[category]
     ]
+
     # Sort for deterministic iteration.
+    def is_eligible_understanding_model(model_id: str) -> bool:
+        """Check the category's model-type restriction for a model.
+
+        Args:
+            model_id:
+                The model identifier.
+
+        Returns:
+            Whether the model is permitted in this category's rank pool.
+        """
+        return not (
+            category == LeaderboardCategory.UNDERSTANDING
+            and metadata_dict is not None
+            and metadata_dict.get(model_id, {}).get("model_type")
+            == "zero_shot_classifier"
+        )
+
     eligible_model_results = {
         mid: model_results[mid]
         for mid in sorted(model_results.keys())
         if all(ds in model_results[mid] for ds in required_datasets)
+        and is_eligible_understanding_model(mid)
     }
 
     language_to_required_datasets = {
@@ -952,6 +989,7 @@ def _compute_eligible_models_and_ranks(
                 mid: model_results[mid]
                 for mid in sorted(model_results.keys())
                 if all(ds in model_results[mid] for ds in lang_required)
+                and is_eligible_understanding_model(mid)
             }
             cache_key = _language_rank_cache_key(
                 language=language,
@@ -1197,6 +1235,7 @@ def _reorder_columns(
         + orthogonal_cols
         + [
             "generative_type",
+            "model_type",
             "open",
             "commercial",
             "merge",
@@ -1213,4 +1252,6 @@ def _reorder_columns(
         cols += [f"{dataset}_version" for dataset in dataset_cols]
         cols += [f"{dataset}_failures" for dataset in dataset_cols]
         cols += [f"{dataset}_scored" for dataset in dataset_cols]
+    if "model_type" not in df:
+        df = df.assign(model_type=None)
     return df[cols]

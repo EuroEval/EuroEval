@@ -7,18 +7,12 @@ import typing as t
 from functools import cached_property, lru_cache
 from pathlib import Path
 
-from huggingface_hub import (
-    HfApi,
-    hf_hub_download,
-    snapshot_download,
-    try_to_load_from_cache,
-)
+from huggingface_hub import hf_hub_download, snapshot_download, try_to_load_from_cache
 from huggingface_hub.errors import (
     EntryNotFoundError,
     HFValidationError,
     LocalEntryNotFoundError,
     RepositoryNotFoundError,
-    SafetensorsParsingError,
 )
 from huggingface_hub.utils import validate_repo_id
 
@@ -58,8 +52,7 @@ if t.TYPE_CHECKING:
 # A probability floor, to avoid taking the log of zero.
 _LOGPROB_FLOOR = 1e-12
 
-# The marker file that ships with every Laya checkpoint (root or subfolder), used to
-# detect Laya checkpoints structurally rather than through a fixed repo/name list.
+# The marker file that ships with every Laya checkpoint.
 _LAYA_CONFIG_FILENAME = "rl_agent_config.json"
 
 # Laya's own fallback when a checkpoint config doesn't set `max_len` (see
@@ -107,10 +100,15 @@ class ZeroShotClassifierModel(BenchmarkModule):
                 If a revision other than "main" is requested, since the `laya`
                 package cannot load a specific revision.
         """
-        import laya  # noqa: PLC0415
-
         model_id = model_config.model_id
         param = model_config.param
+        if param is not None:
+            raise InvalidModel(
+                "Laya checkpoints do not support # parameters/subfolders; use the "
+                "standalone checkpoint repository or local checkpoint root."
+            )
+        import laya  # noqa: PLC0415
+
         revision = model_config.revision
         if revision not in ("main", ""):
             raise InvalidModel(
@@ -119,27 +117,15 @@ class ZeroShotClassifierModel(BenchmarkModule):
                 "revision -- it always loads the repo's default branch ('main')."
             )
 
-        subfolder = param
         token = get_hf_token(api_key=benchmark_config.api_key)
-
-        # Resolve/download the requested repo (or `#subfolder`) through EuroEval's
-        # configured cache, so `--download-only`, evaluation, and `clear_model_cache`
-        # all agree on where the checkpoint lives, and so that other variants bundled
-        # in the same repo aren't downloaded.
         checkpoint_path = _resolve_checkpoint_path(
-            model_id=model_id,
-            subfolder=subfolder,
-            cache_dir=model_config.model_cache_dir,
-            token=token,
+            model_id=model_id, cache_dir=model_config.model_cache_dir, token=token
         )
-        config = _local_laya_config(
-            directory=Path(checkpoint_path), subfolder=subfolder
-        )
+        config = _local_laya_config(directory=Path(checkpoint_path), subfolder=None)
         self.max_length = (config or {}).get("max_len", _DEFAULT_MAX_LENGTH)
 
         self.agent = laya.Agent(
             model_id_or_path=checkpoint_path,
-            subfolder=subfolder,
             token=token,
             device=str(benchmark_config.device),
         )
@@ -409,28 +395,15 @@ class ZeroShotClassifierModel(BenchmarkModule):
         """
         model_id_components = split_model_id(model_id=model_id)
         param = model_id_components.param
+        if param is not None:
+            raise InvalidModel(
+                "Laya checkpoints do not support # parameters/subfolders; use the "
+                "standalone checkpoint repository or local checkpoint root."
+            )
         bare_model_id = model_id_components.model_id
         model_cache_dir = create_model_cache_dir(
             cache_dir=benchmark_config.cache_dir, model_id=bare_model_id
         )
-        if param is not None:
-            token = get_hf_token(api_key=benchmark_config.api_key)
-            config, definitely_absent = _find_laya_config(
-                model_id=bare_model_id,
-                subfolder=param,
-                token=token,
-                cache_dir=model_cache_dir,
-            )
-            # Only hard-fail when we positively know the marker file is absent (a
-            # reachable Hub said so, or a local/cached lookup came up empty). If the
-            # Hub is merely unreachable, we don't yet know either way, so we let the
-            # benchmark proceed and defer to the checkpoint download/load later.
-            if config is None and definitely_absent:
-                raise InvalidModel(
-                    f"Invalid parameter {param!r} for model {bare_model_id!r}: no "
-                    f"{_laya_config_filename(subfolder=param)!r} was found in that "
-                    "repo."
-                )
 
         return ModelConfig(
             model_id=model_id_components.model_id,
@@ -460,20 +433,24 @@ class ZeroShotClassifierModel(BenchmarkModule):
 
         Returns:
             Whether the model exists.
+
         """
         model_id_components = split_model_id(model_id=model_id)
         bare_model_id = model_id_components.model_id
-        subfolder = model_id_components.param
         token = get_hf_token(api_key=benchmark_config.api_key)
         cache_dir = create_model_cache_dir(
             cache_dir=benchmark_config.cache_dir, model_id=bare_model_id
         )
-
+        if model_id_components.param is not None:
+            # Parameters belong to other backends too (e.g. OpenAI reasoning effort).
+            # Identify a real Laya root so get_model_config can explain its root-only
+            # restriction; don't mistake arbitrary parameterized IDs for Laya models.
+            config, _ = _find_laya_config(
+                model_id=bare_model_id, subfolder=None, token=token, cache_dir=cache_dir
+            )
+            return config is not None
         config, _ = _find_laya_config(
-            model_id=bare_model_id,
-            subfolder=subfolder,
-            token=token,
-            cache_dir=cache_dir,
+            model_id=bare_model_id, subfolder=None, token=token, cache_dir=cache_dir
         )
         if config is None:
             return False
@@ -504,23 +481,10 @@ class ZeroShotClassifierModel(BenchmarkModule):
             return self.benchmark_config.num_parameters
 
         model_id = self.model_config.model_id
-        param = self.model_config.param
         if Path(model_id).is_dir():
-            checkpoint_dir = Path(model_id)
-            if param is not None:
-                checkpoint_dir /= param
-            return _num_params_from_local_checkpoint(checkpoint_dir=checkpoint_dir)
+            return _num_params_from_local_checkpoint(checkpoint_dir=Path(model_id))
 
         token = get_hf_token(api_key=self.benchmark_config.api_key)
-        if param is not None:
-            # A variant's weights live in its own subfolder; read only the header.
-            try:
-                metadata = HfApi().parse_safetensors_file_metadata(
-                    repo_id=model_id, filename=f"{param}/model.safetensors", token=token
-                )
-            except (OSError, EntryNotFoundError, SafetensorsParsingError):
-                return -1
-            return sum(metadata.parameter_count.values())
 
         try:
             num_params = get_num_params_from_safetensors_metadata(
@@ -790,11 +754,11 @@ def _remote_laya_config(
 
 
 def _num_params_from_local_checkpoint(checkpoint_dir: Path) -> int:
-    """Get the number of parameters of a local Laya checkpoint directory.
+    """Get the number of parameters in a local Laya checkpoint directory.
 
     Args:
         checkpoint_dir:
-            The local checkpoint directory, containing `model.safetensors`.
+            The local checkpoint directory containing `model.safetensors`.
 
     Returns:
         The number of parameters in the model.
@@ -806,45 +770,30 @@ def _num_params_from_local_checkpoint(checkpoint_dir: Path) -> int:
         return sum(math.prod(f.get_slice(key).get_shape()) for key in f.keys())
 
 
-def _resolve_checkpoint_path(
-    model_id: str, subfolder: str | None, cache_dir: str, token: str | None
-) -> str:
-    """Resolve the requested checkpoint through EuroEval's own configured cache.
-
-    A local directory is returned unchanged. Otherwise, only the requested repo root
-    (or `#subfolder`) is downloaded into `cache_dir`, so `--download-only`, evaluation,
-    and `clear_model_cache` all agree on where the checkpoint lives, and unrelated
-    variants bundled in the same repo aren't downloaded.
+def _resolve_checkpoint_path(model_id: str, cache_dir: str, token: str | None) -> str:
+    """Resolve a root Laya checkpoint through EuroEval's configured cache.
 
     Args:
         model_id:
-            The Hub repo ID, or a local checkpoint directory.
-        subfolder:
-            The requested `#subfolder`, if any.
+            The Hub repository ID or local checkpoint directory.
         cache_dir:
-            EuroEval's configured model cache directory for this model.
+            EuroEval's configured cache directory.
         token:
             The Hugging Face Hub API token, if any.
 
     Returns:
-        The local path to the downloaded (or already-local) checkpoint.
+        The local checkpoint root path.
     """
     if Path(model_id).is_dir():
         return model_id
-
-    # A requested subfolder is a self-contained variant checkpoint, so the whole
-    # subfolder is downloaded and nothing else -- sibling variants bundled in the
-    # same repo aren't. At the root, only the files a Laya checkpoint actually
-    # ships with are downloaded, since the root of a repo bundling variants also
-    # contains those variants' (much larger) subfolders.
-    allow_patterns = (
-        [f"{subfolder}/**"]
-        if subfolder
-        else [_LAYA_CONFIG_FILENAME, "model.safetensors", "tokenizer/**", "encoder/**"]
-    )
     return snapshot_download(
         repo_id=model_id,
         cache_dir=cache_dir,
-        allow_patterns=allow_patterns,
+        allow_patterns=[
+            "rl_agent_config.json",
+            "model.safetensors",
+            "tokenizer/**",
+            "encoder/**",
+        ],
         token=token,
     )

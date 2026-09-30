@@ -1436,7 +1436,7 @@ class TestVLLMClassification:
             side_effect=lambda completions: completions
         )
         raw_output = SimpleNamespace(outputs=[SimpleNamespace(token_ids=[1])])
-        sampling_params = SimpleNamespace(prompt_logprobs=None)
+        sampling_params = MagicMock(prompt_logprobs=None)
 
         completions, _ = model._parse_completions(
             raw_outputs=[raw_output], sampling_params=sampling_params
@@ -1480,7 +1480,9 @@ class TestVLLMClassification:
             structured = model._setup_structured_outputs(inputs={"text": ["prompt"]})
 
         assert structured is not None
-        assert structured.json["properties"]["label"]["enum"] == ["café", "нет"]
+        schema = structured.json
+        assert isinstance(schema, dict)
+        assert schema["properties"]["label"]["enum"] == ["café", "нет"]
 
 
 class TestVLLMPromptTruncation:

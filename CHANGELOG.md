@@ -7,6 +7,13 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- Removed Laya `#param` checkpoint-subfolder support; Laya models now load from
+  standalone repository roots or local checkpoint roots only.
+
+## [v18.2.0] - 2026-09-29
+
 ### Added
 
 - Added Laya zero-shot classifier support through the `laya` extra and
