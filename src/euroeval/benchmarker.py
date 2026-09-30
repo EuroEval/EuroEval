@@ -1444,7 +1444,6 @@ class Benchmarker:
 
             _resolve_checkpoint_path(
                 model_id=model_config.model_id,
-                subfolder=model_config.param,
                 cache_dir=model_config.model_cache_dir,
                 token=get_hf_token(api_key=benchmark_config.api_key),
             )
@@ -1511,7 +1510,6 @@ class Benchmarker:
 
             _resolve_checkpoint_path(
                 model_id=model_config.model_id,
-                subfolder=model_config.param,
                 cache_dir=model_config.model_cache_dir,
                 token=get_hf_token(api_key=benchmark_config.api_key),
             )
