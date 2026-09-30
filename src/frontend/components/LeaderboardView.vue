@@ -54,7 +54,7 @@ const categoryDescription = computed(() => {
     case "understanding":
       return "This leaderboard contains only the models which can handle all language understanding tasks.";
     case "all_models":
-      return "";
+      return "This leaderboard contains all the models that EuroEval supports.";
   }
 });
 
