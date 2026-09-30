@@ -310,16 +310,16 @@ const downloadCsv = async () => {
       <div
         class="lb-task-scope"
         role="img"
-        aria-label="Task scope narrows from Chat through Generative and Understanding to All Models. This describes task coverage, not model membership."
+        aria-label="Task coverage narrows from Chat through Generative and Understanding to All Models. Model eligibility does not follow this nesting."
       >
-        <span class="lb-task-scope-label">Task scope</span>
-        <span class="lb-task-scope-direction" aria-hidden="true">broader</span>
-        <div class="lb-task-scope-steps" aria-hidden="true">
-          <span v-for="t in categoryTabs" :key="t.id" class="lb-task-scope-step">
-            {{ t.label }}
-          </span>
-        </div>
-        <span class="lb-task-scope-direction" aria-hidden="true">narrower</span>
+        <span class="lb-task-scope-nesting" aria-hidden="true">
+          <span
+            v-for="t in categoryTabs"
+            :key="t.id"
+            :class="['lb-task-scope-ring', { active: activeCategory === t.id }]"
+          />
+        </span>
+        <span>Task coverage: broader → narrower</span>
       </div>
     </div>
 
@@ -617,47 +617,42 @@ const downloadCsv = async () => {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  flex-wrap: wrap;
   color: var(--color-muted);
-  font-size: 0.68rem;
+  font-size: 0.7rem;
 }
 
-.lb-task-scope-label {
-  color: var(--color-text);
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
+.lb-task-scope-nesting {
+  position: relative;
+  flex: none;
+  width: 34px;
+  height: 26px;
 }
 
-.lb-task-scope-direction {
-  font-size: 0.65rem;
-}
-
-.lb-task-scope-steps {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.lb-task-scope-step {
+.lb-task-scope-ring {
+  position: absolute;
   border: 1px solid var(--color-border);
-  border-radius: 4px;
-  background: var(--color-surface);
-  padding: 0.15rem 0.4rem;
-  white-space: nowrap;
+  border-radius: 3px;
 }
 
-.lb-task-scope-step:nth-child(2) {
-  margin-left: 0.25rem;
+.lb-task-scope-ring:nth-child(1) {
+  inset: 0;
 }
 
-.lb-task-scope-step:nth-child(3) {
-  margin-left: 0.5rem;
+.lb-task-scope-ring:nth-child(2) {
+  inset: 3px 4px;
 }
 
-.lb-task-scope-step:nth-child(4) {
-  margin-left: 0.75rem;
+.lb-task-scope-ring:nth-child(3) {
+  inset: 6px 8px;
+}
+
+.lb-task-scope-ring:nth-child(4) {
+  inset: 9px 12px;
+}
+
+.lb-task-scope-ring.active {
+  border-color: var(--color-link);
+  border-width: 2px;
 }
 
 .lb-tab-soon {
