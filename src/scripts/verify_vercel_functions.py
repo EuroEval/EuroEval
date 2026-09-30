@@ -39,6 +39,7 @@ EXPECTED_RUNTIMES = {
     "api/worker/auth/poll": "edge",
     "api/worker/auth/revoke": "edge",
     "api/worker/auth/start": "edge",
+    "api/worker/canary-corpus": "edge",
     "api/worker/claim": "edge",
     "api/worker/coordinator-lock": "edge",
     "api/worker/coordinator-release": "edge",
