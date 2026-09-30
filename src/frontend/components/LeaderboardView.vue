@@ -278,7 +278,7 @@ const downloadCsv = async () => {
       class="lb-tabs"
       role="tablist"
       aria-orientation="vertical"
-      aria-label="Task coverage categories, from broadest to narrowest"
+      aria-label="Model categories nested from All Models to Chat"
     >
       <div class="lb-category-box lb-category-box-all" role="presentation">
         <button
