@@ -608,7 +608,11 @@ def test_benchmark_result_includes_model_release_date(
     benchmark_config: BenchmarkConfig,
 ) -> None:
     """A completed evaluation copies model release metadata into its result."""
-    dated_config = replace(model_config, release_date="2024-02-03")
+    dated_config = replace(
+        model_config,
+        model_id="convaiinnovations/laya-multilingual",
+        release_date="2024-02-03",
+    )
     model = MagicMock()
     model.num_params = 100
     model.model_max_length = 512
@@ -636,6 +640,9 @@ def test_benchmark_result_includes_model_release_date(
 
     assert isinstance(result, BenchmarkResult)
     assert result.release_date == "2024-02-03"
+    assert result.commercially_licensed is True
+    assert result.open is True
+    assert result.trained_from_scratch is False
 
 
 def test_benchmark_results_is_a_list(benchmarker: Benchmarker) -> None:
@@ -1145,7 +1152,7 @@ def test_zero_shot_canary_standalone_reuses_loaded_model_metadata(
     )
     zero_shot_config = replace(
         model_config,
-        model_id="laya-model",
+        model_id="convaiinnovations/laya",
         revision="main",
         fresh=False,
         model_type=ModelType.ZERO_SHOT_CLASSIFIER,
@@ -1168,6 +1175,9 @@ def test_zero_shot_canary_standalone_reuses_loaded_model_metadata(
 
     assert len(results) == 1
     assert results[0].task == CONTAMINATION_DETECTION.name
+    assert results[0].commercially_licensed is True
+    assert results[0].open is True
+    assert results[0].trained_from_scratch is False
     assert load_model_mock.call_count == 1
     assert load_model_mock.call_args.kwargs["dataset_config"].task != (
         CONTAMINATION_DETECTION
