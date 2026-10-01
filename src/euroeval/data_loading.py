@@ -10,7 +10,7 @@ import requests
 from datasets import Dataset, DatasetDict, load_dataset
 from datasets.exceptions import DatasetsError
 from huggingface_hub.errors import HfHubHTTPError, RepositoryNotFoundError
-from numpy.random import Generator
+from numpy.random import Generator, default_rng
 
 from .constants import SUPPORTED_FILE_FORMATS_FOR_LOCAL_DATASETS
 from .exceptions import HuggingFaceHubDown, InvalidBenchmark
@@ -24,7 +24,10 @@ if t.TYPE_CHECKING:
 
 
 def load_data(
-    rng: Generator, dataset_config: "DatasetConfig", benchmark_config: "BenchmarkConfig"
+    rng: Generator,
+    dataset_config: "DatasetConfig",
+    benchmark_config: "BenchmarkConfig",
+    create_validation_split: bool = False,
 ) -> list["DatasetDict"]:
     """Load the raw bootstrapped datasets.
 
@@ -35,9 +38,18 @@ def load_data(
             The configuration for the dataset.
         benchmark_config:
             The configuration for the benchmark.
+        create_validation_split:
+            Whether to derive a validation split from training data when the dataset has
+            no configured validation split. This is intended for non-generative
+            fine-tuning only.
 
     Returns:
         A list of bootstrapped datasets, one for each iteration.
+
+    Raises:
+        InvalidBenchmark:
+            If a validation split is requested but the training data has fewer than two
+            examples.
     """
     dataset = load_raw_data(
         dataset_config=dataset_config,
@@ -59,6 +71,32 @@ def load_data(
                 f"{type(split)}."
             )
             dataset[split_name] = split
+
+    # Derive a deterministic validation holdout from the original training data before
+    # bootstrapping. Keep the original index values to ensure the sets are disjoint.
+    if (
+        create_validation_split
+        and dataset_config.val_split is None
+        and "val" not in dataset
+    ):
+        train = dataset["train"]
+        if len(train) < 2:
+            raise InvalidBenchmark(
+                "At least two training examples are required to create a validation "
+                "split when no validation split is configured."
+            )
+        num_validation_examples = max(1, round(len(train) * 0.2))
+        num_validation_examples = min(num_validation_examples, len(train) - 1)
+        validation_indices = set(
+            default_rng(seed=4242)
+            .choice(len(train), size=num_validation_examples, replace=False)
+            .tolist()
+        )
+        training_indices = [
+            idx for idx in range(len(train)) if idx not in validation_indices
+        ]
+        dataset["val"] = train.select(sorted(validation_indices))
+        dataset["train"] = train.select(training_indices)
 
     if (
         not benchmark_config.evaluate_test_split

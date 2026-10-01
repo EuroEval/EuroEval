@@ -1117,6 +1117,9 @@ class Benchmarker:
                         rng=rng,
                         dataset_config=dataset_config,
                         benchmark_config=benchmark_config,
+                        create_validation_split=(
+                            not model_config.model_type.uses_generation_pipeline
+                        ),
                     )
                     prepared_datasets = model.prepare_datasets(
                         datasets=bootstrapped_datasets, task=dataset_config.task

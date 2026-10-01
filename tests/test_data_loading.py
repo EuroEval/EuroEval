@@ -6,7 +6,7 @@ from functools import partial
 from pathlib import Path
 
 import pytest
-from datasets import DatasetDict
+from datasets import Dataset, DatasetDict
 from numpy.random import default_rng
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 
@@ -16,6 +16,7 @@ from euroeval.data_loading import load_data, load_raw_data
 from euroeval.data_models import BenchmarkConfig, DatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.enums import GenerativeType
+from euroeval.exceptions import InvalidBenchmark
 from euroeval.generation_utils import apply_prompt, extract_few_shot_examples
 from euroeval.tasks import RC
 
@@ -167,6 +168,76 @@ class TestLoadData:
             )["multi-wiki-qa-da"],
             benchmark_config=benchmark_config,
         )
+
+    def test_derived_validation_split_is_deterministic_and_disjoint(
+        self,
+        benchmark_config: BenchmarkConfig,
+        dataset_config: DatasetConfig,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Derive a stable train holdout before bootstrapping, leaving test intact."""
+        dataset_config = dataset_config.model_copy(update={"val_split": None})
+        monkeypatch.setattr(
+            "euroeval.data_loading.load_raw_data",
+            lambda **_: DatasetDict(
+                {
+                    "train": Dataset.from_dict({"text": [str(i) for i in range(16)]}),
+                    "test": Dataset.from_dict({"text": ["test-0", "test-1"]}),
+                }
+            ),
+        )
+        config = benchmark_config.model_copy(
+            update={"num_iterations": 2, "evaluate_test_split": True}
+        )
+
+        result = load_data(
+            rng=default_rng(seed=42),
+            dataset_config=dataset_config,
+            benchmark_config=config,
+            create_validation_split=True,
+        )
+        second_result = load_data(
+            rng=default_rng(seed=42),
+            dataset_config=dataset_config,
+            benchmark_config=config,
+            create_validation_split=True,
+        )
+
+        for iteration in range(2):
+            train_indices = set(result[iteration]["train"]["index"])
+            validation_indices = set(result[iteration]["val"]["index"])
+            assert train_indices.isdisjoint(validation_indices)
+            assert (
+                result[iteration]["val"]["index"]
+                == second_result[iteration]["val"]["index"]
+            )
+            assert set(result[iteration]["test"]["text"]) == {"test-0", "test-1"}
+
+    def test_derived_validation_split_rejects_tiny_training_data(
+        self,
+        benchmark_config: BenchmarkConfig,
+        dataset_config: DatasetConfig,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Reject a one-row training split rather than creating overlapping data."""
+        dataset_config = dataset_config.model_copy(update={"val_split": None})
+        source_dataset = DatasetDict(
+            {
+                "train": Dataset.from_dict({"text": ["only"]}),
+                "test": Dataset.from_dict({"text": ["test"]}),
+            }
+        )
+        monkeypatch.setattr(
+            "euroeval.data_loading.load_raw_data", lambda **_: source_dataset
+        )
+
+        with pytest.raises(InvalidBenchmark, match="At least two training examples"):
+            load_data(
+                rng=default_rng(seed=42),
+                dataset_config=dataset_config,
+                benchmark_config=benchmark_config,
+                create_validation_split=True,
+            )
 
     def test_load_data_is_list_of_dataset_dicts(
         self, datasets: list[DatasetDict]
