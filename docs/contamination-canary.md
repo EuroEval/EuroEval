@@ -79,7 +79,16 @@ storage for audit. Auxiliary records never become public metrics or rankings, an
 datasets/revisions/variants of a selected model are filtered from generated
 leaderboards.
 
-Configure private scoring with owner-only paths:
+Leaderboard scoring automatically discovers the same private key and directory defaults
+as the standalone scoring CLI: `~/.config/euroeval/watermark-audit-v1.key` and
+`~/.local/share/euroeval/private-canary-v5`. Set environment variables to override either
+path when using a nonstandard installation. The exclusions file is loaded from that same
+resolved private directory, so previously confirmed removals remain effective without
+explicit configuration. If the default private files are absent, canary scoring is
+reported as unavailable without aborting unrelated result processing; correct an invalid
+or insecure setup rather than relying on the unavailable result.
+
+Configure alternate owner-only paths when needed:
 
 ```sh
 umask 077

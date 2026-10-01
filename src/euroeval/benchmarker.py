@@ -54,6 +54,33 @@ from .tasks import LA, SPEED
 from .types import ShotModeRequest
 from .utils import enforce_reproducibility, get_hf_token, internet_connection_available
 
+_VERIFIED_MODEL_METADATA = {
+    "convaiinnovations/laya-multilingual": {
+        "commercially_licensed": True,
+        "open": True,
+        "trained_from_scratch": False,
+    },
+    "convaiinnovations/laya": {
+        "commercially_licensed": True,
+        "open": True,
+        "trained_from_scratch": False,
+    },
+}
+
+
+def _verified_model_metadata(model_id: str) -> dict[str, bool]:
+    """Return verified metadata for explicitly recognised model repositories.
+
+    Args:
+        model_id:
+            The exact Hugging Face repository ID, without revision or parameter.
+
+    Returns:
+        The known metadata fields, or an empty mapping for other models.
+    """
+    return _VERIFIED_MODEL_METADATA.get(model_id, {}).copy()
+
+
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
     from .data_models import BenchmarkConfig, ModelConfig, Task
@@ -788,6 +815,7 @@ class Benchmarker:
             num_model_parameters = reference_result.num_model_parameters
             max_sequence_length = reference_result.max_sequence_length
             vocabulary_size = reference_result.vocabulary_size
+        metadata = _verified_model_metadata(model_id=model_config.model_id)
         return BenchmarkResult(
             dataset=result_dataset,
             task=CANARY_RESULT_TASK,
@@ -804,6 +832,9 @@ class Benchmarker:
             generative=model_config.model_type is ModelType.GENERATIVE,
             model_type=model_config.model_type.value,
             inference_engine=model_config.inference_backend.value,
+            commercially_licensed=metadata.get("commercially_licensed"),
+            open=metadata.get("open"),
+            trained_from_scratch=metadata.get("trained_from_scratch"),
             generative_type=(
                 loaded_model.generative_type.value
                 if loaded_model is not None and loaded_model.generative_type is not None
@@ -1131,6 +1162,7 @@ class Benchmarker:
                     dataset_config=dataset_config,
                     evaluate_test_split=benchmark_config.evaluate_test_split,
                 )
+                metadata = _verified_model_metadata(model_id=model_config.model_id)
                 record = BenchmarkResult(
                     dataset=dataset_config.name,
                     task=dataset_config.task.name,
@@ -1144,6 +1176,9 @@ class Benchmarker:
                     generative=model_config.model_type == ModelType.GENERATIVE,
                     model_type=model_config.model_type.value,
                     inference_engine=model_config.inference_backend.value,
+                    commercially_licensed=metadata.get("commercially_licensed"),
+                    open=metadata.get("open"),
+                    trained_from_scratch=metadata.get("trained_from_scratch"),
                     generative_type=(
                         model.generative_type.value
                         if model.generative_type is not None

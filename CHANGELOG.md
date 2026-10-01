@@ -64,6 +64,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Benchmark results for `convaiinnovations/laya-multilingual` and
+  `convaiinnovations/laya` now include their verified licensing, openness and
+  pretrained-backbone metadata in both ordinary and contamination-canary evaluations.
 - LiteLLM contamination-canary collection now probes API capabilities with one request,
   preserves the six-token output bound across token-limit fallbacks and reused-model
   parameter adjustments, and reports collection status and failure reasons without

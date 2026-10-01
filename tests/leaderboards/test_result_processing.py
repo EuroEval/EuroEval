@@ -354,7 +354,7 @@ def test_cache_freshness_load_before_cache_construction(
     monkeypatch.setattr(
         result_processing,
         "_upload_per_model_files",
-        lambda processed_records, upload_to_bucket=False: None,
+        lambda processed_records, upload_to_bucket=False, local_only_label=None: None,
     )
 
     result_processing.process_results(
@@ -428,7 +428,7 @@ def test_process_results_clears_cache_after_upload(
     monkeypatch.setattr(
         result_processing,
         "_upload_per_model_files",
-        lambda processed_records, upload_to_bucket=False: None,
+        lambda processed_records, upload_to_bucket=False, local_only_label=None: None,
     )
 
     result_processing.process_results(
@@ -472,7 +472,11 @@ def test_process_results_keeps_canary_records_out_of_public_uploads() -> None:
 
     assert upload.call_args_list == [
         call(processed_records=[], upload_to_bucket=True),
-        call(processed_records=[canary], upload_to_bucket=False),
+        call(
+            processed_records=[canary],
+            upload_to_bucket=False,
+            local_only_label="private contamination-canary",
+        ),
     ]
 
 
