@@ -100,5 +100,9 @@ class VariableChoiceTrainer(Trainer):
             ignore_keys=ignore_keys,
         )
         if logits is not None and not prediction_loss_only:
-            logits = logits.masked_fill(~choice_mask, torch.finfo(logits.dtype).min)
+            logits = logits.masked_fill(~choice_mask, -torch.inf)
+            # Trainer pads logits from narrower batches with -100 during evaluation
+            # aggregation. Convert to class IDs before aggregation so that padding
+            # cannot outrank valid logits, regardless of their magnitude.
+            logits = logits.argmax(dim=-1)
         return loss, logits, labels
