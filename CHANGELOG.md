@@ -12,6 +12,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Encoder multiple-choice fine-tuning now supports datasets with different numbers of
   answers per question. Batch padding is explicitly masked from training loss and model
   predictions, and BE-WSC and Danish Citizen Tests declare their verified label sets.
+  Multiline answer options in datasets such as ALBA-MCQ are parsed without changing the
+  questions, labels, or published dataset splits.
 
 ### Changed
 

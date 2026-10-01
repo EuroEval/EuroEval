@@ -73,12 +73,15 @@ def test_variable_choice_trainer_evaluate_does_not_argmax_aggregation_padding(
             return 2
 
     class LogitModel(torch.nn.Module):
-        def forward(self, input_ids: torch.FloatTensor) -> SequenceClassifierOutput:
+        def forward(
+            self, input_ids: torch.FloatTensor, labels: torch.LongTensor | None = None
+        ) -> SequenceClassifierOutput:
             """Use input values directly as choice logits.
 
             Returns:
                 A model output containing the choice logits.
             """
+            del labels
             return SequenceClassifierOutput(logits=input_ids)
 
     captured_predictions: list[int] = []
