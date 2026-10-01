@@ -75,11 +75,12 @@ class TestPrepareExamples:
                 num_choices=2,
             )
 
-    def test_mismatched_choice_count_raises(
-        self, mock_tokeniser: MagicMock, valid_batch: dict
-    ) -> None:
-        """A question with wrong number of choices raises `InvalidBenchmark`."""
-        # First question has 2 choices, second has 3
+    def test_mixed_choice_counts_preserved(self, mock_tokeniser: MagicMock) -> None:
+        """Questions with two and three answers retain their true choice counts."""
+        mock_tokeniser.return_value = {
+            "input_ids": [[1], [2], [3], [4], [5]],
+            "attention_mask": [[1], [1], [1], [1], [1]],
+        }
         batch = {
             "text": [
                 "What is 2+2?\nChoices:\na. 3\nb. 4",
@@ -88,15 +89,14 @@ class TestPrepareExamples:
             "label": ["b", "c"],
         }
 
-        with pytest.raises(
-            InvalidBenchmark,
-            match="Multiple-choice example has 3 choices, but this dataset requires 2",
-        ):
-            multiple_choice_classification.prepare_examples(
-                examples=batch,  # ty: ignore[invalid-argument-type]
-                tokeniser=mock_tokeniser,
-                num_choices=2,
-            )
+        result = multiple_choice_classification.prepare_examples(
+            examples=batch,  # ty: ignore[invalid-argument-type]
+            tokeniser=mock_tokeniser,
+            num_choices=4,
+        )
+
+        assert [len(row) for row in result["input_ids"]] == [2, 3]
+        assert result["label"] == [1, 2]
 
     def test_uppercase_gold_label_accepted(
         self, mock_tokeniser: MagicMock, valid_batch: dict

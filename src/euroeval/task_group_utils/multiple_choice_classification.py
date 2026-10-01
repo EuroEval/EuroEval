@@ -14,78 +14,52 @@ if t.TYPE_CHECKING:
 def prepare_examples(
     examples: "BatchEncoding", tokeniser: "PreTrainedTokenizer", num_choices: int = 0
 ) -> dict:
-    """Prepare the features.
+    """Tokenise choices while preserving each question's actual choice count.
 
     Args:
-        examples:
-            The examples to prepare.
-        tokeniser:
-            The tokeniser to use to prepare the examples.
-        num_choices:
-            The number of choices each question is expected to have, taken from the
-            dataset configuration. If 0 (datasets with dynamic labels that do not
-            declare a fixed count), the count is inferred from the first document.
+        examples: The input batch containing text and gold labels.
+        tokeniser: The tokenizer used to encode question-choice pairs.
+        num_choices: Retained for API compatibility; choice counts are inferred per row.
 
     Returns:
-        The prepared examples.
+        Tokenized features grouped by question, with one label per question.
 
     Raises:
-        InvalidBenchmark:
-            If a document has no choices, a number of choices that differs from the
-            count required by the dataset, or a gold label that is not one of the
-            available choices. Note that encoder models require a uniform number of
-            choices across all examples in a dataset (due to
-            `DataCollatorForMultipleChoice` reshaping requirements). If this dataset
-            has variable choice counts, use a generative model instead, which supports
-            variable choices per sample.
+        InvalidBenchmark: If a question has no choices, too many choices, or an
+            invalid gold label.
     """
-    # `datasets.map` hands us a batch of documents at a time, so we iterate over every
-    # document and concatenate the rows they produce. Each document is a multiple-choice
-    # question, with one label per example. We keep each example as
-    # [{input_ids: [[1], [2]]}, {input_ids: [[3], [4]]}].
+    del num_choices
     all_texts: list[str] = []
     all_choices: list[str] = []
+    counts: list[int] = []
     all_labels: list[int] = []
-    expected_num_choices = num_choices
     for doc, gold_letter in zip(examples["text"], examples["label"]):
-        # Recover the bare question and the individual choice texts from the formatted
-        # prompt.
         context_and_question, choices = parse_bare_question_and_choices(doc)
-        len_choices = len(choices)
-        if len_choices == 0:
+        count = len(choices)
+        if count == 0:
             raise InvalidBenchmark("No choices found in the document.")
-
-        if expected_num_choices == 0:
-            expected_num_choices = len_choices
-        elif len_choices != expected_num_choices:
+        if count > len(CHOICE_LETTERS):
             raise InvalidBenchmark(
-                f"Multiple-choice example has {len_choices} choices, but this dataset "
-                f"requires {expected_num_choices} choices. Encoder models require a "
-                "uniform number of choices across all examples (due to "
-                "`DataCollatorForMultipleChoice` reshaping). Either:\n"
-                "  1. Use a generative model (supports variable choices per sample), "
-                "or\n"
-                f"  2. Fix the dataset to have exactly {expected_num_choices} choices "
-                "per question."
+                f"Multiple-choice example has {count} choices, exceeding the maximum "
+                f"of {len(CHOICE_LETTERS)} supported choices."
             )
 
         gold = gold_letter.lower()
-        if gold not in CHOICE_LETTERS[:expected_num_choices]:
+        if gold not in CHOICE_LETTERS[:count]:
             raise InvalidBenchmark(f"Gold label {gold_letter!r} is not a valid choice.")
 
-        all_texts.extend([context_and_question] * len_choices)
+        all_texts.extend([context_and_question] * count)
         all_choices.extend(choices)
+        counts.append(count)
         all_labels.append(CHOICE_LETTERS.index(gold))
 
-    new_examples = tokeniser(text=all_texts, text_pair=all_choices, truncation=True)
-    # regroup the flat (question, choice) rows back into one nested row per question.
-    if expected_num_choices > 0:
-        new_examples = {
-            k: [
-                v[i : i + expected_num_choices]
-                for i in range(0, len(v), expected_num_choices)
-            ]
-            for k, v in new_examples.items()
-        }
+    tokenized = tokeniser(text=all_texts, text_pair=all_choices, truncation=True)
+    offsets = [0]
+    for count in counts:
+        offsets.append(offsets[-1] + count)
+    new_examples = {
+        key: [values[start:end] for start, end in zip(offsets, offsets[1:])]
+        for key, values in tokenized.items()
+    }
     new_examples["label"] = all_labels
     return new_examples

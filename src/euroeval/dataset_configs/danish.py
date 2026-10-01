@@ -93,6 +93,7 @@ DANISH_CITIZEN_TESTS_CONFIG = DatasetConfig(
     source="EuroEval/danish-citizen-tests-updated",
     task=KNOW,
     languages=[DANISH],
+    labels=["a", "b", "c"],
 )
 
 IFEVAL_DA_CONFIG = DatasetConfig(
