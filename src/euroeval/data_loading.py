@@ -72,8 +72,22 @@ def load_data(
             )
             dataset[split_name] = split
 
-    # Derive a deterministic validation holdout from the original training data before
-    # bootstrapping. Keep the original index values to ensure the sets are disjoint.
+    if (
+        not benchmark_config.evaluate_test_split
+        and dataset_config.val_split is not None
+    ):
+        dataset["test"] = dataset["val"]
+
+    splits = [split for split in ["train", "val", "test"] if split in dataset]
+
+    # Remove empty examples from the datasets
+    for text_feature in ["tokens", "text"]:
+        for split in splits:
+            if text_feature in dataset[split].features:
+                dataset = dataset.filter(lambda x: len(x[text_feature]) > 0)
+
+    # Derive a deterministic validation holdout from non-empty training rows before
+    # bootstrapping. Keep original indices so the two partitions remain disjoint.
     if (
         create_validation_split
         and dataset_config.val_split is None
@@ -97,20 +111,7 @@ def load_data(
         ]
         dataset["val"] = train.select(sorted(validation_indices))
         dataset["train"] = train.select(training_indices)
-
-    if (
-        not benchmark_config.evaluate_test_split
-        and dataset_config.val_split is not None
-    ):
-        dataset["test"] = dataset["val"]
-
-    splits = [split for split in ["train", "val", "test"] if split in dataset]
-
-    # Remove empty examples from the datasets
-    for text_feature in ["tokens", "text"]:
-        for split in splits:
-            if text_feature in dataset[split].features:
-                dataset = dataset.filter(lambda x: len(x[text_feature]) > 0)
+        splits.insert(1, "val")
 
     # If we are testing then truncate the test set, unless we need the full set for
     # evaluation
