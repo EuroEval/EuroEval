@@ -7,6 +7,12 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- Encoder multiple-choice fine-tuning now supports datasets with different numbers of
+  answers per question. Batch padding is explicitly masked from training loss and model
+  predictions, and BE-WSC and Danish Citizen Tests declare their verified label sets.
+
 ### Changed
 
 - Removed Laya `#param` checkpoint-subfolder support; Laya models now load from
