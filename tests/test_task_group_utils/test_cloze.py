@@ -34,6 +34,26 @@ class TestLetterToChoiceText:
 class TestParseBareQuestionAndChoices:
     """Tests for `parse_bare_question_and_choices`."""
 
+    def test_multiline_choices_preserve_embedded_numbered_lists(self) -> None:
+        """Numbered lines and blank lines inside options remain part of each choice."""
+        text = (
+            "Give examples?\n"
+            "Options:\n"
+            "a. First list:\n"
+            "1. one\n"
+            "2. two\n"
+            "\n"
+            "b. Second list:\n"
+            "1. three\n"
+            "2. four"
+        )
+        question, choices = cloze.parse_bare_question_and_choices(text)
+        assert question == "Give examples?"
+        assert choices == [
+            "First list:\n1. one\n2. two",
+            "Second list:\n1. three\n2. four",
+        ]
+
     def test_multiline_question(self) -> None:
         """A question spanning multiple lines is preserved in full."""
         text = "Line one.\nLine two?\nChoices:\na. first\nb. second"
@@ -45,6 +65,13 @@ class TestParseBareQuestionAndChoices:
         """Text without enumerated options yields the original text and no choices."""
         question, choices = cloze.parse_bare_question_and_choices("Just a sentence.")
         assert question == "Just a sentence."
+        assert choices == []
+
+    def test_nonsequential_options_are_rejected(self) -> None:
+        """A missing option label does not produce a partial choice list."""
+        text = "Question?\nOptions:\na. first\nc. third"
+        question, choices = cloze.parse_bare_question_and_choices(text)
+        assert question == text
         assert choices == []
 
     def test_question_line_starting_with_enumerator_is_kept(self) -> None:
