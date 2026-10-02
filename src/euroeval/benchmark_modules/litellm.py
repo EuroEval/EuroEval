@@ -115,6 +115,9 @@ VOCAB_SIZE_MAPPING = {
 
 MODEL_MAX_LENGTH_MAPPING = {
     # OpenAI models
+    r"(openai/)?gpt-6-(astra|sol|luna)": 1_050_000,
+    r"(openai/)?gpt-6\.1-sol": 1_050_000,
+    r"(openai/)?gpt-5\.6(-(?:sol|terra|luna))?": 1_050_000,
     r"(openai/)?gpt-5\.4-(mini|nano).*": 400_000,
     r"(openai/)?gpt-5\.[45].*": 1_050_000,
     r"(openai/)?gpt-5\.2.*": 400_000,
@@ -131,17 +134,22 @@ MODEL_MAX_LENGTH_MAPPING = {
     r"(openai/)?o[2-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_000,
     r"(openai/)?gpt-4\.1.*": 1_047_576,
     # Anthropic models
+    r"(anthropic/)?claude-(opus|sonnet)-5": 1_000_000,
+    r"(anthropic/)?claude-(fable|mythos)-5(?:-1)?": 1_000_000,
+    r"(anthropic/)?claude-(opus|sonnet)-5-5": 1_000_000,
     r"(anthropic/)?claude-opus-4-8": 1_000_000,
     r"(anthropic/)?claude-sonnet-4-6": 1_000_000,
     r"(anthropic/)?claude-haiku-4-5": 200_000,
     r"(anthropic/)?claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]{8}": 200_000,
     r"(anthropic/)?claude-(opus|sonnet|haiku)-[1-9](-[1-9])?-[0-9]{8}": 200_000,
     # Gemini models
+    r"(gemini/)?gemini-3\.1-(pro-preview(?:-customtools)?|flash-lite)": 1_048_576,
+    r"(gemini/)?gemini-3\.(?:5-(?:flash|flash-lite)|[678]-flash)": 1_048_576,
     r"(gemini/)?gemini-1\.5-flash.*": 1_048_576,
     r"(gemini/)?gemini-1\.5-pro.*": 2_097_152,
-    r"(gemini/)?gemini-[23](\.[05])?.*": 1_048_576,
+    r"(gemini/)?gemini-(?:2(?:\.[05])?|3(?:\.0)?)-(flash|pro).*": 1_048_576,
     # xAI models
-    r"(xai/)?grok.*": 131_072,
+    r"(xai/)?grok-4\.(5|6|7)": 500_000,
     # DeepSeek models
     # Source: HF `deepseek-ai/DeepSeek-V4.1-Flash` `config.json` (context length).
     r"deepseek/deepseek-flash.*": 1_048_576,
@@ -223,6 +231,7 @@ MODEL_RELEASE_DATE_MAPPING = {
     r"(openai/)?gpt-5\.5-pro": "2026-04-23",
     r"(openai/)?gpt-5\.6(?:-(?:sol|terra|luna))?": "2026-07-09",
     r"(openai/)?gpt-6-astra": "2026-09-03",
+    r"(openai/)?gpt-6-(?:sol|luna)": "2026-09-22",
     # Anthropic
     r"(anthropic/)?claude-3-opus": "2024-03-04",
     r"(anthropic/)?claude-3-sonnet": "2024-03-04",
@@ -271,6 +280,7 @@ MODEL_RELEASE_DATE_MAPPING = {
     r"(xai/)?grok-4\.20.*": "2026-03-10",
     r"(xai/)?grok-4\.5.*": "2026-07-08",
     r"(xai/)?grok-4\.6.*": "2026-08-12",
+    r"(xai/)?grok-4\.7": "2026-09-17",
     # DeepSeek
     # Source: repo creation date for `deepseek-ai/DeepSeek-V4.1-Flash`.
     r"deepseek/deepseek-flash.*": "2026-09-10",
