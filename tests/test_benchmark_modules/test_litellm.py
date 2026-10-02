@@ -191,10 +191,10 @@ def test_api_context_length_override_takes_precedence(
     dataset_config: DatasetConfig, benchmark_config: BenchmarkConfig
 ) -> None:
     """An explicit context-length override takes precedence over vendor metadata."""
+    benchmark_config = dataclasses.replace(benchmark_config, max_context_length=8_000)
     model_config = LiteLLMModel.get_model_config(
         model_id="openai/gpt-6-astra", benchmark_config=benchmark_config
     )
-    benchmark_config.max_context_length = 8_000
     model = LiteLLMModel(
         model_config=model_config,
         dataset_config=dataset_config,
@@ -211,6 +211,7 @@ def test_api_context_length_override_takes_precedence(
         ("openai/gpt-6-astra", 1_050_000),
         ("openai/gpt-6-sol", 1_050_000),
         ("openai/gpt-6-luna", 1_050_000),
+        ("openai/gpt-6.1-sol", 1_050_000),
         ("gpt-5.6", 1_050_000),
         ("openai/gpt-5.6-sol", 1_050_000),
         ("openai/gpt-5.6-terra", 1_050_000),
@@ -233,11 +234,16 @@ def test_api_context_length_override_takes_precedence(
         ("anthropic/claude-sonnet-5-5", 1_000_000),
         ("xai/grok-4.5", 500_000),
         ("xai/grok-4.6", 500_000),
+        ("xai/grok-4.7", 500_000),
         # Similar-looking IDs with no verified context length must not inherit one.
         ("openai/gpt-5.6-nano", -1),
         ("openai/gpt-6-beta", -1),
+        ("openai/gpt-6.1-astra", -1),
         ("gemini/gemini-3.9-flash", -1),
-        ("xai/grok-4.7", -1),
+        ("gemini/gemini-3.5-pro", -1),
+        ("gemini/gemini-3.5-flash-preview", -1),
+        ("gemini/gemini-3.8-flash-lite", -1),
+        ("xai/grok-4.7-fast", -1),
     ],
 )
 def test_api_model_context_lengths(
@@ -247,6 +253,7 @@ def test_api_model_context_lengths(
     benchmark_config: BenchmarkConfig,
 ) -> None:
     """Documented API IDs expose their context lengths through the model interface."""
+    benchmark_config = dataclasses.replace(benchmark_config, max_context_length=None)
     model_config = LiteLLMModel.get_model_config(
         model_id=model_id, benchmark_config=benchmark_config
     )
@@ -308,8 +315,11 @@ def test_deepseek_provider_prefix_is_preserved_for_custom_api(
         ("xai/grok-4.20", "2026-03-10"),
         ("xai/grok-4.5", "2026-07-08"),
         ("xai/grok-4.6", "2026-08-12"),
+        ("xai/grok-4.7", "2026-09-17"),
         ("openai/gpt-5.6-luna", "2026-07-09"),
         ("openai/gpt-5.6", "2026-07-09"),
+        ("openai/gpt-6-sol", "2026-09-22"),
+        ("openai/gpt-6-luna", "2026-09-22"),
         ("provider/undated-model", None),
         ("provider/model-2024-99-99", None),
     ],
