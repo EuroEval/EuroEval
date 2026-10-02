@@ -16,6 +16,9 @@
   "grammatical-error-detection": [
     "Micro-average F1-score"
   ],
+  "hallucination": [
+    "Hallucination rate"
+  ],
   "instruction-following": [
     "Instruction Accuracy"
   ],

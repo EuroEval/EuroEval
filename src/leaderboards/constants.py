@@ -217,6 +217,7 @@ LEADERBOARD_TASKS: list[str] = [
     "common-sense-reasoning",
     "simplification",
     "european-values",
+    "hallucination",
     "instruction-following",
     "tool-calling",
     "logical-reasoning",

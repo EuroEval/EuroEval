@@ -261,6 +261,14 @@ visible (Robustness). Adding a model can only shift `pooled_std(d)` and the per-
 leader locally, so its effect on other models is small and shrinks as more models are
 added (Minimal Change).
 
+### Orthogonal task score intervals
+
+Optional orthogonal-task scores are shown with an approximate 95% interval when every
+contributing dataset has at least two finite samples and a finite, nonnegative standard
+error. The displayed halfwidth is `1.96 × sqrt(sum(SEᵢ²)) / number of datasets`, assuming
+independent datasets. This approximation is separate from the bootstrap intervals for
+rank scores; if any uncertainty is unavailable, only the point score is shown.
+
 ### Rank
 
 Alongside the mean rank score the leaderboard shows an integer **Rank** column — a
@@ -329,9 +337,9 @@ above:
   dataset, EuroEval keeps the one produced by the newest framework version and drops
   validation-split results whenever a test-split result is available, so no model is
   counted twice.
-- **Orthogonal tasks.** A few evaluations — currently the European values survey — probe
-  a model's values rather than its capabilities. These are reported in their own columns
-  and are deliberately left out of the rank score.
+- **Orthogonal tasks.** The European values survey and hallucination detection probe
+  properties not captured by task performance. These are reported in their own columns and
+  deliberately left out of eligibility and the rank score. Missing results are allowed.
 - **Inference speed.** EuroEval can also measure inference speed (in GPT-2 tokens per
   second), but speed is reported separately and kept out of the rank score, which
   reflects quality only.
