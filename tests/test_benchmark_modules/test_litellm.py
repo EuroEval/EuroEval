@@ -187,6 +187,79 @@ def _make_response(content: str = "positive") -> MagicMock:
     return response
 
 
+def test_api_context_length_override_takes_precedence(
+    dataset_config: DatasetConfig, benchmark_config: BenchmarkConfig
+) -> None:
+    """An explicit context-length override takes precedence over vendor metadata."""
+    model_config = LiteLLMModel.get_model_config(
+        model_id="openai/gpt-6-astra", benchmark_config=benchmark_config
+    )
+    benchmark_config.max_context_length = 8_000
+    model = LiteLLMModel(
+        model_config=model_config,
+        dataset_config=dataset_config,
+        benchmark_config=benchmark_config,
+        log_metadata=False,
+    )
+
+    assert model.model_max_length == 8_000
+
+
+@pytest.mark.parametrize(
+    ("model_id", "expected"),
+    [
+        ("openai/gpt-6-astra", 1_050_000),
+        ("openai/gpt-6-sol", 1_050_000),
+        ("openai/gpt-6-luna", 1_050_000),
+        ("gpt-5.6", 1_050_000),
+        ("openai/gpt-5.6-sol", 1_050_000),
+        ("openai/gpt-5.6-terra", 1_050_000),
+        ("openai/gpt-5.6-luna", 1_050_000),
+        ("gemini/gemini-3.1-pro-preview", 1_048_576),
+        ("gemini/gemini-3.1-pro-preview-customtools", 1_048_576),
+        ("gemini/gemini-3.1-flash-lite", 1_048_576),
+        ("gemini/gemini-3.5-flash", 1_048_576),
+        ("gemini/gemini-3.5-flash-lite", 1_048_576),
+        ("gemini/gemini-3.6-flash", 1_048_576),
+        ("gemini/gemini-3.7-flash", 1_048_576),
+        ("gemini/gemini-3.8-flash", 1_048_576),
+        ("anthropic/claude-opus-5", 1_000_000),
+        ("anthropic/claude-sonnet-5", 1_000_000),
+        ("anthropic/claude-fable-5", 1_000_000),
+        ("anthropic/claude-mythos-5", 1_000_000),
+        ("anthropic/claude-fable-5-1", 1_000_000),
+        ("anthropic/claude-mythos-5-1", 1_000_000),
+        ("anthropic/claude-opus-5-5", 1_000_000),
+        ("anthropic/claude-sonnet-5-5", 1_000_000),
+        ("xai/grok-4.5", 500_000),
+        ("xai/grok-4.6", 500_000),
+        # Similar-looking IDs with no verified context length must not inherit one.
+        ("openai/gpt-5.6-nano", -1),
+        ("openai/gpt-6-beta", -1),
+        ("gemini/gemini-3.9-flash", -1),
+        ("xai/grok-4.7", -1),
+    ],
+)
+def test_api_model_context_lengths(
+    model_id: str,
+    expected: int,
+    dataset_config: DatasetConfig,
+    benchmark_config: BenchmarkConfig,
+) -> None:
+    """Documented API IDs expose their context lengths through the model interface."""
+    model_config = LiteLLMModel.get_model_config(
+        model_id=model_id, benchmark_config=benchmark_config
+    )
+    model = LiteLLMModel(
+        model_config=model_config,
+        dataset_config=dataset_config,
+        benchmark_config=benchmark_config,
+        log_metadata=False,
+    )
+
+    assert model.model_max_length == expected
+
+
 def test_deepseek_provider_prefix_is_preserved_for_custom_api(
     benchmark_config: BenchmarkConfig,
 ) -> None:

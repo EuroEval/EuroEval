@@ -115,6 +115,13 @@ VOCAB_SIZE_MAPPING = {
 
 MODEL_MAX_LENGTH_MAPPING = {
     # OpenAI models
+    # GPT-6 model pages: https://developers.openai.com/api/docs/models/gpt-6-astra,
+    # https://developers.openai.com/api/docs/models/gpt-6-sol, and
+    # https://developers.openai.com/api/docs/models/gpt-6-luna (1,050,000 tokens).
+    r"(openai/)?gpt-6-(astra|sol|luna)": 1_050_000,
+    # GPT-5.6's unsuffixed alias routes to Sol; the vendor documents Sol, Terra and
+    # Luna as the model variants. Their context windows are 1,050,000 tokens.
+    r"(openai/)?gpt-5\.6(-(?:sol|terra|luna))?": 1_050_000,
     r"(openai/)?gpt-5\.4-(mini|nano).*": 400_000,
     r"(openai/)?gpt-5\.[45].*": 1_050_000,
     r"(openai/)?gpt-5\.2.*": 400_000,
@@ -131,17 +138,28 @@ MODEL_MAX_LENGTH_MAPPING = {
     r"(openai/)?o[2-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_000,
     r"(openai/)?gpt-4\.1.*": 1_047_576,
     # Anthropic models
+    # Current model overview: https://platform.claude.com/docs/en/about-claude/models/overview
+    # The documented Claude 5, Fable/Mythos 5.1, and Opus/Sonnet 5.5 variants have
+    # 1M-token context windows. Keep this list specific to avoid labeling older models.
+    r"(anthropic/)?claude-(opus|sonnet)-5": 1_000_000,
+    r"(anthropic/)?claude-(fable|mythos)-5(?:-1)?": 1_000_000,
+    r"(anthropic/)?claude-(opus|sonnet)-5-5": 1_000_000,
     r"(anthropic/)?claude-opus-4-8": 1_000_000,
     r"(anthropic/)?claude-sonnet-4-6": 1_000_000,
     r"(anthropic/)?claude-haiku-4-5": 200_000,
     r"(anthropic/)?claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]{8}": 200_000,
     r"(anthropic/)?claude-(opus|sonnet|haiku)-[1-9](-[1-9])?-[0-9]{8}": 200_000,
     # Gemini models
+    # Model pages for Gemini 3.1, 3.5, 3.6, 3.7 and 3.8 list 1,048,576 input
+    # tokens. Exact stable/preview IDs avoid assigning that limit to unrelated versions.
+    r"(gemini/)?gemini-3\.1-(pro-preview(?:-customtools)?|flash-lite)": 1_048_576,
+    r"(gemini/)?gemini-3\.(5|6|7|8)-(flash|flash-lite)": 1_048_576,
     r"(gemini/)?gemini-1\.5-flash.*": 1_048_576,
     r"(gemini/)?gemini-1\.5-pro.*": 2_097_152,
-    r"(gemini/)?gemini-[23](\.[05])?.*": 1_048_576,
+    r"(gemini/)?gemini-(2(?:\.0)?|2\.5|3(?:\.0)?|3\.5)-(flash|pro).*": 1_048_576,
     # xAI models
-    r"(xai/)?grok.*": 131_072,
+    # https://docs.x.ai/developers/models/grok-4.5 and /grok-4.6 document 500,000.
+    r"(xai/)?grok-4\.(5|6)": 500_000,
     # DeepSeek models
     # Source: HF `deepseek-ai/DeepSeek-V4.1-Flash` `config.json` (context length).
     r"deepseek/deepseek-flash.*": 1_048_576,
