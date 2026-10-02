@@ -235,7 +235,6 @@ def test_api_context_length_override_takes_precedence(
         ("xai/grok-4.5", 500_000),
         ("xai/grok-4.6", 500_000),
         ("xai/grok-4.7", 500_000),
-        # Similar-looking IDs with no verified context length must not inherit one.
         ("openai/gpt-5.6-nano", -1),
         ("openai/gpt-6-beta", -1),
         ("openai/gpt-6.1-astra", -1),
