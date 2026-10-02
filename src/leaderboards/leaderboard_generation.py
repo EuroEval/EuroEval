@@ -333,10 +333,13 @@ def _create_leaderboard_headers(
     processed_tasks_per_language: dict[str, set[str]] = {}
     seen_version_col = False
     for id_, col in enumerate(df.columns):
-        if (task := col.replace(" ", "-").lower()) in ORTHOGONAL_TASKS:
+        if (
+            task := col.replace(" ", "-").lower().removesuffix("-rate")
+        ) in ORTHOGONAL_TASKS:
             top_header.append("")
+            task_page = "hallucination-detection" if task == "hallucination" else task
             second_header.append(
-                f'<a href="https://euroeval.com/tasks/{task}">{col}</a>'
+                f'<a href="https://euroeval.com/tasks/{task_page}">{col}</a>'
             )
 
         # Replace dataset columns with task links in the first header, and dataset links
@@ -663,7 +666,7 @@ def _build_model_row_data(
     leaderboard_configs: dict[str, dict[str, list[str]]],
     category_to_datasets: dict[str, list[str]],
     category_to_orthogonal_datasets: dict[str, dict[str, str]],
-    orthogonal_scores_by_plain: dict[str, dict[str, float]],
+    orthogonal_scores_by_plain: dict[str, dict[str, tuple[float, float | None]]],
     metadata_dict: dict[str, dict],
 ) -> dict[str, t.Any]:
     """Build the data dictionary entry for a single model row.
@@ -734,13 +737,12 @@ def _build_model_row_data(
         for task in category_to_orthogonal_datasets[category].values()
     }
 
-    plain_id = plain_model_id(model_id)
-    orthogonal_scores = defaultdict(list)
-    for dataset, orthogonal_main_score in orthogonal_scores_by_plain.get(
-        plain_id, {}
+    orthogonal_scores: dict[str, list[tuple[float, float | None]]] = defaultdict(list)
+    for dataset, score_and_std_err in orthogonal_scores_by_plain.get(
+        plain_model_id(model_id), {}
     ).items():
         orthogonal_task = category_to_orthogonal_datasets[category][dataset]
-        orthogonal_scores[orthogonal_task].append(orthogonal_main_score)
+        orthogonal_scores[orthogonal_task].append(score_and_std_err)
 
     total_results = {}
     for dataset in category_to_datasets[category]:
@@ -765,10 +767,21 @@ def _build_model_row_data(
             score_str = "-"
         total_results[dataset] = score_str
 
-    orthogonal_task_scores = {
-        task: np.mean(score_list).item() if len(score_list) > 0 else float("nan")
-        for task, score_list in orthogonal_scores.items()
-    }
+    orthogonal_task_scores: dict[str, float | str] = {}
+    for task, dataset_scores in orthogonal_scores.items():
+        if not dataset_scores:
+            orthogonal_task_scores[task] = float("nan")
+            continue
+        point = np.mean([score for score, _ in dataset_scores]).item()
+        uncertainties = [std_err for _, std_err in dataset_scores]
+        if all(std_err is not None for std_err in uncertainties):
+            sum_squared_errors = sum(
+                std_err**2 for std_err in uncertainties if std_err is not None
+            )
+            halfwidth = 1.96 * math.sqrt(sum_squared_errors) / len(dataset_scores)
+            orthogonal_task_scores[task] = f"{point:,.2f} ± {halfwidth:,.2f}"
+        else:
+            orthogonal_task_scores[task] = point
 
     metadata = {
         key: value
@@ -838,7 +851,7 @@ def _collect_orthogonal_scores(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     category: str,
     category_to_orthogonal_datasets: dict[str, dict[str, str]],
-) -> dict[str, dict[str, float]]:
+) -> dict[str, dict[str, tuple[float, float | None]]]:
     """Collect orthogonal scores keyed by plain model id.
 
     Args:
@@ -850,18 +863,30 @@ def _collect_orthogonal_scores(
             Category to orthogonal datasets mapping.
 
     Returns:
-        Dictionary mapping plain model ids to orthogonal scores.
+        Dictionary mapping model ids and datasets to scores and usable standard errors.
     """
-    orthogonal_scores_by_plain: dict[str, dict[str, float]] = defaultdict(dict)
+    orthogonal_scores_by_model: dict[str, dict[str, tuple[float, float | None]]] = (
+        defaultdict(dict)
+    )
     for other_model_id, other_results in model_results.items():
-        other_plain_id = plain_model_id(other_model_id)
         for dataset in category_to_orthogonal_datasets[category]:
             if dataset not in other_results:
                 continue
-            main_score = other_results[dataset][0][1]
-            if not math.isnan(main_score):
-                orthogonal_scores_by_plain[other_plain_id][dataset] = main_score
-    return orthogonal_scores_by_plain
+            raw_scores, main_score, std_err = other_results[dataset][0]
+            if not math.isfinite(main_score):
+                continue
+            usable_std_err = (
+                std_err
+                if len([score for score in raw_scores if math.isfinite(score)]) >= 2
+                and math.isfinite(std_err)
+                and std_err >= 0
+                else None
+            )
+            orthogonal_scores_by_model[plain_model_id(other_model_id)][dataset] = (
+                main_score,
+                usable_std_err,
+            )
+    return orthogonal_scores_by_model
 
 
 def _compute_eligible_models_and_ranks(
@@ -1115,7 +1140,11 @@ def _create_simplified_and_rename(
         | {"mean_rank_score": "Rank score"}
         | {rank_col: rank_col.title() for rank_col in rank_cols[2:]}
         | {
-            orthogonal_task.replace("-", "_"): orthogonal_task.replace("-", " ").title()
+            orthogonal_task.replace("-", "_"): (
+                "Hallucination Rate"
+                if orthogonal_task == "hallucination"
+                else orthogonal_task.replace("-", " ").title()
+            )
             for orthogonal_task in category_to_orthogonal_datasets[category].values()
         }
     )

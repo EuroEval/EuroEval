@@ -7,6 +7,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Hallucination rate is now shown as an optional orthogonal percentage in chat leaderboards;
+  missing results do not affect eligibility, rank or aggregate score.
+
 ### Fixed
 
 - LiteLLM model context-length metadata now covers the documented GPT-5.6/GPT-6/6.1 Sol,

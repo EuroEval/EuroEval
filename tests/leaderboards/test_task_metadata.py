@@ -55,17 +55,19 @@ def test_category_includes_task_generative_excludes_instruct_exclusive() -> None
     )
 
 
-def test_category_includes_task_only_chat_shows_orthogonal_tasks() -> None:
-    """Orthogonal tasks (e.g. european-values) only show on chat."""
-    assert not category_includes_task(
-        category=LeaderboardCategory.GENERATIVE, task="european-values"
-    )
-    assert not category_includes_task(
-        category=LeaderboardCategory.ALL_MODELS, task="european-values"
-    )
-    assert not category_includes_task(
-        category=LeaderboardCategory.UNDERSTANDING, task="european-values"
-    )
+def test_category_includes_task_orthogonal_tasks_on_chat_and_generative() -> None:
+    """Orthogonal tasks show on Chat and Generative, but not other categories."""
+    for task in ("hallucination", "european-values"):
+        assert category_includes_task(category=LeaderboardCategory.CHAT, task=task)
+        assert category_includes_task(
+            category=LeaderboardCategory.GENERATIVE, task=task
+        )
+        assert not category_includes_task(
+            category=LeaderboardCategory.ALL_MODELS, task=task
+        )
+        assert not category_includes_task(
+            category=LeaderboardCategory.UNDERSTANDING, task=task
+        )
 
 
 def test_dataset_sources_omits_blank_sources_but_maps_valid_sources(
@@ -83,6 +85,12 @@ def test_dataset_sources_omits_blank_sources_but_maps_valid_sources(
         assert task_metadata.dataset_sources() == {"conll-nl": "EuroEval/conll-nl-mini"}
     finally:
         task_metadata.dataset_sources.cache_clear()
+
+
+def test_hallucination_is_included_in_leaderboard_dataset_selection() -> None:
+    """Official RAGTruth results are available to chat leaderboards."""
+    assert "hallucination" in LEADERBOARD_TASKS
+    assert "ragtruth-da" in official_datasets_for_language("danish")["hallucination"]
 
 
 def test_task_category_european_values_is_exempt_from_instruct_exclusive() -> None:

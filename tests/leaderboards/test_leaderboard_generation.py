@@ -14,6 +14,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from euroeval.dataset_configs.danish import (
+    ANGRY_TWEETS_CONFIG,
+    RAGTRUTH_DA_CONFIG,
+    VALEU_DA_CONFIG,
+)
 from src.leaderboards import leaderboard_generation
 from src.leaderboards.enums import LeaderboardCategory
 from src.leaderboards.leaderboard_generation import (
@@ -563,12 +568,72 @@ def _make_dummy_results(
 class TestOrthogonalDatasetsByCategory:
     """Tests for orthogonal bonus-column scoping in _build_category_dataset_maps."""
 
-    def test_orthogonal_datasets_only_populated_for_chat(self) -> None:
-        """Orthogonal datasets are only mapped for chat; other categories get {}."""
+    def test_hallucination_result_is_optional_and_does_not_change_ranking(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Hallucination results are optional and leave rank eligibility unchanged."""
+        hallucination_task = RAGTRUTH_DA_CONFIG.task.name
+        hallucination_dataset = RAGTRUTH_DA_CONFIG.name
+        assert hallucination_task == "hallucination"
+        assert hallucination_dataset == "ragtruth-da"
+        config = {
+            "danish": {
+                "sentiment-classification": ["angry-tweets"],
+                hallucination_task: [hallucination_dataset],
+            }
+        }
+        category = LeaderboardCategory.CHAT
+        _, orthogonal = _build_category_dataset_maps(
+            categories=[category], leaderboard_configs=config
+        )
+        standard = {"angry-tweets": [([70.0, 80.0], 75.0, 0.0)]}
+        with_hallucination = {
+            "model-a": standard | {hallucination_dataset: [([0.2], 0.2, 0.0)]},
+            "model-b": standard,
+        }
+        without_hallucination = {"model-a": standard, "model-b": standard}
+
+        monkeypatch.setattr(leaderboard_generation, "NUM_BOOTSTRAPS", 20)
+
+        def rank_inputs(
+            model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
+        ) -> tuple[dict, dict, dict]:
+            eligible, _, ranks, ordinal_ranks = _compute_eligible_models_and_ranks(
+                model_results=model_results,
+                category=category,
+                category_to_datasets={
+                    category: ["angry-tweets", hallucination_dataset]
+                },
+                category_to_orthogonal_datasets=orthogonal,
+                leaderboard_configs=config,
+            )
+            return eligible, ranks, ordinal_ranks
+
+        with_result = rank_inputs(with_hallucination)
+        without_result = rank_inputs(without_hallucination)
+        assert set(with_result[0]) == {"model-a", "model-b"}
+        assert set(without_result[0]) == {"model-a", "model-b"}
+        assert with_result[1:] == without_result[1:]
+        assert with_result[1]
+        assert with_result[2]
+
+        collected = leaderboard_generation._collect_orthogonal_scores(
+            model_results=with_hallucination,
+            category=category,
+            category_to_orthogonal_datasets=orthogonal,
+        )
+        assert collected["model-a"][hallucination_dataset] == (0.2, None)
+        assert "model-b" not in collected
+
+    def test_orthogonal_datasets_populated_for_chat_and_generative(self) -> None:
+        """Orthogonal datasets map to Chat and Generative only."""
+        hallucination_task = RAGTRUTH_DA_CONFIG.task.name
+        hallucination_dataset = RAGTRUTH_DA_CONFIG.name
         leaderboard_configs = {
             "danish": {
                 "sentiment-classification": ["angry-tweets"],
                 "european-values": ["valeu-da"],
+                hallucination_task: [hallucination_dataset],
             }
         }
         _, category_to_orthogonal_datasets = _build_category_dataset_maps(
@@ -582,9 +647,13 @@ class TestOrthogonalDatasetsByCategory:
         )
 
         assert category_to_orthogonal_datasets[LeaderboardCategory.CHAT] == {
-            "valeu-da": "european-values"
+            "valeu-da": "european-values",
+            hallucination_dataset: hallucination_task,
         }
-        assert category_to_orthogonal_datasets[LeaderboardCategory.GENERATIVE] == {}
+        assert category_to_orthogonal_datasets[LeaderboardCategory.GENERATIVE] == {
+            "valeu-da": "european-values",
+            hallucination_dataset: hallucination_task,
+        }
         assert category_to_orthogonal_datasets[LeaderboardCategory.ALL_MODELS] == {}
         assert category_to_orthogonal_datasets[LeaderboardCategory.UNDERSTANDING] == {}
 
@@ -712,6 +781,173 @@ def test_generate_all_models_csv_preserves_classifier_icon(
     all_models = pd.read_csv(tmp_path / "english_all_models_simplified.csv")
     icons = all_models.set_index("model")["generative_type"].to_dict()
     assert icons == {"org/laya": "🎯", "org/encoder": "🔍"}
+
+
+def test_generate_generative_csv_keeps_optional_orthogonal_scores_out_of_rank(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Generate both optional columns without changing either model's rank."""
+    standard = ANGRY_TWEETS_CONFIG.name
+    values = VALEU_DA_CONFIG.name
+    hallucination = RAGTRUTH_DA_CONFIG.name
+    configs = {
+        ANGRY_TWEETS_CONFIG.task.name: [standard],
+        VALEU_DA_CONFIG.task.name: [values],
+        RAGTRUTH_DA_CONFIG.task.name: [hallucination],
+    }
+    scores = {
+        "org/a (zero-shot)": {standard: [([70.0, 80.0], 75.0, 0.0)]},
+        "org/b (zero-shot)": {standard: [([60.0, 70.0], 65.0, 0.0)]},
+    }
+    metadata = {
+        model_id: {
+            "generative_type": "instruction_tuned",
+            "model_type": None,
+            "parameters": 100,
+            "vocabulary_size": math.nan,
+            "context": math.nan,
+            "release_date": None,
+            "open": True,
+            "commercial": False,
+            "merge": False,
+            "trained_from_scratch": False,
+        }
+        for model_id in scores
+    }
+    monkeypatch.setattr(leaderboard_generation, "OUTPUT_DIR", tmp_path)
+    monkeypatch.setattr(leaderboard_generation, "NUM_BOOTSTRAPS", 20)
+    monkeypatch.setattr(leaderboard_generation, "load_raw_results", lambda: [{}])
+    monkeypatch.setattr(
+        leaderboard_generation, "group_results_by_model", lambda results: scores
+    )
+    monkeypatch.setattr(
+        leaderboard_generation, "extract_model_metadata", lambda results: metadata
+    )
+    monkeypatch.setattr(
+        leaderboard_generation,
+        "official_datasets_for_language",
+        lambda language: configs,
+    )
+
+    def generate() -> pd.DataFrame:
+        """Generate and read the public leaderboard CSV.
+
+        Returns:
+            The generated Generative leaderboard.
+        """
+        leaderboard_generation.generate_leaderboard(
+            leaderboard_name="danish",
+            language_names=["danish"],
+            categories=[LeaderboardCategory.GENERATIVE],
+            force=True,
+        )
+        return pd.read_csv(tmp_path / "danish_generative.csv", skiprows=1)
+
+    without = generate()
+    scores["org/a (zero-shot)"] |= {
+        values: [([30.0, 40.0], 35.0, 0.1)],
+        hallucination: [([0.4, 0.6], 0.5, 0.0)],
+    }
+    scores["org/b (zero-shot)"] |= {
+        values: [([35.0], 35.0, 0.0)],
+        hallucination: [([0.4, 0.6], 0.5, math.nan)],
+    }
+    with_scores = generate()
+
+    pd.testing.assert_frame_equal(
+        without[["Model", "Rank", "Rank score"]],
+        with_scores[["Model", "Rank", "Rank score"]],
+    )
+    assert len(with_scores) == 2
+    values_col = next(col for col in with_scores if "European Values" in col)
+    hallucination_col = (
+        '<a href="https://euroeval.com/tasks/hallucination-detection">'
+        "Hallucination Rate</a>"
+    )
+    assert hallucination_col in with_scores.columns
+    assert with_scores[values_col].tolist() == ["35.00 ± 0.20", "35.0"]
+    assert with_scores[hallucination_col].tolist() == ["0.50 ± 0.00", "0.5"]
+
+
+def test_generate_leaderboard_projects_orthogonal_scores_to_plain_model_variants(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Project orthogonal points and uncertainty to every variant row."""
+    standard = ANGRY_TWEETS_CONFIG.name
+    values = VALEU_DA_CONFIG.name
+    hallucination = RAGTRUTH_DA_CONFIG.name
+    configs = {
+        ANGRY_TWEETS_CONFIG.task.name: [standard],
+        VALEU_DA_CONFIG.task.name: [values],
+        RAGTRUTH_DA_CONFIG.task.name: [hallucination],
+    }
+    scores = {
+        "org/model": {standard: [([70.0, 80.0], 75.0, 0.0)]},
+        "org/model (zero-shot)": {standard: [([70.0, 80.0], 75.0, 0.0)]},
+    }
+    metadata = {
+        model_id: {
+            "generative_type": "instruction_tuned",
+            "model_type": None,
+            "parameters": 100,
+            "vocabulary_size": math.nan,
+            "context": math.nan,
+            "release_date": None,
+            "open": True,
+            "commercial": False,
+            "merge": False,
+            "trained_from_scratch": False,
+        }
+        for model_id in scores
+    }
+    monkeypatch.setattr(leaderboard_generation, "OUTPUT_DIR", tmp_path)
+    monkeypatch.setattr(leaderboard_generation, "NUM_BOOTSTRAPS", 20)
+    monkeypatch.setattr(leaderboard_generation, "load_raw_results", lambda: [{}])
+    monkeypatch.setattr(
+        leaderboard_generation, "group_results_by_model", lambda results: scores
+    )
+    monkeypatch.setattr(
+        leaderboard_generation, "extract_model_metadata", lambda results: metadata
+    )
+    monkeypatch.setattr(
+        leaderboard_generation,
+        "official_datasets_for_language",
+        lambda language: configs,
+    )
+
+    def generate() -> pd.DataFrame:
+        """Generate and read the public leaderboard CSV.
+
+        Returns:
+            The generated Generative leaderboard.
+        """
+        leaderboard_generation.generate_leaderboard(
+            leaderboard_name="danish",
+            language_names=["danish"],
+            categories=[LeaderboardCategory.GENERATIVE],
+            force=True,
+        )
+        return pd.read_csv(tmp_path / "danish_generative.csv", skiprows=1)
+
+    without = generate()
+    scores["org/model (zero-shot)"] |= {
+        values: [([30.0, 40.0], 35.0, 0.1)],
+        hallucination: [([0.5], 0.5, math.nan)],
+    }
+    with_scores = generate()
+
+    pd.testing.assert_frame_equal(
+        without[["Model", "Rank", "Rank score"]],
+        with_scores[["Model", "Rank", "Rank score"]],
+    )
+    assert len(with_scores) == 2
+    values_col = next(col for col in with_scores if "European Values" in col)
+    hallucination_col = (
+        '<a href="https://euroeval.com/tasks/hallucination-detection">'
+        "Hallucination Rate</a>"
+    )
+    assert with_scores[values_col].tolist() == ["35.00 ± 0.20", "35.00 ± 0.20"]
+    assert with_scores[hallucination_col].tolist() == [0.5, 0.5]
 
 
 def test_release_date_is_emitted_for_frontend_visualizations() -> None:

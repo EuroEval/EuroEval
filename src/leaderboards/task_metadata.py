@@ -42,7 +42,7 @@ def category_includes_task(category: LeaderboardCategory, task: str) -> bool:
         True if the task is scored within the category.
     """
     if task in ORTHOGONAL_TASKS:
-        return category == LeaderboardCategory.CHAT
+        return category in {LeaderboardCategory.CHAT, LeaderboardCategory.GENERATIVE}
     if category == LeaderboardCategory.CHAT:
         return True
     if category == LeaderboardCategory.GENERATIVE:
@@ -67,9 +67,8 @@ def task_category(task_name: str) -> str:
     A task is "instruct_exclusive" when it's restricted to instruction-tuned/
     reasoning models (`GenerativeType.BASE` isn't in its
     `default_allowed_generative_types`), unless it's also in
-    `euroeval.constants.ORTHOGONAL_TASKS`, in which case it keeps its
-    existing bonus-column treatment on Generative/All-models (e.g.
-    european-values) rather than being excluded from them entirely.
+    `euroeval.constants.ORTHOGONAL_TASKS`. Orthogonal tasks remain optional
+    columns on Chat and Generative rather than being excluded entirely.
 
     Args:
         task_name:
