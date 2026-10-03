@@ -588,13 +588,6 @@ class Benchmarker:
             # cached validation result cannot satisfy an encoder test evaluation.
             model_benchmark_config = benchmark_config
             if model_config.model_type is ModelType.ENCODER:
-                if not benchmark_config.evaluate_test_split:
-                    log_once(
-                        "Encoder models are always scored on the test split; the "
-                        "validation-split option does not change their final scores. "
-                        "Validation remains reserved for early stopping.",
-                        level=logging.WARNING,
-                    )
                 model_benchmark_config = replace(
                     benchmark_config, evaluate_test_split=True
                 )
