@@ -781,7 +781,9 @@ def _build_model_row_data(
             halfwidth = 1.96 * math.sqrt(sum_squared_errors) / len(dataset_scores)
             orthogonal_task_scores[task] = f"{point:,.2f} ± {halfwidth:,.2f}"
         else:
-            orthogonal_task_scores[task] = f"{point:,.2f}"
+            orthogonal_task_scores[task] = (
+                f"{point:,.2f}" if task == "european-values" else point
+            )
 
     metadata = {
         key: value
