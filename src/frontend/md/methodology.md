@@ -95,8 +95,9 @@ Every finetune uses the same model-agnostic recipe:
 - **Reproducibility:** a fixed seed per iteration (4242 plus the iteration index) with
   deterministic backend flags set.
 
-The validation split is used only for early stopping; the reported score always comes
-from the test split. Inputs longer than the 8,192-token context limit are truncated.
+The validation split is used only for early stopping; encoder reported scores always
+come from the test split, regardless of the configured evaluation split. Inputs longer
+than the 8,192-token context limit are truncated.
 
 ## Prompt Structure
 

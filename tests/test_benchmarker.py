@@ -5,7 +5,7 @@ import os
 import subprocess
 import sys
 import time
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 from dataclasses import replace
 from pathlib import Path
 from shutil import rmtree
@@ -868,6 +868,118 @@ def test_encoder_canary_standalone_uses_supported_metadata_task(
     )
 
 
+def test_encoder_final_scoring_receives_test_split_config(
+    benchmarker: Benchmarker,
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A validation request still sends test-split config to the final scorer."""
+    encoder_config = replace(model_config, model_type=ModelType.ENCODER)
+    config = replace(
+        benchmark_config, datasets=[dataset_config], evaluate_test_split=False
+    )
+    scoring_configs: list[BenchmarkConfig] = []
+    monkeypatch.setattr(
+        benchmarker, "_build_benchmark_config", lambda **_kwargs: config
+    )
+    monkeypatch.setattr(
+        benchmarker, "_fetch_model_configs", lambda *_args: [encoder_config]
+    )
+    monkeypatch.setattr(
+        benchmarker,
+        "_create_model_dataset_mapping",
+        lambda model_configs, datasets: {model: datasets for model in model_configs},
+    )
+    monkeypatch.setattr(
+        benchmarker,
+        "_prepare_pending_benchmarks",
+        lambda **_kwargs: (
+            MagicMock(),
+            [(ShotMode.ZERO_SHOT, dataset_config)],
+            [],
+            None,
+        ),
+    )
+    monkeypatch.setattr(
+        benchmarker,
+        "_benchmark_single",
+        lambda **kwargs: scoring_configs.append(kwargs["benchmark_config"]),
+    )
+    monkeypatch.setattr(
+        benchmarker, "_handle_benchmark_result", lambda **kwargs: (1, 0, 0, False)
+    )
+
+    benchmarker.benchmark(model="encoder-model", evaluate_test_split=False)
+
+    assert len(scoring_configs) == 1
+    assert scoring_configs[0].evaluate_test_split is True
+
+
+@pytest.mark.parametrize(
+    "requested_test_split",
+    [None, False, True],
+    ids=["default-validation-request", "explicit-validation-request", "test-request"],
+)
+def test_encoder_uses_test_split_in_public_benchmark_flow(
+    benchmarker: Benchmarker,
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+    requested_test_split: bool | None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Encoder split override reaches cache planning even for val requests."""
+    encoder_config = replace(model_config, model_type=ModelType.ENCODER)
+    config = replace(benchmark_config, datasets=[dataset_config])
+    observed: list[BenchmarkConfig] = []
+
+    monkeypatch.setattr(
+        benchmarker,
+        "_build_benchmark_config",
+        lambda **kwargs: replace(
+            config,
+            evaluate_test_split=(
+                config.evaluate_test_split
+                if kwargs.get("evaluate_test_split") is None
+                else kwargs["evaluate_test_split"]
+            ),
+        ),
+    )
+    monkeypatch.setattr(
+        benchmarker, "_fetch_model_configs", lambda *_args: [encoder_config]
+    )
+    monkeypatch.setattr(
+        benchmarker,
+        "_create_model_dataset_mapping",
+        lambda model_configs, datasets: {model: datasets for model in model_configs},
+    )
+
+    def record_cache_identity(
+        model_config: ModelConfig,
+        benchmark_plan: Sequence[tuple[ShotMode, DatasetConfig]],
+        benchmark_config: BenchmarkConfig,
+        benchmark_results: Sequence[BenchmarkResult],
+    ) -> tuple[list[tuple[ShotMode, DatasetConfig]], list[BenchmarkResult]]:
+        _ = model_config, benchmark_plan, benchmark_results
+        observed.append(benchmark_config)
+        return [], []
+
+    monkeypatch.setattr(
+        "euroeval.benchmarker.filter_existing_benchmarks", record_cache_identity
+    )
+    if requested_test_split is None:
+        benchmarker.benchmark(model="encoder-model")
+    else:
+        benchmarker.benchmark(
+            model="encoder-model", evaluate_test_split=requested_test_split
+        )
+
+    assert observed
+    assert all(config.evaluate_test_split is True for config in observed)
+
+
 @pytest.mark.parametrize(
     argnames=["few_shot", "evaluate_test_split", "benchmark_results", "expected"],
     argvalues=[
@@ -1132,6 +1244,53 @@ def test_laya_download_only_resolves_root_checkpoint(
     resolver_mock.assert_called_once_with(
         model_id=zero_shot_config.model_id, cache_dir=str(model_cache_dir), token=None
     )
+
+
+def test_mixed_models_keep_non_encoder_split_setting(
+    benchmarker: Benchmarker,
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The encoder override does not change generative or classifier split choices."""
+    configs = [
+        replace(model_config, model_id="encoder", model_type=ModelType.ENCODER),
+        replace(model_config, model_id="generative", model_type=ModelType.GENERATIVE),
+        replace(
+            model_config,
+            model_id="classifier",
+            model_type=ModelType.ZERO_SHOT_CLASSIFIER,
+        ),
+    ]
+    config = replace(
+        benchmark_config, datasets=[dataset_config], evaluate_test_split=False
+    )
+    observed: dict[str, bool] = {}
+    monkeypatch.setattr(
+        benchmarker, "_build_benchmark_config", lambda **_kwargs: config
+    )
+    monkeypatch.setattr(benchmarker, "_fetch_model_configs", lambda *_args: configs)
+    monkeypatch.setattr(
+        benchmarker,
+        "_create_model_dataset_mapping",
+        lambda model_configs, datasets: {model: datasets for model in model_configs},
+    )
+
+    def record_cache_plan(
+        model_config: ModelConfig,
+        datasets: Sequence[DatasetConfig],
+        benchmark_config: BenchmarkConfig,
+        existing_results: Sequence[BenchmarkResult],
+    ) -> tuple[None, list[tuple[ShotMode, DatasetConfig]], list[BenchmarkResult], None]:
+        _ = datasets, existing_results
+        observed[model_config.model_id] = benchmark_config.evaluate_test_split
+        return None, [], [], None
+
+    monkeypatch.setattr(benchmarker, "_prepare_pending_benchmarks", record_cache_plan)
+    benchmarker.benchmark(model=[config.model_id for config in configs])
+
+    assert observed == {"encoder": True, "generative": False, "classifier": False}
 
 
 def test_zero_shot_canary_standalone_reuses_loaded_model_metadata(
