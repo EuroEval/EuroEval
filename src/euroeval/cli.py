@@ -132,8 +132,10 @@ from .languages import get_all_languages
     "--evaluate-test-split/--evaluate-val-split",
     default=False,
     show_default=True,
-    help="""Whether to only evaluate on the test split. Only use this for your final
-    evaluation, as the test split should not be used for development.""",
+    help="""Whether to evaluate on the test split. Encoder models always use the test
+    split for final scores regardless of this option; validation is used only for early
+    stopping. This option controls the split for generative models and zero-shot
+    classifiers. Use validation for model development, not final evaluation.""",
 )
 @click.option(
     "--few-shot/--zero-shot",
