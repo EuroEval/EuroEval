@@ -402,8 +402,9 @@ class Benchmarker:
                 Whether to clear the model cache after benchmarking each model. Defaults
                 to the value specified when initialising the benchmarker.
             evaluate_test_split:
-                Whether to evaluate the test split of the datasets. Defaults to the
-                value specified when initialising the benchmarker.
+                Whether to evaluate the test split of the datasets. Encoder models
+                always use test for final scores, while validation is used for early
+                stopping. Other model types use the configured value.
             few_shot:
                 The per-call shot policy. True and False select one concrete mode;
                 ``ShotMode.AUTO`` explicitly selects automatic planning. ``None``
@@ -581,6 +582,23 @@ class Benchmarker:
             if not datasets:
                 continue
 
+            # Encoders use validation for early stopping, but their final reported
+            # scores must always come from the published test split. Apply this
+            # model-specific override before result-cache identity is computed so a
+            # cached validation result cannot satisfy an encoder test evaluation.
+            model_benchmark_config = benchmark_config
+            if model_config.model_type is ModelType.ENCODER:
+                if not benchmark_config.evaluate_test_split:
+                    log_once(
+                        "Encoder models are always scored on the test split; the "
+                        "validation-split option does not change their final scores. "
+                        "Validation remains reserved for early stopping.",
+                        level=logging.WARNING,
+                    )
+                model_benchmark_config = replace(
+                    benchmark_config, evaluate_test_split=True
+                )
+
             loaded_model: "BenchmarkModule | None" = None
             model_finished = 0
             model_skipped = 0
@@ -593,7 +611,7 @@ class Benchmarker:
                     self._prepare_pending_benchmarks(
                         model_config=model_config,
                         datasets=datasets,
-                        benchmark_config=benchmark_config,
+                        benchmark_config=model_benchmark_config,
                         existing_results=existing_results,
                     )
                 )
@@ -611,7 +629,7 @@ class Benchmarker:
                     pending_benchmarks
                 ):
                     mode_config = replace(
-                        benchmark_config, few_shot=shot_mode is ShotMode.FEW_SHOT
+                        model_benchmark_config, few_shot=shot_mode is ShotMode.FEW_SHOT
                     )
                     self._update_benchmark_config_for_dataset(
                         dataset_config=dataset_config, benchmark_config=mode_config

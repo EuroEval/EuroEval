@@ -21,6 +21,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   training split for datasets without a configured validation split. The holdout is
   disjoint from training, leaves the published test split unchanged, and is not applied
   to generative evaluations.
+- Encoder final scores now always come from the published test split, regardless of
+  validation-split configuration; validation remains available for early stopping.
 - Encoder multiple-choice fine-tuning now supports datasets with different numbers of
   answers per question. Batch padding is explicitly masked from training loss and model
   predictions, and BE-WSC and Danish Citizen Tests declare their verified label sets.
