@@ -849,7 +849,7 @@ def test_generate_generative_csv_keeps_optional_orthogonal_scores_out_of_rank(
         hallucination: [([0.4, 0.6], 0.5, 0.0)],
     }
     scores["org/b (zero-shot)"] |= {
-        values: [([35.0], 35.0, 0.0)],
+        values: [([35.678], 35.678, math.nan)],
         hallucination: [([0.4, 0.6], 0.5, math.nan)],
     }
     with_scores = generate()
@@ -865,7 +865,7 @@ def test_generate_generative_csv_keeps_optional_orthogonal_scores_out_of_rank(
         "Hallucination Rate</a>"
     )
     assert hallucination_col in with_scores.columns
-    assert with_scores[values_col].tolist() == ["35.00 ± 0.20", "35.0"]
+    assert with_scores[values_col].tolist() == ["35.00 ± 0.20", "35.68"]
     assert with_scores[hallucination_col].tolist() == ["0.50 ± 0.00", "0.5"]
 
 
