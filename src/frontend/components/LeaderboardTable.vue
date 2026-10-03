@@ -256,7 +256,8 @@ const cellDisplayHtml = (cell: { html: string; text: string; sortKey: number | s
         ? cell.sortKey
         : Number.parseFloat(cell.text);
     if (Number.isFinite(num)) {
-      return col.key.toLowerCase() === "hallucination rate"
+      return col.key.toLowerCase() === "european values" ||
+        col.key.toLowerCase() === "hallucination rate"
         ? `${num.toFixed(2)}%`
         : `${Math.round(num)}%`;
     }
