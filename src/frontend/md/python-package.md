@@ -166,6 +166,21 @@ Concrete, end-to-end tasks. Each is self-contained — copy, adapt, run.
     euroeval --model meta-llama/Llama-3.1-8B-Instruct --language da
     ```
 
+??? example "Evaluate hosted Jev System One"
+
+    Use the exact EuroEval model ID `typesafe/jev` for direct zero-shot sequence or
+    multiple-choice classification through Typesafe System One. EuroEval sends the
+    documented upstream alias `jev-latest` in the Typesafe request payload. Set
+    `TYPESAFE_API_KEY` in the environment; `--api-key` is reserved for Hugging Face and
+    is never sent to Typesafe:
+
+    ```bash
+    TYPESAFE_API_KEY="<your-typesafe-api-key>" euroeval --model typesafe/jev
+    ```
+
+    The hosted model does not expose verified size metadata and cannot be used for the
+    speed benchmark.
+
 ??? example "Evaluate a model served by vLLM, Ollama, or another OpenAI-compatible API"
 
     Point `--api-base` at the inference server.  For Ollama, prefix the model name with
