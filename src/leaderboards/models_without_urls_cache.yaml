@@ -24,5 +24,6 @@ skole-gpt-mixtral: false
 syvai/danskgpt-chat-llama3-70b: false
 syvai/llama3-da-base: false
 test_model: true
+typesafe/jev: false
 xai/grok-3-beta: false
 xai/grok-3-mini-beta: false
