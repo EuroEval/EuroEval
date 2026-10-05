@@ -30,7 +30,8 @@ from .base import BenchmarkModule, _extract_labels_from_generation_helper
 from .zero_shot_classifier import ZeroShotClassifierModel
 
 _SYSTEM_ONE_URL = "https://api.typesafe.ai/v1/systemone"
-_MODEL_ID = "jev-latest"
+_MODEL_ID = "typesafe/jev"
+_UPSTREAM_MODEL_ID = "jev-latest"
 _LOGPROB_FLOOR = 1e-12
 
 if t.TYPE_CHECKING:
@@ -171,7 +172,7 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
             headers={"Authorization": f"Bearer {self.api_key}"},
             json={
                 "state": state,
-                "model": _MODEL_ID,
+                "model": _UPSTREAM_MODEL_ID,
                 "questions": {
                     "name": {
                         "type": "choice",
@@ -261,7 +262,7 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
         Returns:
             Whether the ID selects Jev System One.
         """
-        return split_model_id(model_id=model_id).model_id == _MODEL_ID
+        return model_id == _MODEL_ID
 
     @cached_property
     def model_max_length(self) -> int:

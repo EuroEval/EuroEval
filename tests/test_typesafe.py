@@ -21,7 +21,7 @@ def test_api_key_must_come_from_typesafe_environment(
     """The Hugging Face --api-key value is never used as the Typesafe key."""
     monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)
     config = TypesafeSystemOneModel.get_model_config(
-        model_id="jev-latest", benchmark_config=benchmark_config
+        model_id="typesafe/jev", benchmark_config=benchmark_config
     )
 
     with pytest.raises(NeedsAdditionalArgument, match="TYPESAFE_API_KEY"):
@@ -86,7 +86,7 @@ def _make_model(
         The configured hosted model.
     """
     config = TypesafeSystemOneModel.get_model_config(
-        model_id="jev-latest", benchmark_config=benchmark_config
+        model_id="typesafe/jev", benchmark_config=benchmark_config
     )
     return TypesafeSystemOneModel(
         model_config=config,
@@ -176,19 +176,26 @@ def test_model_config_routes_jev_and_rejects_suffixes(
 ) -> None:
     """Only the exact hosted model identifier is accepted for evaluation."""
     config = TypesafeSystemOneModel.get_model_config(
-        model_id="jev-latest", benchmark_config=benchmark_config
+        model_id="typesafe/jev", benchmark_config=benchmark_config
     )
 
     assert config.inference_backend == InferenceBackend.TYPESAFE
     assert config.model_type == ModelType.ZERO_SHOT_CLASSIFIER
     assert TypesafeSystemOneModel.model_exists(
-        model_id="jev-latest", benchmark_config=benchmark_config
+        model_id="typesafe/jev", benchmark_config=benchmark_config
     )
     assert not TypesafeSystemOneModel.model_exists(
         model_id="some-other-model", benchmark_config=benchmark_config
     )
-    for suffixed_id in ("jev-latest@main", "jev-latest#subfolder"):
-        assert TypesafeSystemOneModel.model_exists(
+    assert not TypesafeSystemOneModel.model_exists(
+        model_id="jev-latest", benchmark_config=benchmark_config
+    )
+    with pytest.raises(InvalidModel, match="exact model ID"):
+        TypesafeSystemOneModel.get_model_config(
+            model_id="jev-latest", benchmark_config=benchmark_config
+        )
+    for suffixed_id in ("typesafe/jev@main", "typesafe/jev#subfolder"):
+        assert not TypesafeSystemOneModel.model_exists(
             model_id=suffixed_id, benchmark_config=benchmark_config
         )
         with pytest.raises(InvalidModel, match="exact model ID"):
@@ -205,7 +212,7 @@ def test_public_model_loading_routes_to_typesafe(
     """The shared model loader instantiates the dedicated hosted backend."""
     monkeypatch.setenv("TYPESAFE_API_KEY", "typesafe-token")
     config = TypesafeSystemOneModel.get_model_config(
-        model_id="jev-latest", benchmark_config=benchmark_config
+        model_id="typesafe/jev", benchmark_config=benchmark_config
     )
 
     assert isinstance(

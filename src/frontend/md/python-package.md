@@ -168,12 +168,14 @@ Concrete, end-to-end tasks. Each is self-contained — copy, adapt, run.
 
 ??? example "Evaluate hosted Jev System One"
 
-    Use the exact model ID `jev-latest` for direct zero-shot sequence or multiple-choice
-    classification through Typesafe System One. Set `TYPESAFE_API_KEY` in the
-    environment; `--api-key` is reserved for Hugging Face and is never sent to Typesafe:
+    Use the exact EuroEval model ID `typesafe/jev` for direct zero-shot sequence or
+    multiple-choice classification through Typesafe System One. EuroEval sends the
+    documented upstream alias `jev-latest` in the Typesafe request payload. Set
+    `TYPESAFE_API_KEY` in the environment; `--api-key` is reserved for Hugging Face and
+    is never sent to Typesafe:
 
     ```bash
-    TYPESAFE_API_KEY="<your-typesafe-api-key>" euroeval --model jev-latest
+    TYPESAFE_API_KEY="<your-typesafe-api-key>" euroeval --model typesafe/jev
     ```
 
     The hosted model does not expose verified size metadata and cannot be used for the
