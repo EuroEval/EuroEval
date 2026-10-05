@@ -1,5 +1,6 @@
 """Tests for the `generation` module."""
 
+import copy
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -103,8 +104,10 @@ def test_single_sample_generation_preserves_predictions_and_progress(
         TypesafeSystemOneModel.batching_preference == BatchingPreference.SINGLE_SAMPLE
     )
 
+    dataset_config = copy.copy(dataset_config)
+    benchmark_config = copy.copy(benchmark_config)
     dataset_config.prompt_label_mapping = {}
-    dataset_config.bootstrap_samples = False
+    dataset_config.bootstrap_samples = True
     benchmark_config.progress_bar = progress_bar
     benchmark_config.use_bits_per_character = False
     benchmark_config.debug = False
@@ -116,6 +119,7 @@ def test_single_sample_generation_preserves_predictions_and_progress(
     )
     model.extract_labels_from_generation.return_value = ["positive"]
     cache = MagicMock()
+    cache.__contains__.return_value = False
     progress_flags: list[bool] = []
 
     def track_progress(iterable: object, disable: bool) -> object:
