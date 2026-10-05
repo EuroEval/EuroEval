@@ -3,6 +3,7 @@
 import collections.abc as c
 import math
 import os
+import time
 import typing as t
 from functools import cached_property
 
@@ -33,6 +34,8 @@ _SYSTEM_ONE_URL = "https://api.typesafe.ai/v1/systemone"
 _MODEL_ID = "typesafe/jev"
 _UPSTREAM_MODEL_ID = "jev-latest"
 _LOGPROB_FLOOR = 1e-12
+_MAX_REQUEST_ATTEMPTS = 3
+_MAX_RETRY_AFTER = 10.0
 
 if t.TYPE_CHECKING:
     from transformers.trainer import Trainer
@@ -167,23 +170,52 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
             InvalidBenchmark:
                 If the response does not contain probabilities for every label.
         """
-        response = requests.post(
-            _SYSTEM_ONE_URL,
-            headers={"Authorization": f"Bearer {self.api_key}"},
-            json={
-                "state": state,
-                "model": _UPSTREAM_MODEL_ID,
-                "questions": {
-                    "name": {
-                        "type": "choice",
-                        "instructions": self.buffer["instructions"],
-                        "criteria": criteria,
-                    }
-                },
-            },
-            timeout=120,
-        )
-        response.raise_for_status()
+        for attempt in range(1, _MAX_REQUEST_ATTEMPTS + 1):
+            try:
+                response = requests.post(
+                    _SYSTEM_ONE_URL,
+                    headers={"Authorization": f"Bearer {self.api_key}"},
+                    json={
+                        "state": state,
+                        "model": _UPSTREAM_MODEL_ID,
+                        "questions": {
+                            "name": {
+                                "type": "choice",
+                                "instructions": self.buffer["instructions"],
+                                "criteria": criteria,
+                            }
+                        },
+                    },
+                    timeout=120,
+                )
+                response.raise_for_status()
+            except requests.HTTPError as error:
+                response = error.response
+                status = response.status_code if response is not None else None
+                if status not in {429} and (status is None or status < 500):
+                    raise self._request_failure(
+                        cause=f"HTTP status {status}", attempts=attempt, input_count=1
+                    ) from None
+                if attempt == _MAX_REQUEST_ATTEMPTS:
+                    raise self._request_failure(
+                        cause=f"HTTP status {status}", attempts=attempt, input_count=1
+                    ) from None
+                self._wait_before_retry(
+                    attempt=attempt,
+                    retry_after=(
+                        response.headers.get("Retry-After")
+                        if response is not None
+                        else None
+                    ),
+                )
+            except (requests.ConnectionError, requests.Timeout) as error:
+                if attempt == _MAX_REQUEST_ATTEMPTS:
+                    raise self._request_failure(
+                        cause=type(error).__name__, attempts=attempt, input_count=1
+                    ) from None
+                self._wait_before_retry(attempt=attempt, retry_after=None)
+            else:
+                break
         try:
             probabilities = response.json()["answers"]["name"]["probabilities"]
         except (KeyError, TypeError) as error:
@@ -214,6 +246,50 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
                 )
             parsed[label] = probability
         return parsed
+
+    def _request_failure(
+        self, *, cause: str, attempts: int, input_count: int
+    ) -> InvalidModel:
+        """Create a safe, contextual error for a failed service request.
+
+        Args:
+            cause:
+                HTTP status or exception class describing the failure.
+            attempts:
+                Number of requests made.
+            input_count:
+                Number of text inputs in the generation batch.
+
+        Returns:
+            An informative model error without request content or credentials.
+        """
+        return InvalidModel(
+            f"Typesafe model '{self.model_config.model_id}' request failed "
+            f"after {attempts} "
+            f"attempt{'s' if attempts != 1 else ''} for {input_count} text "
+            f"input: {cause}."
+        )
+
+    @staticmethod
+    def _wait_before_retry(*, attempt: int, retry_after: str | None) -> None:
+        """Pause briefly before retrying, honouring a bounded numeric Retry-After.
+
+        Args:
+            attempt:
+                Failed attempt number, starting at one.
+            retry_after:
+                Optional Retry-After header value in seconds.
+        """
+        delay = min(0.5 * (2 ** (attempt - 1)), _MAX_RETRY_AFTER)
+        if retry_after is not None:
+            try:
+                requested_delay = float(retry_after)
+            except ValueError:
+                pass
+            else:
+                if math.isfinite(requested_delay):
+                    delay = min(max(requested_delay, 0.0), _MAX_RETRY_AFTER)
+        time.sleep(delay)
 
     @property
     def generative_type(self) -> GenerativeType | None:

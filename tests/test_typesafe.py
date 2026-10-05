@@ -2,9 +2,11 @@
 
 import copy
 import dataclasses
+import traceback
 import typing as t
 
 import pytest
+import requests
 
 from euroeval.benchmark_modules.typesafe import TypesafeSystemOneModel
 from euroeval.data_models import BenchmarkConfig, DatasetConfig
@@ -96,6 +98,68 @@ def _make_model(
     )
 
 
+def test_generate_does_not_retry_permanent_http_status(
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Authentication failures are reported immediately without a retry."""
+    monkeypatch.setenv("TYPESAFE_API_KEY", "typesafe-token")
+    response = requests.Response()
+    response.status_code = 401
+    calls = 0
+
+    def post(*_args: object, **_kwargs: object) -> requests.Response:
+        nonlocal calls
+        calls += 1
+        return response
+
+    monkeypatch.setattr("euroeval.benchmark_modules.typesafe.requests.post", post)
+    monkeypatch.setattr("euroeval.benchmark_modules.typesafe.time.sleep", pytest.fail)
+
+    with pytest.raises(InvalidModel, match="typesafe/jev.*1 attempt.*HTTP status 401"):
+        _make_model(benchmark_config, dataset_config).generate(
+            inputs={"text": ["A review"]}
+        )
+    assert calls == 1
+
+
+def test_generate_exhausts_transient_statuses(
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Repeated server failures become a contextual InvalidModel."""
+    monkeypatch.setenv("TYPESAFE_API_KEY", "typesafe-token")
+    response = requests.Response()
+    response.status_code = 520
+    response.reason = "private request content"
+    calls = 0
+
+    def post(*_args: object, **_kwargs: object) -> requests.Response:
+        nonlocal calls
+        calls += 1
+        return response
+
+    monkeypatch.setattr("euroeval.benchmark_modules.typesafe.requests.post", post)
+    delays: list[float] = []
+    monkeypatch.setattr("euroeval.benchmark_modules.typesafe.time.sleep", delays.append)
+
+    with pytest.raises(
+        InvalidModel, match="typesafe/jev.*3 attempts.*HTTP status 520"
+    ) as error:
+        _make_model(benchmark_config, dataset_config).generate(
+            inputs={"text": ["private text"]}
+        )
+
+    displayed = "".join(traceback.format_exception(error.value))
+    assert "private request content" not in displayed
+    assert "private text" not in displayed
+    assert "HTTP status 520" in displayed
+    assert calls == 3
+    assert delays == [0.5, 1.0]
+
+
 @pytest.mark.parametrize("probability", [-0.1, 1.1, float("nan"), float("inf")])
 def test_generate_rejects_invalid_probabilities(
     benchmark_config: BenchmarkConfig,
@@ -138,6 +202,76 @@ def test_generate_rejects_malformed_response(
         _make_model(benchmark_config, dataset_config).generate(
             inputs={"text": ["A review"]}
         )
+
+
+def test_generate_retries_connection_errors_then_reports_failure(
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Connection failures are retried and reported without private details."""
+    monkeypatch.setenv("TYPESAFE_API_KEY", "typesafe-token")
+    failure = requests.ConnectionError("private connection detail")
+    calls = 0
+
+    def post(*_args: object, **_kwargs: object) -> _Response:
+        nonlocal calls
+        calls += 1
+        raise failure
+
+    monkeypatch.setattr("euroeval.benchmark_modules.typesafe.requests.post", post)
+    delays: list[float] = []
+    monkeypatch.setattr("euroeval.benchmark_modules.typesafe.time.sleep", delays.append)
+
+    with pytest.raises(
+        InvalidModel, match="typesafe/jev.*3 attempts.*ConnectionError"
+    ) as error:
+        _make_model(benchmark_config, dataset_config).generate(
+            inputs={"text": ["A review"]}
+        )
+
+    displayed = "".join(traceback.format_exception(error.value))
+    assert "private connection detail" not in displayed
+    assert "ConnectionError" in displayed
+    assert calls == 3
+    assert delays == [0.5, 1.0]
+
+
+def test_generate_retries_transient_status_and_recovers(
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Transient HTTP responses are retried and a later response is used."""
+    monkeypatch.setenv("TYPESAFE_API_KEY", "typesafe-token")
+    labels = [
+        dataset_config.prompt_label_mapping[label]
+        for label in dataset_config.id2label.values()
+    ]
+    transient = requests.Response()
+    transient.status_code = 429
+    transient.headers["Retry-After"] = "2"
+    calls = 0
+    delays: list[float] = []
+
+    def post(*_args: object, **_kwargs: object) -> _Response | requests.Response:
+        nonlocal calls
+        calls += 1
+        return (
+            transient
+            if calls == 1
+            else _Response({labels[0]: 0.8, labels[1]: 0.1, labels[2]: 0.1})
+        )
+
+    monkeypatch.setattr("euroeval.benchmark_modules.typesafe.requests.post", post)
+    monkeypatch.setattr("euroeval.benchmark_modules.typesafe.time.sleep", delays.append)
+    output = _make_model(benchmark_config, dataset_config).generate(
+        inputs={"text": ["A review"]}
+    )
+
+    assert output.sequences == [labels[0]]
+    assert calls == 2
+    assert delays == [2.0]
 
 
 def test_generate_supports_multiple_choice(

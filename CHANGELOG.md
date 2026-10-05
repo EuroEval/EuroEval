@@ -19,6 +19,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Typesafe System One requests now retry transient HTTP and connection failures with
+  bounded backoff, and report exhausted or permanent request failures as `InvalidModel`.
 - Laya and Typesafe per-text classifiers now use single-sample generation batches, enabling
   per-example progress reporting without changing their classification requests.
 - Structured classification prompts now convert choices only in the rendered
