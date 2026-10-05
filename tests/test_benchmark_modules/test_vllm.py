@@ -1417,6 +1417,29 @@ class TestVLLMClassification:
         assert '{"label": "a"}' in prepared["text"][0]
         assert '{"label": "b"}' in prepared["text"][0]
 
+    def test_json_choices_leave_quoted_label_in_input_unchanged(
+        self, dataset_config: DatasetConfig
+    ) -> None:
+        """Structured choices do not rewrite matching text in the user input."""
+        config = self._classification_config(
+            dataset_config=dataset_config,
+            label_mapping={"positive": "agree", "negative": "disagree"},
+        )
+        prepared = apply_prompt(
+            examples={"text": ["The user wrote 'positive' in this message."]},
+            few_shot_examples=[],
+            model_config=MagicMock(),
+            dataset_config=config,
+            generative_type=GenerativeType.BASE,
+            always_populate_text_field=True,
+            tokeniser=None,
+            classification_output_key="label",
+        )
+
+        assert "The user wrote 'positive' in this message." in prepared["text"][0]
+        assert '{"label": "agree"}' in prepared["text"][0]
+        assert '{"label": "positive"}' not in prepared["text"][0]
+
     def test_logprob_trimming_matches_the_complete_label(self) -> None:
         """Overlapping and mapped labels start scoring at the actual JSON value."""
         scores = [
