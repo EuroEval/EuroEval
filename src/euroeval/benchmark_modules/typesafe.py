@@ -42,7 +42,7 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
     """Hosted zero-shot classifier using Typesafe System One."""
 
     fresh_model = False
-    batching_preference = BatchingPreference.ALL_AT_ONCE
+    batching_preference = BatchingPreference.SINGLE_SAMPLE
     high_priority = True
 
     def __init__(

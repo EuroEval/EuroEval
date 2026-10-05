@@ -1,12 +1,18 @@
 """Tests for the `generation` module."""
 
+import copy
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+from datasets import Dataset
 
-from euroeval.enums import TaskGroup
-from euroeval.generation import generate
+from euroeval import generation
+from euroeval.benchmark_modules.typesafe import TypesafeSystemOneModel
+from euroeval.benchmark_modules.zero_shot_classifier import ZeroShotClassifierModel
+from euroeval.data_models import GenerativeModelOutput
+from euroeval.enums import BatchingPreference, TaskGroup
+from euroeval.generation import generate, generate_single_iteration
 
 
 class TestBPCacheNamespace:
@@ -84,3 +90,60 @@ def model_config_mock(tmp_path: Path) -> MagicMock:
     cfg.model_id = "fake-model"
     cfg.model_cache_dir = str(tmp_path)
     return cfg
+
+
+@pytest.mark.parametrize("progress_bar", [True, False])
+def test_single_sample_generation_preserves_predictions_and_progress(
+    dataset_config: MagicMock, benchmark_config: MagicMock, progress_bar: bool
+) -> None:
+    """Single-sample generation retains predictions and honours progress settings."""
+    assert (
+        ZeroShotClassifierModel.batching_preference == BatchingPreference.SINGLE_SAMPLE
+    )
+    assert (
+        TypesafeSystemOneModel.batching_preference == BatchingPreference.SINGLE_SAMPLE
+    )
+
+    dataset_config = copy.copy(dataset_config)
+    benchmark_config = copy.copy(benchmark_config)
+    dataset_config.prompt_label_mapping = {}
+    dataset_config.bootstrap_samples = True
+    benchmark_config.progress_bar = progress_bar
+    benchmark_config.use_bits_per_character = False
+    benchmark_config.debug = False
+
+    model = MagicMock()
+    model.batching_preference = BatchingPreference.SINGLE_SAMPLE
+    model.generate.side_effect = lambda inputs: GenerativeModelOutput(
+        sequences=["positive"] * len(inputs["text"])
+    )
+    model.extract_labels_from_generation.return_value = ["positive"]
+    cache = MagicMock()
+    cache.__contains__.return_value = False
+    progress_flags: list[bool] = []
+
+    def track_progress(iterable: object, disable: bool) -> object:
+        progress_flags.append(not disable)
+        return iterable
+
+    with patch.object(generation, "get_pbar", side_effect=track_progress):
+        generate_single_iteration(
+            dataset=Dataset.from_dict(
+                {"text": ["first", "second"], "label": ["positive", "positive"]}
+            ),
+            model=model,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            cache=cache,
+        )
+
+    assert progress_flags == [progress_bar]
+    generated_texts = [
+        call.kwargs["inputs"]["text"] for call in model.generate.call_args_list
+    ]
+    assert generated_texts == [["first"], ["second"]]
+    assert model.extract_labels_from_generation.call_count == 2
+    assert all(
+        call.kwargs["model_output"].sequences == ["positive"]
+        for call in model.extract_labels_from_generation.call_args_list
+    )
