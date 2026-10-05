@@ -87,7 +87,19 @@ def apply_prompt(
             "tuned and when we are not just returning the raw messages."
         )
 
-    create_prompt = _create_prompt_creator(dataset_config, generative_type)
+    structured_output_key = (
+        classification_output_key
+        if classification_output_key is not None
+        and dataset_config.task.task_group
+        in {TaskGroup.SEQUENCE_CLASSIFICATION, TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION}
+        and not use_bits_per_character
+        else None
+    )
+    create_prompt = _create_prompt_creator(
+        dataset_config=dataset_config,
+        generative_type=generative_type,
+        structured_output_key=structured_output_key,
+    )
 
     # Add bare inputs for BPC on MCQ tasks
     if (
@@ -234,17 +246,6 @@ def _add_structured_classification_output(
     for label in output_labels:
         prompt_label_mapping.setdefault(label, label)
 
-    def add_json_choices(prompt: str) -> str:
-        """Replace quoted bare-label choices without changing surrounding wording.
-
-        Returns:
-            The prompt with quoted choices replaced by JSON objects.
-        """
-        for prompt_label, output_label in prompt_label_mapping.items():
-            json_choice = json.dumps({output_key: output_label}, ensure_ascii=False)
-            prompt = prompt.replace(f"'{prompt_label}'", json_choice)
-        return prompt
-
     def add_json_answer(prompt: str, label: str) -> tuple[str, str]:
         """Replace a trailing bare answer with a JSON object.
 
@@ -276,10 +277,8 @@ def _add_structured_classification_output(
         return prompt, json_answer
 
     few_shot_sections = [
-        add_json_answer(add_json_choices(prompt), label)
-        for prompt, label in few_shot_sections
+        add_json_answer(prompt, label) for prompt, label in few_shot_sections
     ]
-    new_sections = [(add_json_choices(prompt), label) for prompt, label in new_sections]
     return few_shot_sections, new_sections
 
 
@@ -683,7 +682,9 @@ def _get_json_labels_str(
 
 
 def _create_prompt_creator(
-    dataset_config: "DatasetConfig", generative_type: GenerativeType | None
+    dataset_config: "DatasetConfig",
+    generative_type: GenerativeType | None,
+    structured_output_key: str | None = None,
 ) -> c.Callable[..., tuple[str, str]]:
     """Create a function that builds prompts from keyword arguments.
 
@@ -692,6 +693,9 @@ def _create_prompt_creator(
             The dataset configuration.
         generative_type:
             The generative type of the model.
+        structured_output_key:
+            Optional JSON output key. When provided, only quoted choices supplied
+            through the labels_str template field are converted to JSON objects.
 
     Returns:
         A function that builds prompts from keyword arguments.
@@ -715,6 +719,17 @@ def _create_prompt_creator(
         )
         label_mapping = dataset_config.prompt_label_mapping
         label = label_mapping.get(label, label)
+        if structured_output_key is not None and "labels_str" in kwargs:
+            labels_str = kwargs["labels_str"]
+
+            def replace_choice(match: re.Match[str]) -> str:
+                prompt_label = match.group(1)
+                output_label = label_mapping.get(prompt_label, prompt_label)
+                return json.dumps(
+                    {structured_output_key: output_label}, ensure_ascii=False
+                )
+
+            kwargs["labels_str"] = re.sub(r"'([^']*)'", replace_choice, labels_str)
         if generative_type in {
             GenerativeType.INSTRUCTION_TUNED,
             GenerativeType.REASONING,
