@@ -147,7 +147,8 @@ def test_generate_supports_multiple_choice(
 ) -> None:
     """Multiple-choice generation sends candidate answers as criteria."""
     monkeypatch.setenv("TYPESAFE_API_KEY", "typesafe-token")
-    dataset_config = copy.deepcopy(dataset_config)
+    dataset_config = copy.copy(dataset_config)
+    dataset_config.task = copy.copy(dataset_config.task)
     dataset_config.task.task_group = TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
     labels = [
         dataset_config.prompt_label_mapping[label]
@@ -232,7 +233,8 @@ def test_speed_task_is_rejected_before_remote_call(
 ) -> None:
     """Hosted Jev refuses unsupported speed benchmarks during local setup."""
     monkeypatch.setenv("TYPESAFE_API_KEY", "typesafe-token")
-    dataset_config = copy.deepcopy(dataset_config)
+    dataset_config = copy.copy(dataset_config)
+    dataset_config.task = copy.copy(dataset_config.task)
     dataset_config.task.task_group = TaskGroup.SPEED
     monkeypatch.setattr(
         "euroeval.benchmark_modules.typesafe.requests.post",
