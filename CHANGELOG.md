@@ -9,8 +9,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added direct hosted Typesafe System One classification for the exact EuroEval model ID
-  `typesafe/jev`. Requests use Typesafe's documented upstream alias `jev-latest`;
+- Added direct hosted Typesafe System One classification for versioned EuroEval model
+  IDs such as `typesafe/jev-1.13.0`. The selected version is sent upstream unchanged;
   authenticate with the `TYPESAFE_API_KEY` environment variable. The integration
   supports zero-shot sequence and multiple-choice classification; model size metadata
   remains unknown and speed benchmarking is unsupported.

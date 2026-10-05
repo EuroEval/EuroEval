@@ -3,6 +3,7 @@
 import collections.abc as c
 import math
 import os
+import re
 import time
 import typing as t
 from functools import cached_property
@@ -31,8 +32,7 @@ from .base import BenchmarkModule, _extract_labels_from_generation_helper
 from .zero_shot_classifier import ZeroShotClassifierModel
 
 _SYSTEM_ONE_URL = "https://api.typesafe.ai/v1/systemone"
-_MODEL_ID = "typesafe/jev"
-_UPSTREAM_MODEL_ID = "jev-latest"
+_MODEL_ID_PATTERN = re.compile(r"typesafe/jev-(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")
 _LOGPROB_FLOOR = 1e-12
 _MAX_REQUEST_ATTEMPTS = 3
 _MAX_RETRY_AFTER = 10.0
@@ -177,7 +177,7 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
                     headers={"Authorization": f"Bearer {self.api_key}"},
                     json={
                         "state": state,
-                        "model": _UPSTREAM_MODEL_ID,
+                        "model": self.model_config.model_id.removeprefix("typesafe/"),
                         "questions": {
                             "name": {
                                 "type": "choice",
@@ -307,14 +307,15 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
 
         Raises:
             InvalidModel:
-                If a parameter or revision suffix is supplied.
+                If the ID does not contain a valid three-part numeric version.
         """
-        components = split_model_id(model_id=model_id)
-        if model_id != _MODEL_ID:
+        if _MODEL_ID_PATTERN.fullmatch(model_id) is None:
             raise InvalidModel(
-                f"Typesafe System One supports only the exact model ID {_MODEL_ID!r}; "
-                "parameter and revision suffixes are not supported."
+                "Typesafe System One model IDs must use the form "
+                "'typesafe/jev-<version>' with a three-part numeric version, "
+                "for example 'typesafe/jev-1.13.0'."
             )
+        components = split_model_id(model_id=model_id)
         return ModelConfig(
             model_id=components.model_id,
             revision=components.revision,
@@ -338,7 +339,7 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
         Returns:
             Whether the ID selects Jev System One.
         """
-        return model_id == _MODEL_ID
+        return _MODEL_ID_PATTERN.fullmatch(model_id) is not None
 
     @cached_property
     def model_max_length(self) -> int:

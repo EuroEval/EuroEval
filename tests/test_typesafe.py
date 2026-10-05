@@ -23,7 +23,7 @@ def test_api_key_must_come_from_typesafe_environment(
     """The Hugging Face --api-key value is never used as the Typesafe key."""
     monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)
     config = TypesafeSystemOneModel.get_model_config(
-        model_id="typesafe/jev", benchmark_config=benchmark_config
+        model_id="typesafe/jev-1.13.0", benchmark_config=benchmark_config
     )
 
     with pytest.raises(NeedsAdditionalArgument, match="TYPESAFE_API_KEY"):
@@ -64,7 +64,7 @@ def test_generate_classifies_through_system_one_and_extracts_labels(
     headers = t.cast(dict[str, str], requests[0]["headers"])
     payload = t.cast(dict[str, object], requests[0]["json"])
     assert headers == {"Authorization": "Bearer typesafe-token"}
-    assert payload["model"] == "jev-latest"
+    assert payload["model"] == "jev-1.13.0"
     assert output.scores is not None
 
 
@@ -88,7 +88,7 @@ def _make_model(
         The configured hosted model.
     """
     config = TypesafeSystemOneModel.get_model_config(
-        model_id="typesafe/jev", benchmark_config=benchmark_config
+        model_id="typesafe/jev-1.13.0", benchmark_config=benchmark_config
     )
     return TypesafeSystemOneModel(
         model_config=config,
@@ -306,36 +306,40 @@ def test_generate_supports_multiple_choice(
     ]
 
 
-def test_model_config_routes_jev_and_rejects_suffixes(
+def test_model_config_routes_versioned_jev_and_rejects_malformed_ids(
     benchmark_config: BenchmarkConfig,
 ) -> None:
-    """Only the exact hosted model identifier is accepted for evaluation."""
+    """Valid versioned IDs use Typesafe and malformed IDs are rejected."""
+    model_id = "typesafe/jev-1.13.0"
     config = TypesafeSystemOneModel.get_model_config(
-        model_id="typesafe/jev", benchmark_config=benchmark_config
+        model_id=model_id, benchmark_config=benchmark_config
     )
 
+    assert config.model_id == model_id
     assert config.inference_backend == InferenceBackend.TYPESAFE
     assert config.model_type == ModelType.ZERO_SHOT_CLASSIFIER
     assert TypesafeSystemOneModel.model_exists(
-        model_id="typesafe/jev", benchmark_config=benchmark_config
+        model_id=model_id, benchmark_config=benchmark_config
     )
-    assert not TypesafeSystemOneModel.model_exists(
-        model_id="some-other-model", benchmark_config=benchmark_config
+    assert TypesafeSystemOneModel.model_exists(
+        model_id="typesafe/jev-2.0.0", benchmark_config=benchmark_config
     )
-    assert not TypesafeSystemOneModel.model_exists(
-        model_id="jev-latest", benchmark_config=benchmark_config
-    )
-    with pytest.raises(InvalidModel, match="exact model ID"):
-        TypesafeSystemOneModel.get_model_config(
-            model_id="jev-latest", benchmark_config=benchmark_config
-        )
-    for suffixed_id in ("typesafe/jev@main", "typesafe/jev#subfolder"):
+    for invalid_id in (
+        "typesafe/jev",
+        "typesafe/jev-1.13",
+        "typesafe/jev-1.13.0-beta",
+        "typesafe/jev-01.13.0",
+        "typesafe/jev-1.13.0@main",
+        "typesafe/jev-1.13.0#subfolder",
+        "some-other-model",
+        "jev-latest",
+    ):
         assert not TypesafeSystemOneModel.model_exists(
-            model_id=suffixed_id, benchmark_config=benchmark_config
+            model_id=invalid_id, benchmark_config=benchmark_config
         )
-        with pytest.raises(InvalidModel, match="exact model ID"):
+        with pytest.raises(InvalidModel, match="three-part numeric version"):
             TypesafeSystemOneModel.get_model_config(
-                model_id=suffixed_id, benchmark_config=benchmark_config
+                model_id=invalid_id, benchmark_config=benchmark_config
             )
 
 
@@ -347,7 +351,7 @@ def test_public_model_loading_routes_to_typesafe(
     """The shared model loader instantiates the dedicated hosted backend."""
     monkeypatch.setenv("TYPESAFE_API_KEY", "typesafe-token")
     config = TypesafeSystemOneModel.get_model_config(
-        model_id="typesafe/jev", benchmark_config=benchmark_config
+        model_id="typesafe/jev-1.13.0", benchmark_config=benchmark_config
     )
 
     assert isinstance(
