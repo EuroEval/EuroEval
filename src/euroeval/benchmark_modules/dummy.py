@@ -1,11 +1,13 @@
 """A built-in dummy model, used for debugging."""
 
+import json
 import math
 import random
 import re
 import typing as t
 from functools import cached_property
 
+from ..constants import CLASSIFICATION_OUTPUT_KEY
 from ..data_models import (
     BenchmarkConfig,
     DatasetConfig,
@@ -187,7 +189,13 @@ class DummyModel(BenchmarkModule):
                 [[(label, uniform_logprob) for label in candidate_labels]]
                 for _ in range(num_samples)
             ]
-            sequences = [random.choice(candidate_labels) for _ in range(num_samples)]
+            sequences = [
+                json.dumps(
+                    {CLASSIFICATION_OUTPUT_KEY: random.choice(candidate_labels)},
+                    ensure_ascii=False,
+                )
+                for _ in range(num_samples)
+            ]
             return GenerativeModelOutput(sequences=sequences, scores=scores)
 
         # A generic non-empty placeholder answer for non-classification tasks.
@@ -302,6 +310,18 @@ class DummyModel(BenchmarkModule):
             itr_idx=itr_idx,
             always_populate_text_field=False,
             tokeniser=None,
+            classification_output_key=(
+                CLASSIFICATION_OUTPUT_KEY
+                if (
+                    self.dataset_config.task.task_group
+                    in {
+                        TaskGroup.SEQUENCE_CLASSIFICATION,
+                        TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+                    }
+                    and self.dataset_config.labels
+                )
+                else None
+            ),
         )
 
     @property

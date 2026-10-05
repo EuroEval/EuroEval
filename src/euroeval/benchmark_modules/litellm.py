@@ -3,7 +3,6 @@
 import asyncio
 import collections.abc as c
 import datetime
-import json
 import logging
 import os
 import re
@@ -36,8 +35,8 @@ from tqdm.asyncio import tqdm as tqdm_async
 
 from ..async_utils import add_semaphore_and_catch_exception, safe_run
 from ..constants import (
+    CLASSIFICATION_OUTPUT_KEY,
     JSON_STRIP_CHARACTERS,
-    LITELLM_CLASSIFICATION_OUTPUT_KEY,
     MAX_LITELLM_LOGPROBS,
     REASONING_MAX_TOKENS,
     TOOL_CALLING_KEYS,
@@ -68,7 +67,12 @@ from ..generation_utils import raise_if_wrong_params
 from ..logging_utils import get_pbar, log, log_once
 from ..model_cache import create_model_cache_dir
 from ..safetensors_utils import get_num_params_from_safetensors_metadata
-from ..string_utils import split_model_id
+from ..string_utils import (
+    clean_label_token,
+    extract_classification_label,
+    find_label_logprob_start,
+    split_model_id,
+)
 from ..tasks import LOGIC
 from ..tokenisation_utils import get_first_label_token_mapping
 from ..types import ExtractLabelsFunction
@@ -643,7 +647,9 @@ class LiteLLMModel(BenchmarkModule):
 
     @staticmethod
     def _create_model_output(
-        model_responses: c.Sequence["ModelResponse"], model_id: str
+        model_responses: c.Sequence["ModelResponse"],
+        model_id: str,
+        classification_label_tokens: c.Collection[str] | None = None,
     ) -> GenerativeModelOutput:
         """Create a GenerativeModelOutput object from a list of ModelResponse objects.
 
@@ -653,6 +659,8 @@ class LiteLLMModel(BenchmarkModule):
                 object from.
             model_id:
                 The ID of the model.
+            classification_label_tokens (optional):
+                First tokens of mapped classification labels. Defaults to None.
 
         Returns:
             A GenerativeModelOutput object.
@@ -694,20 +702,16 @@ class LiteLLMModel(BenchmarkModule):
             # within the dictionary
             # This is not relevant for tooling and may cause problems there
             generation_dct: dict[str, t.Any] | None = None
-            if LITELLM_CLASSIFICATION_OUTPUT_KEY in generation_output and not all(
+            if CLASSIFICATION_OUTPUT_KEY in generation_output and not all(
                 [k in generation_output for k in TOOL_CALLING_KEYS]
             ):
-                try:
-                    generation_dct = json.loads(generation_output)
-                    assert isinstance(generation_dct, dict)
-                    if set(generation_dct.keys()) == {
-                        LITELLM_CLASSIFICATION_OUTPUT_KEY
-                    }:
-                        generation_output = str(
-                            generation_dct[LITELLM_CLASSIFICATION_OUTPUT_KEY]
-                        ).strip()
-                except json.JSONDecodeError:
-                    pass
+                if (
+                    classification_label := extract_classification_label(
+                        generation_output
+                    )
+                ) is not None:
+                    generation_dct = {CLASSIFICATION_OUTPUT_KEY: classification_label}
+                    generation_output = classification_label
 
             # Structure the model output as a GenerativeModelOutput object
             sequences.append(generation_output)
@@ -752,7 +756,11 @@ class LiteLLMModel(BenchmarkModule):
                     )
 
                 logprobs_list: c.Sequence[c.Sequence[tuple[str, float]]]
+                generated_tokens: list[str] | None = None
                 if isinstance(logprobs_obj, ChoiceLogprobs):
+                    generated_tokens = [
+                        content.token for content in logprobs_obj.content or list()
+                    ]
                     logprobs_list = [
                         [
                             (top_logprob.token, top_logprob.logprob)
@@ -761,6 +769,7 @@ class LiteLLMModel(BenchmarkModule):
                         for content in logprobs_obj.content or list()
                     ]
                 else:
+                    generated_tokens = logprobs_obj.tokens
                     logprobs_list = [
                         [
                             (token, logprob)
@@ -773,17 +782,12 @@ class LiteLLMModel(BenchmarkModule):
                 # token index of the value within the dictionary, rather than the
                 # first token of the entire output
                 if generation_dct:
-                    key_name = next(iter(generation_dct.keys()))
-                    logprobs_list = [
-                        lst
-                        for lst in logprobs_list
-                        if (
-                            lst
-                            and lst[0]
-                            and (token := lst[0][0].strip(JSON_STRIP_CHARACTERS))
-                            and not key_name.startswith(token)
-                        )
-                    ]
+                    logprobs_list = LiteLLMModel._trim_classification_logprobs(
+                        logprobs_list=logprobs_list,
+                        value=str(generation_dct[CLASSIFICATION_OUTPUT_KEY]),
+                        classification_label_tokens=classification_label_tokens,
+                        generated_tokens=generated_tokens,
+                    )
 
                 sample_scores = logprobs_list
             scores.append(sample_scores)
@@ -812,6 +816,50 @@ class LiteLLMModel(BenchmarkModule):
         else:
             scores_out = None
         return GenerativeModelOutput(sequences=sequences, scores=scores_out)
+
+    @staticmethod
+    def _trim_classification_logprobs(
+        logprobs_list: c.Sequence[c.Sequence[tuple[str, float]]],
+        value: str,
+        classification_label_tokens: c.Collection[str] | None,
+        generated_tokens: c.Sequence[str] | None = None,
+    ) -> c.Sequence[c.Sequence[tuple[str, float]]]:
+        """Remove JSON syntax tokens from classification logprobs.
+
+        Returns:
+            Logprob entries beginning with the label value.
+        """
+        value_start = find_label_logprob_start(
+            logprobs_list=logprobs_list, value=value, generated_tokens=generated_tokens
+        )
+        if value_start is not None:
+            return logprobs_list[value_start:]
+        label_tokens = {
+            clean_label_token(value),
+            *(
+                clean_label_token(label_token)
+                for label_token in classification_label_tokens or ()
+            ),
+        }
+        matching_indices = [
+            index
+            for index, token_logprobs in enumerate(logprobs_list)
+            if any(
+                clean_label_token(token) in label_tokens for token, _ in token_logprobs
+            )
+        ]
+        if matching_indices:
+            return logprobs_list[min(matching_indices) :]
+        return [
+            token_logprobs
+            for token_logprobs in logprobs_list
+            if (
+                token_logprobs
+                and token_logprobs[0]
+                and (token := token_logprobs[0][0].strip(JSON_STRIP_CHARACTERS))
+                and not CLASSIFICATION_OUTPUT_KEY.startswith(token)
+            )
+        ]
 
     async def _generate_async(
         self,
@@ -1771,7 +1819,13 @@ class LiteLLMModel(BenchmarkModule):
         # Extract the generations from the model output
         ordered_responses = [all_responses[i] for i in range(len(model_inputs))]
         model_output = self._create_model_output(
-            model_responses=ordered_responses, model_id=self.model_config.model_id
+            model_responses=ordered_responses,
+            model_id=self.model_config.model_id,
+            classification_label_tokens=(
+                self.buffer["first_label_token_mapping"].values()
+                if isinstance(self.buffer["first_label_token_mapping"], dict)
+                else None
+            ),
         )
 
         if len(model_inputs) != len(model_output.sequences):
@@ -1813,9 +1867,16 @@ class LiteLLMModel(BenchmarkModule):
         )
 
         # Set up response_format for structured generation
+        is_label_classification = dataset_config.task.task_group in {
+            TaskGroup.SEQUENCE_CLASSIFICATION,
+            TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+        } and (
+            bool(dataset_config.labels)
+            or dataset_config.task.task_group
+            == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+        )
         if self.generative_type == GenerativeType.REASONING and (
-            dataset_config.task.uses_structured_output
-            or (self.dataset_config.task.uses_logprobs and self.dataset_config.labels)
+            dataset_config.task.uses_structured_output or is_label_classification
         ):
             log_once(
                 f"The model {self.model_config.model_id!r} is a reasoning model "
@@ -1827,14 +1888,15 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs = self._setup_response_format(
                 dataset_config=dataset_config, generation_kwargs=generation_kwargs
             )
-        elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
-            [
-                self.dataset_config.prompt_label_mapping[label]
-                for label in self.dataset_config.labels
+        elif is_label_classification:
+            mapped_labels = [
+                dataset_config.prompt_label_mapping[label]
+                for label in dataset_config.labels
             ]
-            keys_and_their_types = {
-                LITELLM_CLASSIFICATION_OUTPUT_KEY: (c.Sequence[str], ...)
-            }
+            label_type = (
+                t.Literal.__getitem__(tuple(mapped_labels)) if mapped_labels else str
+            )
+            keys_and_their_types = {CLASSIFICATION_OUTPUT_KEY: (label_type, ...)}
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class
 
@@ -2382,6 +2444,17 @@ class LiteLLMModel(BenchmarkModule):
             itr_idx=itr_idx,
             always_populate_text_field=False,
             tokeniser=None,
+            classification_output_key=(
+                CLASSIFICATION_OUTPUT_KEY
+                if (
+                    self.dataset_config.task.task_group
+                    in {
+                        TaskGroup.SEQUENCE_CLASSIFICATION,
+                        TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+                    }
+                )
+                else None
+            ),
         )
 
     @property

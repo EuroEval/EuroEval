@@ -84,10 +84,9 @@ REASONING_TOKENS: list[tuple[str | re.Pattern, str | re.Pattern]] = [
 # output
 CUSTOM_STOP_TOKENS = ["<sep>"]
 
-# For classification tasks we force LiteLLM models to output a JSON dictionary with a
-# single key and the values being restricted to the allowed labels. This is the key we
-# use
-LITELLM_CLASSIFICATION_OUTPUT_KEY = "label"
+# For generative classification tasks we request a JSON object with a single key and
+# values restricted to the allowed labels.
+CLASSIFICATION_OUTPUT_KEY = "label"
 
 # These characters are stripped from JSON output when trying to identify the label
 JSON_STRIP_CHARACTERS = ' {}\n\r":'
@@ -95,7 +94,7 @@ JSON_STRIP_CHARACTERS = ' {}\n\r":'
 # The number of tokens we generate when evaluating generative models on classification
 # tasks. We also use this to determine whether we should store logprobs in the model
 # outputs (and cache).
-NUM_GENERATION_TOKENS_FOR_CLASSIFICATION = 10
+NUM_GENERATION_TOKENS_FOR_CLASSIFICATION = 50
 
 # We only allow loading local datasets in these file formats
 SUPPORTED_FILE_FORMATS_FOR_LOCAL_DATASETS = ["csv"]

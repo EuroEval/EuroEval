@@ -24,6 +24,7 @@ from urllib3.exceptions import RequestError
 
 from ..constants import (
     BPC_LOGPROBS,
+    CLASSIFICATION_OUTPUT_KEY,
     CUSTOM_STOP_TOKENS,
     GENERATION_KWARGS,
     GENERATIVE_PIPELINE_TAGS,
@@ -51,7 +52,11 @@ from ..exceptions import (
 )
 from ..generation_utils import raise_if_wrong_params
 from ..logging_utils import get_pbar, log, log_once, no_terminal_output
-from ..string_utils import split_model_id
+from ..string_utils import (
+    extract_classification_label,
+    find_label_logprob_start,
+    split_model_id,
+)
 from ..tasks import LOGIC
 from ..tokenisation_utils import (
     apply_chat_template,
@@ -630,6 +635,44 @@ class VLLMModel(HuggingFaceEncoderModel):
                 ]
                 for raw_output in raw_outputs
             ]
+            if isinstance(self.buffer["first_label_token_mapping"], dict):
+                trimmed_scores = []
+                for completion, sample_scores, raw_output in zip(
+                    completions, scores, raw_outputs
+                ):
+                    output = raw_output.outputs[0]
+                    selected_tokens = [
+                        token_scores[token_id].decoded_token
+                        if token_scores and token_id in token_scores
+                        else None
+                        for token_id, token_scores in zip(
+                            output.token_ids, output.logprobs or list()
+                        )
+                    ]
+                    emitted_tokens = [
+                        token for token in selected_tokens if isinstance(token, str)
+                    ]
+                    generated_tokens = (
+                        emitted_tokens
+                        if len(emitted_tokens) == len(sample_scores)
+                        else None
+                    )
+                    value = extract_classification_label(completion)
+                    value_start = (
+                        find_label_logprob_start(
+                            logprobs_list=sample_scores,
+                            value=value,
+                            generated_tokens=generated_tokens,
+                        )
+                        if value is not None
+                        else None
+                    )
+                    trimmed_scores.append(
+                        sample_scores[value_start:]
+                        if value_start is not None
+                        else sample_scores
+                    )
+                scores = trimmed_scores
             return GenerativeModelOutput(sequences=completions, scores=scores)
         return GenerativeModelOutput(sequences=completions)
 
@@ -970,9 +1013,18 @@ class VLLMModel(HuggingFaceEncoderModel):
         Returns:
             StructuredOutputsParams if structured output is enabled, or None otherwise.
         """
+        is_label_classification = self.dataset_config.task.task_group in {
+            TaskGroup.SEQUENCE_CLASSIFICATION,
+            TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+        } and (
+            bool(self.dataset_config.labels)
+            or self.dataset_config.task.task_group
+            == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+        )
+        if "bpc_prompt" in inputs:
+            return None
         if (
-            self.dataset_config.task.uses_structured_output
-            or (self.dataset_config.task.uses_logprobs and self.dataset_config.labels)
+            self.dataset_config.task.uses_structured_output or is_label_classification
         ) and self.generative_type == GenerativeType.REASONING:
             log_once(
                 "The dataset uses structured output, but we are not using it as the "
@@ -982,12 +1034,17 @@ class VLLMModel(HuggingFaceEncoderModel):
             return None
         if self.dataset_config.task.uses_structured_output:
             return self._structured_output_for_task(inputs)
-        if (
-            self.dataset_config.task.uses_logprobs
-            and self.dataset_config.labels
-            and self.buffer.get("first_label_token_mapping", False)
-        ):
-            return self._structured_output_for_logprobs()
+        if is_label_classification:
+            if self.dataset_config.labels:
+                return self._structured_output_for_logprobs()
+            return StructuredOutputsParams(
+                json={
+                    "type": "object",
+                    "properties": {CLASSIFICATION_OUTPUT_KEY: {"type": "string"}},
+                    "required": [CLASSIFICATION_OUTPUT_KEY],
+                    "additionalProperties": False,
+                }
+            )
         log_once(
             "Not using structured generation as the dataset does not require it.",
             level=logging.DEBUG,
@@ -1000,18 +1057,21 @@ class VLLMModel(HuggingFaceEncoderModel):
         Returns:
             StructuredOutputsParams for logprobs-based tasks.
         """
-        choice_labels = [
+        mapped_labels = [
             self.dataset_config.prompt_label_mapping[label]
             for label in self.dataset_config.labels
         ]
-        if isinstance(self.buffer["first_label_token_mapping"], dict):
-            choice_labels = [
-                self.buffer["first_label_token_mapping"][label]
-                for label in choice_labels
-            ]
-        struct_output = StructuredOutputsParams(choice=choice_labels)
+        schema = {
+            "type": "object",
+            "properties": {
+                CLASSIFICATION_OUTPUT_KEY: {"type": "string", "enum": mapped_labels}
+            },
+            "required": [CLASSIFICATION_OUTPUT_KEY],
+            "additionalProperties": False,
+        }
+        struct_output = StructuredOutputsParams(json=schema)
         log_once(
-            f"Using structured generation with the choices: {struct_output.choice!r}.",
+            f"Using structured generation with the JSON labels: {mapped_labels!r}.",
             level=logging.DEBUG,
         )
         return struct_output
@@ -1271,6 +1331,17 @@ class VLLMModel(HuggingFaceEncoderModel):
             itr_idx=itr_idx,
             always_populate_text_field=True,
             tokeniser=self._tokeniser,
+            classification_output_key=(
+                CLASSIFICATION_OUTPUT_KEY
+                if (
+                    self.dataset_config.task.task_group
+                    in {
+                        TaskGroup.SEQUENCE_CLASSIFICATION,
+                        TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+                    }
+                )
+                else None
+            ),
         )
 
     def score(self, inputs: dict) -> "GenerativeModelOutput":

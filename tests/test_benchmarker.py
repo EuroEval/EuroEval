@@ -1231,18 +1231,23 @@ def test_laya_download_only_resolves_root_checkpoint(
         param=None,
     )
     resolver_mock = MagicMock()
+    resolved_token = "resolved-token"
     monkeypatch.setattr(
         "euroeval.benchmark_modules.zero_shot_classifier._resolve_checkpoint_path",
         resolver_mock,
     )
-    monkeypatch.setattr("euroeval.benchmarker.get_hf_token", lambda **kwargs: None)
+    monkeypatch.setattr(
+        "euroeval.benchmarker.get_hf_token", lambda **kwargs: resolved_token
+    )
 
     benchmarker._download_model_only(
         model_config=zero_shot_config, benchmark_config=benchmark_config
     )
 
     resolver_mock.assert_called_once_with(
-        model_id=zero_shot_config.model_id, cache_dir=str(model_cache_dir), token=None
+        model_id=zero_shot_config.model_id,
+        cache_dir=str(model_cache_dir),
+        token=resolved_token,
     )
 
 

@@ -8,6 +8,7 @@ import typing as t
 import demjson3
 import numpy as np
 
+from .constants import CLASSIFICATION_OUTPUT_KEY
 from .exceptions import InvalidBenchmark, InvalidModel
 from .logging_utils import log
 
@@ -63,6 +64,30 @@ def clean_label_token(token: str, *, preserve_spaces: bool = False) -> str:
 
 if t.TYPE_CHECKING:
     from .data_models import ModelIdComponents
+
+
+def extract_classification_label(s: str) -> str | None:
+    """Extract the final scalar classification label from a JSON object.
+
+    Args:
+        s:
+            Model output, optionally containing reasoning before the JSON object.
+
+    Returns:
+        The JSON ``label`` value when it is a string, otherwise None.
+    """
+    matches = list(re.finditer(pattern=r"\{[^{}]*?\}", string=s, flags=re.DOTALL))
+    for match in reversed(matches):
+        try:
+            value = demjson3.decode(txt=match.group())
+        except demjson3.JSONDecodeError:
+            continue
+        if not isinstance(value, dict):
+            continue
+        label = value.get(CLASSIFICATION_OUTPUT_KEY)
+        if isinstance(label, str):
+            return label.strip()
+    return None
 
 
 def extract_json_dict_from_string(s: str) -> dict | None:
@@ -153,6 +178,78 @@ def extract_multiple_choice_labels(
             f"{', '.join(effective_candidates)}. Here is the prompt: {prompt!r}"
         )
     return sample_candidate_labels
+
+
+def find_label_logprob_start(
+    logprobs_list: c.Sequence[c.Sequence[tuple[str, float]]],
+    value: str,
+    generated_tokens: c.Sequence[str] | None = None,
+) -> int | None:
+    """Find the token position where a JSON label value starts.
+
+    Prefer emitted tokens when available: an alternative matching the label can occur
+    while the model is still emitting the JSON key. For providers that omit emitted
+    tokens, match the complete value across alternatives as a fallback.
+
+    Args:
+        logprobs_list:
+            Token alternatives in generated order.
+        value:
+            The decoded JSON label value.
+        generated_tokens (optional):
+            Actually emitted tokens, aligned with logprob positions. Defaults to None.
+
+    Returns:
+        The position of the JSON label value, or None when it cannot be recovered.
+    """
+    if generated_tokens is not None and len(generated_tokens) == len(logprobs_list):
+        emitted = "".join(generated_tokens)
+        key_pattern = rf'"{re.escape(CLASSIFICATION_OUTPUT_KEY)}"\s*:\s*"'
+        matches = list(re.finditer(key_pattern, emitted))
+        if matches:
+            value_offset = matches[-1].end()
+            offset = 0
+            for index, token in enumerate(generated_tokens):
+                offset += len(token)
+                if offset > value_offset:
+                    return index
+        return None
+
+    target = clean_label_token(value, preserve_spaces=True).lstrip()
+    if not target:
+        return None
+    for start in range(len(logprobs_list)):
+        offsets = {0}
+        for position in range(start, len(logprobs_list)):
+            pieces = {
+                _normalise_logprob_piece(token, first=position == start)
+                for token, _ in logprobs_list[position]
+            }
+            pieces.discard("")
+            offsets = {
+                offset + len(piece)
+                for offset in offsets
+                for piece in pieces
+                if target.startswith(piece, offset)
+            }
+            if len(target) in offsets:
+                return start
+            if not offsets:
+                break
+    return None
+
+
+def _normalise_logprob_piece(token: str, *, first: bool) -> str:
+    """Normalise one logprob token while retaining label-internal spaces.
+
+    Returns:
+        The normalised token text.
+    """
+    has_boundary_marker = token.startswith(("Ġ", "▁"))
+    piece = clean_label_token(token, preserve_spaces=True)
+    if has_boundary_marker and piece and not piece.startswith(" "):
+        piece = f" {piece}"
+    return piece.lstrip() if first else piece
 
 
 def scramble(text: str) -> str:

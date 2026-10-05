@@ -14,6 +14,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Structured classification prompts now convert choices only in the rendered
+  choice-instruction field, preserving quoted label text in user-provided inputs.
 - LiteLLM model context-length metadata now covers the documented GPT-5.6/GPT-6/6.1 Sol,
   Gemini 3.1/3.5/3.6/3.7/3.8, Claude 5/Fable/Mythos and 5.5, and Grok 4.5–4.7 IDs.
   Unverified model variants are not assigned these family-specific context lengths.
@@ -78,6 +80,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed generative classification prompts across LiteLLM and vLLM to put mapped JSON
+  objects in the existing localised choice sentence, use scalar `label` objects for
+  base-model few-shot answers, and preserve label logprob scoring for overlapping and
+  Unicode labels (#2197). Variable-choice multiple-choice classifications also receive
+  JSON prompts and open string schemas when the dataset has no fixed label list (#2201).
 - Benchmark results for `convaiinnovations/laya-multilingual` and
   `convaiinnovations/laya` now include their verified licensing, openness and
   pretrained-backbone metadata in both ordinary and contamination-canary evaluations.
