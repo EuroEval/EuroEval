@@ -9,6 +9,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added direct hosted Typesafe System One classification for `jev-latest`. Authenticate
+  with `--api-key` or the `TYPESAFE_API_KEY` environment variable. The integration
+  supports zero-shot sequence and multiple-choice classification; model size metadata
+  remains unknown and speed benchmarking is unsupported.
 - Hallucination rate is now shown as an optional orthogonal percentage in chat leaderboards;
   missing results do not affect eligibility, rank or aggregate score.
 

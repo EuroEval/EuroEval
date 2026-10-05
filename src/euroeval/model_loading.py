@@ -8,6 +8,7 @@ from .benchmark_modules import (
     FreshEncoderModel,
     HuggingFaceEncoderModel,
     LiteLLMModel,
+    TypesafeSystemOneModel,
     VLLMModel,
     ZeroShotClassifierModel,
 )
@@ -127,6 +128,8 @@ def load_model(
             model_class = DummyModel
         case (ModelType.ZERO_SHOT_CLASSIFIER, InferenceBackend.LAYA, False):
             model_class = ZeroShotClassifierModel
+        case (ModelType.ZERO_SHOT_CLASSIFIER, InferenceBackend.TYPESAFE, False):
+            model_class = TypesafeSystemOneModel
         case (ModelType.ENCODER, InferenceBackend.TRANSFORMERS, True):
             model_class = FreshEncoderModel
         case (_, _, True):

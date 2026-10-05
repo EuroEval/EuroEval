@@ -103,6 +103,8 @@ class InferenceBackend(AutoStrEnum):
             The built-in dummy model, used for debugging.
         LAYA:
             The Laya zero-shot classifier model. The `laya` library.
+        TYPESAFE:
+            The hosted Typesafe System One zero-shot classifier.
     """
 
     TRANSFORMERS = auto()
@@ -110,6 +112,7 @@ class InferenceBackend(AutoStrEnum):
     LITELLM = auto()
     DUMMY = auto()
     LAYA = auto()
+    TYPESAFE = auto()
 
 
 class ModelType(AutoStrEnum):
