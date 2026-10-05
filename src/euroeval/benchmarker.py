@@ -1486,7 +1486,11 @@ class Benchmarker:
         )
         del dataset
 
-        if model_config.model_type is ModelType.ZERO_SHOT_CLASSIFIER:
+        if model_config.inference_backend is InferenceBackend.TYPESAFE:
+            # Hosted models have no downloadable checkpoint; only data and metrics
+            # are cached in download-only mode.
+            pass
+        elif model_config.model_type is ModelType.ZERO_SHOT_CLASSIFIER:
             from .benchmark_modules.zero_shot_classifier import (  # noqa: PLC0415
                 _resolve_checkpoint_path,
             )

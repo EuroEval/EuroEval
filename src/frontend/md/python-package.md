@@ -169,11 +169,11 @@ Concrete, end-to-end tasks. Each is self-contained — copy, adapt, run.
 ??? example "Evaluate hosted Jev System One"
 
     Use the exact model ID `jev-latest` for direct zero-shot sequence or multiple-choice
-    classification through Typesafe System One. Supply the Typesafe API key with
-    `--api-key`, or set `TYPESAFE_API_KEY` in the environment:
+    classification through Typesafe System One. Set `TYPESAFE_API_KEY` in the
+    environment; `--api-key` is reserved for Hugging Face and is never sent to Typesafe:
 
     ```bash
-    euroeval --model jev-latest --api-key "$TYPESAFE_API_KEY"
+    TYPESAFE_API_KEY="<your-typesafe-api-key>" euroeval --model jev-latest
     ```
 
     The hosted model does not expose verified size metadata and cannot be used for the
