@@ -3,7 +3,11 @@
 import pytest
 
 from leaderboards import link_generation
-from leaderboards.link_generation import generate_deepseek_url, generate_model_url
+from leaderboards.link_generation import (
+    generate_deepseek_url,
+    generate_model_url,
+    generate_typesafe_url,
+)
 
 
 @pytest.mark.parametrize(
@@ -41,3 +45,18 @@ def test_deepseek_url_overrides_stale_missing_url_decision(
 def test_non_provider_deepseek_models_have_no_deepseek_url(model_id: str) -> None:
     """Model names without the DeepSeek provider prefix are not API models."""
     assert generate_deepseek_url(model_id=model_id) is None
+
+
+@pytest.mark.parametrize("model_id", ["jev", "other/typesafe/jev"])
+def test_non_provider_typesafe_models_have_no_typesafe_url(model_id: str) -> None:
+    """Only IDs with a Typesafe provider prefix use the Typesafe link."""
+    assert generate_typesafe_url(model_id=model_id) is None
+
+
+@pytest.mark.parametrize("model_id", ["typesafe/jev", "typesafe/another-model"])
+def test_typesafe_provider_models_use_docs_url(model_id: str) -> None:
+    """Every Typesafe model links to the provider's model documentation."""
+    expected_url = "https://docs.typesafe.ai/models"
+
+    assert generate_typesafe_url(model_id=model_id) == expected_url
+    assert generate_model_url(model_id=model_id) == expected_url

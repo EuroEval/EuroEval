@@ -287,6 +287,7 @@ def generate_model_url(model_id: str) -> str | None:
     model_id_without_extras = split_model_id(model_id=plain_model_id(model_id)).model_id
 
     url_generators = (
+        generate_typesafe_url,
         generate_deepseek_url,
         generate_ollama_url,
         generate_hf_hub_url,
@@ -431,6 +432,22 @@ def generate_task_link(task_id: int, label: str) -> str:
         f"{label.replace('-', ' ').capitalize()}"
         "</a>"
     )
+
+
+@cache
+def generate_typesafe_url(model_id: str) -> str | None:
+    """Generate a documentation URL for a Typesafe model.
+
+    Args:
+        model_id:
+            The Typesafe model ID, including the ``typesafe/`` provider prefix.
+
+    Returns:
+        The Typesafe models URL, or None if this is not a Typesafe model.
+    """
+    if model_id.startswith("typesafe/"):
+        return "https://docs.typesafe.ai/models"
+    return None
 
 
 @cache
