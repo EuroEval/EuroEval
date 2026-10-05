@@ -70,7 +70,7 @@ class ZeroShotClassifierModel(BenchmarkModule):
     """
 
     fresh_model = False
-    batching_preference = BatchingPreference.ALL_AT_ONCE
+    batching_preference = BatchingPreference.SINGLE_SAMPLE
 
     # Checked before the generic encoder/generative modules, so that a Laya repo
     # isn't misidentified as a plain encoder.

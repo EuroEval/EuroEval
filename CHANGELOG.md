@@ -19,6 +19,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Laya and Typesafe per-text classifiers now use single-sample generation batches, enabling
+  per-example progress reporting without changing their classification requests.
 - Structured classification prompts now convert choices only in the rendered
   choice-instruction field, preserving quoted label text in user-provided inputs.
 - LiteLLM model context-length metadata now covers the documented GPT-5.6/GPT-6/6.1 Sol,
