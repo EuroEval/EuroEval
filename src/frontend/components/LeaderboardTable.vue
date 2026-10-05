@@ -176,7 +176,7 @@ const fillerRowCount = computed(() => {
 
 const COMPACT_COLS = new Set(["parameters", "vocabulary", "context"]);
 
-const PERCENT_COLS = new Set(["european values"]);
+const PERCENT_COLS = new Set(["european values", "hallucination rate"]);
 
 const TICK_CROSS_COLS = new Set([
   "commercial",
@@ -246,14 +246,21 @@ const cellDisplayHtml = (cell: { html: string; text: string; sortKey: number | s
     return cell.text || "?";
   }
   if (isPercentCol(col)) {
-    // sortKey is a number for kind="number", but a lowercased text string
-    // when an "N/A" placeholder forced the column to kind="text". Parse the
-    // displayed text directly so both cases render as "<n>%".
+    const interval = cell.text.match(
+      /^([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*±\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))$/,
+    );
+    if (interval) return `${interval[1]}% ± ${interval[2]}%`;
+    // Preserve the legacy display for cells without a confidence interval.
     const num =
       typeof cell.sortKey === "number"
         ? cell.sortKey
         : Number.parseFloat(cell.text);
-    if (Number.isFinite(num)) return `${Math.round(num)}%`;
+    if (Number.isFinite(num)) {
+      return col.key.toLowerCase() === "european values" ||
+        col.key.toLowerCase() === "hallucination rate"
+        ? `${num.toFixed(2)}%`
+        : `${Math.round(num)}%`;
+    }
     return cell.text || "?";
   }
   return cell.html;
@@ -348,6 +355,7 @@ const NON_LANGUAGE_NUMBER_COLS = new Set([
   "vocabulary",
   "context",
   "european values",
+  "hallucination rate",
 ]);
 const isLanguageRankCol = (col: Column): boolean =>
   props.heatmapScoreCols &&

@@ -57,6 +57,7 @@ BE_WSC_CONFIG = DatasetConfig(
     source="EuroEval/be-wsc",
     task=COMMON_SENSE,
     languages=[BELARUSIAN],
+    labels=["a", "b"],
 )
 
 MULTI_IFEVAL_BE_CONFIG = DatasetConfig(
