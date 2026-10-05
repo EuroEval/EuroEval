@@ -21,7 +21,7 @@ from ..enums import (
     ModelType,
     TaskGroup,
 )
-from ..exceptions import InvalidBenchmark, NeedsAdditionalArgument
+from ..exceptions import InvalidBenchmark, InvalidModel, NeedsAdditionalArgument
 from ..model_cache import create_model_cache_dir
 from ..string_utils import split_model_id
 from ..task_group_utils.cloze import parse_bare_question_and_choices
@@ -55,14 +55,26 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
 
         Raises:
             NeedsAdditionalArgument:
-                If neither an API key nor the documented environment variable exists.
+                If TYPESAFE_API_KEY is not set.
+            InvalidBenchmark:
+                If the dataset task is unsupported.
         """
-        self.api_key = benchmark_config.api_key or os.getenv("TYPESAFE_API_KEY")
+        self.api_key = os.getenv("TYPESAFE_API_KEY")
         if not self.api_key:
             raise NeedsAdditionalArgument(
-                cli_argument="--api-key",
-                script_argument="api_key=<your-typesafe-api-key>",
+                cli_argument="TYPESAFE_API_KEY environment variable",
+                script_argument=(
+                    'os.environ["TYPESAFE_API_KEY"] = "<your-typesafe-api-key>"'
+                ),
                 run_with_cli=benchmark_config.run_with_cli,
+            )
+        if dataset_config.task.task_group not in {
+            TaskGroup.SEQUENCE_CLASSIFICATION,
+            TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+        }:
+            raise InvalidBenchmark(
+                "Typesafe System One supports sequence and multiple-choice "
+                "classification tasks only."
             )
         BenchmarkModule.__init__(
             self,
@@ -71,7 +83,7 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
             benchmark_config=benchmark_config,
             log_metadata=log_metadata,
         )
-        self.buffer["first_label_token_mapping"] = False
+        self.buffer["first_label_token_mapping"] = True
         self._validate_labels()
         self.buffer["instructions"] = self._build_instructions()
 
@@ -86,7 +98,7 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
         return _extract_labels_from_generation_helper(
             dataset_config=self.dataset_config,
             model_config=self.model_config,
-            first_label_token_mapping=False,
+            first_label_token_mapping=True,
         )
 
     def generate(self, inputs: dict) -> GenerativeModelOutput:
@@ -177,13 +189,30 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
             raise InvalidBenchmark(
                 "Typesafe System One returned a response without choice probabilities."
             ) from error
+        if not isinstance(probabilities, dict):
+            raise InvalidBenchmark(
+                "Typesafe System One returned malformed choice probabilities."
+            )
         missing_labels = [label for label in criteria if label not in probabilities]
         if missing_labels:
             raise InvalidBenchmark(
                 "Typesafe System One did not return probabilities for labels "
                 f"{missing_labels!r}."
             )
-        return {label: float(probabilities[label]) for label in criteria}
+        parsed: dict[str, float] = {}
+        for label in criteria:
+            try:
+                probability = float(probabilities[label])
+            except (TypeError, ValueError) as error:
+                raise InvalidBenchmark(
+                    "Typesafe System One returned a non-numeric choice probability."
+                ) from error
+            if not math.isfinite(probability) or not 0 <= probability <= 1:
+                raise InvalidBenchmark(
+                    "Typesafe System One returned a probability outside [0, 1]."
+                )
+            parsed[label] = probability
+        return parsed
 
     @property
     def generative_type(self) -> GenerativeType | None:
@@ -198,8 +227,17 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
 
         Returns:
             The dedicated Typesafe model configuration.
+
+        Raises:
+            InvalidModel:
+                If a parameter or revision suffix is supplied.
         """
         components = split_model_id(model_id=model_id)
+        if model_id != _MODEL_ID:
+            raise InvalidModel(
+                f"Typesafe System One supports only the exact model ID {_MODEL_ID!r}; "
+                "parameter and revision suffixes are not supported."
+            )
         return ModelConfig(
             model_id=components.model_id,
             revision=components.revision,
