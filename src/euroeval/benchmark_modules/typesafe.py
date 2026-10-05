@@ -195,11 +195,11 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
                 if status not in {429} and (status is None or status < 500):
                     raise self._request_failure(
                         cause=f"HTTP status {status}", attempts=attempt, input_count=1
-                    ) from error
+                    ) from None
                 if attempt == _MAX_REQUEST_ATTEMPTS:
                     raise self._request_failure(
                         cause=f"HTTP status {status}", attempts=attempt, input_count=1
-                    ) from error
+                    ) from None
                 self._wait_before_retry(
                     attempt=attempt,
                     retry_after=(
@@ -212,7 +212,7 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
                 if attempt == _MAX_REQUEST_ATTEMPTS:
                     raise self._request_failure(
                         cause=type(error).__name__, attempts=attempt, input_count=1
-                    ) from error
+                    ) from None
                 self._wait_before_retry(attempt=attempt, retry_after=None)
             else:
                 break

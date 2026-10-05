@@ -2,6 +2,7 @@
 
 import copy
 import dataclasses
+import traceback
 import typing as t
 
 import pytest
@@ -132,6 +133,7 @@ def test_generate_exhausts_transient_statuses(
     monkeypatch.setenv("TYPESAFE_API_KEY", "typesafe-token")
     response = requests.Response()
     response.status_code = 520
+    response.reason = "private request content"
     calls = 0
 
     def post(*_args: object, **_kwargs: object) -> requests.Response:
@@ -150,8 +152,10 @@ def test_generate_exhausts_transient_statuses(
             inputs={"text": ["private text"]}
         )
 
-    assert isinstance(error.value.__cause__, requests.HTTPError)
-    assert "private text" not in str(error.value)
+    displayed = "".join(traceback.format_exception(error.value))
+    assert "private request content" not in displayed
+    assert "private text" not in displayed
+    assert "HTTP status 520" in displayed
     assert calls == 3
     assert delays == [0.5, 1.0]
 
@@ -205,9 +209,9 @@ def test_generate_retries_connection_errors_then_reports_failure(
     dataset_config: DatasetConfig,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Connection failures are retried and retain their cause after exhaustion."""
+    """Connection failures are retried and reported without private details."""
     monkeypatch.setenv("TYPESAFE_API_KEY", "typesafe-token")
-    failure = requests.ConnectionError("connection unavailable")
+    failure = requests.ConnectionError("private connection detail")
     calls = 0
 
     def post(*_args: object, **_kwargs: object) -> _Response:
@@ -226,7 +230,9 @@ def test_generate_retries_connection_errors_then_reports_failure(
             inputs={"text": ["A review"]}
         )
 
-    assert error.value.__cause__ is failure
+    displayed = "".join(traceback.format_exception(error.value))
+    assert "private connection detail" not in displayed
+    assert "ConnectionError" in displayed
     assert calls == 3
     assert delays == [0.5, 1.0]
 
