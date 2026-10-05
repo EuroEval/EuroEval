@@ -48,7 +48,7 @@ def test_generate_classifies_through_system_one_and_extracts_labels(
 
     def post(url: str, **kwargs: object) -> _Response:
         requests.append({"url": url, **kwargs})
-        return _Response({labels[0]: 0.8, labels[1]: 0.2})
+        return _Response({labels[0]: 0.8, labels[1]: 0.1, labels[2]: 0.1})
 
     monkeypatch.setattr("euroeval.benchmark_modules.typesafe.requests.post", post)
     config = dataclasses.replace(benchmark_config, api_key="hf-token")
@@ -111,7 +111,9 @@ def test_generate_rejects_invalid_probabilities(
     ]
     monkeypatch.setattr(
         "euroeval.benchmark_modules.typesafe.requests.post",
-        lambda *_args, **_kwargs: _Response({labels[0]: probability, labels[1]: 0.2}),
+        lambda *_args, **_kwargs: _Response(
+            {labels[0]: probability, labels[1]: 0.1, labels[2]: 0.1}
+        ),
     )
 
     with pytest.raises(InvalidBenchmark, match="probability"):
@@ -158,13 +160,15 @@ def test_generate_supports_multiple_choice(
         questions = t.cast(dict[str, object], payload["questions"])
         question = t.cast(dict[str, object], questions["name"])
         criteria_sent.append(t.cast(dict[str, str | None], question["criteria"]))
-        return _Response({labels[0]: 0.8, labels[1]: 0.2})
+        return _Response({labels[0]: 0.8, labels[1]: 0.1, labels[2]: 0.1})
 
     monkeypatch.setattr("euroeval.benchmark_modules.typesafe.requests.post", post)
     model = _make_model(benchmark_config, dataset_config)
-    model.generate(inputs={"text": ["Question?\na. First\nb. Second"]})
+    model.generate(inputs={"text": ["Question?\na. First\nb. Second\nc. Third"]})
 
-    assert criteria_sent == [{labels[0]: "First", labels[1]: "Second"}]
+    assert criteria_sent == [
+        {labels[0]: "First", labels[1]: "Second", labels[2]: "Third"}
+    ]
 
 
 def test_model_config_routes_jev_and_rejects_suffixes(
