@@ -158,7 +158,14 @@ const ICONS = new Set([
   "",
 ]);
 
-const NUMERIC_COLS = new Set(["rank", "parameters", "vocabulary", "context"]);
+const NUMERIC_COLS = new Set([
+  "rank",
+  "parameters",
+  "vocabulary",
+  "context",
+  "european values",
+  "hallucination rate",
+]);
 
 const ICON_COLS = new Set([
   "type",
@@ -278,7 +285,10 @@ export function parseCell(raw: string, kind: CellKind): ParsedCell {
     const n = parseNumberSafe(sort);
     sortKey = n !== null ? n : sort.toLowerCase();
   } else if (kind === "number") {
-    const n = parseNumberSafe(text);
+    // Orthogonal metric columns may carry a confidence-interval halfwidth.
+    // Their numeric sort value is always the point estimate before ±.
+    const interval = /^([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*±/.exec(text);
+    const n = parseNumberSafe(interval?.[1] ?? text);
     sortKey = n !== null ? n : Number.POSITIVE_INFINITY;
   } else if (kind === "score") {
     // Score cells look like "60.17 ± 1.40 / 72.92 ± 1.18" — sort by the

@@ -28,7 +28,6 @@ from requests.exceptions import RequestException
 from torch import nn
 from transformers import PretrainedConfig
 from transformers.data.data_collator import (
-    DataCollatorForMultipleChoice,
     DataCollatorForTokenClassification,
     DataCollatorWithPadding,
 )
@@ -69,6 +68,7 @@ from ..model_cache import create_model_cache_dir
 from ..safetensors_utils import get_num_params_from_safetensors_metadata
 from ..string_utils import split_model_id
 from ..task_group_utils import (
+    encoder_multiple_choice,
     multiple_choice_classification,
     question_answering,
     token_classification,
@@ -230,8 +230,8 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                     tokenizer=self._tokeniser, padding="longest"
                 )
             case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-                return DataCollatorForMultipleChoice(
-                    tokenizer=self._tokeniser, padding="longest"
+                return encoder_multiple_choice.VariableChoiceCollator(
+                    tokenizer=self._tokeniser
                 )
             case TaskGroup.TOKEN_CLASSIFICATION:
                 return DataCollatorForTokenClassification(
@@ -475,7 +475,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                     partial(
                         multiple_choice_classification.prepare_examples,
                         tokeniser=self._tokeniser,
-                        num_choices=self.dataset_config.num_labels,
+                        num_choices=0,
                     ),
                     batched=True,
                     batch_size=10,
@@ -593,9 +593,10 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 TaskGroup.SEQUENCE_CLASSIFICATION
                 | TaskGroup.TEXT_TO_TEXT
                 | TaskGroup.TOKEN_CLASSIFICATION
-                | TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
             ):
                 return Trainer
+            case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
+                return encoder_multiple_choice.VariableChoiceTrainer
             case TaskGroup.QUESTION_ANSWERING:
                 return question_answering.QuestionAnsweringTrainer
             case _:

@@ -31,6 +31,8 @@ logger = logging.getLogger(__name__)
 
 CANARY_KEY_ENV = "EUROEVAL_CANARY_KEY"
 CANARY_REPORT_PATH_ENV = "EUROEVAL_CANARY_REPORT_PATH"
+_DEFAULT_KEY_PATH = Path("~/.config/euroeval/watermark-audit-v1.key")
+_DEFAULT_PRIVATE_DIR = Path("~/.local/share/euroeval/private-canary-v5")
 CANARY_EXACT_RATE_DIFFERENCE = 0.10
 CANARY_SIGN_P_VALUE = 0.01
 _REPORT_SCHEMA = "contamination-canary-report/v1"
@@ -169,9 +171,11 @@ def _atomic_private_write(*, path: Path, content: str) -> None:
 def _private_directory() -> Path:
     """Return the configured directory containing private scoring records."""
     configured = os.getenv(CANARY_PRIVATE_DIR_ENV)
-    if not configured:
-        raise ValueError(f"{CANARY_PRIVATE_DIR_ENV} is required")
-    return Path(configured).expanduser()
+    return (
+        Path(configured).expanduser()
+        if configured
+        else _DEFAULT_PRIVATE_DIR.expanduser()
+    )
 
 
 def confirm_canary_exclusions(
@@ -237,10 +241,7 @@ def _numeric_field(value: dict[str, object], field: str) -> float:
 
 def load_canary_exclusions() -> set[str]:
     """Load durable removals, failing closed once private state is configured."""
-    configured = os.getenv(CANARY_PRIVATE_DIR_ENV)
-    if not configured:
-        return set()
-    path = Path(configured).expanduser() / _EXCLUSIONS_FILENAME
+    path = _private_directory() / _EXCLUSIONS_FILENAME
     if not path.exists():
         return set()
     try:
@@ -299,22 +300,32 @@ def score_canary_records(records: c.Sequence[dict[str, object]]) -> dict[str, ob
     """Score embedded evidence using private maintainer-only targets and controls."""
     if not records:
         return _base_report(status="missing", models=[])
+    setup_stage = "private_directory"
     try:
         private_dir = _private_directory()
         _validate_private_directory(private_dir)
+        setup_stage = "private_key"
         key = _load_private_key(_key_path())
+        setup_stage = "private_records"
         private_records, manifest_hash = _load_private_records(
             private_dir=private_dir, key=key
         )
+        setup_stage = "prompt_corpus"
         prompts = load_canary_prompts(
             cache_dir=Path(
                 os.getenv("HF_HOME", str(Path.home() / ".cache" / "huggingface"))
             )
         )
         prompt_digests = {item.row_id: item.prompt_sha256 for item in prompts}
-    except Exception as error:  # noqa: BLE001 - audit setup is non-fatal
+    except Exception:  # noqa: BLE001 - audit setup is non-fatal
         report = _base_report(status="unavailable", models=[])
-        report["reason"] = type(error).__name__
+        report["stage"] = setup_stage
+        report["reason"] = {
+            "private_directory": "private_data_configuration_failed",
+            "private_key": "private_key_configuration_failed",
+            "private_records": "private_data_validation_failed",
+            "prompt_corpus": "prompt_corpus_unavailable",
+        }[setup_stage]
         _write_report(report=report)
         return report
 
@@ -407,9 +418,9 @@ def _base_report(*, status: str, models: list[dict[str, object]]) -> dict[str, o
 def _key_path() -> Path:
     """Return the configured private key path."""
     configured = os.getenv(CANARY_KEY_ENV)
-    if not configured:
-        raise ValueError(f"{CANARY_KEY_ENV} is required")
-    return Path(configured).expanduser()
+    return (
+        Path(configured).expanduser() if configured else _DEFAULT_KEY_PATH.expanduser()
+    )
 
 
 def _load_private_key(path: Path) -> bytes:

@@ -7,6 +7,28 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Hallucination rate is now shown as an optional orthogonal percentage in chat leaderboards;
+  missing results do not affect eligibility, rank or aggregate score.
+
+### Fixed
+
+- LiteLLM model context-length metadata now covers the documented GPT-5.6/GPT-6/6.1 Sol,
+  Gemini 3.1/3.5/3.6/3.7/3.8, Claude 5/Fable/Mythos and 5.5, and Grok 4.5–4.7 IDs.
+  Unverified model variants are not assigned these family-specific context lengths.
+- Encoder fine-tuning now creates a deterministic validation holdout from the original
+  training split for datasets without a configured validation split. The holdout is
+  disjoint from training, leaves the published test split unchanged, and is not applied
+  to generative evaluations.
+- Encoder final scores now always come from the published test split, regardless of
+  validation-split configuration; validation remains available for early stopping.
+- Encoder multiple-choice fine-tuning now supports datasets with different numbers of
+  answers per question. Batch padding is explicitly masked from training loss and model
+  predictions, and BE-WSC and Danish Citizen Tests declare their verified label sets.
+  Multiline answer options in datasets such as ALBA-MCQ are parsed without changing the
+  questions, labels, or published dataset splits.
+
 ### Changed
 
 - Removed Laya `#param` checkpoint-subfolder support; Laya models now load from
@@ -61,6 +83,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   base-model few-shot answers, and preserve label logprob scoring for overlapping and
   Unicode labels (#2197). Variable-choice multiple-choice classifications also receive
   JSON prompts and open string schemas when the dataset has no fixed label list (#2201).
+- Benchmark results for `convaiinnovations/laya-multilingual` and
+  `convaiinnovations/laya` now include their verified licensing, openness and
+  pretrained-backbone metadata in both ordinary and contamination-canary evaluations.
 - LiteLLM contamination-canary collection now probes API capabilities with one request,
   preserves the six-token output bound across token-limit fallbacks and reused-model
   parameter adjustments, and reports collection status and failure reasons without

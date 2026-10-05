@@ -64,35 +64,52 @@ def parse_bare_question_and_choices(text: str) -> tuple[str, list[str]]:
         ``choices`` is empty and ``bare_question`` is the original text unchanged.
     """
     lines = text.split("\n")
-    candidate_idxs = [
-        idx for idx, line in enumerate(lines) if _CHOICE_LINE_REGEX.match(line)
+    candidates = [
+        (idx, match.group(1).lower(), match.group(2).strip())
+        for idx, line in enumerate(lines)
+        if (match := _CHOICE_LINE_REGEX.match(line))
     ]
-    if not candidate_idxs:
+    alpha_candidates = [
+        candidate
+        for candidate in candidates
+        if len(candidate[1]) == 1 and candidate[1].isalpha()
+    ]
+
+    # Option bodies may themselves contain numbered lists (including blank lines).
+    # Treat only a sequential alphabetic run as the outer option boundaries; numeric
+    # enumerators between those boundaries remain part of the option text.
+    selected: list[tuple[int, str, str]] = []
+    for start_idx, (_, marker, _) in enumerate(alpha_candidates):
+        if marker != CHOICE_LETTERS[0]:
+            continue
+        run = [alpha_candidates[start_idx]]
+        valid_run = True
+        for candidate in alpha_candidates[start_idx + 1 :]:
+            expected_idx = len(run)
+            if (
+                expected_idx >= len(CHOICE_LETTERS)
+                or candidate[1] != CHOICE_LETTERS[expected_idx]
+            ):
+                valid_run = False
+                break
+            run.append(candidate)
+        if valid_run and len(run) > len(selected):
+            selected = run
+
+    if len(selected) < 2:
         return text, []
 
-    # Only the final contiguous block of enumerated lines counts as choices: the
-    # question itself can contain lines that start with e.g. "1." or "a.", so we walk
-    # backwards from the end and stop at the first gap.
-    block_idxs: list[int] = []
-    for idx in reversed(candidate_idxs):
-        if not block_idxs or idx == block_idxs[-1] - 1:
-            block_idxs.append(idx)
-        else:
-            break
-    block_idxs.reverse()
-    first_choice_idx = block_idxs[0]
-
-    choices: list[str] = []
-    markers: list[str] = []
-    for idx in block_idxs:
-        match = _CHOICE_LINE_REGEX.match(lines[idx])
-        assert match is not None  # guaranteed by candidate_idxs construction
-        markers.append(match.group(1).strip().lower())
-        choices.append(match.group(2).strip())
-
-    expected_markers = list(CHOICE_LETTERS[: len(choices)])
-    if markers != expected_markers:
-        return text, []
+    first_choice_idx = selected[0][0]
+    choices = []
+    for choice_idx, (_, _, first_line) in enumerate(selected):
+        start = selected[choice_idx][0]
+        end = (
+            selected[choice_idx + 1][0]
+            if choice_idx + 1 < len(selected)
+            else len(lines)
+        )
+        body_lines = [first_line, *lines[start + 1 : end]]
+        choices.append("\n".join(body_lines).strip())
 
     # Everything before the first option is the question, minus a trailing choices-label
     # line (e.g. "Choices:"), mirroring how the prompt was assembled as
