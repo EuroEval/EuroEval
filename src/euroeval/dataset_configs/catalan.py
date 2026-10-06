@@ -124,7 +124,6 @@ MULTI_BFCL_CA_CONFIG = DatasetConfig(
     task=TOOL_CALLING,
     languages=[CATALAN],
     train_split=None,
-    unofficial=True,
 )
 
 

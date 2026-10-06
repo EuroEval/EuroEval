@@ -1053,6 +1053,130 @@
     "train": 1024,
     "val": 256
   },
+  "EuroEval/multi-bfcl-be-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-bg-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-bs-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-ca-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-cs-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-da-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-de-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-el-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-es-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-et-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-fi-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-fo-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-fr-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-hr-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-hu-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-is-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-it-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-lb-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-lt-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-lv-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-nl-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-no-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-pl-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-pt-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-ro-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-sk-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-sl-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-sq-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-sr-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-sv-mini": {
+    "test": 2048,
+    "val": 256
+  },
+  "EuroEval/multi-bfcl-uk-mini": {
+    "test": 2048,
+    "val": 256
+  },
   "EuroEval/multi-ifeval-be": {
     "test": 524
   },
