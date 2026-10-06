@@ -10,8 +10,9 @@ how many tokens are hallucinated, i.e., not grounded in the context.
 
 The hallucination detection is performed using the
 [LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
-transformer-based classifier to predict hallucination at the token level. The
-hallucination detection classifiers are trained on the publicly available
+transformer-based classifier to predict hallucination at the token level. The method is
+described by [Thoresen and Smart (2026)](https://doi.org/10.48550/arXiv.2605.02504).
+The hallucination detection classifiers are trained on the publicly available
 hallucination datasets
 [MultiWikiQA-Synthetic-Hallucinations](https://huggingface.co/datasets/alexandrainst/multi-wiki-qa-synthetic-hallucinations)
 and [Translated-RAGTruth-Hallucinations](https://huggingface.co/datasets/alexandrainst/ragtruth-translated-hallucinations).
