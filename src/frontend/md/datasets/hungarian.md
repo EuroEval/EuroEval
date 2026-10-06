@@ -1261,22 +1261,36 @@ The source test split has 2,501 examples in ten categories:
 - `simple_javascript` (50)
 - `simple_python` (400)
 
-We select 2,048 rows from the 2,501-row source test split by applying a deterministic
-shuffle (seed 42) and retaining the first 2,048 rows. The resulting test-only dataset
-has no training or validation split, so evaluation is zero-shot. Translation quality may
-vary and affect results.
+The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
+rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
+published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
+with no training split. EuroEval evaluates generative models on validation by default;
+pass `--evaluate-test-split` to evaluate on test. This task requires zero-shot
+evaluation and has no training examples. Translation quality may vary and affect
+results.
 
-Here are two examples from the published test split. The `text` value is shown verbatim
-and contains both the serialized function definitions and translated user question.
-`target_text` is stored as a JSON string; it is decoded below for readability. Both
-displayed fields are complete (not abbreviated):
+Here are two examples from the published validation split. The `text` value is shown
+verbatim and contains both the serialized function definitions and translated user
+question. `target_text` is stored as a JSON string; it is decoded below for readability.
+Both displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"version_api.VersionApi.get_version\", \"description\": \"Retrieves the current version information of the application, including its name and version number.\", \"parameters\": {\"type\": \"dict\", \"required\": [], \"properties\": {}}}]\nQuestion: Add meg az alkalmazás verzióját.",
+  "text": "Functions:\n[{\"name\": \"image_processing.object_identification\", \"description\": \"Identify objects in a given image.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"image_url\"], \"properties\": {\"image_url\": {\"type\": \"string\", \"description\": \"The URL of the image.\"}}}}, {\"name\": \"text_analysis.sentiment_analysis\", \"description\": \"Analyze the sentiment of a given text.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"text\"], \"properties\": {\"text\": {\"type\": \"string\", \"description\": \"The text to be analyzed.\"}}}}]\nQuestion: Azonosítsd a kertemről készült, my_backyard_image_url címen található képen látható tárgyakat, és elemezd a mai naplóbejegyzésem, my_journal_entry_text hangulatát.",
   "target_text": [
     {
-      "version_api.VersionApi.get_version": {}
+      "image_processing.object_identification": {
+        "image_url": [
+          "my_backyard_image_url"
+        ]
+      }
+    },
+    {
+      "text_analysis.sentiment_analysis": {
+        "text": [
+          "my_journal_entry_text"
+        ]
+      }
     }
   ]
 }
@@ -1284,26 +1298,47 @@ displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"math.factorial\", \"description\": \"Calculate the factorial of a given number.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"number\"], \"properties\": {\"number\": {\"type\": \"integer\", \"description\": \"The number for which factorial needs to be calculated.\"}}}}]\nQuestion: Mennyi az 5, a 7 és a 9 faktoriálisának értéke?",
+  "text": "Functions:\n[{\"name\": \"update_user_info\", \"description\": \"Update user information in the database.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"user_id\", \"update_info\"], \"properties\": {\"user_id\": {\"type\": \"integer\", \"description\": \"The user ID of the customer.\"}, \"update_info\": {\"type\": \"dict\", \"properties\": {\"name\": {\"type\": \"string\", \"description\": \"The customer's updated name.\"}, \"email\": {\"type\": \"string\", \"description\": \"The customer's updated email.\"}}, \"description\": \"The new information to update.\"}, \"database\": {\"type\": \"string\", \"description\": \"The database where the user's information is stored.\", \"default\": \"CustomerInfo\"}}}}]\nQuestion: Tudnád az „update_user_info” függvénnyel a „CustomerInfo” adatbázisban a 12345-ös felhasználói azonosítójú ügyfél nevét „John”-ra, e-mail-címét pedig „example@.com”-ra módosítani, majd ugyanezt megtenni a 67890-es felhasználói azonosítójú ügyféllel is, az ő nevét és e-mail-címét is ugyanezekre az értékekre módosítva?",
   "target_text": [
     {
-      "math.factorial": {
-        "number": [
-          5
+      "update_user_info": {
+        "user_id": [
+          12345
+        ],
+        "update_info": [
+          {
+            "name": [
+              "John"
+            ],
+            "email": [
+              "example@.com"
+            ]
+          }
+        ],
+        "database": [
+          "CustomerInfo",
+          ""
         ]
       }
     },
     {
-      "math.factorial": {
-        "number": [
-          7
-        ]
-      }
-    },
-    {
-      "math.factorial": {
-        "number": [
-          9
+      "update_user_info": {
+        "user_id": [
+          67890
+        ],
+        "update_info": [
+          {
+            "name": [
+              "John"
+            ],
+            "email": [
+              "example@.com"
+            ]
+          }
+        ],
+        "database": [
+          "CustomerInfo",
+          ""
         ]
       }
     }
@@ -1343,3 +1378,5 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-bfcl-hu
 ```
+
+Use `--evaluate-test-split` to evaluate the test split explicitly.

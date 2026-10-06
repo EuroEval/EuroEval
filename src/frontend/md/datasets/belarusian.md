@@ -910,24 +910,40 @@ The source test split has 2,501 examples in ten categories:
 - `simple_javascript` (50)
 - `simple_python` (400)
 
-We select 2,048 rows from the 2,501-row source test split by applying a deterministic
-shuffle (seed 42) and retaining the first 2,048 rows. The resulting test-only dataset
-has no training or validation split, so evaluation is zero-shot. Translation quality may
-vary and affect results.
+The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
+rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
+published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
+with no training split. EuroEval evaluates generative models on validation by default;
+pass `--evaluate-test-split` to evaluate on test. This task requires zero-shot
+evaluation and has no training examples. Translation quality may vary and affect
+results.
 
-Here are two examples from the published test split. The `text` value is shown verbatim
-and contains both the serialized function definitions and translated user question.
-`target_text` is stored as a JSON string; it is decoded below for readability. Both
-displayed fields are complete (not abbreviated):
+Here are two examples from the published validation split. The `text` value is shown
+verbatim and contains both the serialized function definitions and translated user
+question. `target_text` is stored as a JSON string; it is decoded below for readability.
+Both displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"math.factorial\", \"description\": \"Calculate the factorial of a given number.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"number\"], \"properties\": {\"number\": {\"type\": \"integer\", \"description\": \"The number to compute factorial.\"}}}}]\nQuestion: Вылічыце фактарыял ліку 5.",
+  "text": "Functions:\n[{\"name\": \"calcVolume.cuboid\", \"description\": \"Calculates the volume of a cuboid.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"height\", \"width\", \"depth\"], \"properties\": {\"height\": {\"type\": \"float\", \"description\": \"The height of the cuboid.\"}, \"width\": {\"type\": \"float\", \"description\": \"The width of the cuboid.\"}, \"depth\": {\"type\": \"float\", \"description\": \"The depth of the cuboid.\"}}}}, {\"name\": \"calcVolume.sphere\", \"description\": \"Calculates the volume of a sphere.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"radius\"], \"properties\": {\"radius\": {\"type\": \"float\", \"description\": \"The radius of the sphere.\"}}}}]\nQuestion: Вылічыце аб’ём прамавугольнага паралелепіпеда вышынёй 10 м, шырынёй 5 м і глыбінёй 8 м. Таксама знайдзіце аб’ём шара радыусам 4 м.",
   "target_text": [
     {
-      "math.factorial": {
-        "number": [
-          5
+      "calcVolume.cuboid": {
+        "height": [
+          10.0
+        ],
+        "width": [
+          5.0
+        ],
+        "depth": [
+          8.0
+        ]
+      }
+    },
+    {
+      "calcVolume.sphere": {
+        "radius": [
+          4.0
         ]
       }
     }
@@ -937,26 +953,33 @@ displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"math.factorial\", \"description\": \"Calculate the factorial of a given number.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"number\"], \"properties\": {\"number\": {\"type\": \"integer\", \"description\": \"The number for which factorial needs to be calculated.\"}}}}]\nQuestion: Чаму роўныя фактарыялы лікаў 5, 7 і 9?",
+  "text": "Functions:\n[{\"name\": \"math.power\", \"description\": \"Calculate the power of one number raised to another.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"base\", \"exponent\"], \"properties\": {\"base\": {\"type\": \"integer\", \"description\": \"The base number.\"}, \"exponent\": {\"type\": \"integer\", \"description\": \"The exponent.\"}, \"mod\": {\"type\": \"float\", \"description\": \"The modulus. Default is None. Calculates pow(base, exponent) % mod when provided.\"}}}}]\nQuestion: Ці можаце вы вылічыць вынік наступных матэматычных дзеянняў: спачатку ўзвядзіце лік 3 у пятую ступень, а затым лік 2 у трэцюю ступень?",
   "target_text": [
     {
-      "math.factorial": {
-        "number": [
+      "math.power": {
+        "base": [
+          2
+        ],
+        "exponent": [
+          3
+        ],
+        "mod": [
+          "",
+          null
+        ]
+      }
+    },
+    {
+      "math.power": {
+        "base": [
+          3
+        ],
+        "exponent": [
           5
-        ]
-      }
-    },
-    {
-      "math.factorial": {
-        "number": [
-          7
-        ]
-      }
-    },
-    {
-      "math.factorial": {
-        "number": [
-          9
+        ],
+        "mod": [
+          "",
+          null
         ]
       }
     }
@@ -996,3 +1019,5 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-bfcl-be
 ```
+
+Use `--evaluate-test-split` to evaluate the test split explicitly.

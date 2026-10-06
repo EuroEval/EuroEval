@@ -2660,24 +2660,42 @@ The source test split has 2,501 examples in ten categories:
 - `simple_javascript` (50)
 - `simple_python` (400)
 
-We select 2,048 rows from the 2,501-row source test split by applying a deterministic
-shuffle (seed 42) and retaining the first 2,048 rows. The resulting test-only dataset
-has no training or validation split, so evaluation is zero-shot. Translation quality may
-vary and affect results.
+The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
+rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
+published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
+with no training split. EuroEval evaluates generative models on validation by default;
+pass `--evaluate-test-split` to evaluate on test. This task requires zero-shot
+evaluation and has no training examples. Translation quality may vary and affect
+results.
 
-Here are two examples from the published test split. The `text` value is shown verbatim
-and contains both the serialized function definitions and translated user question. The
-dataset's separate `function` field contains the same definitions as the `Functions:`
-portion of `text`, so it is not repeated below. `target_text` is stored as a JSON
-string; it is decoded below for readability. Both displayed fields are complete (not
-abbreviated):
+Here are two examples from the published validation split. The `text` value is shown
+verbatim and contains both the serialized function definitions and translated user
+question. `target_text` is stored as a JSON string; it is decoded below for readability.
+Both displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"version_api.VersionApi.get_version\", \"description\": \"Retrieves the current version information of the application, including its name and version number.\", \"parameters\": {\"type\": \"dict\", \"required\": [], \"properties\": {}}}]\nQuestion: Giv mig applikationens version.",
+  "text": "Functions:\n[{\"name\": \"get_team_info\", \"description\": \"Retrieve information for a specific team, such as championships won.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"team\", \"info\"], \"properties\": {\"team\": {\"type\": \"string\", \"description\": \"The name of the team.\"}, \"info\": {\"type\": \"string\", \"description\": \"The information sought. E.g., 'championships_won'.\"}}}}, {\"name\": \"get_player_record\", \"description\": \"Retrieve record stats for a specific player and stat type.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"player\", \"stat\"], \"properties\": {\"player\": {\"type\": \"string\", \"description\": \"The name of the player.\"}, \"stat\": {\"type\": \"string\", \"description\": \"The type of statistic. E.g., 'highest_scoring_game', 'total_championships'.\"}}}}]\nQuestion: Kan du finde oplysninger om Michael Jordans kamp med flest point og det samlede antal mesterskaber, han vandt?",
   "target_text": [
     {
-      "version_api.VersionApi.get_version": {}
+      "get_player_record": {
+        "player": [
+          "Michael Jordan"
+        ],
+        "stat": [
+          "highest_scoring_game"
+        ]
+      }
+    },
+    {
+      "get_player_record": {
+        "player": [
+          "Michael Jordan"
+        ],
+        "stat": [
+          "total_championships"
+        ]
+      }
     }
   ]
 }
@@ -2685,26 +2703,35 @@ abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"math.factorial\", \"description\": \"Calculate the factorial of a given positive integer.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"number\"], \"properties\": {\"number\": {\"type\": \"integer\", \"description\": \"The number for which factorial needs to be calculated.\"}}}}]\nQuestion: Beregn fakultet af 5, 10 og 15.",
+  "text": "Functions:\n[{\"name\": \"calc_area_triangle\", \"description\": \"Calculate the area of a triangle with the formula area = 0.5 * base * height.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"base\", \"height\"], \"properties\": {\"base\": {\"type\": \"integer\", \"description\": \"The length of the base of the triangle in meters.\"}, \"height\": {\"type\": \"integer\", \"description\": \"The perpendicular height of the triangle from the base to the opposite vertex in meters.\"}}}}]\nQuestion: Du planlægger at anlægge tre trekantede haver i din baghave. Den første have har en grundlinje på 10 meter og en højde på 5 meter, den anden have har en grundlinje på 15 meter og en højde på 7 meter, og den tredje have har en grundlinje på 20 meter og en højde på 10 meter. Hvad er de tre havers samlede areal?",
   "target_text": [
     {
-      "math.factorial": {
-        "number": [
+      "calc_area_triangle": {
+        "base": [
+          10
+        ],
+        "height": [
           5
         ]
       }
     },
     {
-      "math.factorial": {
-        "number": [
-          10
+      "calc_area_triangle": {
+        "base": [
+          15
+        ],
+        "height": [
+          7
         ]
       }
     },
     {
-      "math.factorial": {
-        "number": [
-          15
+      "calc_area_triangle": {
+        "base": [
+          20
+        ],
+        "height": [
+          10
         ]
       }
     }
@@ -2744,3 +2771,5 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-bfcl-da
 ```
+
+Use `--evaluate-test-split` to evaluate the test split explicitly.

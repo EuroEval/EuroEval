@@ -2080,22 +2080,45 @@ The source test split has 2,501 examples in ten categories:
 - `simple_javascript` (50)
 - `simple_python` (400)
 
-We select 2,048 rows from the 2,501-row source test split by applying a deterministic
-shuffle (seed 42) and retaining the first 2,048 rows. The resulting test-only dataset
-has no training or validation split, so evaluation is zero-shot. Translation quality may
-vary and affect results.
+The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
+rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
+published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
+with no training split. EuroEval evaluates generative models on validation by default;
+pass `--evaluate-test-split` to evaluate on test. This task requires zero-shot
+evaluation and has no training examples. Translation quality may vary and affect
+results.
 
-Here are two examples from the published test split. The `text` value is shown verbatim
-and contains both the serialized function definitions and translated user question.
-`target_text` is stored as a JSON string; it is decoded below for readability. Both
-displayed fields are complete (not abbreviated):
+Here are two examples from the published validation split. The `text` value is shown
+verbatim and contains both the serialized function definitions and translated user
+question. `target_text` is stored as a JSON string; it is decoded below for readability.
+Both displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"version_api.VersionApi.get_version\", \"description\": \"Retrieves the current version information of the application, including its name and version number.\", \"parameters\": {\"type\": \"dict\", \"required\": [], \"properties\": {}}}]\nQuestion: Segðu mér hvaða útgáfu forritið er.",
+  "text": "Functions:\n[{\"name\": \"office_designer.design\", \"description\": \"Design an office space based on specific requirements\", \"parameters\": {\"type\": \"dict\", \"required\": [\"rooms\", \"meeting_room\"], \"properties\": {\"rooms\": {\"type\": \"integer\", \"description\": \"Number of rooms in the office.\"}, \"meeting_room\": {\"type\": \"string\", \"enum\": [\"small\", \"medium\", \"large\"], \"description\": \"Size of the meeting room\"}}}}, {\"name\": \"house_designer.design\", \"description\": \"Design a house based on specific criteria\", \"parameters\": {\"type\": \"dict\", \"required\": [\"bedrooms\", \"bathrooms\"], \"properties\": {\"bedrooms\": {\"type\": \"integer\", \"description\": \"Number of bedrooms desired.\"}, \"bathrooms\": {\"type\": \"integer\", \"description\": \"Number of bathrooms needed.\"}, \"garden\": {\"type\": \"boolean\", \"description\": \"Does the house need a garden? Default is False\"}}}}]\nQuestion: Hannaðu hús með þremur svefnherbergjum, tveimur baðherbergjum og garði. Hannaðu einnig skrifstofu með fimm herbergjum og stóru fundarherbergi.",
   "target_text": [
     {
-      "version_api.VersionApi.get_version": {}
+      "house_designer.design": {
+        "bedrooms": [
+          3
+        ],
+        "bathrooms": [
+          2
+        ],
+        "garden": [
+          true
+        ]
+      }
+    },
+    {
+      "office_designer.design": {
+        "rooms": [
+          5
+        ],
+        "meeting_room": [
+          "large"
+        ]
+      }
     }
   ]
 }
@@ -2103,26 +2126,31 @@ displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"math.factorial\", \"description\": \"Calculate the factorial of a given positive integer.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"number\"], \"properties\": {\"number\": {\"type\": \"integer\", \"description\": \"The number for which factorial needs to be calculated.\"}}}}]\nQuestion: Reiknaðu hrópmerktar tölur fyrir 5, 10 og 15.",
+  "text": "Functions:\n[{\"name\": \"calculate_distance\", \"description\": \"Calculate the distance between two celestial bodies.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"body1\", \"body2\"], \"properties\": {\"body1\": {\"type\": \"string\", \"description\": \"The first celestial body.\"}, \"body2\": {\"type\": \"string\", \"description\": \"The second celestial body.\"}, \"unit\": {\"type\": \"string\", \"description\": \"The unit of measurement, default is 'kilometers'.\"}}}}]\nQuestion: Hver er fjarlægðin í mílum milli himintunglanna Mars og Venusar, og síðan milli Mars og Júpíters, ef fallið „calculate_distance“ krefst nafna himintunglanna tveggja og mælieiningar?",
   "target_text": [
     {
-      "math.factorial": {
-        "number": [
-          5
+      "calculate_distance": {
+        "body1": [
+          "Mars"
+        ],
+        "body2": [
+          "Venus"
+        ],
+        "unit": [
+          "miles"
         ]
       }
     },
     {
-      "math.factorial": {
-        "number": [
-          10
-        ]
-      }
-    },
-    {
-      "math.factorial": {
-        "number": [
-          15
+      "calculate_distance": {
+        "body1": [
+          "Mars"
+        ],
+        "body2": [
+          "Jupiter"
+        ],
+        "unit": [
+          "miles"
         ]
       }
     }
@@ -2162,3 +2190,5 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-bfcl-is
 ```
+
+Use `--evaluate-test-split` to evaluate the test split explicitly.

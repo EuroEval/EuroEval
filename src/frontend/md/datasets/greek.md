@@ -1514,22 +1514,62 @@ The source test split has 2,501 examples in ten categories:
 - `simple_javascript` (50)
 - `simple_python` (400)
 
-We select 2,048 rows from the 2,501-row source test split by applying a deterministic
-shuffle (seed 42) and retaining the first 2,048 rows. The resulting test-only dataset
-has no training or validation split, so evaluation is zero-shot. Translation quality may
-vary and affect results.
+The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
+rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
+published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
+with no training split. EuroEval evaluates generative models on validation by default;
+pass `--evaluate-test-split` to evaluate on test. This task requires zero-shot
+evaluation and has no training examples. Translation quality may vary and affect
+results.
 
-Here are two examples from the published test split. The `text` value is shown verbatim
-and contains both the serialized function definitions and translated user question.
-`target_text` is stored as a JSON string; it is decoded below for readability. Both
-displayed fields are complete (not abbreviated):
+Here are two examples from the published validation split. The `text` value is shown
+verbatim and contains both the serialized function definitions and translated user
+question. `target_text` is stored as a JSON string; it is decoded below for readability.
+Both displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"version_api.VersionApi.get_version\", \"description\": \"Retrieves the current version information of the application, including its name and version number.\", \"parameters\": {\"type\": \"dict\", \"required\": [], \"properties\": {}}}]\nQuestion: Πες μου την έκδοση της εφαρμογής.",
+  "text": "Functions:\n[{\"name\": \"scienceFacts.getCharge\", \"description\": \"Fetch the electric charge of an atomic particle\", \"parameters\": {\"type\": \"dict\", \"required\": [\"particle\", \"unit\"], \"properties\": {\"particle\": {\"type\": \"string\", \"description\": \"The atomic particle. e.g. Electron, Proton\"}, \"unit\": {\"type\": \"string\", \"description\": \"Unit to retrieve electric charge. For example, 'coulombs' etc.\"}}}}, {\"name\": \"scienceFacts.getWeight\", \"description\": \"Fetch the atomic weight of an atomic particle\", \"parameters\": {\"type\": \"dict\", \"required\": [\"particle\", \"unit\"], \"properties\": {\"particle\": {\"type\": \"string\", \"description\": \"The atomic particle. e.g. Electron, Proton\"}, \"unit\": {\"type\": \"string\", \"description\": \"Unit to retrieve weight. For example, 'kg', 'pound', 'amu' etc.\"}}}}, {\"name\": \"scienceFacts.getDiameter\", \"description\": \"Fetch the diameter of an atomic particle\", \"parameters\": {\"type\": \"dict\", \"required\": [\"particle\", \"unit\"], \"properties\": {\"particle\": {\"type\": \"string\", \"description\": \"The atomic particle. e.g. Electron, Proton\"}, \"unit\": {\"type\": \"string\", \"description\": \"Unit to retrieve diameter. For example, 'meter', 'cm', 'femtometers' etc.\"}}}}]\nQuestion: Ποια είναι η μάζα του νετρονίου και του πρωτονίου σε μονάδες ατομικής μάζας (amu); Επίσης, ποια είναι η διάμετρος του πρωτονίου και του νετρονίου σε φεμτόμετρα;",
   "target_text": [
     {
-      "version_api.VersionApi.get_version": {}
+      "scienceFacts.getWeight": {
+        "particle": [
+          "Neutron"
+        ],
+        "unit": [
+          "amu"
+        ]
+      }
+    },
+    {
+      "scienceFacts.getWeight": {
+        "particle": [
+          "Proton"
+        ],
+        "unit": [
+          "amu"
+        ]
+      }
+    },
+    {
+      "scienceFacts.getDiameter": {
+        "particle": [
+          "Proton"
+        ],
+        "unit": [
+          "femtometers"
+        ]
+      }
+    },
+    {
+      "scienceFacts.getDiameter": {
+        "particle": [
+          "Neutron"
+        ],
+        "unit": [
+          "femtometers"
+        ]
+      }
     }
   ]
 }
@@ -1537,26 +1577,31 @@ displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"math.factorial\", \"description\": \"Calculate the factorial of a given positive integer.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"number\"], \"properties\": {\"number\": {\"type\": \"integer\", \"description\": \"The number for which factorial needs to be calculated.\"}}}}]\nQuestion: Υπολόγισε τα παραγοντικά των αριθμών 5, 10 και 15.",
+  "text": "Functions:\n[{\"name\": \"calculate_distance\", \"description\": \"Calculate the distance between two celestial bodies.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"body1\", \"body2\"], \"properties\": {\"body1\": {\"type\": \"string\", \"description\": \"The first celestial body.\"}, \"body2\": {\"type\": \"string\", \"description\": \"The second celestial body.\"}, \"unit\": {\"type\": \"string\", \"description\": \"The unit of measurement, default is 'kilometers'.\"}}}}]\nQuestion: Ποια είναι η απόσταση σε μίλια μεταξύ των ουράνιων σωμάτων Άρη και Αφροδίτης και, στη συνέχεια, μεταξύ Άρη και Δία, δεδομένου ότι η συνάρτηση «calculate_distance» απαιτεί τα ονόματα των δύο ουράνιων σωμάτων και τη μονάδα μέτρησης;",
   "target_text": [
     {
-      "math.factorial": {
-        "number": [
-          5
+      "calculate_distance": {
+        "body1": [
+          "Mars"
+        ],
+        "body2": [
+          "Venus"
+        ],
+        "unit": [
+          "miles"
         ]
       }
     },
     {
-      "math.factorial": {
-        "number": [
-          10
-        ]
-      }
-    },
-    {
-      "math.factorial": {
-        "number": [
-          15
+      "calculate_distance": {
+        "body1": [
+          "Mars"
+        ],
+        "body2": [
+          "Jupiter"
+        ],
+        "unit": [
+          "miles"
         ]
       }
     }
@@ -1596,3 +1641,5 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-bfcl-el
 ```
+
+Use `--evaluate-test-split` to evaluate the test split explicitly.

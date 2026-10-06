@@ -2067,22 +2067,54 @@ The source test split has 2,501 examples in ten categories:
 - `simple_javascript` (50)
 - `simple_python` (400)
 
-We select 2,048 rows from the 2,501-row source test split by applying a deterministic
-shuffle (seed 42) and retaining the first 2,048 rows. The resulting test-only dataset
-has no training or validation split, so evaluation is zero-shot. Translation quality may
-vary and affect results.
+The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
+rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
+published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
+with no training split. EuroEval evaluates generative models on validation by default;
+pass `--evaluate-test-split` to evaluate on test. This task requires zero-shot
+evaluation and has no training examples. Translation quality may vary and affect
+results.
 
-Here are two examples from the published test split. The `text` value is shown verbatim
-and contains both the serialized function definitions and translated user question.
-`target_text` is stored as a JSON string; it is decoded below for readability. Both
-displayed fields are complete (not abbreviated):
+Here are two examples from the published validation split. The `text` value is shown
+verbatim and contains both the serialized function definitions and translated user
+question. `target_text` is stored as a JSON string; it is decoded below for readability.
+Both displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"version_api.VersionApi.get_version\", \"description\": \"Retrieves the current version information of the application, including its name and version number.\", \"parameters\": {\"type\": \"dict\", \"required\": [], \"properties\": {}}}]\nQuestion: Nenne mir die Version der Anwendung.",
+  "text": "Functions:\n[{\"name\": \"museum.get_hours\", \"description\": \"Retrieve the operational hours of a specified museum.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"museum_name\"], \"properties\": {\"museum_name\": {\"type\": \"string\", \"description\": \"The name of the museum.\"}}}}, {\"name\": \"location.get_travel_time\", \"description\": \"Retrieve the estimated travel time from current location to a specific destination.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"destination\"], \"properties\": {\"destination\": {\"type\": \"string\", \"description\": \"The destination location.\"}, \"mode\": {\"type\": \"string\", \"enum\": [\"Driving\", \"Biking\", \"Walking\"], \"description\": \"Mode of travel.\", \"default\": \"Driving\"}}}}, {\"name\": \"museum.get_waiting_time\", \"description\": \"Retrieve the estimated waiting time at a specific museum.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"museum_name\"], \"properties\": {\"museum_name\": {\"type\": \"string\", \"description\": \"The name of the museum.\"}, \"day\": {\"type\": \"string\", \"enum\": [\"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Saturday\", \"Sunday\"], \"description\": \"Day of the week.\", \"default\": \"Monday\"}}}}]\nQuestion: Finde die Öffnungszeiten des Louvre-Museums und die Wartezeit heraus und sag mir dann, wie lange ich von meinem aktuellen Standort bis zum Museum brauche.",
   "target_text": [
     {
-      "version_api.VersionApi.get_version": {}
+      "museum.get_hours": {
+        "museum_name": [
+          "Louvre Museum",
+          "Louvre"
+        ]
+      }
+    },
+    {
+      "museum.get_waiting_time": {
+        "museum_name": [
+          "Louvre Museum",
+          "Louvre"
+        ],
+        "day": [
+          "",
+          "Monday"
+        ]
+      }
+    },
+    {
+      "location.get_travel_time": {
+        "destination": [
+          "Louvre Museum",
+          "Louvre"
+        ],
+        "mode": [
+          "Driving",
+          ""
+        ]
+      }
     }
   ]
 }
@@ -2090,26 +2122,67 @@ displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"math.factorial\", \"description\": \"Calculate the factorial of a given number.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"number\"], \"properties\": {\"number\": {\"type\": \"integer\", \"description\": \"The number for which factorial needs to be calculated.\"}}}}]\nQuestion: Was sind die Ergebnisse von 5 Fakultät, 7 Fakultät und 9 Fakultät?",
+  "text": "Functions:\n[{\"name\": \"create_histogram\", \"description\": \"Create a histogram based on provided data.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"data\", \"bins\"], \"properties\": {\"data\": {\"type\": \"array\", \"items\": {\"type\": \"integer\"}, \"description\": \"The data for which histogram needs to be plotted.\"}, \"bins\": {\"type\": \"integer\", \"description\": \"The number of equal-width bins in the range. Default is 10.\"}}}}]\nQuestion: Du erhältst zwei Datensätze: Der erste ist [12, 15, 11, 14, 18, 19, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26] und der zweite ist [32, 35, 31, 34, 38, 39, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46]. Kannst du mit der Funktion „create_histogram“ für jeden Datensatz ein Histogramm mit jeweils 5 Klassen erstellen?",
   "target_text": [
     {
-      "math.factorial": {
-        "number": [
+      "create_histogram": {
+        "data": [
+          [
+            12,
+            15,
+            11,
+            14,
+            18,
+            19,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26
+          ]
+        ],
+        "bins": [
           5
         ]
       }
     },
     {
-      "math.factorial": {
-        "number": [
-          7
-        ]
-      }
-    },
-    {
-      "math.factorial": {
-        "number": [
-          9
+      "create_histogram": {
+        "data": [
+          [
+            32,
+            35,
+            31,
+            34,
+            38,
+            39,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46
+          ]
+        ],
+        "bins": [
+          5
         ]
       }
     }
@@ -2149,3 +2222,5 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-bfcl-de
 ```
+
+Use `--evaluate-test-split` to evaluate the test split explicitly.

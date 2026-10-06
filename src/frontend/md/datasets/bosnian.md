@@ -640,22 +640,42 @@ The source test split has 2,501 examples in ten categories:
 - `simple_javascript` (50)
 - `simple_python` (400)
 
-We select 2,048 rows from the 2,501-row source test split by applying a deterministic
-shuffle (seed 42) and retaining the first 2,048 rows. The resulting test-only dataset
-has no training or validation split, so evaluation is zero-shot. Translation quality may
-vary and affect results.
+The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
+rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
+published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
+with no training split. EuroEval evaluates generative models on validation by default;
+pass `--evaluate-test-split` to evaluate on test. This task requires zero-shot
+evaluation and has no training examples. Translation quality may vary and affect
+results.
 
-Here are two examples from the published test split. The `text` value is shown verbatim
-and contains both the serialized function definitions and translated user question.
-`target_text` is stored as a JSON string; it is decoded below for readability. Both
-displayed fields are complete (not abbreviated):
+Here are two examples from the published validation split. The `text` value is shown
+verbatim and contains both the serialized function definitions and translated user
+question. `target_text` is stored as a JSON string; it is decoded below for readability.
+Both displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"version_api.VersionApi.get_version\", \"description\": \"Retrieves the current version information of the application, including its name and version number.\", \"parameters\": {\"type\": \"dict\", \"required\": [], \"properties\": {}}}]\nQuestion: Dajte mi verziju aplikacije.",
+  "text": "Functions:\n[{\"name\": \"calcVolume.cuboid\", \"description\": \"Calculates the volume of a cuboid.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"height\", \"width\", \"depth\"], \"properties\": {\"height\": {\"type\": \"float\", \"description\": \"The height of the cuboid.\"}, \"width\": {\"type\": \"float\", \"description\": \"The width of the cuboid.\"}, \"depth\": {\"type\": \"float\", \"description\": \"The depth of the cuboid.\"}}}}, {\"name\": \"calcVolume.sphere\", \"description\": \"Calculates the volume of a sphere.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"radius\"], \"properties\": {\"radius\": {\"type\": \"float\", \"description\": \"The radius of the sphere.\"}}}}]\nQuestion: Izračunajte zapreminu kvadra visine 10 m, širine 5 m i dubine 8 m. Zatim izračunajte zapreminu kugle poluprečnika 4 m.",
   "target_text": [
     {
-      "version_api.VersionApi.get_version": {}
+      "calcVolume.cuboid": {
+        "height": [
+          10.0
+        ],
+        "width": [
+          5.0
+        ],
+        "depth": [
+          8.0
+        ]
+      }
+    },
+    {
+      "calcVolume.sphere": {
+        "radius": [
+          4.0
+        ]
+      }
     }
   ]
 }
@@ -663,26 +683,35 @@ displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"math.factorial\", \"description\": \"Calculate the factorial of a given number.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"number\"], \"properties\": {\"number\": {\"type\": \"integer\", \"description\": \"The number for which factorial needs to be calculated.\"}}}}]\nQuestion: Koliko iznose faktorijeli brojeva 5, 7 i 9?",
+  "text": "Functions:\n[{\"name\": \"calculate_BMI\", \"description\": \"Calculate the Body Mass Index (BMI) given a person's weight and height.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"weight_kg\", \"height_m\"], \"properties\": {\"weight_kg\": {\"type\": \"integer\", \"description\": \"The weight of the person in kilograms.\"}, \"height_m\": {\"type\": \"float\", \"description\": \"The height of the person in meters.\"}}}}]\nQuestion: John, koji ima 85 kilograma i visok je 1,8 metara, i njegova prijateljica Sarah, koja ima 60 kilograma i visoka je 1,65 metara, raspravljaju o svom zdravlju. Odlučuju izračunati svoj indeks tjelesne mase (BMI) kako bi razriješili raspravu. Kasnije susreću svog prijatelja Mikea, koji ima 75 kilograma i visok je 1,7 metara, te odlučuju izračunati i njegov BMI. Možete li im pomoći da izračunaju svoje indekse tjelesne mase?",
   "target_text": [
     {
-      "math.factorial": {
-        "number": [
-          5
+      "calculate_BMI": {
+        "weight_kg": [
+          85
+        ],
+        "height_m": [
+          1.8
         ]
       }
     },
     {
-      "math.factorial": {
-        "number": [
-          7
+      "calculate_BMI": {
+        "weight_kg": [
+          60
+        ],
+        "height_m": [
+          1.65
         ]
       }
     },
     {
-      "math.factorial": {
-        "number": [
-          9
+      "calculate_BMI": {
+        "weight_kg": [
+          75
+        ],
+        "height_m": [
+          1.7
         ]
       }
     }
@@ -722,3 +751,5 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-bfcl-bs
 ```
+
+Use `--evaluate-test-split` to evaluate the test split explicitly.

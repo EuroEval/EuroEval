@@ -1379,24 +1379,53 @@ The source test split has 2,501 examples in ten categories:
 - `simple_javascript` (50)
 - `simple_python` (400)
 
-We select 2,048 rows from the 2,501-row source test split by applying a deterministic
-shuffle (seed 42) and retaining the first 2,048 rows. The resulting test-only dataset
-has no training or validation split, so evaluation is zero-shot. Translation quality may
-vary and affect results.
+The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
+rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
+published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
+with no training split. EuroEval evaluates generative models on validation by default;
+pass `--evaluate-test-split` to evaluate on test. This task requires zero-shot
+evaluation and has no training examples. Translation quality may vary and affect
+results.
 
-Here are two examples from the published test split. The `text` value is shown verbatim
-and contains both the serialized function definitions and translated user question.
-`target_text` is stored as a JSON string; it is decoded below for readability. Both
-displayed fields are complete (not abbreviated):
+Here are two examples from the published validation split. The `text` value is shown
+verbatim and contains both the serialized function definitions and translated user
+question. `target_text` is stored as a JSON string; it is decoded below for readability.
+Both displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"math.factorial\", \"description\": \"Calculate the factorial of a given number.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"number\"], \"properties\": {\"number\": {\"type\": \"integer\", \"description\": \"The number to compute factorial.\"}}}}]\nQuestion: Calculează factorialul numărului 5.",
+  "text": "Functions:\n[{\"name\": \"painting.create\", \"description\": \"Creates a new painting with specified parameters\", \"parameters\": {\"type\": \"dict\", \"required\": [\"shape\", \"background_color\", \"dimensions\"], \"properties\": {\"shape\": {\"type\": \"string\", \"description\": \"Shape of the painting to be created.\"}, \"background_color\": {\"type\": \"string\", \"description\": \"Background color of the painting.\"}, \"dimensions\": {\"type\": \"array\", \"items\": {\"type\": \"integer\"}, \"description\": \"Dimensions of the painting in inches.\"}}}}, {\"name\": \"display.set_screen_brightness\", \"description\": \"Sets the screen brightness for viewing the painting\", \"parameters\": {\"type\": \"dict\", \"required\": [\"percentage\", \"duration\"], \"properties\": {\"percentage\": {\"type\": \"integer\", \"description\": \"Screen brightness level in percentage.\"}, \"duration\": {\"type\": \"integer\", \"description\": \"Duration to maintain the brightness level in seconds.\"}}}}, {\"name\": \"painting.display\", \"description\": \"Displays a created painting for a specific amount of time\", \"parameters\": {\"type\": \"dict\", \"required\": [\"time\"], \"properties\": {\"time\": {\"type\": \"integer\", \"description\": \"Time in seconds the painting will be displayed for.\"}}}}]\nQuestion: Creează o pictură pătrată, cu fundal albastru și dimensiuni de 16 × 16 inchi, apoi afișeaz-o timp de 30 de secunde la 70% luminozitate a ecranului.",
   "target_text": [
     {
-      "math.factorial": {
-        "number": [
-          5
+      "painting.create": {
+        "shape": [
+          "square"
+        ],
+        "background_color": [
+          "blue"
+        ],
+        "dimensions": [
+          [
+            16,
+            16
+          ]
+        ]
+      }
+    },
+    {
+      "display.set_screen_brightness": {
+        "percentage": [
+          70
+        ],
+        "duration": [
+          30
+        ]
+      }
+    },
+    {
+      "painting.display": {
+        "time": [
+          30
         ]
       }
     }
@@ -1406,26 +1435,45 @@ displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"math.factorial\", \"description\": \"Calculate the factorial of a given positive integer.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"number\"], \"properties\": {\"number\": {\"type\": \"integer\", \"description\": \"The number for which factorial needs to be calculated.\"}}}}]\nQuestion: Calculează factorialul numerelor 5, 10 și 15.",
+  "text": "Functions:\n[{\"name\": \"calculate_speed\", \"description\": \"Calculate the speed of an object based on the distance travelled and the time taken.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"distance\", \"time\"], \"properties\": {\"distance\": {\"type\": \"integer\", \"description\": \"The distance the object travelled in meters.\"}, \"time\": {\"type\": \"integer\", \"description\": \"The time it took for the object to travel in seconds.\"}, \"to_unit\": {\"type\": \"string\", \"description\": \"The unit in which the speed should be calculated, default is m/s.\"}}}}]\nQuestion: Poți calcula viteza unei mașini care a parcurs 500 de metri în 25 de secunde și să dai răspunsul în km/h? De asemenea, poți calcula viteza unei biciclete care a parcurs 1000 de metri în 200 de secunde și să dai răspunsul în m/s? În cele din urmă, poți calcula viteza unui tren care a parcurs 10000 de metri în 600 de secunde și să dai răspunsul în km/h?",
   "target_text": [
     {
-      "math.factorial": {
-        "number": [
-          5
+      "calculate_speed": {
+        "distance": [
+          500
+        ],
+        "time": [
+          25
+        ],
+        "to_unit": [
+          "km/h"
         ]
       }
     },
     {
-      "math.factorial": {
-        "number": [
-          10
+      "calculate_speed": {
+        "distance": [
+          1000
+        ],
+        "time": [
+          200
+        ],
+        "to_unit": [
+          "m/s",
+          ""
         ]
       }
     },
     {
-      "math.factorial": {
-        "number": [
-          15
+      "calculate_speed": {
+        "distance": [
+          10000
+        ],
+        "time": [
+          600
+        ],
+        "to_unit": [
+          "km/h"
         ]
       }
     }
@@ -1465,3 +1513,5 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-bfcl-ro
 ```
+
+Use `--evaluate-test-split` to evaluate the test split explicitly.

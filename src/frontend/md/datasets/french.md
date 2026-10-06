@@ -1695,22 +1695,54 @@ The source test split has 2,501 examples in ten categories:
 - `simple_javascript` (50)
 - `simple_python` (400)
 
-We select 2,048 rows from the 2,501-row source test split by applying a deterministic
-shuffle (seed 42) and retaining the first 2,048 rows. The resulting test-only dataset
-has no training or validation split, so evaluation is zero-shot. Translation quality may
-vary and affect results.
+The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
+rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
+published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
+with no training split. EuroEval evaluates generative models on validation by default;
+pass `--evaluate-test-split` to evaluate on test. This task requires zero-shot
+evaluation and has no training examples. Translation quality may vary and affect
+results.
 
-Here are two examples from the published test split. The `text` value is shown verbatim
-and contains both the serialized function definitions and translated user question.
-`target_text` is stored as a JSON string; it is decoded below for readability. Both
-displayed fields are complete (not abbreviated):
+Here are two examples from the published validation split. The `text` value is shown
+verbatim and contains both the serialized function definitions and translated user
+question. `target_text` is stored as a JSON string; it is decoded below for readability.
+Both displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"version_api.VersionApi.get_version\", \"description\": \"Retrieves the current version information of the application, including its name and version number.\", \"parameters\": {\"type\": \"dict\", \"required\": [], \"properties\": {}}}]\nQuestion: Donne-moi la version de l’application.",
+  "text": "Functions:\n[{\"name\": \"melody_generator\", \"description\": \"Create a melody based on specified notes.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"note_sequence\"], \"properties\": {\"note_sequence\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}, \"description\": \"The sequence of notes for the melody.\"}, \"instrument\": {\"type\": \"string\", \"default\": \"Bass\", \"description\": \"The instrument to play the melody, e.g. Bass.\"}}}}, {\"name\": \"beat_generator\", \"description\": \"Generate a beat based on specified genre and beats per minute.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"genre\", \"bpm\"], \"properties\": {\"genre\": {\"type\": \"string\", \"description\": \"The genre of the beat, e.g. Hip Hop.\"}, \"bpm\": {\"type\": \"integer\", \"description\": \"The beats per minute of the beat.\"}, \"scale\": {\"type\": \"string\", \"description\": \"The scale for the beat, e.g. Major.\", \"default\": \"Major\"}}}}]\nQuestion: Crée un beat hip-hop à 95 battements par minute dans une gamme majeure, et compose une ligne de basse avec les notes do4, mi4, fa4 et sol4.",
   "target_text": [
     {
-      "version_api.VersionApi.get_version": {}
+      "beat_generator": {
+        "genre": [
+          "Hip Hop",
+          "hip hop"
+        ],
+        "bpm": [
+          95
+        ],
+        "scale": [
+          "Major",
+          "major",
+          ""
+        ]
+      }
+    },
+    {
+      "melody_generator": {
+        "note_sequence": [
+          [
+            "C4",
+            "E4",
+            "F4",
+            "G4"
+          ]
+        ],
+        "instrument": [
+          "Bass",
+          ""
+        ]
+      }
     }
   ]
 }
@@ -1718,26 +1750,45 @@ displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"math.factorial\", \"description\": \"Calculate the factorial of a given positive integer.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"number\"], \"properties\": {\"number\": {\"type\": \"integer\", \"description\": \"The number for which factorial needs to be calculated.\"}}}}]\nQuestion: Calculez les factorielles de 5, de 10 et de 15.",
+  "text": "Functions:\n[{\"name\": \"calculate_speed\", \"description\": \"Calculate the speed of an object based on the distance travelled and the time taken.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"distance\", \"time\"], \"properties\": {\"distance\": {\"type\": \"integer\", \"description\": \"The distance the object travelled in meters.\"}, \"time\": {\"type\": \"integer\", \"description\": \"The time it took for the object to travel in seconds.\"}, \"to_unit\": {\"type\": \"string\", \"description\": \"The unit in which the speed should be calculated, default is m/s.\"}}}}]\nQuestion: Peux-tu calculer la vitesse d’une voiture qui a parcouru 500 mètres en 25 secondes et donner la réponse en km/h ? Peux-tu également calculer la vitesse d’un vélo qui a parcouru 1 000 mètres en 200 secondes et donner la réponse en m/s ? Enfin, peux-tu calculer la vitesse d’un train qui a parcouru 10 000 mètres en 600 secondes et donner la réponse en km/h ?",
   "target_text": [
     {
-      "math.factorial": {
-        "number": [
-          5
+      "calculate_speed": {
+        "distance": [
+          500
+        ],
+        "time": [
+          25
+        ],
+        "to_unit": [
+          "km/h"
         ]
       }
     },
     {
-      "math.factorial": {
-        "number": [
-          10
+      "calculate_speed": {
+        "distance": [
+          1000
+        ],
+        "time": [
+          200
+        ],
+        "to_unit": [
+          "m/s",
+          ""
         ]
       }
     },
     {
-      "math.factorial": {
-        "number": [
-          15
+      "calculate_speed": {
+        "distance": [
+          10000
+        ],
+        "time": [
+          600
+        ],
+        "to_unit": [
+          "km/h"
         ]
       }
     }
@@ -1777,3 +1828,5 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-bfcl-fr
 ```
+
+Use `--evaluate-test-split` to evaluate the test split explicitly.
