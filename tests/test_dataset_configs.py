@@ -179,7 +179,7 @@ def test_multibfcl_configs_and_prompts_cover_non_english_languages() -> None:
         config = configs[f"multi-bfcl-{code}"]
         assert config.source == f"EuroEval/multi-bfcl-{code}-mini"
         assert config.task == TOOL_CALLING
-        assert config.unofficial
+        assert not config.unofficial
         assert config.train_split is None
         assert config.val_split == "val"
         assert config.test_split == "test"

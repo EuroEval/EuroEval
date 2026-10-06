@@ -134,7 +134,6 @@ MULTI_BFCL_SR_CONFIG = DatasetConfig(
     task=TOOL_CALLING,
     languages=[SERBIAN],
     train_split=None,
-    unofficial=True,
 )
 
 

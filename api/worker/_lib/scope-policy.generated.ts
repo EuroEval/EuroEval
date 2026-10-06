@@ -15,10 +15,10 @@ export type ScopePolicy = {
 };
 
 const generatedScopePolicy = {
-  "policy_version": "volunteer-scope/18.1.0.dev0",
+  "policy_version": "volunteer-scope/18.2.0",
   "policies": [
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "be",
       "language_group": "be",
@@ -42,7 +42,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "bg",
       "language_group": "bg",
@@ -65,7 +65,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "bs",
       "language_group": "bs",
@@ -84,7 +84,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "ca",
       "language_group": "ca",
@@ -107,7 +107,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "cs",
       "language_group": "cs",
@@ -130,7 +130,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "da",
       "language_group": "da",
@@ -155,7 +155,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "de",
       "language_group": "de",
@@ -179,7 +179,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "el",
       "language_group": "el",
@@ -202,7 +202,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "en",
       "language_group": "en",
@@ -225,7 +225,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "es",
       "language_group": "es",
@@ -249,7 +249,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "et",
       "language_group": "et",
@@ -272,7 +272,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "fi",
       "language_group": "fi",
@@ -295,7 +295,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "fo",
       "language_group": "fo",
@@ -318,7 +318,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "fr",
       "language_group": "fr",
@@ -342,7 +342,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "hr",
       "language_group": "hr",
@@ -365,7 +365,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "hu",
       "language_group": "hu",
@@ -388,7 +388,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "is",
       "language_group": "is",
@@ -411,7 +411,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "it",
       "language_group": "it",
@@ -435,7 +435,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "lb",
       "language_group": "lb",
@@ -458,7 +458,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "lt",
       "language_group": "lt",
@@ -482,7 +482,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "lv",
       "language_group": "lv",
@@ -505,7 +505,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "nb",
       "language_group": "nb",
@@ -529,7 +529,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "nl",
       "language_group": "nl",
@@ -553,7 +553,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "nn",
       "language_group": "nn",
@@ -577,7 +577,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "no",
       "language_group": "no",
@@ -603,7 +603,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "pl",
       "language_group": "pl",
@@ -626,7 +626,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "pt",
       "language_group": "pt",
@@ -650,7 +650,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "pt-pt",
       "language_group": "pt-pt",
@@ -674,7 +674,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "ro",
       "language_group": "ro",
@@ -697,7 +697,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "sk",
       "language_group": "sk",
@@ -720,7 +720,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "sl",
       "language_group": "sl",
@@ -743,7 +743,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "sq",
       "language_group": "sq",
@@ -766,7 +766,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "sr",
       "language_group": "sr",
@@ -789,7 +789,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "sv",
       "language_group": "sv",
@@ -813,7 +813,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "encoder",
       "language": "uk",
       "language_group": "uk",
@@ -836,7 +836,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "be",
       "language_group": "be",
@@ -847,6 +847,7 @@ const generatedScopePolicy = {
           "[\"berte-wd\",true,true]",
           "[\"besls\",true,true]",
           "[\"bewic\",true,true]",
+          "[\"flores-en-be\",true,true]",
           "[\"multi-wiki-qa-be\",true,true]",
           "[\"wikiann-be\",true,true]"
         ],
@@ -856,6 +857,8 @@ const generatedScopePolicy = {
           "[\"berte-wd\",true,false]",
           "[\"besls\",true,false]",
           "[\"bewic\",true,false]",
+          "[\"flores-en-be\",true,false]",
+          "[\"multi-bfcl-be\",true,null]",
           "[\"multi-ifeval-be\",null,null]",
           "[\"multi-wiki-qa-be\",true,false]",
           "[\"ragtruth-be\",true,null]",
@@ -865,6 +868,7 @@ const generatedScopePolicy = {
           "[\"berte-wd\",true,true]",
           "[\"besls\",true,true]",
           "[\"bewic\",true,true]",
+          "[\"flores-en-be\",true,true]",
           "[\"multi-wiki-qa-be\",true,true]",
           "[\"wikiann-be\",true,true]"
         ]
@@ -879,7 +883,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "bg",
       "language_group": "bg",
@@ -888,25 +892,32 @@ const generatedScopePolicy = {
           "[\"bg-ner-bsnlp\",true,true]",
           "[\"cinexio\",true,true]",
           "[\"exams-bg\",true,true]",
+          "[\"flores-en-bg\",true,true]",
           "[\"multi-wiki-qa-bg\",true,true]",
           "[\"scala-bg\",true,true]",
-          "[\"winogrande-bg\",true,true]"
+          "[\"winogrande-bg\",true,true]",
+          "[\"wmt24pp-en-bg\",true,true]"
         ],
         [
           "[\"bg-ner-bsnlp\",true,false]",
           "[\"cinexio\",true,false]",
           "[\"exams-bg\",true,false]",
+          "[\"flores-en-bg\",true,false]",
+          "[\"multi-bfcl-bg\",true,null]",
           "[\"multi-ifeval-bg\",null,null]",
           "[\"multi-wiki-qa-bg\",true,false]",
           "[\"ragtruth-bg\",true,null]",
           "[\"scala-bg\",true,false]",
           "[\"winogrande-bg\",true,false]",
+          "[\"wmt24pp-en-bg\",true,false]",
           "[\"bg-ner-bsnlp\",true,true]",
           "[\"cinexio\",true,true]",
           "[\"exams-bg\",true,true]",
+          "[\"flores-en-bg\",true,true]",
           "[\"multi-wiki-qa-bg\",true,true]",
           "[\"scala-bg\",true,true]",
-          "[\"winogrande-bg\",true,true]"
+          "[\"winogrande-bg\",true,true]",
+          "[\"wmt24pp-en-bg\",true,true]"
         ]
       ],
       "task_groups": [
@@ -919,24 +930,28 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "bs",
       "language_group": "bs",
       "allowed_identity_suffix_sets": [
         [
+          "[\"flores-en-bs\",true,true]",
           "[\"lr-sum-bs\",true,true]",
           "[\"mms-bs\",true,true]",
           "[\"multi-wiki-qa-bs\",true,true]",
           "[\"wikiann-bs\",true,true]"
         ],
         [
+          "[\"flores-en-bs\",true,false]",
           "[\"lr-sum-bs\",true,false]",
           "[\"mms-bs\",true,false]",
+          "[\"multi-bfcl-bs\",true,null]",
           "[\"multi-ifeval-bs\",null,null]",
           "[\"multi-wiki-qa-bs\",true,false]",
           "[\"ragtruth-bs\",true,null]",
           "[\"wikiann-bs\",true,false]",
+          "[\"flores-en-bs\",true,true]",
           "[\"lr-sum-bs\",true,true]",
           "[\"mms-bs\",true,true]",
           "[\"multi-wiki-qa-bs\",true,true]",
@@ -952,37 +967,44 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "ca",
       "language_group": "ca",
       "allowed_identity_suffix_sets": [
         [
           "[\"dacsa-ca\",true,true]",
+          "[\"flores-en-ca\",true,true]",
           "[\"guia-cat\",true,true]",
           "[\"mmlu-ca\",true,true]",
           "[\"multi-wiki-qa-ca\",true,true]",
           "[\"scala-ca\",true,true]",
           "[\"wikiann-ca\",true,true]",
-          "[\"winogrande-ca\",true,true]"
+          "[\"winogrande-ca\",true,true]",
+          "[\"wmt24pp-en-ca\",true,true]"
         ],
         [
           "[\"dacsa-ca\",true,false]",
+          "[\"flores-en-ca\",true,false]",
           "[\"guia-cat\",true,false]",
           "[\"ifeval-ca\",null,null]",
           "[\"mmlu-ca\",true,false]",
+          "[\"multi-bfcl-ca\",true,null]",
           "[\"multi-wiki-qa-ca\",true,false]",
           "[\"ragtruth-ca\",true,null]",
           "[\"scala-ca\",true,false]",
           "[\"wikiann-ca\",true,false]",
           "[\"winogrande-ca\",true,false]",
+          "[\"wmt24pp-en-ca\",true,false]",
           "[\"dacsa-ca\",true,true]",
+          "[\"flores-en-ca\",true,true]",
           "[\"guia-cat\",true,true]",
           "[\"mmlu-ca\",true,true]",
           "[\"multi-wiki-qa-ca\",true,true]",
           "[\"scala-ca\",true,true]",
           "[\"wikiann-ca\",true,true]",
-          "[\"winogrande-ca\",true,true]"
+          "[\"winogrande-ca\",true,true]",
+          "[\"wmt24pp-en-ca\",true,true]"
         ]
       ],
       "task_groups": [
@@ -995,7 +1017,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "cs",
       "language_group": "cs",
@@ -1004,28 +1026,35 @@ const generatedScopePolicy = {
           "[\"cs-gec\",true,true]",
           "[\"csfd-sentiment\",true,true]",
           "[\"czech-news\",true,true]",
+          "[\"flores-en-cs\",true,true]",
           "[\"hellaswag-cs\",true,true]",
           "[\"poner\",true,true]",
           "[\"sqad\",true,true]",
-          "[\"umimeto-qa\",true,true]"
+          "[\"umimeto-qa\",true,true]",
+          "[\"wmt24pp-en-cs\",true,true]"
         ],
         [
           "[\"cs-gec\",true,false]",
           "[\"csfd-sentiment\",true,false]",
           "[\"czech-news\",true,false]",
+          "[\"flores-en-cs\",true,false]",
           "[\"hellaswag-cs\",true,false]",
+          "[\"multi-bfcl-cs\",true,null]",
           "[\"multi-ifeval-cs\",null,null]",
           "[\"poner\",true,false]",
           "[\"ragtruth-cs\",true,null]",
           "[\"sqad\",true,false]",
           "[\"umimeto-qa\",true,false]",
+          "[\"wmt24pp-en-cs\",true,false]",
           "[\"cs-gec\",true,true]",
           "[\"csfd-sentiment\",true,true]",
           "[\"czech-news\",true,true]",
+          "[\"flores-en-cs\",true,true]",
           "[\"hellaswag-cs\",true,true]",
           "[\"poner\",true,true]",
           "[\"sqad\",true,true]",
-          "[\"umimeto-qa\",true,true]"
+          "[\"umimeto-qa\",true,true]",
+          "[\"wmt24pp-en-cs\",true,true]"
         ]
       ],
       "task_groups": [
@@ -1038,7 +1067,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "da",
       "language_group": "da",
@@ -1050,9 +1079,11 @@ const generatedScopePolicy = {
           "[\"dansk\",true,true]",
           "[\"danske-talemaader\",true,true]",
           "[\"danwic\",true,true]",
+          "[\"flores-en-da\",true,true]",
           "[\"multi-wiki-qa-da\",true,true]",
           "[\"nordjylland-news\",true,true]",
-          "[\"winogrande-da\",true,true]"
+          "[\"winogrande-da\",true,true]",
+          "[\"wmt24pp-en-da\",true,true]"
         ],
         [
           "[\"angry-tweets\",true,false]",
@@ -1061,12 +1092,15 @@ const generatedScopePolicy = {
           "[\"dansk\",true,false]",
           "[\"danske-talemaader\",true,false]",
           "[\"danwic\",true,false]",
+          "[\"flores-en-da\",true,false]",
           "[\"ifeval-da\",null,null]",
+          "[\"multi-bfcl-da\",true,null]",
           "[\"multi-wiki-qa-da\",true,false]",
           "[\"nordjylland-news\",true,false]",
           "[\"ragtruth-da\",true,null]",
           "[\"valeu-da\",null,null]",
           "[\"winogrande-da\",true,false]",
+          "[\"wmt24pp-en-da\",true,false]",
           "[\"zebra-puzzles-easy-da\",true,false]",
           "[\"angry-tweets\",true,true]",
           "[\"dala\",true,true]",
@@ -1074,9 +1108,11 @@ const generatedScopePolicy = {
           "[\"dansk\",true,true]",
           "[\"danske-talemaader\",true,true]",
           "[\"danwic\",true,true]",
+          "[\"flores-en-da\",true,true]",
           "[\"multi-wiki-qa-da\",true,true]",
           "[\"nordjylland-news\",true,true]",
           "[\"winogrande-da\",true,true]",
+          "[\"wmt24pp-en-da\",true,true]",
           "[\"zebra-puzzles-easy-da\",true,true]"
         ]
       ],
@@ -1090,34 +1126,13 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "de",
       "language_group": "de",
       "allowed_identity_suffix_sets": [
         [
-          "[\"germanquad\",true,true]",
-          "[\"germeval\",true,true]",
-          "[\"include-de\",true,true]",
-          "[\"mlsum-de\",true,true]",
-          "[\"multiloko-de\",null,true]",
-          "[\"sb10k\",true,true]",
-          "[\"scala-de\",true,true]",
-          "[\"winogrande-de\",true,true]"
-        ],
-        [
-          "[\"germanquad\",true,false]",
-          "[\"germeval\",true,false]",
-          "[\"include-de\",true,false]",
-          "[\"mlsum-de\",true,false]",
-          "[\"multi-ifeval-de\",null,null]",
-          "[\"multiloko-de\",null,false]",
-          "[\"ragtruth-de\",true,null]",
-          "[\"sb10k\",true,false]",
-          "[\"scala-de\",true,false]",
-          "[\"valeu-de\",null,null]",
-          "[\"winogrande-de\",true,false]",
-          "[\"zebra-puzzles-easy-de\",true,false]",
+          "[\"flores-en-de\",true,true]",
           "[\"germanquad\",true,true]",
           "[\"germeval\",true,true]",
           "[\"include-de\",true,true]",
@@ -1126,6 +1141,34 @@ const generatedScopePolicy = {
           "[\"sb10k\",true,true]",
           "[\"scala-de\",true,true]",
           "[\"winogrande-de\",true,true]",
+          "[\"wmt24pp-en-de\",true,true]"
+        ],
+        [
+          "[\"flores-en-de\",true,false]",
+          "[\"germanquad\",true,false]",
+          "[\"germeval\",true,false]",
+          "[\"include-de\",true,false]",
+          "[\"mlsum-de\",true,false]",
+          "[\"multi-bfcl-de\",true,null]",
+          "[\"multi-ifeval-de\",null,null]",
+          "[\"multiloko-de\",null,false]",
+          "[\"ragtruth-de\",true,null]",
+          "[\"sb10k\",true,false]",
+          "[\"scala-de\",true,false]",
+          "[\"valeu-de\",null,null]",
+          "[\"winogrande-de\",true,false]",
+          "[\"wmt24pp-en-de\",true,false]",
+          "[\"zebra-puzzles-easy-de\",true,false]",
+          "[\"flores-en-de\",true,true]",
+          "[\"germanquad\",true,true]",
+          "[\"germeval\",true,true]",
+          "[\"include-de\",true,true]",
+          "[\"mlsum-de\",true,true]",
+          "[\"multiloko-de\",null,true]",
+          "[\"sb10k\",true,true]",
+          "[\"scala-de\",true,true]",
+          "[\"winogrande-de\",true,true]",
+          "[\"wmt24pp-en-de\",true,true]",
           "[\"zebra-puzzles-easy-de\",true,true]"
         ]
       ],
@@ -1139,7 +1182,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "el",
       "language_group": "el",
@@ -1147,32 +1190,39 @@ const generatedScopePolicy = {
         [
           "[\"culturaqa\",true,true]",
           "[\"elner\",true,true]",
+          "[\"flores-en-el\",true,true]",
           "[\"greek-mmlu\",true,true]",
           "[\"greek-sa\",true,true]",
           "[\"greek-wikipedia\",true,true]",
           "[\"multi-wiki-qa-el\",true,true]",
           "[\"scala-el\",true,true]",
-          "[\"winogrande-el\",true,true]"
+          "[\"winogrande-el\",true,true]",
+          "[\"wmt24pp-en-el\",true,true]"
         ],
         [
           "[\"culturaqa\",true,false]",
           "[\"elner\",true,false]",
+          "[\"flores-en-el\",true,false]",
           "[\"greek-mmlu\",true,false]",
           "[\"greek-sa\",true,false]",
           "[\"greek-wikipedia\",true,false]",
           "[\"ifeval-el\",null,null]",
+          "[\"multi-bfcl-el\",true,null]",
           "[\"multi-wiki-qa-el\",true,false]",
           "[\"ragtruth-el\",true,null]",
           "[\"scala-el\",true,false]",
           "[\"winogrande-el\",true,false]",
+          "[\"wmt24pp-en-el\",true,false]",
           "[\"culturaqa\",true,true]",
           "[\"elner\",true,true]",
+          "[\"flores-en-el\",true,true]",
           "[\"greek-mmlu\",true,true]",
           "[\"greek-sa\",true,true]",
           "[\"greek-wikipedia\",true,true]",
           "[\"multi-wiki-qa-el\",true,true]",
           "[\"scala-el\",true,true]",
-          "[\"winogrande-el\",true,true]"
+          "[\"winogrande-el\",true,true]",
+          "[\"wmt24pp-en-el\",true,true]"
         ]
       ],
       "task_groups": [
@@ -1185,7 +1235,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "en",
       "language_group": "en",
@@ -1232,13 +1282,14 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "es",
       "language_group": "es",
       "allowed_identity_suffix_sets": [
         [
           "[\"conll-es\",true,true]",
+          "[\"flores-en-es\",true,true]",
           "[\"include-es\",true,true]",
           "[\"mlqa-es\",true,true]",
           "[\"mlsum-es\",true,true]",
@@ -1249,10 +1300,12 @@ const generatedScopePolicy = {
         ],
         [
           "[\"conll-es\",true,false]",
+          "[\"flores-en-es\",true,false]",
           "[\"ifeval-es\",null,null]",
           "[\"include-es\",true,false]",
           "[\"mlqa-es\",true,false]",
           "[\"mlsum-es\",true,false]",
+          "[\"multi-bfcl-es\",true,null]",
           "[\"multiloko-es\",null,false]",
           "[\"ragtruth-es\",true,null]",
           "[\"scala-es\",true,false]",
@@ -1260,6 +1313,7 @@ const generatedScopePolicy = {
           "[\"valeu-es\",null,null]",
           "[\"winogrande-es\",true,false]",
           "[\"conll-es\",true,true]",
+          "[\"flores-en-es\",true,true]",
           "[\"include-es\",true,true]",
           "[\"mlqa-es\",true,true]",
           "[\"mlsum-es\",true,true]",
@@ -1279,7 +1333,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "et",
       "language_group": "et",
@@ -1288,29 +1342,36 @@ const generatedScopePolicy = {
           "[\"err-news\",true,true]",
           "[\"estner\",true,true]",
           "[\"estonian-valence\",true,true]",
+          "[\"flores-en-et\",true,true]",
           "[\"grammar-et\",true,true]",
           "[\"multi-wiki-qa-et\",true,true]",
           "[\"trivia-et\",true,true]",
-          "[\"winogrande-et\",true,true]"
+          "[\"winogrande-et\",true,true]",
+          "[\"wmt24pp-en-et\",true,true]"
         ],
         [
           "[\"err-news\",true,false]",
           "[\"estner\",true,false]",
           "[\"estonian-valence\",true,false]",
+          "[\"flores-en-et\",true,false]",
           "[\"grammar-et\",true,false]",
           "[\"ifeval-et\",null,null]",
+          "[\"multi-bfcl-et\",true,null]",
           "[\"multi-wiki-qa-et\",true,false]",
           "[\"ragtruth-et\",true,null]",
           "[\"trivia-et\",true,false]",
           "[\"valeu-et\",null,null]",
           "[\"winogrande-et\",true,false]",
+          "[\"wmt24pp-en-et\",true,false]",
           "[\"err-news\",true,true]",
           "[\"estner\",true,true]",
           "[\"estonian-valence\",true,true]",
+          "[\"flores-en-et\",true,true]",
           "[\"grammar-et\",true,true]",
           "[\"multi-wiki-qa-et\",true,true]",
           "[\"trivia-et\",true,true]",
-          "[\"winogrande-et\",true,true]"
+          "[\"winogrande-et\",true,true]",
+          "[\"wmt24pp-en-et\",true,true]"
         ]
       ],
       "task_groups": [
@@ -1323,22 +1384,26 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "fi",
       "language_group": "fi",
       "allowed_identity_suffix_sets": [
         [
+          "[\"flores-en-fi\",true,true]",
           "[\"include-fi\",true,true]",
           "[\"scala-fi\",true,true]",
           "[\"scandisent-fi\",true,true]",
           "[\"turku-ner-fi\",true,true]",
           "[\"tydiqa-fi\",true,true]",
           "[\"winogrande-fi\",true,true]",
+          "[\"wmt24pp-en-fi\",true,true]",
           "[\"xlsum-fi\",true,true]"
         ],
         [
+          "[\"flores-en-fi\",true,false]",
           "[\"include-fi\",true,false]",
+          "[\"multi-bfcl-fi\",true,null]",
           "[\"multi-ifeval-fi\",null,null]",
           "[\"ragtruth-fi\",true,null]",
           "[\"scala-fi\",true,false]",
@@ -1347,13 +1412,16 @@ const generatedScopePolicy = {
           "[\"tydiqa-fi\",true,false]",
           "[\"valeu-fi\",null,null]",
           "[\"winogrande-fi\",true,false]",
+          "[\"wmt24pp-en-fi\",true,false]",
           "[\"xlsum-fi\",true,false]",
+          "[\"flores-en-fi\",true,true]",
           "[\"include-fi\",true,true]",
           "[\"scala-fi\",true,true]",
           "[\"scandisent-fi\",true,true]",
           "[\"turku-ner-fi\",true,true]",
           "[\"tydiqa-fi\",true,true]",
           "[\"winogrande-fi\",true,true]",
+          "[\"wmt24pp-en-fi\",true,true]",
           "[\"xlsum-fi\",true,true]"
         ]
       ],
@@ -1367,7 +1435,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "fo",
       "language_group": "fo",
@@ -1376,6 +1444,7 @@ const generatedScopePolicy = {
           "[\"faroese-grammatical-correctness\",true,true]",
           "[\"faroese-metaphorical-explanations\",true,true]",
           "[\"faroese-semantic-relations\",true,true]",
+          "[\"flores-en-fo\",true,true]",
           "[\"fone\",true,true]",
           "[\"foqa\",true,true]",
           "[\"fosent\",true,true]",
@@ -1385,9 +1454,11 @@ const generatedScopePolicy = {
           "[\"faroese-grammatical-correctness\",true,false]",
           "[\"faroese-metaphorical-explanations\",true,false]",
           "[\"faroese-semantic-relations\",true,false]",
+          "[\"flores-en-fo\",true,false]",
           "[\"fone\",true,false]",
           "[\"foqa\",true,false]",
           "[\"fosent\",true,false]",
+          "[\"multi-bfcl-fo\",true,null]",
           "[\"multi-ifeval-fo\",null,null]",
           "[\"ragtruth-fo\",true,null]",
           "[\"scala-fo\",true,false]",
@@ -1395,6 +1466,7 @@ const generatedScopePolicy = {
           "[\"faroese-grammatical-correctness\",true,true]",
           "[\"faroese-metaphorical-explanations\",true,true]",
           "[\"faroese-semantic-relations\",true,true]",
+          "[\"flores-en-fo\",true,true]",
           "[\"fone\",true,true]",
           "[\"foqa\",true,true]",
           "[\"fosent\",true,true]",
@@ -1412,7 +1484,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "fr",
       "language_group": "fr",
@@ -1420,33 +1492,40 @@ const generatedScopePolicy = {
         [
           "[\"allocine\",true,true]",
           "[\"eltec\",true,true]",
+          "[\"flores-en-fr\",true,true]",
           "[\"fquad\",true,true]",
           "[\"hellaswag-fr\",true,true]",
           "[\"include-fr\",true,true]",
           "[\"multiloko-fr\",null,true]",
           "[\"orange-sum\",true,true]",
-          "[\"scala-fr\",true,true]"
+          "[\"scala-fr\",true,true]",
+          "[\"wmt24pp-en-fr\",true,true]"
         ],
         [
           "[\"allocine\",true,false]",
           "[\"eltec\",true,false]",
+          "[\"flores-en-fr\",true,false]",
           "[\"fquad\",true,false]",
           "[\"hellaswag-fr\",true,false]",
           "[\"ifeval-fr\",null,null]",
           "[\"include-fr\",true,false]",
+          "[\"multi-bfcl-fr\",true,null]",
           "[\"multiloko-fr\",null,false]",
           "[\"orange-sum\",true,false]",
           "[\"ragtruth-fr\",true,null]",
           "[\"scala-fr\",true,false]",
           "[\"valeu-fr\",null,null]",
+          "[\"wmt24pp-en-fr\",true,false]",
           "[\"allocine\",true,true]",
           "[\"eltec\",true,true]",
+          "[\"flores-en-fr\",true,true]",
           "[\"fquad\",true,true]",
           "[\"hellaswag-fr\",true,true]",
           "[\"include-fr\",true,true]",
           "[\"multiloko-fr\",null,true]",
           "[\"orange-sum\",true,true]",
-          "[\"scala-fr\",true,true]"
+          "[\"scala-fr\",true,true]",
+          "[\"wmt24pp-en-fr\",true,true]"
         ]
       ],
       "task_groups": [
@@ -1459,34 +1538,41 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "hr",
       "language_group": "hr",
       "allowed_identity_suffix_sets": [
         [
+          "[\"flores-en-hr\",true,true]",
           "[\"include-hr\",true,true]",
           "[\"mms-hr\",true,true]",
           "[\"multi-wiki-qa-hr\",true,true]",
           "[\"scala-hr\",true,true]",
           "[\"wikiann-hr\",true,true]",
-          "[\"winogrande-hr\",true,true]"
+          "[\"winogrande-hr\",true,true]",
+          "[\"wmt24pp-en-hr\",true,true]"
         ],
         [
+          "[\"flores-en-hr\",true,false]",
           "[\"include-hr\",true,false]",
           "[\"mms-hr\",true,false]",
+          "[\"multi-bfcl-hr\",true,null]",
           "[\"multi-ifeval-hr\",null,null]",
           "[\"multi-wiki-qa-hr\",true,false]",
           "[\"ragtruth-hr\",true,null]",
           "[\"scala-hr\",true,false]",
           "[\"wikiann-hr\",true,false]",
           "[\"winogrande-hr\",true,false]",
+          "[\"wmt24pp-en-hr\",true,false]",
+          "[\"flores-en-hr\",true,true]",
           "[\"include-hr\",true,true]",
           "[\"mms-hr\",true,true]",
           "[\"multi-wiki-qa-hr\",true,true]",
           "[\"scala-hr\",true,true]",
           "[\"wikiann-hr\",true,true]",
-          "[\"winogrande-hr\",true,true]"
+          "[\"winogrande-hr\",true,true]",
+          "[\"wmt24pp-en-hr\",true,true]"
         ]
       ],
       "task_groups": [
@@ -1499,37 +1585,44 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "hu",
       "language_group": "hu",
       "allowed_identity_suffix_sets": [
         [
+          "[\"flores-en-hu\",true,true]",
           "[\"hunsum\",true,true]",
           "[\"husst\",true,true]",
           "[\"include-hu\",true,true]",
           "[\"multi-wiki-qa-hu\",true,true]",
           "[\"scala-hu\",true,true]",
           "[\"szeged-ner\",true,true]",
-          "[\"winogrande-hu\",true,true]"
+          "[\"winogrande-hu\",true,true]",
+          "[\"wmt24pp-en-hu\",true,true]"
         ],
         [
+          "[\"flores-en-hu\",true,false]",
           "[\"hunsum\",true,false]",
           "[\"husst\",true,false]",
           "[\"include-hu\",true,false]",
+          "[\"multi-bfcl-hu\",true,null]",
           "[\"multi-ifeval-hu\",null,null]",
           "[\"multi-wiki-qa-hu\",true,false]",
           "[\"ragtruth-hu\",true,null]",
           "[\"scala-hu\",true,false]",
           "[\"szeged-ner\",true,false]",
           "[\"winogrande-hu\",true,false]",
+          "[\"wmt24pp-en-hu\",true,false]",
+          "[\"flores-en-hu\",true,true]",
           "[\"hunsum\",true,true]",
           "[\"husst\",true,true]",
           "[\"include-hu\",true,true]",
           "[\"multi-wiki-qa-hu\",true,true]",
           "[\"scala-hu\",true,true]",
           "[\"szeged-ner\",true,true]",
-          "[\"winogrande-hu\",true,true]"
+          "[\"winogrande-hu\",true,true]",
+          "[\"wmt24pp-en-hu\",true,true]"
         ]
       ],
       "task_groups": [
@@ -1542,32 +1635,13 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "is",
       "language_group": "is",
       "allowed_identity_suffix_sets": [
         [
-          "[\"hotter-and-colder-sentiment\",true,true]",
-          "[\"ice-ec\",true,true]",
-          "[\"icelandic-knowledge\",true,true]",
-          "[\"mim-gold-ner\",true,true]",
-          "[\"nqii\",true,true]",
-          "[\"rrn\",true,true]",
-          "[\"winogrande-is\",true,true]"
-        ],
-        [
-          "[\"hotter-and-colder-sentiment\",true,false]",
-          "[\"ice-ec\",true,false]",
-          "[\"icelandic-knowledge\",true,false]",
-          "[\"mim-gold-ner\",true,false]",
-          "[\"multi-ifeval-is\",null,null]",
-          "[\"nqii\",true,false]",
-          "[\"ragtruth-is\",true,null]",
-          "[\"rrn\",true,false]",
-          "[\"valeu-is\",null,null]",
-          "[\"winogrande-is\",true,false]",
-          "[\"zebra-puzzles-easy-is\",true,false]",
+          "[\"flores-en-is\",true,true]",
           "[\"hotter-and-colder-sentiment\",true,true]",
           "[\"ice-ec\",true,true]",
           "[\"icelandic-knowledge\",true,true]",
@@ -1575,6 +1649,32 @@ const generatedScopePolicy = {
           "[\"nqii\",true,true]",
           "[\"rrn\",true,true]",
           "[\"winogrande-is\",true,true]",
+          "[\"wmt24pp-en-is\",true,true]"
+        ],
+        [
+          "[\"flores-en-is\",true,false]",
+          "[\"hotter-and-colder-sentiment\",true,false]",
+          "[\"ice-ec\",true,false]",
+          "[\"icelandic-knowledge\",true,false]",
+          "[\"mim-gold-ner\",true,false]",
+          "[\"multi-bfcl-is\",true,null]",
+          "[\"multi-ifeval-is\",null,null]",
+          "[\"nqii\",true,false]",
+          "[\"ragtruth-is\",true,null]",
+          "[\"rrn\",true,false]",
+          "[\"valeu-is\",null,null]",
+          "[\"winogrande-is\",true,false]",
+          "[\"wmt24pp-en-is\",true,false]",
+          "[\"zebra-puzzles-easy-is\",true,false]",
+          "[\"flores-en-is\",true,true]",
+          "[\"hotter-and-colder-sentiment\",true,true]",
+          "[\"ice-ec\",true,true]",
+          "[\"icelandic-knowledge\",true,true]",
+          "[\"mim-gold-ner\",true,true]",
+          "[\"nqii\",true,true]",
+          "[\"rrn\",true,true]",
+          "[\"winogrande-is\",true,true]",
+          "[\"wmt24pp-en-is\",true,true]",
           "[\"zebra-puzzles-easy-is\",true,true]"
         ]
       ],
@@ -1588,12 +1688,13 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "it",
       "language_group": "it",
       "allowed_identity_suffix_sets": [
         [
+          "[\"flores-en-it\",true,true]",
           "[\"ilpost-sum\",true,true]",
           "[\"include-it\",true,true]",
           "[\"multiloko-it\",null,true]",
@@ -1601,11 +1702,14 @@ const generatedScopePolicy = {
           "[\"scala-it\",true,true]",
           "[\"sentipolc16\",true,true]",
           "[\"squad-it\",true,true]",
-          "[\"winogrande-it\",true,true]"
+          "[\"winogrande-it\",true,true]",
+          "[\"wmt24pp-en-it\",true,true]"
         ],
         [
+          "[\"flores-en-it\",true,false]",
           "[\"ilpost-sum\",true,false]",
           "[\"include-it\",true,false]",
+          "[\"multi-bfcl-it\",true,null]",
           "[\"multi-ifeval-it\",null,null]",
           "[\"multiloko-it\",null,false]",
           "[\"multinerd-it\",true,false]",
@@ -1615,6 +1719,8 @@ const generatedScopePolicy = {
           "[\"squad-it\",true,false]",
           "[\"valeu-it\",null,null]",
           "[\"winogrande-it\",true,false]",
+          "[\"wmt24pp-en-it\",true,false]",
+          "[\"flores-en-it\",true,true]",
           "[\"ilpost-sum\",true,true]",
           "[\"include-it\",true,true]",
           "[\"multiloko-it\",null,true]",
@@ -1622,7 +1728,8 @@ const generatedScopePolicy = {
           "[\"scala-it\",true,true]",
           "[\"sentipolc16\",true,true]",
           "[\"squad-it\",true,true]",
-          "[\"winogrande-it\",true,true]"
+          "[\"winogrande-it\",true,true]",
+          "[\"wmt24pp-en-it\",true,true]"
         ]
       ],
       "task_groups": [
@@ -1635,12 +1742,13 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "lb",
       "language_group": "lb",
       "allowed_identity_suffix_sets": [
         [
+          "[\"flores-en-lb\",true,true]",
           "[\"ltzglue-hc\",true,true]",
           "[\"ltzglue-la-binary\",true,true]",
           "[\"ltzglue-ner\",true,true]",
@@ -1650,15 +1758,18 @@ const generatedScopePolicy = {
           "[\"multi-wiki-qa-lb\",true,true]"
         ],
         [
+          "[\"flores-en-lb\",true,false]",
           "[\"ltzglue-hc\",true,false]",
           "[\"ltzglue-la-binary\",true,false]",
           "[\"ltzglue-ner\",true,false]",
           "[\"ltzglue-rte\",true,false]",
           "[\"ltzglue-sa\",true,false]",
           "[\"ltzglue-tc\",true,false]",
+          "[\"multi-bfcl-lb\",true,null]",
           "[\"multi-ifeval-lb\",null,null]",
           "[\"multi-wiki-qa-lb\",true,false]",
           "[\"ragtruth-lb\",true,null]",
+          "[\"flores-en-lb\",true,true]",
           "[\"ltzglue-hc\",true,true]",
           "[\"ltzglue-la-binary\",true,true]",
           "[\"ltzglue-ner\",true,true]",
@@ -1677,40 +1788,47 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "lt",
       "language_group": "lt",
       "allowed_identity_suffix_sets": [
         [
           "[\"atsiliepimai\",true,true]",
+          "[\"flores-en-lt\",true,true]",
           "[\"include-lt\",true,true]",
           "[\"lrytas\",true,true]",
           "[\"lt-history\",true,true]",
           "[\"multi-wiki-qa-lt\",true,true]",
           "[\"scala-lt\",true,true]",
           "[\"wikiann-lt\",true,true]",
-          "[\"winogrande-lt\",true,true]"
+          "[\"winogrande-lt\",true,true]",
+          "[\"wmt24pp-en-lt\",true,true]"
         ],
         [
           "[\"atsiliepimai\",true,false]",
+          "[\"flores-en-lt\",true,false]",
           "[\"include-lt\",true,false]",
           "[\"lrytas\",true,false]",
           "[\"lt-history\",true,false]",
+          "[\"multi-bfcl-lt\",true,null]",
           "[\"multi-ifeval-lt\",null,null]",
           "[\"multi-wiki-qa-lt\",true,false]",
           "[\"ragtruth-lt\",true,null]",
           "[\"scala-lt\",true,false]",
           "[\"wikiann-lt\",true,false]",
           "[\"winogrande-lt\",true,false]",
+          "[\"wmt24pp-en-lt\",true,false]",
           "[\"atsiliepimai\",true,true]",
+          "[\"flores-en-lt\",true,true]",
           "[\"include-lt\",true,true]",
           "[\"lrytas\",true,true]",
           "[\"lt-history\",true,true]",
           "[\"multi-wiki-qa-lt\",true,true]",
           "[\"scala-lt\",true,true]",
           "[\"wikiann-lt\",true,true]",
-          "[\"winogrande-lt\",true,true]"
+          "[\"winogrande-lt\",true,true]",
+          "[\"wmt24pp-en-lt\",true,true]"
         ]
       ],
       "task_groups": [
@@ -1723,37 +1841,44 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "lv",
       "language_group": "lv",
       "allowed_identity_suffix_sets": [
         [
           "[\"copa-lv\",true,true]",
+          "[\"flores-en-lv\",true,true]",
           "[\"fullstack-ner-lv\",true,true]",
           "[\"latvian-twitter-sentiment\",true,true]",
           "[\"lsm\",true,true]",
           "[\"mmlu-lv\",true,true]",
           "[\"multi-wiki-qa-lv\",true,true]",
-          "[\"scala-lv\",true,true]"
+          "[\"scala-lv\",true,true]",
+          "[\"wmt24pp-en-lv\",true,true]"
         ],
         [
           "[\"copa-lv\",true,false]",
+          "[\"flores-en-lv\",true,false]",
           "[\"fullstack-ner-lv\",true,false]",
           "[\"latvian-twitter-sentiment\",true,false]",
           "[\"lsm\",true,false]",
           "[\"mmlu-lv\",true,false]",
+          "[\"multi-bfcl-lv\",true,null]",
           "[\"multi-ifeval-lv\",null,null]",
           "[\"multi-wiki-qa-lv\",true,false]",
           "[\"ragtruth-lv\",true,null]",
           "[\"scala-lv\",true,false]",
+          "[\"wmt24pp-en-lv\",true,false]",
           "[\"copa-lv\",true,true]",
+          "[\"flores-en-lv\",true,true]",
           "[\"fullstack-ner-lv\",true,true]",
           "[\"latvian-twitter-sentiment\",true,true]",
           "[\"lsm\",true,true]",
           "[\"mmlu-lv\",true,true]",
           "[\"multi-wiki-qa-lv\",true,true]",
-          "[\"scala-lv\",true,true]"
+          "[\"scala-lv\",true,true]",
+          "[\"wmt24pp-en-lv\",true,true]"
         ]
       ],
       "task_groups": [
@@ -1766,7 +1891,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "nb",
       "language_group": "nb",
@@ -1814,7 +1939,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "nl",
       "language_group": "nl",
@@ -1824,19 +1949,23 @@ const generatedScopePolicy = {
           "[\"dbrd\",true,true]",
           "[\"duidelijke-taal\",true,true]",
           "[\"dutch-cola\",true,true]",
+          "[\"flores-en-nl\",true,true]",
           "[\"include-nl\",true,true]",
           "[\"multiloko-nl\",null,true]",
           "[\"squad-nl\",true,true]",
           "[\"wiki-lingua-nl\",true,true]",
-          "[\"winogrande-nl\",true,true]"
+          "[\"winogrande-nl\",true,true]",
+          "[\"wmt24pp-en-nl\",true,true]"
         ],
         [
           "[\"conll-nl\",true,false]",
           "[\"dbrd\",true,false]",
           "[\"duidelijke-taal\",true,false]",
           "[\"dutch-cola\",true,false]",
+          "[\"flores-en-nl\",true,false]",
           "[\"include-nl\",true,false]",
           "[\"mbbq-nl\",true,null]",
+          "[\"multi-bfcl-nl\",true,null]",
           "[\"multi-ifeval-nl\",null,null]",
           "[\"multiloko-nl\",null,false]",
           "[\"ragtruth-nl\",true,null]",
@@ -1844,16 +1973,19 @@ const generatedScopePolicy = {
           "[\"valeu-nl\",null,null]",
           "[\"wiki-lingua-nl\",true,false]",
           "[\"winogrande-nl\",true,false]",
+          "[\"wmt24pp-en-nl\",true,false]",
           "[\"zebra-puzzles-easy-nl\",true,false]",
           "[\"conll-nl\",true,true]",
           "[\"dbrd\",true,true]",
           "[\"duidelijke-taal\",true,true]",
           "[\"dutch-cola\",true,true]",
+          "[\"flores-en-nl\",true,true]",
           "[\"include-nl\",true,true]",
           "[\"multiloko-nl\",null,true]",
           "[\"squad-nl\",true,true]",
           "[\"wiki-lingua-nl\",true,true]",
           "[\"winogrande-nl\",true,true]",
+          "[\"wmt24pp-en-nl\",true,true]",
           "[\"zebra-puzzles-easy-nl\",true,true]"
         ]
       ],
@@ -1867,7 +1999,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "nn",
       "language_group": "nn",
@@ -1915,12 +2047,13 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "no",
       "language_group": "no",
       "allowed_identity_suffix_sets": [
         [
+          "[\"flores-en-no\",true,true]",
           "[\"idioms-no\",true,true]",
           "[\"no-sammendrag\",true,true]",
           "[\"nor-common-sense-qa\",true,true]",
@@ -1930,10 +2063,13 @@ const generatedScopePolicy = {
           "[\"norquad\",true,true]",
           "[\"nrk-quiz-qa\",true,true]",
           "[\"scala-nb\",true,true]",
-          "[\"scala-nn\",true,true]"
+          "[\"scala-nn\",true,true]",
+          "[\"wmt24pp-en-no\",true,true]"
         ],
         [
+          "[\"flores-en-no\",true,false]",
           "[\"idioms-no\",true,false]",
+          "[\"multi-bfcl-no\",true,null]",
           "[\"multi-ifeval-nb\",null,null]",
           "[\"multi-ifeval-nn\",null,null]",
           "[\"no-sammendrag\",true,false]",
@@ -1947,8 +2083,10 @@ const generatedScopePolicy = {
           "[\"scala-nb\",true,false]",
           "[\"scala-nn\",true,false]",
           "[\"valeu-no\",null,null]",
+          "[\"wmt24pp-en-no\",true,false]",
           "[\"zebra-puzzles-easy-nb\",true,false]",
           "[\"zebra-puzzles-easy-nn\",true,false]",
+          "[\"flores-en-no\",true,true]",
           "[\"idioms-no\",true,true]",
           "[\"no-sammendrag\",true,true]",
           "[\"nor-common-sense-qa\",true,true]",
@@ -1959,6 +2097,7 @@ const generatedScopePolicy = {
           "[\"nrk-quiz-qa\",true,true]",
           "[\"scala-nb\",true,true]",
           "[\"scala-nn\",true,true]",
+          "[\"wmt24pp-en-no\",true,true]",
           "[\"zebra-puzzles-easy-nb\",true,true]",
           "[\"zebra-puzzles-easy-nn\",true,true]"
         ]
@@ -1973,23 +2112,27 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "pl",
       "language_group": "pl",
       "allowed_identity_suffix_sets": [
         [
+          "[\"flores-en-pl\",true,true]",
           "[\"kpwr-ner\",true,true]",
           "[\"llmzszl\",true,true]",
           "[\"polemo2\",true,true]",
           "[\"poquad\",true,true]",
           "[\"psc\",true,true]",
           "[\"scala-pl\",true,true]",
-          "[\"winogrande-pl\",true,true]"
+          "[\"winogrande-pl\",true,true]",
+          "[\"wmt24pp-en-pl\",true,true]"
         ],
         [
+          "[\"flores-en-pl\",true,false]",
           "[\"kpwr-ner\",true,false]",
           "[\"llmzszl\",true,false]",
+          "[\"multi-bfcl-pl\",true,null]",
           "[\"multi-ifeval-pl\",null,null]",
           "[\"polemo2\",true,false]",
           "[\"poquad\",true,false]",
@@ -1998,13 +2141,16 @@ const generatedScopePolicy = {
           "[\"scala-pl\",true,false]",
           "[\"valeu-pl\",null,null]",
           "[\"winogrande-pl\",true,false]",
+          "[\"wmt24pp-en-pl\",true,false]",
+          "[\"flores-en-pl\",true,true]",
           "[\"kpwr-ner\",true,true]",
           "[\"llmzszl\",true,true]",
           "[\"polemo2\",true,true]",
           "[\"poquad\",true,true]",
           "[\"psc\",true,true]",
           "[\"scala-pl\",true,true]",
-          "[\"winogrande-pl\",true,true]"
+          "[\"winogrande-pl\",true,true]",
+          "[\"wmt24pp-en-pl\",true,true]"
         ]
       ],
       "task_groups": [
@@ -2017,7 +2163,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "pt",
       "language_group": "pt",
@@ -2025,17 +2171,21 @@ const generatedScopePolicy = {
         [
           "[\"alba-mcq-pt\",null,true]",
           "[\"cultura-viva-pt\",true,true]",
+          "[\"flores-en-pt\",true,true]",
           "[\"harem\",true,true]",
           "[\"multi-wiki-qa-pt\",true,true]",
           "[\"publico\",true,true]",
           "[\"scala-pt\",true,true]",
           "[\"sst2-pt\",true,true]",
-          "[\"winogrande-pt\",true,true]"
+          "[\"winogrande-pt\",true,true]",
+          "[\"wmt24pp-en-pt\",true,true]"
         ],
         [
           "[\"alba-mcq-pt\",null,false]",
           "[\"cultura-viva-pt\",true,false]",
+          "[\"flores-en-pt\",true,false]",
           "[\"harem\",true,false]",
+          "[\"multi-bfcl-pt\",true,null]",
           "[\"multi-ifeval-pt\",null,null]",
           "[\"multi-wiki-qa-pt\",true,false]",
           "[\"publico\",true,false]",
@@ -2044,14 +2194,17 @@ const generatedScopePolicy = {
           "[\"sst2-pt\",true,false]",
           "[\"valeu-pt\",null,null]",
           "[\"winogrande-pt\",true,false]",
+          "[\"wmt24pp-en-pt\",true,false]",
           "[\"alba-mcq-pt\",null,true]",
           "[\"cultura-viva-pt\",true,true]",
+          "[\"flores-en-pt\",true,true]",
           "[\"harem\",true,true]",
           "[\"multi-wiki-qa-pt\",true,true]",
           "[\"publico\",true,true]",
           "[\"scala-pt\",true,true]",
           "[\"sst2-pt\",true,true]",
-          "[\"winogrande-pt\",true,true]"
+          "[\"winogrande-pt\",true,true]",
+          "[\"wmt24pp-en-pt\",true,true]"
         ]
       ],
       "task_groups": [
@@ -2064,7 +2217,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "pt-pt",
       "language_group": "pt-pt",
@@ -2109,22 +2262,26 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "ro",
       "language_group": "ro",
       "allowed_identity_suffix_sets": [
         [
+          "[\"flores-en-ro\",true,true]",
           "[\"global-mmlu-ro\",true,true]",
           "[\"multi-wiki-qa-ro\",true,true]",
           "[\"ro-sent\",true,true]",
           "[\"ronec\",true,true]",
           "[\"scala-ro\",true,true]",
           "[\"sumo-ro\",true,true]",
-          "[\"winogrande-ro\",true,true]"
+          "[\"winogrande-ro\",true,true]",
+          "[\"wmt24pp-en-ro\",true,true]"
         ],
         [
+          "[\"flores-en-ro\",true,false]",
           "[\"global-mmlu-ro\",true,false]",
+          "[\"multi-bfcl-ro\",true,null]",
           "[\"multi-ifeval-ro\",null,null]",
           "[\"multi-wiki-qa-ro\",true,false]",
           "[\"ragtruth-ro\",true,null]",
@@ -2133,13 +2290,16 @@ const generatedScopePolicy = {
           "[\"scala-ro\",true,false]",
           "[\"sumo-ro\",true,false]",
           "[\"winogrande-ro\",true,false]",
+          "[\"wmt24pp-en-ro\",true,false]",
+          "[\"flores-en-ro\",true,true]",
           "[\"global-mmlu-ro\",true,true]",
           "[\"multi-wiki-qa-ro\",true,true]",
           "[\"ro-sent\",true,true]",
           "[\"ronec\",true,true]",
           "[\"scala-ro\",true,true]",
           "[\"sumo-ro\",true,true]",
-          "[\"winogrande-ro\",true,true]"
+          "[\"winogrande-ro\",true,true]",
+          "[\"wmt24pp-en-ro\",true,true]"
         ]
       ],
       "task_groups": [
@@ -2152,34 +2312,41 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "sk",
       "language_group": "sk",
       "allowed_identity_suffix_sets": [
         [
           "[\"csfd-sentiment-sk\",true,true]",
+          "[\"flores-en-sk\",true,true]",
           "[\"mmlu-sk\",true,true]",
           "[\"multi-wiki-qa-sk\",true,true]",
           "[\"scala-sk\",true,true]",
           "[\"uner-sk\",true,true]",
-          "[\"winogrande-sk\",true,true]"
+          "[\"winogrande-sk\",true,true]",
+          "[\"wmt24pp-en-sk\",true,true]"
         ],
         [
           "[\"csfd-sentiment-sk\",true,false]",
+          "[\"flores-en-sk\",true,false]",
           "[\"mmlu-sk\",true,false]",
+          "[\"multi-bfcl-sk\",true,null]",
           "[\"multi-ifeval-sk\",null,null]",
           "[\"multi-wiki-qa-sk\",true,false]",
           "[\"ragtruth-sk\",true,null]",
           "[\"scala-sk\",true,false]",
           "[\"uner-sk\",true,false]",
           "[\"winogrande-sk\",true,false]",
+          "[\"wmt24pp-en-sk\",true,false]",
           "[\"csfd-sentiment-sk\",true,true]",
+          "[\"flores-en-sk\",true,true]",
           "[\"mmlu-sk\",true,true]",
           "[\"multi-wiki-qa-sk\",true,true]",
           "[\"scala-sk\",true,true]",
           "[\"uner-sk\",true,true]",
-          "[\"winogrande-sk\",true,true]"
+          "[\"winogrande-sk\",true,true]",
+          "[\"wmt24pp-en-sk\",true,true]"
         ]
       ],
       "task_groups": [
@@ -2192,21 +2359,25 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "sl",
       "language_group": "sl",
       "allowed_identity_suffix_sets": [
         [
+          "[\"flores-en-sl\",true,true]",
           "[\"mmlu-sl\",true,true]",
           "[\"multi-wiki-qa-sl\",true,true]",
           "[\"scala-sl\",true,true]",
           "[\"sentinews\",true,true]",
           "[\"ssj500k-ner\",true,true]",
-          "[\"winogrande-sl\",true,true]"
+          "[\"winogrande-sl\",true,true]",
+          "[\"wmt24pp-en-sl\",true,true]"
         ],
         [
+          "[\"flores-en-sl\",true,false]",
           "[\"mmlu-sl\",true,false]",
+          "[\"multi-bfcl-sl\",true,null]",
           "[\"multi-ifeval-sl\",null,null]",
           "[\"multi-wiki-qa-sl\",true,false]",
           "[\"ragtruth-sl\",true,null]",
@@ -2214,12 +2385,15 @@ const generatedScopePolicy = {
           "[\"sentinews\",true,false]",
           "[\"ssj500k-ner\",true,false]",
           "[\"winogrande-sl\",true,false]",
+          "[\"wmt24pp-en-sl\",true,false]",
+          "[\"flores-en-sl\",true,true]",
           "[\"mmlu-sl\",true,true]",
           "[\"multi-wiki-qa-sl\",true,true]",
           "[\"scala-sl\",true,true]",
           "[\"sentinews\",true,true]",
           "[\"ssj500k-ner\",true,true]",
-          "[\"winogrande-sl\",true,true]"
+          "[\"winogrande-sl\",true,true]",
+          "[\"wmt24pp-en-sl\",true,true]"
         ]
       ],
       "task_groups": [
@@ -2232,12 +2406,13 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "sq",
       "language_group": "sq",
       "allowed_identity_suffix_sets": [
         [
+          "[\"flores-en-sq\",true,true]",
           "[\"include-sq\",true,true]",
           "[\"lr-sum-sq\",true,true]",
           "[\"mms-sq\",true,true]",
@@ -2247,15 +2422,18 @@ const generatedScopePolicy = {
           "[\"winogrande-sq\",true,true]"
         ],
         [
+          "[\"flores-en-sq\",true,false]",
           "[\"include-sq\",true,false]",
           "[\"lr-sum-sq\",true,false]",
           "[\"mms-sq\",true,false]",
+          "[\"multi-bfcl-sq\",true,null]",
           "[\"multi-ifeval-sq\",null,null]",
           "[\"multi-wiki-qa-sq\",true,false]",
           "[\"ragtruth-sq\",true,null]",
           "[\"scala-sq\",true,false]",
           "[\"wikiann-sq\",true,false]",
           "[\"winogrande-sq\",true,false]",
+          "[\"flores-en-sq\",true,true]",
           "[\"include-sq\",true,true]",
           "[\"lr-sum-sq\",true,true]",
           "[\"mms-sq\",true,true]",
@@ -2275,37 +2453,44 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "sr",
       "language_group": "sr",
       "allowed_identity_suffix_sets": [
         [
+          "[\"flores-en-sr\",true,true]",
           "[\"include-sr\",true,true]",
           "[\"lr-sum-sr\",true,true]",
           "[\"mms-sr\",true,true]",
           "[\"multi-wiki-qa-sr\",true,true]",
           "[\"scala-sr\",true,true]",
           "[\"uner-sr\",true,true]",
-          "[\"winogrande-sr\",true,true]"
+          "[\"winogrande-sr\",true,true]",
+          "[\"wmt24pp-en-sr\",true,true]"
         ],
         [
+          "[\"flores-en-sr\",true,false]",
           "[\"include-sr\",true,false]",
           "[\"lr-sum-sr\",true,false]",
           "[\"mms-sr\",true,false]",
+          "[\"multi-bfcl-sr\",true,null]",
           "[\"multi-ifeval-sr\",null,null]",
           "[\"multi-wiki-qa-sr\",true,false]",
           "[\"ragtruth-sr\",true,null]",
           "[\"scala-sr\",true,false]",
           "[\"uner-sr\",true,false]",
           "[\"winogrande-sr\",true,false]",
+          "[\"wmt24pp-en-sr\",true,false]",
+          "[\"flores-en-sr\",true,true]",
           "[\"include-sr\",true,true]",
           "[\"lr-sum-sr\",true,true]",
           "[\"mms-sr\",true,true]",
           "[\"multi-wiki-qa-sr\",true,true]",
           "[\"scala-sr\",true,true]",
           "[\"uner-sr\",true,true]",
-          "[\"winogrande-sr\",true,true]"
+          "[\"winogrande-sr\",true,true]",
+          "[\"wmt24pp-en-sr\",true,true]"
         ]
       ],
       "task_groups": [
@@ -2318,12 +2503,13 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "sv",
       "language_group": "sv",
       "allowed_identity_suffix_sets": [
         [
+          "[\"flores-en-sv\",true,true]",
           "[\"multi-wiki-qa-sv\",true,true]",
           "[\"scala-sv\",true,true]",
           "[\"skolprov\",true,true]",
@@ -2331,9 +2517,12 @@ const generatedScopePolicy = {
           "[\"swedish-facts\",true,true]",
           "[\"swedn\",true,true]",
           "[\"swerec\",true,true]",
-          "[\"winogrande-sv\",true,true]"
+          "[\"winogrande-sv\",true,true]",
+          "[\"wmt24pp-en-sv\",true,true]"
         ],
         [
+          "[\"flores-en-sv\",true,false]",
+          "[\"multi-bfcl-sv\",true,null]",
           "[\"multi-ifeval-sv\",null,null]",
           "[\"multi-wiki-qa-sv\",true,false]",
           "[\"ragtruth-sv\",true,null]",
@@ -2345,7 +2534,9 @@ const generatedScopePolicy = {
           "[\"swerec\",true,false]",
           "[\"valeu-sv\",null,null]",
           "[\"winogrande-sv\",true,false]",
+          "[\"wmt24pp-en-sv\",true,false]",
           "[\"zebra-puzzles-easy-sv\",true,false]",
+          "[\"flores-en-sv\",true,true]",
           "[\"multi-wiki-qa-sv\",true,true]",
           "[\"scala-sv\",true,true]",
           "[\"skolprov\",true,true]",
@@ -2354,6 +2545,7 @@ const generatedScopePolicy = {
           "[\"swedn\",true,true]",
           "[\"swerec\",true,true]",
           "[\"winogrande-sv\",true,true]",
+          "[\"wmt24pp-en-sv\",true,true]",
           "[\"zebra-puzzles-easy-sv\",true,true]"
         ]
       ],
@@ -2367,37 +2559,44 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.1.0.dev0",
+      "euroeval_version": "18.2.0",
       "model_type": "generative",
       "language": "uk",
       "language_group": "uk",
       "allowed_identity_suffix_sets": [
         [
           "[\"cross-domain-uk-reviews\",true,true]",
+          "[\"flores-en-uk\",true,true]",
           "[\"include-uk\",true,true]",
           "[\"lr-sum-uk\",true,true]",
           "[\"multi-wiki-qa-uk\",true,true]",
           "[\"ner-uk\",true,true]",
           "[\"scala-uk\",true,true]",
-          "[\"winogrande-uk\",true,true]"
+          "[\"winogrande-uk\",true,true]",
+          "[\"wmt24pp-en-uk\",true,true]"
         ],
         [
           "[\"cross-domain-uk-reviews\",true,false]",
+          "[\"flores-en-uk\",true,false]",
           "[\"include-uk\",true,false]",
           "[\"lr-sum-uk\",true,false]",
+          "[\"multi-bfcl-uk\",true,null]",
           "[\"multi-ifeval-uk\",null,null]",
           "[\"multi-wiki-qa-uk\",true,false]",
           "[\"ner-uk\",true,false]",
           "[\"ragtruth-uk\",true,null]",
           "[\"scala-uk\",true,false]",
           "[\"winogrande-uk\",true,false]",
+          "[\"wmt24pp-en-uk\",true,false]",
           "[\"cross-domain-uk-reviews\",true,true]",
+          "[\"flores-en-uk\",true,true]",
           "[\"include-uk\",true,true]",
           "[\"lr-sum-uk\",true,true]",
           "[\"multi-wiki-qa-uk\",true,true]",
           "[\"ner-uk\",true,true]",
           "[\"scala-uk\",true,true]",
-          "[\"winogrande-uk\",true,true]"
+          "[\"winogrande-uk\",true,true]",
+          "[\"wmt24pp-en-uk\",true,true]"
         ]
       ],
       "task_groups": [

@@ -139,7 +139,6 @@ MULTI_BFCL_EL_CONFIG = DatasetConfig(
     task=TOOL_CALLING,
     languages=[GREEK],
     train_split=None,
-    unofficial=True,
 )
 
 

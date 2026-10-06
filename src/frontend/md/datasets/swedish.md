@@ -2122,7 +2122,7 @@ euroeval --model <model-id> --dataset flores-sv-en
 
 ## Tool calling
 
-### Unofficial: MultiBFCL-sv
+### MultiBFCL-sv
 
 MultiBFCL is a machine-translated version of the Berkeley Function Calling Leaderboard
 (BFCL-v2), created by Dan Saattrup Smart at [syv.ai](https://syv.ai/) and published as
