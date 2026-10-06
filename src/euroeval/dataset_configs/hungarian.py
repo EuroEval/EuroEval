@@ -12,6 +12,7 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TOOL_CALLING,
     TRANSLATION,
 )
 
@@ -116,6 +117,18 @@ INCLUDE_HU_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+MULTI_BFCL_HU_CONFIG = DatasetConfig(
+    name="multi-bfcl-hu",
+    pretty_name="MultiBFCL-hu",
+    source="EuroEval/multi-bfcl-hu-mini",
+    task=TOOL_CALLING,
+    languages=[HUNGARIAN],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
+)
+
 
 WMT24PP_HU_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-hu-en",

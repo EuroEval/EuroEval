@@ -14,6 +14,7 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TOOL_CALLING,
     TRANSLATION,
     WIC,
 )
@@ -140,6 +141,18 @@ MULTILOKO_IT_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+MULTI_BFCL_IT_CONFIG = DatasetConfig(
+    name="multi-bfcl-it",
+    pretty_name="MultiBFCL-it",
+    source="EuroEval/multi-bfcl-it-mini",
+    task=TOOL_CALLING,
+    languages=[ITALIAN],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
+)
+
 
 WMT24PP_IT_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-it-en",

@@ -11,6 +11,7 @@ from ..tasks import (
     NER,
     RC,
     SENT,
+    TOOL_CALLING,
     TRANSLATION,
 )
 
@@ -106,6 +107,18 @@ RAGTRUTH_SL_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+MULTI_BFCL_SL_CONFIG = DatasetConfig(
+    name="multi-bfcl-sl",
+    pretty_name="MultiBFCL-sl",
+    source="EuroEval/multi-bfcl-sl-mini",
+    task=TOOL_CALLING,
+    languages=[SLOVENE],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
+)
+
 
 WMT24PP_SL_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-sl-en",

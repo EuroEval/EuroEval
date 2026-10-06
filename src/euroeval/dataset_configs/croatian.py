@@ -11,6 +11,7 @@ from ..tasks import (
     NER,
     RC,
     SENT,
+    TOOL_CALLING,
     TRANSLATION,
 )
 
@@ -107,6 +108,18 @@ INCLUDE_HR_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+MULTI_BFCL_HR_CONFIG = DatasetConfig(
+    name="multi-bfcl-hr",
+    pretty_name="MultiBFCL-hr",
+    source="EuroEval/multi-bfcl-hr-mini",
+    task=TOOL_CALLING,
+    languages=[CROATIAN],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
+)
+
 
 WMT24PP_HR_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-hr-en",

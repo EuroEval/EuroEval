@@ -10,7 +10,7 @@ from ..constants import (
     TOOL_CALLING_FUNCTION_KEY,
 )
 from ..data_models import PromptConfig
-from ..languages import ENGLISH
+from ..languages import get_all_languages
 
 if t.TYPE_CHECKING:
     from ..languages import Language
@@ -33,8 +33,10 @@ def _reformat(s: str) -> str:
     return s.replace("{", "{{").replace("}", "}}").replace("$", "")
 
 
+# The response schema and output constraints intentionally remain in English for
+# every language; only the user question and function descriptions are translated.
 TOOL_CALLING_TEMPLATES: dict["Language", PromptConfig] = {
-    ENGLISH: PromptConfig(
+    language: PromptConfig(
         default_prompt_prefix="",
         default_prompt_template="",
         default_instruction_prompt=(
@@ -52,6 +54,5 @@ TOOL_CALLING_TEMPLATES: dict["Language", PromptConfig] = {
         ),
         default_prompt_label_mapping=dict(),
     )
+    for language in get_all_languages().values()
 }
-
-pass

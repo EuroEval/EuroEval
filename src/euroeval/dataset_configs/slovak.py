@@ -12,6 +12,7 @@ from ..tasks import (
     NLI,
     RC,
     SENT,
+    TOOL_CALLING,
     TRANSLATION,
 )
 
@@ -106,6 +107,18 @@ RAGTRUTH_SK_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+MULTI_BFCL_SK_CONFIG = DatasetConfig(
+    name="multi-bfcl-sk",
+    pretty_name="MultiBFCL-sk",
+    source="EuroEval/multi-bfcl-sk-mini",
+    task=TOOL_CALLING,
+    languages=[SLOVAK],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
+)
+
 
 WMT24PP_SK_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-sk-en",

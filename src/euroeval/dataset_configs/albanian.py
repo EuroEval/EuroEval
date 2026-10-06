@@ -12,6 +12,7 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TOOL_CALLING,
     TRANSLATION,
 )
 
@@ -105,6 +106,18 @@ RAGTRUTH_SQ_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+MULTI_BFCL_SQ_CONFIG = DatasetConfig(
+    name="multi-bfcl-sq",
+    pretty_name="MultiBFCL-sq",
+    source="EuroEval/multi-bfcl-sq-mini",
+    task=TOOL_CALLING,
+    languages=[ALBANIAN],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
+)
+
 
 FLORES_SQ_EN_CONFIG = TranslationDatasetConfig(
     name="flores-sq-en",

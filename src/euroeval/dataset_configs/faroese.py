@@ -13,6 +13,7 @@ from ..tasks import (
     NER,
     RC,
     SENT,
+    TOOL_CALLING,
     TRANSLATION,
 )
 
@@ -116,6 +117,18 @@ FAROESE_METAPHORICAL_EXPLANATIONS_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+MULTI_BFCL_FO_CONFIG = DatasetConfig(
+    name="multi-bfcl-fo",
+    pretty_name="MultiBFCL-fo",
+    source="EuroEval/multi-bfcl-fo-mini",
+    task=TOOL_CALLING,
+    languages=[FAROESE],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
+)
+
 
 FLORES_FO_EN_CONFIG = TranslationDatasetConfig(
     name="flores-fo-en",
