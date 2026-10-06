@@ -1,9 +1,5 @@
-"""Prepare multilingual BFCL validation and test datasets for EuroEval.
+"""Prepare and publish multilingual BFCL validation and test datasets for EuroEval."""
 
-Publication is opt-in: run with ``--publish`` after reviewing the generated data.
-"""
-
-import argparse
 import json
 import logging
 
@@ -52,16 +48,9 @@ LANGUAGE_SOURCES = {
 
 
 def main() -> None:
-    """Prepare each language, publishing only when explicitly requested."""
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--language", choices=LANGUAGE_SOURCES, help="One language only"
-    )
-    parser.add_argument("--publish", action="store_true", help="Upload to the Hub")
-    args = parser.parse_args()
+    """Prepare and publish datasets for every supported language."""
     logging.basicConfig(level=logging.INFO)
-    codes = [args.language] if args.language else LANGUAGE_SOURCES
-    for code in codes:
+    for code in LANGUAGE_SOURCES:
         dataset, repo_id = build_dataset(language_code=code)
         logger.info(
             "Prepared %s (%d validation, %d test rows)",
@@ -69,8 +58,7 @@ def main() -> None:
             len(dataset["val"]),
             len(dataset["test"]),
         )
-        if args.publish:
-            dataset.push_to_hub(repo_id=repo_id, private=True)
+        dataset.push_to_hub(repo_id=repo_id, private=True)
 
 
 def build_dataset(language_code: str) -> tuple[DatasetDict, str]:
