@@ -1,4 +1,4 @@
-"""Prepare test-only multilingual BFCL datasets for EuroEval.
+"""Prepare multilingual BFCL validation and test datasets for EuroEval.
 
 Publication is opt-in: run with ``--publish`` after reviewing the generated data.
 """
@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 SOURCE_REPO = "syvai/multi-bfcl"
 MAX_TEST_SAMPLES = 2048
+MAX_VAL_SAMPLES = 256
 # One source subset per non-English EuroEval language configuration. The source uses
 # pt-pt for Portuguese, while EuroEval identifies the benchmark with pt.
 LANGUAGE_SOURCES = {
@@ -62,38 +63,52 @@ def main() -> None:
     codes = [args.language] if args.language else LANGUAGE_SOURCES
     for code in codes:
         dataset, repo_id = build_dataset(language_code=code)
-        logger.info("Prepared %s (%d test rows)", repo_id, len(dataset["test"]))
+        logger.info(
+            "Prepared %s (%d validation, %d test rows)",
+            repo_id,
+            len(dataset["val"]),
+            len(dataset["test"]),
+        )
         if args.publish:
             dataset.push_to_hub(repo_id=repo_id, private=True)
 
 
 def build_dataset(language_code: str) -> tuple[DatasetDict, str]:
-    """Build a deterministic test-only dataset from a source language subset.
+    """Build disjoint validation and test splits from a source test subset.
 
     Args:
         language_code:
             The EuroEval two-letter language code.
 
     Returns:
-        The dataset and its destination Hub repository ID. Truncated datasets
-        receive the ``-mini`` suffix.
+        The dataset and its ``-mini`` destination Hub repository ID. The first
+        2,048 shuffled records retain the published test split; the next 256
+        become validation records.
 
     Raises:
         ValueError:
-            If the language code is not supported.
+            If the language code is unsupported or fewer than 2,304 source
+            records are available.
     """
     if language_code not in LANGUAGE_SOURCES:
         raise ValueError(f"Unsupported MultiBFCL language: {language_code}")
     source = load_dataset(
         path=SOURCE_REPO, name=LANGUAGE_SOURCES[language_code], split="test"
     )
-    # A fixed shuffle avoids systematically excluding the final BFCL categories.
-    truncated = len(source) > MAX_TEST_SAMPLES
-    test = source.shuffle(seed=42).select(range(min(len(source), MAX_TEST_SAMPLES)))
+    required = MAX_TEST_SAMPLES + MAX_VAL_SAMPLES
+    if len(source) < required:
+        raise ValueError(
+            f"MultiBFCL {language_code} requires {required} distinct source rows; "
+            f"found {len(source)}"
+        )
+    # Retain the original shuffled test prefix; draw validation only after it.
+    shuffled = source.shuffle(seed=42)
+    test = shuffled.select(range(MAX_TEST_SAMPLES))
+    val = shuffled.select(range(MAX_TEST_SAMPLES, required))
     test = test.map(_convert_row, remove_columns=test.column_names)
-    suffix = "-mini" if truncated else ""
-    repo_id = f"EuroEval/multi-bfcl-{language_code}{suffix}"
-    return DatasetDict({"test": test}), repo_id
+    val = val.map(_convert_row, remove_columns=val.column_names)
+    repo_id = f"EuroEval/multi-bfcl-{language_code}-mini"
+    return DatasetDict({"val": val, "test": test}), repo_id
 
 
 def _convert_row(row: dict[str, str]) -> dict[str, str]:

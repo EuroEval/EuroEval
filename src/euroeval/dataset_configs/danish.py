@@ -163,7 +163,6 @@ MULTI_BFCL_DA_CONFIG = DatasetConfig(
     task=TOOL_CALLING,
     languages=[DANISH],
     train_split=None,
-    val_split=None,
     unofficial=True,
 )
 

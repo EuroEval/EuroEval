@@ -9,9 +9,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added unofficial, test-only MultiBFCL tool-calling configurations for 31
-  non-English languages, with multilingual prompt coverage and opt-in dataset
-  publication. The source test splits are sampled deterministically to 2,048 rows.
+- Added unofficial MultiBFCL tool-calling configurations for 31 non-English
+  languages, with multilingual prompt coverage and opt-in dataset publication.
+  Each source test split is shuffled deterministically: the original 2,048 test
+  rows are retained and the next 256 disjoint rows form validation.
 - Added direct hosted Typesafe System One classification for versioned EuroEval model
   IDs such as `typesafe/jev-1.13.0`. The selected version is sent upstream unchanged;
   authenticate with the `TYPESAFE_API_KEY` environment variable. The integration
