@@ -167,7 +167,7 @@ def _has_cyrillic(text: str) -> bool:
 
 
 def test_multibfcl_configs_and_prompts_cover_non_english_languages() -> None:
-    """Every source language has a test-only config and a JSON output prompt."""
+    """Every source language has validation and test config with a JSON prompt."""
     configs = {
         config.name: config
         for config in vars(dc_module).values()
@@ -180,7 +180,8 @@ def test_multibfcl_configs_and_prompts_cover_non_english_languages() -> None:
         assert config.source == f"EuroEval/multi-bfcl-{code}-mini"
         assert config.task == TOOL_CALLING
         assert config.unofficial
-        assert config.train_split is None and config.val_split is None
+        assert config.train_split is None
+        assert config.val_split == "val"
         assert config.test_split == "test"
         assert config.languages[0].code == code
         assert "{text}" in config.instruction_prompt

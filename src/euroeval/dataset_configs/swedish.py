@@ -157,7 +157,6 @@ MULTI_BFCL_SV_CONFIG = DatasetConfig(
     task=TOOL_CALLING,
     languages=[SWEDISH],
     train_split=None,
-    val_split=None,
     unofficial=True,
 )
 

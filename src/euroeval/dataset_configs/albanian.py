@@ -114,7 +114,6 @@ MULTI_BFCL_SQ_CONFIG = DatasetConfig(
     task=TOOL_CALLING,
     languages=[ALBANIAN],
     train_split=None,
-    val_split=None,
     unofficial=True,
 )
 

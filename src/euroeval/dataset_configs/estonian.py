@@ -143,7 +143,6 @@ MULTI_BFCL_ET_CONFIG = DatasetConfig(
     task=TOOL_CALLING,
     languages=[ESTONIAN],
     train_split=None,
-    val_split=None,
     unofficial=True,
 )
 

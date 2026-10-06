@@ -138,7 +138,6 @@ MULTI_BFCL_ES_CONFIG = DatasetConfig(
     task=TOOL_CALLING,
     languages=[SPANISH],
     train_split=None,
-    val_split=None,
     unofficial=True,
 )
 
