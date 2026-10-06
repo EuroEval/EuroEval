@@ -1114,22 +1114,42 @@ The source test split has 2,501 examples in ten categories:
 - `simple_javascript` (50)
 - `simple_python` (400)
 
-We select 2,048 rows from the 2,501-row source test split by applying a deterministic
-shuffle (seed 42) and retaining the first 2,048 rows. The resulting test-only dataset
-has no training or validation split, so evaluation is zero-shot. Translation quality may
-vary and affect results.
+The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
+rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
+published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
+with no training split. EuroEval evaluates generative models on validation by default;
+pass `--evaluate-test-split` to evaluate on test. This task requires zero-shot
+evaluation and has no training examples. Translation quality may vary and affect
+results.
 
-Here are two examples from the published test split. The `text` value is shown verbatim
-and contains both the serialized function definitions and translated user question.
-`target_text` is stored as a JSON string; it is decoded below for readability. Both
-displayed fields are complete (not abbreviated):
+Here are two examples from the published validation split. The `text` value is shown
+verbatim and contains both the serialized function definitions and translated user
+question. `target_text` is stored as a JSON string; it is decoded below for readability.
+Both displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"version_api.VersionApi.get_version\", \"description\": \"Retrieves the current version information of the application, including its name and version number.\", \"parameters\": {\"type\": \"dict\", \"required\": [], \"properties\": {}}}]\nQuestion: Norādi man lietotnes versiju.",
+  "text": "Functions:\n[{\"name\": \"calcVolume.cuboid\", \"description\": \"Calculates the volume of a cuboid.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"height\", \"width\", \"depth\"], \"properties\": {\"height\": {\"type\": \"float\", \"description\": \"The height of the cuboid.\"}, \"width\": {\"type\": \"float\", \"description\": \"The width of the cuboid.\"}, \"depth\": {\"type\": \"float\", \"description\": \"The depth of the cuboid.\"}}}}, {\"name\": \"calcVolume.sphere\", \"description\": \"Calculates the volume of a sphere.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"radius\"], \"properties\": {\"radius\": {\"type\": \"float\", \"description\": \"The radius of the sphere.\"}}}}]\nQuestion: Aprēķini taisnstūra paralēlskaldņa tilpumu, ja tā augstums ir 10 m, platums ir 5 m un dziļums ir 8 m. Aprēķini arī lodes tilpumu, ja tās rādiuss ir 4 m.",
   "target_text": [
     {
-      "version_api.VersionApi.get_version": {}
+      "calcVolume.cuboid": {
+        "height": [
+          10.0
+        ],
+        "width": [
+          5.0
+        ],
+        "depth": [
+          8.0
+        ]
+      }
+    },
+    {
+      "calcVolume.sphere": {
+        "radius": [
+          4.0
+        ]
+      }
     }
   ]
 }
@@ -1137,26 +1157,43 @@ displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"math.factorial\", \"description\": \"Calculate the factorial of a given number.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"number\"], \"properties\": {\"number\": {\"type\": \"integer\", \"description\": \"The number for which factorial needs to be calculated.\"}}}}]\nQuestion: Kādi ir skaitļu 5, 7 un 9 faktoriālu rezultāti?",
+  "text": "Functions:\n[{\"name\": \"plot_sine_wave\", \"description\": \"Plot a sine wave for a given frequency in a given range.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"start_range\", \"end_range\", \"frequency\"], \"properties\": {\"start_range\": {\"type\": \"integer\", \"description\": \"Start of the range in radians.\"}, \"end_range\": {\"type\": \"integer\", \"description\": \"End of the range in radians.\"}, \"frequency\": {\"type\": \"integer\", \"description\": \"Frequency of the sine wave in Hz.\"}, \"amplitude\": {\"type\": \"integer\", \"description\": \"Amplitude of the sine wave. Default is 1.\"}, \"phase_shift\": {\"type\": \"integer\", \"description\": \"Phase shift of the sine wave in radians. Default is 0.\"}}}}]\nQuestion: Vai vari man attēlot divus sinusoīdas viļņus grafikā? Pirmajam jābūt ar 5 Hz frekvenci, diapazonā no 0 līdz 10 radiāniem, ar amplitūdu 2 un fāzes nobīdi par 1 radiānu. Otrajam jābūt ar 10 Hz frekvenci, diapazonā no 0 līdz 20 radiāniem, ar amplitūdu 3 un fāzes nobīdi par 2 radiāniem.",
   "target_text": [
     {
-      "math.factorial": {
-        "number": [
+      "plot_sine_wave": {
+        "start_range": [
+          0
+        ],
+        "end_range": [
+          10
+        ],
+        "frequency": [
           5
+        ],
+        "amplitude": [
+          2
+        ],
+        "phase_shift": [
+          1
         ]
       }
     },
     {
-      "math.factorial": {
-        "number": [
-          7
-        ]
-      }
-    },
-    {
-      "math.factorial": {
-        "number": [
-          9
+      "plot_sine_wave": {
+        "start_range": [
+          0
+        ],
+        "end_range": [
+          20
+        ],
+        "frequency": [
+          10
+        ],
+        "amplitude": [
+          3
+        ],
+        "phase_shift": [
+          2
         ]
       }
     }
@@ -1196,3 +1233,5 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-bfcl-lv
 ```
+
+Use `--evaluate-test-split` to evaluate the test split explicitly.

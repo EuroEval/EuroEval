@@ -1001,22 +1001,36 @@ The source test split has 2,501 examples in ten categories:
 - `simple_javascript` (50)
 - `simple_python` (400)
 
-We select 2,048 rows from the 2,501-row source test split by applying a deterministic
-shuffle (seed 42) and retaining the first 2,048 rows. The resulting test-only dataset
-has no training or validation split, so evaluation is zero-shot. Translation quality may
-vary and affect results.
+The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
+rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
+published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
+with no training split. EuroEval evaluates generative models on validation by default;
+pass `--evaluate-test-split` to evaluate on test. This task requires zero-shot
+evaluation and has no training examples. Translation quality may vary and affect
+results.
 
-Here are two examples from the published test split. The `text` value is shown verbatim
-and contains both the serialized function definitions and translated user question.
-`target_text` is stored as a JSON string; it is decoded below for readability. Both
-displayed fields are complete (not abbreviated):
+Here are two examples from the published validation split. The `text` value is shown
+verbatim and contains both the serialized function definitions and translated user
+question. `target_text` is stored as a JSON string; it is decoded below for readability.
+Both displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"version_api.VersionApi.get_version\", \"description\": \"Retrieves the current version information of the application, including its name and version number.\", \"parameters\": {\"type\": \"dict\", \"required\": [], \"properties\": {}}}]\nQuestion: Gëff mir d'Versioun vun der Applikatioun.",
+  "text": "Functions:\n[{\"name\": \"frequency_to_wavelength\", \"description\": \"Converts the frequency of a musical note to its wavelength.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"frequency\"], \"properties\": {\"frequency\": {\"type\": \"float\", \"description\": \"The frequency in hertz of the musical note.\"}}}}, {\"name\": \"note_conversion.indian\", \"description\": \"Converts a note in Western music to Indian classical music.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"note\"], \"properties\": {\"note\": {\"type\": \"string\", \"description\": \"The note in Western musical scale.\"}}}}]\nQuestion: Wat ass déi entspriechend Nout fir C an der indescher Museksskala? A rechent d'Frequenz vu 440 Hz an eng Wellelängt ëm.",
   "target_text": [
     {
-      "version_api.VersionApi.get_version": {}
+      "note_conversion.indian": {
+        "note": [
+          "C"
+        ]
+      }
+    },
+    {
+      "frequency_to_wavelength": {
+        "frequency": [
+          440.0
+        ]
+      }
     }
   ]
 }
@@ -1024,26 +1038,43 @@ displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"math.factorial\", \"description\": \"Calculate the factorial of a given positive integer.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"number\"], \"properties\": {\"number\": {\"type\": \"integer\", \"description\": \"The number for which factorial needs to be calculated.\"}}}}]\nQuestion: Berechent d'Fakultéite vu 5, 10 a 15.",
+  "text": "Functions:\n[{\"name\": \"plot_sine_wave\", \"description\": \"Plot a sine wave for a given frequency in a given range.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"start_range\", \"end_range\", \"frequency\"], \"properties\": {\"start_range\": {\"type\": \"integer\", \"description\": \"Start of the range in radians.\"}, \"end_range\": {\"type\": \"integer\", \"description\": \"End of the range in radians.\"}, \"frequency\": {\"type\": \"integer\", \"description\": \"Frequency of the sine wave in Hz.\"}, \"amplitude\": {\"type\": \"integer\", \"description\": \"Amplitude of the sine wave. Default is 1.\"}, \"phase_shift\": {\"type\": \"integer\", \"description\": \"Phase shift of the sine wave in radians. Default is 0.\"}}}}]\nQuestion: Kanns du mir zwou Sinuswelle plotten? Déi éischt soll eng Frequenz vu 5 Hz hunn, bei 0 Radiant ufänken a bei 10 Radiant ophalen, mat enger Amplitud vun 2 an enger Phaseverschiebung vun 1 Radiant. Déi zweet soll eng Frequenz vun 10 Hz hunn, bei 0 Radiant ufänken a bei 20 Radiant ophalen, mat enger Amplitud vun 3 an enger Phaseverschiebung vun 2 Radiant.",
   "target_text": [
     {
-      "math.factorial": {
-        "number": [
-          5
-        ]
-      }
-    },
-    {
-      "math.factorial": {
-        "number": [
+      "plot_sine_wave": {
+        "start_range": [
+          0
+        ],
+        "end_range": [
           10
+        ],
+        "frequency": [
+          5
+        ],
+        "amplitude": [
+          2
+        ],
+        "phase_shift": [
+          1
         ]
       }
     },
     {
-      "math.factorial": {
-        "number": [
-          15
+      "plot_sine_wave": {
+        "start_range": [
+          0
+        ],
+        "end_range": [
+          20
+        ],
+        "frequency": [
+          10
+        ],
+        "amplitude": [
+          3
+        ],
+        "phase_shift": [
+          2
         ]
       }
     }
@@ -1083,3 +1114,5 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-bfcl-lb
 ```
+
+Use `--evaluate-test-split` to evaluate the test split explicitly.

@@ -3087,24 +3087,41 @@ The source test split has 2,501 examples in ten categories:
 - `simple_javascript` (50)
 - `simple_python` (400)
 
-We select 2,048 rows from the 2,501-row source test split by applying a deterministic
-shuffle (seed 42) and retaining the first 2,048 rows. The resulting test-only dataset
-has no training or validation split, so evaluation is zero-shot. Translation quality may
-vary and affect results.
+The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
+rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
+published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
+with no training split. EuroEval evaluates generative models on validation by default;
+pass `--evaluate-test-split` to evaluate on test. This task requires zero-shot
+evaluation and has no training examples. Translation quality may vary and affect
+results.
 
-Here are two examples from the published test split. The `text` value is shown verbatim
-and contains both the serialized function definitions and translated user question.
-`target_text` is stored as a JSON string; it is decoded below for readability. Both
-displayed fields are complete (not abbreviated):
+Here are two examples from the published validation split. The `text` value is shown
+verbatim and contains both the serialized function definitions and translated user
+question. `target_text` is stored as a JSON string; it is decoded below for readability.
+Both displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"math.factorial\", \"description\": \"Calculate the factorial of a given number.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"number\"], \"properties\": {\"number\": {\"type\": \"integer\", \"description\": \"The number to compute factorial.\"}}}}]\nQuestion: Beregn fakultetet til tallet 5",
+  "text": "Functions:\n[{\"name\": \"stock_invest.calculate_investment_cost\", \"description\": \"Calculate the cost of investing in a specific number of shares from a given company.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"company\", \"shares\"], \"properties\": {\"company\": {\"type\": \"string\", \"description\": \"The company that you want to invest in.\"}, \"shares\": {\"type\": \"integer\", \"description\": \"Number of shares to invest.\"}}}}, {\"name\": \"stock_invest.calculate_dividend_payout\", \"description\": \"Calculate the total dividend payout for a specific number of shares with known dividend per share.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"shares\", \"dividend_per_share\"], \"properties\": {\"shares\": {\"type\": \"integer\", \"description\": \"Number of shares to calculate dividends.\"}, \"dividend_per_share\": {\"type\": \"float\", \"description\": \"Known dividend per share.\"}}}}]\nQuestion: Hvor mye vil det koste meg å kjøpe 50 aksjer i Apple til dagens aksjekurs? Beregn også det samlede utbyttet dersom hver aksje gir 1,30 USD i utbytte.",
   "target_text": [
     {
-      "math.factorial": {
-        "number": [
-          5
+      "stock_invest.calculate_investment_cost": {
+        "company": [
+          "Apple",
+          "AAPL"
+        ],
+        "shares": [
+          50
+        ]
+      }
+    },
+    {
+      "stock_invest.calculate_dividend_payout": {
+        "shares": [
+          50
+        ],
+        "dividend_per_share": [
+          1.3
         ]
       }
     }
@@ -3114,26 +3131,39 @@ displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"number_analysis.prime_factors\", \"description\": \"Compute the prime factors of a number.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"number\"], \"properties\": {\"number\": {\"type\": \"integer\", \"description\": \"The number to be factored.\"}}}}]\nQuestion: Hva er primfaktorene til tallene 45, 100 og 150?",
+  "text": "Functions:\n[{\"name\": \"mathematics.calculate_area_under_curve\", \"description\": \"Calculate the area under the curve for a given polynomial function within a specified interval.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"polynomial\", \"limits\"], \"properties\": {\"polynomial\": {\"type\": \"array\", \"items\": {\"type\": \"integer\"}, \"description\": \"The coefficients of the polynomial, in decreasing order of exponent, where the first element is the coefficient for x^n, the second element is the coefficient for x^(n-1), and so on. The last element is the constant term.\"}, \"limits\": {\"type\": \"array\", \"items\": {\"type\": \"integer\"}, \"description\": \"A list of two numbers specifying the lower and upper limit for the integration interval.\"}}}}]\nQuestion: Kan du beregne arealet under kurven for polynomfunksjonen med koeffisientene [3, -2, 1] (det vil si funksjonen 3x² - 2x + 1) på intervallet [-1, 2], og deretter gjøre det samme for polynomfunksjonen med koeffisientene [1, 0, -1] (det vil si funksjonen x² - 1) på intervallet [0, 3]? Oppgi begge resultatene.",
   "target_text": [
     {
-      "number_analysis.prime_factors": {
-        "number": [
-          45
+      "mathematics.calculate_area_under_curve": {
+        "polynomial": [
+          [
+            3,
+            -2,
+            1
+          ]
+        ],
+        "limits": [
+          [
+            -1,
+            2
+          ]
         ]
       }
     },
     {
-      "number_analysis.prime_factors": {
-        "number": [
-          100
-        ]
-      }
-    },
-    {
-      "number_analysis.prime_factors": {
-        "number": [
-          150
+      "mathematics.calculate_area_under_curve": {
+        "polynomial": [
+          [
+            1,
+            0,
+            -1
+          ]
+        ],
+        "limits": [
+          [
+            0,
+            3
+          ]
         ]
       }
     }
@@ -3173,3 +3203,5 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-bfcl-no
 ```
+
+Use `--evaluate-test-split` to evaluate the test split explicitly.

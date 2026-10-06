@@ -1445,22 +1445,41 @@ The source test split has 2,501 examples in ten categories:
 - `simple_javascript` (50)
 - `simple_python` (400)
 
-We select 2,048 rows from the 2,501-row source test split by applying a deterministic
-shuffle (seed 42) and retaining the first 2,048 rows. The resulting test-only dataset
-has no training or validation split, so evaluation is zero-shot. Translation quality may
-vary and affect results.
+The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
+rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
+published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
+with no training split. EuroEval evaluates generative models on validation by default;
+pass `--evaluate-test-split` to evaluate on test. This task requires zero-shot
+evaluation and has no training examples. Translation quality may vary and affect
+results.
 
-Here are two examples from the published test split. The `text` value is shown verbatim
-and contains both the serialized function definitions and translated user question.
-`target_text` is stored as a JSON string; it is decoded below for readability. Both
-displayed fields are complete (not abbreviated):
+Here are two examples from the published validation split. The `text` value is shown
+verbatim and contains both the serialized function definitions and translated user
+question. `target_text` is stored as a JSON string; it is decoded below for readability.
+Both displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"version_api.VersionApi.get_version\", \"description\": \"Retrieves the current version information of the application, including its name and version number.\", \"parameters\": {\"type\": \"dict\", \"required\": [], \"properties\": {}}}]\nQuestion: Kerro minulle sovelluksen versio.",
+  "text": "Functions:\n[{\"name\": \"card_game_search\", \"description\": \"Locate a card game based on a specific theme.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"theme\"], \"properties\": {\"theme\": {\"type\": \"string\", \"description\": \"The theme for the card game.\"}}}}, {\"name\": \"board_game_search\", \"description\": \"Locate a board game based on specific criteria.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"complexity\", \"player_count\"], \"properties\": {\"complexity\": {\"type\": \"float\", \"description\": \"The maximum complexity rating of the board game (lower is simpler).\"}, \"player_count\": {\"type\": \"integer\", \"description\": \"The minimum player count for the board game.\"}}}}, {\"name\": \"trivia_game_search\", \"description\": \"Locate a trivia game based on play duration.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"duration\"], \"properties\": {\"duration\": {\"type\": \"float\", \"description\": \"The maximum playing duration for the trivia game in minutes.\"}}}}]\nQuestion: Etsi lautapeli, jonka monimutkaisuusarvio on alle 2,5 ja jota voi pelata yli viisi pelaajaa, sekä tietovisapeli, jonka voi pelata 60 minuutissa.",
   "target_text": [
     {
-      "version_api.VersionApi.get_version": {}
+      "board_game_search": {
+        "complexity": [
+          2.5
+        ],
+        "player_count": [
+          6
+        ]
+      }
+    },
+    {
+      "trivia_game_search": {
+        "duration": [
+          60.0,
+          45.0,
+          30.0
+        ]
+      }
     }
   ]
 }
@@ -1468,26 +1487,33 @@ displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"math.factorial\", \"description\": \"Calculate the factorial of a given number.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"number\"], \"properties\": {\"number\": {\"type\": \"integer\", \"description\": \"The number for which factorial needs to be calculated.\"}}}}]\nQuestion: Mitkä ovat lukujen 5, 7 ja 9 kertomat?",
+  "text": "Functions:\n[{\"name\": \"math.power\", \"description\": \"Calculate the power of one number raised to another.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"base\", \"exponent\"], \"properties\": {\"base\": {\"type\": \"integer\", \"description\": \"The base number.\"}, \"exponent\": {\"type\": \"integer\", \"description\": \"The exponent.\"}, \"mod\": {\"type\": \"float\", \"description\": \"The modulus. Default is None. Calculates pow(base, exponent) % mod when provided.\"}}}}]\nQuestion: Voitko laskea seuraavan matemaattisen operaation tuloksen: korota ensin luku 3 viidenteen potenssiin ja sitten luku 2 kolmanteen potenssiin?",
   "target_text": [
     {
-      "math.factorial": {
-        "number": [
+      "math.power": {
+        "base": [
+          2
+        ],
+        "exponent": [
+          3
+        ],
+        "mod": [
+          "",
+          null
+        ]
+      }
+    },
+    {
+      "math.power": {
+        "base": [
+          3
+        ],
+        "exponent": [
           5
-        ]
-      }
-    },
-    {
-      "math.factorial": {
-        "number": [
-          7
-        ]
-      }
-    },
-    {
-      "math.factorial": {
-        "number": [
-          9
+        ],
+        "mod": [
+          "",
+          null
         ]
       }
     }
@@ -1527,3 +1553,5 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-bfcl-fi
 ```
+
+Use `--evaluate-test-split` to evaluate the test split explicitly.

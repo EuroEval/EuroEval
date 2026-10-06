@@ -1897,24 +1897,52 @@ The source test split has 2,501 examples in ten categories:
 - `simple_javascript` (50)
 - `simple_python` (400)
 
-We select 2,048 rows from the 2,501-row source test split by applying a deterministic
-shuffle (seed 42) and retaining the first 2,048 rows. The resulting test-only dataset
-has no training or validation split, so evaluation is zero-shot. Translation quality may
-vary and affect results.
+The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
+rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
+published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
+with no training split. EuroEval evaluates generative models on validation by default;
+pass `--evaluate-test-split` to evaluate on test. This task requires zero-shot
+evaluation and has no training examples. Translation quality may vary and affect
+results.
 
-Here are two examples from the published test split. The `text` value is shown verbatim
-and contains both the serialized function definitions and translated user question.
-`target_text` is stored as a JSON string; it is decoded below for readability. Both
-displayed fields are complete (not abbreviated):
+Here are two examples from the published validation split. The `text` value is shown
+verbatim and contains both the serialized function definitions and translated user
+question. `target_text` is stored as a JSON string; it is decoded below for readability.
+Both displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"math.factorial\", \"description\": \"Calculate the factorial of a given number.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"number\"], \"properties\": {\"number\": {\"type\": \"integer\", \"description\": \"The number to compute factorial.\"}}}}]\nQuestion: Calcula o fatorial do número 5",
+  "text": "Functions:\n[{\"name\": \"museum.get_hours\", \"description\": \"Retrieve the operational hours of a specified museum.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"museum_name\"], \"properties\": {\"museum_name\": {\"type\": \"string\", \"description\": \"The name of the museum.\"}}}}, {\"name\": \"location.get_travel_time\", \"description\": \"Retrieve the estimated travel time from current location to a specific destination.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"destination\"], \"properties\": {\"destination\": {\"type\": \"string\", \"description\": \"The destination location.\"}, \"mode\": {\"type\": \"string\", \"enum\": [\"Driving\", \"Biking\", \"Walking\"], \"description\": \"Mode of travel.\", \"default\": \"Driving\"}}}}, {\"name\": \"museum.get_waiting_time\", \"description\": \"Retrieve the estimated waiting time at a specific museum.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"museum_name\"], \"properties\": {\"museum_name\": {\"type\": \"string\", \"description\": \"The name of the museum.\"}, \"day\": {\"type\": \"string\", \"enum\": [\"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Saturday\", \"Sunday\"], \"description\": \"Day of the week.\", \"default\": \"Monday\"}}}}]\nQuestion: Consulta o horário de funcionamento do Museu do Louvre e o tempo de espera e, depois, diz-me quanto tempo demorarei a chegar ao museu a partir da minha localização atual.",
   "target_text": [
     {
-      "math.factorial": {
-        "number": [
-          5
+      "museum.get_hours": {
+        "museum_name": [
+          "Louvre Museum",
+          "Louvre"
+        ]
+      }
+    },
+    {
+      "museum.get_waiting_time": {
+        "museum_name": [
+          "Louvre Museum",
+          "Louvre"
+        ],
+        "day": [
+          "",
+          "Monday"
+        ]
+      }
+    },
+    {
+      "location.get_travel_time": {
+        "destination": [
+          "Louvre Museum",
+          "Louvre"
+        ],
+        "mode": [
+          "Driving",
+          ""
         ]
       }
     }
@@ -1924,26 +1952,47 @@ displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"math.factorial\", \"description\": \"Calculate the factorial of a given positive integer.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"number\"], \"properties\": {\"number\": {\"type\": \"integer\", \"description\": \"The number for which factorial needs to be calculated.\"}}}}]\nQuestion: Calcula os fatoriais de 5, 10 e 15.",
+  "text": "Functions:\n[{\"name\": \"calculate_clock_angle\", \"description\": \"Calculate the angle between the hour and minute hands of a clock at a given time.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"hours\", \"minutes\"], \"properties\": {\"hours\": {\"type\": \"integer\", \"description\": \"The hour on the clock face.\"}, \"minutes\": {\"type\": \"integer\", \"description\": \"The minutes on the clock face.\"}, \"round_to\": {\"type\": \"integer\", \"description\": \"The number of decimal places to round the result to, default is 2.\"}}}}]\nQuestion: Qual é o ângulo entre os ponteiros das horas e dos minutos de um relógio às 3h15, arredondado a duas casas decimais, e como se compara com os ângulos às 8h20 e às 11h50, também arredondados a duas casas decimais?",
   "target_text": [
     {
-      "math.factorial": {
-        "number": [
-          5
-        ]
-      }
-    },
-    {
-      "math.factorial": {
-        "number": [
-          10
-        ]
-      }
-    },
-    {
-      "math.factorial": {
-        "number": [
+      "calculate_clock_angle": {
+        "hours": [
+          3
+        ],
+        "minutes": [
           15
+        ],
+        "round_to": [
+          2,
+          ""
+        ]
+      }
+    },
+    {
+      "calculate_clock_angle": {
+        "hours": [
+          8
+        ],
+        "minutes": [
+          20
+        ],
+        "round_to": [
+          2,
+          ""
+        ]
+      }
+    },
+    {
+      "calculate_clock_angle": {
+        "hours": [
+          11
+        ],
+        "minutes": [
+          50
+        ],
+        "round_to": [
+          2,
+          ""
         ]
       }
     }
@@ -1983,3 +2032,5 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-bfcl-pt
 ```
+
+Use `--evaluate-test-split` to evaluate the test split explicitly.

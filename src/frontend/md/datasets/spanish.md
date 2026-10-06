@@ -1650,22 +1650,54 @@ The source test split has 2,501 examples in ten categories:
 - `simple_javascript` (50)
 - `simple_python` (400)
 
-We select 2,048 rows from the 2,501-row source test split by applying a deterministic
-shuffle (seed 42) and retaining the first 2,048 rows. The resulting test-only dataset
-has no training or validation split, so evaluation is zero-shot. Translation quality may
-vary and affect results.
+The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
+rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
+published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
+with no training split. EuroEval evaluates generative models on validation by default;
+pass `--evaluate-test-split` to evaluate on test. This task requires zero-shot
+evaluation and has no training examples. Translation quality may vary and affect
+results.
 
-Here are two examples from the published test split. The `text` value is shown verbatim
-and contains both the serialized function definitions and translated user question.
-`target_text` is stored as a JSON string; it is decoded below for readability. Both
-displayed fields are complete (not abbreviated):
+Here are two examples from the published validation split. The `text` value is shown
+verbatim and contains both the serialized function definitions and translated user
+question. `target_text` is stored as a JSON string; it is decoded below for readability.
+Both displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"version_api.VersionApi.get_version\", \"description\": \"Retrieves the current version information of the application, including its name and version number.\", \"parameters\": {\"type\": \"dict\", \"required\": [], \"properties\": {}}}]\nQuestion: Dame la versión de la aplicación.",
+  "text": "Functions:\n[{\"name\": \"museum.get_hours\", \"description\": \"Retrieve the operational hours of a specified museum.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"museum_name\"], \"properties\": {\"museum_name\": {\"type\": \"string\", \"description\": \"The name of the museum.\"}}}}, {\"name\": \"location.get_travel_time\", \"description\": \"Retrieve the estimated travel time from current location to a specific destination.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"destination\"], \"properties\": {\"destination\": {\"type\": \"string\", \"description\": \"The destination location.\"}, \"mode\": {\"type\": \"string\", \"enum\": [\"Driving\", \"Biking\", \"Walking\"], \"description\": \"Mode of travel.\", \"default\": \"Driving\"}}}}, {\"name\": \"museum.get_waiting_time\", \"description\": \"Retrieve the estimated waiting time at a specific museum.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"museum_name\"], \"properties\": {\"museum_name\": {\"type\": \"string\", \"description\": \"The name of the museum.\"}, \"day\": {\"type\": \"string\", \"enum\": [\"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Saturday\", \"Sunday\"], \"description\": \"Day of the week.\", \"default\": \"Monday\"}}}}]\nQuestion: Averigua el horario de apertura del Museo del Louvre y el tiempo de espera; luego dime cuánto tardaré en llegar al museo desde mi ubicación actual.",
   "target_text": [
     {
-      "version_api.VersionApi.get_version": {}
+      "museum.get_hours": {
+        "museum_name": [
+          "Louvre Museum",
+          "Louvre"
+        ]
+      }
+    },
+    {
+      "museum.get_waiting_time": {
+        "museum_name": [
+          "Louvre Museum",
+          "Louvre"
+        ],
+        "day": [
+          "",
+          "Monday"
+        ]
+      }
+    },
+    {
+      "location.get_travel_time": {
+        "destination": [
+          "Louvre Museum",
+          "Louvre"
+        ],
+        "mode": [
+          "Driving",
+          ""
+        ]
+      }
     }
   ]
 }
@@ -1673,26 +1705,36 @@ displayed fields are complete (not abbreviated):
 
 ```json
 {
-  "text": "Functions:\n[{\"name\": \"math.factorial\", \"description\": \"Calculate the factorial of a given positive integer.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"number\"], \"properties\": {\"number\": {\"type\": \"integer\", \"description\": \"The number for which factorial needs to be calculated.\"}}}}]\nQuestion: Calcula el factorial de 5, 10 y 15.",
+  "text": "Functions:\n[{\"name\": \"get_theater_movie_releases\", \"description\": \"Retrieve the list of movie releases in specific theaters for a specified period.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"location\", \"timeframe\"], \"properties\": {\"location\": {\"type\": \"string\", \"description\": \"The location of the theaters.\"}, \"timeframe\": {\"type\": \"integer\", \"description\": \"The number of days for which releases are required from current date.\"}, \"format\": {\"type\": \"string\", \"description\": \"Format of movies - could be 'IMAX', '2D', '3D', '4DX' etc. This is an optional parameter.\", \"default\": \"IMAX\"}}}}]\nQuestion: ¿Puedes darme la lista de películas que se estrenarán en formato IMAX en los cines de Nueva York durante los próximos 7 días y la lista de películas que se estrenarán en formato 2D en los cines de Los Ángeles durante los próximos 14 días?",
   "target_text": [
     {
-      "math.factorial": {
-        "number": [
-          5
+      "get_theater_movie_releases": {
+        "location": [
+          "New York",
+          "New York, NY",
+          "NYC"
+        ],
+        "timeframe": [
+          7
+        ],
+        "format": [
+          "IMAX",
+          ""
         ]
       }
     },
     {
-      "math.factorial": {
-        "number": [
-          10
-        ]
-      }
-    },
-    {
-      "math.factorial": {
-        "number": [
-          15
+      "get_theater_movie_releases": {
+        "location": [
+          "Los Angeles",
+          "Los Angeles, CA",
+          "LA"
+        ],
+        "timeframe": [
+          14
+        ],
+        "format": [
+          "2D"
         ]
       }
     }
@@ -1732,3 +1774,5 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-bfcl-es
 ```
+
+Use `--evaluate-test-split` to evaluate the test split explicitly.
