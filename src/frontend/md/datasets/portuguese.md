@@ -1900,10 +1900,8 @@ The source test split has 2,501 examples in ten categories:
 The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
 rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
 published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
-with no training split. EuroEval evaluates generative models on validation by default;
-pass `--evaluate-test-split` to evaluate on test. This task requires zero-shot
-evaluation and has no training examples. Translation quality may vary and affect
-results.
+with no training split. EuroEval evaluates this task zero-shot on validation by
+default. Translation quality may vary and affect results.
 
 Here are two examples from the published validation split. The `text` value is shown
 verbatim and contains both the serialized function definitions and translated user
@@ -2032,5 +2030,3 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-bfcl-pt
 ```
-
-Use `--evaluate-test-split` to evaluate the test split explicitly.
