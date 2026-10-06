@@ -88,7 +88,7 @@ def _evaluate_function_toolcall_response(
     if len(pred_calls) != len(ref_calls):
         return False
 
-    for pred_call, ref_call, description in zip(pred_calls, ref_calls, descriptions):
+    for pred_call, ref_call in zip(pred_calls, ref_calls):
         # each predicted function call should be a dict
         if not isinstance(pred_call, dict):
             log_once(
@@ -139,7 +139,15 @@ def _evaluate_function_toolcall_response(
         if pred_name != ref_name:
             return False
 
-        # get requires arguments from function descriptions
+        # Match the schema to the called function, not its position in the list.
+        description = next(
+            (function for function in descriptions if function.get("name") == ref_name),
+            None,
+        )
+        if description is None:
+            return False
+
+        # get required arguments from function descriptions
         parameters = description.get("parameters", None)
         required_args = (
             parameters.get("required", None) if isinstance(parameters, dict) else None

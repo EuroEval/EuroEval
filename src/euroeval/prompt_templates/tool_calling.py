@@ -18,7 +18,10 @@ if t.TYPE_CHECKING:
 ToolCall = pydantic.create_model(
     "ToolCall",
     __base__=pydantic.BaseModel,
-    **{TOOL_CALLING_FUNCTION_KEY: str, TOOL_CALLING_ARGUMENTS_KEY: dict[str, str]},
+    **{
+        TOOL_CALLING_FUNCTION_KEY: str,
+        TOOL_CALLING_ARGUMENTS_KEY: dict[str, pydantic.JsonValue],
+    },
 )
 
 
