@@ -13,6 +13,7 @@ from ..tasks import (
     RC,
     SENT,
     TEXT_CLASSIFICATION,
+    TOOL_CALLING,
     TRANSLATION,
 )
 
@@ -117,6 +118,18 @@ RAGTRUTH_LB_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+MULTI_BFCL_LB_CONFIG = DatasetConfig(
+    name="multi-bfcl-lb",
+    pretty_name="MultiBFCL-lb",
+    source="EuroEval/multi-bfcl-lb-mini",
+    task=TOOL_CALLING,
+    languages=[LUXEMBOURGISH],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
+)
+
 
 FLORES_LB_EN_CONFIG = TranslationDatasetConfig(
     name="flores-lb-en",

@@ -11,6 +11,7 @@ from ..tasks import (
     NER,
     RC,
     SENT,
+    TOOL_CALLING,
     TRANSLATION,
 )
 
@@ -106,6 +107,18 @@ RAGTRUTH_BG_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+MULTI_BFCL_BG_CONFIG = DatasetConfig(
+    name="multi-bfcl-bg",
+    pretty_name="MultiBFCL-bg",
+    source="EuroEval/multi-bfcl-bg-mini",
+    task=TOOL_CALLING,
+    languages=[BULGARIAN],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
+)
+
 
 WMT24PP_BG_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-bg-en",
