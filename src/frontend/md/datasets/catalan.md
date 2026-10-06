@@ -1045,7 +1045,7 @@ MultiBFCL is a machine-translated version of the Berkeley Function Calling Leade
 [syvai/multi-bfcl](https://huggingface.co/datasets/syvai/multi-bfcl). The source is
 based on the [Berkeley Function Calling Leaderboard
 v2](https://openreview.net/forum?id=2GmDdhBdDk); translations were generated with
-GPT-6-sol. Function definitions remain in English in the source data, while the user
+GPT-6-sol. The examples shown here use English function names and descriptions; user
 questions are translated (the Portuguese subset uses the upstream `pt-pt` variant).
 
 The source test split has 2,501 examples in ten categories:
@@ -1061,9 +1061,10 @@ The source test split has 2,501 examples in ten categories:
 - `simple_javascript` (50)
 - `simple_python` (400)
 
-We use the full source test split and apply a deterministic shuffle (seed 42), retaining
-the first 2,048 rows. The resulting test-only dataset has no training or validation
-split, so evaluation is zero-shot. Translation quality may vary and affect results.
+We select 2,048 rows from the 2,501-row source test split by applying a deterministic
+shuffle (seed 42) and retaining the first 2,048 rows. The resulting test-only dataset
+has no training or validation split, so evaluation is zero-shot. Translation quality may
+vary and affect results.
 
 Here are two examples from the published test split. The `text` value is shown verbatim
 and contains both the serialized function definitions and translated user question.
@@ -1116,17 +1117,26 @@ When evaluating generative models, we use the following setup (see the
 - Number of few-shot examples: 0
 - No prefix prompt or base prompt template: tool calling is evaluated only for
   instruction-tuned/reasoning generative models.
-- Instruction prompt (in English for every language):
+- Instruction prompt (in English for every language; schematic, not literal runtime
+  text):
 
   ```text
-  A list of names and descriptions of functions available, and a user question is given below:
+  A list of names and descriptions of functions available, and a user question is given
+  below:
   {text}
-  Answer with a JSON, strictly following this schema: {"$defs":{"JsonValue":{},"ToolCall":{"properties":{"function":{"title":"Function","type":"string"},"arguments":{"additionalProperties":{"$ref":"#/$defs/JsonValue"},"title":"Arguments","type":"object"}},"required":["function","arguments"],"title":"ToolCall","type":"object"}},"properties":{"tool_calls":{"items":{"$ref":"#/$defs/ToolCall"},"title":"Tool Calls","type":"array"}},"required":["tool_calls"],"title":"ToolCallingResponse","type":"object"}. The value of tool_calls must list the function call(s) to execute to fulfill the users request, in the right order and number, using double quotes for all keys and strings, and nothing else (no additional explanatory text).
+  Answer with a JSON object matching this schematic; the runtime uses a generated schema:
+  {"tool_calls": [
+    {"function": "<function name>", "arguments": {"<argument name>": "<value>"}}
+  ]}
+  Use function names from the provided definitions. Each call includes its function and
+  arguments. Return calls in the right order and number, using double quotes for all keys
+  and strings, and nothing else (no extra explanatory text).
   ```
 
-Tool-calling accuracy requires the correct number and order of calls, the correct
-function names, and matching values for required arguments (any listed possible value is
-accepted). Optional arguments are not scored.
+Tool-calling accuracy requires the correct number and order of calls and the correct
+function names. For arguments, the metric checks each reference argument when the
+function has no nonempty required-argument list; otherwise, it checks only required
+arguments. Any listed possible value is accepted for each checked argument.
 
 You can evaluate this dataset directly as follows:
 
