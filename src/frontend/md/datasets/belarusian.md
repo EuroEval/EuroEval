@@ -884,3 +884,136 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset flores-be-en
 ```
+
+## Tool calling
+
+### MultiBFCL-be
+
+MultiBFCL is a machine-translated version of the Berkeley Function Calling Leaderboard
+(BFCL-v2), created by Dan Saattrup Smart at [syv.ai](https://syv.ai/) and published as
+[syvai/multi-bfcl](https://huggingface.co/datasets/syvai/multi-bfcl). The source is
+based on the [Berkeley Function Calling Leaderboard
+v2](https://openreview.net/forum?id=2GmDdhBdDk); translations were generated with
+GPT-6-sol. The examples shown here use English function names and descriptions; user
+questions are translated (the Portuguese subset uses the upstream `pt-pt` variant).
+
+The source test split has 2,501 examples in ten categories:
+
+- `live_multiple` (1,053)
+- `live_parallel_multiple` (24)
+- `live_parallel` (16)
+- `live_simple` (258)
+- `multiple` (200)
+- `parallel_multiple` (200)
+- `parallel` (200)
+- `simple_java` (100)
+- `simple_javascript` (50)
+- `simple_python` (400)
+
+The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
+rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
+published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
+with no training split. EuroEval evaluates this task zero-shot on validation by
+default. Translation quality may vary and affect results.
+
+Here are two examples from the published validation split. The `text` value is shown
+verbatim and contains both the serialized function definitions and translated user
+question. `target_text` is stored as a JSON string; it is decoded below for readability.
+Both displayed fields are complete (not abbreviated):
+
+```json
+{
+  "text": "Functions:\n[{\"name\": \"calcVolume.cuboid\", \"description\": \"Calculates the volume of a cuboid.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"height\", \"width\", \"depth\"], \"properties\": {\"height\": {\"type\": \"float\", \"description\": \"The height of the cuboid.\"}, \"width\": {\"type\": \"float\", \"description\": \"The width of the cuboid.\"}, \"depth\": {\"type\": \"float\", \"description\": \"The depth of the cuboid.\"}}}}, {\"name\": \"calcVolume.sphere\", \"description\": \"Calculates the volume of a sphere.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"radius\"], \"properties\": {\"radius\": {\"type\": \"float\", \"description\": \"The radius of the sphere.\"}}}}]\nQuestion: Вылічыце аб’ём прамавугольнага паралелепіпеда вышынёй 10 м, шырынёй 5 м і глыбінёй 8 м. Таксама знайдзіце аб’ём шара радыусам 4 м.",
+  "target_text": [
+    {
+      "calcVolume.cuboid": {
+        "height": [
+          10.0
+        ],
+        "width": [
+          5.0
+        ],
+        "depth": [
+          8.0
+        ]
+      }
+    },
+    {
+      "calcVolume.sphere": {
+        "radius": [
+          4.0
+        ]
+      }
+    }
+  ]
+}
+```
+
+```json
+{
+  "text": "Functions:\n[{\"name\": \"math.power\", \"description\": \"Calculate the power of one number raised to another.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"base\", \"exponent\"], \"properties\": {\"base\": {\"type\": \"integer\", \"description\": \"The base number.\"}, \"exponent\": {\"type\": \"integer\", \"description\": \"The exponent.\"}, \"mod\": {\"type\": \"float\", \"description\": \"The modulus. Default is None. Calculates pow(base, exponent) % mod when provided.\"}}}}]\nQuestion: Ці можаце вы вылічыць вынік наступных матэматычных дзеянняў: спачатку ўзвядзіце лік 3 у пятую ступень, а затым лік 2 у трэцюю ступень?",
+  "target_text": [
+    {
+      "math.power": {
+        "base": [
+          2
+        ],
+        "exponent": [
+          3
+        ],
+        "mod": [
+          "",
+          null
+        ]
+      }
+    },
+    {
+      "math.power": {
+        "base": [
+          3
+        ],
+        "exponent": [
+          5
+        ],
+        "mod": [
+          "",
+          null
+        ]
+      }
+    }
+  ]
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt or base prompt template: tool calling is evaluated only for
+  instruction-tuned/reasoning generative models.
+- Instruction prompt (in English for every language; schematic, not literal runtime
+  text):
+
+  ```text
+  A list of names and descriptions of functions available, and a user question is given
+  below:
+  {text}
+  Answer with a JSON object matching this schematic; the runtime uses a generated schema:
+  {"tool_calls": [
+    {"function": "<function name>", "arguments": {"<argument name>": "<value>"}}
+  ]}
+  Use function names from the provided definitions. Each call includes its function and
+  arguments. Return calls in the right order and number, using double quotes for all keys
+  and strings, and nothing else (no extra explanatory text).
+  ```
+
+Tool-calling accuracy requires the correct number and order of calls and the correct
+function names. For arguments, the metric checks each reference argument when the
+function has no nonempty required-argument list; otherwise, it checks only required
+arguments. Any listed possible value is accepted for each checked argument.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-bfcl-be
+```

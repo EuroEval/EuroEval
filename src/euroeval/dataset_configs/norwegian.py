@@ -17,6 +17,7 @@ from ..tasks import (
     SENT,
     SUMM,
     TEXT_CLASSIFICATION,
+    TOOL_CALLING,
     TRANSLATION,
 )
 
@@ -183,6 +184,16 @@ RAGTRUTH_NO_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+MULTI_BFCL_NO_CONFIG = DatasetConfig(
+    name="multi-bfcl-no",
+    pretty_name="MultiBFCL-no",
+    source="EuroEval/multi-bfcl-no-mini",
+    task=TOOL_CALLING,
+    languages=[NORWEGIAN],
+    train_split=None,
+)
+
 
 WMT24PP_NO_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-no-en",

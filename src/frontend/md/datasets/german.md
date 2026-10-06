@@ -2041,3 +2041,182 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset flores-de-en
 ```
+
+## Tool calling
+
+### MultiBFCL-de
+
+MultiBFCL is a machine-translated version of the Berkeley Function Calling Leaderboard
+(BFCL-v2), created by Dan Saattrup Smart at [syv.ai](https://syv.ai/) and published as
+[syvai/multi-bfcl](https://huggingface.co/datasets/syvai/multi-bfcl). The source is
+based on the [Berkeley Function Calling Leaderboard
+v2](https://openreview.net/forum?id=2GmDdhBdDk); translations were generated with
+GPT-6-sol. The examples shown here use English function names and descriptions; user
+questions are translated (the Portuguese subset uses the upstream `pt-pt` variant).
+
+The source test split has 2,501 examples in ten categories:
+
+- `live_multiple` (1,053)
+- `live_parallel_multiple` (24)
+- `live_parallel` (16)
+- `live_simple` (258)
+- `multiple` (200)
+- `parallel_multiple` (200)
+- `parallel` (200)
+- `simple_java` (100)
+- `simple_javascript` (50)
+- `simple_python` (400)
+
+The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
+rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
+published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
+with no training split. EuroEval evaluates this task zero-shot on validation by
+default. Translation quality may vary and affect results.
+
+Here are two examples from the published validation split. The `text` value is shown
+verbatim and contains both the serialized function definitions and translated user
+question. `target_text` is stored as a JSON string; it is decoded below for readability.
+Both displayed fields are complete (not abbreviated):
+
+```json
+{
+  "text": "Functions:\n[{\"name\": \"museum.get_hours\", \"description\": \"Retrieve the operational hours of a specified museum.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"museum_name\"], \"properties\": {\"museum_name\": {\"type\": \"string\", \"description\": \"The name of the museum.\"}}}}, {\"name\": \"location.get_travel_time\", \"description\": \"Retrieve the estimated travel time from current location to a specific destination.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"destination\"], \"properties\": {\"destination\": {\"type\": \"string\", \"description\": \"The destination location.\"}, \"mode\": {\"type\": \"string\", \"enum\": [\"Driving\", \"Biking\", \"Walking\"], \"description\": \"Mode of travel.\", \"default\": \"Driving\"}}}}, {\"name\": \"museum.get_waiting_time\", \"description\": \"Retrieve the estimated waiting time at a specific museum.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"museum_name\"], \"properties\": {\"museum_name\": {\"type\": \"string\", \"description\": \"The name of the museum.\"}, \"day\": {\"type\": \"string\", \"enum\": [\"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Saturday\", \"Sunday\"], \"description\": \"Day of the week.\", \"default\": \"Monday\"}}}}]\nQuestion: Finde die Öffnungszeiten des Louvre-Museums und die Wartezeit heraus und sag mir dann, wie lange ich von meinem aktuellen Standort bis zum Museum brauche.",
+  "target_text": [
+    {
+      "museum.get_hours": {
+        "museum_name": [
+          "Louvre Museum",
+          "Louvre"
+        ]
+      }
+    },
+    {
+      "museum.get_waiting_time": {
+        "museum_name": [
+          "Louvre Museum",
+          "Louvre"
+        ],
+        "day": [
+          "",
+          "Monday"
+        ]
+      }
+    },
+    {
+      "location.get_travel_time": {
+        "destination": [
+          "Louvre Museum",
+          "Louvre"
+        ],
+        "mode": [
+          "Driving",
+          ""
+        ]
+      }
+    }
+  ]
+}
+```
+
+```json
+{
+  "text": "Functions:\n[{\"name\": \"create_histogram\", \"description\": \"Create a histogram based on provided data.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"data\", \"bins\"], \"properties\": {\"data\": {\"type\": \"array\", \"items\": {\"type\": \"integer\"}, \"description\": \"The data for which histogram needs to be plotted.\"}, \"bins\": {\"type\": \"integer\", \"description\": \"The number of equal-width bins in the range. Default is 10.\"}}}}]\nQuestion: Du erhältst zwei Datensätze: Der erste ist [12, 15, 11, 14, 18, 19, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26] und der zweite ist [32, 35, 31, 34, 38, 39, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46]. Kannst du mit der Funktion „create_histogram“ für jeden Datensatz ein Histogramm mit jeweils 5 Klassen erstellen?",
+  "target_text": [
+    {
+      "create_histogram": {
+        "data": [
+          [
+            12,
+            15,
+            11,
+            14,
+            18,
+            19,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26
+          ]
+        ],
+        "bins": [
+          5
+        ]
+      }
+    },
+    {
+      "create_histogram": {
+        "data": [
+          [
+            32,
+            35,
+            31,
+            34,
+            38,
+            39,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46
+          ]
+        ],
+        "bins": [
+          5
+        ]
+      }
+    }
+  ]
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt or base prompt template: tool calling is evaluated only for
+  instruction-tuned/reasoning generative models.
+- Instruction prompt (in English for every language; schematic, not literal runtime
+  text):
+
+  ```text
+  A list of names and descriptions of functions available, and a user question is given
+  below:
+  {text}
+  Answer with a JSON object matching this schematic; the runtime uses a generated schema:
+  {"tool_calls": [
+    {"function": "<function name>", "arguments": {"<argument name>": "<value>"}}
+  ]}
+  Use function names from the provided definitions. Each call includes its function and
+  arguments. Return calls in the right order and number, using double quotes for all keys
+  and strings, and nothing else (no extra explanatory text).
+  ```
+
+Tool-calling accuracy requires the correct number and order of calls and the correct
+function names. For arguments, the metric checks each reference argument when the
+function has no nonempty required-argument list; otherwise, it checks only required
+arguments. Any listed possible value is accepted for each checked argument.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-bfcl-de
+```

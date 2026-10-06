@@ -1088,3 +1088,146 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset flores-lv-en
 ```
+
+## Tool calling
+
+### MultiBFCL-lv
+
+MultiBFCL is a machine-translated version of the Berkeley Function Calling Leaderboard
+(BFCL-v2), created by Dan Saattrup Smart at [syv.ai](https://syv.ai/) and published as
+[syvai/multi-bfcl](https://huggingface.co/datasets/syvai/multi-bfcl). The source is
+based on the [Berkeley Function Calling Leaderboard
+v2](https://openreview.net/forum?id=2GmDdhBdDk); translations were generated with
+GPT-6-sol. The examples shown here use English function names and descriptions; user
+questions are translated (the Portuguese subset uses the upstream `pt-pt` variant).
+
+The source test split has 2,501 examples in ten categories:
+
+- `live_multiple` (1,053)
+- `live_parallel_multiple` (24)
+- `live_parallel` (16)
+- `live_simple` (258)
+- `multiple` (200)
+- `parallel_multiple` (200)
+- `parallel` (200)
+- `simple_java` (100)
+- `simple_javascript` (50)
+- `simple_python` (400)
+
+The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
+rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
+published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
+with no training split. EuroEval evaluates this task zero-shot on validation by
+default. Translation quality may vary and affect results.
+
+Here are two examples from the published validation split. The `text` value is shown
+verbatim and contains both the serialized function definitions and translated user
+question. `target_text` is stored as a JSON string; it is decoded below for readability.
+Both displayed fields are complete (not abbreviated):
+
+```json
+{
+  "text": "Functions:\n[{\"name\": \"calcVolume.cuboid\", \"description\": \"Calculates the volume of a cuboid.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"height\", \"width\", \"depth\"], \"properties\": {\"height\": {\"type\": \"float\", \"description\": \"The height of the cuboid.\"}, \"width\": {\"type\": \"float\", \"description\": \"The width of the cuboid.\"}, \"depth\": {\"type\": \"float\", \"description\": \"The depth of the cuboid.\"}}}}, {\"name\": \"calcVolume.sphere\", \"description\": \"Calculates the volume of a sphere.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"radius\"], \"properties\": {\"radius\": {\"type\": \"float\", \"description\": \"The radius of the sphere.\"}}}}]\nQuestion: Aprēķini taisnstūra paralēlskaldņa tilpumu, ja tā augstums ir 10 m, platums ir 5 m un dziļums ir 8 m. Aprēķini arī lodes tilpumu, ja tās rādiuss ir 4 m.",
+  "target_text": [
+    {
+      "calcVolume.cuboid": {
+        "height": [
+          10.0
+        ],
+        "width": [
+          5.0
+        ],
+        "depth": [
+          8.0
+        ]
+      }
+    },
+    {
+      "calcVolume.sphere": {
+        "radius": [
+          4.0
+        ]
+      }
+    }
+  ]
+}
+```
+
+```json
+{
+  "text": "Functions:\n[{\"name\": \"plot_sine_wave\", \"description\": \"Plot a sine wave for a given frequency in a given range.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"start_range\", \"end_range\", \"frequency\"], \"properties\": {\"start_range\": {\"type\": \"integer\", \"description\": \"Start of the range in radians.\"}, \"end_range\": {\"type\": \"integer\", \"description\": \"End of the range in radians.\"}, \"frequency\": {\"type\": \"integer\", \"description\": \"Frequency of the sine wave in Hz.\"}, \"amplitude\": {\"type\": \"integer\", \"description\": \"Amplitude of the sine wave. Default is 1.\"}, \"phase_shift\": {\"type\": \"integer\", \"description\": \"Phase shift of the sine wave in radians. Default is 0.\"}}}}]\nQuestion: Vai vari man attēlot divus sinusoīdas viļņus grafikā? Pirmajam jābūt ar 5 Hz frekvenci, diapazonā no 0 līdz 10 radiāniem, ar amplitūdu 2 un fāzes nobīdi par 1 radiānu. Otrajam jābūt ar 10 Hz frekvenci, diapazonā no 0 līdz 20 radiāniem, ar amplitūdu 3 un fāzes nobīdi par 2 radiāniem.",
+  "target_text": [
+    {
+      "plot_sine_wave": {
+        "start_range": [
+          0
+        ],
+        "end_range": [
+          10
+        ],
+        "frequency": [
+          5
+        ],
+        "amplitude": [
+          2
+        ],
+        "phase_shift": [
+          1
+        ]
+      }
+    },
+    {
+      "plot_sine_wave": {
+        "start_range": [
+          0
+        ],
+        "end_range": [
+          20
+        ],
+        "frequency": [
+          10
+        ],
+        "amplitude": [
+          3
+        ],
+        "phase_shift": [
+          2
+        ]
+      }
+    }
+  ]
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt or base prompt template: tool calling is evaluated only for
+  instruction-tuned/reasoning generative models.
+- Instruction prompt (in English for every language; schematic, not literal runtime
+  text):
+
+  ```text
+  A list of names and descriptions of functions available, and a user question is given
+  below:
+  {text}
+  Answer with a JSON object matching this schematic; the runtime uses a generated schema:
+  {"tool_calls": [
+    {"function": "<function name>", "arguments": {"<argument name>": "<value>"}}
+  ]}
+  Use function names from the provided definitions. Each call includes its function and
+  arguments. Return calls in the right order and number, using double quotes for all keys
+  and strings, and nothing else (no extra explanatory text).
+  ```
+
+Tool-calling accuracy requires the correct number and order of calls and the correct
+function names. For arguments, the metric checks each reference argument when the
+function has no nonempty required-argument list; otherwise, it checks only required
+arguments. Any listed possible value is accepted for each checked argument.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-bfcl-lv
+```

@@ -16,6 +16,7 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TOOL_CALLING,
     TRANSLATION,
 )
 
@@ -140,6 +141,16 @@ ICE_EC_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+MULTI_BFCL_IS_CONFIG = DatasetConfig(
+    name="multi-bfcl-is",
+    pretty_name="MultiBFCL-is",
+    source="EuroEval/multi-bfcl-is-mini",
+    task=TOOL_CALLING,
+    languages=[ICELANDIC],
+    train_split=None,
+)
+
 
 WMT24PP_IS_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-is-en",

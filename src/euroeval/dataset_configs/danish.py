@@ -17,6 +17,7 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TOOL_CALLING,
     TRANSLATION,
     WIC,
 )
@@ -154,6 +155,16 @@ DANWIC_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+MULTI_BFCL_DA_CONFIG = DatasetConfig(
+    name="multi-bfcl-da",
+    pretty_name="MultiBFCL-da",
+    source="EuroEval/multi-bfcl-da-mini",
+    task=TOOL_CALLING,
+    languages=[DANISH],
+    train_split=None,
+)
+
 
 WMT24PP_DA_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-da-en",

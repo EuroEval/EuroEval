@@ -2,7 +2,16 @@
 
 from ..data_models import DatasetConfig, TranslationDatasetConfig
 from ..languages import BOSNIAN, ENGLISH
-from ..tasks import HALLU, INSTRUCTION_FOLLOWING, NER, RC, SENT, SUMM, TRANSLATION
+from ..tasks import (
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+    TOOL_CALLING,
+    TRANSLATION,
+)
 
 # Official datasets ###
 
@@ -69,6 +78,16 @@ RAGTRUTH_BS_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+MULTI_BFCL_BS_CONFIG = DatasetConfig(
+    name="multi-bfcl-bs",
+    pretty_name="MultiBFCL-bs",
+    source="EuroEval/multi-bfcl-bs-mini",
+    task=TOOL_CALLING,
+    languages=[BOSNIAN],
+    train_split=None,
+)
+
 
 FLORES_BS_EN_CONFIG = TranslationDatasetConfig(
     name="flores-bs-en",

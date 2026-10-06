@@ -1,5 +1,6 @@
 """Tests for the generated volunteer scope policy."""
 
+import importlib.metadata
 import json
 import tomllib
 import typing as t
@@ -55,6 +56,19 @@ def test_checked_in_json_and_typescript_policies_are_synchronised() -> None:
     assert (
         policy_module.encode_typescript_policy(policy) == typescript_path.read_bytes()
     )
+
+
+def test_checked_in_policy_matches_all_official_datasets() -> None:
+    """Volunteer scope stays in sync with the official dataset configurations."""
+    checked_in = json.loads(
+        Path("api/worker/scope-policy.json").read_text(encoding="utf-8")
+    )
+    expected = build_policy(
+        euroeval_version=importlib.metadata.version("euroeval"),
+        pairs=policy_module.official_pairs(),
+    )
+
+    assert checked_in == expected
 
 
 def test_development_policy_version_uses_pep440_normalisation() -> None:

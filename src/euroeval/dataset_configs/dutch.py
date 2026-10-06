@@ -19,6 +19,7 @@ from ..tasks import (
     SENT,
     SIMPL,
     SUMM,
+    TOOL_CALLING,
     TRANSLATION,
 )
 
@@ -170,6 +171,16 @@ WINOGRANDE_NL_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+MULTI_BFCL_NL_CONFIG = DatasetConfig(
+    name="multi-bfcl-nl",
+    pretty_name="MultiBFCL-nl",
+    source="EuroEval/multi-bfcl-nl-mini",
+    task=TOOL_CALLING,
+    languages=[DUTCH],
+    train_split=None,
+)
+
 
 WMT24PP_NL_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-nl-en",

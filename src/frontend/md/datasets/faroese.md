@@ -1175,3 +1175,150 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset flores-fo-en
 ```
+
+## Tool calling
+
+### MultiBFCL-fo
+
+MultiBFCL is a machine-translated version of the Berkeley Function Calling Leaderboard
+(BFCL-v2), created by Dan Saattrup Smart at [syv.ai](https://syv.ai/) and published as
+[syvai/multi-bfcl](https://huggingface.co/datasets/syvai/multi-bfcl). The source is
+based on the [Berkeley Function Calling Leaderboard
+v2](https://openreview.net/forum?id=2GmDdhBdDk); translations were generated with
+GPT-6-sol. The examples shown here use English function names and descriptions; user
+questions are translated (the Portuguese subset uses the upstream `pt-pt` variant).
+
+The source test split has 2,501 examples in ten categories:
+
+- `live_multiple` (1,053)
+- `live_parallel_multiple` (24)
+- `live_parallel` (16)
+- `live_simple` (258)
+- `multiple` (200)
+- `parallel_multiple` (200)
+- `parallel` (200)
+- `simple_java` (100)
+- `simple_javascript` (50)
+- `simple_python` (400)
+
+The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
+rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
+published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
+with no training split. EuroEval evaluates this task zero-shot on validation by
+default. Translation quality may vary and affect results.
+
+Here are two examples from the published validation split. The `text` value is shown
+verbatim and contains both the serialized function definitions and translated user
+question. `target_text` is stored as a JSON string; it is decoded below for readability.
+Both displayed fields are complete (not abbreviated):
+
+```json
+{
+  "text": "Functions:\n[{\"name\": \"melody_generator\", \"description\": \"Create a melody based on specified notes.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"note_sequence\"], \"properties\": {\"note_sequence\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}, \"description\": \"The sequence of notes for the melody.\"}, \"instrument\": {\"type\": \"string\", \"default\": \"Bass\", \"description\": \"The instrument to play the melody, e.g. Bass.\"}}}}, {\"name\": \"beat_generator\", \"description\": \"Generate a beat based on specified genre and beats per minute.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"genre\", \"bpm\"], \"properties\": {\"genre\": {\"type\": \"string\", \"description\": \"The genre of the beat, e.g. Hip Hop.\"}, \"bpm\": {\"type\": \"integer\", \"description\": \"The beats per minute of the beat.\"}, \"scale\": {\"type\": \"string\", \"description\": \"The scale for the beat, e.g. Major.\", \"default\": \"Major\"}}}}]\nQuestion: Ger ein hiphop-rytm úr 95 sløgum um minuttin í durtónastiga og ger eina bassmelodi við tónunum C4, E4, F4 og G4.",
+  "target_text": [
+    {
+      "beat_generator": {
+        "genre": [
+          "Hip Hop",
+          "hip hop"
+        ],
+        "bpm": [
+          95
+        ],
+        "scale": [
+          "Major",
+          "major",
+          ""
+        ]
+      }
+    },
+    {
+      "melody_generator": {
+        "note_sequence": [
+          [
+            "C4",
+            "E4",
+            "F4",
+            "G4"
+          ]
+        ],
+        "instrument": [
+          "Bass",
+          ""
+        ]
+      }
+    }
+  ]
+}
+```
+
+```json
+{
+  "text": "Functions:\n[{\"name\": \"calc_area_triangle\", \"description\": \"Calculate the area of a triangle with the formula area = 0.5 * base * height.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"base\", \"height\"], \"properties\": {\"base\": {\"type\": \"integer\", \"description\": \"The length of the base of the triangle in meters.\"}, \"height\": {\"type\": \"integer\", \"description\": \"The perpendicular height of the triangle from the base to the opposite vertex in meters.\"}}}}]\nQuestion: Tú ætlar at gera tríggjar tríkantaðar urtagarðar í bakgarðinum hjá tær. Fyrsti urtagarðurin hevur ein grundlinju, sum er 10 metrar, og eina hædd, sum er 5 metrar. Annar urtagarðurin hevur ein grundlinju, sum er 15 metrar, og eina hædd, sum er 7 metrar. Triði urtagarðurin hevur ein grundlinju, sum er 20 metrar, og eina hædd, sum er 10 metrar. Hvussu stórt er samlaða víddin á teimum trimum urtagørðunum?",
+  "target_text": [
+    {
+      "calc_area_triangle": {
+        "base": [
+          10
+        ],
+        "height": [
+          5
+        ]
+      }
+    },
+    {
+      "calc_area_triangle": {
+        "base": [
+          15
+        ],
+        "height": [
+          7
+        ]
+      }
+    },
+    {
+      "calc_area_triangle": {
+        "base": [
+          20
+        ],
+        "height": [
+          10
+        ]
+      }
+    }
+  ]
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt or base prompt template: tool calling is evaluated only for
+  instruction-tuned/reasoning generative models.
+- Instruction prompt (in English for every language; schematic, not literal runtime
+  text):
+
+  ```text
+  A list of names and descriptions of functions available, and a user question is given
+  below:
+  {text}
+  Answer with a JSON object matching this schematic; the runtime uses a generated schema:
+  {"tool_calls": [
+    {"function": "<function name>", "arguments": {"<argument name>": "<value>"}}
+  ]}
+  Use function names from the provided definitions. Each call includes its function and
+  arguments. Return calls in the right order and number, using double quotes for all keys
+  and strings, and nothing else (no extra explanatory text).
+  ```
+
+Tool-calling accuracy requires the correct number and order of calls and the correct
+function names. For arguments, the metric checks each reference argument when the
+function has no nonempty required-argument list; otherwise, it checks only required
+arguments. Any listed possible value is accepted for each checked argument.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-bfcl-fo
+```

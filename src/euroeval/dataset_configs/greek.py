@@ -13,6 +13,7 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TOOL_CALLING,
     TRANSLATION,
 )
 
@@ -130,6 +131,16 @@ CULTURAQA_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+MULTI_BFCL_EL_CONFIG = DatasetConfig(
+    name="multi-bfcl-el",
+    pretty_name="MultiBFCL-el",
+    source="EuroEval/multi-bfcl-el-mini",
+    task=TOOL_CALLING,
+    languages=[GREEK],
+    train_split=None,
+)
+
 
 WMT24PP_EL_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-el-en",

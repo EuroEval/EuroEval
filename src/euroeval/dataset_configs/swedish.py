@@ -16,6 +16,7 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TOOL_CALLING,
     TRANSLATION,
 )
 
@@ -148,6 +149,16 @@ SWEDISH_FACTS_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+MULTI_BFCL_SV_CONFIG = DatasetConfig(
+    name="multi-bfcl-sv",
+    pretty_name="MultiBFCL-sv",
+    source="EuroEval/multi-bfcl-sv-mini",
+    task=TOOL_CALLING,
+    languages=[SWEDISH],
+    train_split=None,
+)
+
 
 WMT24PP_SV_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-sv-en",

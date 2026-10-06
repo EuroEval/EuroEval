@@ -14,6 +14,7 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TOOL_CALLING,
     TRANSLATION,
 )
 
@@ -131,6 +132,16 @@ INCLUDE_FI_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+MULTI_BFCL_FI_CONFIG = DatasetConfig(
+    name="multi-bfcl-fi",
+    pretty_name="MultiBFCL-fi",
+    source="EuroEval/multi-bfcl-fi-mini",
+    task=TOOL_CALLING,
+    languages=[FINNISH],
+    train_split=None,
+)
+
 
 WMT24PP_FI_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-fi-en",

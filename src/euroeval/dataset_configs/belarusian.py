@@ -11,6 +11,7 @@ from ..tasks import (
     NLI,
     RC,
     SENT,
+    TOOL_CALLING,
     TRANSLATION,
     WIC,
 )
@@ -102,6 +103,16 @@ BELACOLA_CONFIG = DatasetConfig(
 )
 
 # Unofficial datasets ###
+
+MULTI_BFCL_BE_CONFIG = DatasetConfig(
+    name="multi-bfcl-be",
+    pretty_name="MultiBFCL-be",
+    source="EuroEval/multi-bfcl-be-mini",
+    task=TOOL_CALLING,
+    languages=[BELARUSIAN],
+    train_split=None,
+)
+
 
 FLORES_BE_EN_CONFIG = TranslationDatasetConfig(
     name="flores-be-en",

@@ -12,8 +12,10 @@ import pytest
 from euroeval import dataset_configs as dc_module
 from euroeval.data_models import DatasetConfig, TranslationDatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs
-from euroeval.languages import BULGARIAN, ENGLISH
-from euroeval.tasks import TRANSLATION
+from euroeval.languages import BULGARIAN, ENGLISH, get_all_languages
+from euroeval.prompt_templates.tool_calling import TOOL_CALLING_TEMPLATES
+from euroeval.tasks import TOOL_CALLING, TRANSLATION
+from scripts.dataset_creation.create_multibfcl import LANGUAGE_SOURCES
 
 WMT24PP_LANGUAGE_CODES = (
     "bg",
@@ -162,6 +164,31 @@ def test_include_sr_uses_cyrillic_prompt() -> None:
 def _has_cyrillic(text: str) -> bool:
     """Return whether the text contains any Cyrillic characters."""
     return any("Ѐ" <= ch <= "ӿ" for ch in text)
+
+
+def test_multibfcl_configs_and_prompts_cover_non_english_languages() -> None:
+    """Every source language has validation and test config with a JSON prompt."""
+    configs = {
+        config.name: config
+        for config in vars(dc_module).values()
+        if isinstance(config, DatasetConfig) and config.name.startswith("multi-bfcl-")
+    }
+    assert set(configs) == {f"multi-bfcl-{code}" for code in LANGUAGE_SOURCES}
+    assert set(TOOL_CALLING_TEMPLATES) == set(get_all_languages().values())
+    for code in LANGUAGE_SOURCES:
+        config = configs[f"multi-bfcl-{code}"]
+        assert config.source == f"EuroEval/multi-bfcl-{code}-mini"
+        assert config.task == TOOL_CALLING
+        assert not config.unofficial
+        assert config.train_split is None
+        assert config.val_split == "val"
+        assert config.test_split == "test"
+        assert config.languages[0].code == code
+        assert "{text}" in config.instruction_prompt
+        assert "tool_calls" in config.instruction_prompt
+        assert "Functions:" in config.instruction_prompt.format(
+            text="Functions: []\\nQuestion: Hej"
+        )
 
 
 def test_no_duplicate_dataset_config_assignments() -> None:

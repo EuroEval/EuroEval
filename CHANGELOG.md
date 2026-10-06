@@ -9,6 +9,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added the new tool calling benchmark MultiBFCL, translated from the English BFCL-v2
+  benchmark, to all 31 non-English languages. These have been added as official
+  datasets.
 - Added direct hosted Typesafe System One classification for versioned EuroEval model
   IDs such as `typesafe/jev-1.13.0`. The selected version is sent upstream unchanged;
   authenticate with the `TYPESAFE_API_KEY` environment variable. The integration

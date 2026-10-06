@@ -1235,3 +1235,144 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset flores-hu-en
 ```
+
+## Tool calling
+
+### MultiBFCL-hu
+
+MultiBFCL is a machine-translated version of the Berkeley Function Calling Leaderboard
+(BFCL-v2), created by Dan Saattrup Smart at [syv.ai](https://syv.ai/) and published as
+[syvai/multi-bfcl](https://huggingface.co/datasets/syvai/multi-bfcl). The source is
+based on the [Berkeley Function Calling Leaderboard
+v2](https://openreview.net/forum?id=2GmDdhBdDk); translations were generated with
+GPT-6-sol. The examples shown here use English function names and descriptions; user
+questions are translated (the Portuguese subset uses the upstream `pt-pt` variant).
+
+The source test split has 2,501 examples in ten categories:
+
+- `live_multiple` (1,053)
+- `live_parallel_multiple` (24)
+- `live_parallel` (16)
+- `live_simple` (258)
+- `multiple` (200)
+- `parallel_multiple` (200)
+- `parallel` (200)
+- `simple_java` (100)
+- `simple_javascript` (50)
+- `simple_python` (400)
+
+The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
+rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
+published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
+with no training split. EuroEval evaluates this task zero-shot on validation by
+default. Translation quality may vary and affect results.
+
+Here are two examples from the published validation split. The `text` value is shown
+verbatim and contains both the serialized function definitions and translated user
+question. `target_text` is stored as a JSON string; it is decoded below for readability.
+Both displayed fields are complete (not abbreviated):
+
+```json
+{
+  "text": "Functions:\n[{\"name\": \"image_processing.object_identification\", \"description\": \"Identify objects in a given image.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"image_url\"], \"properties\": {\"image_url\": {\"type\": \"string\", \"description\": \"The URL of the image.\"}}}}, {\"name\": \"text_analysis.sentiment_analysis\", \"description\": \"Analyze the sentiment of a given text.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"text\"], \"properties\": {\"text\": {\"type\": \"string\", \"description\": \"The text to be analyzed.\"}}}}]\nQuestion: Azonosítsd a kertemről készült, my_backyard_image_url címen található képen látható tárgyakat, és elemezd a mai naplóbejegyzésem, my_journal_entry_text hangulatát.",
+  "target_text": [
+    {
+      "image_processing.object_identification": {
+        "image_url": [
+          "my_backyard_image_url"
+        ]
+      }
+    },
+    {
+      "text_analysis.sentiment_analysis": {
+        "text": [
+          "my_journal_entry_text"
+        ]
+      }
+    }
+  ]
+}
+```
+
+```json
+{
+  "text": "Functions:\n[{\"name\": \"update_user_info\", \"description\": \"Update user information in the database.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"user_id\", \"update_info\"], \"properties\": {\"user_id\": {\"type\": \"integer\", \"description\": \"The user ID of the customer.\"}, \"update_info\": {\"type\": \"dict\", \"properties\": {\"name\": {\"type\": \"string\", \"description\": \"The customer's updated name.\"}, \"email\": {\"type\": \"string\", \"description\": \"The customer's updated email.\"}}, \"description\": \"The new information to update.\"}, \"database\": {\"type\": \"string\", \"description\": \"The database where the user's information is stored.\", \"default\": \"CustomerInfo\"}}}}]\nQuestion: Tudnád az „update_user_info” függvénnyel a „CustomerInfo” adatbázisban a 12345-ös felhasználói azonosítójú ügyfél nevét „John”-ra, e-mail-címét pedig „example@.com”-ra módosítani, majd ugyanezt megtenni a 67890-es felhasználói azonosítójú ügyféllel is, az ő nevét és e-mail-címét is ugyanezekre az értékekre módosítva?",
+  "target_text": [
+    {
+      "update_user_info": {
+        "user_id": [
+          12345
+        ],
+        "update_info": [
+          {
+            "name": [
+              "John"
+            ],
+            "email": [
+              "example@.com"
+            ]
+          }
+        ],
+        "database": [
+          "CustomerInfo",
+          ""
+        ]
+      }
+    },
+    {
+      "update_user_info": {
+        "user_id": [
+          67890
+        ],
+        "update_info": [
+          {
+            "name": [
+              "John"
+            ],
+            "email": [
+              "example@.com"
+            ]
+          }
+        ],
+        "database": [
+          "CustomerInfo",
+          ""
+        ]
+      }
+    }
+  ]
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt or base prompt template: tool calling is evaluated only for
+  instruction-tuned/reasoning generative models.
+- Instruction prompt (in English for every language; schematic, not literal runtime
+  text):
+
+  ```text
+  A list of names and descriptions of functions available, and a user question is given
+  below:
+  {text}
+  Answer with a JSON object matching this schematic; the runtime uses a generated schema:
+  {"tool_calls": [
+    {"function": "<function name>", "arguments": {"<argument name>": "<value>"}}
+  ]}
+  Use function names from the provided definitions. Each call includes its function and
+  arguments. Return calls in the right order and number, using double quotes for all keys
+  and strings, and nothing else (no extra explanatory text).
+  ```
+
+Tool-calling accuracy requires the correct number and order of calls and the correct
+function names. For arguments, the metric checks each reference argument when the
+function has no nonempty required-argument list; otherwise, it checks only required
+arguments. Any listed possible value is accepted for each checked argument.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-bfcl-hu
+```

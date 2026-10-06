@@ -2119,3 +2119,153 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset flores-sv-en
 ```
+
+## Tool calling
+
+### MultiBFCL-sv
+
+MultiBFCL is a machine-translated version of the Berkeley Function Calling Leaderboard
+(BFCL-v2), created by Dan Saattrup Smart at [syv.ai](https://syv.ai/) and published as
+[syvai/multi-bfcl](https://huggingface.co/datasets/syvai/multi-bfcl). The source is
+based on the [Berkeley Function Calling Leaderboard
+v2](https://openreview.net/forum?id=2GmDdhBdDk); translations were generated with
+GPT-6-sol. The examples shown here use English function names and descriptions; user
+questions are translated (the Portuguese subset uses the upstream `pt-pt` variant).
+
+The source test split has 2,501 examples in ten categories:
+
+- `live_multiple` (1,053)
+- `live_parallel_multiple` (24)
+- `live_parallel` (16)
+- `live_simple` (258)
+- `multiple` (200)
+- `parallel_multiple` (200)
+- `parallel` (200)
+- `simple_java` (100)
+- `simple_javascript` (50)
+- `simple_python` (400)
+
+The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
+rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
+published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
+with no training split. EuroEval evaluates this task zero-shot on validation by
+default. Translation quality may vary and affect results.
+
+Here are two examples from the published validation split. The `text` value is shown
+verbatim and contains both the serialized function definitions and translated user
+question. `target_text` is stored as a JSON string; it is decoded below for readability.
+Both displayed fields are complete (not abbreviated):
+
+```json
+{
+  "text": "Functions:\n[{\"name\": \"get_sculpture_details\", \"description\": \"Retrieves details of a sculpture, such as its material and size, from a museum database.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"museum_location\", \"sculpture_id\"], \"properties\": {\"museum_location\": {\"type\": \"string\", \"description\": \"Location of the museum housing the sculpture.\"}, \"sculpture_id\": {\"type\": \"integer\", \"description\": \"Database ID of the sculpture.\"}}}}, {\"name\": \"get_artwork_price\", \"description\": \"Retrieves the price of a sculpture based on size and material.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"museum_location\", \"sculpture_material\", \"sculpture_size\"], \"properties\": {\"museum_location\": {\"type\": \"string\", \"description\": \"Location of the museum housing the sculpture.\"}, \"sculpture_material\": {\"type\": \"string\", \"description\": \"Material of the sculpture.\"}, \"sculpture_size\": {\"type\": \"array\", \"items\": {\"type\": \"integer\"}, \"description\": \"Dimensions of the sculpture.\"}}}}]\nQuestion: Vad är genomsnittspriset för en marmorstaty på 4 × 4 fot på museet i Philadelphia och en bronsskulptur på 6 × 3 fot på museet i New York?",
+  "target_text": [
+    {
+      "get_artwork_price": {
+        "museum_location": [
+          "Philadelphia"
+        ],
+        "sculpture_material": [
+          "marble"
+        ],
+        "sculpture_size": [
+          [
+            4,
+            4
+          ]
+        ]
+      }
+    },
+    {
+      "get_artwork_price": {
+        "museum_location": [
+          "New York"
+        ],
+        "sculpture_material": [
+          "bronze"
+        ],
+        "sculpture_size": [
+          [
+            6,
+            3
+          ]
+        ]
+      }
+    }
+  ]
+}
+```
+
+```json
+{
+  "text": "Functions:\n[{\"name\": \"light_travel_time\", \"description\": \"Calculate the time taken for light to travel from a celestial body to another.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"distance_in_light_years\"], \"properties\": {\"distance_in_light_years\": {\"type\": \"float\", \"description\": \"The distance between the two celestial bodies in light years.\"}, \"speed_of_light\": {\"type\": \"integer\", \"description\": \"The speed of light in vacuum, in m/s. Default value is 299792458 m/s.\"}}}}]\nQuestion: Kan du beräkna hur lång tid det skulle ta för ljuset att färdas från jorden till en nyupptäckt exoplanet som ligger 4,22 ljusår bort, sedan till en annan exoplanet som ligger 6,1 ljusår från den första, och slutligen tillbaka till jorden, som ligger 5,88 ljusår från den andra exoplaneten? Anta att ljusets hastighet i vakuum är 299792458 m/s.",
+  "target_text": [
+    {
+      "light_travel_time": {
+        "distance_in_light_years": [
+          4.22
+        ],
+        "speed_of_light": [
+          299792458,
+          ""
+        ]
+      }
+    },
+    {
+      "light_travel_time": {
+        "distance_in_light_years": [
+          6.1
+        ],
+        "speed_of_light": [
+          299792458,
+          ""
+        ]
+      }
+    },
+    {
+      "light_travel_time": {
+        "distance_in_light_years": [
+          5.88
+        ],
+        "speed_of_light": [
+          299792458,
+          ""
+        ]
+      }
+    }
+  ]
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt or base prompt template: tool calling is evaluated only for
+  instruction-tuned/reasoning generative models.
+- Instruction prompt (in English for every language; schematic, not literal runtime
+  text):
+
+  ```text
+  A list of names and descriptions of functions available, and a user question is given
+  below:
+  {text}
+  Answer with a JSON object matching this schematic; the runtime uses a generated schema:
+  {"tool_calls": [
+    {"function": "<function name>", "arguments": {"<argument name>": "<value>"}}
+  ]}
+  Use function names from the provided definitions. Each call includes its function and
+  arguments. Return calls in the right order and number, using double quotes for all keys
+  and strings, and nothing else (no extra explanatory text).
+  ```
+
+Tool-calling accuracy requires the correct number and order of calls and the correct
+function names. For arguments, the metric checks each reference argument when the
+function has no nonempty required-argument list; otherwise, it checks only required
+arguments. Any listed possible value is accepted for each checked argument.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-bfcl-sv
+```

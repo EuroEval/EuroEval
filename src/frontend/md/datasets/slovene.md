@@ -1066,3 +1066,132 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset flores-sl-en
 ```
+
+## Tool calling
+
+### MultiBFCL-sl
+
+MultiBFCL is a machine-translated version of the Berkeley Function Calling Leaderboard
+(BFCL-v2), created by Dan Saattrup Smart at [syv.ai](https://syv.ai/) and published as
+[syvai/multi-bfcl](https://huggingface.co/datasets/syvai/multi-bfcl). The source is
+based on the [Berkeley Function Calling Leaderboard
+v2](https://openreview.net/forum?id=2GmDdhBdDk); translations were generated with
+GPT-6-sol. The examples shown here use English function names and descriptions; user
+questions are translated (the Portuguese subset uses the upstream `pt-pt` variant).
+
+The source test split has 2,501 examples in ten categories:
+
+- `live_multiple` (1,053)
+- `live_parallel_multiple` (24)
+- `live_parallel` (16)
+- `live_simple` (258)
+- `multiple` (200)
+- `parallel_multiple` (200)
+- `parallel` (200)
+- `simple_java` (100)
+- `simple_javascript` (50)
+- `simple_python` (400)
+
+The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
+rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
+published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
+with no training split. EuroEval evaluates this task zero-shot on validation by
+default. Translation quality may vary and affect results.
+
+Here are two examples from the published validation split. The `text` value is shown
+verbatim and contains both the serialized function definitions and translated user
+question. `target_text` is stored as a JSON string; it is decoded below for readability.
+Both displayed fields are complete (not abbreviated):
+
+```json
+{
+  "text": "Functions:\n[{\"name\": \"frequency_to_wavelength\", \"description\": \"Converts the frequency of a musical note to its wavelength.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"frequency\"], \"properties\": {\"frequency\": {\"type\": \"float\", \"description\": \"The frequency in hertz of the musical note.\"}}}}, {\"name\": \"note_conversion.indian\", \"description\": \"Converts a note in Western music to Indian classical music.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"note\"], \"properties\": {\"note\": {\"type\": \"string\", \"description\": \"The note in Western musical scale.\"}}}}]\nQuestion: Kateri ton v indijski glasbeni lestvici ustreza tonu C? In pretvori frekvenco 440 Hz v valovno dolžino.",
+  "target_text": [
+    {
+      "note_conversion.indian": {
+        "note": [
+          "C"
+        ]
+      }
+    },
+    {
+      "frequency_to_wavelength": {
+        "frequency": [
+          440.0
+        ]
+      }
+    }
+  ]
+}
+```
+
+```json
+{
+  "text": "Functions:\n[{\"name\": \"calculate_BMI\", \"description\": \"Calculate the Body Mass Index (BMI) given a person's weight and height.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"weight_kg\", \"height_m\"], \"properties\": {\"weight_kg\": {\"type\": \"integer\", \"description\": \"The weight of the person in kilograms.\"}, \"height_m\": {\"type\": \"float\", \"description\": \"The height of the person in meters.\"}}}}]\nQuestion: John, ki tehta 85 kilogramov in je visok 1,8 metra, ter njegova prijateljica Sarah, ki tehta 60 kilogramov in je visoka 1,65 metra, razpravljata o svojem zdravju. Da bi razrešila spor, se odločita izračunati svoj indeks telesne mase (ITM). Pozneje srečata prijatelja Mika, ki tehta 75 kilogramov in je visok 1,7 metra, ter se odločita izračunati še njegov ITM. Jim lahko pomagaš izračunati njihove indekse telesne mase?",
+  "target_text": [
+    {
+      "calculate_BMI": {
+        "weight_kg": [
+          85
+        ],
+        "height_m": [
+          1.8
+        ]
+      }
+    },
+    {
+      "calculate_BMI": {
+        "weight_kg": [
+          60
+        ],
+        "height_m": [
+          1.65
+        ]
+      }
+    },
+    {
+      "calculate_BMI": {
+        "weight_kg": [
+          75
+        ],
+        "height_m": [
+          1.7
+        ]
+      }
+    }
+  ]
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt or base prompt template: tool calling is evaluated only for
+  instruction-tuned/reasoning generative models.
+- Instruction prompt (in English for every language; schematic, not literal runtime
+  text):
+
+  ```text
+  A list of names and descriptions of functions available, and a user question is given
+  below:
+  {text}
+  Answer with a JSON object matching this schematic; the runtime uses a generated schema:
+  {"tool_calls": [
+    {"function": "<function name>", "arguments": {"<argument name>": "<value>"}}
+  ]}
+  Use function names from the provided definitions. Each call includes its function and
+  arguments. Return calls in the right order and number, using double quotes for all keys
+  and strings, and nothing else (no extra explanatory text).
+  ```
+
+Tool-calling accuracy requires the correct number and order of calls and the correct
+function names. For arguments, the metric checks each reference argument when the
+function has no nonempty required-argument list; otherwise, it checks only required
+arguments. Any listed possible value is accepted for each checked argument.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-bfcl-sl
+```

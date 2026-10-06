@@ -3061,3 +3061,143 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset flores-no-en
 ```
+
+## Tool calling
+
+### MultiBFCL-no
+
+MultiBFCL is a machine-translated version of the Berkeley Function Calling Leaderboard
+(BFCL-v2), created by Dan Saattrup Smart at [syv.ai](https://syv.ai/) and published as
+[syvai/multi-bfcl](https://huggingface.co/datasets/syvai/multi-bfcl). The source is
+based on the [Berkeley Function Calling Leaderboard
+v2](https://openreview.net/forum?id=2GmDdhBdDk); translations were generated with
+GPT-6-sol. The examples shown here use English function names and descriptions; user
+questions are translated (the Portuguese subset uses the upstream `pt-pt` variant).
+
+The source test split has 2,501 examples in ten categories:
+
+- `live_multiple` (1,053)
+- `live_parallel_multiple` (24)
+- `live_parallel` (16)
+- `live_simple` (258)
+- `multiple` (200)
+- `parallel_multiple` (200)
+- `parallel` (200)
+- `simple_java` (100)
+- `simple_javascript` (50)
+- `simple_python` (400)
+
+The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
+rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
+published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
+with no training split. EuroEval evaluates this task zero-shot on validation by
+default. Translation quality may vary and affect results.
+
+Here are two examples from the published validation split. The `text` value is shown
+verbatim and contains both the serialized function definitions and translated user
+question. `target_text` is stored as a JSON string; it is decoded below for readability.
+Both displayed fields are complete (not abbreviated):
+
+```json
+{
+  "text": "Functions:\n[{\"name\": \"stock_invest.calculate_investment_cost\", \"description\": \"Calculate the cost of investing in a specific number of shares from a given company.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"company\", \"shares\"], \"properties\": {\"company\": {\"type\": \"string\", \"description\": \"The company that you want to invest in.\"}, \"shares\": {\"type\": \"integer\", \"description\": \"Number of shares to invest.\"}}}}, {\"name\": \"stock_invest.calculate_dividend_payout\", \"description\": \"Calculate the total dividend payout for a specific number of shares with known dividend per share.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"shares\", \"dividend_per_share\"], \"properties\": {\"shares\": {\"type\": \"integer\", \"description\": \"Number of shares to calculate dividends.\"}, \"dividend_per_share\": {\"type\": \"float\", \"description\": \"Known dividend per share.\"}}}}]\nQuestion: Hvor mye vil det koste meg å kjøpe 50 aksjer i Apple til dagens aksjekurs? Beregn også det samlede utbyttet dersom hver aksje gir 1,30 USD i utbytte.",
+  "target_text": [
+    {
+      "stock_invest.calculate_investment_cost": {
+        "company": [
+          "Apple",
+          "AAPL"
+        ],
+        "shares": [
+          50
+        ]
+      }
+    },
+    {
+      "stock_invest.calculate_dividend_payout": {
+        "shares": [
+          50
+        ],
+        "dividend_per_share": [
+          1.3
+        ]
+      }
+    }
+  ]
+}
+```
+
+```json
+{
+  "text": "Functions:\n[{\"name\": \"mathematics.calculate_area_under_curve\", \"description\": \"Calculate the area under the curve for a given polynomial function within a specified interval.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"polynomial\", \"limits\"], \"properties\": {\"polynomial\": {\"type\": \"array\", \"items\": {\"type\": \"integer\"}, \"description\": \"The coefficients of the polynomial, in decreasing order of exponent, where the first element is the coefficient for x^n, the second element is the coefficient for x^(n-1), and so on. The last element is the constant term.\"}, \"limits\": {\"type\": \"array\", \"items\": {\"type\": \"integer\"}, \"description\": \"A list of two numbers specifying the lower and upper limit for the integration interval.\"}}}}]\nQuestion: Kan du beregne arealet under kurven for polynomfunksjonen med koeffisientene [3, -2, 1] (det vil si funksjonen 3x² - 2x + 1) på intervallet [-1, 2], og deretter gjøre det samme for polynomfunksjonen med koeffisientene [1, 0, -1] (det vil si funksjonen x² - 1) på intervallet [0, 3]? Oppgi begge resultatene.",
+  "target_text": [
+    {
+      "mathematics.calculate_area_under_curve": {
+        "polynomial": [
+          [
+            3,
+            -2,
+            1
+          ]
+        ],
+        "limits": [
+          [
+            -1,
+            2
+          ]
+        ]
+      }
+    },
+    {
+      "mathematics.calculate_area_under_curve": {
+        "polynomial": [
+          [
+            1,
+            0,
+            -1
+          ]
+        ],
+        "limits": [
+          [
+            0,
+            3
+          ]
+        ]
+      }
+    }
+  ]
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt or base prompt template: tool calling is evaluated only for
+  instruction-tuned/reasoning generative models.
+- Instruction prompt (in English for every language; schematic, not literal runtime
+  text):
+
+  ```text
+  A list of names and descriptions of functions available, and a user question is given
+  below:
+  {text}
+  Answer with a JSON object matching this schematic; the runtime uses a generated schema:
+  {"tool_calls": [
+    {"function": "<function name>", "arguments": {"<argument name>": "<value>"}}
+  ]}
+  Use function names from the provided definitions. Each call includes its function and
+  arguments. Return calls in the right order and number, using double quotes for all keys
+  and strings, and nothing else (no extra explanatory text).
+  ```
+
+Tool-calling accuracy requires the correct number and order of calls and the correct
+function names. For arguments, the metric checks each reference argument when the
+function has no nonempty required-argument list; otherwise, it checks only required
+arguments. Any listed possible value is accepted for each checked argument.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-bfcl-no
+```

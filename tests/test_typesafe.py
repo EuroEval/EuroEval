@@ -144,17 +144,18 @@ def test_generate_exhausts_transient_statuses(
     monkeypatch.setattr("euroeval.benchmark_modules.typesafe.requests.post", post)
     delays: list[float] = []
     monkeypatch.setattr("euroeval.benchmark_modules.typesafe.time.sleep", delays.append)
+    private_input = "private " + "text"
 
     with pytest.raises(
         InvalidModel, match="typesafe/jev.*3 attempts.*HTTP status 520"
     ) as error:
         _make_model(benchmark_config, dataset_config).generate(
-            inputs={"text": ["private text"]}
+            inputs={"text": [private_input]}
         )
 
     displayed = "".join(traceback.format_exception(error.value))
     assert "private request content" not in displayed
-    assert "private text" not in displayed
+    assert private_input not in displayed
     assert "HTTP status 520" in displayed
     assert calls == 3
     assert delays == [0.5, 1.0]

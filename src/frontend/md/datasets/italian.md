@@ -1777,3 +1777,141 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset flores-it-en
 ```
+
+## Tool calling
+
+### MultiBFCL-it
+
+MultiBFCL is a machine-translated version of the Berkeley Function Calling Leaderboard
+(BFCL-v2), created by Dan Saattrup Smart at [syv.ai](https://syv.ai/) and published as
+[syvai/multi-bfcl](https://huggingface.co/datasets/syvai/multi-bfcl). The source is
+based on the [Berkeley Function Calling Leaderboard
+v2](https://openreview.net/forum?id=2GmDdhBdDk); translations were generated with
+GPT-6-sol. The examples shown here use English function names and descriptions; user
+questions are translated (the Portuguese subset uses the upstream `pt-pt` variant).
+
+The source test split has 2,501 examples in ten categories:
+
+- `live_multiple` (1,053)
+- `live_parallel_multiple` (24)
+- `live_parallel` (16)
+- `live_simple` (258)
+- `multiple` (200)
+- `parallel_multiple` (200)
+- `parallel` (200)
+- `simple_java` (100)
+- `simple_javascript` (50)
+- `simple_python` (400)
+
+The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
+rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
+published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
+with no training split. EuroEval evaluates this task zero-shot on validation by
+default. Translation quality may vary and affect results.
+
+Here are two examples from the published validation split. The `text` value is shown
+verbatim and contains both the serialized function definitions and translated user
+question. `target_text` is stored as a JSON string; it is decoded below for readability.
+Both displayed fields are complete (not abbreviated):
+
+```json
+{
+  "text": "Functions:\n[{\"name\": \"get_team_info\", \"description\": \"Retrieve information for a specific team, such as championships won.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"team\", \"info\"], \"properties\": {\"team\": {\"type\": \"string\", \"description\": \"The name of the team.\"}, \"info\": {\"type\": \"string\", \"description\": \"The information sought. E.g., 'championships_won'.\"}}}}, {\"name\": \"get_player_record\", \"description\": \"Retrieve record stats for a specific player and stat type.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"player\", \"stat\"], \"properties\": {\"player\": {\"type\": \"string\", \"description\": \"The name of the player.\"}, \"stat\": {\"type\": \"string\", \"description\": \"The type of statistic. E.g., 'highest_scoring_game', 'total_championships'.\"}}}}]\nQuestion: Puoi trovare informazioni sulla partita in cui Michael Jordan ha segnato più punti e sul numero totale di titoli NBA che ha vinto?",
+  "target_text": [
+    {
+      "get_player_record": {
+        "player": [
+          "Michael Jordan"
+        ],
+        "stat": [
+          "highest_scoring_game"
+        ]
+      }
+    },
+    {
+      "get_player_record": {
+        "player": [
+          "Michael Jordan"
+        ],
+        "stat": [
+          "total_championships"
+        ]
+      }
+    }
+  ]
+}
+```
+
+```json
+{
+  "text": "Functions:\n[{\"name\": \"light_travel_time\", \"description\": \"Calculate the time taken for light to travel from a celestial body to another.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"distance_in_light_years\"], \"properties\": {\"distance_in_light_years\": {\"type\": \"float\", \"description\": \"The distance between the two celestial bodies in light years.\"}, \"speed_of_light\": {\"type\": \"integer\", \"description\": \"The speed of light in vacuum, in m/s. Default value is 299792458 m/s.\"}}}}]\nQuestion: Puoi calcolare quanto tempo impiegherebbe la luce a viaggiare dalla Terra a un esopianeta appena scoperto distante 4,22 anni luce, poi a un altro esopianeta che si trova a 6,1 anni luce dal primo e infine a tornare sulla Terra, distante 5,88 anni luce dal secondo esopianeta? Supponi che la velocità della luce nel vuoto sia 299792458 m/s.",
+  "target_text": [
+    {
+      "light_travel_time": {
+        "distance_in_light_years": [
+          4.22
+        ],
+        "speed_of_light": [
+          299792458,
+          ""
+        ]
+      }
+    },
+    {
+      "light_travel_time": {
+        "distance_in_light_years": [
+          6.1
+        ],
+        "speed_of_light": [
+          299792458,
+          ""
+        ]
+      }
+    },
+    {
+      "light_travel_time": {
+        "distance_in_light_years": [
+          5.88
+        ],
+        "speed_of_light": [
+          299792458,
+          ""
+        ]
+      }
+    }
+  ]
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt or base prompt template: tool calling is evaluated only for
+  instruction-tuned/reasoning generative models.
+- Instruction prompt (in English for every language; schematic, not literal runtime
+  text):
+
+  ```text
+  A list of names and descriptions of functions available, and a user question is given
+  below:
+  {text}
+  Answer with a JSON object matching this schematic; the runtime uses a generated schema:
+  {"tool_calls": [
+    {"function": "<function name>", "arguments": {"<argument name>": "<value>"}}
+  ]}
+  Use function names from the provided definitions. Each call includes its function and
+  arguments. Return calls in the right order and number, using double quotes for all keys
+  and strings, and nothing else (no extra explanatory text).
+  ```
+
+Tool-calling accuracy requires the correct number and order of calls and the correct
+function names. For arguments, the metric checks each reference argument when the
+function has no nonempty required-argument list; otherwise, it checks only required
+arguments. Any listed possible value is accepted for each checked argument.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-bfcl-it
+```

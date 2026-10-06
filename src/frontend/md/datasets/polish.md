@@ -1327,3 +1327,134 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset flores-pl-en
 ```
+
+## Tool calling
+
+### MultiBFCL-pl
+
+MultiBFCL is a machine-translated version of the Berkeley Function Calling Leaderboard
+(BFCL-v2), created by Dan Saattrup Smart at [syv.ai](https://syv.ai/) and published as
+[syvai/multi-bfcl](https://huggingface.co/datasets/syvai/multi-bfcl). The source is
+based on the [Berkeley Function Calling Leaderboard
+v2](https://openreview.net/forum?id=2GmDdhBdDk); translations were generated with
+GPT-6-sol. The examples shown here use English function names and descriptions; user
+questions are translated (the Portuguese subset uses the upstream `pt-pt` variant).
+
+The source test split has 2,501 examples in ten categories:
+
+- `live_multiple` (1,053)
+- `live_parallel_multiple` (24)
+- `live_parallel` (16)
+- `live_simple` (258)
+- `multiple` (200)
+- `parallel_multiple` (200)
+- `parallel` (200)
+- `simple_java` (100)
+- `simple_javascript` (50)
+- `simple_python` (400)
+
+The converter shuffles the 2,501 source test rows with seed 42, assigns the first 2,048
+rows to test, the next 256 to validation, and leaves the remaining 197 unused. The
+published EuroEval dataset therefore contains 256 validation and 2,048 test examples,
+with no training split. EuroEval evaluates this task zero-shot on validation by
+default. Translation quality may vary and affect results.
+
+Here are two examples from the published validation split. The `text` value is shown
+verbatim and contains both the serialized function definitions and translated user
+question. `target_text` is stored as a JSON string; it is decoded below for readability.
+Both displayed fields are complete (not abbreviated):
+
+```json
+{
+  "text": "Functions:\n[{\"name\": \"get_team_info\", \"description\": \"Retrieve information for a specific team, such as championships won.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"team\", \"info\"], \"properties\": {\"team\": {\"type\": \"string\", \"description\": \"The name of the team.\"}, \"info\": {\"type\": \"string\", \"description\": \"The information sought. E.g., 'championships_won'.\"}}}}, {\"name\": \"get_player_record\", \"description\": \"Retrieve record stats for a specific player and stat type.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"player\", \"stat\"], \"properties\": {\"player\": {\"type\": \"string\", \"description\": \"The name of the player.\"}, \"stat\": {\"type\": \"string\", \"description\": \"The type of statistic. E.g., 'highest_scoring_game', 'total_championships'.\"}}}}]\nQuestion: Czy możesz znaleźć informacje o meczu, w którym Michael Jordan zdobył najwięcej punktów, oraz o łącznej liczbie zdobytych przez niego tytułów mistrzowskich?",
+  "target_text": [
+    {
+      "get_player_record": {
+        "player": [
+          "Michael Jordan"
+        ],
+        "stat": [
+          "highest_scoring_game"
+        ]
+      }
+    },
+    {
+      "get_player_record": {
+        "player": [
+          "Michael Jordan"
+        ],
+        "stat": [
+          "total_championships"
+        ]
+      }
+    }
+  ]
+}
+```
+
+```json
+{
+  "text": "Functions:\n[{\"name\": \"calculate_distance\", \"description\": \"Calculate the distance between two celestial bodies.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"body1\", \"body2\"], \"properties\": {\"body1\": {\"type\": \"string\", \"description\": \"The first celestial body.\"}, \"body2\": {\"type\": \"string\", \"description\": \"The second celestial body.\"}, \"unit\": {\"type\": \"string\", \"description\": \"The unit of measurement, default is 'kilometers'.\"}}}}]\nQuestion: Jaka jest odległość w milach między Marsem a Wenus, a następnie między Marsem a Jowiszem, jeśli funkcja „calculate_distance” wymaga podania nazw dwóch ciał niebieskich oraz jednostki miary?",
+  "target_text": [
+    {
+      "calculate_distance": {
+        "body1": [
+          "Mars"
+        ],
+        "body2": [
+          "Venus"
+        ],
+        "unit": [
+          "miles"
+        ]
+      }
+    },
+    {
+      "calculate_distance": {
+        "body1": [
+          "Mars"
+        ],
+        "body2": [
+          "Jupiter"
+        ],
+        "unit": [
+          "miles"
+        ]
+      }
+    }
+  ]
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt or base prompt template: tool calling is evaluated only for
+  instruction-tuned/reasoning generative models.
+- Instruction prompt (in English for every language; schematic, not literal runtime
+  text):
+
+  ```text
+  A list of names and descriptions of functions available, and a user question is given
+  below:
+  {text}
+  Answer with a JSON object matching this schematic; the runtime uses a generated schema:
+  {"tool_calls": [
+    {"function": "<function name>", "arguments": {"<argument name>": "<value>"}}
+  ]}
+  Use function names from the provided definitions. Each call includes its function and
+  arguments. Return calls in the right order and number, using double quotes for all keys
+  and strings, and nothing else (no extra explanatory text).
+  ```
+
+Tool-calling accuracy requires the correct number and order of calls and the correct
+function names. For arguments, the metric checks each reference argument when the
+function has no nonempty required-argument list; otherwise, it checks only required
+arguments. Any listed possible value is accepted for each checked argument.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-bfcl-pl
+```
