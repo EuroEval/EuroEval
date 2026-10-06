@@ -84,6 +84,31 @@ def test_build_dataset_keeps_source_test_and_scores(
     )
 
 
+def test_build_dataset_preserves_system_and_user_messages(
+    monkeypatch: pytest.MonkeyPatch, source_row: dict[str, str]
+) -> None:
+    """A multi-message source question retains its system instructions."""
+    source_row["question"] = json.dumps(
+        [
+            [
+                {"role": "system", "content": "Use the supplied context."},
+                {"role": "user", "content": "Find København."},
+            ]
+        ]
+    )
+
+    def fake_load_dataset(*, path: str, name: str, split: str) -> Dataset:
+        """Return one test example for conversion."""
+        assert (path, name, split) == ("syvai/multi-bfcl", "da", "test")
+        return Dataset.from_list([source_row])
+
+    monkeypatch.setattr(create_multibfcl, "load_dataset", fake_load_dataset)
+    dataset, _ = create_multibfcl.build_dataset(language_code="da")
+    assert dataset["test"][0]["text"].endswith(
+        "System: Use the supplied context.\nQuestion: Find København."
+    )
+
+
 def test_build_dataset_rejects_unknown_language() -> None:
     """Only EuroEval's non-English language subsets are published."""
     with pytest.raises(ValueError, match="Unsupported MultiBFCL language"):

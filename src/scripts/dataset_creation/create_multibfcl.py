@@ -106,12 +106,21 @@ def _convert_row(row: dict[str, str]) -> dict[str, str]:
     Returns:
         A record containing prompt text, tool schema and reference calls.
     """
-    question = json.loads(row["question"])[0][0]["content"]
+    messages = json.loads(row["question"])[0]
+    if len(messages) == 1 and messages[0]["role"] == "user":
+        question = f"Question: {messages[0]['content']}"
+    else:
+        role_labels = {"system": "System", "user": "Question", "assistant": "Assistant"}
+        question = "\n".join(
+            f"{role_labels.get(message['role'], message['role'].title())}: "
+            f"{message['content']}"
+            for message in messages
+        )
     functions = json.loads(row["function"])
     ground_truth = json.loads(row["ground_truth"])
     function_str = json.dumps(functions, ensure_ascii=False)
     return {
-        "text": f"Functions:\n{function_str}\nQuestion: {question}",
+        "text": f"Functions:\n{function_str}\n{question}",
         "function": function_str,
         "target_text": json.dumps(ground_truth, ensure_ascii=False),
     }
