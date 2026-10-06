@@ -183,3 +183,31 @@ def test_build_dataset_uses_portuguese_source(
     assert repo_id == "EuroEval/multi-bfcl-pt-mini"
     assert len(dataset["test"]) == 2048
     assert len(dataset["val"]) == 256
+
+
+def test_main_publishes_every_language_privately(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Publish every generated language dataset once to its private repository."""
+    published: list[tuple[str, bool]] = []
+
+    class DummyDataset:
+        def __getitem__(self, split: str) -> list[None]:
+            return [None]
+
+        def push_to_hub(self, *, repo_id: str, private: bool) -> None:
+            published.append((repo_id, private))
+
+    def fake_build_dataset(language_code: str) -> tuple[DummyDataset, str]:
+        return DummyDataset(), f"EuroEval/multi-bfcl-{language_code}-mini"
+
+    monkeypatch.setattr(create_multibfcl, "build_dataset", fake_build_dataset)
+
+    create_multibfcl.main()
+
+    expected = [
+        (f"EuroEval/multi-bfcl-{language_code}-mini", True)
+        for language_code in create_multibfcl.LANGUAGE_SOURCES
+    ]
+    assert len(expected) == 31
+    assert published == expected
