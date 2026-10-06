@@ -1384,3 +1384,23 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset flores-sk-en
 ```
+
+## Tool calling
+
+### Unofficial: MultiBFCL-sk
+
+This dataset is based on the translated
+[BFCL-v2 dataset](https://huggingface.co/datasets/syvai/multi-bfcl).
+It uses the `sk` language subset. The prompts present function definitions in
+JSON format and use an English instruction asking the model to respond with a
+function call in the same format.
+
+The original test split contains 2,501 rows. We use a deterministic shuffle and cap it
+at 2,048 test samples. There are no training or validation splits, so evaluation is
+zero-shot only. Translation quality may vary, which can affect the evaluation results.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-bfcl-sk
+```
