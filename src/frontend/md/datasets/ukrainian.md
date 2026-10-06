@@ -1273,15 +1273,97 @@ euroeval --model <model-id> --dataset flores-uk-en
 
 ### Unofficial: MultiBFCL-uk
 
-This dataset is based on the translated
-[BFCL-v2 dataset](https://huggingface.co/datasets/syvai/multi-bfcl).
-It uses the `uk` language subset. The prompts present function definitions in
-JSON format and use an English instruction asking the model to respond with a
-function call in the same format.
+MultiBFCL is a machine-translated version of the Berkeley Function Calling Leaderboard
+(BFCL-v2), created by Dan Saattrup Smart at [syv.ai](https://syv.ai/) and published as
+[syvai/multi-bfcl](https://huggingface.co/datasets/syvai/multi-bfcl). The source is
+based on the [Berkeley Function Calling Leaderboard
+v2](https://openreview.net/forum?id=2GmDdhBdDk); translations were generated with
+GPT-6-sol. Function definitions remain in English in the source data, while the user
+questions are translated (the Portuguese subset uses the upstream `pt-pt` variant).
 
-The original test split contains 2,501 rows. We use a deterministic shuffle and cap it
-at 2,048 test samples. There are no training or validation splits, so evaluation is
-zero-shot only. Translation quality may vary, which can affect the evaluation results.
+The source test split has 2,501 examples in ten categories:
+
+- `live_multiple` (1,053)
+- `live_parallel_multiple` (24)
+- `live_parallel` (16)
+- `live_simple` (258)
+- `multiple` (200)
+- `parallel_multiple` (200)
+- `parallel` (200)
+- `simple_java` (100)
+- `simple_javascript` (50)
+- `simple_python` (400)
+
+We use the full source test split and apply a deterministic shuffle (seed 42), retaining
+the first 2,048 rows. The resulting test-only dataset has no training or validation
+split, so evaluation is zero-shot. Translation quality may vary and affect results.
+
+Here are two examples from the published test split. The `text` value is shown verbatim
+and contains both the serialized function definitions and translated user question.
+`target_text` is stored as a JSON string; it is decoded below for readability. Both
+displayed fields are complete (not abbreviated):
+
+```json
+{
+  "text": "Functions:\n[{\"name\": \"math.factorial\", \"description\": \"Calculate the factorial of a given number.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"number\"], \"properties\": {\"number\": {\"type\": \"integer\", \"description\": \"The number to compute factorial.\"}}}}]\nQuestion: Обчисліть факторіал числа 5.",
+  "target_text": [
+    {
+      "math.factorial": {
+        "number": [
+          5
+        ]
+      }
+    }
+  ]
+}
+```
+
+```json
+{
+  "text": "Functions:\n[{\"name\": \"math.factorial\", \"description\": \"Calculate the factorial of a given number.\", \"parameters\": {\"type\": \"dict\", \"required\": [\"number\"], \"properties\": {\"number\": {\"type\": \"integer\", \"description\": \"The number for which factorial needs to be calculated.\"}}}}]\nQuestion: Чому дорівнюють факторіали чисел 5, 7 і 9?",
+  "target_text": [
+    {
+      "math.factorial": {
+        "number": [
+          5
+        ]
+      }
+    },
+    {
+      "math.factorial": {
+        "number": [
+          7
+        ]
+      }
+    },
+    {
+      "math.factorial": {
+        "number": [
+          9
+        ]
+      }
+    }
+  ]
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt or base prompt template: tool calling is evaluated only for
+  instruction-tuned/reasoning generative models.
+- Instruction prompt (in English for every language):
+
+  ```text
+  A list of names and descriptions of functions available, and a user question is given below:
+  {text}
+  Answer with a JSON, strictly following this schema: {"$defs":{"JsonValue":{},"ToolCall":{"properties":{"function":{"title":"Function","type":"string"},"arguments":{"additionalProperties":{"$ref":"#/$defs/JsonValue"},"title":"Arguments","type":"object"}},"required":["function","arguments"],"title":"ToolCall","type":"object"}},"properties":{"tool_calls":{"items":{"$ref":"#/$defs/ToolCall"},"title":"Tool Calls","type":"array"}},"required":["tool_calls"],"title":"ToolCallingResponse","type":"object"}. The value of tool_calls must list the function call(s) to execute to fulfill the users request, in the right order and number, using double quotes for all keys and strings, and nothing else (no additional explanatory text).
+  ```
+
+Tool-calling accuracy requires the correct number and order of calls, the correct
+function names, and matching values for required arguments (any listed possible value is
+accepted). Optional arguments are not scored.
 
 You can evaluate this dataset directly as follows:
 
