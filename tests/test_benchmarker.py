@@ -27,6 +27,7 @@ from euroeval.data_models import (
 )
 from euroeval.enums import InferenceBackend, ModelType, ShotMode, TaskGroup
 from euroeval.exceptions import HuggingFaceHubDown
+from euroeval.languages import DANISH
 from euroeval.result_cache import get_record
 from euroeval.tasks import CONTAMINATION_DETECTION, NER, SENT
 
@@ -604,9 +605,15 @@ def test_benchmark_openai(
 @pytest.mark.parametrize(
     ("backend", "expected_dataset_names"),
     [
-        (InferenceBackend.GLINER, ["sent-dataset"]),
-        (InferenceBackend.LAYA, ["sent-dataset", "multiple-choice-dataset"]),
-        (InferenceBackend.TYPESAFE, ["sent-dataset", "multiple-choice-dataset"]),
+        (InferenceBackend.GLINER, ["sent-dataset", "canary-dataset"]),
+        (
+            InferenceBackend.LAYA,
+            ["sent-dataset", "multiple-choice-dataset", "canary-dataset"],
+        ),
+        (
+            InferenceBackend.TYPESAFE,
+            ["sent-dataset", "multiple-choice-dataset", "canary-dataset"],
+        ),
     ],
 )
 def test_benchmark_plan_filters_multiple_choice_only_for_gliner(
@@ -627,14 +634,21 @@ def test_benchmark_plan_filters_multiple_choice_only_for_gliner(
         pretty_name="Sentiment dataset",
         source="dataset_id",
         task=SENT,
-        languages=[Language(code="da", name="Danish")],
+        languages=[DANISH],
     )
     multiple_choice_dataset = DatasetConfig(
         name="multiple-choice-dataset",
         pretty_name="Multiple-choice dataset",
         source="dataset_id",
         task=replace(SENT, task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION),
-        languages=[Language(code="da", name="Danish")],
+        languages=[DANISH],
+    )
+    canary_dataset = DatasetConfig(
+        name="canary-dataset",
+        pretty_name="Contamination canary",
+        source="dataset_id",
+        task=CONTAMINATION_DETECTION,
+        languages=[DANISH],
     )
     planned_datasets: list[DatasetConfig] = []
     monkeypatch.setattr(
@@ -657,7 +671,7 @@ def test_benchmark_plan_filters_multiple_choice_only_for_gliner(
 
     benchmarker.benchmark(
         model="fastino/GLiNER2.5-Decide",
-        dataset=[sequence_dataset, multiple_choice_dataset],
+        dataset=[sequence_dataset, multiple_choice_dataset, canary_dataset],
         save_results=False,
         progress_bar=False,
     )

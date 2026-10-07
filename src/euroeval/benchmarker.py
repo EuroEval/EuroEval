@@ -1453,6 +1453,7 @@ class Benchmarker:
                 and (
                     model_config.inference_backend is not InferenceBackend.GLINER
                     or ds_config.task.task_group is TaskGroup.SEQUENCE_CLASSIFICATION
+                    or self._is_canary_dataset(ds_config)
                 )
                 and (
                     self._is_canary_dataset(ds_config)
