@@ -9,9 +9,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added the optional `gliner` zero-shot sequence-classification backend for
-  `fastino/GLiNER2.5-Decide` and compatible GLiNER2 checkpoints. It returns selected
-  labels without fabricating per-label probabilities; install with
+- Added the optional `gliner` zero-shot sequence and multiple-choice classification
+  backend for `fastino/GLiNER2.5-Decide` and compatible GLiNER2 checkpoints. It returns
+  selected labels without fabricating per-label probabilities; install with
   `pip install euroeval[gliner]`.
 - Added the new tool calling benchmark MultiBFCL, translated from the English BFCL-v2
   benchmark, to all 31 non-English languages. These have been added as official
@@ -28,9 +28,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- GLiNER benchmark plans now exclude multiple-choice classification datasets, which the
-  backend does not support; other zero-shot classifier backends retain their existing
-  sequence and multiple-choice dataset support.
 - Typesafe System One requests now retry transient HTTP and connection failures with
   bounded backoff, and report exhausted or permanent request failures as `InvalidModel`.
 - Laya and Typesafe per-text classifiers now use single-sample generation batches, enabling
