@@ -602,6 +602,23 @@ def test_benchmark_openai(
     assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
 
 
+@pytest.mark.parametrize(
+    ("backend", "expected_dataset_names"),
+    [
+        (
+            InferenceBackend.GLINER,
+            ["sent-dataset", "multiple-choice-dataset", "canary-dataset"],
+        ),
+        (
+            InferenceBackend.LAYA,
+            ["sent-dataset", "multiple-choice-dataset", "canary-dataset"],
+        ),
+        (
+            InferenceBackend.TYPESAFE,
+            ["sent-dataset", "multiple-choice-dataset", "canary-dataset"],
+        ),
+    ],
+)
 def test_benchmark_plan_includes_multiple_choice_for_gliner(
     benchmarker: Benchmarker,
     model_config: ModelConfig,
@@ -1044,43 +1061,37 @@ def test_encoder_uses_test_split_in_public_benchmark_flow(
     assert all(config.evaluate_test_split is True for config in observed)
 
 
-@pytest.mark.parametrize(
-    ("backend", "expected_dataset_names"),
-    [
-        (
-            InferenceBackend.GLINER,
-            ["sent-dataset", "multiple-choice-dataset", "canary-dataset"],
-        ),
-        (
-            InferenceBackend.LAYA,
-            ["sent-dataset", "multiple-choice-dataset", "canary-dataset"],
-        ),
-        (
-            InferenceBackend.TYPESAFE,
-            ["sent-dataset", "multiple-choice-dataset", "canary-dataset"],
-        ),
-    ],
-)
 def test_fetch_model_configs_keeps_valid_models_when_extra_is_missing(
     benchmarker: Benchmarker,
-    benchmark_config: BenchmarkConfig,
     model_config: ModelConfig,
+    dataset_config: DatasetConfig,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A missing optional extra does not prevent other selected models running."""
+    observed: list[ModelConfig] = []
 
     def get_config(*, model_id: str, benchmark_config: BenchmarkConfig) -> ModelConfig:
         if model_id == "gliner":
             raise NeedsExtraInstalled(extra="gliner")
         return model_config
 
-    monkeypatch.setattr("euroeval.benchmarker.get_model_config", get_config)
+    def capture_plan(
+        *,
+        model_config: ModelConfig,
+        datasets: Sequence[DatasetConfig],
+        benchmark_config: BenchmarkConfig,
+        existing_results: Sequence[BenchmarkResult],
+    ) -> tuple[None, list[tuple[ShotMode, DatasetConfig]], list[BenchmarkResult], None]:
+        observed.append(model_config)
+        return None, [], [], None
 
-    configs = benchmarker._fetch_model_configs(
-        model_ids=["gliner", "valid"], benchmark_config=benchmark_config
+    monkeypatch.setattr("euroeval.benchmarker.get_model_config", get_config)
+    monkeypatch.setattr(benchmarker, "_prepare_pending_benchmarks", capture_plan)
+    benchmarker.benchmark(
+        model=["gliner", "valid"], dataset=dataset_config, save_results=False
     )
 
-    assert configs == [model_config]
+    assert observed == [model_config]
 
 
 @pytest.mark.parametrize(
