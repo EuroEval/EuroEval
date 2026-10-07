@@ -191,9 +191,6 @@ NUM_PARAMS_MAPPING = {
 
 # Release dates for API aliases which do not carry a dated version in their ID.
 # Dated model IDs are handled generically by `get_api_model_release_date` below.
-# Sources are the providers' model launch posts and model changelogs:
-# https://platform.openai.com/docs/models, https://docs.anthropic.com/en/docs/about-claude/models,
-# https://ai.google.dev/gemini-api/docs/models, and https://docs.x.ai/docs/models.
 MODEL_RELEASE_DATE_MAPPING = {
     # OpenAI
     r"(openai/)?gpt-3\.5-turbo": "2023-03-01",
@@ -286,10 +283,8 @@ MODEL_RELEASE_DATE_MAPPING = {
     r"(xai/)?grok-4\.6.*": "2026-08-12",
     r"(xai/)?grok-4\.7": "2026-09-17",
     # DeepSeek
-    # Source: repo creation date for `deepseek-ai/DeepSeek-V4.1-Flash`.
     r"deepseek/deepseek-flash.*": "2026-09-10",
     # Typesafe
-    # Source: https://typesafe.ai/blog/introducing-system-one-models-and-jev
     r"typesafe/jev-1\.13\.0": "2026-09-15",
 }
 
