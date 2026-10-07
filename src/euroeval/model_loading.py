@@ -6,7 +6,7 @@ import typing as t
 from .benchmark_modules import (
     DummyModel,
     FreshEncoderModel,
-    GLiNER2ClassifierModel,
+    GLiNERModel,
     HuggingFaceEncoderModel,
     LiteLLMModel,
     TypesafeSystemOneModel,
@@ -129,8 +129,8 @@ def load_model(
             model_class = DummyModel
         case (ModelType.ZERO_SHOT_CLASSIFIER, InferenceBackend.LAYA, False):
             model_class = ZeroShotClassifierModel
-        case (ModelType.ZERO_SHOT_CLASSIFIER, InferenceBackend.GLINER2, False):
-            model_class = GLiNER2ClassifierModel
+        case (ModelType.ZERO_SHOT_CLASSIFIER, InferenceBackend.GLINER, False):
+            model_class = GLiNERModel
         case (ModelType.ZERO_SHOT_CLASSIFIER, InferenceBackend.TYPESAFE, False):
             model_class = TypesafeSystemOneModel
         case (ModelType.ENCODER, InferenceBackend.TRANSFORMERS, True):

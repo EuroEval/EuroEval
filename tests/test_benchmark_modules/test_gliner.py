@@ -9,13 +9,13 @@ from pathlib import Path
 
 import pytest
 
-from euroeval.benchmark_modules.gliner2_classifier import GLiNER2ClassifierModel
+from euroeval.benchmark_modules.gliner import GLiNERModel
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 from euroeval.enums import InferenceBackend, ModelType, TaskGroup
 from euroeval.exceptions import InvalidBenchmark
 
 
-class TestGLiNER2Classifier:
+class TestGLiNER:
     """Public backend behavior with a fake local checkpoint and extractor."""
 
     def test_dataset_switch_uses_new_label_mapping(
@@ -27,18 +27,18 @@ class TestGLiNER2Classifier:
         tmp_path: Path,
     ) -> None:
         """Switching datasets changes the candidate labels without stale state."""
-        monkeypatch.setitem(sys.modules, "gliner2", _gliner2_module())
+        monkeypatch.setitem(sys.modules, "gliner2", _gliner_module())
         checkpoint = tmp_path / "checkpoint"
         checkpoint.mkdir()
         config = dataclasses.replace(
             model_config,
             model_id=str(checkpoint),
-            inference_backend=InferenceBackend.GLINER2,
+            inference_backend=InferenceBackend.GLINER,
             model_type=ModelType.ZERO_SHOT_CLASSIFIER,
             revision="main",
             param=None,
         )
-        classifier = GLiNER2ClassifierModel(
+        classifier = GLiNERModel(
             model_config=config,
             dataset_config=dataset_config,
             benchmark_config=benchmark_config,
@@ -62,13 +62,13 @@ class TestGLiNER2Classifier:
         tmp_path: Path,
     ) -> None:
         """Local metadata prevents unrelated encoder checkpoints being claimed."""
-        monkeypatch.setitem(sys.modules, "gliner2", _gliner2_module())
+        monkeypatch.setitem(sys.modules, "gliner2", _gliner_module())
         checkpoint = tmp_path / "gliner"
         checkpoint.mkdir()
         config_path = checkpoint / "config.json"
         config_path.write_text(json.dumps({"model_type": "gliner2"}))
         assert (
-            GLiNER2ClassifierModel.model_exists(
+            GLiNERModel.model_exists(
                 model_id=str(checkpoint), benchmark_config=benchmark_config
             )
             is True
@@ -87,7 +87,7 @@ class TestGLiNER2Classifier:
             )
         )
         assert (
-            GLiNER2ClassifierModel.model_exists(
+            GLiNERModel.model_exists(
                 model_id=str(checkpoint), benchmark_config=benchmark_config
             )
             is True
@@ -104,7 +104,7 @@ class TestGLiNER2Classifier:
             )
         )
         assert (
-            GLiNER2ClassifierModel.model_exists(
+            GLiNERModel.model_exists(
                 model_id=str(checkpoint), benchmark_config=benchmark_config
             )
             is False
@@ -119,13 +119,13 @@ class TestGLiNER2Classifier:
         tmp_path: Path,
     ) -> None:
         """The backend does not silently treat unsupported task prompts as labels."""
-        monkeypatch.setitem(sys.modules, "gliner2", _gliner2_module())
+        monkeypatch.setitem(sys.modules, "gliner2", _gliner_module())
         checkpoint = tmp_path / "checkpoint"
         checkpoint.mkdir()
         config = dataclasses.replace(
             model_config,
             model_id=str(checkpoint),
-            inference_backend=InferenceBackend.GLINER2,
+            inference_backend=InferenceBackend.GLINER,
             model_type=ModelType.ZERO_SHOT_CLASSIFIER,
             revision="main",
             param=None,
@@ -134,7 +134,7 @@ class TestGLiNER2Classifier:
         multiple_choice.task = dataclasses.replace(
             dataset_config.task, task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
         )
-        classifier = GLiNER2ClassifierModel(
+        classifier = GLiNERModel(
             model_config=config,
             dataset_config=multiple_choice,
             benchmark_config=benchmark_config,
@@ -152,18 +152,18 @@ class TestGLiNER2Classifier:
         tmp_path: Path,
     ) -> None:
         """Output includes the selected label, and does not invent class scores."""
-        monkeypatch.setitem(sys.modules, "gliner2", _gliner2_module())
+        monkeypatch.setitem(sys.modules, "gliner2", _gliner_module())
         checkpoint = tmp_path / "checkpoint"
         checkpoint.mkdir()
         config = dataclasses.replace(
             model_config,
             model_id=str(checkpoint),
-            inference_backend=InferenceBackend.GLINER2,
+            inference_backend=InferenceBackend.GLINER,
             model_type=ModelType.ZERO_SHOT_CLASSIFIER,
             revision="main",
             param=None,
         )
-        classifier = GLiNER2ClassifierModel(
+        classifier = GLiNERModel(
             model_config=config,
             dataset_config=dataset_config,
             benchmark_config=benchmark_config,
@@ -182,7 +182,7 @@ class TestGLiNER2Classifier:
         assert classifier.model_max_length == 512
 
 
-def _gliner2_module() -> types.ModuleType:
+def _gliner_module() -> types.ModuleType:
     """Create a fake optional dependency module without loading model weights.
 
     Returns:

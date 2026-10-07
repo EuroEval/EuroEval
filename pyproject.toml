@@ -83,7 +83,7 @@ leaderboards = [
     "scipy>=1.14.1",
     "tqdm>=4.66.0",
 ]
-gliner2 = [
+gliner = [
     "gliner2[local]>=1.3.0",
 ]
 

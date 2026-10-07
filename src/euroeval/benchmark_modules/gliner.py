@@ -23,7 +23,7 @@ from .base import BenchmarkModule
 from .zero_shot_classifier import ZeroShotClassifierModel
 
 
-class GLiNER2ClassifierModel(ZeroShotClassifierModel):
+class GLiNERModel(ZeroShotClassifierModel):
     """Zero-shot sequence classifier using GLiNER2's schema classification API."""
 
     high_priority = True
@@ -59,7 +59,7 @@ class GLiNER2ClassifierModel(ZeroShotClassifierModel):
             from gliner2 import AutoExtractor  # noqa: PLC0415
         except ImportError as exc:
             raise InvalidModel(
-                "Install EuroEval with `pip install euroeval[gliner2]`."
+                "Install EuroEval with `pip install euroeval[gliner]`."
             ) from exc
 
         token = get_hf_token(api_key=benchmark_config.api_key)
@@ -163,7 +163,7 @@ class GLiNER2ClassifierModel(ZeroShotClassifierModel):
             task="text-classification",
             languages=list(),
             merge=False,
-            inference_backend=InferenceBackend.GLINER2,
+            inference_backend=InferenceBackend.GLINER,
             model_type=ModelType.ZERO_SHOT_CLASSIFIER,
             fresh=False,
             model_cache_dir=create_model_cache_dir(
@@ -212,12 +212,12 @@ class GLiNER2ClassifierModel(ZeroShotClassifierModel):
             config = json.loads(config_path.read_text())
         except (OSError, json.JSONDecodeError):
             return False
-        if not isinstance(config, dict) or not _is_gliner2_config(config):
+        if not isinstance(config, dict) or not _is_gliner_config(config):
             return False
         try:
             import gliner2  # noqa: F401,PLC0415
         except ImportError:
-            return NeedsExtraInstalled(extra="gliner2")
+            return NeedsExtraInstalled(extra="gliner")
         return True
 
     @property
@@ -230,7 +230,7 @@ class GLiNER2ClassifierModel(ZeroShotClassifierModel):
         return 512
 
 
-def _is_gliner2_config(config: dict[str, t.Any]) -> bool:
+def _is_gliner_config(config: dict[str, t.Any]) -> bool:
     """Return whether checkpoint metadata identifies a GLiNER2 classifier.
 
     Args:
@@ -248,7 +248,7 @@ def _is_gliner2_config(config: dict[str, t.Any]) -> bool:
     # The Hub advertises library_name=gliner2 separately: it is not stored in
     # config.json. Match the checkpoint's versioned extractor schema instead of
     # trusting a generic SpanExtractor architecture or the repository name.
-    gliner2_extractor = (
+    gliner_extractor = (
         model_type == "extractor"
         and "spanextractor" in architecture
         and str(config.get("architecture", "")).casefold() == "span"
@@ -258,4 +258,4 @@ def _is_gliner2_config(config: dict[str, t.Any]) -> bool:
         and "span_mode" in span_head
     )
     # Keep support for earlier configs whose model type or architecture names GLiNER2.
-    return gliner2_extractor or "gliner2" in f"{architecture} {model_type}"
+    return gliner_extractor or "gliner2" in f"{architecture} {model_type}"
