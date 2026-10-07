@@ -28,6 +28,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Recognised GLiNER2 checkpoints now report the missing `euroeval[gliner]` extra instead
+  of being incorrectly dispatched to the generic Transformers encoder backend.
 - Typesafe System One requests now retry transient HTTP and connection failures with
   bounded backoff, and report exhausted or permanent request failures as `InvalidModel`.
 - Laya and Typesafe per-text classifiers now use single-sample generation batches, enabling
