@@ -18,13 +18,14 @@ from ..enums import InferenceBackend, ModelType, TaskGroup
 from ..exceptions import InvalidBenchmark, InvalidModel, NeedsExtraInstalled
 from ..model_cache import create_model_cache_dir
 from ..string_utils import split_model_id
+from ..task_group_utils.cloze import parse_bare_question_and_choices
 from ..utils import get_hf_token
 from .base import BenchmarkModule
 from .zero_shot_classifier import ZeroShotClassifierModel
 
 
 class GLiNERModel(ZeroShotClassifierModel):
-    """Zero-shot sequence classifier using GLiNER2's schema classification API."""
+    """Zero-shot sequence and multiple-choice classifier using GLiNER2 schemas."""
 
     high_priority = True
 
@@ -101,10 +102,13 @@ class GLiNERModel(ZeroShotClassifierModel):
             InvalidBenchmark: If the task or batch is unsupported or a result is absent.
         """
         task_group = self.dataset_config.task.task_group
-        if task_group is not TaskGroup.SEQUENCE_CLASSIFICATION:
+        if task_group not in {
+            TaskGroup.SEQUENCE_CLASSIFICATION,
+            TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+        }:
             raise InvalidBenchmark(
-                "GLiNER2 classifier supports sequence classification only; "
-                f"{task_group!r} is not supported."
+                "GLiNER2 classifier supports sequence and multiple-choice "
+                f"classification only; {task_group!r} is not supported."
             )
         if self.dataset_config.task.requires_logprobs:
             raise InvalidBenchmark(
@@ -121,15 +125,50 @@ class GLiNERModel(ZeroShotClassifierModel):
             raise InvalidBenchmark("GLiNER2 classification requires candidate labels.")
         sequences: list[str] = []
         for text in inputs["text"]:
+            raw_text = str(text)
+            if task_group is TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
+                question, options = parse_bare_question_and_choices(text=raw_text)
+                if (
+                    not question
+                    or len(options) < 2
+                    or len(options) > len(labels)
+                    or len(set(options)) != len(options)
+                    or any(not option for option in options)
+                ):
+                    raise InvalidBenchmark(
+                        "GLiNER2 could not parse valid multiple-choice options "
+                        f"from {raw_text!r}."
+                    )
+                answer_labels = [chr(ord("a") + index) for index in range(len(options))]
+                schema = {
+                    "answer": {
+                        "labels": dict(zip(answer_labels, options, strict=True)),
+                        "prompt": question,
+                    }
+                }
+                result = self.model.classify_text(
+                    question, schema, include_confidence=False
+                )
+                value = result.get("answer") if isinstance(result, dict) else None
+                if isinstance(value, dict):
+                    value = value.get("label")
+                if not isinstance(value, str) or value not in answer_labels:
+                    raise InvalidBenchmark(
+                        f"GLiNER2 returned no valid selected answer for {raw_text!r}: "
+                        f"{result!r}."
+                    )
+                sequences.append(value)
+                continue
+
             result = self.model.classify_text(
-                str(text), {"label": labels}, include_confidence=False
+                raw_text, {"label": labels}, include_confidence=False
             )
             value = result.get("label") if isinstance(result, dict) else None
             if isinstance(value, dict):
                 value = value.get("label")
             if not isinstance(value, str) or value not in labels:
                 raise InvalidBenchmark(
-                    f"GLiNER2 returned no valid selected label for {text!r}: "
+                    f"GLiNER2 returned no valid selected label for {raw_text!r}: "
                     f"{result!r}."
                 )
             sequences.append(value)

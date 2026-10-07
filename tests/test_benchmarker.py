@@ -605,7 +605,10 @@ def test_benchmark_openai(
 @pytest.mark.parametrize(
     ("backend", "expected_dataset_names"),
     [
-        (InferenceBackend.GLINER, ["sent-dataset", "canary-dataset"]),
+        (
+            InferenceBackend.GLINER,
+            ["sent-dataset", "multiple-choice-dataset", "canary-dataset"],
+        ),
         (
             InferenceBackend.LAYA,
             ["sent-dataset", "multiple-choice-dataset", "canary-dataset"],
@@ -616,14 +619,14 @@ def test_benchmark_openai(
         ),
     ],
 )
-def test_benchmark_plan_filters_multiple_choice_only_for_gliner(
+def test_benchmark_plan_includes_multiple_choice_for_gliner(
     benchmarker: Benchmarker,
     model_config: ModelConfig,
     monkeypatch: pytest.MonkeyPatch,
     backend: InferenceBackend,
     expected_dataset_names: list[str],
 ) -> None:
-    """The public benchmark plan limits GLiNER to sequence-classification tasks."""
+    """The public benchmark plan includes GLiNER multiple-choice tasks."""
     classifier_config = replace(
         model_config,
         model_type=ModelType.ZERO_SHOT_CLASSIFIER,
