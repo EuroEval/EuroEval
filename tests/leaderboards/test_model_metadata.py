@@ -1126,3 +1126,35 @@ def test_add_missing_entries_uses_first_hf_weights_commit(
 
     assert record["model_info"]["additional_details"]["release_date"] == "2024-02-03"
     mock_release_date.assert_called_once()
+
+
+@patch("leaderboards.model_metadata.get_api_model_release_date")
+def test_typesafe_release_date_uses_api_metadata_route(
+    mock_release_date: MagicMock,
+) -> None:
+    """Typesafe hosted model IDs are enriched through API release metadata."""
+    mock_release_date.return_value = "2026-09-15"
+    record = {
+        "model_info": {
+            "name": "typesafe/jev-1.13.0",
+            "additional_details": {
+                "generative": False,
+                "generative_type": None,
+                "merge": False,
+                "commercially_licensed": False,
+                "open": False,
+                "trained_from_scratch": False,
+                "model_url": "https://typesafe.ai",
+            },
+        },
+        "eval_library": {"additional_details": {"few_shot": True}},
+    }
+
+    enriched = add_missing_entries(
+        record=record, trained_from_scratch_patterns=[], cache=Cache()
+    )
+
+    assert enriched["model_info"]["additional_details"]["release_date"] == (
+        "2026-09-15"
+    )
+    mock_release_date.assert_called_once_with("typesafe/jev-1.13.0")

@@ -16,7 +16,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   IDs such as `typesafe/jev-1.13.0`. The selected version is sent upstream unchanged;
   authenticate with the `TYPESAFE_API_KEY` environment variable. The integration
   supports zero-shot sequence and multiple-choice classification; model size metadata
-  remains unknown and speed benchmarking is unsupported.
+  remains unknown and speed benchmarking is unsupported. The exact model ID
+  `typesafe/jev-1.13.0` now also carries its verified 2026-09-15 release date into
+  benchmark results and leaderboard metadata.
 - Hallucination rate is now shown as an optional orthogonal percentage in chat leaderboards;
   missing results do not affect eligibility, rank or aggregate score.
 

@@ -268,6 +268,7 @@ API_MODEL_PATTERNS: list[re.Pattern] = [
     re.compile(r"(openai/)?gpt-[456789].*"),
     re.compile(r"(anthropic/)?claude.*"),
     re.compile(r"(xai/)?grok.*"),
+    re.compile(r"typesafe/jev-\d+\.\d+\.\d+"),
 ]
 
 # Models matching these patterns are excluded from the core-model list
