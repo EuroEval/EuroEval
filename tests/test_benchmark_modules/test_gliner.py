@@ -3,6 +3,7 @@
 import copy
 import dataclasses
 import json
+import logging
 import sys
 import types
 from pathlib import Path
@@ -183,6 +184,55 @@ class TestGLiNER:
             is False
         )
 
+    @pytest.mark.parametrize(
+        ("verbose", "expected_stdout"), [(False, ""), (True, "GLiNER banner\\n")]
+    )
+    def test_model_loading_banner_respects_verbose_setting(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+        tmp_path: Path,
+        capsys: pytest.CaptureFixture[str],
+        verbose: bool,
+        expected_stdout: str,
+    ) -> None:
+        """Hide the upstream banner by default without swallowing diagnostics."""
+        checkpoint = tmp_path / "checkpoint"
+        checkpoint.mkdir()
+        config = dataclasses.replace(
+            model_config,
+            model_id=str(checkpoint),
+            inference_backend=InferenceBackend.GLINER,
+            model_type=ModelType.ZERO_SHOT_CLASSIFIER,
+            revision="main",
+            param=None,
+        )
+        configured_benchmark = dataclasses.replace(benchmark_config, verbose=verbose)
+
+        def load_model(checkpoint: str, map_location: str) -> FakeExtractor:
+            print("GLiNER banner")
+            print("upstream error", file=sys.stderr)
+            return FakeExtractor()
+
+        module = types.ModuleType("gliner2")
+        module.AutoExtractor = types.SimpleNamespace(from_pretrained=load_model)
+        monkeypatch.setitem(sys.modules, "gliner2", module)
+
+        GLiNERModel(
+            model_config=config,
+            dataset_config=dataset_config,
+            benchmark_config=configured_benchmark,
+            log_metadata=False,
+        )
+        logging.getLogger("euroeval.test").warning("EuroEval warning")
+
+        captured = capsys.readouterr()
+        assert captured.out == expected_stdout
+        assert "upstream error" in captured.err
+        assert "EuroEval warning" in captured.err
+
     def test_returns_selected_labels_without_fabricated_scores(
         self,
         monkeypatch: pytest.MonkeyPatch,
@@ -222,21 +272,6 @@ class TestGLiNER:
         assert classifier.model_max_length == 512
 
 
-def _gliner_module() -> types.ModuleType:
-    """Create a fake optional dependency module without loading model weights.
-
-    Returns:
-        A fake GLiNER2 module exposing AutoExtractor.
-    """
-    module = types.ModuleType("gliner2")
-    module.AutoExtractor = types.SimpleNamespace(
-        from_pretrained=lambda checkpoint, map_location: (
-            FakeExtractor() if Path(checkpoint).exists() and str(map_location) else None
-        )
-    )
-    return module
-
-
 class FakeExtractor:
     """Small stand-in for the public AutoExtractor classification interface."""
 
@@ -254,3 +289,18 @@ class FakeExtractor:
         if "answer" in schema:
             return self.response if self.response is not None else {"answer": "b"}
         return {"label": schema["label"][1]}
+
+
+def _gliner_module() -> types.ModuleType:
+    """Create a fake optional dependency module without loading model weights.
+
+    Returns:
+        A fake GLiNER2 module exposing AutoExtractor.
+    """
+    module = types.ModuleType("gliner2")
+    module.AutoExtractor = types.SimpleNamespace(
+        from_pretrained=lambda checkpoint, map_location: (
+            FakeExtractor() if Path(checkpoint).exists() and str(map_location) else None
+        )
+    )
+    return module

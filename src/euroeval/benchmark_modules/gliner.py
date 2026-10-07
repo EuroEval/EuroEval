@@ -1,5 +1,7 @@
 """GLiNER2-backed zero-shot classification benchmark module."""
 
+import contextlib
+import io
 import json
 import typing as t
 from pathlib import Path
@@ -73,9 +75,15 @@ class GLiNERModel(ZeroShotClassifierModel):
                 cache_dir=model_config.model_cache_dir,
                 token=token,
             )
-        self.model = AutoExtractor.from_pretrained(
-            checkpoint, map_location=str(benchmark_config.device)
-        )
+        if benchmark_config.verbose:
+            self.model = AutoExtractor.from_pretrained(
+                checkpoint, map_location=str(benchmark_config.device)
+            )
+        else:
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.model = AutoExtractor.from_pretrained(
+                    checkpoint, map_location=str(benchmark_config.device)
+                )
         BenchmarkModule.__init__(
             self,
             model_config=model_config,
