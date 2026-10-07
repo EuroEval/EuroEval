@@ -1,9 +1,11 @@
 """Tests for the `model_config` module."""
 
 import dataclasses
+import json
 import os
 import sys
 import types
+from pathlib import Path
 
 import pytest
 
@@ -49,6 +51,63 @@ def test_get_model_config(
             assert isinstance(model_config, ModelConfig)
         except InvalidModel as e:
             pytest.skip(f"Model {model_id} is not supported: {e}")
+
+
+def test_gliner_without_optional_package_does_not_fall_back_to_encoder(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, benchmark_config: BenchmarkConfig
+) -> None:
+    """Recognised GLiNER checkpoints report the missing extra before HF fallback."""
+    (tmp_path / "config.json").write_text(
+        json.dumps(
+            {
+                "architectures": ["SpanExtractor"],
+                "model_type": "extractor",
+                "architecture": "span",
+                "config_version": 3,
+                "architecture_version": 1,
+                "span_head": {"span_mode": "marker"},
+            }
+        )
+    )
+    monkeypatch.setitem(sys.modules, "gliner2", None)
+    monkeypatch.setattr(
+        "euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.model_exists",
+        classmethod(lambda cls, model_id, benchmark_config: True),
+    )
+
+    with pytest.raises(InvalidModel, match=r"euroeval\[gliner\]"):
+        get_model_config(model_id=str(tmp_path), benchmark_config=benchmark_config)
+
+
+def test_installed_gliner_checkpoint_resolves_to_specialised_backend(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    benchmark_config: BenchmarkConfig,
+    model_config: ModelConfig,
+) -> None:
+    """An installed GLiNER package lets its specialised module claim the checkpoint."""
+    (tmp_path / "config.json").write_text(
+        json.dumps(
+            {
+                "architectures": ["SpanExtractor"],
+                "model_type": "extractor",
+                "architecture": "span",
+                "config_version": 3,
+                "architecture_version": 1,
+                "span_head": {"span_mode": "marker"},
+            }
+        )
+    )
+    monkeypatch.setitem(sys.modules, "gliner2", types.ModuleType("gliner2"))
+    monkeypatch.setattr(
+        "euroeval.benchmark_modules.gliner.GLiNERModel.get_model_config",
+        classmethod(lambda cls, model_id, benchmark_config: model_config),
+    )
+
+    assert (
+        get_model_config(model_id=str(tmp_path), benchmark_config=benchmark_config)
+        == model_config
+    )
 
 
 def test_laya_resolves_correctly_offline_regardless_of_module_order(
@@ -130,6 +189,32 @@ def test_non_matching_model_id_resolves_to_encoder_model(
     )
     assert resolved_config.inference_backend == InferenceBackend.TRANSFORMERS
     assert resolved_config.model_type == ModelType.ENCODER
+
+
+def test_unrelated_local_model_still_resolves_to_encoder_without_gliner(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    benchmark_config: BenchmarkConfig,
+    model_config: ModelConfig,
+) -> None:
+    """A generic encoder does not require the unrelated optional GLiNER extra."""
+    (tmp_path / "config.json").write_text(
+        json.dumps({"architectures": ["BertModel"], "model_type": "bert"})
+    )
+    monkeypatch.setitem(sys.modules, "gliner2", None)
+    monkeypatch.setattr(
+        "euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.model_exists",
+        classmethod(lambda cls, model_id, benchmark_config: True),
+    )
+    monkeypatch.setattr(
+        "euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.get_model_config",
+        classmethod(lambda cls, model_id, benchmark_config: model_config),
+    )
+
+    assert (
+        get_model_config(model_id=str(tmp_path), benchmark_config=benchmark_config)
+        == model_config
+    )
 
 
 def test_zero_shot_classifier_is_checked_regardless_of_dispatch_order(

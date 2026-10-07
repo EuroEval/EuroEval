@@ -47,6 +47,13 @@ def get_model_config(
             model_id=model_id, benchmark_config=benchmark_config
         )
         if isinstance(exists_or_err, NeedsExtraInstalled):
+            if not benchmark_module.is_fallback:
+                raise InvalidModel(
+                    f"Model {model_id} is supported by "
+                    f"{benchmark_module.__name__}, but checking it requires an "
+                    f"optional package. Install it with `pip install "
+                    f"euroeval[{exists_or_err.extra}]` and try again."
+                )
             needs_extras.append(exists_or_err.extra)
         elif isinstance(exists_or_err, NeedsEnvironmentVariable):
             needs_env_vars.append(exists_or_err.env_var)
