@@ -368,7 +368,11 @@ def _collect_raw_scores(
                 continue
 
         task_name = get_task(record)
-        if not task_name or task_name in ORTHOGONAL_TASKS:
+        if (
+            not task_name
+            or task_name in ORTHOGONAL_TASKS
+            or task_name == "contamination-detection"
+        ):
             continue
 
         record_languages = _extract_languages_from_record(record)
