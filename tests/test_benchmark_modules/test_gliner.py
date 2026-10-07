@@ -11,8 +11,9 @@ import pytest
 
 from euroeval.benchmark_modules.gliner import GLiNERModel
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
-from euroeval.enums import InferenceBackend, ModelType, TaskGroup
+from euroeval.enums import InferenceBackend, ModelType
 from euroeval.exceptions import InvalidBenchmark
+from euroeval.tasks import KNOW
 
 
 class TestGLiNER:
@@ -40,19 +41,22 @@ class TestGLiNER:
             revision="main",
             param=None,
         )
-        multiple_choice = copy.copy(dataset_config)
-        multiple_choice.task = dataclasses.replace(
-            dataset_config.task, task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+        multiple_choice = DatasetConfig(
+            name="multiple-choice",
+            pretty_name="Multiple choice",
+            source="dataset_id",
+            task=KNOW,
+            languages=dataset_config.languages,
+            labels=["a", "b", "c", "d"],
         )
-        multiple_choice.labels = ["a", "b", "c", "d"]
         classifier = GLiNERModel(
             model_config=config,
             dataset_config=multiple_choice,
             benchmark_config=benchmark_config,
             log_metadata=False,
         )
-        options = ["first", "second", "third", "fourth"][:num_options]
-        prompt = "Question?\nChoices:\n" + "\n".join(
+        options = ["første", "andet", "tredje", "fjerde"][:num_options]
+        prompt = "Hvad er det rigtige svar?\nSvarmuligheder:\n" + "\n".join(
             f"{chr(ord('a') + index)}. {option}" for index, option in enumerate(options)
         )
         output = classifier.generate(inputs={"text": [prompt]})
@@ -60,11 +64,14 @@ class TestGLiNER:
         assert output.scores is None
         assert classifier.model.calls == [
             (
-                "Question?",
+                "Hvad er det rigtige svar?",
                 {
                     "answer": {
                         "labels": dict(zip("abcd"[:num_options], options, strict=True)),
-                        "prompt": "Question?",
+                        "prompt": (
+                            "Besvar ovenstående spørgsmål ved at svare med "
+                            f"{', '.join('abcd'[:num_options])}, og intet andet."
+                        ),
                     }
                 },
             )

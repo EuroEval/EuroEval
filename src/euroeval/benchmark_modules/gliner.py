@@ -140,12 +140,19 @@ class GLiNERModel(ZeroShotClassifierModel):
                         f"from {raw_text!r}."
                     )
                 answer_labels = [chr(ord("a") + index) for index in range(len(options))]
-                schema = {
-                    "answer": {
-                        "labels": dict(zip(answer_labels, options, strict=True)),
-                        "prompt": question,
-                    }
+                schema_config: dict[str, dict[str, str] | str] = {
+                    "labels": dict(zip(answer_labels, options, strict=True))
                 }
+                # Reuse the dataset's localised instruction, omitting the question
+                # already supplied as the text and limiting letters to this sample.
+                _, placeholder, instruction = (
+                    self.dataset_config.instruction_prompt.partition("{text}")
+                )
+                if placeholder and instruction.strip():
+                    schema_config["prompt"] = instruction.format(
+                        labels_str=", ".join(answer_labels)
+                    ).strip()
+                schema = {"answer": schema_config}
                 result = self.model.classify_text(
                     question, schema, include_confidence=False
                 )
