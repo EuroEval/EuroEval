@@ -32,7 +32,14 @@ from .data_models import (
     DatasetConfig,
     get_package_version,
 )
-from .enums import Device, GenerativeType, InferenceBackend, ModelType, ShotMode
+from .enums import (
+    Device,
+    GenerativeType,
+    InferenceBackend,
+    ModelType,
+    ShotMode,
+    TaskGroup,
+)
 from .exceptions import HuggingFaceHubDown, InvalidBenchmark, InvalidModel
 from .finetuning import finetune
 from .generation import generate
@@ -1443,6 +1450,10 @@ class Benchmarker:
                 ds_config
                 for ds_config in dataset_configs
                 if model_config.model_type in ds_config.allowed_model_types
+                and (
+                    model_config.inference_backend is not InferenceBackend.GLINER
+                    or ds_config.task.task_group is TaskGroup.SEQUENCE_CLASSIFICATION
+                )
                 and (
                     self._is_canary_dataset(ds_config)
                     or model_config.model_type.supports_task_group(
