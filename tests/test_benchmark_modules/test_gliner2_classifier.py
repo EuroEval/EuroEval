@@ -80,7 +80,9 @@ class TestGLiNER2Classifier:
                     "architectures": ["SpanExtractor"],
                     "architecture": "span",
                     "model_name": "microsoft/deberta-v3-large",
-                    "library_name": "gliner2",
+                    "config_version": 3,
+                    "architecture_version": 1,
+                    "span_head": {"span_mode": "markerV0"},
                 }
             )
         )
@@ -97,7 +99,7 @@ class TestGLiNER2Classifier:
                     "architectures": ["SpanExtractor"],
                     "architecture": "span",
                     "model_name": "microsoft/deberta-v3-large",
-                    "library_name": "transformers",
+                    "span_head": {"span_mode": "markerV0"},
                 }
             )
         )
@@ -174,6 +176,9 @@ class TestGLiNER2Classifier:
         ]
         assert output.sequences == [labels[1]]
         assert output.scores is None
+        assert classifier.extract_labels_from_generation(
+            input_batch={"prompt": ["sample"]}, model_output=output
+        ) == [labels[1]]
         assert classifier.model_max_length == 512
 
 

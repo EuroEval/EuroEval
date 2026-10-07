@@ -106,6 +106,11 @@ class GLiNER2ClassifierModel(ZeroShotClassifierModel):
                 "GLiNER2 classifier supports sequence classification only; "
                 f"{task_group!r} is not supported."
             )
+        if self.dataset_config.task.requires_logprobs:
+            raise InvalidBenchmark(
+                "GLiNER2 does not provide per-label log probabilities required "
+                "by this task."
+            )
         if "text" not in inputs:
             raise InvalidBenchmark("The inputs must contain a 'text' key.")
         labels = [
@@ -239,15 +244,18 @@ def _is_gliner2_config(config: dict[str, t.Any]) -> bool:
         architectures = []
     architecture = " ".join(str(value) for value in architectures).casefold()
     model_type = str(config.get("model_type", "")).casefold()
-    library_name = str(config.get("library_name", "")).casefold()
-    # The real GLiNER2.5-Decide checkpoint uses a generic extractor config and
-    # encoder name; require the explicit GLiNER2 Hub library marker for that shape.
-    decide_extractor = (
-        library_name == "gliner2"
-        and model_type == "extractor"
+    span_head = config.get("span_head")
+    # The Hub advertises library_name=gliner2 separately: it is not stored in
+    # config.json. Match the checkpoint's versioned extractor schema instead of
+    # trusting a generic SpanExtractor architecture or the repository name.
+    gliner2_extractor = (
+        model_type == "extractor"
         and "spanextractor" in architecture
         and str(config.get("architecture", "")).casefold() == "span"
+        and config.get("config_version") == 3
+        and config.get("architecture_version") == 1
+        and isinstance(span_head, dict)
+        and "span_mode" in span_head
     )
     # Keep support for earlier configs whose model type or architecture names GLiNER2.
-    # Never infer compatibility from model_name or the repository name alone.
-    return decide_extractor or "gliner2" in f"{architecture} {model_type}"
+    return gliner2_extractor or "gliner2" in f"{architecture} {model_type}"
