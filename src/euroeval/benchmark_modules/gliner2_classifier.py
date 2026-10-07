@@ -82,6 +82,9 @@ class GLiNER2ClassifierModel(ZeroShotClassifierModel):
             benchmark_config=benchmark_config,
             log_metadata=log_metadata,
         )
+        # Shared generation and evaluation code expects this buffer entry even though
+        # GLiNER2 does not provide token-level candidate scores.
+        self.buffer["first_label_token_mapping"] = False
 
     def generate(self, inputs: dict[str, t.Any]) -> GenerativeModelOutput:
         """Classify text and return only the selected label, without invented scores.
@@ -212,6 +215,15 @@ class GLiNER2ClassifierModel(ZeroShotClassifierModel):
             return NeedsExtraInstalled(extra="gliner2")
         return True
 
+    @property
+    def model_max_length(self) -> int:
+        """The conservative context length used for extractor checkpoints.
+
+        Returns:
+            The maximum input length in tokens.
+        """
+        return 512
+
 
 def _is_gliner2_config(config: dict[str, t.Any]) -> bool:
     """Return whether checkpoint metadata identifies a GLiNER2 classifier.
@@ -222,10 +234,20 @@ def _is_gliner2_config(config: dict[str, t.Any]) -> bool:
     Returns:
         Whether the checkpoint is known to be a GLiNER2-compatible classifier.
     """
-    architecture = " ".join(str(value) for value in config.get("architectures", []))
-    model_type = str(config.get("model_type", ""))
-    metadata = f"{architecture} {model_type}".casefold()
-    # Do not identify by repository name alone: the Hub ID can be a typo, a fork,
-    # or a repository whose config was replaced. Both architecture/model_type are
-    # checkpoint metadata, unlike the arbitrary underlying encoder name.
-    return "gliner2" in metadata
+    architectures = config.get("architectures", [])
+    if not isinstance(architectures, list):
+        architectures = []
+    architecture = " ".join(str(value) for value in architectures).casefold()
+    model_type = str(config.get("model_type", "")).casefold()
+    library_name = str(config.get("library_name", "")).casefold()
+    # The real GLiNER2.5-Decide checkpoint uses a generic extractor config and
+    # encoder name; require the explicit GLiNER2 Hub library marker for that shape.
+    decide_extractor = (
+        library_name == "gliner2"
+        and model_type == "extractor"
+        and "spanextractor" in architecture
+        and str(config.get("architecture", "")).casefold() == "span"
+    )
+    # Keep support for earlier configs whose model type or architecture names GLiNER2.
+    # Never infer compatibility from model_name or the repository name alone.
+    return decide_extractor or "gliner2" in f"{architecture} {model_type}"

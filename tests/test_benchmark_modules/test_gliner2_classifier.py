@@ -1,5 +1,6 @@
 """Offline tests for the GLiNER2 zero-shot classifier backend."""
 
+import copy
 import dataclasses
 import json
 import sys
@@ -16,6 +17,43 @@ from euroeval.exceptions import InvalidBenchmark
 
 class TestGLiNER2Classifier:
     """Public backend behavior with a fake local checkpoint and extractor."""
+
+    def test_dataset_switch_uses_new_label_mapping(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+        tmp_path: Path,
+    ) -> None:
+        """Switching datasets changes the candidate labels without stale state."""
+        monkeypatch.setitem(sys.modules, "gliner2", _gliner2_module())
+        checkpoint = tmp_path / "checkpoint"
+        checkpoint.mkdir()
+        config = dataclasses.replace(
+            model_config,
+            model_id=str(checkpoint),
+            inference_backend=InferenceBackend.GLINER2,
+            model_type=ModelType.ZERO_SHOT_CLASSIFIER,
+            revision="main",
+            param=None,
+        )
+        classifier = GLiNER2ClassifierModel(
+            model_config=config,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+        new_mapping = {
+            label: f"new-{prompt_label}"
+            for label, prompt_label in dataset_config.prompt_label_mapping.items()
+        }
+        switched_config = copy.copy(dataset_config)
+        switched_config.prompt_label_mapping = new_mapping
+        classifier.update_dataset_config(dataset_config=switched_config)
+        output = classifier.generate(inputs={"text": ["sample"]})
+        labels = [new_mapping[label] for label in switched_config.id2label.values()]
+        assert output.sequences == [labels[1]]
 
     def test_identifies_local_gliner_metadata_but_not_other_encoders(
         self,
@@ -35,7 +73,34 @@ class TestGLiNER2Classifier:
             )
             is True
         )
-        config_path.write_text(json.dumps({"model_type": "bert"}))
+        config_path.write_text(
+            json.dumps(
+                {
+                    "model_type": "extractor",
+                    "architectures": ["SpanExtractor"],
+                    "architecture": "span",
+                    "model_name": "microsoft/deberta-v3-large",
+                    "library_name": "gliner2",
+                }
+            )
+        )
+        assert (
+            GLiNER2ClassifierModel.model_exists(
+                model_id=str(checkpoint), benchmark_config=benchmark_config
+            )
+            is True
+        )
+        config_path.write_text(
+            json.dumps(
+                {
+                    "model_type": "extractor",
+                    "architectures": ["SpanExtractor"],
+                    "architecture": "span",
+                    "model_name": "microsoft/deberta-v3-large",
+                    "library_name": "transformers",
+                }
+            )
+        )
         assert (
             GLiNER2ClassifierModel.model_exists(
                 model_id=str(checkpoint), benchmark_config=benchmark_config
@@ -63,13 +128,9 @@ class TestGLiNER2Classifier:
             revision="main",
             param=None,
         )
-        multiple_choice = dataset_config.model_copy(
-            update={
-                "task": dataclasses.replace(
-                    dataset_config.task,
-                    task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
-                )
-            }
+        multiple_choice = copy.copy(dataset_config)
+        multiple_choice.task = dataclasses.replace(
+            dataset_config.task, task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
         )
         classifier = GLiNER2ClassifierModel(
             model_config=config,
@@ -107,8 +168,13 @@ class TestGLiNER2Classifier:
             log_metadata=False,
         )
         output = classifier.generate(inputs={"text": ["sample"]})
-        assert output.sequences == [dataset_config.prompt_label_mapping["1"]]
+        labels = [
+            dataset_config.prompt_label_mapping[label]
+            for label in dataset_config.id2label.values()
+        ]
+        assert output.sequences == [labels[1]]
         assert output.scores is None
+        assert classifier.model_max_length == 512
 
 
 def _gliner2_module() -> types.ModuleType:
