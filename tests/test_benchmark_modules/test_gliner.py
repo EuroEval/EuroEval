@@ -185,7 +185,7 @@ class TestGLiNER:
         )
 
     @pytest.mark.parametrize(
-        ("verbose", "expected_stdout"), [(False, ""), (True, "GLiNER banner\\n")]
+        ("verbose", "expected_stdout"), [(False, ""), (True, "GLiNER banner\n")]
     )
     def test_model_loading_banner_respects_verbose_setting(
         self,
@@ -195,6 +195,7 @@ class TestGLiNER:
         benchmark_config: BenchmarkConfig,
         tmp_path: Path,
         capsys: pytest.CaptureFixture[str],
+        caplog: pytest.LogCaptureFixture,
         verbose: bool,
         expected_stdout: str,
     ) -> None:
@@ -231,7 +232,7 @@ class TestGLiNER:
         captured = capsys.readouterr()
         assert captured.out == expected_stdout
         assert "upstream error" in captured.err
-        assert "EuroEval warning" in captured.err
+        assert "EuroEval warning" in caplog.text
 
     def test_returns_selected_labels_without_fabricated_scores(
         self,
