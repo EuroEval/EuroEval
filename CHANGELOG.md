@@ -28,6 +28,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Missing optional model extras now fail CLI runs when no other selected model can run,
+  with an install instruction instead of a false cached-results message. Mixed runs still
+  continue with models whose dependencies are installed.
 - Recognised GLiNER2 checkpoints now report the missing `euroeval[gliner]` extra instead
   of being incorrectly dispatched to the generic Transformers encoder backend.
 - Typesafe System One requests now retry transient HTTP and connection failures with
