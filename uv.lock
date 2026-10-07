@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12, <4.0"
 resolution-markers = [
     "python_full_version >= '3.14' and platform_machine == 'arm64' and sys_platform == 'darwin'",
@@ -1242,6 +1242,7 @@ dependencies = [
 [package.optional-dependencies]
 all = [
     { name = "bitsandbytes", marker = "sys_platform == 'linux'" },
+    { name = "gliner2", extra = ["local"] },
     { name = "laya" },
     { name = "ray", marker = "sys_platform == 'linux'" },
     { name = "timm" },
@@ -1256,6 +1257,9 @@ generative = [
     { name = "vllm", version = "0.27.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'linux'" },
     { name = "vllm", version = "0.27.1+cpu", source = { git = "https://github.com/vllm-project/vllm.git?tag=v0.27.1#6e448d0ea9bf3d88d898b65449ca6dc2aec170ac" }, marker = "sys_platform == 'darwin'" },
     { name = "vllm-metal", marker = "sys_platform == 'darwin'" },
+]
+gliner2 = [
+    { name = "gliner2", extra = ["local"] },
 ]
 laya = [
     { name = "laya" },
@@ -1317,6 +1321,8 @@ requires-dist = [
     { name = "datasets", specifier = ">=3.5.0" },
     { name = "demjson3", specifier = ">=3.0.6" },
     { name = "evaluate", specifier = ">=0.4.1" },
+    { name = "gliner2", extras = ["local"], marker = "extra == 'all'", specifier = ">=1.3.0" },
+    { name = "gliner2", extras = ["local"], marker = "extra == 'gliner2'", specifier = ">=1.3.0" },
     { name = "google-cloud-aiplatform", specifier = ">=1.157.0" },
     { name = "huggingface-hub", specifier = ">=0.30.1" },
     { name = "kaleido", specifier = ">=1.3.0" },
@@ -1363,7 +1369,7 @@ requires-dist = [
     { name = "vllm-metal", marker = "sys_platform == 'darwin' and extra == 'all'", git = "https://github.com/vllm-project/vllm-metal.git?tag=v0.2.0-20260531-071330" },
     { name = "vllm-metal", marker = "sys_platform == 'darwin' and extra == 'generative'", git = "https://github.com/vllm-project/vllm-metal.git?tag=v0.2.0-20260531-071330" },
 ]
-provides-extras = ["generative", "laya", "all", "leaderboards"]
+provides-extras = ["generative", "laya", "all", "leaderboards", "gliner2"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1815,6 +1821,30 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/5d/e2/3874574cce18a2e3608abfe5b4b5b3c9765653c464f5da18df8971cf501d/future_fstrings-1.2.0.tar.gz", hash = "sha256:6cf41cbe97c398ab5a81168ce0dbb8ad95862d3caf23c21e4430627b90844089", size = 5786, upload-time = "2019-06-16T03:04:42.651Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ab/6d/ea1d52e9038558dd37f5d30647eb9f07888c164960a5d4daa5f970c6da25/future_fstrings-1.2.0-py2.py3-none-any.whl", hash = "sha256:90e49598b553d8746c4dc7d9442e0359d038c3039d802c91c0a55505da318c63", size = 6138, upload-time = "2019-06-16T03:04:40.395Z" },
+]
+
+[[package]]
+name = "gliner2"
+version = "2.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "requests" },
+    { name = "tqdm" },
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b2/a8/2dcfdb8862dbeb488b6b86047075a213cc101ca592eae1a43b824cca74dd/gliner2-2.0.0.tar.gz", hash = "sha256:82b149f893ba0f6adf75ef1db599b6dbecd9811cca34dbd0bac7cd9e90b90ce4", size = 565826, upload-time = "2026-08-24T15:13:43.439Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/00/44/87d2803c5c5c6c0bd22bce4d52c66c965dacae29e0121d7e04c9883711df/gliner2-2.0.0-py3-none-any.whl", hash = "sha256:6f7c4cba0ef3173636d8bd9404aa94d4e0ccf36d4b4b9a0d27d740dd2d3236c3", size = 326214, upload-time = "2026-08-24T15:13:41.09Z" },
+]
+
+[package.optional-dependencies]
+local = [
+    { name = "numpy" },
+    { name = "peft" },
+    { name = "safetensors" },
+    { name = "torch" },
+    { name = "transformers", extra = ["mistral-common"] },
 ]
 
 [[package]]
