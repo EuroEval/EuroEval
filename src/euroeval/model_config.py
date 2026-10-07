@@ -50,7 +50,7 @@ def get_model_config(
             if not benchmark_module.is_fallback:
                 raise InvalidModel(
                     f"Model {model_id} is supported by "
-                    f"{benchmark_module.__name__}, but checking it requires an "
+                    f"{benchmark_module.__name__}, but running it requires an "
                     f"optional package. Install it with `pip install "
                     f"euroeval[{exists_or_err.extra}]` and try again."
                 )
