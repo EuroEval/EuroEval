@@ -25,7 +25,7 @@ from euroeval.data_models import (
     ModelConfig,
     Task,
 )
-from euroeval.enums import InferenceBackend, ModelType, ShotMode
+from euroeval.enums import InferenceBackend, ModelType, ShotMode, TaskGroup
 from euroeval.exceptions import HuggingFaceHubDown
 from euroeval.result_cache import get_record
 from euroeval.tasks import CONTAMINATION_DETECTION, NER, SENT
@@ -599,6 +599,70 @@ def test_benchmark_openai(
     )
     assert isinstance(benchmark_result, list)
     assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
+
+
+@pytest.mark.parametrize(
+    ("backend", "expected_dataset_names"),
+    [
+        (InferenceBackend.GLINER, ["sent-dataset"]),
+        (InferenceBackend.LAYA, ["sent-dataset", "multiple-choice-dataset"]),
+        (InferenceBackend.TYPESAFE, ["sent-dataset", "multiple-choice-dataset"]),
+    ],
+)
+def test_benchmark_plan_filters_multiple_choice_only_for_gliner(
+    benchmarker: Benchmarker,
+    model_config: ModelConfig,
+    monkeypatch: pytest.MonkeyPatch,
+    backend: InferenceBackend,
+    expected_dataset_names: list[str],
+) -> None:
+    """The public benchmark plan limits GLiNER to sequence-classification tasks."""
+    classifier_config = replace(
+        model_config,
+        model_type=ModelType.ZERO_SHOT_CLASSIFIER,
+        inference_backend=backend,
+    )
+    sequence_dataset = DatasetConfig(
+        name="sent-dataset",
+        pretty_name="Sentiment dataset",
+        source="dataset_id",
+        task=SENT,
+        languages=[Language(code="da", name="Danish")],
+    )
+    multiple_choice_dataset = DatasetConfig(
+        name="multiple-choice-dataset",
+        pretty_name="Multiple-choice dataset",
+        source="dataset_id",
+        task=replace(SENT, task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION),
+        languages=[Language(code="da", name="Danish")],
+    )
+    planned_datasets: list[DatasetConfig] = []
+    monkeypatch.setattr(
+        benchmarker,
+        "_fetch_model_configs",
+        lambda _model_ids, _benchmark_config: [classifier_config],
+    )
+
+    def capture_plan(
+        *,
+        datasets: Sequence[DatasetConfig],
+        model_config: ModelConfig,
+        benchmark_config: BenchmarkConfig,
+        existing_results: Sequence[BenchmarkResult],
+    ) -> tuple[None, list[tuple[ShotMode, DatasetConfig]], list[BenchmarkResult], None]:
+        planned_datasets.extend(datasets)
+        return None, [], [], None
+
+    monkeypatch.setattr(benchmarker, "_prepare_pending_benchmarks", capture_plan)
+
+    benchmarker.benchmark(
+        model="fastino/GLiNER2.5-Decide",
+        dataset=[sequence_dataset, multiple_choice_dataset],
+        save_results=False,
+        progress_bar=False,
+    )
+
+    assert [dataset.name for dataset in planned_datasets] == expected_dataset_names
 
 
 def test_benchmark_result_includes_model_release_date(
