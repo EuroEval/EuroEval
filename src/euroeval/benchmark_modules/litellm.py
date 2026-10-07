@@ -288,6 +288,9 @@ MODEL_RELEASE_DATE_MAPPING = {
     # DeepSeek
     # Source: repo creation date for `deepseek-ai/DeepSeek-V4.1-Flash`.
     r"deepseek/deepseek-flash.*": "2026-09-10",
+    # Typesafe
+    # Source: https://typesafe.ai/blog/introducing-system-one-models-and-jev
+    r"typesafe/jev-1\.13\.0": "2026-09-15",
 }
 
 REASONING_MODELS = [

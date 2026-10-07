@@ -319,6 +319,13 @@ def test_model_config_routes_versioned_jev_and_rejects_malformed_ids(
     assert config.model_id == model_id
     assert config.inference_backend == InferenceBackend.TYPESAFE
     assert config.model_type == ModelType.ZERO_SHOT_CLASSIFIER
+    assert config.release_date == "2026-09-15"
+    assert (
+        TypesafeSystemOneModel.get_model_config(
+            model_id="typesafe/jev-1.13.1", benchmark_config=benchmark_config
+        ).release_date
+        is None
+    )
     assert TypesafeSystemOneModel.model_exists(
         model_id=model_id, benchmark_config=benchmark_config
     )

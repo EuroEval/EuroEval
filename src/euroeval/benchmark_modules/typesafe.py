@@ -330,6 +330,9 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
                 cache_dir=benchmark_config.cache_dir, model_id=components.model_id
             ),
             adapter_base_model_id=None,
+            release_date=(
+                "2026-09-15" if components.model_id == "typesafe/jev-1.13.0" else None
+            ),
         )
 
     @classmethod
