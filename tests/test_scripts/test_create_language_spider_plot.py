@@ -1080,6 +1080,14 @@ class TestIntegrationWithTempFiles:
                 raw_scores=[0.78, 0.79, 0.77],
                 metric_name="mcc",
             ),
+            make_eee_record(
+                "test/model1",
+                ["da"],
+                {},
+                False,
+                task="contamination-detection",
+                dataset="contamination-canary-da",
+            ),
         ]
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -1087,6 +1095,7 @@ class TestIntegrationWithTempFiles:
             model1_dir.mkdir()
             (model1_dir / "record_0.json").write_text(json.dumps(records[0]))
             (model1_dir / "record_1.json").write_text(json.dumps(records[1]))
+            (model1_dir / "contamination.json").write_text(json.dumps(records[4]))
 
             model2_dir = Path(tmpdir) / "test_model2"
             model2_dir.mkdir()
