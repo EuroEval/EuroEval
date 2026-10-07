@@ -103,6 +103,8 @@ class InferenceBackend(AutoStrEnum):
             The built-in dummy model, used for debugging.
         LAYA:
             The Laya zero-shot classifier model. The `laya` library.
+        GLINER:
+            The GLiNER2 zero-shot classifier. The `gliner2` library.
         TYPESAFE:
             The hosted Typesafe System One zero-shot classifier.
     """
@@ -112,6 +114,7 @@ class InferenceBackend(AutoStrEnum):
     LITELLM = auto()
     DUMMY = auto()
     LAYA = auto()
+    GLINER = auto()
     TYPESAFE = auto()
 
 

@@ -47,6 +47,8 @@ def get_model_config(
             model_id=model_id, benchmark_config=benchmark_config
         )
         if isinstance(exists_or_err, NeedsExtraInstalled):
+            if not benchmark_module.is_fallback:
+                raise exists_or_err
             needs_extras.append(exists_or_err.extra)
         elif isinstance(exists_or_err, NeedsEnvironmentVariable):
             needs_env_vars.append(exists_or_err.env_var)

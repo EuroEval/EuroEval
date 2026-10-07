@@ -25,8 +25,9 @@ from euroeval.data_models import (
     ModelConfig,
     Task,
 )
-from euroeval.enums import InferenceBackend, ModelType, ShotMode
-from euroeval.exceptions import HuggingFaceHubDown
+from euroeval.enums import InferenceBackend, ModelType, ShotMode, TaskGroup
+from euroeval.exceptions import HuggingFaceHubDown, NeedsExtraInstalled
+from euroeval.languages import DANISH
 from euroeval.result_cache import get_record
 from euroeval.tasks import CONTAMINATION_DETECTION, NER, SENT
 
@@ -601,6 +602,86 @@ def test_benchmark_openai(
     assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
 
 
+@pytest.mark.parametrize(
+    ("backend", "expected_dataset_names"),
+    [
+        (
+            InferenceBackend.GLINER,
+            ["sent-dataset", "multiple-choice-dataset", "canary-dataset"],
+        ),
+        (
+            InferenceBackend.LAYA,
+            ["sent-dataset", "multiple-choice-dataset", "canary-dataset"],
+        ),
+        (
+            InferenceBackend.TYPESAFE,
+            ["sent-dataset", "multiple-choice-dataset", "canary-dataset"],
+        ),
+    ],
+)
+def test_benchmark_plan_includes_multiple_choice_for_gliner(
+    benchmarker: Benchmarker,
+    model_config: ModelConfig,
+    monkeypatch: pytest.MonkeyPatch,
+    backend: InferenceBackend,
+    expected_dataset_names: list[str],
+) -> None:
+    """The public benchmark plan includes GLiNER multiple-choice tasks."""
+    classifier_config = replace(
+        model_config,
+        model_type=ModelType.ZERO_SHOT_CLASSIFIER,
+        inference_backend=backend,
+    )
+    sequence_dataset = DatasetConfig(
+        name="sent-dataset",
+        pretty_name="Sentiment dataset",
+        source="dataset_id",
+        task=SENT,
+        languages=[DANISH],
+    )
+    multiple_choice_dataset = DatasetConfig(
+        name="multiple-choice-dataset",
+        pretty_name="Multiple-choice dataset",
+        source="dataset_id",
+        task=replace(SENT, task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION),
+        languages=[DANISH],
+    )
+    canary_dataset = DatasetConfig(
+        name="canary-dataset",
+        pretty_name="Contamination canary",
+        source="dataset_id",
+        task=CONTAMINATION_DETECTION,
+        languages=[DANISH],
+    )
+    planned_datasets: list[DatasetConfig] = []
+    monkeypatch.setattr(
+        benchmarker,
+        "_fetch_model_configs",
+        lambda _model_ids, _benchmark_config: [classifier_config],
+    )
+
+    def capture_plan(
+        *,
+        datasets: Sequence[DatasetConfig],
+        model_config: ModelConfig,
+        benchmark_config: BenchmarkConfig,
+        existing_results: Sequence[BenchmarkResult],
+    ) -> tuple[None, list[tuple[ShotMode, DatasetConfig]], list[BenchmarkResult], None]:
+        planned_datasets.extend(datasets)
+        return None, [], [], None
+
+    monkeypatch.setattr(benchmarker, "_prepare_pending_benchmarks", capture_plan)
+
+    benchmarker.benchmark(
+        model="fastino/GLiNER2.5-Decide",
+        dataset=[sequence_dataset, multiple_choice_dataset, canary_dataset],
+        save_results=False,
+        progress_bar=False,
+    )
+
+    assert [dataset.name for dataset in planned_datasets] == expected_dataset_names
+
+
 def test_benchmark_result_includes_model_release_date(
     monkeypatch: pytest.MonkeyPatch,
     model_config: ModelConfig,
@@ -978,6 +1059,39 @@ def test_encoder_uses_test_split_in_public_benchmark_flow(
 
     assert observed
     assert all(config.evaluate_test_split is True for config in observed)
+
+
+def test_fetch_model_configs_keeps_valid_models_when_extra_is_missing(
+    benchmarker: Benchmarker,
+    model_config: ModelConfig,
+    dataset_config: DatasetConfig,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A missing optional extra does not prevent other selected models running."""
+    observed: list[ModelConfig] = []
+
+    def get_config(*, model_id: str, benchmark_config: BenchmarkConfig) -> ModelConfig:
+        if model_id == "gliner":
+            raise NeedsExtraInstalled(extra="gliner")
+        return model_config
+
+    def capture_plan(
+        *,
+        model_config: ModelConfig,
+        datasets: Sequence[DatasetConfig],
+        benchmark_config: BenchmarkConfig,
+        existing_results: Sequence[BenchmarkResult],
+    ) -> tuple[None, list[tuple[ShotMode, DatasetConfig]], list[BenchmarkResult], None]:
+        observed.append(model_config)
+        return None, [], [], None
+
+    monkeypatch.setattr("euroeval.benchmarker.get_model_config", get_config)
+    monkeypatch.setattr(benchmarker, "_prepare_pending_benchmarks", capture_plan)
+    benchmarker.benchmark(
+        model=["gliner", "valid"], dataset=dataset_config, save_results=False
+    )
+
+    assert observed == [model_config]
 
 
 @pytest.mark.parametrize(

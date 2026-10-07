@@ -3,6 +3,7 @@
 from .base import BenchmarkModule
 from .dummy import DummyModel
 from .fresh import FreshEncoderModel
+from .gliner import GLiNERModel
 from .hf import HuggingFaceEncoderModel
 from .litellm import LiteLLMModel
 from .typesafe import TypesafeSystemOneModel
