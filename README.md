@@ -31,6 +31,14 @@
 
 ## Installation and usage
 
+Optional zero-shot classifier backends can be installed independently with
+`pip install euroeval[laya]` or `pip install euroeval[gliner2]`. The GLiNER2 backend
+supports sequence classification with `fastino/GLiNER2.5-Decide` and compatible
+GLiNER2 checkpoints. Its API returns a selected label (and may provide selected-label
+confidence), not a probability distribution over candidates; EuroEval therefore reports
+no per-label scores for this backend. GLiNER2 weights are downloaded only when loading
+the model.
+
 See the [documentation](https://euroeval.com/python-package/) for more information.
 
 ## Reproducing the evaluation datasets
