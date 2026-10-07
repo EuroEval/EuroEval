@@ -11,7 +11,7 @@ import pytest
 
 from euroeval.data_models import BenchmarkConfig, HFModelInfo, ModelConfig
 from euroeval.enums import InferenceBackend, ModelType
-from euroeval.exceptions import InvalidModel
+from euroeval.exceptions import InvalidModel, NeedsExtraInstalled
 from euroeval.model_config import get_model_config
 
 
@@ -75,7 +75,7 @@ def test_gliner_without_optional_package_does_not_fall_back_to_encoder(
         classmethod(lambda cls, model_id, benchmark_config: True),
     )
 
-    with pytest.raises(InvalidModel, match=r"euroeval\[gliner\]"):
+    with pytest.raises(NeedsExtraInstalled, match=r"euroeval\[gliner\]"):
         get_model_config(model_id=str(tmp_path), benchmark_config=benchmark_config)
 
 

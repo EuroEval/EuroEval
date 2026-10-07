@@ -1,5 +1,8 @@
 """Tests for the `cli` module."""
 
+import json
+import sys
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -99,6 +102,33 @@ def test_dataset_selects_the_languages_it_contains(
     assert result.exit_code == 0
     assert mock_benchmarker_cls.call_args.kwargs["dataset"] == ["dansk"]
     assert mock_benchmarker_cls.call_args.kwargs["language"] == ["all"]
+
+
+def test_missing_gliner_extra_fails_without_cached_message(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A missing GLiNER extra is a CLI error, not an empty cached run."""
+    (tmp_path / "config.json").write_text(
+        json.dumps(
+            {
+                "architectures": ["SpanExtractor"],
+                "model_type": "extractor",
+                "architecture": "span",
+                "config_version": 3,
+                "architecture_version": 1,
+                "span_head": {"span_mode": "marker"},
+            }
+        )
+    )
+    monkeypatch.setitem(sys.modules, "gliner2", None)
+
+    result = CliRunner().invoke(
+        benchmark, ["-m", str(tmp_path), "-l", "da", "--no-save-results"]
+    )
+
+    assert result.exit_code != 0
+    assert "pip install euroeval[gliner]" in result.output
+    assert "No benchmarks to run" not in result.output
 
 
 def test_num_parameters_is_forwarded(monkeypatch: pytest.MonkeyPatch) -> None:

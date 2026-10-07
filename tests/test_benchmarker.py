@@ -26,7 +26,7 @@ from euroeval.data_models import (
     Task,
 )
 from euroeval.enums import InferenceBackend, ModelType, ShotMode, TaskGroup
-from euroeval.exceptions import HuggingFaceHubDown
+from euroeval.exceptions import HuggingFaceHubDown, NeedsExtraInstalled
 from euroeval.languages import DANISH
 from euroeval.result_cache import get_record
 from euroeval.tasks import CONTAMINATION_DETECTION, NER, SENT
@@ -602,23 +602,6 @@ def test_benchmark_openai(
     assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
 
 
-@pytest.mark.parametrize(
-    ("backend", "expected_dataset_names"),
-    [
-        (
-            InferenceBackend.GLINER,
-            ["sent-dataset", "multiple-choice-dataset", "canary-dataset"],
-        ),
-        (
-            InferenceBackend.LAYA,
-            ["sent-dataset", "multiple-choice-dataset", "canary-dataset"],
-        ),
-        (
-            InferenceBackend.TYPESAFE,
-            ["sent-dataset", "multiple-choice-dataset", "canary-dataset"],
-        ),
-    ],
-)
 def test_benchmark_plan_includes_multiple_choice_for_gliner(
     benchmarker: Benchmarker,
     model_config: ModelConfig,
@@ -1059,6 +1042,45 @@ def test_encoder_uses_test_split_in_public_benchmark_flow(
 
     assert observed
     assert all(config.evaluate_test_split is True for config in observed)
+
+
+@pytest.mark.parametrize(
+    ("backend", "expected_dataset_names"),
+    [
+        (
+            InferenceBackend.GLINER,
+            ["sent-dataset", "multiple-choice-dataset", "canary-dataset"],
+        ),
+        (
+            InferenceBackend.LAYA,
+            ["sent-dataset", "multiple-choice-dataset", "canary-dataset"],
+        ),
+        (
+            InferenceBackend.TYPESAFE,
+            ["sent-dataset", "multiple-choice-dataset", "canary-dataset"],
+        ),
+    ],
+)
+def test_fetch_model_configs_keeps_valid_models_when_extra_is_missing(
+    benchmarker: Benchmarker,
+    benchmark_config: BenchmarkConfig,
+    model_config: ModelConfig,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A missing optional extra does not prevent other selected models running."""
+
+    def get_config(*, model_id: str, benchmark_config: BenchmarkConfig) -> ModelConfig:
+        if model_id == "gliner":
+            raise NeedsExtraInstalled(extra="gliner")
+        return model_config
+
+    monkeypatch.setattr("euroeval.benchmarker.get_model_config", get_config)
+
+    configs = benchmarker._fetch_model_configs(
+        model_ids=["gliner", "valid"], benchmark_config=benchmark_config
+    )
+
+    assert configs == [model_config]
 
 
 @pytest.mark.parametrize(

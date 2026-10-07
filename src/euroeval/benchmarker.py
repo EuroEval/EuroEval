@@ -33,7 +33,12 @@ from .data_models import (
     get_package_version,
 )
 from .enums import Device, GenerativeType, InferenceBackend, ModelType, ShotMode
-from .exceptions import HuggingFaceHubDown, InvalidBenchmark, InvalidModel
+from .exceptions import (
+    HuggingFaceHubDown,
+    InvalidBenchmark,
+    InvalidModel,
+    NeedsExtraInstalled,
+)
 from .finetuning import finetune
 from .generation import generate
 from .logging_utils import adjust_logging_level, get_pbar, log, log_once
@@ -1608,6 +1613,7 @@ class Benchmarker:
             A list of model configurations.
         """
         configs: list["ModelConfig"] = []
+        missing_extras: list[NeedsExtraInstalled] = []
         for model_id in get_pbar(
             iterable=model_ids,
             desc="Fetching model configurations",
@@ -1619,8 +1625,14 @@ class Benchmarker:
                         model_id=model_id, benchmark_config=benchmark_config
                     )
                 )
+            except NeedsExtraInstalled as e:
+                missing_extras.append(e)
             except InvalidModel as e:
                 log(e.message, level=logging.ERROR)
+        if not configs and missing_extras:
+            raise missing_extras[0]
+        for error in missing_extras:
+            log(error.message, level=logging.ERROR)
         return configs
 
     def _generate_summary_message(
