@@ -118,3 +118,17 @@ ed74fe79644a  # euroeval/private_canary.py, scripts/canary/run_private_canary_ex
 0fab7ac216e4  # scripts/canary staged output validation phases
 3f38679ad63b  # euroeval/benchmark_modules prepare_dataset helper wrappers (incl. zero-shot classifier)
 b80c76a4c146  # hf/vllm model_exists: parallel checks, intentionally separate
+
+
+# ---------- Backend interface wrappers: shared helpers already own the common logic ----------
+
+494325a47945  # euroeval/benchmark_modules label-extraction interface wrappers; shared helper owns logic
+8296d291f455  # euroeval/benchmark_modules dataset-preparation wrappers; backend options differ, helper owns logic
+cb672719781f  # euroeval/benchmark_modules/zero_shot_classifier.py, euroeval/benchmark_modules/kev.py; backend-specific raw-text preservation and validation
+
+
+# ---------- Backend-specific model behaviour: merging would obscure validation or generation semantics ----------
+
+412e08f590f4  # euroeval/benchmark_modules/zero_shot_classifier.py, euroeval/benchmark_modules/typesafe.py, euroeval/benchmark_modules/kev.py, euroeval/benchmark_modules/dummy.py; backend-specific generation semantics
+6c1ab1274c0d  # euroeval/benchmark_modules/kev.py, euroeval/benchmark_modules/gliner.py, euroeval/benchmark_modules/zero_shot_classifier.py, euroeval/benchmark_modules/typesafe.py; backend-specific validation/config
+f6a57cfb9432  # euroeval/benchmark_modules/zero_shot_classifier.py, euroeval/benchmark_modules/typesafe.py; backend-specific config refresh
