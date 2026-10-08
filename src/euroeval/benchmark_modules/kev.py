@@ -136,7 +136,7 @@ class KevModel(BenchmarkModule):
             state = str(text)
             if task_group is TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
                 state, options = parse_bare_question_and_choices(text=state)
-                if not state or len(options) < 2 or len(set(options)) != len(options):
+                if not state or len(options) < 2:
                     raise InvalidBenchmark(
                         f"Kev could not parse multiple-choice options from {text!r}."
                     )

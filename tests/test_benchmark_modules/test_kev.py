@@ -289,6 +289,83 @@ def test_load_uses_requested_revision_and_initialises_extractor(
     assert model.buffer["first_label_token_mapping"] is True
 
 
+def test_multiple_choice_accepts_repeated_option_bodies_with_distinct_letters(
+    dataset_config: DatasetConfig,
+) -> None:
+    """Repeated choice text remains represented by its separate answer letters.
+
+    Args:
+        dataset_config: The multiple-choice test dataset configuration.
+    """
+
+    class FakeModel:
+        """Stand in for the pointer-head model while recording its input."""
+
+        def __init__(self) -> None:
+            """Initialize the collected input records."""
+            self.records: list[dict] = []
+
+        def encode(
+            self,
+            tokenizer: object,
+            record: dict,
+            *,
+            strict: bool,
+            max_state: int,
+            max_branch: int,
+        ) -> dict:
+            """Collect the input record for assertions.
+
+            Args:
+                tokenizer: The unused tokenizer stand-in.
+                record: The constructed Kev input record.
+                strict: Whether strict encoding was requested.
+                max_state: The maximum state length.
+                max_branch: The maximum branch length.
+
+            Returns:
+                The unchanged record.
+            """
+            self.records.append(record)
+            return record
+
+        def probs(self, encoded: dict) -> list[torch.Tensor]:
+            """Return probabilities for the four positional choices.
+
+            Args:
+                encoded: The encoded record supplied to the fake head.
+
+            Returns:
+                Controlled probabilities for the four choices.
+            """
+            return [torch.tensor([0.1, 0.2, 0.3, 0.4])]
+
+    fake = FakeModel()
+    model = _make_model(dataset_config, fake)
+    model.dataset_config.task.task_group = TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+    model.dataset_config.labels = ["a", "b", "c", "d"]
+    model.dataset_config.prompt_label_mapping = {letter: letter for letter in "abcd"}
+    prompt = (
+        "Quins són els drets laborals?\n"
+        "A. Drets dels treballadors\n"
+        "B. Drets dels treballadors\n"
+        "C. Dret a l'habitatge\n"
+        "D. Dret a la salut"
+    )
+
+    output = model.generate({"text": [prompt]})
+
+    assert fake.records[0]["questions"][0]["options"] == [
+        "Drets dels treballadors",
+        "Drets dels treballadors",
+        "Dret a l'habitatge",
+        "Dret a la salut",
+    ]
+    assert output.sequences == ["d"]
+    assert output.scores is not None
+    assert [label for label, _ in output.scores[0][0]] == ["d", "c", "b", "a"]
+
+
 def test_multiple_choice_accepts_variable_options_without_fixed_labels(
     dataset_config: DatasetConfig,
 ) -> None:
