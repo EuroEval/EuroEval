@@ -227,8 +227,9 @@ def test_apply_vercel_adds_atomically_and_validates_metadata(
         '{"projectId":"project-id","orgId":"team-id","projectName":"euroeval"}',
         encoding="utf-8",
     )
-    monkeypatch.setattr(operations, "source_versions", lambda: ("1.0", "1.0"))
+    monkeypatch.setattr(operations, "source_versions", lambda: ("18.3.0.dev", "1.0"))
     values = {name: f"value-{name}" for name in operations.REQUIRED_ENVIRONMENT}
+    values.pop("EUROEVAL_VERSION")
     values.update(
         {
             "VERCEL_PROJECT_ID": "project-id",
@@ -255,7 +256,8 @@ def test_apply_vercel_adds_atomically_and_validates_metadata(
             ]
             return operations.CommandResult(0, json.dumps(metadata))
         assert "env" in command and "add" in command
-        assert kwargs["input_text"] == values[command[3]] + "\n"
+        expected_value = values.get(command[3], "18.3.0")
+        assert kwargs["input_text"] == expected_value + "\n"
         assert "--force" in command and "--yes" in command and "--type" in command
         return operations.CommandResult(0)
 
@@ -658,6 +660,7 @@ def test_plan_does_not_run_commands_or_print_secret_values(
     assert "EU creation requires an eligible organisation plan" in output
     assert "US requires an explicit data-residency decision" in output
     assert "metadata cannot verify an existing bucket's region" in output
+    assert "euroeval_version=18.3.0" in output
 
 
 def test_redis_requires_exact_pong_and_never_prints_url(
@@ -679,6 +682,17 @@ def test_redis_requires_exact_pong_and_never_prints_url(
     operations.print_diagnostics(diagnostics)
     assert diagnostics[0].failed
     assert url not in capsys.readouterr().out
+
+
+def test_release_version_normalisation_only_removes_source_marker() -> None:
+    """Source and PyPI versions align without hiding a different dev release."""
+    assert operations.normalise_version("18.3.0") == "18.3.0"
+    assert operations.normalise_version("18.3.0.dev") == "18.3.0"
+    assert operations.normalise_version("18.3.0.dev0") == "18.3.0"
+    assert operations.normalise_version("18.3.0.dev1") == "18.3.0.dev1"
+    assert operations.normalise_version("18.4.0") != operations.normalise_version(
+        "18.3.0.dev"
+    )
 
 
 def test_reuse_vercel_kv_fails_before_mutation_for_missing_source(

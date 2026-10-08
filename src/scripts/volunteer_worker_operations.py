@@ -969,7 +969,7 @@ def apply_vercel(*, environment: dict[str, str]) -> list[Diagnostic]:
         return identity
     euroeval_version, worker_version = source_versions()
     values = dict(environment)
-    values.setdefault("EUROEVAL_VERSION", euroeval_version)
+    values.setdefault("EUROEVAL_VERSION", normalise_version(euroeval_version))
     values.setdefault("VOLUNTEER_WORKER_VERSION", worker_version)
     missing = [name for name in REQUIRED_ENVIRONMENT if not values.get(name)]
     if missing:
@@ -1083,6 +1083,15 @@ def check_vercel(*, environment: dict[str, str]) -> list[Diagnostic]:
             )
         )
     return result
+
+
+def normalise_version(value: str) -> str:
+    """Treat the source-only trailing development marker as its release version.
+
+    Returns:
+        Normalised version, preserving any genuinely different development release.
+    """
+    return re.sub(r"\.dev(?:0)?$", "", value)
 
 
 def source_versions() -> tuple[str, str]:
@@ -1421,15 +1430,6 @@ def check_policy(*, environment: dict[str, str]) -> list[Diagnostic]:
     return result
 
 
-def normalise_version(value: str) -> str:
-    """Normalise the broker's accepted trailing development notation.
-
-    Returns:
-        Normalised version.
-    """
-    return value[:-4] + ".dev0" if value.endswith(".dev") else value
-
-
 def check_redis(*, environment: dict[str, str]) -> list[Diagnostic]:
     """Perform an Upstash data-plane PING when both values are configured.
 
@@ -1741,7 +1741,10 @@ def print_plan(*, environment: dict[str, str]) -> None:
     print("5. AUTOMATED CHECK: run safe GET/OPTIONS and unauthenticated POST probes.")
     print(f"Defaults: repository={REPOSITORY}; base_url={PRODUCTION_BASE_URL};")
     print(f"  results_bucket={RESULTS_BUCKET}; image={IMAGE_REPOSITORY};")
-    print(f"  euroeval_version={euroeval_version}; worker_version={worker_version}")
+    print(
+        f"  euroeval_version={normalise_version(euroeval_version)}; "
+        f"worker_version={worker_version}"
+    )
     print("  hf_region=eu (HF bucket creation default)")
     print(
         "EU creation requires an eligible organisation plan; HF metadata cannot "
