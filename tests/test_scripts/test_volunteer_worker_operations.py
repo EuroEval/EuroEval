@@ -199,6 +199,32 @@ def test_apply_hf_uses_explicit_us_region(monkeypatch: pytest.MonkeyPatch) -> No
     assert ["--region", "us"] == commands[2][7:9]
 
 
+def test_apply_rejects_noncanonical_euroeval_version_before_mutation(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Explicit version aliases and mismatches cannot reach an apply mutation."""
+    called = False
+
+    def unexpected_apply() -> list[operations.Diagnostic]:
+        nonlocal called
+        called = True
+        return []
+
+    monkeypatch.setattr(operations, "source_versions", lambda: ("18.3.0.dev", "1.0.0"))
+    monkeypatch.setattr(operations, "apply_github", unexpected_apply)
+    for configured in ("18.3.0.dev", "18.3.0.dev0", "18.3.0.dev1", "18.4.0"):
+        assert (
+            operations.apply(
+                environment={"EUROEVAL_VERSION": configured},
+                components={"github"},
+                confirmed=True,
+            )
+            == 2
+        )
+    assert not called
+    assert "no changes were made" in capsys.readouterr().out
+
+
 def test_apply_requires_explicit_component_and_confirmation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -267,6 +293,65 @@ def test_apply_vercel_adds_atomically_and_validates_metadata(
     assert not any(command[2] == "rm" for command in commands if len(command) > 2)
     assert all(
         value not in command for command in commands for value in values.values()
+    )
+
+
+def test_check_policy_rejects_noncanonical_version_and_exact_policy_mismatch(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Policy checks diagnose version aliases and stale exact release versions."""
+    monkeypatch.chdir(tmp_path)
+    policy_path = tmp_path / "api/worker/scope-policy.json"
+    policy_path.parent.mkdir(parents=True)
+    policy_path.write_text(
+        json.dumps(
+            {
+                "policy_version": "volunteer-scope/18.3.0",
+                "policies": [
+                    {
+                        "euroeval_version": "18.3.0",
+                        "model_type": "encoder",
+                        "language": "da",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(operations, "source_versions", lambda: ("18.3.0.dev", "1.0.0"))
+    monkeypatch.setattr(
+        operations,
+        "run_command",
+        lambda *args, **kwargs: operations.CommandResult(
+            returncode=0, stdout="", stderr=""
+        ),
+    )
+
+    configured = operations.check_policy(
+        environment={"EUROEVAL_VERSION": "18.3.0.dev0"}
+    )
+    assert any(
+        item.failed and "EUROEVAL_VERSION" in item.message for item in configured
+    )
+
+    policy_path.write_text(
+        json.dumps(
+            {
+                "policy_version": "volunteer-scope/18.3.0",
+                "policies": [
+                    {
+                        "euroeval_version": "18.3.0.dev0",
+                        "model_type": "encoder",
+                        "language": "da",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    mismatch = operations.check_policy(environment={})
+    assert any(
+        item.failed and "generated policy version" in item.message for item in mismatch
     )
 
 

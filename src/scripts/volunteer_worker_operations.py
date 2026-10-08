@@ -166,6 +166,16 @@ def apply(
     Returns:
         Process exit status.
     """
+    configured_version = environment.get("EUROEVAL_VERSION")
+    if configured_version:
+        euroeval_version, _ = source_versions()
+        expected_version = normalise_version(euroeval_version)
+        if configured_version != expected_version:
+            print(
+                "EUROEVAL_VERSION must exactly match the canonical source version "
+                f"{expected_version}; no changes were made."
+            )
+            return 2
     if local_secrets:
         if components or reuse_vercel_kv:
             print("--local-secrets cannot be combined with another apply scope.")
@@ -1374,9 +1384,8 @@ def check_policy(*, environment: dict[str, str]) -> list[Diagnostic]:
         )
     ]
     configured = environment.get("EUROEVAL_VERSION")
-    if configured and normalise_version(configured) != normalise_version(
-        euroeval_version
-    ):
+    expected_version = normalise_version(euroeval_version)
+    if configured and configured != expected_version:
         result.append(
             Diagnostic("policy", "drift", "EUROEVAL_VERSION differs from source", True)
         )
@@ -1389,9 +1398,7 @@ def check_policy(*, environment: dict[str, str]) -> list[Diagnostic]:
         policy_versions.add(
             str(policy["policy_version"]).removeprefix("volunteer-scope/")
         )
-        if {normalise_version(value) for value in policy_versions} != {
-            normalise_version(euroeval_version)
-        }:
+        if policy_versions != {expected_version}:
             result.append(
                 Diagnostic(
                     "policy",
