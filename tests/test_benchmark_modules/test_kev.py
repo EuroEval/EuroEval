@@ -346,11 +346,14 @@ def test_multiple_choice_accepts_repeated_option_bodies_with_distinct_letters(
     model.dataset_config.labels = ["a", "b", "c", "d"]
     model.dataset_config.prompt_label_mapping = {letter: letter for letter in "abcd"}
     prompt = (
-        "Quins són els drets laborals?\n"
-        "A. Drets dels treballadors\n"
-        "B. Drets dels treballadors\n"
-        "C. Dret a l'habitatge\n"
-        "D. Dret a la salut"
+        "Les ______ són les obligacions dels treballadors envers el seu "
+        "empleador, basades en contractes individuals i en lleis més àmplies "
+        "d'ocupació.\n"
+        "Opciones:\n"
+        "a. Drets dels treballadors\n"
+        "b. Drets dels treballadors\n"
+        "c. Deures de l'empleador\n"
+        "d. Deures dels treballadors"
     )
 
     output = model.generate({"text": [prompt]})
@@ -358,8 +361,8 @@ def test_multiple_choice_accepts_repeated_option_bodies_with_distinct_letters(
     assert fake.records[0]["questions"][0]["options"] == [
         "Drets dels treballadors",
         "Drets dels treballadors",
-        "Dret a l'habitatge",
-        "Dret a la salut",
+        "Deures de l'empleador",
+        "Deures dels treballadors",
     ]
     assert output.sequences == ["d"]
     assert output.scores is not None
