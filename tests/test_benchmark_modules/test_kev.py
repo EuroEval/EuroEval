@@ -23,9 +23,15 @@ from euroeval.tasks import KNOW
 def test_generate_rejects_malformed_probabilities(
     dataset_config: DatasetConfig,
 ) -> None:
-    """Malformed pointer output fails clearly instead of producing fake scores."""
+    """Malformed pointer output fails clearly instead of producing fake scores.
+
+    Args:
+        dataset_config: The test dataset configuration.
+    """
 
     class FakeModel:
+        """Stand in for the pointer-head model during an offline test."""
+
         def encode(
             self,
             tokenizer: object,
@@ -35,9 +41,29 @@ def test_generate_rejects_malformed_probabilities(
             max_state: int = 0,
             max_branch: int = 0,
         ) -> dict:
+            """Return the record in the shape the fake pointer head consumes.
+
+            Args:
+                tokenizer: The unused tokenizer stand-in.
+                record: The constructed Kev input record.
+                strict: Whether the record should use strict encoding.
+                max_state: The maximum state length requested by the adapter.
+                max_branch: The maximum branch length requested by the adapter.
+
+            Returns:
+                The unchanged input record.
+            """
             return record
 
         def probs(self, encoded: dict) -> list[torch.Tensor]:
+            """Return controlled class probabilities for this test.
+
+            Args:
+                encoded: The encoded record supplied to the fake head.
+
+            Returns:
+                Controlled probabilities for the available choices.
+            """
             return [torch.tensor([0.2, 0.2])]
 
     model = _make_model(dataset_config, FakeModel())
@@ -47,6 +73,10 @@ def test_generate_rejects_malformed_probabilities(
 
 def _make_model(dataset_config: DatasetConfig, fake_model: object) -> KevModel:
     """Build a Kev adapter around fakes without mutating shared task definitions.
+
+    Args:
+        dataset_config: The dataset configuration to copy for this test.
+        fake_model: The stand-in for the loaded Kev model.
 
     Returns:
         The adapter configured around the fake model.
@@ -69,10 +99,17 @@ def _make_model(dataset_config: DatasetConfig, fake_model: object) -> KevModel:
 def test_generate_scores_each_sample_and_passes_serving_limit(
     dataset_config: DatasetConfig,
 ) -> None:
-    """The decision head receives a serving limit and outputs preserve each sample."""
+    """The decision head receives a serving limit and outputs preserve each sample.
+
+    Args:
+        dataset_config: The test dataset configuration.
+    """
 
     class FakeModel:
+        """Stand in for the pointer-head model during an offline test."""
+
         def __init__(self) -> None:
+            """Initialize the fake model's collected input records."""
             self.records = []
 
         def encode(
@@ -84,12 +121,32 @@ def test_generate_scores_each_sample_and_passes_serving_limit(
             max_state: int = 0,
             max_branch: int = 0,
         ) -> dict:
+            """Return the record in the shape the fake pointer head consumes.
+
+            Args:
+                tokenizer: The unused tokenizer stand-in.
+                record: The constructed Kev input record.
+                strict: Whether the record should use strict encoding.
+                max_state: The maximum state length requested by the adapter.
+                max_branch: The maximum branch length requested by the adapter.
+
+            Returns:
+                The unchanged input record.
+            """
             assert strict is True
             assert (max_state, max_branch) == (65_536, 73_728)
             self.records.append(record)
             return record
 
         def probs(self, encoded: dict) -> list[torch.Tensor]:
+            """Return controlled class probabilities for this test.
+
+            Args:
+                encoded: The encoded record supplied to the fake head.
+
+            Returns:
+                Controlled probabilities for the available choices.
+            """
             return [torch.tensor([0.7, 0.3])]
 
     fake = FakeModel()
@@ -108,7 +165,11 @@ def test_generate_scores_each_sample_and_passes_serving_limit(
 def test_get_model_config_selects_kev_dispatch(
     benchmark_config: BenchmarkConfig,
 ) -> None:
-    """Kev IDs map to the independent Kev inference backend."""
+    """Kev IDs map to the independent Kev inference backend.
+
+    Args:
+        benchmark_config: The benchmark settings used for model detection.
+    """
     config = KevModel.get_model_config("org/kev-model@release", benchmark_config)
     assert config.model_id == "org/kev-model"
     assert config.revision == "release"
@@ -117,7 +178,11 @@ def test_get_model_config_selects_kev_dispatch(
 
 
 def test_kev_forces_zero_shot(benchmark_config: BenchmarkConfig) -> None:
-    """The classifier uses the existing zero-shot-only shot policy."""
+    """The classifier uses the existing zero-shot-only shot policy.
+
+    Args:
+        benchmark_config: The benchmark settings used for shot selection.
+    """
     config = KevModel.get_model_config(
         model_id="jaredpalmer/kev-0.8b", benchmark_config=benchmark_config
     )
@@ -131,20 +196,50 @@ def test_load_uses_requested_revision_and_initialises_extractor(
     benchmark_config: BenchmarkConfig,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Load the selected checkpoint and preserve classifier state."""
+    """Load the selected checkpoint and preserve classifier state.
+
+    Args:
+        dataset_config: The dataset configuration for the Kev model.
+        benchmark_config: The benchmark settings used to load the model.
+        monkeypatch: The fixture replacing checkpoint-loading dependencies.
+    """
     requested: dict[str, object] = {}
 
     class FakeCheckpoint:
+        """Capture options sent to Kev's checkpoint loader."""
+
         def __init__(self, path: str) -> None:
+            """Capture the options passed to this test double.
+
+            Args:
+                path: The resolved checkpoint path.
+            """
             requested["path"] = path
 
         def load(self, device: str, options: object) -> tuple[object, object]:
+            """Record checkpoint options and provide a fake loaded model.
+
+            Args:
+                device: The requested inference device.
+                options: The requested Kev load options.
+
+            Returns:
+                A tokenizer and fake loaded model.
+            """
             requested["device"] = device
             requested["options"] = options
             return object(), SimpleNamespace(eval=lambda: None)
 
     class FakeLoadOptions:
+        """Capture the backend and dtype requested by EuroEval."""
+
         def __init__(self, *, backend: str, dtype: torch.dtype) -> None:
+            """Capture the options passed to this test double.
+
+            Args:
+                backend: The requested model backend.
+                dtype: The requested model dtype.
+            """
             requested["backend"] = backend
             requested["dtype"] = dtype
 
@@ -159,6 +254,17 @@ def test_load_uses_requested_revision_and_initialises_extractor(
     def fake_resolve(
         *, model_id: str, revision: str | None, cache_dir: str, token: str | None
     ) -> str:
+        """Record the requested revision without downloading a checkpoint.
+
+        Args:
+            model_id: The requested checkpoint ID.
+            revision: The requested checkpoint revision.
+            cache_dir: The unused checkpoint cache directory.
+            token: The unused Hub token.
+
+        Returns:
+            The fake local checkpoint directory.
+        """
         requested["model_id"] = model_id
         requested["revision"] = revision
         return "/cache/selected-revision"
@@ -186,9 +292,15 @@ def test_load_uses_requested_revision_and_initialises_extractor(
 def test_multiple_choice_accepts_variable_options_without_fixed_labels(
     dataset_config: DatasetConfig,
 ) -> None:
-    """Community datasets without fixed labels can still score their answer choices."""
+    """Community datasets without fixed labels can still score their answer choices.
+
+    Args:
+        dataset_config: The multiple-choice test dataset configuration.
+    """
 
     class FakeModel:
+        """Stand in for the pointer-head model during an offline test."""
+
         def encode(
             self,
             tokenizer: object,
@@ -198,10 +310,30 @@ def test_multiple_choice_accepts_variable_options_without_fixed_labels(
             max_branch: int,
             strict: bool,
         ) -> dict:
+            """Return the record in the shape the fake pointer head consumes.
+
+            Args:
+                tokenizer: The unused tokenizer stand-in.
+                record: The constructed Kev input record.
+                max_state: The maximum state length requested by the adapter.
+                max_branch: The maximum branch length requested by the adapter.
+                strict: Whether the record should use strict encoding.
+
+            Returns:
+                The unchanged input record.
+            """
             assert record["questions"][0]["options"] == ["apple", "pear"]
             return record
 
         def probs(self, encoded: dict) -> list[torch.Tensor]:
+            """Return controlled class probabilities for this test.
+
+            Args:
+                encoded: The encoded record supplied to the fake head.
+
+            Returns:
+                Controlled probabilities for the available choices.
+            """
             return [torch.tensor([0.1, 0.9])]
 
     model = _make_model(dataset_config, FakeModel())
@@ -217,10 +349,17 @@ def test_multiple_choice_accepts_variable_options_without_fixed_labels(
 def test_multiple_choice_uses_per_sample_options_and_stable_letters(
     dataset_config: DatasetConfig,
 ) -> None:
-    """Each sample is classified over its own choices and returns stable letters."""
+    """Each sample is classified over its own choices and returns stable letters.
+
+    Args:
+        dataset_config: The multiple-choice test dataset configuration.
+    """
 
     class FakeModel:
+        """Stand in for the pointer-head model during an offline test."""
+
         def __init__(self) -> None:
+            """Initialize the fake model's collected input records."""
             self.records = []
 
         def encode(
@@ -232,10 +371,30 @@ def test_multiple_choice_uses_per_sample_options_and_stable_letters(
             max_state: int = 0,
             max_branch: int = 0,
         ) -> dict:
+            """Return the record in the shape the fake pointer head consumes.
+
+            Args:
+                tokenizer: The unused tokenizer stand-in.
+                record: The constructed Kev input record.
+                strict: Whether the record should use strict encoding.
+                max_state: The maximum state length requested by the adapter.
+                max_branch: The maximum branch length requested by the adapter.
+
+            Returns:
+                The unchanged input record.
+            """
             self.records.append(record)
             return record
 
         def probs(self, encoded: dict) -> list[torch.Tensor]:
+            """Return controlled class probabilities for this test.
+
+            Args:
+                encoded: The encoded record supplied to the fake head.
+
+            Returns:
+                Controlled probabilities for the available choices.
+            """
             return [torch.tensor([0.1, 0.9])]
 
     fake = FakeModel()
@@ -261,7 +420,11 @@ def test_multiple_choice_uses_per_sample_options_and_stable_letters(
 
 
 def test_prepare_dataset_rejects_few_shot(dataset_config: DatasetConfig) -> None:
-    """Kev cannot consume EuroEval few-shot demonstrations."""
+    """Kev cannot consume EuroEval few-shot demonstrations.
+
+    Args:
+        dataset_config: The test dataset configuration.
+    """
     model = _make_model(dataset_config, SimpleNamespace())
     model.benchmark_config.few_shot = True
     with pytest.raises(InvalidBenchmark, match="does not support few-shot"):
@@ -275,33 +438,80 @@ def test_prepare_dataset_rejects_few_shot(dataset_config: DatasetConfig) -> None
 def test_prepare_dataset_restores_raw_text(
     dataset_config: DatasetConfig, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Kev applies the shared task preparation while exposing original input text."""
+    """Kev applies the shared task preparation while exposing original input text.
+
+    Args:
+        dataset_config: The test dataset configuration.
+        monkeypatch: The fixture replacing the dataset preparation helper.
+    """
     original = ["raw sample"]
     mapped = ["rendered prompt"]
     calls = {}
 
     class Split:
+        """Represent a minimal test dataset split."""
+
         def __init__(self, text: list[str]) -> None:
+            """Store the fake split's text column.
+
+            Args:
+                text: The column contents of the fake split.
+            """
             self.text = text
 
         def __getitem__(self, key: str) -> list[str]:
+            """Return the requested fake dataset column.
+
+            Args:
+                key: The name of the fake dataset column.
+
+            Returns:
+                The values in the requested column.
+            """
             assert key == "text"
             return self.text
 
         def add_column(self, key: str, values: list[str]) -> "Split":
+            """Return a fake split with the supplied column values.
+
+            Args:
+                key: The name of the fake dataset column.
+                values: The values to place in the fake dataset column.
+
+            Returns:
+                A fake split containing the supplied values.
+            """
             assert key == "text"
             return Split(values)
 
         def remove_columns(self, key: str) -> "Split":
+            """Return an empty fake split after removing its column.
+
+            Args:
+                key: The name of the fake dataset column.
+
+            Returns:
+                An empty fake split.
+            """
             assert key == "text"
             return Split([])
 
     class Data(dict):
+        """Hold fake dataset splits by name."""
+
         pass
 
     dataset = Data(test=Split(original))
 
     def helper(**kwargs: object) -> Data:
+        """Record dataset preparation arguments and return a fake split.
+
+        Args:
+            kwargs: The preparation settings passed by the adapter.
+
+        Returns:
+            A prepared fake dataset split.
+        """
         calls.update(kwargs)
         return Data(test=Split(mapped))
 
@@ -320,7 +530,12 @@ def test_prepare_dataset_restores_raw_text(
 def test_recognizes_only_complete_kev_checkpoints(
     tmp_path: Path, benchmark_config: BenchmarkConfig
 ) -> None:
-    """A PEFT adapter is not Kev without its trained head and adapter weights."""
+    """A PEFT adapter is not Kev without its trained head and adapter weights.
+
+    Args:
+        tmp_path: The temporary directory for incomplete and complete checkpoints.
+        benchmark_config: The benchmark settings used for model detection.
+    """
     (tmp_path / "adapter_config.json").write_text(json.dumps({"r": 8}))
     assert KevModel.model_exists(str(tmp_path), benchmark_config) is False
     (tmp_path / "adapter_model.safetensors").touch()
@@ -329,7 +544,11 @@ def test_recognizes_only_complete_kev_checkpoints(
 
 
 def test_resolve_checkpoint_path_reuses_local_directory(tmp_path: Path) -> None:
-    """Local checkpoints bypass Hub downloads."""
+    """Local checkpoints bypass Hub downloads.
+
+    Args:
+        tmp_path: The local checkpoint directory.
+    """
     assert resolve_checkpoint_path(
         model_id=str(tmp_path), revision="tag", cache_dir="cache", token="secret"
     ) == str(tmp_path)

@@ -53,6 +53,12 @@ class KevModel(BenchmarkModule):
     ) -> None:
         """Load a Kev checkpoint using Kev's canonical checkpoint loader.
 
+        Args:
+            model_config: The checkpoint identity and local model-cache directory.
+            dataset_config: The dataset and label configuration.
+            benchmark_config: The device, credentials, and evaluation settings.
+            log_metadata: Whether to log the loaded model's metadata.
+
         Raises:
             InvalidModel: If the checkpoint dependency is unavailable or ID is invalid.
         """
@@ -88,7 +94,11 @@ class KevModel(BenchmarkModule):
 
     @property
     def extract_labels_from_generation(self) -> ExtractLabelsFunction:
-        """The standard classifier output-label extractor."""
+        """The standard classifier output-label extractor.
+
+        Returns:
+            The label extractor configured for this dataset.
+        """
         return _extract_labels_from_generation_helper(
             dataset_config=self.dataset_config,
             model_config=self.model_config,
@@ -97,6 +107,9 @@ class KevModel(BenchmarkModule):
 
     def generate(self, inputs: dict[str, t.Any]) -> GenerativeModelOutput:
         """Score each sample with Kev's trained pointer head.
+
+        Args:
+            inputs: Batched examples containing the raw text to classify.
 
         Returns:
             Class predictions and their log-probability scores.
@@ -206,6 +219,10 @@ class KevModel(BenchmarkModule):
     ) -> ModelConfig:
         """Build a Kev model configuration.
 
+        Args:
+            model_id: The checkpoint ID, optionally including its revision.
+            benchmark_config: The evaluation settings and cache location.
+
         Returns:
             The generated model configuration.
 
@@ -235,8 +252,12 @@ class KevModel(BenchmarkModule):
     def model_exists(cls, model_id: str, benchmark_config: BenchmarkConfig) -> bool:
         """Recognize Kev's complete checkpoint layout without loading weights.
 
+        Args:
+            model_id: A local checkpoint path or Hugging Face repository ID.
+            benchmark_config: The credentials used to inspect a remote checkpoint.
+
         Returns:
-            True if metadata matches Kev, otherwise False or a missing-extra diagnostic.
+            Whether the directory or repository contains a complete Kev checkpoint.
         """
         bare = split_model_id(model_id=model_id).model_id
         path = Path(bare)
@@ -266,18 +287,31 @@ class KevModel(BenchmarkModule):
 
     @property
     def model_max_length(self) -> int:
-        """Kev supports extended context; defer to its checkpoint's native limits."""
+        """The maximum context length supported by Kev.
+
+        Returns:
+            The context limit in tokens.
+        """
         return 65_536
 
     @property
     def num_params(self) -> int:
-        """The loaded model's parameter count."""
+        """The loaded model's parameter count.
+
+        Returns:
+            The number of model parameters.
+        """
         return sum(parameter.numel() for parameter in self.model.parameters())
 
     def prepare_dataset(
         self, dataset: DatasetDict, task: Task, itr_idx: int
     ) -> DatasetDict:
         """Prepare task fields while restoring the raw text Kev consumes.
+
+        Args:
+            dataset: The loaded dataset splits.
+            task: The task whose fields should be prepared.
+            itr_idx: The current evaluation iteration.
 
         Returns:
             The prepared dataset with the original sample text restored.
@@ -311,7 +345,11 @@ class KevModel(BenchmarkModule):
 
     @property
     def vocab_size(self) -> int:
-        """The checkpoint tokenizer vocabulary size."""
+        """The checkpoint tokenizer vocabulary size.
+
+        Returns:
+            The number of tokens in the vocabulary.
+        """
         return len(self.tokenizer)
 
 
@@ -319,6 +357,12 @@ def resolve_checkpoint_path(
     *, model_id: str, revision: str | None, cache_dir: str, token: str | None
 ) -> str:
     """Resolve a local Kev checkpoint or download the requested Hub revision.
+
+    Args:
+        model_id: The local directory or Hub repository ID.
+        revision: The Hub revision to download, if specified.
+        cache_dir: The directory for downloaded checkpoint files.
+        token: The optional Hub access token.
 
     Returns:
         The local checkpoint directory.
