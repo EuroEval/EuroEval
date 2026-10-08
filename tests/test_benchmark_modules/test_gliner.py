@@ -79,10 +79,26 @@ class TestGLiNER:
         assert classifier.extract_labels_from_generation(
             input_batch={"prompt": [prompt]}, model_output=output
         ) == ["b"]
+        repeated_option = r"\frac{1}{2}"
+        repeated_prompt = (
+            "Beräkna uttrycket.\nSvarsalternativ:\n"
+            f"a. {repeated_option}\nb. {repeated_option}\nc. 1"
+        )
+        repeated_output = classifier.generate(inputs={"text": [repeated_prompt]})
+        assert repeated_output.sequences == ["b"]
+        repeated_question, repeated_schema = classifier.model.calls[-1]
+        assert repeated_question == "Beräkna uttrycket."
+        assert repeated_schema["answer"]["labels"] == {
+            "a": repeated_option,
+            "b": repeated_option,
+            "c": "1",
+        }
+
         for malformed in (
             "Question?",
             "Question?\nChoices:\na. first\nc. third",
-            "Question?\nChoices:\na. same\nb. same",
+            "Question?\nChoices:\na. first\nb. ",
+            "Question?\nChoices:\na. first\nb. second\nc. third\nd. fourth\ne. fifth",
         ):
             with pytest.raises(InvalidBenchmark, match="could not parse valid"):
                 classifier.generate(inputs={"text": [malformed]})
