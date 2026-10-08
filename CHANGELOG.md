@@ -28,8 +28,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- GLiNER2 knowledge-task evaluation now accepts repeated multiple-choice option text
-  while preserving each answer letter's mapping to its option.
 - Typesafe System One requests now retry transient HTTP and connection failures with
   bounded backoff, and report exhausted or permanent request failures as `InvalidModel`.
 - Laya and Typesafe per-text classifiers now use single-sample generation batches, enabling
