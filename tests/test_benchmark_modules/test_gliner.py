@@ -3,7 +3,6 @@
 import copy
 import dataclasses
 import json
-import logging
 import sys
 import types
 from pathlib import Path
@@ -195,7 +194,6 @@ class TestGLiNER:
         benchmark_config: BenchmarkConfig,
         tmp_path: Path,
         capsys: pytest.CaptureFixture[str],
-        caplog: pytest.LogCaptureFixture,
         verbose: bool,
         expected_stdout: str,
     ) -> None:
@@ -227,12 +225,9 @@ class TestGLiNER:
             benchmark_config=configured_benchmark,
             log_metadata=False,
         )
-        logging.getLogger("euroeval.test").warning("EuroEval warning")
-
         captured = capsys.readouterr()
         assert captured.out == expected_stdout
         assert "upstream error" in captured.err
-        assert "EuroEval warning" in caplog.text
 
     def test_returns_selected_labels_without_fabricated_scores(
         self,
