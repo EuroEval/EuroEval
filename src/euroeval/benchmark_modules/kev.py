@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import inspect
 import math
 import typing as t
 from pathlib import Path
@@ -22,7 +21,7 @@ from ..data_models import (
 from ..enums import BatchingPreference, InferenceBackend, ModelType, TaskGroup
 from ..exceptions import InvalidBenchmark, InvalidModel
 from ..model_cache import create_model_cache_dir
-from ..string_utils import split_model_id
+from ..string_utils import extract_multiple_choice_labels, split_model_id
 from ..task_group_utils.cloze import parse_bare_question_and_choices
 from ..types import ExtractLabelsFunction
 from ..utils import get_hf_token
@@ -41,6 +40,7 @@ class KevModel(BenchmarkModule):
     this backend never substitutes a generic text-classification head.
     """
 
+    fresh_model = False
     batching_preference = BatchingPreference.SINGLE_SAMPLE
     high_priority = True
 
@@ -79,8 +79,8 @@ class KevModel(BenchmarkModule):
             LoadOptions(backend="torch", dtype=torch.float32),
         )
         self.model.eval()
-        self.buffer["first_label_token_mapping"] = False
         super().__init__(model_config, dataset_config, benchmark_config, log_metadata)
+        self.buffer["first_label_token_mapping"] = True
 
     @property
     def data_collator(self) -> t.Callable:
@@ -111,8 +111,6 @@ class KevModel(BenchmarkModule):
             TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
         ):
             raise InvalidBenchmark(f"Kev does not support task group {task_group!r}.")
-        if self.dataset_config.task.requires_logprobs:
-            raise InvalidBenchmark("Kev does not expose token-level log probabilities.")
         texts = inputs.get("text")
         if texts is None:
             raise InvalidBenchmark("The inputs must contain a 'text' key.")
@@ -120,61 +118,51 @@ class KevModel(BenchmarkModule):
             self.dataset_config.prompt_label_mapping[label]
             for label in self.dataset_config.id2label.values()
         ]
-        if len(labels) < 2:
+        if task_group is TaskGroup.SEQUENCE_CLASSIFICATION and len(labels) < 2:
             raise InvalidBenchmark("Kev classification requires at least two labels.")
         sequences: list[str] = []
+        scores: list[list[list[tuple[str, float]]]] = []
         for text in texts:
-            options = labels
-            output_labels = labels
             state = str(text)
             if task_group is TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-                state, parsed = parse_bare_question_and_choices(text=state)
-                if not state or len(parsed) < 2 or len(set(parsed)) != len(parsed):
+                state, options = parse_bare_question_and_choices(text=state)
+                if not state or len(options) < 2 or len(set(options)) != len(options):
                     raise InvalidBenchmark(
                         f"Kev could not parse multiple-choice options from {text!r}."
                     )
-                options = parsed
-                if len(parsed) != len(labels):
+                output_labels = list(
+                    extract_multiple_choice_labels(
+                        prompt=str(text), candidate_labels=labels
+                    )
+                )
+                if len(options) != len(output_labels):
                     raise InvalidBenchmark(
                         "Kev multiple-choice option count does not match the dataset "
-                        f"labels ({len(parsed)} options, {len(labels)} labels)."
+                        f"labels ({len(options)} options, {len(output_labels)} labels)."
                     )
-                if len(parsed) > 26:
-                    raise InvalidBenchmark(
-                        "Kev supports at most 26 multiple-choice options."
-                    )
-                output_labels = [chr(ord("A") + index) for index in range(len(parsed))]
+            else:
+                options = labels
+                output_labels = labels
             record = {
                 "state": state,
                 "questions": [
                     {
-                        "instr": self.dataset_config.instruction_prompt.replace(
-                            "{text}", ""
+                        "instr": self.dataset_config.instruction_prompt.format(
+                            text="", labels_str=self.dataset_config.get_labels_str()
                         ).strip(),
                         "options": options,
-                        "label": options[0],
+                        "label": 0,
                     }
                 ],
             }
             try:
-                encode_parameters = inspect.signature(self.model.encode).parameters
-                encode_kwargs: dict[str, t.Any] = {"strict": True}
-                length_parameter = next(
-                    (
-                        parameter
-                        for parameter in ("max_length", "max_len")
-                        if parameter in encode_parameters
-                    ),
-                    "max_length"
-                    if any(
-                        parameter.kind is inspect.Parameter.VAR_KEYWORD
-                        for parameter in encode_parameters.values()
-                    )
-                    else None,
+                encoded = self.model.encode(
+                    self.tokenizer,
+                    record,
+                    max_state=self.model_max_length,
+                    max_branch=self.model_max_length + 8192,
+                    strict=True,
                 )
-                if length_parameter is not None:
-                    encode_kwargs[length_parameter] = self.model_max_length
-                encoded = self.model.encode(self.tokenizer, record, **encode_kwargs)
                 probs = self.model.probs(encoded)
                 probabilities = probs[0].detach().cpu().tolist()
             except (ValueError, TypeError, IndexError, AttributeError) as exc:
@@ -198,7 +186,15 @@ class KevModel(BenchmarkModule):
                 reverse=True,
             )
             sequences.append(ranked[0][0])
-        return GenerativeModelOutput(sequences=sequences)
+            scores.append(
+                [
+                    [
+                        (label, math.log(max(probability, 1e-12)))
+                        for label, probability in ranked
+                    ]
+                ]
+            )
+        return GenerativeModelOutput(sequences=sequences, scores=scores)
 
     @property
     def generative_type(self) -> None:

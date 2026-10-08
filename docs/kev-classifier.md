@@ -14,15 +14,15 @@ Kev is not the unrelated `kev` package on PyPI. Install upstream from its Git re
 uv pip install --no-deps 'git+https://github.com/jaredpalmer/kev.git'
 ```
 
-`--no-deps` avoids replacing EuroEval's pinned `scikit-learn==1.6.1`; upstream metadata
-currently requests scikit-learn >=1.9.1 and may impose Python bounds that conflict with
-EuroEval. This command installs only Kev itself, so install/validate the runtime
-requirements listed by the upstream project manually in an environment compatible with
-both projects. EuroEval checks that `kev.checkpoint` imports before recognizing a
-checkpoint; it does not claim that the upstream dependency set is fully compatible.
+`--no-deps` avoids replacing EuroEval's pinned `scikit-learn==1.6.1`. Kev currently
+requires `scikit-learn>=1.9.1`, `torch>=2.6,<2.9`, and `transformers>=5.17,<6`,
+which do not all match EuroEval's environment. The loader only uses Kev's inference
+code, but this dependency override is **not validated** against real weights. Check
+upstream compatibility before relying on benchmark results. A checkpoint is detected
+from its files even if Kev is not installed; loading then reports how to install it.
 
 The adapter supports sequence classification and multiple-choice classification in
-zero-shot mode only. Like other zero-shot classifier backends, it does not support
-few-shot demonstrations or token-level log probabilities. Model detection reads small
+zero-shot mode only. It returns a probability for each choice, not generated-token
+probabilities; few-shot demonstrations are not supported. Model detection reads small
 Hub file metadata and does not fetch model weights; weight files are fetched only when
 the model is loaded.

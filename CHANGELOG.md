@@ -9,10 +9,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Add an in-process Kev pointer-head zero-shot classifier backend for local and Hub checkpoints.
-
-### Added
-
+- Added an in-process Kev pointer-head zero-shot classifier backend for local and Hub
+  checkpoints.
 - Added the optional `gliner` zero-shot sequence and multiple-choice classification
   backend for `fastino/GLiNER2.5-Decide` and compatible GLiNER2 checkpoints. It returns
   selected labels without fabricating per-label probabilities; install with
