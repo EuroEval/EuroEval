@@ -7,6 +7,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [v18.3.0] - 2026-10-08
+
 ### Added
 
 - Added support to evaluate zero-shot classifiers, aka decision models. This includes
