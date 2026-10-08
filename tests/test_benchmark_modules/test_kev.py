@@ -426,6 +426,92 @@ def test_multiple_choice_accepts_variable_options_without_fixed_labels(
     assert [label for label, _ in output.scores[0][0]] == ["b", "a"]
 
 
+def test_multiple_choice_labels_follow_parsed_options_not_question_text(
+    dataset_config: DatasetConfig,
+) -> None:
+    """Kev scores and instructs with only the options parsed from each sample.
+
+    Args:
+        dataset_config: The multiple-choice test dataset configuration.
+    """
+
+    class FakeModel:
+        """Stand in for the pointer-head model during an offline test."""
+
+        def __init__(self) -> None:
+            """Initialize collected input records."""
+            self.records = []
+
+        def encode(
+            self,
+            tokenizer: object,
+            record: dict,
+            *,
+            max_state: int,
+            max_branch: int,
+            strict: bool,
+        ) -> dict:
+            """Collect each constructed Kev input record.
+
+            Args:
+                tokenizer: The unused tokenizer stand-in.
+                record: The constructed Kev input record.
+                max_state: The maximum state length requested by the adapter.
+                max_branch: The maximum branch length requested by the adapter.
+                strict: Whether strict encoding was requested.
+
+            Returns:
+                The unchanged input record.
+            """
+            self.records.append(record)
+            return record
+
+        def probs(self, encoded: dict) -> list[torch.Tensor]:
+            """Return a normalized distribution over the current options.
+
+            Args:
+                encoded: The encoded record supplied to the fake head.
+
+            Returns:
+                Controlled probabilities for the available choices.
+            """
+            return [
+                torch.full(
+                    (len(encoded["questions"][0]["options"]),),
+                    1.0 / len(encoded["questions"][0]["options"]),
+                )
+            ]
+
+    fake = FakeModel()
+    model = _make_model(dataset_config, fake)
+    model.dataset_config.task.task_group = TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+    model.dataset_config.labels = ["a", "b", "c"]
+    model.dataset_config.prompt_label_mapping = {label: label for label in "abc"}
+    output = model.generate(
+        {
+            "text": [
+                "Question mentions c. in ordinary text?\na. apple\nb. pear",
+                "Another question?\na. red\nb. blue\nc. green",
+            ]
+        }
+    )
+
+    assert [record["questions"][0]["options"] for record in fake.records] == [
+        ["apple", "pear"],
+        ["red", "blue", "green"],
+    ]
+    assert [record["questions"][0]["instr"] for record in fake.records] == [
+        "Choose: 'a' or 'b'",
+        "Choose: 'a', 'b' or 'c'",
+    ]
+    assert output.sequences == ["a", "a"]
+    assert output.scores is not None
+    assert [[label for label, _ in scores[0]] for scores in output.scores] == [
+        ["a", "b"],
+        ["a", "b", "c"],
+    ]
+
+
 def test_multiple_choice_uses_per_sample_options_and_stable_letters(
     dataset_config: DatasetConfig,
 ) -> None:
