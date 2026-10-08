@@ -86,7 +86,7 @@ def test_package_version_matches_authoritative_release() -> None:
     """The declared package version matches the current release."""
     project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
 
-    assert project["project"]["version"] == "18.2.0"
+    assert project["project"]["version"] == "18.3.0"
 
 
 def test_policy_does_not_share_a_group_scope() -> None:
