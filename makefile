@@ -143,8 +143,8 @@ add-dev-version:
 
 publish:
 	@set -a; [ ! -f .env ] || source .env; set +a; \
-	if [ "$${PYPI_API_TOKEN:-}" = "" ]; then \
-		echo "No PyPI API token specified in the '.env' file, so cannot publish."; \
+	if [ -z "$${EUROEVAL_PYPI_API_TOKEN:-}" ] || [ -z "$${SCANDEVAL_PYPI_API_TOKEN:-}" ]; then \
+		echo "Both EUROEVAL_PYPI_API_TOKEN and SCANDEVAL_PYPI_API_TOKEN must be specified to publish."; \
 	else \
 		echo "Publishing to PyPI..."; \
 		$(MAKE) --quiet publish-euroeval \
