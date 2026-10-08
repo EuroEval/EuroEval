@@ -140,7 +140,6 @@ class GLiNERModel(ZeroShotClassifierModel):
                     not question
                     or len(options) < 2
                     or len(options) > len(labels)
-                    or len(set(options)) != len(options)
                     or any(not option for option in options)
                 ):
                     raise InvalidBenchmark(
