@@ -62,10 +62,10 @@ class KevModel(BenchmarkModule):
             from kev.checkpoint import Checkpoint, LoadOptions  # noqa: PLC0415
         except ImportError as exc:
             raise InvalidModel(
-                "Kev is not installed. On supported Linux x86_64 systems with Python "
-                "3.12–3.13, install the pinned upstream dependency with "
-                "`uv sync --extra kev`. The unrelated `kev` package on PyPI is not "
-                "the classifier backend."
+                "Kev is not installed. On supported Linux x86_64 or macOS arm64 "
+                "systems with Python 3.12–3.13, install the pinned upstream "
+                "dependency with `uv sync --extra kev`. The unrelated `kev` "
+                "package on PyPI is not the classifier backend."
             ) from exc
         checkpoint_path = resolve_checkpoint_path(
             model_id=model_config.model_id,

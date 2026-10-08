@@ -23,6 +23,8 @@ required-markers = [
 overrides = [
     { name = "numpy", specifier = ">=2.5.1" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
+    { name = "scikit-learn", specifier = "==1.6.1" },
+    { name = "torch", specifier = ">=2.6.0" },
     { name = "transformers", extras = ["mistral-common"], specifier = ">=5.14.0" },
 ]
 
@@ -39,6 +41,11 @@ wheels = [
 name = "accelerate"
 version = "1.14.0"
 source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14' and platform_machine == 'arm64' and sys_platform == 'darwin'",
+    "python_full_version >= '3.14' and sys_platform != 'darwin' and sys_platform != 'emscripten'",
+    "python_full_version < '3.13' and platform_machine != 'x86_64' and sys_platform != 'darwin' and sys_platform != 'emscripten'",
+]
 dependencies = [
     { name = "huggingface-hub" },
     { name = "numpy" },
@@ -51,6 +58,30 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/8d/75/94cd5d389649578aca399e5aa822637eec18319a1dadc400ffe2f9a7493f/accelerate-1.14.0.tar.gz", hash = "sha256:41b9c4377a54e0b460a959b0defa1b736e4ca0a2373252d9a539964c2afe3c8d", size = 412167, upload-time = "2026-06-11T13:45:52.326Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a8/db/253133d7e7cb40d3af384bb2f5c0b4a2b7fdcffbc95c688cc67a20a3c103/accelerate-1.14.0-py3-none-any.whl", hash = "sha256:e94390c2863b873be18f623f9df48a0d8fe5eff13ea7f1a00092b0a7904888c6", size = 389246, upload-time = "2026-06-11T13:45:50.477Z" },
+]
+
+[[package]]
+name = "accelerate"
+version = "1.15.0"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version == '3.13.*' and platform_machine == 'arm64' and sys_platform == 'darwin'",
+    "python_full_version == '3.13.*' and sys_platform != 'darwin' and sys_platform != 'emscripten'",
+    "python_full_version < '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin'",
+    "python_full_version < '3.13' and platform_machine == 'x86_64' and sys_platform != 'darwin' and sys_platform != 'emscripten'",
+]
+dependencies = [
+    { name = "huggingface-hub" },
+    { name = "numpy" },
+    { name = "packaging" },
+    { name = "psutil" },
+    { name = "pyyaml" },
+    { name = "safetensors" },
+    { name = "torch" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f5/b5/1d3ed029ac71d3f2961346829a268da923698e9fd63f218f78841f216bfd/accelerate-1.15.0.tar.gz", hash = "sha256:5654f8c5eaa0d4fa68b33e287a97765da6849bf6d51dcac874e73fbbddfb6134", size = 422615, upload-time = "2026-09-09T13:04:49.078Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8a/4c/34f0450479d01195027260da68d8a3880683f1640c3ca5adf64acb3185f1/accelerate-1.15.0-py3-none-any.whl", hash = "sha256:97eacca0b73e45cb867dbf8c5d5d4dc32219544300e0c8992c7334dc2ef33cec", size = 394295, upload-time = "2026-09-09T13:04:47.331Z" },
 ]
 
 [[package]]
@@ -1199,7 +1230,8 @@ name = "euroeval"
 version = "18.2.0"
 source = { editable = "." }
 dependencies = [
-    { name = "accelerate" },
+    { name = "accelerate", version = "1.14.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.14' and platform_machine == 'x86_64') or (python_full_version != '3.13.*' and platform_machine != 'x86_64' and sys_platform != 'darwin') or (python_full_version >= '3.14' and sys_platform == 'darwin')" },
+    { name = "accelerate", version = "1.15.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.14' and platform_machine == 'x86_64') or (python_full_version == '3.13.*' and platform_machine != 'x86_64' and sys_platform != 'darwin') or (python_full_version < '3.14' and sys_platform == 'darwin')" },
     { name = "bert-score" },
     { name = "click" },
     { name = "cloudpickle" },
@@ -1220,7 +1252,8 @@ dependencies = [
     { name = "numpy" },
     { name = "ollama" },
     { name = "pandas" },
-    { name = "peft" },
+    { name = "peft", version = "0.20.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.14' and platform_machine == 'x86_64') or (python_full_version != '3.13.*' and platform_machine != 'x86_64' and sys_platform != 'darwin') or (python_full_version >= '3.14' and sys_platform == 'darwin')" },
+    { name = "peft", version = "0.21.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.14' and platform_machine == 'x86_64') or (python_full_version == '3.13.*' and platform_machine != 'x86_64' and sys_platform != 'darwin') or (python_full_version < '3.14' and sys_platform == 'darwin')" },
     { name = "protobuf" },
     { name = "pydantic" },
     { name = "pyinfer" },
@@ -1243,6 +1276,7 @@ dependencies = [
 all = [
     { name = "bitsandbytes", marker = "sys_platform == 'linux'" },
     { name = "gliner2", extra = ["local"] },
+    { name = "kev", marker = "(python_full_version < '3.14' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version < '3.14' and sys_platform == 'darwin')" },
     { name = "laya" },
     { name = "ray", marker = "sys_platform == 'linux'" },
     { name = "timm" },
@@ -1260,6 +1294,9 @@ generative = [
 ]
 gliner = [
     { name = "gliner2", extra = ["local"] },
+]
+kev = [
+    { name = "kev", marker = "(python_full_version < '3.14' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version < '3.14' and sys_platform == 'darwin')" },
 ]
 laya = [
     { name = "laya" },
@@ -1326,6 +1363,8 @@ requires-dist = [
     { name = "google-cloud-aiplatform", specifier = ">=1.157.0" },
     { name = "huggingface-hub", specifier = ">=0.30.1" },
     { name = "kaleido", specifier = ">=1.3.0" },
+    { name = "kev", marker = "(python_full_version < '3.14' and platform_machine == 'arm64' and sys_platform == 'darwin' and extra == 'all') or (python_full_version < '3.14' and platform_machine == 'x86_64' and sys_platform == 'linux' and extra == 'all')", git = "https://github.com/jaredpalmer/kev.git?rev=5e42a7a03f28134853dd3ff77461457e921e5ec1" },
+    { name = "kev", marker = "(python_full_version < '3.14' and platform_machine == 'arm64' and sys_platform == 'darwin' and extra == 'kev') or (python_full_version < '3.14' and platform_machine == 'x86_64' and sys_platform == 'linux' and extra == 'kev')", git = "https://github.com/jaredpalmer/kev.git?rev=5e42a7a03f28134853dd3ff77461457e921e5ec1" },
     { name = "langdetect", specifier = ">=1.0.9" },
     { name = "laya", marker = "extra == 'all'", specifier = ">=0.3.6" },
     { name = "laya", marker = "extra == 'laya'", specifier = ">=0.3.6" },
@@ -1369,7 +1408,7 @@ requires-dist = [
     { name = "vllm-metal", marker = "sys_platform == 'darwin' and extra == 'all'", git = "https://github.com/vllm-project/vllm-metal.git?tag=v0.2.0-20260531-071330" },
     { name = "vllm-metal", marker = "sys_platform == 'darwin' and extra == 'generative'", git = "https://github.com/vllm-project/vllm-metal.git?tag=v0.2.0-20260531-071330" },
 ]
-provides-extras = ["generative", "laya", "all", "leaderboards", "gliner"]
+provides-extras = ["generative", "laya", "all", "leaderboards", "gliner", "kev"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1841,7 +1880,8 @@ wheels = [
 [package.optional-dependencies]
 local = [
     { name = "numpy" },
-    { name = "peft" },
+    { name = "peft", version = "0.20.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.14' and platform_machine == 'x86_64') or (python_full_version != '3.13.*' and platform_machine != 'x86_64' and sys_platform != 'darwin') or (python_full_version >= '3.14' and sys_platform == 'darwin')" },
+    { name = "peft", version = "0.21.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.14' and platform_machine == 'x86_64') or (python_full_version == '3.13.*' and platform_machine != 'x86_64' and sys_platform != 'darwin') or (python_full_version < '3.14' and sys_platform == 'darwin')" },
     { name = "safetensors" },
     { name = "torch" },
     { name = "transformers", extra = ["mistral-common"] },
@@ -2522,6 +2562,21 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/e0/64/53eac73d31dbfc3310ee2e87bcac1ae7417427f0fbe3dd800eaf676db324/kaleido-1.3.0.tar.gz", hash = "sha256:5e0378a7475e98852773deeb6483dee91f8aa7b364dde7b5f2b3622cb468a3e6", size = 68938, upload-time = "2026-05-04T19:45:28.932Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/9e/b9/a6d8bb7d228940f01885bd9f327ab7f9d366a9be775c4bf366bf9d9477ae/kaleido-1.3.0-py3-none-any.whl", hash = "sha256:52714dfd38e8f2a114831826200c40bb10d0ca0c11d4272f3f48ad499cd8f8ea", size = 55580, upload-time = "2026-05-04T19:45:27.483Z" },
+]
+
+[[package]]
+name = "kev"
+version = "0.1.0"
+source = { git = "https://github.com/jaredpalmer/kev.git?rev=5e42a7a03f28134853dd3ff77461457e921e5ec1#5e42a7a03f28134853dd3ff77461457e921e5ec1" }
+dependencies = [
+    { name = "accelerate", version = "1.15.0", source = { registry = "https://pypi.org/simple" } },
+    { name = "datasets" },
+    { name = "numpy" },
+    { name = "peft", version = "0.21.2", source = { registry = "https://pypi.org/simple" } },
+    { name = "pydantic" },
+    { name = "scikit-learn" },
+    { name = "torch" },
+    { name = "transformers", extra = ["mistral-common"] },
 ]
 
 [[package]]
@@ -4344,8 +4399,13 @@ wheels = [
 name = "peft"
 version = "0.20.0"
 source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14' and platform_machine == 'arm64' and sys_platform == 'darwin'",
+    "python_full_version >= '3.14' and sys_platform != 'darwin' and sys_platform != 'emscripten'",
+    "python_full_version < '3.13' and platform_machine != 'x86_64' and sys_platform != 'darwin' and sys_platform != 'emscripten'",
+]
 dependencies = [
-    { name = "accelerate" },
+    { name = "accelerate", version = "1.14.0", source = { registry = "https://pypi.org/simple" } },
     { name = "huggingface-hub" },
     { name = "numpy" },
     { name = "packaging" },
@@ -4359,6 +4419,33 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/b4/08/02541a2c29be7c78698f73d438bc0e733b214f3f35ec5db79fca8da8fc61/peft-0.20.0.tar.gz", hash = "sha256:4769c8093a4ca145fd6fb3fd4dd50449675f5fe46434ad1e98b285a132d4b1d0", size = 880503, upload-time = "2026-07-28T13:46:01.85Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/28/79/13bcabb8048126422d5c4b880575d40886c726f354db88cfeed4325525bb/peft-0.20.0-py3-none-any.whl", hash = "sha256:0fbba16ffebfad3de96e06f2da6860fd860292324b85b6141909fa1e26ea9233", size = 775777, upload-time = "2026-07-28T13:45:59.809Z" },
+]
+
+[[package]]
+name = "peft"
+version = "0.21.2"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version == '3.13.*' and platform_machine == 'arm64' and sys_platform == 'darwin'",
+    "python_full_version == '3.13.*' and sys_platform != 'darwin' and sys_platform != 'emscripten'",
+    "python_full_version < '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin'",
+    "python_full_version < '3.13' and platform_machine == 'x86_64' and sys_platform != 'darwin' and sys_platform != 'emscripten'",
+]
+dependencies = [
+    { name = "accelerate", version = "1.15.0", source = { registry = "https://pypi.org/simple" } },
+    { name = "huggingface-hub" },
+    { name = "numpy" },
+    { name = "packaging" },
+    { name = "psutil" },
+    { name = "pyyaml" },
+    { name = "safetensors" },
+    { name = "torch" },
+    { name = "tqdm" },
+    { name = "transformers", extra = ["mistral-common"] },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/80/af/2e08abf1cd3b8792a02f5116808f2398c2f77ecdff801ced2ce16007a6f9/peft-0.21.2.tar.gz", hash = "sha256:b803ccfb3f3f316004d850284306687833a2235ea278fb56abc856203456142e", size = 983614, upload-time = "2026-10-01T10:26:36.129Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/70/0b/59441cdbfdd342ed03c08af90a2fe16173f0cd48ab219f523b39ca059a79/peft-0.21.2-py3-none-any.whl", hash = "sha256:106ab6077ff72c54d21577f9af5970e34bac7582cb14209f7b2b511e322a4eae", size = 835427, upload-time = "2026-10-01T10:26:34.085Z" },
 ]
 
 [[package]]
@@ -7105,7 +7192,8 @@ name = "vllm-metal"
 version = "0.2.0"
 source = { git = "https://github.com/vllm-project/vllm-metal.git?tag=v0.2.0-20260531-071330#8a3ddf05b229a71234ffaabc225cd345edc4b68e" }
 dependencies = [
-    { name = "accelerate" },
+    { name = "accelerate", version = "1.14.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14'" },
+    { name = "accelerate", version = "1.15.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14'" },
     { name = "llguidance" },
     { name = "mlx" },
     { name = "mlx-lm" },
