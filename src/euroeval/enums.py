@@ -107,6 +107,8 @@ class InferenceBackend(AutoStrEnum):
             The GLiNER2 zero-shot classifier. The `gliner2` library.
         TYPESAFE:
             The hosted Typesafe System One zero-shot classifier.
+        KEV:
+            The in-process Kev pointer-head zero-shot classifier.
     """
 
     TRANSFORMERS = auto()
@@ -116,6 +118,7 @@ class InferenceBackend(AutoStrEnum):
     LAYA = auto()
     GLINER = auto()
     TYPESAFE = auto()
+    KEV = auto()
 
 
 class ModelType(AutoStrEnum):
