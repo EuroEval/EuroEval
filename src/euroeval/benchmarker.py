@@ -1496,15 +1496,27 @@ class Benchmarker:
             # are cached in download-only mode.
             pass
         elif model_config.model_type is ModelType.ZERO_SHOT_CLASSIFIER:
-            from .benchmark_modules.zero_shot_classifier import (  # noqa: PLC0415
-                _resolve_checkpoint_path,
-            )
+            if model_config.inference_backend is InferenceBackend.KEV:
+                from .benchmark_modules.kev import (  # noqa: PLC0415
+                    resolve_checkpoint_path,
+                )
 
-            _resolve_checkpoint_path(
-                model_id=model_config.model_id,
-                cache_dir=model_config.model_cache_dir,
-                token=get_hf_token(api_key=benchmark_config.api_key),
-            )
+                resolve_checkpoint_path(
+                    model_id=model_config.model_id,
+                    revision=model_config.revision,
+                    cache_dir=model_config.model_cache_dir,
+                    token=get_hf_token(api_key=benchmark_config.api_key),
+                )
+            else:
+                from .benchmark_modules.zero_shot_classifier import (  # noqa: PLC0415
+                    _resolve_checkpoint_path,
+                )
+
+                _resolve_checkpoint_path(
+                    model_id=model_config.model_id,
+                    cache_dir=model_config.model_cache_dir,
+                    token=get_hf_token(api_key=benchmark_config.api_key),
+                )
         # Skip download if the model is a local path
         elif not Path(model_config.model_id).exists():
             # Check if model is already cached before downloading
@@ -1562,15 +1574,27 @@ class Benchmarker:
     ) -> None:
         """Download model weights without loading virtual-task data."""
         if model_config.model_type is ModelType.ZERO_SHOT_CLASSIFIER:
-            from .benchmark_modules.zero_shot_classifier import (  # noqa: PLC0415
-                _resolve_checkpoint_path,
-            )
+            if model_config.inference_backend is InferenceBackend.KEV:
+                from .benchmark_modules.kev import (  # noqa: PLC0415
+                    resolve_checkpoint_path,
+                )
 
-            _resolve_checkpoint_path(
-                model_id=model_config.model_id,
-                cache_dir=model_config.model_cache_dir,
-                token=get_hf_token(api_key=benchmark_config.api_key),
-            )
+                resolve_checkpoint_path(
+                    model_id=model_config.model_id,
+                    revision=model_config.revision,
+                    cache_dir=model_config.model_cache_dir,
+                    token=get_hf_token(api_key=benchmark_config.api_key),
+                )
+            else:
+                from .benchmark_modules.zero_shot_classifier import (  # noqa: PLC0415
+                    _resolve_checkpoint_path,
+                )
+
+                _resolve_checkpoint_path(
+                    model_id=model_config.model_id,
+                    cache_dir=model_config.model_cache_dir,
+                    token=get_hf_token(api_key=benchmark_config.api_key),
+                )
             return
         if Path(model_config.model_id).exists():
             log_once(

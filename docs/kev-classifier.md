@@ -7,13 +7,19 @@ either the adapter or full backbone; it does not use a serving API. Complete che
 are recognized by `head.pt` plus either `adapter_config.json` /
 `adapter_model.safetensors`, or `config.json` / `model*.safetensors`.
 
-Kev is not the unrelated `kev` package on PyPI. Install the upstream project from its
-repository into the EuroEval environment before selecting a checkpoint. EuroEval
-intentionally does not add it as a mandatory dependency or install it from PyPI: the
-current upstream dependency metadata requires scikit-learn >=1.9.1, conflicting with
-EuroEval's pinned 1.6.1, and upstream Python bounds may also differ. Do not resolve this
-by upgrading EuroEval's scikit-learn pin; use an environment/dependency revision
-compatible with both projects.
+Kev is not the unrelated `kev` package on PyPI. Install upstream from its Git repository
+(not `pip install kev`) in the EuroEval environment:
+
+```bash
+uv pip install --no-deps 'git+https://github.com/jaredpalmer/kev.git'
+```
+
+`--no-deps` avoids replacing EuroEval's pinned `scikit-learn==1.6.1`; upstream metadata
+currently requests scikit-learn >=1.9.1 and may impose Python bounds that conflict with
+EuroEval. This command installs only Kev itself, so install/validate the runtime
+requirements listed by the upstream project manually in an environment compatible with
+both projects. EuroEval checks that `kev.checkpoint` imports before recognizing a
+checkpoint; it does not claim that the upstream dependency set is fully compatible.
 
 The adapter supports sequence classification and multiple-choice classification in
 zero-shot mode only. Like other zero-shot classifier backends, it does not support

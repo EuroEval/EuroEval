@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import inspect
 import math
 import typing as t
 from pathlib import Path
 
 import torch
 from datasets import DatasetDict
-from huggingface_hub import HfApi
+from huggingface_hub import HfApi, snapshot_download
 from transformers import Trainer
 
 from ..data_models import (
@@ -19,11 +20,17 @@ from ..data_models import (
     Task,
 )
 from ..enums import BatchingPreference, InferenceBackend, ModelType, TaskGroup
-from ..exceptions import InvalidBenchmark, InvalidModel, NeedsExtraInstalled
+from ..exceptions import InvalidBenchmark, InvalidModel
 from ..model_cache import create_model_cache_dir
 from ..string_utils import split_model_id
 from ..task_group_utils.cloze import parse_bare_question_and_choices
-from .base import BenchmarkModule
+from ..types import ExtractLabelsFunction
+from ..utils import get_hf_token
+from .base import (
+    BenchmarkModule,
+    _extract_labels_from_generation_helper,
+    _prepare_dataset_helper,
+)
 
 
 class KevModel(BenchmarkModule):
@@ -55,13 +62,19 @@ class KevModel(BenchmarkModule):
             from kev.checkpoint import Checkpoint, LoadOptions  # noqa: PLC0415
         except ImportError as exc:
             raise InvalidModel(
-                "Install the upstream Kev repository package to use this backend."
+                "Kev is not available from EuroEval extras or the unrelated PyPI "
+                "`kev`. "
+                "Install upstream with `uv pip install --no-deps "
+                "'git+https://github.com/jaredpalmer/kev.git'` and install its "
+                "compatible runtime requirements manually."
             ) from exc
-        local = Path(model_config.model_id)
-        # Checkpoint.resolve_run handles Hub IDs and downloads only checkpoint files.
-        self.tokenizer, self.model = Checkpoint(
-            str(local) if local.is_dir() else model_config.model_id
-        ).load(
+        checkpoint_path = resolve_checkpoint_path(
+            model_id=model_config.model_id,
+            revision=model_config.revision,
+            cache_dir=model_config.model_cache_dir,
+            token=get_hf_token(api_key=benchmark_config.api_key),
+        )
+        self.tokenizer, self.model = Checkpoint(checkpoint_path).load(
             str(benchmark_config.device),
             LoadOptions(backend="torch", dtype=torch.float32),
         )
@@ -75,9 +88,13 @@ class KevModel(BenchmarkModule):
         raise NotImplementedError("Kev checkpoints cannot be finetuned by EuroEval.")
 
     @property
-    def extract_labels_from_generation(self) -> t.Callable:
-        """The function that returns labels directly from the pointer head."""
-        return lambda **kwargs: kwargs
+    def extract_labels_from_generation(self) -> ExtractLabelsFunction:
+        """The standard classifier output-label extractor."""
+        return _extract_labels_from_generation_helper(
+            dataset_config=self.dataset_config,
+            model_config=self.model_config,
+            first_label_token_mapping=self.buffer["first_label_token_mapping"],
+        )
 
     def generate(self, inputs: dict[str, t.Any]) -> GenerativeModelOutput:
         """Score each sample with Kev's trained pointer head.
@@ -106,7 +123,6 @@ class KevModel(BenchmarkModule):
         if len(labels) < 2:
             raise InvalidBenchmark("Kev classification requires at least two labels.")
         sequences: list[str] = []
-        scores: list[list[list[tuple[str, float]]]] = []
         for text in texts:
             options = labels
             output_labels = labels
@@ -118,7 +134,16 @@ class KevModel(BenchmarkModule):
                         f"Kev could not parse multiple-choice options from {text!r}."
                     )
                 options = parsed
-                output_labels = labels[: len(parsed)]
+                if len(parsed) != len(labels):
+                    raise InvalidBenchmark(
+                        "Kev multiple-choice option count does not match the dataset "
+                        f"labels ({len(parsed)} options, {len(labels)} labels)."
+                    )
+                if len(parsed) > 26:
+                    raise InvalidBenchmark(
+                        "Kev supports at most 26 multiple-choice options."
+                    )
+                output_labels = [chr(ord("A") + index) for index in range(len(parsed))]
             record = {
                 "state": state,
                 "questions": [
@@ -132,7 +157,24 @@ class KevModel(BenchmarkModule):
                 ],
             }
             try:
-                encoded = self.model.encode(self.tokenizer, record, strict=True)
+                encode_parameters = inspect.signature(self.model.encode).parameters
+                encode_kwargs: dict[str, t.Any] = {"strict": True}
+                length_parameter = next(
+                    (
+                        parameter
+                        for parameter in ("max_length", "max_len")
+                        if parameter in encode_parameters
+                    ),
+                    "max_length"
+                    if any(
+                        parameter.kind is inspect.Parameter.VAR_KEYWORD
+                        for parameter in encode_parameters.values()
+                    )
+                    else None,
+                )
+                if length_parameter is not None:
+                    encode_kwargs[length_parameter] = self.model_max_length
+                encoded = self.model.encode(self.tokenizer, record, **encode_kwargs)
                 probs = self.model.probs(encoded)
                 probabilities = probs[0].detach().cpu().tolist()
             except (ValueError, TypeError, IndexError, AttributeError) as exc:
@@ -156,15 +198,7 @@ class KevModel(BenchmarkModule):
                 reverse=True,
             )
             sequences.append(ranked[0][0])
-            scores.append(
-                [
-                    [
-                        (label, math.log(max(probability, 1e-30)))
-                        for label, probability in ranked
-                    ]
-                ]
-            )
-        return GenerativeModelOutput(sequences=sequences, scores=scores)
+        return GenerativeModelOutput(sequences=sequences)
 
     @property
     def generative_type(self) -> None:
@@ -203,9 +237,7 @@ class KevModel(BenchmarkModule):
         )
 
     @classmethod
-    def model_exists(
-        cls, model_id: str, benchmark_config: BenchmarkConfig
-    ) -> bool | NeedsExtraInstalled:
+    def model_exists(cls, model_id: str, benchmark_config: BenchmarkConfig) -> bool:
         """Recognize Kev's complete checkpoint layout without loading weights.
 
         Returns:
@@ -235,10 +267,6 @@ class KevModel(BenchmarkModule):
         )
         if "head.pt" not in files or not (has_adapter or has_full):
             return False
-        try:
-            import kev.checkpoint  # noqa: F401,PLC0415
-        except ImportError:
-            return NeedsExtraInstalled(extra="kev")
         return True
 
     @property
@@ -254,12 +282,32 @@ class KevModel(BenchmarkModule):
     def prepare_dataset(
         self, dataset: DatasetDict, task: Task, itr_idx: int
     ) -> DatasetDict:
-        """Return a dataset unchanged because Kev consumes raw text.
+        """Prepare task fields while restoring the raw text Kev consumes.
 
         Returns:
-            The original dataset.
+            The prepared dataset with the original sample text restored.
+
+        Raises:
+            InvalidBenchmark: If few-shot mode is enabled.
         """
-        return dataset
+        if self.benchmark_config.few_shot:
+            raise InvalidBenchmark("Kev does not support few-shot evaluation.")
+        raw_text = list(dataset["test"]["text"])
+        prepared = _prepare_dataset_helper(
+            dataset=dataset,
+            task=task,
+            model_config=self.model_config,
+            dataset_config=self.dataset_config,
+            benchmark_config=self.benchmark_config,
+            generative_type=None,
+            itr_idx=itr_idx,
+            always_populate_text_field=False,
+            tokeniser=None,
+        )
+        prepared["test"] = (
+            prepared["test"].remove_columns("text").add_column("text", raw_text)
+        )
+        return prepared
 
     @property
     def trainer_class(self) -> t.Type[Trainer]:
@@ -270,3 +318,18 @@ class KevModel(BenchmarkModule):
     def vocab_size(self) -> int:
         """The checkpoint tokenizer vocabulary size."""
         return len(self.tokenizer)
+
+
+def resolve_checkpoint_path(
+    *, model_id: str, revision: str | None, cache_dir: str, token: str | None
+) -> str:
+    """Resolve a local Kev checkpoint or download the requested Hub revision.
+
+    Returns:
+        The local checkpoint directory.
+    """
+    if Path(model_id).is_dir():
+        return model_id
+    return snapshot_download(
+        repo_id=model_id, revision=revision, cache_dir=cache_dir, token=token
+    )
