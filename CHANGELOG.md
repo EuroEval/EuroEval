@@ -9,52 +9,31 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added an in-process Kev pointer-head zero-shot classifier backend for local and Hub
-  checkpoints.
-- Added the optional `gliner` zero-shot sequence and multiple-choice classification
-  backend for `fastino/GLiNER2.5-Decide` and compatible GLiNER2 checkpoints. It returns
-  selected labels without fabricating per-label probabilities; install with
-  `pip install euroeval[gliner]`.
-- Added the new tool calling benchmark MultiBFCL, translated from the English BFCL-v2
-  benchmark, to all 31 non-English languages. These have been added as official
-  datasets.
-- Added direct hosted Typesafe System One classification for versioned EuroEval model
-  IDs such as `typesafe/jev-1.13.0`. The selected version is sent upstream unchanged;
-  authenticate with the `TYPESAFE_API_KEY` environment variable. The integration
-  supports zero-shot sequence and multiple-choice classification; model size metadata
-  remains unknown and speed benchmarking is unsupported. The exact model ID
-  `typesafe/jev-1.13.0` now also carries its verified 2026-09-15 release date into
-  benchmark results and leaderboard metadata.
-- Hallucination rate is now shown as an optional orthogonal percentage in chat leaderboards;
-  missing results do not affect eligibility, rank or aggregate score.
-
-### Fixed
-
-- Typesafe System One requests now retry transient HTTP and connection failures with
-  bounded backoff, and report exhausted or permanent request failures as `InvalidModel`.
-- Laya and Typesafe per-text classifiers now use single-sample generation batches, enabling
-  per-example progress reporting without changing their classification requests.
-- Structured classification prompts now convert choices only in the rendered
-  choice-instruction field, preserving quoted label text in user-provided inputs.
+- Added support to evaluate zero-shot classifiers, aka decision models. This includes
+  the Jev API, Laya-based models, Kev-based models and GLiNER2.5-Decide models. For the
+  Jev API, the environment variable `TYPESAFE_API_KEY` is required.
+- Hallucination rate is now shown as an optional orthogonal percentage in chat
+  leaderboards; missing results do not affect eligibility, rank or aggregate score.
 - LiteLLM model context-length metadata now covers the documented GPT-5.6/GPT-6/6.1 Sol,
   Gemini 3.1/3.5/3.6/3.7/3.8, Claude 5/Fable/Mythos and 5.5, and Grok 4.5–4.7 IDs.
   Unverified model variants are not assigned these family-specific context lengths.
+
+### Fixed
+
+- Structured classification prompts now convert choices only in the rendered
+  choice-instruction field, preserving quoted label text in user-provided inputs.
 - Encoder fine-tuning now creates a deterministic validation holdout from the original
   training split for datasets without a configured validation split. The holdout is
   disjoint from training, leaves the published test split unchanged, and is not applied
   to generative evaluations.
 - Encoder final scores now always come from the published test split, regardless of
-  validation-split configuration; validation remains available for early stopping.
+  validation-split configuration; validation remains available for early stopping. This
+  was a regression in a previous release.
 - Encoder multiple-choice fine-tuning now supports datasets with different numbers of
   answers per question. Batch padding is explicitly masked from training loss and model
   predictions, and BE-WSC and Danish Citizen Tests declare their verified label sets.
   Multiline answer options in datasets such as ALBA-MCQ are parsed without changing the
   questions, labels, or published dataset splits.
-
-### Changed
-
-- Removed Laya `#param` checkpoint-subfolder support; Laya models now load from
-  standalone repository roots or local checkpoint roots only.
 
 ## [v18.2.0] - 2026-09-29
 
@@ -74,15 +53,16 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   only during private leaderboard processing.
 - Added a `--num-parameters` CLI option and matching `num_parameters` Python argument
   for overriding model parameter counts when they cannot be inferred automatically.
-- Added support for DeepSeek-V4.1-Flash via the DeepSeek API (`deepseek/deepseek-flash`),
-  including model metadata and the `#no-thinking`, `#thinking`, `#low`, `#high` and
-  `#max` parameters to control its thinking mode. `#no-thinking` and `#thinking` send
-  `thinking.type: disabled`/`enabled` respectively, while `#low`, `#high` and `#max`
-  set DeepSeek's `reasoning_effort` and leave thinking on. Since thinking is enabled by
-  default, the bare model ID is treated as a reasoning model. The `deepseek/` prefix is
-  required, so that open-weight deployments of DeepSeek models (e.g. via vLLM, Ollama
-  or OpenRouter) are not treated as the DeepSeek API and thus don't get its
-  DeepSeek-API-specific parameter shaping. This was contributed by @mathiasesn ✨
+- Added support for DeepSeek-V4.1-Flash via the DeepSeek API
+  (`deepseek/deepseek-flash`), including model metadata and the `#no-thinking`,
+  `#thinking`, `#low`, `#high` and `#max` parameters to control its thinking mode.
+  `#no-thinking` and `#thinking` send `thinking.type: disabled`/`enabled` respectively,
+  while `#low`, `#high` and `#max` set DeepSeek's `reasoning_effort` and leave thinking
+  on. Since thinking is enabled by default, the bare model ID is treated as a reasoning
+  model. The `deepseek/` prefix is required, so that open-weight deployments of DeepSeek
+  models (e.g. via vLLM, Ollama or OpenRouter) are not treated as the DeepSeek API and
+  thus don't get its DeepSeek-API-specific parameter shaping. This was contributed by
+  @mathiasesn ✨
 
 ### Changed
 
@@ -136,11 +116,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - The LiteLLM module now recognises the DeepSeek API's "This response_format type is
   unavailable now" error and falls back from JSON schemas to plain JSON output. This
   was contributed by @mathiasesn ✨
-- First-label-token mapping for chat models now isolates label tokens via a chat-template
-  diff (with encode-label fallback) instead of scanning the full templated conversation.
-  This prevents system-prompt tokens such as ``p`` / ``n`` from being mistaken for
-  classification label prefixes (e.g. ``positif`` → ``p``). This was contributed by
-  @djstrong ✨
+- First-label-token mapping for chat models now isolates label tokens via a
+  chat-template diff (with encode-label fallback) instead of scanning the full templated
+  conversation. This prevents system-prompt tokens such as ``p`` / ``n`` from being
+  mistaken for classification label prefixes (e.g. ``positif`` → ``p``). This was
+  contributed by @djstrong ✨
 - Suppressed a harmless vLLM Metal tokeniser compatibility warning during startup when
   the optional vLLM tokeniser registry is unavailable.
 - vLLM text-only evaluations no longer initialise multimodal processors just to
@@ -180,9 +160,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   solvers are used as EuroEval instruction prompts.
   An answer boxed as an equation, such as `\boxed{x = 5}`, scores the value it names.
 - Added the unofficial Danish knowledge dataset `danish-similarity-outlier`, part of the
-  [Danish Semantic Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark),
-  where the model has to pick the semantically least similar word from six options. This
-  was contributed by @Mr-Neutr0n ✨
+  [Danish Semantic Reasoning
+  Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark), where the
+  model has to pick the semantically least similar word from six options. This was
+  contributed by @Mr-Neutr0n ✨
 
 ### Changed
 
@@ -293,8 +274,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   Each language has both `flores-en-{code}` and `flores-{code}-en` datasets, with the
   train/validation splits drawn from the FLORES+ `dev` split and the test split from
   `devtest` (128 / 256 / up to 1,024 samples). The English-to-local datasets are
-  official, while the local-to-English datasets are unofficial. This applies to both
-  the six languages not covered by WMT24++ and the 25 WMT24++ languages.
+  official, while the local-to-English datasets are unofficial. This applies to both the
+  six languages not covered by WMT24++ and the 25 WMT24++ languages.
 - Added translation prompt templates for Belarusian, Faroese and Luxembourgish as source
   languages, so that all official languages now have translation prompt templates.
 - Added a transliteration engine (`euroeval.transliteration`) and a `multiple_scripts`
@@ -359,19 +340,20 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 - Removed the language-identification penalty from the ChrF metrics, along with the
   `lingua-language-detector` dependency and the `metrics.language_detection` module. The
-  penalty was a holdover from when translation was scored with BERTScore (embedding-based,
-  so it could reward correct content written in the wrong language); with character-based
-  ChrF a wrong-language output already scores low on its own. In practice the penalty was
-  wrongly zeroing large fractions of correct references (e.g. ~58% of gold Croatian and
-  ~24% of gold English), depressing valid scores far more than it caught genuine errors.
+  penalty was a holdover from when translation was scored with BERTScore
+  (embedding-based, so it could reward correct content written in the wrong language);
+  with character-based ChrF a wrong-language output already scores low on its own. In
+  practice the penalty was wrongly zeroing large fractions of correct references (e.g.
+  ~58% of gold Croatian and ~24% of gold English), depressing valid scores far more than
+  it caught genuine errors.
 
 ### Fixed
 
 - Fixed the prompt script for Serbian datasets whose content is written in Cyrillic. The
   `include-sr` knowledge dataset now uses a Cyrillic prompt (overriding the shared Latin
   knowledge template still used by the Latin-script `mmlu-sr`, `mms-sr` and
-  `winogrande-sr`), and the Serbian-source translation prompt template is now Cyrillic to
-  match the Cyrillic source text of `wmt24pp-sr-en`.
+  `winogrande-sr`), and the Serbian-source translation prompt template is now Cyrillic
+  to match the Cyrillic source text of `wmt24pp-sr-en`.
 - Fixed `_load_model_from_pretrained` final error message for `KeyError`/`RuntimeError`
   after retry exhaustion. The raised `InvalidModel` now includes the model ID and
   exception repr (e.g. `The model 'EuroBERT/EuroBERT-210m' could not be loaded. The
@@ -485,8 +467,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and caching
     the pipeline
 - Added the Danish zebra puzzle dataset
-  [zebra_puzzles](https://huggingface.co/datasets/alexandrainst/zebra_puzzles). The split
-  is given by 128 / 1,024 samples for train / test, respectively. It is marked as
+  [zebra_puzzles](https://huggingface.co/datasets/alexandrainst/zebra_puzzles). The
+  split is given by 128 / 1,024 samples for train / test, respectively. It is marked as
   `unofficial` for now. This was contributed by @sofiehb ✨
 
 ### Fixed
@@ -496,7 +478,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Fixed the parameter count derived from safetensors metadata when a model has multiple
   dtype entries. The `parameter_count` dict maps each dtype to the number of parameters
   stored in that dtype, so the total is the sum across entries — previously only the
-  largest entry was used, undercounting models with weights split across multiple dtypes.
+  largest entry was used, undercounting models with weights split across multiple
+  dtypes.
 - Fixed the finetuning NaN-retry not actually switching to fp32. When NaN values were
   detected under mixed precision, the retry disabled autocast but reloaded the model
   via `get_dtype`, which is hardware-driven and kept returning bf16/fp16 on CUDA — so
