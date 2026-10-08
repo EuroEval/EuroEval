@@ -74,6 +74,14 @@ class TestParseBareQuestionAndChoices:
         assert question == text
         assert choices == []
 
+    def test_preserves_colon_ended_question_before_choices_heading(self) -> None:
+        """Only the choices heading is removed when the question ends in a colon."""
+        for heading in ("Opciones:", "Choices:", "Svarmuligheder:"):
+            text = f"Pregunta:\n{heading}\n\na. primera\nb. segona"
+            question, choices = cloze.parse_bare_question_and_choices(text)
+            assert question == "Pregunta:"
+            assert choices == ["primera", "segona"]
+
     def test_question_line_starting_with_enumerator_is_kept(self) -> None:
         """A question line that itself starts with ``N.`` is not mistaken for a choice.
 
