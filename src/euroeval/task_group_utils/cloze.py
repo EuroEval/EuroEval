@@ -115,9 +115,11 @@ def parse_bare_question_and_choices(text: str) -> tuple[str, list[str]]:
     # line (e.g. "Choices:"), mirroring how the prompt was assembled as
     # ``<question>\n<choices label>:\n<options>``.
     head_lines = lines[:first_choice_idx]
-    while head_lines and (
-        head_lines[-1].strip() == "" or head_lines[-1].rstrip().endswith(":")
-    ):
+    while head_lines and not head_lines[-1].strip():
+        head_lines.pop()
+    if head_lines and head_lines[-1].rstrip().endswith(":"):
+        head_lines.pop()
+    while head_lines and not head_lines[-1].strip():
         head_lines.pop()
     bare_question = "\n".join(head_lines).strip()
     return bare_question, choices

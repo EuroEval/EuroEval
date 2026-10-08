@@ -76,6 +76,14 @@ class TestGLiNER:
                 },
             )
         ]
+        catalan_prompt = "Pregunta:\nOpciones:\na. primera\nb. segona"
+        catalan_output = classifier.generate(inputs={"text": [catalan_prompt]})
+        assert catalan_output.sequences == ["b"]
+        assert classifier.model.calls[-1][0] == "Pregunta:"
+        assert classifier.model.calls[-1][1]["answer"]["labels"] == {
+            "a": "primera",
+            "b": "segona",
+        }
         assert classifier.extract_labels_from_generation(
             input_batch={"prompt": [prompt]}, model_output=output
         ) == ["b"]
