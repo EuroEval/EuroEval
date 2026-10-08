@@ -21,7 +21,7 @@ from ..data_models import (
 from ..enums import BatchingPreference, InferenceBackend, ModelType, TaskGroup
 from ..exceptions import InvalidBenchmark, InvalidModel
 from ..model_cache import create_model_cache_dir
-from ..string_utils import extract_multiple_choice_labels, split_model_id
+from ..string_utils import split_model_id
 from ..task_group_utils.cloze import parse_bare_question_and_choices
 from ..types import ExtractLabelsFunction
 from ..utils import get_hf_token
@@ -140,16 +140,12 @@ class KevModel(BenchmarkModule):
                     raise InvalidBenchmark(
                         f"Kev could not parse multiple-choice options from {text!r}."
                     )
-                output_labels = list(
-                    extract_multiple_choice_labels(
-                        prompt=str(text), candidate_labels=labels
-                    )
-                )
-                if len(options) != len(output_labels):
+                if labels and len(options) > len(labels):
                     raise InvalidBenchmark(
-                        "Kev multiple-choice option count does not match the dataset "
-                        f"labels ({len(options)} options, {len(output_labels)} labels)."
+                        "Kev multiple-choice option count exceeds the dataset labels "
+                        f"({len(options)} options, {len(labels)} labels)."
                     )
+                output_labels = [chr(ord("a") + index) for index in range(len(options))]
             else:
                 options = labels
                 output_labels = labels
@@ -158,7 +154,13 @@ class KevModel(BenchmarkModule):
                 "questions": [
                     {
                         "instr": self.dataset_config.instruction_prompt.format(
-                            text="", labels_str=self.dataset_config.get_labels_str()
+                            text="",
+                            labels_str=self.dataset_config.get_labels_str(
+                                labels=output_labels
+                                if task_group
+                                is TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+                                else None
+                            ),
                         ).strip(),
                         "options": options,
                         "label": 0,
