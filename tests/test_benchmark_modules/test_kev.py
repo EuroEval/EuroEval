@@ -487,6 +487,7 @@ def test_multiple_choice_labels_follow_parsed_options_not_question_text(
     model.dataset_config.task.task_group = TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
     model.dataset_config.labels = ["a", "b", "c"]
     model.dataset_config.prompt_label_mapping = {label: label for label in "abc"}
+    model.dataset_config.instruction_prompt = "Choose: {labels_str}"
     output = model.generate(
         {
             "text": [
@@ -501,8 +502,8 @@ def test_multiple_choice_labels_follow_parsed_options_not_question_text(
         ["red", "blue", "green"],
     ]
     assert [record["questions"][0]["instr"] for record in fake.records] == [
-        "Choose: 'a' or 'b'",
-        "Choose: 'a', 'b' or 'c'",
+        "Choose: 'a' eller 'b'",
+        "Choose: 'a', 'b' eller 'c'",
     ]
     assert output.sequences == ["a", "a"]
     assert output.scores is not None
