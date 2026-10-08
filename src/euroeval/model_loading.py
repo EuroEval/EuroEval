@@ -8,6 +8,7 @@ from .benchmark_modules import (
     FreshEncoderModel,
     GLiNERModel,
     HuggingFaceEncoderModel,
+    KevModel,
     LiteLLMModel,
     TypesafeSystemOneModel,
     VLLMModel,
@@ -133,6 +134,8 @@ def load_model(
             model_class = GLiNERModel
         case (ModelType.ZERO_SHOT_CLASSIFIER, InferenceBackend.TYPESAFE, False):
             model_class = TypesafeSystemOneModel
+        case (ModelType.ZERO_SHOT_CLASSIFIER, InferenceBackend.KEV, False):
+            model_class = KevModel
         case (ModelType.ENCODER, InferenceBackend.TRANSFORMERS, True):
             model_class = FreshEncoderModel
         case (_, _, True):

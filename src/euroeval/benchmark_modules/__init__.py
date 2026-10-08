@@ -5,6 +5,7 @@ from .dummy import DummyModel
 from .fresh import FreshEncoderModel
 from .gliner import GLiNERModel
 from .hf import HuggingFaceEncoderModel
+from .kev import KevModel
 from .litellm import LiteLLMModel
 from .typesafe import TypesafeSystemOneModel
 from .vllm import VLLMModel
