@@ -1,8 +1,8 @@
 {
-  "policy_version": "volunteer-scope/18.2.0",
+  "policy_version": "volunteer-scope/18.3.0",
   "policies": [
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "be",
       "language_group": "be",
@@ -26,7 +26,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "bg",
       "language_group": "bg",
@@ -49,7 +49,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "bs",
       "language_group": "bs",
@@ -68,7 +68,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "ca",
       "language_group": "ca",
@@ -91,7 +91,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "cs",
       "language_group": "cs",
@@ -114,7 +114,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "da",
       "language_group": "da",
@@ -139,7 +139,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "de",
       "language_group": "de",
@@ -163,7 +163,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "el",
       "language_group": "el",
@@ -186,7 +186,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "en",
       "language_group": "en",
@@ -209,7 +209,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "es",
       "language_group": "es",
@@ -233,7 +233,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "et",
       "language_group": "et",
@@ -256,7 +256,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "fi",
       "language_group": "fi",
@@ -279,7 +279,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "fo",
       "language_group": "fo",
@@ -302,7 +302,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "fr",
       "language_group": "fr",
@@ -326,7 +326,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "hr",
       "language_group": "hr",
@@ -349,7 +349,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "hu",
       "language_group": "hu",
@@ -372,7 +372,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "is",
       "language_group": "is",
@@ -395,7 +395,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "it",
       "language_group": "it",
@@ -419,7 +419,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "lb",
       "language_group": "lb",
@@ -442,7 +442,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "lt",
       "language_group": "lt",
@@ -466,7 +466,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "lv",
       "language_group": "lv",
@@ -489,7 +489,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "nb",
       "language_group": "nb",
@@ -513,7 +513,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "nl",
       "language_group": "nl",
@@ -537,7 +537,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "nn",
       "language_group": "nn",
@@ -561,7 +561,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "no",
       "language_group": "no",
@@ -587,7 +587,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "pl",
       "language_group": "pl",
@@ -610,7 +610,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "pt",
       "language_group": "pt",
@@ -634,7 +634,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "pt-pt",
       "language_group": "pt-pt",
@@ -658,7 +658,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "ro",
       "language_group": "ro",
@@ -681,7 +681,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "sk",
       "language_group": "sk",
@@ -704,7 +704,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "sl",
       "language_group": "sl",
@@ -727,7 +727,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "sq",
       "language_group": "sq",
@@ -750,7 +750,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "sr",
       "language_group": "sr",
@@ -773,7 +773,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "sv",
       "language_group": "sv",
@@ -797,7 +797,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "encoder",
       "language": "uk",
       "language_group": "uk",
@@ -820,7 +820,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "be",
       "language_group": "be",
@@ -867,7 +867,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "bg",
       "language_group": "bg",
@@ -914,7 +914,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "bs",
       "language_group": "bs",
@@ -951,7 +951,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "ca",
       "language_group": "ca",
@@ -1001,7 +1001,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "cs",
       "language_group": "cs",
@@ -1051,7 +1051,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "da",
       "language_group": "da",
@@ -1110,7 +1110,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "de",
       "language_group": "de",
@@ -1166,7 +1166,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "el",
       "language_group": "el",
@@ -1219,7 +1219,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "en",
       "language_group": "en",
@@ -1266,7 +1266,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "es",
       "language_group": "es",
@@ -1317,7 +1317,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "et",
       "language_group": "et",
@@ -1368,7 +1368,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "fi",
       "language_group": "fi",
@@ -1419,7 +1419,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "fo",
       "language_group": "fo",
@@ -1468,7 +1468,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "fr",
       "language_group": "fr",
@@ -1522,7 +1522,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "hr",
       "language_group": "hr",
@@ -1569,7 +1569,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "hu",
       "language_group": "hu",
@@ -1619,7 +1619,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "is",
       "language_group": "is",
@@ -1672,7 +1672,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "it",
       "language_group": "it",
@@ -1726,7 +1726,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "lb",
       "language_group": "lb",
@@ -1772,7 +1772,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "lt",
       "language_group": "lt",
@@ -1825,7 +1825,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "lv",
       "language_group": "lv",
@@ -1875,7 +1875,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "nb",
       "language_group": "nb",
@@ -1923,7 +1923,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "nl",
       "language_group": "nl",
@@ -1983,7 +1983,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "nn",
       "language_group": "nn",
@@ -2031,7 +2031,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "no",
       "language_group": "no",
@@ -2096,7 +2096,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "pl",
       "language_group": "pl",
@@ -2147,7 +2147,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "pt",
       "language_group": "pt",
@@ -2201,7 +2201,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "pt-pt",
       "language_group": "pt-pt",
@@ -2246,7 +2246,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "ro",
       "language_group": "ro",
@@ -2296,7 +2296,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "sk",
       "language_group": "sk",
@@ -2343,7 +2343,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "sl",
       "language_group": "sl",
@@ -2390,7 +2390,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "sq",
       "language_group": "sq",
@@ -2437,7 +2437,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "sr",
       "language_group": "sr",
@@ -2487,7 +2487,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "sv",
       "language_group": "sv",
@@ -2543,7 +2543,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.2.0",
+      "euroeval_version": "18.3.0",
       "model_type": "generative",
       "language": "uk",
       "language_group": "uk",
