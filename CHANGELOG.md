@@ -22,6 +22,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 - Structured classification prompts now convert choices only in the rendered
   choice-instruction field, preserving quoted label text in user-provided inputs.
+- Kev multiple-choice classification now accepts repeated option text while retaining
+  each choice's distinct letter identity.
 - Encoder fine-tuning now creates a deterministic validation holdout from the original
   training split for datasets without a configured validation split. The holdout is
   disjoint from training, leaves the published test split unchanged, and is not applied
