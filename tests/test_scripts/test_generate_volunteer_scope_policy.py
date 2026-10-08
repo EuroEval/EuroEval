@@ -72,21 +72,32 @@ def test_checked_in_policy_matches_all_official_datasets() -> None:
 
 
 def test_development_policy_version_uses_pep440_normalisation() -> None:
-    """Policy versions normalise the package's trailing development marker."""
+    """Policy versions normalise only the source-only development marker."""
     policy = build_policy(
-        euroeval_version="18.1.0.dev",
+        euroeval_version="18.3.0.dev",
         pairs={("multi-wiki-qa-da", "da")},
         model_types=("encoder",),
     )
 
-    assert policy["policy_version"] == "volunteer-scope/18.1.0.dev0"
+    assert policy["policy_version"] == "volunteer-scope/18.3.0"
+    entries = t.cast(list[dict[str, object]], policy["policies"])
+    assert entries[0]["euroeval_version"] == "18.3.0"
+
+    different_development_release = build_policy(
+        euroeval_version="18.3.0.dev1",
+        pairs={("multi-wiki-qa-da", "da")},
+        model_types=("encoder",),
+    )
+    assert different_development_release["policy_version"] == (
+        "volunteer-scope/18.3.0.dev1"
+    )
 
 
 def test_package_version_matches_authoritative_release() -> None:
     """The declared package version matches the current release."""
     project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
 
-    assert project["project"]["version"] == "18.2.0"
+    assert project["project"]["version"] == "18.3.0.dev"
 
 
 def test_policy_does_not_share_a_group_scope() -> None:

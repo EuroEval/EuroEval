@@ -279,11 +279,12 @@ Use `--check` to verify both synchronized files without writing, or `--dry-run` 
 preview whether either would change. `--ts-output <path>` overrides the TypeScript
 mirror location when using a custom JSON output. Commit both generated files with the
 release change. Keep the EuroEval
-release and policy versions aligned separately: the policy's `euroeval_version` must
-match the repository's EuroEval package version and
-`EUROEVAL_VERSION` in Vercel (including the repository's
-normal development-version normalisation). `VOLUNTEER_WORKER_VERSION` is independent
-worker protocol/package versioning; it is currently `1.0.0` and must match the worker
+release and policy versions aligned separately: a trailing `.dev` or `.dev0` in the
+source package version is only a source-vs-PyPI installation marker, so the policy and
+`EUROEVAL_VERSION` use the equivalent release version (for example, `18.3.0`). A
+nonzero development suffix or different base version remains distinct.
+`VOLUNTEER_WORKER_VERSION` is independent worker protocol/package versioning; it is
+currently `1.0.0` and must match the worker
 image/package being published, but need not equal the EuroEval version. The policy
 controls exact result identities; do not hand-edit it. `VOLUNTEER_SCOPE_POLICY_JSON` is
 an optional complete override for an intentional, reviewed deployment policy, not a way
