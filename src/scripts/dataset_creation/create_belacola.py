@@ -9,7 +9,6 @@
 """Create the BelaCoLA dataset and upload it to the Hugging Face Hub."""
 
 from datasets import Dataset, DatasetDict, load_dataset
-from huggingface_hub import HfApi
 
 SOURCE_REPOSITORY = "maaxap/BelarusianGLUE"
 SOURCE_CONFIG = "belacola_in_domain"
@@ -28,7 +27,6 @@ def main() -> None:
 
     dataset = process_dataset(source_dataset=source_dataset)
 
-    HfApi().delete_repo(repo_id=TARGET_REPOSITORY, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(repo_id=TARGET_REPOSITORY, private=True)
 
 

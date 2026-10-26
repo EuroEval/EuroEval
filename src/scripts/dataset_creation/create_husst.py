@@ -13,7 +13,6 @@
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, load_dataset
-from huggingface_hub import HfApi
 from sklearn.utils import resample
 
 
@@ -73,7 +72,6 @@ def main() -> None:
 
     # Push to HF Hub
     dataset_id = "EuroEval/husst-mini"
-    HfApi().delete_repo(repo_id=dataset_id, repo_type="dataset", missing_ok=True)
     dataset_dict.push_to_hub(dataset_id, private=True)
 
 

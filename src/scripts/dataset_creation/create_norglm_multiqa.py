@@ -25,7 +25,6 @@ from constants import (
 )
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from dotenv import load_dotenv
-from huggingface_hub import HfApi
 from openai import OpenAI
 
 load_dotenv()
@@ -238,7 +237,6 @@ def main() -> None:
 
     # Push the dataset to the Hugging Face Hub
     dataset_id = "EuroEval/norglm-multi-qa"
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(dataset_id, private=True)
 
 

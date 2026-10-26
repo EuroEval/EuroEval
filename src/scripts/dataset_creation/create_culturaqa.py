@@ -11,7 +11,6 @@
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
 
 MAX_SPLIT_SIZES = dict(train=1_024, val=256, test=2_048)
 RANDOM_SEED = 4242
@@ -43,7 +42,6 @@ def main() -> None:
         }
     )
 
-    HfApi().delete_repo(target_dataset_id, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(target_dataset_id, private=True)
 
 

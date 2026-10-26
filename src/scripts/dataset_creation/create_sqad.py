@@ -20,7 +20,6 @@ from constants import (
     MIN_NUM_CHARS_IN_QUESTION,
 )
 from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
 
 
 def main() -> None:
@@ -142,7 +141,6 @@ def main() -> None:
 
     # Push to Hugging Face Hub
     dataset_id = "EuroEval/sqad-mini"
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
     dataset_dict.push_to_hub(dataset_id, private=True)
 
 

@@ -22,7 +22,6 @@ from constants import (
     MIN_NUM_CHARS_IN_OPTION,
 )
 from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
 
 
@@ -124,7 +123,6 @@ def main() -> None:
 
     # Push the dataset to the Hugging Face Hub
     dataset_id = "EuroEval/winogrande-is"
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(dataset_id, private=True)
 
 

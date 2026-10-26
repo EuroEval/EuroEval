@@ -9,7 +9,6 @@
 """Create the Dutch SICK-NL Entailment dataset and upload it to the HF Hub."""
 
 from datasets import Dataset, DatasetDict
-from huggingface_hub import HfApi
 
 
 def main() -> None:
@@ -37,7 +36,6 @@ def main() -> None:
 
     # Push the dataset to the Hugging Face Hub
     dataset_id = "EuroEval/sick-nl"
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(dataset_id, private=True)
 
 

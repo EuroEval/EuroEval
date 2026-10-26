@@ -15,7 +15,6 @@ import logging
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
@@ -76,7 +75,6 @@ def main() -> None:
 
     # Upload to Hugging Face Hub
     dataset_id = "EuroEval/cs-gec-mini"
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
     dataset_dict.push_to_hub(dataset_id, private=True)
 
 

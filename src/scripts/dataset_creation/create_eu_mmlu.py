@@ -26,7 +26,7 @@ network. It is described in:
 import pandas as pd
 from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, NamedSplit, Split
-from huggingface_hub import HfApi, hf_hub_download
+from huggingface_hub import hf_hub_download
 
 # The source is not a proper Hugging Face dataset, but a collection of loose CSV files
 # at the root of the repository, so we download and parse them by hand.
@@ -141,9 +141,6 @@ def main() -> None:
         print(f"{language}: {split_sizes} ({num_subjects} subjects)")
 
         dataset_id = f"EuroEval/eu-mmlu-{language}"
-
-        # Remove the dataset from Hugging Face Hub if it already exists
-        HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
 
         # Push the dataset to the Hugging Face Hub
         dataset.push_to_hub(dataset_id, private=True)

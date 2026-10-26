@@ -19,7 +19,6 @@ import pandas as pd
 import requests
 from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, Split
-from huggingface_hub import HfApi
 
 
 def main() -> None:
@@ -53,7 +52,6 @@ def main() -> None:
         )
 
         dataset_id = "EuroEval/exams-bg-mini"
-        HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
         dataset.push_to_hub(dataset_id, private=True)
 
 

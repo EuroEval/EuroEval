@@ -9,7 +9,6 @@
 """Create the IFEval instruction-following datasets and upload to HF Hub."""
 
 from datasets import load_dataset
-from huggingface_hub import HfApi
 from tqdm.auto import tqdm
 
 SUBSET_LANGUAGES: list[str] = [
@@ -76,7 +75,6 @@ def main() -> None:
         dataset = dataset.map(transform).select_columns(["text", "target_text"])
 
         target_repo = TARGET_REPO.format(language=subset_name.split("-")[0])
-        HfApi().delete_repo(repo_id=target_repo, repo_type="dataset", missing_ok=True)
         dataset.push_to_hub(repo_id=target_repo, private=True)
 
 

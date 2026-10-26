@@ -273,9 +273,6 @@ def _process_language(
     new_df = pd.DataFrame(data_dict)
     dataset = DatasetDict({"test": Dataset.from_pandas(new_df, split=Split.TEST)})
 
-    api.delete_repo(
-        new_dataset_id.format(language=language), repo_type="dataset", missing_ok=True
-    )
     dataset.push_to_hub(new_dataset_id.format(language=language), private=True)
     return True
 

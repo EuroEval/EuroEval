@@ -24,7 +24,6 @@ from constants import (
     MIN_NUM_CHARS_IN_OPTION,
 )
 from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
 
 
@@ -193,9 +192,6 @@ def main() -> None:
             dataset_id = "EuroEval/belebele-mini"
         else:
             dataset_id = f"EuroEval/belebele-{language}-mini"
-
-        # Remove the dataset from Hugging Face Hub if it already exists
-        HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
 
         # Push the dataset to the Hugging Face Hub
         dataset.push_to_hub(dataset_id, private=True)

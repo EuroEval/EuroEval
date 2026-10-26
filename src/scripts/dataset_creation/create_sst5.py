@@ -12,7 +12,6 @@
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
 
 
 def main() -> None:
@@ -97,7 +96,6 @@ def main() -> None:
 
     # Push the dataset to the Hugging Face Hub
     dataset_id = "EuroEval/sst5-mini"
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(dataset_id, private=True)
 
 

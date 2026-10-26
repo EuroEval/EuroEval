@@ -13,7 +13,6 @@ import typing as t
 
 from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, load_dataset
-from huggingface_hub import HfApi
 
 
 def main() -> None:
@@ -54,7 +53,6 @@ def main() -> None:
     ds = ds.select_columns(["text", "label"])
 
     # Push the dataset to the Hugging Face Hub
-    HfApi().delete_repo(target_repo_id, repo_type="dataset", missing_ok=True)
     ds.push_to_hub(target_repo_id, private=True)
 
 

@@ -12,8 +12,6 @@
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
-from requests import HTTPError
 
 
 def main() -> None:
@@ -37,14 +35,6 @@ def main() -> None:
 
     full_dataset_id = "EuroEval/dutch-cola-full"
     dataset_id = "EuroEval/dutch-cola"
-
-    # Remove the dataset from Hugging Face Hub if it already exists
-    for repo_id in [dataset_id, full_dataset_id]:
-        try:
-            api = HfApi()
-            api.delete_repo(repo_id, repo_type="dataset", missing_ok=True)
-        except HTTPError:
-            pass
 
     dataset.push_to_hub(full_dataset_id, private=True)
 
@@ -130,8 +120,6 @@ def main() -> None:
             "test": Dataset.from_pandas(new_test_df, split=Split.TEST),
         }
     )
-
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
 
     dataset.push_to_hub(dataset_id, private=True)
 

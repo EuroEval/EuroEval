@@ -24,7 +24,6 @@ from constants import (
     MIN_NUM_CHARS_IN_OPTION,
 )
 from datasets import Dataset, DatasetDict, Split, disable_progress_bars, load_dataset
-from huggingface_hub import HfApi
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
 logger = logging.getLogger("create_winogrande")
@@ -103,7 +102,6 @@ def main() -> None:
 
         # Push the dataset to the Hugging Face Hub
         target_dataset_id = f"EuroEval/winogrande-{language}"
-        HfApi().delete_repo(target_dataset_id, repo_type="dataset", missing_ok=True)
         dataset.push_to_hub(target_dataset_id, private=True)
 
 

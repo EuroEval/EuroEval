@@ -16,7 +16,6 @@ the same sense in both sentences.
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
 
 # Split sizes
 TRAIN_SIZE = 1024
@@ -60,7 +59,6 @@ def main() -> None:
     )
 
     dataset_id = "EuroEval/wic-ita"
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(dataset_id, private=True)
 
 

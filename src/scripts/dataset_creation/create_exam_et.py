@@ -130,7 +130,6 @@ def main() -> None:
         }
     )
 
-    api.delete_repo(repo_id=target_repo_id, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(target_repo_id, private=True)
 
 

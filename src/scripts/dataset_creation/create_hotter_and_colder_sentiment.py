@@ -25,7 +25,6 @@ import pandas as pd
 import requests as rq
 from bs4 import BeautifulSoup, NavigableString, Tag
 from datasets import Dataset, DatasetDict, Split
-from huggingface_hub import HfApi
 from tqdm.auto import tqdm
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
@@ -109,9 +108,6 @@ def main() -> None:
     )
 
     dataset_id = "EuroEval/hotter-and-colder-sentiment"
-
-    # Remove the dataset from Hugging Face Hub if it already exists
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
 
     dataset.push_to_hub(dataset_id, private=True)
 

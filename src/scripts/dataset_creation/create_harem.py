@@ -17,7 +17,6 @@ from collections import Counter
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split
-from huggingface_hub import HfApi
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_harem")
@@ -157,9 +156,6 @@ def main() -> None:
 
     # Create dataset ID
     dataset_id = "EuroEval/harem"
-
-    # Remove the dataset from Hugging Face Hub if it already exists
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
 
     # Push the dataset to the Hugging Face Hub
     logger.info(f"\nUploading dataset to {dataset_id}...")
