@@ -44,7 +44,8 @@ class BiasMetric(Metric):
         Args:
             name: Metric identifier.
             pretty_name: Human-readable metric name.
-            bias_type: Metric variant to compute.
+            bias_type (optional): Metric variant to compute. Defaults to
+                "bias_adjusted_accuracy_ambig".
 
         Raises:
             ValueError:
