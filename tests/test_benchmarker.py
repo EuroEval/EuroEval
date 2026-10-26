@@ -63,7 +63,14 @@ class TestCreateModelDatasetMapping:
     def test_canary_is_preserved_alongside_supported_zero_shot_dataset(
         self, benchmarker: Benchmarker, model_config: ModelConfig
     ) -> None:
-        """The virtual canary bypasses task-group filtering for Laya models."""
+        """The virtual canary bypasses task-group filtering for Laya models.
+
+        Args:
+            benchmarker:
+                The shared benchmarker fixture.
+            model_config:
+                Model configuration being evaluated.
+        """
         zero_shot_model_config = replace(
             model_config, model_type=ModelType.ZERO_SHOT_CLASSIFIER
         )
@@ -94,7 +101,14 @@ class TestCreateModelDatasetMapping:
     def test_standalone_canary_is_preserved_for_zero_shot_model(
         self, benchmarker: Benchmarker, model_config: ModelConfig
     ) -> None:
-        """A Laya-only canary run still includes its virtual dataset."""
+        """A Laya-only canary run still includes its virtual dataset.
+
+        Args:
+            benchmarker:
+                The shared benchmarker fixture.
+            model_config:
+                Model configuration being evaluated.
+        """
         zero_shot_model_config = replace(
             model_config, model_type=ModelType.ZERO_SHOT_CLASSIFIER
         )
@@ -115,7 +129,14 @@ class TestCreateModelDatasetMapping:
     def test_unsupported_task_group_is_filtered_out_for_zero_shot_classifier(
         self, benchmarker: Benchmarker, model_config: ModelConfig
     ) -> None:
-        """A NER dataset is filtered out up front for a zero-shot classifier model."""
+        """A NER dataset is filtered out up front for a zero-shot classifier model.
+
+        Args:
+            benchmarker:
+                The shared benchmarker fixture.
+            model_config:
+                Model configuration being evaluated.
+        """
         zero_shot_model_config = replace(
             model_config, model_type=ModelType.ZERO_SHOT_CLASSIFIER
         )
@@ -148,7 +169,14 @@ class TestDatasetArgumentConflicts:
     def test_benchmark_with_dataset_and_language(
         self, benchmarker: Benchmarker, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test that a `language` argument does not conflict with a `dataset`."""
+        """Test that a `language` argument does not conflict with a `dataset`.
+
+        Args:
+            benchmarker:
+                The shared benchmarker fixture.
+            monkeypatch:
+                Pytest monkeypatch fixture for replacing dependencies.
+        """
         monkeypatch.setattr(
             benchmarker, "_fetch_model_configs", lambda *args, **kwargs: []
         )
@@ -163,7 +191,12 @@ class TestDatasetArgumentConflicts:
     def test_benchmark_with_dataset_and_task_raises(
         self, benchmarker: Benchmarker
     ) -> None:
-        """Test that specifying both `dataset` and `task` raises an error."""
+        """Test that specifying both `dataset` and `task` raises an error.
+
+        Args:
+            benchmarker:
+                The shared benchmarker fixture.
+        """
         with pytest.raises(ValueError, match="Only one of `task` and `dataset"):
             benchmarker.benchmark(model="dummy", dataset="dansk", task="classification")
 
@@ -173,7 +206,12 @@ class TestDatasetArgumentConflicts:
         ids=["all", "str-code", "list-code"],
     )
     def test_init_with_dataset_and_language(self, language: str | list[str]) -> None:
-        """Test that a language selection can be combined with a `dataset`."""
+        """Test that a language selection can be combined with a `dataset`.
+
+        Args:
+            language:
+                Language configuration supplied by the fixture.
+        """
         benchmarker = Benchmarker(
             dataset="dansk", language=language, progress_bar=False, save_results=False
         )
@@ -193,11 +231,27 @@ class TestDebugStartupVerbosity:
     def test_call_debug_true_suppresses_hint(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test that call debug=True suppresses the --verbose hint."""
+        """Test that call debug=True suppresses the --verbose hint.
+
+        Args:
+            monkeypatch:
+                Pytest monkeypatch fixture for replacing dependencies.
+        """
         logged_messages: list[str] = []
         monkeypatch.delenv("FULL_LOG", raising=False)
 
         def mock_log_once(message: str, level: int, prefix: str = "") -> None:
+            """Capture the message sent to the one-time logger.
+
+            Args:
+                message:
+                    Log message passed to the logging helper.
+                level:
+                    Logging level for the message.
+                prefix (optional):
+                    Optional prefix added to the log message. Defaults to an
+                    empty string.
+            """
             logged_messages.append(message)
 
         monkeypatch.setattr("euroeval.benchmarker.log_once", mock_log_once)
@@ -234,11 +288,27 @@ class TestDebugStartupVerbosity:
     def test_init_debug_true_suppresses_hint(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test that init debug=True suppresses the --verbose hint."""
+        """Test that init debug=True suppresses the --verbose hint.
+
+        Args:
+            monkeypatch:
+                Pytest monkeypatch fixture for replacing dependencies.
+        """
         logged_messages: list[str] = []
         monkeypatch.delenv("FULL_LOG", raising=False)
 
         def mock_log_once(message: str, level: int, prefix: str = "") -> None:
+            """Capture the message sent to the one-time logger.
+
+            Args:
+                message:
+                    Log message passed to the logging helper.
+                level:
+                    Logging level for the message.
+                prefix (optional):
+                    Optional prefix added to the log message. Defaults to an
+                    empty string.
+            """
             logged_messages.append(message)
 
         monkeypatch.setattr("euroeval.benchmarker.log_once", mock_log_once)
@@ -273,11 +343,27 @@ class TestDebugStartupVerbosity:
         )
 
     def test_non_debug_shows_hint(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Test that the normal non-debug case still shows the --verbose hint."""
+        """Test that the normal non-debug case still shows the --verbose hint.
+
+        Args:
+            monkeypatch:
+                Pytest monkeypatch fixture for replacing dependencies.
+        """
         logged_messages: list[str] = []
         monkeypatch.delenv("FULL_LOG", raising=False)
 
         def mock_log_once(message: str, level: int, prefix: str = "") -> None:
+            """Capture the message sent to the one-time logger.
+
+            Args:
+                message:
+                    Log message passed to the logging helper.
+                level:
+                    Logging level for the message.
+                prefix (optional):
+                    Optional prefix added to the log message. Defaults to an
+                    empty string.
+            """
             logged_messages.append(message)
 
         monkeypatch.setattr("euroeval.benchmarker.log_once", mock_log_once)
@@ -321,7 +407,18 @@ class TestZeroShotClassifierModelReuse:
         model_config: ModelConfig,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """A preloaded zero-shot model without a generative type is benchmarked."""
+        """A preloaded zero-shot model without a generative type is benchmarked.
+
+        Args:
+            benchmarker:
+                The shared benchmarker fixture.
+            dataset_config:
+                Dataset configuration supplied by the fixture.
+            model_config:
+                Model configuration being evaluated.
+            monkeypatch:
+                Pytest monkeypatch fixture for replacing dependencies.
+        """
         zero_shot_model_config = replace(
             model_config, model_type=ModelType.ZERO_SHOT_CLASSIFIER
         )
@@ -372,7 +469,20 @@ class TestZeroShotClassifierModelReuse:
         model_config: ModelConfig,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """`load_model` is called once and reused across two datasets."""
+        """`load_model` is called once and reused across two datasets.
+
+        Args:
+            benchmarker:
+                The shared benchmarker fixture.
+            benchmark_config:
+                Configuration for the evaluation run.
+            dataset_config:
+                Dataset configuration supplied by the fixture.
+            model_config:
+                Model configuration being evaluated.
+            monkeypatch:
+                Pytest monkeypatch fixture for replacing dependencies.
+        """
         zero_shot_model_config = replace(
             model_config, model_type=ModelType.ZERO_SHOT_CLASSIFIER
         )
@@ -432,10 +542,10 @@ class TestZeroShotClassifierModelReuse:
 
 @pytest.fixture(scope="module")
 def benchmarker() -> Generator[Benchmarker, None, None]:
-    """A `Benchmarker` instance.
+    """Provide a benchmarker instance for tests.
 
     Yields:
-        A `Benchmarker` instance.
+        A benchmarker configured without progress bars or result saving.
     """
     yield Benchmarker(progress_bar=False, save_results=False, num_iterations=1)
 
@@ -445,7 +555,14 @@ def benchmarker() -> Generator[Benchmarker, None, None]:
     argvalues=[(False, logging.INFO), (True, logging.DEBUG)],
 )
 def test_adjust_logging_level(verbose: bool, expected_logging_level: int) -> None:
-    """Test that the logging level is adjusted correctly."""
+    """Test that the logging level is adjusted correctly.
+
+    Args:
+        verbose:
+            Whether verbose logging is enabled.
+        expected_logging_level:
+            Expected logging level for the verbosity setting.
+    """
     logging_level = adjust_logging_level(verbose=verbose, ignore_testing=True)
     assert logging_level == expected_logging_level
 
@@ -454,7 +571,16 @@ def test_adjust_logging_level(verbose: bool, expected_logging_level: int) -> Non
 def test_benchmark_dummy(
     benchmarker: Benchmarker, task: Task, language: Language
 ) -> None:
-    """Test that the dummy model can be benchmarked."""
+    """Test that the dummy model can be benchmarked.
+
+    Args:
+        benchmarker:
+            The shared benchmarker fixture.
+        task:
+            Task configuration supplied by the fixture.
+        language:
+            Language configuration supplied by the fixture.
+    """
     benchmark_result = benchmarker.benchmark(
         model="dummy", task=task.name, language=language.code
     )
@@ -466,7 +592,18 @@ def test_benchmark_dummy(
 def test_benchmark_encoder(
     benchmarker: Benchmarker, task: Task, language: Language, encoder_model_id: str
 ) -> None:
-    """Test that an encoder model can be benchmarked."""
+    """Test that an encoder model can be benchmarked.
+
+    Args:
+        benchmarker:
+            The shared benchmarker fixture.
+        task:
+            Task configuration supplied by the fixture.
+        language:
+            Language configuration supplied by the fixture.
+        encoder_model_id:
+            Identifier of the encoder model fixture.
+    """
     benchmark_result = None
     for _ in range(10):
         try:
@@ -486,7 +623,16 @@ def test_benchmark_encoder(
 def test_benchmark_encoder_no_internet(
     task: Task, language: Language, encoder_model_id: str
 ) -> None:
-    """Test that encoder models can be benchmarked without internet."""
+    """Test that encoder models can be benchmarked without internet.
+
+    Args:
+        task:
+            Task configuration supplied by the fixture.
+        language:
+            Language configuration supplied by the fixture.
+        encoder_model_id:
+            Identifier of the encoder model fixture.
+    """
     # We need a new benchmarker since we only check for internet once per instance
     benchmarker = Benchmarker(progress_bar=False, save_results=False, num_iterations=1)
     benchmark_result = benchmarker.benchmark(
@@ -504,7 +650,18 @@ def test_benchmark_encoder_no_internet(
 def test_benchmark_generative(
     benchmarker: Benchmarker, task: Task, language: Language, generative_model_id: str
 ) -> None:
-    """Test that a generative model can be benchmarked."""
+    """Test that a generative model can be benchmarked.
+
+    Args:
+        benchmarker:
+            The shared benchmarker fixture.
+        task:
+            Task configuration supplied by the fixture.
+        language:
+            Language configuration supplied by the fixture.
+        generative_model_id:
+            Identifier of the generative model fixture.
+    """
     benchmark_result = benchmarker.benchmark(
         model=generative_model_id, task=task.name, language=language.code
     )
@@ -523,7 +680,18 @@ def test_benchmark_generative_adapter(
     language: Language,
     generative_adapter_model_id: str,
 ) -> None:
-    """Test that a generative adapter model can be benchmarked."""
+    """Test that a generative adapter model can be benchmarked.
+
+    Args:
+        benchmarker:
+            The shared benchmarker fixture.
+        task:
+            Task configuration supplied by the fixture.
+        language:
+            Language configuration supplied by the fixture.
+        generative_adapter_model_id:
+            Identifier of the generative adapter model fixture.
+    """
     benchmark_result = benchmarker.benchmark(
         model=generative_adapter_model_id, task=task.name, language=language.code
     )
@@ -542,7 +710,16 @@ def test_benchmark_generative_adapter(
 def test_benchmark_generative_adapter_no_internet(
     task: Task, language: Language, generative_adapter_model_id: str
 ) -> None:
-    """Test that generative adapter models can be benchmarked without internet."""
+    """Test that generative adapter models can be benchmarked without internet.
+
+    Args:
+        task:
+            Task configuration supplied by the fixture.
+        language:
+            Language configuration supplied by the fixture.
+        generative_adapter_model_id:
+            Identifier of the generative adapter model fixture.
+    """
     # We need a new benchmarker since we only check for internet once per instance
     benchmarker = Benchmarker(progress_bar=False, save_results=False, num_iterations=1)
     benchmark_result = benchmarker.benchmark(
@@ -560,7 +737,16 @@ def test_benchmark_generative_adapter_no_internet(
 def test_benchmark_generative_no_internet(
     task: Task, language: Language, generative_model_id: str
 ) -> None:
-    """Test that generative models can be benchmarked without internet."""
+    """Test that generative models can be benchmarked without internet.
+
+    Args:
+        task:
+            Task configuration supplied by the fixture.
+        language:
+            Language configuration supplied by the fixture.
+        generative_model_id:
+            Identifier of the generative model fixture.
+    """
     # We need a new benchmarker since we only check for internet once per instance
     benchmarker = Benchmarker(progress_bar=False, save_results=False, num_iterations=1)
     benchmark_result = benchmarker.benchmark(
@@ -580,7 +766,18 @@ def test_benchmark_generative_no_internet(
 def test_benchmark_ollama(
     benchmarker: Benchmarker, task: Task, language: Language, ollama_model_id: str
 ) -> None:
-    """Test that an Ollama model can be benchmarked."""
+    """Test that an Ollama model can be benchmarked.
+
+    Args:
+        benchmarker:
+            The shared benchmarker fixture.
+        task:
+            Task configuration supplied by the fixture.
+        language:
+            Language configuration supplied by the fixture.
+        ollama_model_id:
+            Identifier of the Ollama model fixture.
+    """
     benchmark_result = benchmarker.benchmark(
         model=ollama_model_id, task=task.name, language=language.code
     )
@@ -594,7 +791,18 @@ def test_benchmark_ollama(
 def test_benchmark_openai(
     benchmarker: Benchmarker, task: Task, language: Language, openai_model_id: str
 ) -> None:
-    """Test that an OpenAI model can be benchmarked."""
+    """Test that an OpenAI model can be benchmarked.
+
+    Args:
+        benchmarker:
+            The shared benchmarker fixture.
+        task:
+            Task configuration supplied by the fixture.
+        language:
+            Language configuration supplied by the fixture.
+        openai_model_id:
+            Openai model id value used by the test.
+    """
     benchmark_result = benchmarker.benchmark(
         model=openai_model_id, task=task.name, language=language.code
     )
@@ -626,7 +834,20 @@ def test_benchmark_plan_includes_multiple_choice_for_gliner(
     backend: InferenceBackend,
     expected_dataset_names: list[str],
 ) -> None:
-    """The public benchmark plan includes GLiNER multiple-choice tasks."""
+    """The public benchmark plan includes GLiNER multiple-choice tasks.
+
+    Args:
+        benchmarker:
+            The shared benchmarker fixture.
+        model_config:
+            Model configuration being evaluated.
+        monkeypatch:
+            Pytest monkeypatch fixture for replacing dependencies.
+        backend:
+            Inference backend under test.
+        expected_dataset_names:
+            Expected dataset names in the benchmark plan.
+    """
     classifier_config = replace(
         model_config,
         model_type=ModelType.ZERO_SHOT_CLASSIFIER,
@@ -667,6 +888,21 @@ def test_benchmark_plan_includes_multiple_choice_for_gliner(
         benchmark_config: BenchmarkConfig,
         existing_results: Sequence[BenchmarkResult],
     ) -> tuple[None, list[tuple[ShotMode, DatasetConfig]], list[BenchmarkResult], None]:
+        """Capture the benchmark plan for assertions.
+
+        Args:
+            datasets:
+                Dataset configurations included in the plan.
+            model_config:
+                Model configuration being evaluated.
+            benchmark_config:
+                Configuration for the evaluation run.
+            existing_results:
+                Previously recorded benchmark results.
+
+        Returns:
+            The value produced by the test helper.
+        """
         planned_datasets.extend(datasets)
         return None, [], [], None
 
@@ -688,7 +924,18 @@ def test_benchmark_result_includes_model_release_date(
     dataset_config: DatasetConfig,
     benchmark_config: BenchmarkConfig,
 ) -> None:
-    """A completed evaluation copies model release metadata into its result."""
+    """A completed evaluation copies model release metadata into its result.
+
+    Args:
+        monkeypatch:
+            Pytest monkeypatch fixture for replacing dependencies.
+        model_config:
+            Model configuration being evaluated.
+        dataset_config:
+            Dataset configuration supplied by the fixture.
+        benchmark_config:
+            Configuration for the evaluation run.
+    """
     dated_config = replace(
         model_config,
         model_id="convaiinnovations/laya-multilingual",
@@ -727,7 +974,12 @@ def test_benchmark_result_includes_model_release_date(
 
 
 def test_benchmark_results_is_a_list(benchmarker: Benchmarker) -> None:
-    """Test that the `benchmark_results` property is a list."""
+    """Test that the `benchmark_results` property is a list.
+
+    Args:
+        benchmarker:
+            The shared benchmarker fixture.
+    """
     assert isinstance(benchmarker.benchmark_results, list)
 
 
@@ -741,7 +993,19 @@ def test_download_only_does_not_instantiate_model(
 ) -> None:
     """Test that download_only mode downloads models without instantiating them.
 
-    This ensures that --download-only mode works on machines without CUDA/GPUs.
+    Args:
+        task:
+            Task configuration supplied by the fixture.
+        language:
+            Language configuration supplied by the fixture.
+        encoder_model_id:
+            Identifier of the encoder model fixture.
+        tmp_path:
+            Temporary directory supplied by pytest.
+        monkeypatch:
+            Pytest monkeypatch fixture for replacing dependencies.
+        device:
+            Compute device supplied by the fixture.
     """
     if task.name == "translation":
         pytest.skip("Translation tasks require two languages")
@@ -750,10 +1014,30 @@ def test_download_only_does_not_instantiate_model(
     load_model_called = False
 
     def mock_snapshot_download(*_args, **_kwargs) -> None:
+        """Record a model snapshot download request.
+
+        Args:
+            _args:
+                Positional arguments passed to snapshot download.
+            _kwargs:
+                Keyword arguments passed to snapshot download.
+        """
         nonlocal snapshot_download_called
         snapshot_download_called = True
 
     def mock_load_model(*_args, **_kwargs) -> Never:
+        """Reject an unexpected model load.
+
+        Args:
+            _args:
+                Positional arguments passed to model loading.
+            _kwargs:
+                Keyword arguments passed to model loading.
+
+        Raises:
+            RuntimeError:
+                Always, because download-only mode must not load a model.
+        """
         nonlocal load_model_called
         load_model_called = True
         raise RuntimeError("load_model should not be called in download_only mode")
@@ -764,7 +1048,14 @@ def test_download_only_does_not_instantiate_model(
     monkeypatch.setattr("euroeval.model_loading.load_model", mock_load_model)
 
     def mock_load_raw_data(*_args, **_kwargs) -> None:
-        pass
+        """Stub raw dataset loading.
+
+        Args:
+            _args:
+                Positional arguments passed to raw-data loading.
+            _kwargs:
+                Keyword arguments passed to raw-data loading.
+        """
 
     monkeypatch.setattr("euroeval.benchmarker.load_raw_data", mock_load_raw_data)
 
@@ -777,7 +1068,14 @@ def test_download_only_does_not_instantiate_model(
     )
 
     def mock_metric_download(*_args, **_kwargs) -> None:
-        pass
+        """Stub metric downloads.
+
+        Args:
+            _args:
+                Positional arguments passed to metric download.
+            _kwargs:
+                Keyword arguments passed to metric download.
+        """
 
     for metric in dataset_config.task.metrics:
         monkeypatch.setattr(metric, "download", mock_metric_download)
@@ -847,7 +1145,22 @@ def test_encoder_canary_mixed_run_reuses_ordinary_result_metadata(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """A mixed encoder run should reuse metadata from its ordinary result."""
+    """A mixed encoder run should reuse metadata from its ordinary result.
+
+    Args:
+        benchmarker:
+            The shared benchmarker fixture.
+        benchmark_config:
+            Configuration for the evaluation run.
+        dataset_config:
+            Dataset configuration supplied by the fixture.
+        model_config:
+            Model configuration being evaluated.
+        monkeypatch:
+            Pytest monkeypatch fixture for replacing dependencies.
+        tmp_path:
+            Temporary directory supplied by pytest.
+    """
     canary_dataset = DatasetConfig(
         task=CONTAMINATION_DETECTION,
         languages=benchmark_config.languages,
@@ -909,7 +1222,20 @@ def test_encoder_canary_standalone_uses_supported_metadata_task(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """A standalone encoder canary must not load the virtual text-to-text task."""
+    """A standalone encoder canary must not load the virtual text-to-text task.
+
+    Args:
+        benchmarker:
+            The shared benchmarker fixture.
+        benchmark_config:
+            Configuration for the evaluation run.
+        model_config:
+            Model configuration being evaluated.
+        monkeypatch:
+            Pytest monkeypatch fixture for replacing dependencies.
+        tmp_path:
+            Temporary directory supplied by pytest.
+    """
     canary_dataset = DatasetConfig(
         task=CONTAMINATION_DETECTION,
         languages=benchmark_config.languages,
@@ -956,7 +1282,20 @@ def test_encoder_final_scoring_receives_test_split_config(
     model_config: ModelConfig,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A validation request still sends test-split config to the final scorer."""
+    """A validation request still sends test-split config to the final scorer.
+
+    Args:
+        benchmarker:
+            The shared benchmarker fixture.
+        benchmark_config:
+            Configuration for the evaluation run.
+        dataset_config:
+            Dataset configuration supplied by the fixture.
+        model_config:
+            Model configuration being evaluated.
+        monkeypatch:
+            Pytest monkeypatch fixture for replacing dependencies.
+    """
     encoder_config = replace(model_config, model_type=ModelType.ENCODER)
     config = replace(
         benchmark_config, datasets=[dataset_config], evaluate_test_split=False
@@ -1011,7 +1350,22 @@ def test_encoder_uses_test_split_in_public_benchmark_flow(
     requested_test_split: bool | None,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Encoder split override reaches cache planning even for val requests."""
+    """Encoder split override reaches cache planning even for val requests.
+
+    Args:
+        benchmarker:
+            The shared benchmarker fixture.
+        benchmark_config:
+            Configuration for the evaluation run.
+        dataset_config:
+            Dataset configuration supplied by the fixture.
+        model_config:
+            Model configuration being evaluated.
+        requested_test_split:
+            Requested test-split setting, or None to use the default.
+        monkeypatch:
+            Pytest monkeypatch fixture for replacing dependencies.
+    """
     encoder_config = replace(model_config, model_type=ModelType.ENCODER)
     config = replace(benchmark_config, datasets=[dataset_config])
     observed: list[BenchmarkConfig] = []
@@ -1043,7 +1397,21 @@ def test_encoder_uses_test_split_in_public_benchmark_flow(
         benchmark_config: BenchmarkConfig,
         benchmark_results: Sequence[BenchmarkResult],
     ) -> tuple[list[tuple[ShotMode, DatasetConfig]], list[BenchmarkResult]]:
-        _ = model_config, benchmark_plan, benchmark_results
+        """Record the cache identity configuration.
+
+        Args:
+            model_config:
+                Model configuration being evaluated.
+            benchmark_plan:
+                Planned shot-mode and dataset pairs.
+            benchmark_config:
+                Configuration for the evaluation run.
+            benchmark_results:
+                Existing benchmark results.
+
+        Returns:
+            The value produced by the test helper.
+        """
         observed.append(benchmark_config)
         return [], []
 
@@ -1067,10 +1435,36 @@ def test_fetch_model_configs_keeps_valid_models_when_extra_is_missing(
     dataset_config: DatasetConfig,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A missing optional extra does not prevent other selected models running."""
+    """A missing optional extra does not prevent other selected models running.
+
+    Args:
+        benchmarker:
+            The shared benchmarker fixture.
+        model_config:
+            Model configuration being evaluated.
+        dataset_config:
+            Dataset configuration supplied by the fixture.
+        monkeypatch:
+            Pytest monkeypatch fixture for replacing dependencies.
+    """
     observed: list[ModelConfig] = []
 
     def get_config(*, model_id: str, benchmark_config: BenchmarkConfig) -> ModelConfig:
+        """Return a model configuration or raise for its missing extra.
+
+        Args:
+            model_id:
+                Identifier of the model being configured.
+            benchmark_config:
+                Configuration for the evaluation run.
+
+        Returns:
+            Model configuration for the requested identifier.
+
+        Raises:
+            NeedsExtraInstalled:
+                If the requested model requires the unavailable GLiNER extra.
+        """
         if model_id == "gliner":
             raise NeedsExtraInstalled(extra="gliner")
         return model_config
@@ -1082,6 +1476,21 @@ def test_fetch_model_configs_keeps_valid_models_when_extra_is_missing(
         benchmark_config: BenchmarkConfig,
         existing_results: Sequence[BenchmarkResult],
     ) -> tuple[None, list[tuple[ShotMode, DatasetConfig]], list[BenchmarkResult], None]:
+        """Capture the benchmark plan for assertions.
+
+        Args:
+            model_config:
+                Model configuration being evaluated.
+            datasets:
+                Dataset configurations included in the plan.
+            benchmark_config:
+                Configuration for the evaluation run.
+            existing_results:
+                Previously recorded benchmark results.
+
+        Returns:
+            The value produced by the test helper.
+        """
         observed.append(model_config)
         return None, [], [], None
 
@@ -1311,7 +1720,24 @@ def test_get_record(
     benchmark_results: list[BenchmarkResult],
     expected: bool,
 ) -> None:
-    """Test whether we can correctly check if a model has been benchmarked."""
+    """Test whether we can correctly check if a model has been benchmarked.
+
+    Args:
+        model_config:
+            Model configuration being evaluated.
+        dataset_config:
+            Dataset configuration supplied by the fixture.
+        benchmark_config:
+            Configuration for the evaluation run.
+        few_shot:
+            Whether few-shot evaluation is requested.
+        evaluate_test_split:
+            Whether the test split is evaluated.
+        benchmark_results:
+            Existing benchmark results.
+        expected:
+            Whether a matching benchmark record is expected.
+    """
     benchmark_config = replace(
         benchmark_config, few_shot=few_shot, evaluate_test_split=evaluate_test_split
     )
@@ -1334,7 +1760,20 @@ def test_laya_download_only_resolves_root_checkpoint(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """Laya downloads resolve only the root checkpoint, not cache globbing."""
+    """Laya downloads resolve only the root checkpoint, not cache globbing.
+
+    Args:
+        benchmarker:
+            The shared benchmarker fixture.
+        benchmark_config:
+            Configuration for the evaluation run.
+        model_config:
+            Model configuration being evaluated.
+        monkeypatch:
+            Pytest monkeypatch fixture for replacing dependencies.
+        tmp_path:
+            Temporary directory supplied by pytest.
+    """
     model_cache_dir = tmp_path / "model-cache"
     (model_cache_dir / "other-variant").mkdir(parents=True)
     (model_cache_dir / "other-variant" / "model.safetensors").touch()
@@ -1372,7 +1811,20 @@ def test_mixed_models_keep_non_encoder_split_setting(
     model_config: ModelConfig,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The encoder override does not change generative or classifier split choices."""
+    """The encoder override does not change generative or classifier split choices.
+
+    Args:
+        benchmarker:
+            The shared benchmarker fixture.
+        benchmark_config:
+            Configuration for the evaluation run.
+        dataset_config:
+            Dataset configuration supplied by the fixture.
+        model_config:
+            Model configuration being evaluated.
+        monkeypatch:
+            Pytest monkeypatch fixture for replacing dependencies.
+    """
     configs = [
         replace(model_config, model_id="encoder", model_type=ModelType.ENCODER),
         replace(model_config, model_id="generative", model_type=ModelType.GENERATIVE),
@@ -1402,7 +1854,21 @@ def test_mixed_models_keep_non_encoder_split_setting(
         benchmark_config: BenchmarkConfig,
         existing_results: Sequence[BenchmarkResult],
     ) -> tuple[None, list[tuple[ShotMode, DatasetConfig]], list[BenchmarkResult], None]:
-        _ = datasets, existing_results
+        """Record split configuration for each model.
+
+        Args:
+            model_config:
+                Model configuration being evaluated.
+            datasets:
+                Dataset configurations included in the plan.
+            benchmark_config:
+                Configuration for the evaluation run.
+            existing_results:
+                Previously recorded benchmark results.
+
+        Returns:
+            The value produced by the test helper.
+        """
         observed[model_config.model_id] = benchmark_config.evaluate_test_split
         return None, [], [], None
 
@@ -1419,7 +1885,20 @@ def test_zero_shot_canary_standalone_reuses_loaded_model_metadata(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """A standalone Laya canary does not load the model a second time."""
+    """A standalone Laya canary does not load the model a second time.
+
+    Args:
+        benchmarker:
+            The shared benchmarker fixture.
+        benchmark_config:
+            Configuration for the evaluation run.
+        model_config:
+            Model configuration being evaluated.
+        monkeypatch:
+            Pytest monkeypatch fixture for replacing dependencies.
+        tmp_path:
+            Temporary directory supplied by pytest.
+    """
     canary_dataset = DatasetConfig(
         task=CONTAMINATION_DETECTION,
         languages=benchmark_config.languages,
