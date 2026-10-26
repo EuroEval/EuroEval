@@ -88,6 +88,7 @@ def set_new_version(major: int, minor: int, patch: int) -> None:
     subprocess.run(args=["git", "add", "CHANGELOG.md"], check=True)
     subprocess.run(args=["git", "add", "pyproject.toml"], check=True)
     subprocess.run(args=["git", "add", "uv.lock"], check=True)
+    subprocess.run(args=["git", "add", "src/euroeval/dataset_configs/"], check=True)
     subprocess.run(args=["git", "commit", "-m", f"feat: v{version}"], check=True)
     subprocess.run(args=["git", "tag", f"v{version}"], check=True)
     subprocess.run(args=["git", "push"], check=True)
