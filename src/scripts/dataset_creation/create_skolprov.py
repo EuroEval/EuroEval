@@ -86,6 +86,15 @@ def main() -> None:
     df = df[df.label != "e"]
 
     def is_repetitive(text: str) -> bool:
+        """Check whether the text contains excessive repetition.
+
+        Args:
+            text (str):
+                Text to check for repetition.
+
+        Returns:
+            Whether the text exceeds the repetition limit.
+        """
         """Return True if the text is repetitive."""
         if pd.isna(text):
             return False
