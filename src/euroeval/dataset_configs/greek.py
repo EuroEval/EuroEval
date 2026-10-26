@@ -27,6 +27,7 @@ WMT24PP_EN_EL_CONFIG = TranslationDatasetConfig(
     languages=[GREEK],
     source_language=ENGLISH,
     target_language=GREEK,
+    revision="65689ddb3f9a784fc5443dd6fbf4a8f2a3ffbe3a",
 )
 
 FLORES_EN_EL_CONFIG = TranslationDatasetConfig(
@@ -37,6 +38,7 @@ FLORES_EN_EL_CONFIG = TranslationDatasetConfig(
     languages=[GREEK],
     source_language=ENGLISH,
     target_language=GREEK,
+    revision="57b27dabc155cd709b100bdad8bafd8967106c66",
 )
 
 GREEK_SA_CONFIG = DatasetConfig(
@@ -46,6 +48,7 @@ GREEK_SA_CONFIG = DatasetConfig(
     task=SENT,
     languages=[GREEK],
     labels=["negative", "positive"],
+    revision="d72b98006eaa98449af88264ac2dd5710c6d2fdc",
 )
 
 SCALA_EL_CONFIG = DatasetConfig(
@@ -54,6 +57,7 @@ SCALA_EL_CONFIG = DatasetConfig(
     source="EuroEval/scala-el",
     task=LA,
     languages=[GREEK],
+    revision="b965b88a1b76fde9c599a7b4516a951d7086e4da",
 )
 
 ELNER_CONFIG = DatasetConfig(
@@ -62,6 +66,7 @@ ELNER_CONFIG = DatasetConfig(
     source="EuroEval/elner-mini",
     task=NER,
     languages=[GREEK],
+    revision="5de2a2d591d55e08d9af7eca78d9fafe90faef5e",
 )
 
 MULTI_WIKI_QA_EL_CONFIG = DatasetConfig(
@@ -70,6 +75,7 @@ MULTI_WIKI_QA_EL_CONFIG = DatasetConfig(
     source="EuroEval/multi-wiki-qa-el-mini",
     task=RC,
     languages=[GREEK],
+    revision="46c8868c52cb2a4ae78db50545731cee226f39ae",
 )
 
 GREEK_WIKIPEDIA_CONFIG = DatasetConfig(
@@ -78,6 +84,7 @@ GREEK_WIKIPEDIA_CONFIG = DatasetConfig(
     source="EuroEval/greek-wikipedia-mini",
     task=SUMM,
     languages=[GREEK],
+    revision="cfb9c5c540732bd06465dbb9f655c92664a3ede3",
 )
 
 WINOGRANDE_EL_CONFIG = DatasetConfig(
@@ -86,6 +93,7 @@ WINOGRANDE_EL_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-el",
     task=COMMON_SENSE,
     languages=[GREEK],
+    revision="15b45b219b6625aea63065f515200ecf2e12fba3",
 )
 
 IFEVAL_EL_CONFIG = DatasetConfig(
@@ -96,6 +104,7 @@ IFEVAL_EL_CONFIG = DatasetConfig(
     languages=[GREEK],
     train_split=None,
     val_split=None,
+    revision="726fe019a7954c63bb00fe96e812a94d5dbd8b03",
 )
 
 RAGTRUTH_EL_CONFIG = DatasetConfig(
@@ -105,6 +114,7 @@ RAGTRUTH_EL_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[GREEK],
     train_split=None,
+    revision="4bcb7006803e653bc2caba4c90987013e7e17cb3",
 )
 
 
@@ -114,6 +124,7 @@ GREEK_MMLU_CONFIG = DatasetConfig(
     source="EuroEval/greek-mmlu-mini",
     task=KNOW,
     languages=[GREEK],
+    revision="7cd71aa0d7e914f914c46c36638dce957ca2cc5a",
 )
 
 CULTURAQA_CONFIG = DatasetConfig(
@@ -127,6 +138,7 @@ CULTURAQA_CONFIG = DatasetConfig(
     instruction_prompt=(
         "Απαντήστε στην παρακάτω ερώτηση με ακρίβεια και συντομία.\n\nΕρώτηση: {text}"
     ),
+    revision="1ace5e667db22a1dd5a5d83a120908290f659e25",
 )
 
 
@@ -139,6 +151,7 @@ MULTI_BFCL_EL_CONFIG = DatasetConfig(
     task=TOOL_CALLING,
     languages=[GREEK],
     train_split=None,
+    revision="6fa526e2b30f87f0ac9400dc1ee664d30d65a6f8",
 )
 
 
@@ -151,6 +164,7 @@ WMT24PP_EL_EN_CONFIG = TranslationDatasetConfig(
     source_language=GREEK,
     target_language=ENGLISH,
     unofficial=True,
+    revision="c1dd1d0ed7ee76cd4858fe84aa12eb08d3187961",
 )
 
 FLORES_EL_EN_CONFIG = TranslationDatasetConfig(
@@ -162,6 +176,7 @@ FLORES_EL_EN_CONFIG = TranslationDatasetConfig(
     source_language=GREEK,
     target_language=ENGLISH,
     unofficial=True,
+    revision="e11f7c2147d915af3c22fbbb1b5bb915cd0aa3a4",
 )
 
 GLOBAL_MMLU_EL_CONFIG = DatasetConfig(
@@ -171,6 +186,7 @@ GLOBAL_MMLU_EL_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[GREEK],
     unofficial=True,
+    revision="1b4d4efe3778c4d331a0688db2e11d85d160ebc4",
 )
 
 MULTI_IFEVAL_EL_CONFIG = DatasetConfig(
@@ -182,6 +198,7 @@ MULTI_IFEVAL_EL_CONFIG = DatasetConfig(
     train_split=None,
     val_split=None,
     unofficial=True,
+    revision="cf465b59373bfd5f56441e046e9fd8aaca5bb3cc",
 )
 
 INCLUDE_EL_CONFIG = DatasetConfig(
@@ -191,6 +208,7 @@ INCLUDE_EL_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[GREEK],
     unofficial=True,
+    revision="8b9ae4e87f921380bb5c4ee8bf3cf703fb51a025",
 )
 
 EU_MMLU_EL_CONFIG = DatasetConfig(
@@ -200,4 +218,5 @@ EU_MMLU_EL_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[GREEK],
     unofficial=True,
+    revision="ea2353933d96d55664adc97c8083dee5abbe1587",
 )

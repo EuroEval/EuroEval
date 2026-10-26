@@ -31,6 +31,7 @@ WMT24PP_EN_NO_CONFIG = TranslationDatasetConfig(
     languages=[NORWEGIAN],
     source_language=ENGLISH,
     target_language=NORWEGIAN,
+    revision="12f864763019da8cb1ac20f3ce73334657d7d860",
 )
 
 FLORES_EN_NO_CONFIG = TranslationDatasetConfig(
@@ -41,6 +42,7 @@ FLORES_EN_NO_CONFIG = TranslationDatasetConfig(
     languages=[NORWEGIAN],
     source_language=ENGLISH,
     target_language=NORWEGIAN,
+    revision="f2e6e0076ba2e7c3cbf5e5f26f95bb014a0c1b8b",
 )
 
 NOREC_CONFIG = DatasetConfig(
@@ -49,6 +51,7 @@ NOREC_CONFIG = DatasetConfig(
     source="EuroEval/norec-mini",
     task=SENT,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
+    revision="07b99ab3363c2e7f8f87015b01c21f4d9b917ce3",
 )
 
 SCALA_NB_CONFIG = DatasetConfig(
@@ -57,6 +60,7 @@ SCALA_NB_CONFIG = DatasetConfig(
     source="EuroEval/scala-nb",
     task=LA,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
+    revision="544d09f5b6e784ca615330d9219b74ebfc173f32",
 )
 
 SCALA_NN_CONFIG = DatasetConfig(
@@ -65,6 +69,7 @@ SCALA_NN_CONFIG = DatasetConfig(
     source="EuroEval/scala-nn",
     task=LA,
     languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
+    revision="442bc8cc1b97ac280d6f8b3631bada3eb7ffc53a",
 )
 
 NORNE_NB_CONFIG = DatasetConfig(
@@ -73,6 +78,7 @@ NORNE_NB_CONFIG = DatasetConfig(
     source="EuroEval/norne-nb-mini",
     task=NER,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
+    revision="67710dfa772469bf5d3653bf0ca9f431e782d85c",
 )
 
 NORNE_NN_CONFIG = DatasetConfig(
@@ -81,6 +87,7 @@ NORNE_NN_CONFIG = DatasetConfig(
     source="EuroEval/norne-nn-mini",
     task=NER,
     languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
+    revision="b34982a3ffc391bf3c5d6c999a2c1804ae170780",
 )
 
 NORQUAD_CONFIG = DatasetConfig(
@@ -90,6 +97,7 @@ NORQUAD_CONFIG = DatasetConfig(
     task=RC,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
     num_few_shot_examples=2,
+    revision="a47881440ce4b18ef61a99be66dc4badbf5aac6e",
 )
 
 NO_SAMMENDRAG_CONFIG = DatasetConfig(
@@ -98,6 +106,7 @@ NO_SAMMENDRAG_CONFIG = DatasetConfig(
     source="EuroEval/no-sammendrag-mini",
     task=SUMM,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
+    revision="e75ef1a845b0c516ca71f0b21fc2457f67ea963c",
 )
 
 NRK_QUIZ_QA_CONFIG = DatasetConfig(
@@ -106,6 +115,7 @@ NRK_QUIZ_QA_CONFIG = DatasetConfig(
     source="EuroEval/nrk-quiz-qa-mini",
     task=KNOW,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
+    revision="452459a682790222fbe385f62464b8d04ae06bc5",
 )
 
 IDIOMS_NO_CONFIG = DatasetConfig(
@@ -114,6 +124,7 @@ IDIOMS_NO_CONFIG = DatasetConfig(
     source="EuroEval/idioms-no",
     task=KNOW,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
+    revision="c6f26c882b02cffd99a5920a677e4e0857cc3602",
 )
 
 NOR_COMMON_SENSE_QA_CONFIG = DatasetConfig(
@@ -123,6 +134,7 @@ NOR_COMMON_SENSE_QA_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
     labels=["a", "b", "c", "d", "e"],
+    revision="f67b02d29612ff84b5a999df15a085a479fb53ed",
 )
 
 VALEU_NO_CONFIG = DatasetConfig(
@@ -135,6 +147,7 @@ VALEU_NO_CONFIG = DatasetConfig(
     val_split=None,
     bootstrap_samples=False,
     instruction_prompt="{text}",
+    revision="591a5845d5f6338986dacf139b1118c88e4510a7",
 )
 
 MULTI_IFEVAL_NB_CONFIG = DatasetConfig(
@@ -145,6 +158,7 @@ MULTI_IFEVAL_NB_CONFIG = DatasetConfig(
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
     train_split=None,
     val_split=None,
+    revision="1ebec885d5be1db88669b51529947635a1e39eb0",
 )
 
 MULTI_IFEVAL_NN_CONFIG = DatasetConfig(
@@ -155,6 +169,7 @@ MULTI_IFEVAL_NN_CONFIG = DatasetConfig(
     languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
     train_split=None,
     val_split=None,
+    revision="11604aa8dc4de6f67e1970c2642c47b081667495",
 )
 
 ZEBRA_PUZZLE_EASY_NB_CONFIG = DatasetConfig(
@@ -163,6 +178,7 @@ ZEBRA_PUZZLE_EASY_NB_CONFIG = DatasetConfig(
     source="EuroEval/zebra-puzzles-easy-nb",
     task=LOGIC,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
+    revision="a45a2d7c76b5cfdf8d214b3f75086a7806bbdd38",
 )
 
 ZEBRA_PUZZLE_EASY_NN_CONFIG = DatasetConfig(
@@ -171,6 +187,7 @@ ZEBRA_PUZZLE_EASY_NN_CONFIG = DatasetConfig(
     source="EuroEval/zebra-puzzles-easy-nn",
     task=LOGIC,
     languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
+    revision="e6c15c0172a31294492be3260d6ce94406d2103b",
 )
 
 RAGTRUTH_NO_CONFIG = DatasetConfig(
@@ -180,6 +197,7 @@ RAGTRUTH_NO_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[NORWEGIAN],
     train_split=None,
+    revision="b0d661a44d4ddf5718d942b1f44c18ae6e29a9ef",
 )
 
 
@@ -192,6 +210,7 @@ MULTI_BFCL_NO_CONFIG = DatasetConfig(
     task=TOOL_CALLING,
     languages=[NORWEGIAN],
     train_split=None,
+    revision="05e01c1e43d5242742cf81b611e1b8e7fa610520",
 )
 
 
@@ -204,6 +223,7 @@ WMT24PP_NO_EN_CONFIG = TranslationDatasetConfig(
     source_language=NORWEGIAN,
     target_language=ENGLISH,
     unofficial=True,
+    revision="e41f27974afc9c5d149aa58c68133473a1275ca5",
 )
 
 FLORES_NO_EN_CONFIG = TranslationDatasetConfig(
@@ -215,6 +235,7 @@ FLORES_NO_EN_CONFIG = TranslationDatasetConfig(
     source_language=NORWEGIAN,
     target_language=ENGLISH,
     unofficial=True,
+    revision="7e1f2fe00b6fb86513f298ab76d24490f4c234db",
 )
 
 IFEVAL_NB_CONFIG = DatasetConfig(
@@ -226,6 +247,7 @@ IFEVAL_NB_CONFIG = DatasetConfig(
     train_split=None,
     val_split=None,
     unofficial=True,
+    revision="da1beb9c6452d2a22295adcc172dbf210ce5d5e7",
 )
 
 IFEVAL_NN_CONFIG = DatasetConfig(
@@ -237,6 +259,7 @@ IFEVAL_NN_CONFIG = DatasetConfig(
     train_split=None,
     val_split=None,
     unofficial=True,
+    revision="c82317c81c037cee2f19ce2096dd1ba529989b40",
 )
 
 NO_COLA_CONFIG = DatasetConfig(
@@ -246,6 +269,7 @@ NO_COLA_CONFIG = DatasetConfig(
     task=LA,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
     unofficial=True,
+    revision="bab066efed8efea49ee45af37a36ff32ff99bd33",
 )
 
 NORGLM_MULTI_QA = DatasetConfig(
@@ -255,6 +279,7 @@ NORGLM_MULTI_QA = DatasetConfig(
     task=RC,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
     unofficial=True,
+    revision="63fe792355afabdd20c63e44361f876fbeef5761",
 )
 
 NORGLM_MULTI_SUM = DatasetConfig(
@@ -264,6 +289,7 @@ NORGLM_MULTI_SUM = DatasetConfig(
     task=SUMM,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
     unofficial=True,
+    revision="92908fb650a9bba30db9678b20c86e725ce9ad3b",
 )
 
 SCHIBSTED_NO_CONFIG = DatasetConfig(
@@ -273,6 +299,7 @@ SCHIBSTED_NO_CONFIG = DatasetConfig(
     task=SUMM,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
     unofficial=True,
+    revision="29988b762ec8150e58cd92c8f4745d3df7afa385",
 )
 
 SCHIBSTED_FRONT_TITLE_NO_CONFIG = DatasetConfig(
@@ -288,6 +315,7 @@ SCHIBSTED_FRONT_TITLE_NO_CONFIG = DatasetConfig(
     instruction_prompt=(
         "Nyhetsartikkel: {text}\n\nSkriv en tittel for den ovennevnte artikkelen."
     ),
+    revision="b83571c11144521ff04b531fb276277624c6a5fd",
 )
 
 PERSONAL_SUM_CONFIG = DatasetConfig(
@@ -297,6 +325,7 @@ PERSONAL_SUM_CONFIG = DatasetConfig(
     task=SUMM,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
     unofficial=True,
+    revision="15b42bb4b52f98071d0aa8bb75d6bd5fbcfa4de9",
 )
 
 MMLU_NO_CONFIG = DatasetConfig(
@@ -306,6 +335,7 @@ MMLU_NO_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
     unofficial=True,
+    revision="a3c4f7df841c4a37ef0f8a2521167b4c268bb1ce",
 )
 
 ARC_NO_CONFIG = DatasetConfig(
@@ -315,6 +345,7 @@ ARC_NO_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
     unofficial=True,
+    revision="14e4184dce15d3cfbd84dccd5f7b37ccad6d83be",
 )
 
 HELLASWAG_NO_CONFIG = DatasetConfig(
@@ -324,6 +355,7 @@ HELLASWAG_NO_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
     unofficial=True,
+    revision="9de6012252553eeec5efa207e58fbc1f74af22aa",
 )
 
 BELEBELE_NO_CONFIG = DatasetConfig(
@@ -333,6 +365,7 @@ BELEBELE_NO_CONFIG = DatasetConfig(
     task=MCRC,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
     unofficial=True,
+    revision="25ded4467d392d22fdcd966b4ba794b96a72c31a",
 )
 
 MULTI_WIKI_QA_NB_CONFIG = DatasetConfig(
@@ -342,6 +375,7 @@ MULTI_WIKI_QA_NB_CONFIG = DatasetConfig(
     task=RC,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
     unofficial=True,
+    revision="730b3f845cf419d3aadaa13a19d5396898516648",
 )
 
 MULTI_WIKI_QA_NN_CONFIG = DatasetConfig(
@@ -351,6 +385,7 @@ MULTI_WIKI_QA_NN_CONFIG = DatasetConfig(
     task=RC,
     languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
     unofficial=True,
+    revision="a5079bcb0a81d342c871fe0fd0b7209fac233912",
 )
 
 WINOGRANDE_NO_CONFIG = DatasetConfig(
@@ -361,6 +396,7 @@ WINOGRANDE_NO_CONFIG = DatasetConfig(
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
     labels=["a", "b"],
     unofficial=True,
+    revision="c8cb6c334b6333cce61ae28a6998547d53c1cea5",
 )
 
 NORDIAL_CONFIG = DatasetConfig(
@@ -379,6 +415,7 @@ NORDIAL_CONFIG = DatasetConfig(
         bokmål="bokmål", nynorsk="nynorsk", dialectal="dialekt", mixed="blandet"
     ),
     unofficial=True,
+    revision="3d2f485f3078496e5137be1e6bbcea31d1ed8b0b",
 )
 
 NORSUMM_NB_CONFIG = DatasetConfig(
@@ -389,6 +426,7 @@ NORSUMM_NB_CONFIG = DatasetConfig(
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
     unofficial=True,
     val_split=None,
+    revision="7863c9e3e794d360e55fe650ec20328af64d2228",
 )
 
 NORSUMM_NN_CONFIG = DatasetConfig(
@@ -399,6 +437,7 @@ NORSUMM_NN_CONFIG = DatasetConfig(
     languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
     unofficial=True,
     val_split=None,
+    revision="ec04568fcb9459510ce350feaebca1a43ebcbbad",
 )
 
 GERLANGMOD_NB_CONFIG = DatasetConfig(
@@ -408,6 +447,7 @@ GERLANGMOD_NB_CONFIG = DatasetConfig(
     task=GED,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
     unofficial=True,
+    revision="3c0e7fb276cedac05dfe461f30392e9d5491c970",
 )
 
 GERLANGMOD_NN_CONFIG = DatasetConfig(
@@ -417,6 +457,7 @@ GERLANGMOD_NN_CONFIG = DatasetConfig(
     task=GED,
     languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
     unofficial=True,
+    revision="6e419359599dde827c700f3666cc013407b8afc9",
 )
 
 ZEBRA_PUZZLE_HARD_NB_CONFIG = DatasetConfig(
@@ -426,6 +467,7 @@ ZEBRA_PUZZLE_HARD_NB_CONFIG = DatasetConfig(
     task=LOGIC,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
     unofficial=True,
+    revision="3b3975d340bea19a3970458c27d2ca94a9549ffc",
 )
 
 ZEBRA_PUZZLE_HARD_NN_CONFIG = DatasetConfig(
@@ -435,4 +477,5 @@ ZEBRA_PUZZLE_HARD_NN_CONFIG = DatasetConfig(
     task=LOGIC,
     languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
     unofficial=True,
+    revision="5fd33b16465ed3df4d15d0c70268c2069b0800a7",
 )
