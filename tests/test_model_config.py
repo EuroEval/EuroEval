@@ -39,7 +39,16 @@ from euroeval.model_config import get_model_config
 def test_get_model_config(
     benchmark_config: BenchmarkConfig, model_id: str, should_raise: bool
 ) -> None:
-    """Test that the `get_model_config` function works as expected."""
+    """Test that the `get_model_config` function works as expected.
+
+    Args:
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        model_id:
+            Model identifier used by the test.
+        should_raise:
+            Should raise supplied to the test.
+    """
     if should_raise:
         with pytest.raises(InvalidModel):
             get_model_config(model_id=model_id, benchmark_config=benchmark_config)
@@ -56,7 +65,16 @@ def test_get_model_config(
 def test_gliner_without_optional_package_does_not_fall_back_to_encoder(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, benchmark_config: BenchmarkConfig
 ) -> None:
-    """Recognised GLiNER checkpoints report the missing extra before HF fallback."""
+    """Recognised GLiNER checkpoints report the missing extra before HF fallback.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+    """
     (tmp_path / "config.json").write_text(
         json.dumps(
             {
@@ -85,7 +103,18 @@ def test_installed_gliner_checkpoint_resolves_to_specialised_backend(
     benchmark_config: BenchmarkConfig,
     model_config: ModelConfig,
 ) -> None:
-    """An installed GLiNER package lets its specialised module claim the checkpoint."""
+    """An installed GLiNER package lets its specialised module claim the checkpoint.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        model_config:
+            Model configuration exercised by the test.
+    """
     (tmp_path / "config.json").write_text(
         json.dumps(
             {
@@ -128,6 +157,14 @@ def test_laya_resolves_correctly_offline_regardless_of_module_order(
     Both modules are `high_priority`, so this only passes if the sort also keys
     on `is_fallback` -- sorting on `high_priority` alone leaves the two tied, and
     ties are broken by import order, which this test doesn't control.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        model_config:
+            Model configuration exercised by the test.
     """
     monkeypatch.setattr(
         "euroeval.benchmark_modules.hf._lookup_model_info",
@@ -174,7 +211,16 @@ def test_non_matching_model_id_resolves_to_encoder_model(
     benchmark_config: BenchmarkConfig,
     model_config: ModelConfig,
 ) -> None:
-    """A normal encoder ID (no Laya match) still resolves via HF."""
+    """A normal encoder ID (no Laya match) still resolves via HF.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        model_config:
+            Model configuration exercised by the test.
+    """
     monkeypatch.setattr(
         "euroeval.benchmark_modules.hf.HuggingFaceEncoderModel.model_exists",
         classmethod(lambda cls, model_id, benchmark_config: True),
@@ -197,7 +243,18 @@ def test_unrelated_local_model_still_resolves_to_encoder_without_gliner(
     benchmark_config: BenchmarkConfig,
     model_config: ModelConfig,
 ) -> None:
-    """A generic encoder does not require the unrelated optional GLiNER extra."""
+    """A generic encoder does not require the unrelated optional GLiNER extra.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        model_config:
+            Model configuration exercised by the test.
+    """
     (tmp_path / "config.json").write_text(
         json.dumps({"architectures": ["BertModel"], "model_type": "bert"})
     )
@@ -226,6 +283,12 @@ def test_zero_shot_classifier_is_checked_regardless_of_dispatch_order(
     mock `HuggingFaceEncoderModel.model_exists` at all: dispatch correctness here
     relies on `HuggingFaceEncoderModel` genuinely not claiming a Laya-style repo
     (no root `config.json`), not on being checked in any particular order.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
     """
     fake_laya_module = types.ModuleType("laya")
     fake_laya_module.Agent = object  # type: ignore[attr-defined]

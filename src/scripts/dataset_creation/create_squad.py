@@ -67,6 +67,15 @@ def main() -> None:
 
     # Extract information on which examples contain an answer
     def has_answer(example: dict) -> bool:
+        """Check whether an example contains an answer.
+
+        Args:
+            example (dict):
+                Example containing candidate answer text.
+
+        Returns:
+            Whether the example has a non-empty answer.
+        """
         return len(example["text"]) > 0 and example["text"][0] != ""
 
     train_has_answer: pd.Series = train_df.answers.map(has_answer)

@@ -167,7 +167,23 @@ def main(
     thermal_pause_temp: float,
     thermal_resume_temp: float,
 ) -> None:
-    """Process the queue forever, sleeping one hour between passes."""
+    """Process the evaluation queue continuously.
+
+    Args:
+        vm_id:
+            Identifier written to issues to distinguish this runner from other VMs.
+        lock_path:
+            Path used to prevent multiple queue processors on the same host.
+        gpu_memory_utilization:
+            Optional fraction of GPU memory available to vLLM; ``None`` uses the
+            evaluation CLI default.
+        inter_issue_sleep:
+            Seconds to wait between issues.
+        thermal_pause_temp:
+            GPU temperature in degrees Celsius at which processing pauses.
+        thermal_resume_temp:
+            GPU temperature in degrees Celsius at which processing resumes.
+    """
     sleep_seconds = 60 * 60
     thermal_config = ThermalConfig(
         inter_issue_sleep_seconds=inter_issue_sleep,
@@ -249,7 +265,19 @@ def process_queue_once(
     gpu_memory_utilization: float | None,
     thermal_config: ThermalConfig,
 ) -> None:
-    """Process every locally claimable model-evaluation request once."""
+    """Process every locally claimable model-evaluation request once.
+
+    Args:
+        assignee:
+            GitHub login assigned to requests claimed by this runner.
+        vm_id:
+            VM marker used to identify this runner's claims.
+        gpu_memory_utilization:
+            Optional fraction of GPU memory available to vLLM; ``None`` uses the
+            evaluation CLI default.
+        thermal_config:
+            Temperature thresholds and inter-issue delay for this queue pass.
+    """
     candidates = _queue_candidates(assignee=assignee, vm_id=vm_id)
     gpu_bytes = gpu_total_memory_bytes()
 
@@ -331,6 +359,20 @@ class _CoordinatorIssueLock:
         token: str,
         parent: "_CoordinatorIssueLock | None" = None,
     ) -> None:
+        """Initialise a renewable coordinator lock.
+
+        Args:
+            number:
+                Issue number associated with the lock.
+            secret:
+                Shared secret used to authenticate coordinator requests.
+            lock_url:
+                Coordinator lock endpoint URL.
+            token:
+                Opaque token returned when the lock was acquired.
+            parent (optional):
+                Parent lock that must remain healthy. Defaults to ``None``.
+        """
         self.number = number
         self.secret = secret
         self.lock_url = lock_url
@@ -343,6 +385,7 @@ class _CoordinatorIssueLock:
         )
 
     def _renew_loop(self) -> None:
+        """Renew the lock periodically and fence the claimant if renewal fails."""
         renew_url = (
             self.lock_url.removesuffix("/coordinator-lock") + "/coordinator-renew"
         )
@@ -421,6 +464,14 @@ def _queue_candidates(
     The GitHub assignee is authoritative: only unassigned requests are fresh
     candidates. A self-assigned request is eligible only when its VM marker matches
     the current runner.
+
+    Args:
+        assignee (optional):
+            GitHub login whose assigned requests may be reclaimed by this runner.
+            Defaults to ``None``, which lists only unassigned requests.
+        vm_id (optional):
+            VM marker required for an assigned request to be eligible. Defaults to
+            ``None``, which excludes assigned requests.
 
     Returns:
         Queue candidates as sortable tuples followed by issue, model id and
@@ -556,6 +607,12 @@ def _filter_protected_language_groups(
 ) -> list[str]:
     """Drop selected groups that overlap a public broker reservation.
 
+    Args:
+        groups:
+            Selected language-group names to filter.
+        protected_languages:
+            Language codes reserved by public broker work.
+
     Returns:
         Groups that contain no protected public language.
     """
@@ -567,7 +624,17 @@ def _filter_protected_language_groups(
 
 
 def _has_legacy_active_ownership(number: int, body: str) -> bool:
-    """Return whether active broker work should retain issue-wide queue blocking."""
+    """Return whether active broker work should retain issue-wide queue blocking.
+
+    Args:
+        number:
+            GitHub issue number used to verify the broker marker signature.
+        body:
+            Current issue body containing the broker marker.
+
+    Returns:
+        Whether the marker represents legacy or non-public active ownership.
+    """
     marker = trusted_community_marker(number=number, body=body)
     return (
         marker is None
@@ -594,12 +661,31 @@ def _has_legacy_active_ownership(number: int, body: str) -> bool:
 
 
 def _has_matching_vm_marker(body: str, vm_id: str) -> bool:
+    """Check that the issue has exactly one marker for this VM.
+
+    Args:
+        body:
+            Issue body to inspect.
+        vm_id:
+            VM identifier expected in the marker.
+
+    Returns:
+        Whether exactly one VM marker is present and matches ``vm_id``.
+    """
     matches = list(VM_MARKER_RE.finditer(body))
     return len(matches) == 1 and matches[0].group(1) == vm_id
 
 
 def _is_unsigned_public_marker(marker: CommunityMarker) -> bool:
-    """Return whether an otherwise parsed marker claims public ownership unsigned."""
+    """Return whether an otherwise parsed marker claims public ownership unsigned.
+
+    Args:
+        marker:
+            Parsed community broker marker to inspect.
+
+    Returns:
+        Whether a public lease or submission lacks a marker signature.
+    """
     return marker.signature is None and (
         any(lease.get("ownership_mode") == "public" for lease in marker.leases)
         or any(
@@ -654,6 +740,12 @@ def _list_queue_issues(*, assignee: str) -> list[dict[str, t.Any]] | None:
 def _skip_accepted_marker(body: str, number: int) -> bool:
     """Keep accepted broker decisions out of the local queue.
 
+    Args:
+        body:
+            Issue body containing a possible broker marker.
+        number:
+            GitHub issue number used to validate terminal submissions.
+
     Returns:
         Whether the marker represents an accepted decision, trusted or not.
     """
@@ -695,7 +787,11 @@ def process_issue(
         vm_id:
             The VM marker written to the issue body.
         gpu_memory_utilization:
-            Optional vLLM memory fraction.
+            Optional vLLM memory fraction; ``None`` uses the evaluation CLI default.
+
+    Raises:
+        Exceptions from evaluation and queue operations are propagated; if processing
+        fails after an issue is claimed, ownership is released first.
     """
     number = issue["number"]
     languages: list[str] = []
@@ -815,6 +911,10 @@ def process_issue(
 def _coordinator_issue_lock(number: int) -> t.Iterator[_CoordinatorIssueLock | None]:
     """Coordinate local claims with the broker's Redis issue mutex.
 
+    Args:
+        number:
+            GitHub issue number whose claim is being coordinated.
+
     The queue fails closed by default. ``VOLUNTEER_COORDINATOR_STANDALONE`` is
     an explicit, temporary migration escape hatch for an operator who has
     verified that no broker or second queue can touch the issue set.
@@ -883,6 +983,20 @@ def _coordinator_request(
 ) -> str:
     """Call a coordinator endpoint and return its lock token.
 
+    Args:
+        url:
+            Coordinator endpoint URL.
+        number:
+            Issue number associated with the lock.
+        secret:
+            Shared secret sent to authenticate the request.
+        token (optional):
+            Existing lock token for renewal or release. Defaults to ``None`` to
+            acquire a lock.
+        operation (optional):
+            Lock operation to acknowledge when ``token`` is provided. Defaults to
+            ``"release"``.
+
     Returns:
         The opaque lock token (or the supplied token on renewal/release).
 
@@ -927,6 +1041,14 @@ def _has_cross_issue_public_collision(
 ) -> bool:
     """Check fresh open queue snapshots for signed public model/language claims.
 
+    Args:
+        number:
+            Issue number being considered for a local claim.
+        model_id:
+            Model identifier to compare with other requests.
+        languages:
+            Language codes requested by this issue.
+
     Returns:
         Whether a collision exists or the queue could not be fetched safely.
     """
@@ -963,7 +1085,19 @@ def _has_cross_issue_public_collision(
 
 
 def _local_work_is_owned(number: int, vm_id: str, assignee: str) -> bool:
-    """Return whether the local runner still owns an issue before a mutation."""
+    """Return whether the local runner still owns an issue before a mutation.
+
+    Args:
+        number:
+            GitHub issue number to fetch and verify.
+        vm_id:
+            VM marker that must still identify this runner.
+        assignee:
+            GitHub login that must remain the issue's sole assignee.
+
+    Returns:
+        Whether the issue is open, locally marked, and solely assigned here.
+    """
     try:
         current = gh_request(path=f"/repos/{REPO}/issues/{number}")
     except urllib.error.HTTPError as error:
@@ -1151,6 +1285,14 @@ def _run_claimed_issue(
 def _complete_if_owned(number: int, vm_id: str, assignee: str) -> bool:
     """Complete an evaluation only while local ownership holds.
 
+    Args:
+        number:
+            GitHub issue number to mark complete.
+        vm_id:
+            VM marker that must still identify this runner.
+        assignee:
+            GitHub login that must remain the issue's sole assignee.
+
     Returns:
         Whether completion labelling and marker cleanup were applied.
     """
@@ -1181,6 +1323,26 @@ def _evaluate_pending_languages(
     gpu_memory_utilization: float | None,
 ) -> tuple[list[str], list[str], bool, str | None, str, int, str] | None:
     """Evaluate pending languages and publish each successful language.
+
+    Args:
+        number:
+            GitHub issue number being evaluated.
+        model_id:
+            Hugging Face model identifier to evaluate.
+        pending:
+            Languages that still require evaluation.
+        done:
+            Mutable list extended with successfully uploaded languages.
+        accumulated:
+            Mutable list extended with newly generated result lines.
+        results_path:
+            JSONL file containing locally generated results.
+        assignee:
+            GitHub login that must retain ownership before upload.
+        vm_id:
+            VM marker that must retain ownership before upload.
+        gpu_memory_utilization:
+            Optional vLLM GPU memory fraction; ``None`` uses the CLI default.
 
     Returns:
         Evaluation state, or None when ownership is lost before an upload.
@@ -1267,6 +1429,20 @@ def _upload_if_owned(
     language: str,
 ) -> bool | None:
     """Upload one language's results only while local ownership holds.
+
+    Args:
+        number:
+            GitHub issue number associated with the results.
+        vm_id:
+            VM marker that must still identify this runner.
+        assignee:
+            GitHub login that must remain the issue's sole assignee.
+        lines:
+            Newly generated JSONL result records to upload.
+        model_id:
+            Model identifier used to select the bucket destination.
+        language:
+            Language being evaluated, used for ownership-loss logging.
 
     Returns:
         Upload status, or None when ownership is lost.
@@ -1371,6 +1547,14 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
 def _label_gated_if_owned(number: int, vm_id: str, assignee: str) -> bool:
     """Apply gated labels only while local ownership holds.
 
+    Args:
+        number:
+            GitHub issue number to label.
+        vm_id:
+            VM marker that must still identify this runner.
+        assignee:
+            GitHub login that must remain the issue's sole assignee.
+
     Returns:
         Whether both labels were applied.
     """
@@ -1387,6 +1571,16 @@ def _label_gated_if_owned(number: int, vm_id: str, assignee: str) -> bool:
 
 def _report_failure_if_owned(number: int, vm_id: str, assignee: str, body: str) -> bool:
     """Report an evaluation failure only while local ownership holds.
+
+    Args:
+        number:
+            GitHub issue number to update.
+        vm_id:
+            VM marker that must still identify this runner.
+        assignee:
+            GitHub login that must remain the issue's sole assignee.
+        body:
+            Failure report to post as an issue comment.
 
     Returns:
         Whether the comment and failure label were applied.

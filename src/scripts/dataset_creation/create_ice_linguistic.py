@@ -117,6 +117,15 @@ def prepare_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
     def make_label(row: pd.Series) -> str:
         # asking if the sentence is incorrect.
+        """Map one source example's answer to the EuroEval correctness label.
+
+        Args:
+            row:
+                A row containing the source prompt and its answer.
+
+        Returns:
+            The ``correct`` or ``incorrect`` label.
+        """
         if "incorrect" in row["input"]:
             return "incorrect" if row["answer"] == "Yes" else "incorrect"
 

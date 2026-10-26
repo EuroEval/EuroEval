@@ -49,7 +49,12 @@ class TestBenchmarkParametersAreConsistent:
     def test_config_params_is_the_same_as_cli(
         self, cli_params: dict[str, ParamType]
     ) -> None:
-        """Test that `BenchmarkConfigParams` agrees with the CLI."""
+        """Test that `BenchmarkConfigParams` agrees with the CLI.
+
+        Args:
+            cli_params:
+                Cli params supplied to the test.
+        """
         benchmark_config_params = set(
             inspect.signature(BenchmarkConfigParams).parameters.keys()
         ) - {"run_with_cli"}
@@ -103,7 +108,12 @@ class TestBenchmarkResult:
     def test_benchmark_result_parameters(
         self, benchmark_result: BenchmarkResult
     ) -> None:
-        """Test that the `BenchmarkResult` parameters are correct."""
+        """Test that the `BenchmarkResult` parameters are correct.
+
+        Args:
+            benchmark_result:
+                Benchmark result supplied to the test.
+        """
         assert benchmark_result.dataset == "dataset"
         assert benchmark_result.model == "model"
         assert benchmark_result.generative is False
@@ -247,7 +257,14 @@ class TestBenchmarkResult:
         ],
     )
     def test_from_dict(self, config: dict, expected: BenchmarkResult) -> None:
-        """Test that `BenchmarkResult.from_dict` works as expected."""
+        """Test that `BenchmarkResult.from_dict` works as expected.
+
+        Args:
+            config:
+                Config supplied to the test.
+            expected:
+                Expected value for this test case.
+        """
         assert BenchmarkResult.from_dict(config) == expected
 
     @pytest.mark.parametrize(
@@ -260,7 +277,16 @@ class TestBenchmarkResult:
         release_date: str | None,
         expected: str | None,
     ) -> None:
-        """Missing and malformed release dates remain backwards compatible."""
+        """Missing and malformed release dates remain backwards compatible.
+
+        Args:
+            benchmark_result:
+                Benchmark result supplied to the test.
+            release_date:
+                Release date supplied to the test.
+            expected:
+                Expected value for this test case.
+        """
         result = benchmark_result.model_copy(update={"release_date": release_date})
         result = BenchmarkResult.model_validate(result.model_dump())
         assert result.release_date == expected
@@ -272,7 +298,12 @@ class TestMetric:
     def test_attributes_correspond_to_arguments(
         self, metric: HuggingFaceMetric
     ) -> None:
-        """Test that the metric config attributes correspond to the arguments."""
+        """Test that the metric config attributes correspond to the arguments.
+
+        Args:
+            metric:
+                Metric supplied to the test.
+        """
         assert (
             metric.name,
             metric.pretty_name,
@@ -281,7 +312,12 @@ class TestMetric:
         ) == ("metric_name", "Metric name", "metric_id", "metric_key")
 
     def test_default_value_of_compute_kwargs(self, metric: HuggingFaceMetric) -> None:
-        """Test that the default value of `compute_kwargs` is an empty dictionary."""
+        """Test that the default value of `compute_kwargs` is an empty dictionary.
+
+        Args:
+            metric:
+                Metric supplied to the test.
+        """
         assert metric.compute_kwargs == dict()
 
     @pytest.mark.parametrize(
@@ -299,9 +335,23 @@ class TestMetric:
     def test_default_value_of_postprocessing_fn(
         self, metric: Metric, inputs: float, expected: tuple[float, str]
     ) -> None:
-        """Test that the default value of `postprocessing_fn` is correct."""
+        """Test that the default value of `postprocessing_fn` is correct.
+
+        Args:
+            metric:
+                Metric supplied to the test.
+            inputs:
+                Inputs supplied to the test.
+            expected:
+                Expected value for this test case.
+        """
         assert metric.postprocessing_fn(inputs) == expected
 
     def test_metric_is_object(self, metric: HuggingFaceMetric) -> None:
-        """Test that the metric config is a `Metric` object."""
+        """Test that the metric config is a `Metric` object.
+
+        Args:
+            metric:
+                Metric supplied to the test.
+        """
         assert isinstance(metric, Metric)

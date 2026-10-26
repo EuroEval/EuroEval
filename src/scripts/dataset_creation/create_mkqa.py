@@ -248,12 +248,12 @@ def create_dataset(
             The MKQA rows, with the queries and answers for all languages.
         language:
             The MKQA language code, such as "da".
-        train_size:
-            The maximum number of training samples.
-        val_size:
-            The maximum number of validation samples.
-        test_size:
-            The maximum number of test samples.
+        train_size (optional):
+            The maximum number of training samples. Defaults to MAX_TRAIN.
+        val_size (optional):
+            The maximum number of validation samples. Defaults to MAX_VAL.
+        test_size (optional):
+            The maximum number of test samples. Defaults to MAX_TEST.
 
     Returns:
         A dataset dictionary with the splits "train", "val" and "test", each with the

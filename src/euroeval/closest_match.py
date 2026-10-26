@@ -22,12 +22,12 @@ def get_closest_match(
             The options to match against.
         case_sensitive:
             Whether to match case sensitively.
-        insertion_weight:
-            The weight of insertions in the Levenshtein distance.
-        deletion_weight:
-            The weight of deletions in the Levenshtein distance.
-        substitution_weight:
-            The weight of substitutions in the Levenshtein distance.
+        insertion_weight (optional):
+            The weight of insertions in the Levenshtein distance. Defaults to 1.
+        deletion_weight (optional):
+            The weight of deletions in the Levenshtein distance. Defaults to 1.
+        substitution_weight (optional):
+            The weight of substitutions in the Levenshtein distance. Defaults to 1.
 
     Returns:
         A pair (closest_match, distance) where closest_match is the closest match to the

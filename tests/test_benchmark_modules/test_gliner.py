@@ -29,7 +29,22 @@ class TestGLiNER:
         tmp_path: Path,
         num_options: int,
     ) -> None:
-        """Options are mapped by their actual per-example order, not config length."""
+        """Options are mapped by their actual per-example order, not config length.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            model_config:
+                Model configuration exercised by the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            tmp_path:
+                Temporary directory for files created by the test.
+            num_options:
+                Num options supplied to the test.
+        """
         monkeypatch.setitem(sys.modules, "gliner2", _gliner_module())
         checkpoint = tmp_path / "checkpoint"
         checkpoint.mkdir()
@@ -123,7 +138,20 @@ class TestGLiNER:
         benchmark_config: BenchmarkConfig,
         tmp_path: Path,
     ) -> None:
-        """Switching datasets changes the candidate labels without stale state."""
+        """Switching datasets changes the candidate labels without stale state.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            model_config:
+                Model configuration exercised by the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         monkeypatch.setitem(sys.modules, "gliner2", _gliner_module())
         checkpoint = tmp_path / "checkpoint"
         checkpoint.mkdir()
@@ -158,7 +186,16 @@ class TestGLiNER:
         benchmark_config: BenchmarkConfig,
         tmp_path: Path,
     ) -> None:
-        """Local metadata prevents unrelated encoder checkpoints being claimed."""
+        """Local metadata prevents unrelated encoder checkpoints being claimed.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         monkeypatch.setitem(sys.modules, "gliner2", _gliner_module())
         checkpoint = tmp_path / "gliner"
         checkpoint.mkdir()
@@ -221,7 +258,26 @@ class TestGLiNER:
         verbose: bool,
         expected_stdout: str,
     ) -> None:
-        """Hide the upstream banner by default without swallowing diagnostics."""
+        """Hide the upstream banner by default without swallowing diagnostics.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            model_config:
+                Model configuration exercised by the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            tmp_path:
+                Temporary directory for files created by the test.
+            capsys:
+                Fixture for capturing output during the test.
+            verbose:
+                Verbose supplied to the test.
+            expected_stdout:
+                Expected stdout for this case.
+        """
         checkpoint = tmp_path / "checkpoint"
         checkpoint.mkdir()
         config = dataclasses.replace(
@@ -235,6 +291,17 @@ class TestGLiNER:
         configured_benchmark = dataclasses.replace(benchmark_config, verbose=verbose)
 
         def load_model(checkpoint: str, map_location: str) -> FakeExtractor:
+            """Load model for this test.
+
+            Args:
+                checkpoint:
+                    Checkpoint supplied to the test.
+                map_location:
+                    Map location supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             print("GLiNER banner")
             print("upstream error", file=sys.stderr)
             return FakeExtractor()
@@ -261,7 +328,20 @@ class TestGLiNER:
         benchmark_config: BenchmarkConfig,
         tmp_path: Path,
     ) -> None:
-        """Output includes the selected label, and does not invent class scores."""
+        """Output includes the selected label, and does not invent class scores.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            model_config:
+                Model configuration exercised by the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         monkeypatch.setitem(sys.modules, "gliner2", _gliner_module())
         checkpoint = tmp_path / "checkpoint"
         checkpoint.mkdir()
@@ -303,7 +383,19 @@ class FakeExtractor:
     def classify_text(
         self, text: str, schema: dict, include_confidence: bool = False
     ) -> dict:
-        """Return selected label in the shape documented by GLiNER2."""
+        """Return selected label in the shape documented by GLiNER2.
+
+        Args:
+            text:
+                Text supplied to the test.
+            schema:
+                Schema supplied to the test.
+            include_confidence (optional):
+                Whether to include confidence in the response. Defaults to False.
+
+        Returns:
+            The classification result in the shape expected by GLiNER2.
+        """
         assert include_confidence is False
         self.calls.append((text, schema))
         if "answer" in schema:

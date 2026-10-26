@@ -667,7 +667,16 @@ class TestComputeMaxScore:
     def test_invalid_override_raises(
         self, override: float, score: float, error_match: str
     ) -> None:
-        """Should reject invalid max-score overrides."""
+        """Should reject invalid max-score overrides.
+
+        Args:
+            override:
+                Override supplied to the test.
+            score:
+                Score supplied to the test.
+            error_match:
+                Error match supplied to the test.
+        """
         model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": score}}
         with pytest.raises(ValueError, match=error_match):
             _compute_max_score(model_scores, max_score_override=override)
@@ -981,7 +990,16 @@ class TestHexToRgba:
     def test_hex_to_rgba_alpha_variants(
         self, colour: str, alpha: float | None, expected: str
     ) -> None:
-        """Should convert colours with default and transparent alpha values."""
+        """Should convert colours with default and transparent alpha values.
+
+        Args:
+            colour:
+                Colour supplied to the test.
+            alpha:
+                Alpha supplied to the test.
+            expected:
+                Expected value for this test case.
+        """
         if alpha is None:
             result = _hex_to_rgba(colour)
         else:
@@ -1384,7 +1402,14 @@ class TestNormaliseLanguageInput:
         [("DA", {"da"}), ("da", {"da"}), ("danish", {"da"}), ("norwegian", {"no"})],
     )
     def test_language_aliases(self, language_input: str, expected: set[str]) -> None:
-        """Should resolve language codes and names to canonical codes."""
+        """Should resolve language codes and names to canonical codes.
+
+        Args:
+            language_input:
+                Language input supplied to the test.
+            expected:
+                Expected value for this test case.
+        """
         assert _normalise_language_input(language_input) == expected
 
 
@@ -1433,7 +1458,14 @@ class TestTitleAndFilenameOptions:
     def test_cli_filename_options(
         self, filename: str | None, expected_filename: str
     ) -> None:
-        """CLI should choose and complete output filenames consistently."""
+        """CLI should choose and complete output filenames consistently.
+
+        Args:
+            filename:
+                Filename supplied to the test.
+            expected_filename:
+                Expected filename for this case.
+        """
         record = make_eee_record(
             "test/model",
             ["da"],
@@ -1527,7 +1559,12 @@ class TestTitleAndFilenameOptions:
     def test_cli_success_output_is_single_line_with_file_uri(
         self, browser_open_calls: list[str]
     ) -> None:
-        """Successful output should be exactly one line with file:// URI."""
+        """Successful output should be exactly one line with file:// URI.
+
+        Args:
+            browser_open_calls:
+                Browser open calls supplied to the test.
+        """
         record = make_eee_record(
             "test/model",
             ["da"],
@@ -1597,7 +1634,14 @@ class TestTitleAndFilenameOptions:
     def test_cli_title_infers_filename_snake_case(
         self, title: str, expected_filename: str
     ) -> None:
-        """CLI titles should infer clean snake-case filenames."""
+        """CLI titles should infer clean snake-case filenames.
+
+        Args:
+            title:
+                Title supplied to the test.
+            expected_filename:
+                Expected filename for this case.
+        """
         record = make_eee_record(
             "test/model",
             ["da"],
@@ -1701,6 +1745,15 @@ def browser_open_calls(monkeypatch: pytest.MonkeyPatch) -> list[str]:
     calls: list[str] = []
 
     def fake_open(url: str) -> bool:
+        """Fake open for this test.
+
+        Args:
+            url:
+                Url supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         calls.append(url)
         return True
 

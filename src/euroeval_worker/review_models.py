@@ -55,11 +55,28 @@ class BucketApi(t.Protocol):
     def batch_bucket_files(
         self, bucket_id: str, *, add: list[tuple[bytes, str]], token: str
     ) -> object:
-        """Upload selected bucket files."""
+        """Upload the supplied files to a bucket.
+
+        Args:
+            bucket_id: Target bucket identifier.
+            add: Byte-content and destination-path pairs to upload.
+            token: Hugging Face authentication token.
+
+        Returns:
+            The API response returned for the batch upload.
+        """
         ...
 
     def bucket_info(self, bucket_id: str, *, token: str) -> BucketInfo:
-        """Return bucket visibility metadata."""
+        """Return bucket visibility metadata.
+
+        Args:
+            bucket_id: Bucket identifier to inspect.
+            token: Hugging Face authentication token.
+
+        Returns:
+            Metadata exposing whether the bucket is private.
+        """
         ...
 
     def download_bucket_files(
@@ -70,19 +87,52 @@ class BucketApi(t.Protocol):
         raise_on_missing_files: bool,
         token: str,
     ) -> None:
-        """Download selected bucket files."""
+        """Download selected bucket files.
+
+        Args:
+            bucket_id:
+                Bucket id.
+            files:
+                Files.
+            raise_on_missing_files:
+                Raise on missing files.
+            token:
+                Token.
+        """
         ...
 
     def get_bucket_paths_info(
         self, bucket_id: str, paths: list[str], *, token: str
     ) -> c.Iterable[BucketEntry]:
-        """Return metadata for selected paths."""
+        """Return metadata for selected paths.
+
+        Args:
+            bucket_id: Bucket containing the paths.
+            paths: Exact bucket paths to inspect.
+            token: Hugging Face authentication token.
+
+        Returns:
+            An iterable of metadata entries for the requested paths.
+        """
         ...
 
     def list_bucket_tree(
         self, bucket_id: str, prefix: str, *, recursive: bool, token: str
     ) -> c.Iterable[BucketEntry]:
-        """List files beneath a bucket prefix."""
+        """List files beneath a bucket prefix.
+
+        Args:
+            bucket_id: Bucket to list.
+            prefix: Path prefix to list beneath.
+            recursive: Whether to include descendants recursively.
+            token: Hugging Face authentication token.
+
+        Returns:
+            An iterable of file metadata entries beneath the prefix.
+
+        Raises:
+            NotImplementedError: If the bucket API does not implement tree listing.
+        """
         raise NotImplementedError(
             f"BucketApi implementations must handle recursive={recursive!r}"
         )

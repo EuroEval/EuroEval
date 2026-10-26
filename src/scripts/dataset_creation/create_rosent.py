@@ -143,7 +143,8 @@ def _create_uniform_label_distribution(
 
     Args:
         df: The input dataframe with a 'label' column.
-        random_state: The random state for reproducibility.
+        random_state (optional):
+            Random state for reproducibility. Defaults to ``4242``.
 
     Returns:
         A dataframe with a uniform label distribution.
@@ -212,7 +213,12 @@ def _classify_text(text: str) -> str:
 
 
 def save_cache(cache: dict) -> None:
-    """Save cache to CACHE_FILE."""
+    """Save the cache to CACHE_FILE.
+
+    Args:
+        cache:
+            Cache data to serialise as JSON.
+    """
     with open(CACHE_FILE, "w") as cache_file:
         json.dump(cache, cache_file, indent=4)
 

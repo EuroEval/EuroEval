@@ -51,6 +51,10 @@ _ALLOWED_REASONS = {
 def canonical_json(value: object) -> str:
     """Encode JSON deterministically for hashing and exact-byte retries.
 
+    Args:
+        value:
+            The JSON-compatible value to encode.
+
     Returns:
         The canonical compact JSON string.
     """
@@ -95,7 +99,11 @@ class CanaryEvidence:
 
     @property
     def identity(self) -> str:
-        """The deterministic cache/storage identity for this evidence."""
+        """The deterministic cache/storage identity for this evidence.
+
+        Returns:
+            The deterministic identity string for this evidence.
+        """
         value = {
             "model_id": self.model_id,
             "requested_revision": self.requested_revision,
@@ -139,6 +147,10 @@ class CanaryEvidence:
 
 def validate_evidence(evidence: CanaryEvidence) -> None:
     """Validate evidence strictly enough for persistence and server submission.
+
+    Args:
+        evidence:
+            The evidence record to validate.
 
     Raises:
         ValueError:
@@ -192,6 +204,10 @@ def validate_evidence(evidence: CanaryEvidence) -> None:
 def normalise_completion(value: str) -> str:
     """Extract the first two lexical words from a bounded model continuation.
 
+    Args:
+        value:
+            The model completion to normalise.
+
     Returns:
         At most the first two NFC-normalised lexical words.
 
@@ -208,6 +224,10 @@ def normalise_completion(value: str) -> str:
 
 def evidence_from_dict(value: object) -> CanaryEvidence:
     """Decode the strict evidence contract and reject undeclared fields.
+
+    Args:
+        value:
+            The untrusted value to decode as canary evidence.
 
     Returns:
         The validated evidence record.
@@ -288,6 +308,21 @@ def evidence_from_dict(value: object) -> CanaryEvidence:
 
 
 def _required_string(value: dict[str, object], key: str) -> str:
+    """Return a required non-empty string from an evidence mapping.
+
+    Args:
+        value:
+            The evidence mapping.
+        key:
+            The required field name.
+
+    Returns:
+        The field's string value.
+
+    Raises:
+        ValueError:
+            If the field is missing or is not a non-empty string.
+    """
     item = value.get(key)
     if not isinstance(item, str) or not item:
         raise ValueError(f"canary evidence field {key!r} is invalid")
@@ -295,6 +330,21 @@ def _required_string(value: dict[str, object], key: str) -> str:
 
 
 def _string(value: dict[str, object], key: str) -> str:
+    """Return a string field from an evidence mapping.
+
+    Args:
+        value:
+            The evidence mapping.
+        key:
+            The field name.
+
+    Returns:
+        The field's string value.
+
+    Raises:
+        ValueError:
+            If the field is missing or is not a string.
+    """
     item = value.get(key)
     if not isinstance(item, str):
         raise ValueError(f"canary evidence field {key!r} is invalid")
@@ -320,6 +370,20 @@ def collected_evidence(
     completions: t.Sequence[str],
 ) -> CanaryEvidence:
     """Build complete evidence from model continuations without retaining prompts.
+
+    Args:
+        model_id:
+            The evaluated model identifier.
+        requested_revision:
+            The requested model revision.
+        resolved_revision:
+            The resolved model revision.
+        backend:
+            The inference backend used.
+        prompts:
+            The validated prompts used for collection.
+        completions:
+            The corresponding model completions.
 
     Returns:
         Validated collected evidence.
@@ -356,6 +420,12 @@ def load_canary_prompts(
     *, cache_dir: str | Path, corpus_path: Path | None = None
 ) -> tuple[CanaryPrompt, ...]:
     """Load and validate the frozen private corpus, then derive completion prompts.
+
+    Args:
+        cache_dir:
+            The directory used to cache the canary corpus.
+        corpus_path (optional):
+            Optional path to the frozen corpus file.
 
     Returns:
         The ordered prompt records derived from the frozen corpus.
@@ -416,6 +486,11 @@ def load_canary_prompts(
 
 
 def _configured_corpus_path() -> Path | None:
+    """Return the configured private canary corpus path, if set.
+
+    Returns:
+        The expanded path from the environment, or None when unset.
+    """
     value = os.getenv(CANARY_CORPUS_PATH_ENV)
     return Path(value).expanduser() if value else None
 
@@ -430,6 +505,20 @@ def status_evidence(
     reason: str,
 ) -> CanaryEvidence:
     """Build a typed non-collected evidence record.
+
+    Args:
+        model_id:
+            The evaluated model identifier.
+        requested_revision:
+            The requested model revision.
+        resolved_revision:
+            The resolved model revision.
+        backend:
+            The inference backend used.
+        status:
+            The non-collected evidence status.
+        reason:
+            Explanation for why canary completions were not collected.
 
     Returns:
         Validated evidence with no observations.

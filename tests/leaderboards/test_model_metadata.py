@@ -116,7 +116,12 @@ class TestCachePriority:
     def test_add_missing_entries_preserves_non_hf_false(
         self, mock_hf_api_class: MagicMock
     ) -> None:
-        """add_missing_entries should preserve open=False for non-HF models."""
+        """add_missing_entries should preserve open=False for non-HF models.
+
+        Args:
+            mock_hf_api_class:
+                Mock hf api class supplied to the test.
+        """
         mock_api = MagicMock()
         mock_hf_api_class.return_value = mock_api
         # Model does NOT exist on HF
@@ -169,6 +174,10 @@ class TestCachePriority:
         This tests that prefix broadening is NOT used for openness, preventing
         propagation of stale values across unrelated model variants.
         HF lookup should succeed for Qwen3-32B and return True.
+
+        Args:
+            mock_hf_api_class:
+                Mock hf api class supplied to the test.
         """
         mock_api = MagicMock()
         mock_hf_api_class.return_value = mock_api
@@ -280,7 +289,12 @@ class TestCachePriority:
 
     @patch("leaderboards.model_metadata.HfApi")
     def test_cached_true_is_trusted(self, mock_hf_api_class: MagicMock) -> None:
-        """Cached open=True should be returned without HF lookup."""
+        """Cached open=True should be returned without HF lookup.
+
+        Args:
+            mock_hf_api_class:
+                Mock hf api class supplied to the test.
+        """
         cache = Cache()
         # split_model_id() strips '#no-thinking', so cache key is 'Qwen/Qwen3-32B'
         cache.open["Qwen/Qwen3-32B"] = True
@@ -335,7 +349,12 @@ class TestCachePriority:
     def test_non_hf_model_false_remains_false(
         self, mock_hf_api_class: MagicMock
     ) -> None:
-        """Non-HF/nonexistent model should remain False."""
+        """Non-HF/nonexistent model should remain False.
+
+        Args:
+            mock_hf_api_class:
+                Mock hf api class supplied to the test.
+        """
         mock_api = MagicMock()
         mock_hf_api_class.return_value = mock_api
         # Model does NOT exist on HF (RepositoryNotFoundError raised)
@@ -372,6 +391,10 @@ class TestCommercialLicenceInference:
 
         After an error, the user is prompted. Their answer is cached, so
         subsequent calls don't re-prompt or re-try the HF API.
+
+        Args:
+            mock_hf_api_class:
+                Mock hf api class supplied to the test.
         """
         mock_api = MagicMock()
         mock_hf_api_class.return_value = mock_api
@@ -398,7 +421,12 @@ class TestCommercialLicenceInference:
     def test_gated_repo_error_falls_through_to_prompt(
         self, mock_hf_api_class: MagicMock
     ) -> None:
-        """GatedRepoError should fall through to prompt, not crash."""
+        """GatedRepoError should fall through to prompt, not crash.
+
+        Args:
+            mock_hf_api_class:
+                Mock hf api class supplied to the test.
+        """
         mock_api = MagicMock()
         mock_hf_api_class.return_value = mock_api
 
@@ -426,7 +454,12 @@ class TestCommercialLicenceInference:
     def test_hf_repository_not_found_falls_through_to_prompt(
         self, mock_hf_api_class: MagicMock
     ) -> None:
-        """RepositoryNotFoundError should fall through to prompt, not crash."""
+        """RepositoryNotFoundError should fall through to prompt, not crash.
+
+        Args:
+            mock_hf_api_class:
+                Mock hf api class supplied to the test.
+        """
         mock_api = MagicMock()
         mock_hf_api_class.return_value = mock_api
 
@@ -455,7 +488,12 @@ class TestCommercialLicenceInference:
     def test_httpx_error_falls_through_to_prompt(
         self, mock_hf_api_class: MagicMock
     ) -> None:
-        """Httpx errors should fall through to prompt, not crash."""
+        """Httpx errors should fall through to prompt, not crash.
+
+        Args:
+            mock_hf_api_class:
+                Mock hf api class supplied to the test.
+        """
         mock_api = MagicMock()
         mock_hf_api_class.return_value = mock_api
         mock_api.model_info.side_effect = httpx.ConnectError("Connection failed")
@@ -470,7 +508,12 @@ class TestCommercialLicenceInference:
 
     @patch("leaderboards.model_metadata.HfApi")
     def test_licence_lookup_is_cached(self, mock_hf_api_class: MagicMock) -> None:
-        """HF licence lookup should be cached to avoid repeated API calls."""
+        """HF licence lookup should be cached to avoid repeated API calls.
+
+        Args:
+            mock_hf_api_class:
+                Mock hf api class supplied to the test.
+        """
         mock_api = MagicMock()
         mock_hf_api_class.return_value = mock_api
         mock_model_info = MagicMock()
@@ -494,7 +537,12 @@ class TestCommercialLicenceInference:
     def test_no_licence_tag_falls_through_to_prompt(
         self, mock_hf_api_class: MagicMock
     ) -> None:
-        """Model without licence tag should fall through to prompt."""
+        """Model without licence tag should fall through to prompt.
+
+        Args:
+            mock_hf_api_class:
+                Mock hf api class supplied to the test.
+        """
         mock_api = MagicMock()
         mock_hf_api_class.return_value = mock_api
         mock_model_info = MagicMock()
@@ -513,7 +561,12 @@ class TestCommercialLicenceInference:
     def test_non_permissive_licence_falls_through_to_prompt(
         self, mock_hf_api_class: MagicMock
     ) -> None:
-        """Non-permissive licence (e.g. llama-3) should fall through to prompt."""
+        """Non-permissive licence (e.g. llama-3) should fall through to prompt.
+
+        Args:
+            mock_hf_api_class:
+                Mock hf api class supplied to the test.
+        """
         mock_api = MagicMock()
         mock_hf_api_class.return_value = mock_api
         mock_model_info = MagicMock()
@@ -537,6 +590,10 @@ class TestCommercialLicenceInference:
         """Model with permissive licence (e.g. MIT) returns True without input().
 
         Regression test: BAAI/bge-m3 with licence:mit should not prompt.
+
+        Args:
+            mock_hf_api_class:
+                Mock hf api class supplied to the test.
         """
         mock_api = MagicMock()
         mock_hf_api_class.return_value = mock_api
@@ -559,7 +616,12 @@ class TestCommercialLicenceInference:
 
     @patch("leaderboards.model_metadata.HfApi")
     def test_permissive_licence_variants(self, mock_hf_api_class: MagicMock) -> None:
-        """Various permissive licences (apache-2.0, BSD, etc.) infer True."""
+        """Various permissive licences (apache-2.0, BSD, etc.) infer True.
+
+        Args:
+            mock_hf_api_class:
+                Mock hf api class supplied to the test.
+        """
         mock_api = MagicMock()
         mock_hf_api_class.return_value = mock_api
         mock_model_info = MagicMock()
@@ -598,7 +660,14 @@ class TestRemoveModelResults:
     def test_deletes_directory_with_slashes_in_model_id(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        """Test deletion works correctly with model IDs containing slashes."""
+        """Test deletion works correctly with model IDs containing slashes.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         monkeypatch.setattr(model_metadata, "RESULTS_DIR", tmp_path)
 
         # Create a model directory (slashes are sanitised to underscores)
@@ -613,7 +682,14 @@ class TestRemoveModelResults:
     def test_deletes_model_directory(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        """Test that _remove_model_results deletes the model's subdirectory."""
+        """Test that _remove_model_results deletes the model's subdirectory.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         monkeypatch.setattr(model_metadata, "RESULTS_DIR", tmp_path)
 
         # Create a model directory with result files
@@ -633,7 +709,14 @@ class TestRemoveModelResults:
     def test_no_error_if_directory_does_not_exist(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        """Test that _remove_model_results does not raise if directory doesn't exist."""
+        """Test that _remove_model_results does not raise if directory doesn't exist.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         monkeypatch.setattr(model_metadata, "RESULTS_DIR", tmp_path)
 
         # Should not raise
@@ -757,6 +840,10 @@ class TestValSuffixMetadataLookup:
 
         This test verifies that when metadata isn't cached, the HF API is called
         with the normalised model ID (without suffix) rather than the raw ID.
+
+        Args:
+            mock_hf_api_class:
+                Mock hf api class supplied to the test.
         """
         cache = Cache()
         mock_api = MagicMock()
@@ -795,7 +882,12 @@ class TestValSuffixMetadataLookup:
     def test_is_open_looks_up_base_model_on_hf(
         self, mock_hf_api_class: MagicMock
     ) -> None:
-        """HfApi.model_info should be called with base model ID for openness check."""
+        """HfApi.model_info should be called with base model ID for openness check.
+
+        Args:
+            mock_hf_api_class:
+                Mock hf api class supplied to the test.
+        """
         cache = Cache()
         mock_api = MagicMock()
         mock_hf_api_class.return_value = mock_api
@@ -818,6 +910,10 @@ class TestValSuffixMetadataLookup:
 
         When a model with suffix isn't found on HF (using base ID), it should
         be treated as closed, not raise an error.
+
+        Args:
+            mock_hf_api_class:
+                Mock hf api class supplied to the test.
         """
         cache = Cache()
         mock_api = MagicMock()
@@ -856,7 +952,12 @@ class TestValSuffixMetadataLookup:
     def test_is_trained_from_scratch_does_not_use_hyphen_prefix_cache(
         self, mock_input: MagicMock
     ) -> None:
-        """A sibling model prefix must not suppress the manual prompt."""
+        """A sibling model prefix must not suppress the manual prompt.
+
+        Args:
+            mock_input:
+                Mock input supplied to the test.
+        """
         cache = Cache()
         cache.open["openeurollm/oellm-9b-128k-theta32m-v3"] = True
         cache.trained_from_scratch["openeurollm/oellm-1b"] = False
@@ -900,7 +1001,12 @@ class TestValSuffixMetadataLookup:
 
     @patch("leaderboards.model_metadata.HfApi")
     def test_merge_detection_ignores_suffix(self, mock_hf_api_class: MagicMock) -> None:
-        """Merge detection via HF tags should work regardless of suffix."""
+        """Merge detection via HF tags should work regardless of suffix.
+
+        Args:
+            mock_hf_api_class:
+                Mock hf api class supplied to the test.
+        """
         cache = Cache()
         mock_api = MagicMock()
         mock_hf_api_class.return_value = mock_api
@@ -924,7 +1030,12 @@ class TestValSuffixMetadataLookup:
 def test_add_missing_entries_caches_missing_release_date(
     mock_release_date: MagicMock,
 ) -> None:
-    """A failed lookup is cached and not repeated for the same model."""
+    """A failed lookup is cached and not repeated for the same model.
+
+    Args:
+        mock_release_date:
+            Mock release date supplied to the test.
+    """
     mock_release_date.return_value = None
     records = [
         {
@@ -947,6 +1058,12 @@ def test_add_missing_entries_caches_missing_release_date(
 
 def _add_missing_entries_with_complete_metadata(record: dict, cache: Cache) -> dict:
     """Populate unrelated metadata so release-date tests never prompt.
+
+    Args:
+        record:
+            Record supplied to the test.
+        cache:
+            Cache supplied to the test.
 
     Returns:
         The record after adding any missing metadata.
@@ -971,7 +1088,14 @@ def _add_missing_entries_with_complete_metadata(record: dict, cache: Cache) -> d
 def test_add_missing_entries_does_not_query_hub_for_api_models(
     mock_api_release_date: MagicMock, mock_hub_release_date: MagicMock
 ) -> None:
-    """API models keep using the API lookup even though they are not Hub repos."""
+    """API models keep using the API lookup even though they are not Hub repos.
+
+    Args:
+        mock_api_release_date:
+            Mock api release date supplied to the test.
+        mock_hub_release_date:
+            Mock hub release date supplied to the test.
+    """
     mock_api_release_date.return_value = "2023-06-13"
     record = {
         "model_info": {
@@ -1000,6 +1124,16 @@ def test_add_missing_entries_falls_back_to_annotations_for_unreadable_repos(
 
     Renamed and deleted repositories are the one class the Hub history cannot
     answer, and leaving them undated would drop them off a time axis.
+
+    Args:
+        mock_release_date:
+            Mock release date supplied to the test.
+        mock_annotated:
+            Mock annotated supplied to the test.
+        mock_generate_url:
+            Mock generate url supplied to the test.
+        mock_remove:
+            Mock remove supplied to the test.
     """
     mock_release_date.return_value = None
     mock_generate_url.return_value = None
@@ -1024,6 +1158,14 @@ def test_add_missing_entries_looks_up_hub_history_without_model_url(
     Routing on the stored `model_url` left every model whose URL could not be
     generated without a date, since the API lookup knows nothing about ordinary
     Hub repositories.
+
+    Args:
+        mock_release_date:
+            Mock release date supplied to the test.
+        mock_generate_url:
+            Mock generate url supplied to the test.
+        mock_remove:
+            Mock remove supplied to the test.
     """
     mock_generate_url.return_value = None
     mock_remove.return_value = False
@@ -1040,7 +1182,12 @@ def test_add_missing_entries_looks_up_hub_history_without_model_url(
 def test_add_missing_entries_preserves_existing_release_date(
     mock_release_date: MagicMock,
 ) -> None:
-    """A valid historical release date is never replaced by a lookup."""
+    """A valid historical release date is never replaced by a lookup.
+
+    Args:
+        mock_release_date:
+            Mock release date supplied to the test.
+    """
     record = {
         "model_info": {
             "name": "org/model",
@@ -1060,7 +1207,12 @@ def test_add_missing_entries_preserves_existing_release_date(
 def test_add_missing_entries_repairs_malformed_release_date(
     mock_release_date: MagicMock,
 ) -> None:
-    """Malformed historical dates are replaced with provider metadata."""
+    """Malformed historical dates are replaced with provider metadata.
+
+    Args:
+        mock_release_date:
+            Mock release date supplied to the test.
+    """
     mock_release_date.return_value = "2024-02-03"
     record = {
         "model_info": {
@@ -1081,7 +1233,12 @@ def test_add_missing_entries_repairs_malformed_release_date(
 def test_add_missing_entries_reuses_api_release_date_for_all_records(
     mock_release_date: MagicMock,
 ) -> None:
-    """Historical API records are enriched without duplicate lookups."""
+    """Historical API records are enriched without duplicate lookups.
+
+    Args:
+        mock_release_date:
+            Mock release date supplied to the test.
+    """
     mock_release_date.return_value = "2023-06-13"
     records = [
         {
@@ -1110,7 +1267,12 @@ def test_add_missing_entries_reuses_api_release_date_for_all_records(
 def test_add_missing_entries_uses_first_hf_weights_commit(
     mock_release_date: MagicMock,
 ) -> None:
-    """Historical Hugging Face records use the shared weights-history lookup."""
+    """Historical Hugging Face records use the shared weights-history lookup.
+
+    Args:
+        mock_release_date:
+            Mock release date supplied to the test.
+    """
     mock_release_date.return_value = "2024-02-03"
     record = {
         "model_info": {
@@ -1132,7 +1294,12 @@ def test_add_missing_entries_uses_first_hf_weights_commit(
 def test_typesafe_release_date_uses_api_metadata_route(
     mock_release_date: MagicMock,
 ) -> None:
-    """Typesafe hosted model IDs are enriched through API release metadata."""
+    """Typesafe hosted model IDs are enriched through API release metadata.
+
+    Args:
+        mock_release_date:
+            Mock release date supplied to the test.
+    """
     mock_release_date.return_value = "2026-09-15"
     record = {
         "model_info": {

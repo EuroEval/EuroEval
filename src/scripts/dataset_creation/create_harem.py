@@ -131,6 +131,15 @@ def main() -> None:
 
     # Convert labels from strings to IDs for consistency with Spanish script
     def convert_labels_to_ids(labels: list[str]) -> list[int]:
+        """Convert entity labels to their integer identifiers.
+
+        Args:
+            labels (list[str]):
+                Entity labels to convert.
+
+        Returns:
+            Integer identifiers corresponding to the labels.
+        """
         return [LABEL2ID[label] for label in labels]
 
     train_df["labels"] = train_df["labels"].apply(convert_labels_to_ids)

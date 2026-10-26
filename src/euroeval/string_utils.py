@@ -242,6 +242,10 @@ def find_label_logprob_start(
 def _normalise_logprob_piece(token: str, *, first: bool) -> str:
     """Normalise one logprob token while retaining label-internal spaces.
 
+    Args:
+        token: The token text to normalise.
+        first: Whether this is the first token in a candidate label.
+
     Returns:
         The normalised token text.
     """

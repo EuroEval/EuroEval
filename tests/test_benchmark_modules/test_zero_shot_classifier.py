@@ -42,7 +42,18 @@ class FakeAgent:
         token: str | None = None,
         device: str | None = None,
     ) -> None:
-        """Record the construction arguments."""
+        """Record the construction arguments.
+
+        Args:
+            model_id_or_path:
+                Model id or path supplied to the test.
+            subfolder (optional):
+                Subfolder supplied to the test. Defaults to None.
+            token (optional):
+                Token supplied to the test. Defaults to None.
+            device (optional):
+                Device supplied to the test. Defaults to None.
+        """
         self.model_id_or_path = model_id_or_path
         self.subfolder = subfolder
         self.token = token
@@ -51,6 +62,12 @@ class FakeAgent:
 
     def system_one(self, state: object, questions: dict) -> dict:
         """Record the call and return a fixed `choice` answer.
+
+        Args:
+            state:
+                State supplied to the test.
+            questions:
+                Questions supplied to the test.
 
         Returns:
             A fake Laya `system_one` response, preferring one criterion.
@@ -74,7 +91,18 @@ class TestClassify:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """`_classify` returns one probability dict per text, keyed by label."""
+        """`_classify` returns one probability dict per text, keyed by label.
+
+        Args:
+            fake_laya_module:
+                Fake laya module supplied to the test.
+            laya_model_config:
+                Laya model config supplied to the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         model = ZeroShotClassifierModel(
             model_config=laya_model_config,
             dataset_config=dataset_config,
@@ -101,7 +129,18 @@ class TestClassify:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """A candidate label missing from Laya's output raises `InvalidBenchmark`."""
+        """A candidate label missing from Laya's output raises `InvalidBenchmark`.
+
+        Args:
+            fake_laya_module:
+                Fake laya module supplied to the test.
+            laya_model_config:
+                Laya model config supplied to the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         model = ZeroShotClassifierModel(
             model_config=laya_model_config,
             dataset_config=dataset_config,
@@ -110,6 +149,17 @@ class TestClassify:
         )
 
         def system_one_missing_label(state: object, questions: dict) -> dict:
+            """System one missing label for this test.
+
+            Args:
+                state:
+                    State supplied to the test.
+                questions:
+                    Questions supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             criteria = list(questions["q"]["criteria"].keys())
             return {
                 "answers": {
@@ -131,7 +181,14 @@ class TestDispatch:
     def test_get_model_config_resolves_via_registry(
         self, fake_laya_module: types.ModuleType, benchmark_config: BenchmarkConfig
     ) -> None:
-        """The reflection-based registry resolves a Laya model ID."""
+        """The reflection-based registry resolves a Laya model ID.
+
+        Args:
+            fake_laya_module:
+                Fake laya module supplied to the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         config = get_model_config(
             model_id="convaiinnovations/laya", benchmark_config=benchmark_config
         )
@@ -141,7 +198,12 @@ class TestDispatch:
     def test_laya_variant_dispatch_fails_with_root_only_message(
         self, benchmark_config: BenchmarkConfig
     ) -> None:
-        """A recognized Laya variant reaches its explicit config validation."""
+        """A recognized Laya variant reaches its explicit config validation.
+
+        Args:
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         with pytest.raises(InvalidModel, match="do not support #"):
             get_model_config(
                 model_id="convaiinnovations/laya#multilingual",
@@ -155,7 +217,18 @@ class TestDispatch:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """`load_model` dispatches to `ZeroShotClassifierModel`."""
+        """`load_model` dispatches to `ZeroShotClassifierModel`.
+
+        Args:
+            fake_laya_module:
+                Fake laya module supplied to the test.
+            laya_model_config:
+                Laya model config supplied to the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         model = load_model(
             model_config=laya_model_config,
             dataset_config=dataset_config,
@@ -166,7 +239,12 @@ class TestDispatch:
     def test_model_exists_does_not_claim_parameterized_non_laya_id(
         self, benchmark_config: BenchmarkConfig
     ) -> None:
-        """Backend dispatch must leave arbitrary `#` parameters to their owner."""
+        """Backend dispatch must leave arbitrary `#` parameters to their owner.
+
+        Args:
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         assert not ZeroShotClassifierModel.model_exists(
             model_id="openai/gpt-5#high", benchmark_config=benchmark_config
         )
@@ -181,7 +259,16 @@ class TestEmptyLabels:
         laya_model_config: ModelConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """Constructing the model raises immediately for a labelless dataset."""
+        """Constructing the model raises immediately for a labelless dataset.
+
+        Args:
+            fake_laya_module:
+                Fake laya module supplied to the test.
+            laya_model_config:
+                Laya model config supplied to the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         sent_dataset_config = DatasetConfig(
             name="dataset",
             pretty_name="Dataset",
@@ -209,7 +296,18 @@ class TestGenerate:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """The extracted label follows the top probability, not candidate order."""
+        """The extracted label follows the top probability, not candidate order.
+
+        Args:
+            fake_laya_module:
+                Fake laya module supplied to the test.
+            laya_model_config:
+                Laya model config supplied to the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         model = ZeroShotClassifierModel(
             model_config=laya_model_config,
             dataset_config=dataset_config,
@@ -237,7 +335,18 @@ class TestGenerate:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """Probabilities from Laya are mapped to logprobs in `scores`."""
+        """Probabilities from Laya are mapped to logprobs in `scores`.
+
+        Args:
+            fake_laya_module:
+                Fake laya module supplied to the test.
+            laya_model_config:
+                Laya model config supplied to the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         model = ZeroShotClassifierModel(
             model_config=laya_model_config,
             dataset_config=dataset_config,
@@ -261,7 +370,16 @@ class TestGenerate:
         laya_model_config: ModelConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """Task groups other than (multiple-choice) classification are rejected."""
+        """Task groups other than (multiple-choice) classification are rejected.
+
+        Args:
+            fake_laya_module:
+                Fake laya module supplied to the test.
+            laya_model_config:
+                Laya model config supplied to the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         hallu_dataset_config = DatasetConfig(
             name="dataset",
             pretty_name="Dataset",
@@ -283,7 +401,12 @@ class TestGetModelConfig:
     """Tests for `ZeroShotClassifierModel.get_model_config`."""
 
     def test_config_fields(self, benchmark_config: BenchmarkConfig) -> None:
-        """The built model config points at the Laya backend."""
+        """The built model config points at the Laya backend.
+
+        Args:
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         config = ZeroShotClassifierModel.get_model_config(
             model_id="convaiinnovations/laya", benchmark_config=benchmark_config
         )
@@ -304,7 +427,14 @@ class TestGetModelConfig:
     def test_laya_rejects_all_parameters(
         self, benchmark_config: BenchmarkConfig, model_id: str
     ) -> None:
-        """Bundled, standalone and local Laya IDs reject every # parameter."""
+        """Bundled, standalone and local Laya IDs reject every # parameter.
+
+        Args:
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            model_id:
+                Model identifier used by the test.
+        """
         with pytest.raises(InvalidModel, match="do not support #"):
             ZeroShotClassifierModel.get_model_config(
                 model_id=model_id, benchmark_config=benchmark_config
@@ -321,7 +451,18 @@ class TestInit:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """The EuroEval-configured device is passed on to `laya.Agent`, explicitly."""
+        """The EuroEval-configured device is passed on to `laya.Agent`, explicitly.
+
+        Args:
+            fake_laya_module:
+                Fake laya module supplied to the test.
+            laya_model_config:
+                Laya model config supplied to the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         model = ZeroShotClassifierModel(
             model_config=laya_model_config,
             dataset_config=dataset_config,
@@ -337,7 +478,18 @@ class TestInit:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """Direct construction cannot bypass Laya's root-only restriction."""
+        """Direct construction cannot bypass Laya's root-only restriction.
+
+        Args:
+            fake_laya_module:
+                Fake laya module supplied to the test.
+            laya_model_config:
+                Laya model config supplied to the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         with pytest.raises(InvalidModel, match="do not support #"):
             ZeroShotClassifierModel(
                 model_config=dataclasses.replace(
@@ -355,7 +507,18 @@ class TestInit:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """A revision other than "main" is rejected."""
+        """A revision other than "main" is rejected.
+
+        Args:
+            fake_laya_module:
+                Fake laya module supplied to the test.
+            laya_model_config:
+                Laya model config supplied to the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         config = dataclasses.replace(laya_model_config, revision="some-other-branch")
         with pytest.raises(InvalidModel, match="revision"):
             ZeroShotClassifierModel(
@@ -372,7 +535,18 @@ class TestInit:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """A plain root checkpoint continues to load as a standalone model."""
+        """A plain root checkpoint continues to load as a standalone model.
+
+        Args:
+            fake_laya_module:
+                Fake laya module supplied to the test.
+            laya_model_config:
+                Laya model config supplied to the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         model = ZeroShotClassifierModel(
             model_config=laya_model_config,
             dataset_config=dataset_config,
@@ -402,7 +576,16 @@ class TestModelExists:
         benchmark_config: BenchmarkConfig,
         model_id: str,
     ) -> None:
-        """Unrelated model IDs are not detected."""
+        """Unrelated model IDs are not detected.
+
+        Args:
+            fake_laya_module:
+                Fake laya module supplied to the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            model_id:
+                Model identifier used by the test.
+        """
         assert (
             ZeroShotClassifierModel.model_exists(
                 model_id=model_id, benchmark_config=benchmark_config
@@ -413,7 +596,14 @@ class TestModelExists:
     def test_matches_bundled_repo(
         self, fake_laya_module: types.ModuleType, benchmark_config: BenchmarkConfig
     ) -> None:
-        """The bundled Laya repo is detected."""
+        """The bundled Laya repo is detected.
+
+        Args:
+            fake_laya_module:
+                Fake laya module supplied to the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         assert (
             ZeroShotClassifierModel.model_exists(
                 model_id="convaiinnovations/laya", benchmark_config=benchmark_config
@@ -427,7 +617,16 @@ class TestModelExists:
         benchmark_config: BenchmarkConfig,
         tmp_path: Path,
     ) -> None:
-        """A local directory with `rl_agent_config.json` is detected."""
+        """A local directory with `rl_agent_config.json` is detected.
+
+        Args:
+            fake_laya_module:
+                Fake laya module supplied to the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         (tmp_path / "rl_agent_config.json").write_text("{}")
         assert (
             ZeroShotClassifierModel.model_exists(
@@ -449,7 +648,16 @@ class TestModelExists:
         benchmark_config: BenchmarkConfig,
         model_id: str,
     ) -> None:
-        """Standalone `convaiinnovations/laya-*` repos are detected."""
+        """Standalone `convaiinnovations/laya-*` repos are detected.
+
+        Args:
+            fake_laya_module:
+                Fake laya module supplied to the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            model_id:
+                Model identifier used by the test.
+        """
         assert (
             ZeroShotClassifierModel.model_exists(
                 model_id=model_id, benchmark_config=benchmark_config
@@ -460,7 +668,14 @@ class TestModelExists:
     def test_needs_extra_installed_when_laya_missing(
         self, monkeypatch: pytest.MonkeyPatch, benchmark_config: BenchmarkConfig
     ) -> None:
-        """A `NeedsExtraInstalled` error is returned when `laya` isn't importable."""
+        """A `NeedsExtraInstalled` error is returned when `laya` isn't importable.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         monkeypatch.setitem(sys.modules, "laya", None)
         result = ZeroShotClassifierModel.model_exists(
             model_id="convaiinnovations/laya", benchmark_config=benchmark_config
@@ -480,6 +695,14 @@ class TestMultipleChoice:
         benchmark_config: BenchmarkConfig,
     ) -> ZeroShotClassifierModel:
         """A model configured for the multiple-choice `KNOW` task.
+
+        Args:
+            fake_laya_module:
+                Fake laya module supplied to the test.
+            laya_model_config:
+                Laya model config supplied to the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
 
         Returns:
             The configured model.
@@ -512,7 +735,14 @@ class TestMultipleChoice:
     def test_falls_back_to_letter_labels_when_unparseable(
         self, mc_model: ZeroShotClassifierModel, text: str
     ) -> None:
-        """Unparseable, mismarked, or duplicated options fall back to letters."""
+        """Unparseable, mismarked, or duplicated options fall back to letters.
+
+        Args:
+            mc_model:
+                Mc model supplied to the test.
+            text:
+                Text supplied to the test.
+        """
         output = mc_model.generate(inputs=dict(text=[text]))
         assert mc_model.agent.calls[0][1]["q"]["criteria"].keys() == {
             "a",
@@ -530,6 +760,10 @@ class TestMultipleChoice:
 
         The option texts are passed once, as each letter's description -- not also
         duplicated into the question state.
+
+        Args:
+            mc_model:
+                Mc model supplied to the test.
         """
         text = (
             "What is the capital of Denmark?\nChoices:\n"
@@ -564,7 +798,20 @@ class TestNumParams:
         model_config: ModelConfig,
         tmp_path: Path,
     ) -> None:
-        """A local checkpoint directory is inspected via `safetensors.safe_open`."""
+        """A local checkpoint directory is inspected via `safetensors.safe_open`.
+
+        Args:
+            fake_laya_module:
+                Fake laya module supplied to the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            model_config:
+                Model configuration exercised by the test.
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         save_file(
             {"a": numpy.zeros((2, 3), dtype=numpy.float32), "b": numpy.zeros(4)},
             str(tmp_path / "model.safetensors"),
@@ -594,9 +841,34 @@ class TestNumParams:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """`num_params` returns -1 when the safetensors metadata can't be fetched."""
+        """`num_params` returns -1 when the safetensors metadata can't be fetched.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            fake_laya_module:
+                Fake laya module supplied to the test.
+            laya_model_config:
+                Laya model config supplied to the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
 
         def raise_error(*args: object, **kwargs: object) -> t.NoReturn:
+            """Raise error for this test.
+
+            Args:
+                args:
+                    Args supplied to the test.
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Raises:
+                OSError:
+                    If the simulated operation fails.
+            """
             raise OSError("no network in this test")
 
         monkeypatch.setattr(
@@ -624,7 +896,18 @@ class TestPrepareDataset:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """The 'text' field stays the raw sample text, not the decoder prompt."""
+        """The 'text' field stays the raw sample text, not the decoder prompt.
+
+        Args:
+            fake_laya_module:
+                Fake laya module supplied to the test.
+            laya_model_config:
+                Laya model config supplied to the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         raw_texts = ["some raw text", "some other raw text"]
         test_split = Dataset.from_dict(
             dict(text=raw_texts, label=["positive", "negative"])
@@ -656,7 +939,20 @@ class TestUnimplementedProperties:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """Laya does not support finetuning properties."""
+        """Laya does not support finetuning properties.
+
+        Args:
+            property_name:
+                Property name supplied to the test.
+            fake_laya_module:
+                Fake laya module supplied to the test.
+            laya_model_config:
+                Laya model config supplied to the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         model = ZeroShotClassifierModel(
             model_config=laya_model_config,
             dataset_config=dataset_config,
@@ -677,7 +973,18 @@ class TestUpdateDatasetConfig:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """Switching datasets recomputes per-dataset buffer state."""
+        """Switching datasets recomputes per-dataset buffer state.
+
+        Args:
+            fake_laya_module:
+                Fake laya module supplied to the test.
+            laya_model_config:
+                Laya model config supplied to the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         model = ZeroShotClassifierModel(
             model_config=laya_model_config,
             dataset_config=dataset_config,
@@ -704,13 +1011,31 @@ class TestUpdateDatasetConfig:
 def _no_network_laya_config(
     monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest
 ) -> None:
-    """Keep Laya config lookups off the network and local Hub cache."""
+    """Keep Laya config lookups off the network and local Hub cache.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        request:
+            Pytest request for parametrised fixture setup.
+    """
     if request.node.name == "test_checkpoint_download_is_root_only":
         return
 
     def fake_local_laya_config(
         directory: Path, subfolder: str | None = None
     ) -> dict[str, int] | None:
+        """Fake local laya config for this test.
+
+        Args:
+            directory:
+                Directory supplied to the test.
+            subfolder (optional):
+                Subfolder supplied to the test. Defaults to None.
+
+        Returns:
+            The value returned by the test helper.
+        """
         if directory.is_dir():
             config_path = directory / "rl_agent_config.json"
             return (
@@ -748,6 +1073,10 @@ def _no_network_laya_config(
 def fake_laya_module(monkeypatch: pytest.MonkeyPatch) -> types.ModuleType:
     """Install a fake `laya` module in `sys.modules`.
 
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+
     Returns:
         The fake `laya` module.
     """
@@ -760,6 +1089,10 @@ def fake_laya_module(monkeypatch: pytest.MonkeyPatch) -> types.ModuleType:
 @pytest.fixture
 def laya_model_config(model_config: ModelConfig) -> ModelConfig:
     """A model configuration pointing at the (fake) Laya model.
+
+    Args:
+        model_config:
+            Model configuration exercised by the test.
 
     Returns:
         A model configuration pointing at Laya.
@@ -778,12 +1111,30 @@ def laya_model_config(model_config: ModelConfig) -> ModelConfig:
 def test_cached_config_falls_back_to_default_hub_cache(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Lookups try the default Hub cache after EuroEval's model cache."""
+    """Lookups try the default Hub cache after EuroEval's model cache.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     calls: list[str | None] = []
 
     def cached_config(
         *, repo_id: str, filename: str, cache_dir: str | None
     ) -> str | None:
+        """Cached config for this test.
+
+        Args:
+            repo_id:
+                Repo id supplied to the test.
+            filename:
+                Filename supplied to the test.
+            cache_dir:
+                Directory used for the test cache.
+
+        Returns:
+            The value returned by the test helper.
+        """
         calls.append(cache_dir)
         return "/cached/config.json" if cache_dir is None else None
 
@@ -800,10 +1151,24 @@ def test_cached_config_falls_back_to_default_hub_cache(
 
 
 def test_checkpoint_download_is_root_only(monkeypatch: pytest.MonkeyPatch) -> None:
-    """A bundled checkpoint downloads the root files without sibling folders."""
+    """A bundled checkpoint downloads the root files without sibling folders.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     requested: dict[str, object] = {}
 
     def fake_snapshot_download(**kwargs: object) -> str:
+        """Fake snapshot download for this test.
+
+        Args:
+            kwargs:
+                Kwargs supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         requested.update(kwargs)
         return "/cache/laya"
 
@@ -823,7 +1188,12 @@ def test_checkpoint_download_is_root_only(monkeypatch: pytest.MonkeyPatch) -> No
 
 
 def test_empty_config_is_valid_marker(tmp_path: Path) -> None:
-    """An empty config still proves that the repository is a Laya checkpoint."""
+    """An empty config still proves that the repository is a Laya checkpoint.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     marker = tmp_path / "rl_agent_config.json"
     marker.write_text("{}")
     assert (
@@ -842,7 +1212,12 @@ def test_find_laya_config_rejects_invalid_hub_id() -> None:
 
 
 def test_malformed_config_raises_invalid_model(tmp_path: Path) -> None:
-    """Malformed checkpoint metadata is reported as an invalid model."""
+    """Malformed checkpoint metadata is reported as an invalid model.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     path = tmp_path / "rl_agent_config.json"
     path.write_text("{not valid json")
     with pytest.raises(InvalidModel):

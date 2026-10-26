@@ -69,7 +69,11 @@ class TestGetAllDatasetConfigs:
 
     @pytest.fixture(scope="class")
     def dataset_configs(self) -> Generator[dict[str, DatasetConfig], None, None]:
-        """Yields all dataset configurations."""
+        """Yield all configured datasets.
+
+        Yields:
+            A mapping from dataset IDs to their configurations.
+        """
         yield get_all_dataset_configs(
             custom_datasets_file=Path("custom_datasets.py"),
             dataset_ids=[],
@@ -82,7 +86,12 @@ class TestGetAllDatasetConfigs:
     def test_dataset_configs_are_a_dict_of_objects(
         self, dataset_configs: dict[str, DatasetConfig]
     ) -> None:
-        """Test that the configs are a dict of `DatasetConfig` objects."""
+        """Test that the configs are a dict of `DatasetConfig` objects.
+
+        Args:
+            dataset_configs:
+                Dataset configs supplied to the test.
+        """
         assert isinstance(dataset_configs, dict)
         assert all(
             isinstance(dataset_config, DatasetConfig)
@@ -162,7 +171,15 @@ def test_include_sr_uses_cyrillic_prompt() -> None:
 
 
 def _has_cyrillic(text: str) -> bool:
-    """Return whether the text contains any Cyrillic characters."""
+    """Return whether the text contains any Cyrillic characters.
+
+    Args:
+        text:
+            Text supplied to the test.
+
+    Returns:
+        Whether at least one character belongs to the Cyrillic block.
+    """
     return any("Ѐ" <= ch <= "ӿ" for ch in text)
 
 
@@ -289,7 +306,12 @@ def test_translation_not_included_in_english_leaderboard() -> None:
 
 @pytest.mark.parametrize("language_code", WMT24PP_LANGUAGE_CODES)
 def test_wmt24pp_configs_cover_all_documented_languages(language_code: str) -> None:
-    """Test that both WMT24++ directions exist for every documented language."""
+    """Test that both WMT24++ directions exist for every documented language.
+
+    Args:
+        language_code:
+            Language code supplied to the test.
+    """
     language_code = language_code.upper()
     forward_config = getattr(dc_module, f"WMT24PP_EN_{language_code}_CONFIG")
     reverse_config = getattr(dc_module, f"WMT24PP_{language_code}_EN_CONFIG")

@@ -29,8 +29,9 @@ def main(argv: list[str] | None = None) -> int:
     """Score every canary record and emit the report as JSON.
 
     Args:
-        argv:
-            Optional command-line arguments.
+        argv (optional):
+            Optional command-line arguments; defaults to ``None``, which uses
+            ``sys.argv``.
 
     Returns:
         Zero after the report has been emitted. Invalid or missing input is handled by
@@ -103,14 +104,24 @@ def _configure_logging() -> None:
 
 
 def _configure_scorer(*, key_path: Path, private_dir: Path, report_path: Path) -> None:
-    """Configure the environment-backed private scorer from command-line paths."""
+    """Configure the environment-backed private scorer from command-line paths.
+
+    Args:
+        key_path: Path to the canary decryption key.
+        private_dir: Directory containing private canary data.
+        report_path: Destination path for the score report.
+    """
     os.environ[CANARY_KEY_ENV] = str(key_path.expanduser())
     os.environ[CANARY_PRIVATE_DIR_ENV] = str(private_dir.expanduser())
     os.environ[CANARY_REPORT_PATH_ENV] = str(report_path.expanduser())
 
 
 def _log_report(*, report: dict[str, object]) -> None:
-    """Render one stable, readable JSON report to standard output via logging."""
+    """Render one stable, readable JSON report to standard output via logging.
+
+    Args:
+        report: Scoring report to serialize as formatted JSON.
+    """
     handler = logging.StreamHandler(stream=sys.stdout)
     handler.setFormatter(logging.Formatter("%(message)s"))
     _REPORT_LOGGER.setLevel(logging.INFO)

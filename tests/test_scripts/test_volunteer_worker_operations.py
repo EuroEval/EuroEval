@@ -23,10 +23,26 @@ REAL_MISSING_BUCKET_STDERR = (
 def test_apply_github_creates_only_missing_labels(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """GitHub setup is idempotent and does not recreate existing labels."""
+    """GitHub setup is idempotent and does not recreate existing labels.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+    """
     commands: list[list[str]] = []
 
     def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        """Return the configured result for a mocked external command.
+
+        Args:
+            command:
+                Command arguments submitted to the operation.
+            kwargs:
+                Optional execution settings, including environment or stdin data.
+
+        Returns:
+            The result configured for the requested command.
+        """
         commands.append(command)
         if command[:3] == ["gh", "api", f"repos/{operations.REPOSITORY}/labels"]:
             return operations.CommandResult(
@@ -48,9 +64,27 @@ def test_apply_github_creates_only_missing_labels(
 def test_apply_hf_classifies_creation_failure_without_leaking_stderr(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """HF apply reports a safe category when bucket creation is denied."""
+    """HF apply reports a safe category when bucket creation is denied.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+        capsys:
+            Pytest fixture for capturing output and checking secret redaction.
+    """
 
     def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        """Return the configured result for a mocked external command.
+
+        Args:
+            command:
+                Command arguments submitted to the operation.
+            kwargs:
+                Optional execution settings, including environment or stdin data.
+
+        Returns:
+            The result configured for the requested command.
+        """
         if command[3:5] == ["buckets", "info"]:
             return operations.CommandResult(1, stderr=REAL_MISSING_BUCKET_STDERR)
         if command[3:5] == ["buckets", "create"]:
@@ -72,11 +106,27 @@ def test_apply_hf_classifies_creation_failure_without_leaking_stderr(
 def test_apply_hf_creates_after_ambiguous_metadata_failure(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """HF apply creates after the CLI cannot establish bucket metadata."""
+    """HF apply creates after the CLI cannot establish bucket metadata.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+    """
     commands: list[list[str]] = []
     info_calls = 0
 
     def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        """Return the configured result for a mocked external command.
+
+        Args:
+            command:
+                Command arguments submitted to the operation.
+            kwargs:
+                Optional execution settings, including environment or stdin data.
+
+        Returns:
+            The result configured for the requested command.
+        """
         nonlocal info_calls
         commands.append(command)
         if command[3:5] == ["buckets", "info"]:
@@ -132,10 +182,26 @@ def test_apply_hf_creates_after_ambiguous_metadata_failure(
 def test_apply_hf_leaves_private_bucket_unchanged(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """HF apply does not recreate or reconfigure an existing private bucket."""
+    """HF apply does not recreate or reconfigure an existing private bucket.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+    """
     commands: list[list[str]] = []
 
     def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        """Return the configured result for a mocked external command.
+
+        Args:
+            command:
+                Command arguments submitted to the operation.
+            kwargs:
+                Optional execution settings, including environment or stdin data.
+
+        Returns:
+            The result configured for the requested command.
+        """
         commands.append(command)
         if command[3:5] == ["buckets", "info"]:
             return operations.CommandResult(0, '{"private":true,"region":"eu"}')
@@ -158,10 +224,26 @@ def test_apply_hf_leaves_private_bucket_unchanged(
 def test_apply_hf_rejects_public_bucket_without_mutating_it(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """HF apply verifies public buckets without changing their visibility."""
+    """HF apply verifies public buckets without changing their visibility.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+    """
     commands: list[list[str]] = []
 
     def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        """Return the configured result for a mocked external command.
+
+        Args:
+            command:
+                Command arguments submitted to the operation.
+            kwargs:
+                Optional execution settings, including environment or stdin data.
+
+        Returns:
+            The result configured for the requested command.
+        """
         commands.append(command)
         if command[3:5] == ["buckets", "info"]:
             return operations.CommandResult(0, '{"private":false,"region":"eu"}')
@@ -176,11 +258,27 @@ def test_apply_hf_rejects_public_bucket_without_mutating_it(
 
 
 def test_apply_hf_uses_explicit_us_region(monkeypatch: pytest.MonkeyPatch) -> None:
-    """HF bucket creation uses the explicitly selected US region."""
+    """HF bucket creation uses the explicitly selected US region.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+    """
     commands: list[list[str]] = []
     info_calls = 0
 
     def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        """Return the configured result for a mocked external command.
+
+        Args:
+            command:
+                Command arguments submitted to the operation.
+            kwargs:
+                Optional execution settings, including environment or stdin data.
+
+        Returns:
+            The result configured for the requested command.
+        """
         nonlocal info_calls
         commands.append(command)
         if command[3:5] == ["buckets", "info"]:
@@ -202,10 +300,22 @@ def test_apply_hf_uses_explicit_us_region(monkeypatch: pytest.MonkeyPatch) -> No
 def test_apply_rejects_noncanonical_euroeval_version_before_mutation(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """Explicit version aliases and mismatches cannot reach an apply mutation."""
+    """Explicit version aliases and mismatches cannot reach an apply mutation.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+        capsys:
+            Pytest fixture for capturing output and checking secret redaction.
+    """
     called = False
 
     def unexpected_apply() -> list[operations.Diagnostic]:
+        """Record an unexpected attempt to apply changes.
+
+        Returns:
+            An empty diagnostic list; the enclosing test checks whether this was called.
+        """
         nonlocal called
         called = True
         return []
@@ -228,10 +338,26 @@ def test_apply_rejects_noncanonical_euroeval_version_before_mutation(
 def test_apply_requires_explicit_component_and_confirmation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The default apply path cannot mutate anything."""
+    """The default apply path cannot mutate anything.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+    """
     called = False
 
     def fail_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        """Fail if the operation attempts an external command.
+
+        Args:
+            command:
+                Unexpected command requested by the code under test.
+            kwargs:
+                Optional execution settings supplied with the command.
+
+        Raises:
+            AssertionError: Always, because this test requires a read-only path.
+        """
         nonlocal called
         called = True
         raise AssertionError(f"unexpected command: {command}")
@@ -246,7 +372,14 @@ def test_apply_requires_explicit_component_and_confirmation(
 def test_apply_vercel_adds_atomically_and_validates_metadata(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Vercel apply never removes variables and sends values only on stdin."""
+    """Vercel apply never removes variables and sends values only on stdin.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+        tmp_path:
+            Temporary directory for isolated files and subprocess inputs.
+    """
     monkeypatch.chdir(tmp_path)
     (tmp_path / ".vercel").mkdir()
     (tmp_path / ".vercel/project.json").write_text(
@@ -266,6 +399,17 @@ def test_apply_vercel_adds_atomically_and_validates_metadata(
     commands: list[list[str]] = []
 
     def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        """Return the configured result for a mocked external command.
+
+        Args:
+            command:
+                Command arguments submitted to the operation.
+            kwargs:
+                Optional execution settings, including environment or stdin data.
+
+        Returns:
+            The result configured for the requested command.
+        """
         commands.append(command)
         if command[:3] == ["vercel", "project", "inspect"]:
             return operations.CommandResult(0, '{"id":"project-id","name":"euroeval"}')
@@ -299,7 +443,14 @@ def test_apply_vercel_adds_atomically_and_validates_metadata(
 def test_check_policy_rejects_noncanonical_version_and_exact_policy_mismatch(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Policy checks diagnose version aliases and stale exact release versions."""
+    """Policy checks diagnose version aliases and stale exact release versions.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+        tmp_path:
+            Temporary directory for isolated files and subprocess inputs.
+    """
     monkeypatch.chdir(tmp_path)
     policy_path = tmp_path / "api/worker/scope-policy.json"
     policy_path.parent.mkdir(parents=True)
@@ -358,7 +509,12 @@ def test_check_policy_rejects_noncanonical_version_and_exact_policy_mismatch(
 def test_docker_inspection_preserves_safe_environment(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Anonymous Docker inspection keeps PATH but cannot use host credentials."""
+    """Anonymous Docker inspection keeps PATH but cannot use host credentials.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+    """
     digest = "sha256:" + "a" * 64
     captured: dict[str, str] = {}
     for name in operations.BASIC_ENVIRONMENT:
@@ -369,6 +525,17 @@ def test_docker_inspection_preserves_safe_environment(
     monkeypatch.setenv("DOCKER_CONFIG", "/host/config")
 
     def fake_run(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
+        """Return a controlled subprocess result and record its child environment.
+
+        Args:
+            args:
+                Positional subprocess arguments, including the command sequence.
+            kwargs:
+                Subprocess options, including the child environment to inspect.
+
+        Returns:
+            A successful completed-process result with the expected mocked output.
+        """
         command = args[0]
         assert isinstance(command, list)
         child_environment = kwargs["env"]
@@ -406,7 +573,12 @@ def test_docker_inspection_preserves_safe_environment(
 
 
 def test_generator_check_exit_and_no_write_modes(tmp_path: Path) -> None:
-    """Generator status propagates through a subprocess and checks do not write."""
+    """Generator status propagates through a subprocess and checks do not write.
+
+    Args:
+        tmp_path:
+            Temporary directory for isolated files and subprocess inputs.
+    """
     output = tmp_path / "scope-policy.json"
     command = [
         "uv",
@@ -437,12 +609,28 @@ def test_generator_check_exit_and_no_write_modes(tmp_path: Path) -> None:
 def test_ghcr_manifest_check_is_anonymous_and_read_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """GHCR checks use an empty Docker config and never pull or log out."""
+    """GHCR checks use an empty Docker config and never pull or log out.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+    """
     digest = "sha256:" + "a" * 64
     commands: list[list[str]] = []
     environments: list[dict[str, str]] = []
 
     def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        """Return the configured result for a mocked external command.
+
+        Args:
+            command:
+                Command arguments submitted to the operation.
+            kwargs:
+                Optional execution settings, including environment or stdin data.
+
+        Returns:
+            The result configured for the requested command.
+        """
         commands.append(command)
         if command[0] == "gh":
             return operations.CommandResult(0, "public")
@@ -486,9 +674,25 @@ def test_ghcr_manifest_check_is_anonymous_and_read_only(
 def test_hf_check_reports_ambiguous_missing_bucket_without_auth_claim(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """HF check does not call an inaccessible private bucket definitively missing."""
+    """HF check does not call an inaccessible private bucket definitively missing.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+    """
 
     def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        """Return the configured result for a mocked external command.
+
+        Args:
+            command:
+                Command arguments submitted to the operation.
+            kwargs:
+                Optional execution settings, including environment or stdin data.
+
+        Returns:
+            The result configured for the requested command.
+        """
         if command[3:5] == ["buckets", "info"]:
             return operations.CommandResult(1, stderr=REAL_MISSING_BUCKET_STDERR)
         return operations.CommandResult(0)
@@ -519,12 +723,28 @@ def test_hf_region_defaults_to_eu_and_rejects_invalid_values() -> None:
 def test_hf_region_is_explicitly_forwarded_to_apply(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The CLI forwards an explicit US region only to HF apply."""
+    """The CLI forwards an explicit US region only to HF apply.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+    """
     regions: list[str] = []
 
     def fake_apply_hf(
         *, environment: dict[str, str], region: str = "eu"
     ) -> list[operations.Diagnostic]:
+        """Capture the selected region without applying any changes.
+
+        Args:
+            environment:
+                Environment values passed to the mocked apply operation.
+            region (optional):
+                Selected bucket region. Defaults to "eu".
+
+        Returns:
+            An empty diagnostic list after recording the selected region.
+        """
         del environment
         regions.append(region)
         return []
@@ -538,7 +758,16 @@ def test_hf_region_is_explicitly_forwarded_to_apply(
 def test_local_secrets_are_gated_to_confirmed_apply(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """Local secret initialisation cannot run from an unconfirmed command."""
+    """Local secret initialisation cannot run from an unconfirmed command.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+        tmp_path:
+            Temporary directory for isolated files and subprocess inputs.
+        capsys:
+            Pytest fixture for capturing output and checking secret redaction.
+    """
     env_file = tmp_path / ".env"
     monkeypatch.setattr(
         operations.secrets,
@@ -559,7 +788,14 @@ def test_local_secrets_are_gated_to_confirmed_apply(
 def test_local_secrets_are_idempotent_and_tighten_mode(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """A rerun preserves content and values while tightening permissions."""
+    """A rerun preserves content and values while tightening permissions.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+        tmp_path:
+            Temporary directory for isolated files and subprocess inputs.
+    """
     env_file = tmp_path / ".env"
     env_file.write_text(
         "VOLUNTEER_MARKER_SECRET=marker\n"
@@ -583,12 +819,28 @@ def test_local_secrets_are_idempotent_and_tighten_mode(
 def test_local_secrets_atomic_failure_preserves_original(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """A failed replacement does not truncate the original dotenv file."""
+    """A failed replacement does not truncate the original dotenv file.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+        tmp_path:
+            Temporary directory for isolated files and subprocess inputs.
+    """
     env_file = tmp_path / ".env"
     original = b"KEEP=value\nVOLUNTEER_MARKER_SECRET=\n"
     env_file.write_bytes(original)
 
     def fail_replace(*args: object) -> None:
+        """Simulate an atomic file replacement failure.
+
+        Args:
+            args:
+                Positional replacement arguments, unused by this failure simulation.
+
+        Raises:
+            OSError: Always, to verify that the original file remains intact.
+        """
         del args
         raise OSError
 
@@ -603,7 +855,14 @@ def test_local_secrets_atomic_failure_preserves_original(
 def test_local_secrets_generate_three_independent_values(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """A new local dotenv file receives one independent value per secret."""
+    """A new local dotenv file receives one independent value per secret.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+        tmp_path:
+            Temporary directory for isolated files and subprocess inputs.
+    """
     values = iter(("marker-value", "coordinator-value", "promotion-value"))
     monkeypatch.setattr(operations.secrets, "token_urlsafe", lambda _: next(values))
     env_file = tmp_path / ".env"
@@ -622,7 +881,16 @@ def test_local_secrets_generate_three_independent_values(
 def test_local_secrets_never_print_values(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """Generated values never appear in diagnostics."""
+    """Generated values never appear in diagnostics.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+        tmp_path:
+            Temporary directory for isolated files and subprocess inputs.
+        capsys:
+            Pytest fixture for capturing output and checking secret redaction.
+    """
     secret = "must-not-be-printed"
     monkeypatch.setattr(operations.secrets, "token_urlsafe", lambda _: secret)
 
@@ -639,7 +907,14 @@ def test_local_secrets_never_print_values(
 def test_local_secrets_preserve_values_and_content(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Existing values, exports, comments, and ordering remain byte-for-byte intact."""
+    """Existing values, exports, comments, and ordering remain byte-for-byte intact.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+        tmp_path:
+            Temporary directory for isolated files and subprocess inputs.
+    """
     env_file = tmp_path / ".env"
     original = (
         b"# operator comment\nKEEP=before\n"
@@ -663,7 +938,14 @@ def test_local_secrets_preserve_values_and_content(
 def test_local_secrets_reject_symlink_without_writing(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """A symlink target is rejected and its referent is untouched."""
+    """A symlink target is rejected and its referent is untouched.
+
+    Args:
+        tmp_path:
+            Temporary directory for isolated files and subprocess inputs.
+        capsys:
+            Pytest fixture for capturing output and checking secret redaction.
+    """
     referent = tmp_path / "referent"
     referent.write_text("KEEP=value\n")
     env_file = tmp_path / ".env"
@@ -724,11 +1006,29 @@ def test_manifest_rejects_index_without_amd64_child() -> None:
 def test_plan_does_not_run_commands_or_print_secret_values(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """Plan is local-only and only names environment variables."""
+    """Plan is local-only and only names environment variables.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+        capsys:
+            Pytest fixture for capturing output and checking secret redaction.
+    """
     secret = "do-not-print-this"
     called = False
 
     def fail_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        """Fail if the operation attempts an external command.
+
+        Args:
+            command:
+                Unexpected command requested by the code under test.
+            kwargs:
+                Optional execution settings supplied with the command.
+
+        Raises:
+            AssertionError: Always, because this test requires a read-only path.
+        """
         nonlocal called
         called = True
         raise AssertionError(f"unexpected command: {command}")
@@ -751,7 +1051,14 @@ def test_plan_does_not_run_commands_or_print_secret_values(
 def test_redis_requires_exact_pong_and_never_prints_url(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """Malformed responses fail without leaking the URL."""
+    """Malformed responses fail without leaking the URL.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+        capsys:
+            Pytest fixture for capturing output and checking secret redaction.
+    """
     url = "https://secret.example.invalid/rest"
     monkeypatch.setattr(
         operations,
@@ -783,12 +1090,34 @@ def test_release_version_normalisation_only_removes_source_marker() -> None:
 def test_reuse_vercel_kv_fails_before_mutation_for_missing_source(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Missing or empty source variables prevent either alias update."""
+    """Missing or empty source variables prevent either alias update.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+        tmp_path:
+            Temporary directory for isolated files and subprocess inputs.
+    """
     monkeypatch.chdir(tmp_path)
     _vercel_link(tmp_path)
     commands: list[list[str]] = []
 
     def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        """Return the configured result for a mocked external command.
+
+        Args:
+            command:
+                Command arguments submitted to the operation.
+            kwargs:
+                Optional execution settings, including environment or stdin data.
+
+        Returns:
+            The result configured for the requested command.
+
+        Raises:
+                AssertionError:
+                    If the operation issues an unexpected command.
+        """
         commands.append(command)
         if command[:3] == ["vercel", "project", "inspect"]:
             return operations.CommandResult(
@@ -815,7 +1144,12 @@ def test_reuse_vercel_kv_fails_before_mutation_for_missing_source(
 
 
 def _vercel_link(tmp_path: Path) -> None:
-    """Create the exact project link used by mocked Vercel operations."""
+    """Create the exact project link used by mocked Vercel operations.
+
+    Args:
+        tmp_path:
+            Temporary directory in which to create the Vercel project link.
+    """
     (tmp_path / ".vercel").mkdir()
     (tmp_path / ".vercel/project.json").write_text(
         '{"projectId":"project-id","orgId":"team-id","projectName":"euroeval"}',
@@ -826,11 +1160,33 @@ def _vercel_link(tmp_path: Path) -> None:
 def test_reuse_vercel_kv_fails_when_post_update_metadata_drifts(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Successful writes still fail when aliases are not sensitive Production vars."""
+    """Successful writes still fail when aliases are not sensitive Production vars.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+        tmp_path:
+            Temporary directory for isolated files and subprocess inputs.
+    """
     monkeypatch.chdir(tmp_path)
     _vercel_link(tmp_path)
 
     def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        """Return the configured result for a mocked external command.
+
+        Args:
+            command:
+                Command arguments submitted to the operation.
+            kwargs:
+                Optional execution settings, including environment or stdin data.
+
+        Returns:
+            The result configured for the requested command.
+
+        Raises:
+                AssertionError:
+                    If the operation issues an unexpected command.
+        """
         if command[:3] == ["vercel", "project", "inspect"]:
             return operations.CommandResult(
                 0, '{"id":"project-id","name":"euroeval","orgId":"team-id"}'
@@ -877,12 +1233,32 @@ def test_reuse_vercel_kv_fails_when_post_update_metadata_drifts(
 def test_reuse_vercel_kv_rejects_identity_drift_without_mutating(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, response: str
 ) -> None:
-    """Any project identity or returned scope mismatch blocks mutation."""
+    """Any project identity or returned scope mismatch blocks mutation.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+        tmp_path:
+            Temporary directory for isolated files and subprocess inputs.
+        response:
+            Mock Vercel project-inspection response used to exercise identity drift.
+    """
     monkeypatch.chdir(tmp_path)
     _vercel_link(tmp_path)
     commands: list[list[str]] = []
 
     def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        """Return the configured result for a mocked external command.
+
+        Args:
+            command:
+                Command arguments submitted to the operation.
+            kwargs:
+                Optional execution settings, including environment or stdin data.
+
+        Returns:
+            The result configured for the requested command.
+        """
         commands.append(command)
         return operations.CommandResult(0, response)
 
@@ -896,10 +1272,26 @@ def test_reuse_vercel_kv_rejects_identity_drift_without_mutating(
 def test_reuse_vercel_kv_requires_apply_flag_and_confirmation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """KV reuse cannot be reached from read-only or unconfirmed commands."""
+    """KV reuse cannot be reached from read-only or unconfirmed commands.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+    """
     called = False
 
     def fail_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        """Fail if the operation attempts an external command.
+
+        Args:
+            command:
+                Unexpected command requested by the code under test.
+            kwargs:
+                Optional execution settings supplied with the command.
+
+        Raises:
+            AssertionError: Always, because this test requires a read-only path.
+        """
         nonlocal called
         called = True
         raise AssertionError(f"unexpected command: {command}")
@@ -914,12 +1306,36 @@ def test_reuse_vercel_kv_requires_apply_flag_and_confirmation(
 def test_reuse_vercel_kv_stops_after_partial_update_failure(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """A failed alias update prevents subsequent mutation and verification."""
+    """A failed alias update prevents subsequent mutation and verification.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+        tmp_path:
+            Temporary directory for isolated files and subprocess inputs.
+        capsys:
+            Pytest fixture for capturing output and checking secret redaction.
+    """
     monkeypatch.chdir(tmp_path)
     _vercel_link(tmp_path)
     commands: list[list[str]] = []
 
     def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        """Return the configured result for a mocked external command.
+
+        Args:
+            command:
+                Command arguments submitted to the operation.
+            kwargs:
+                Optional execution settings, including environment or stdin data.
+
+        Returns:
+            The result configured for the requested command.
+
+        Raises:
+                AssertionError:
+                    If the operation issues an unexpected command.
+        """
         commands.append(command)
         if command[:3] == ["vercel", "project", "inspect"]:
             return operations.CommandResult(
@@ -954,7 +1370,16 @@ def test_reuse_vercel_kv_stops_after_partial_update_failure(
 def test_reuse_vercel_kv_uses_nested_read_and_sensitive_stdin_updates(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """Reuse reads source values in Vercel and exposes only alias names."""
+    """Reuse reads source values in Vercel and exposes only alias names.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+        tmp_path:
+            Temporary directory for isolated files and subprocess inputs.
+        capsys:
+            Pytest fixture for capturing output and checking secret redaction.
+    """
     monkeypatch.chdir(tmp_path)
     _vercel_link(tmp_path)
     url = "https://kv.example.test"
@@ -970,6 +1395,21 @@ def test_reuse_vercel_kv_uses_nested_read_and_sensitive_stdin_updates(
     commands: list[tuple[list[str], dict[str, object]]] = []
 
     def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        """Return the configured result for a mocked external command.
+
+        Args:
+            command:
+                Command arguments submitted to the operation.
+            kwargs:
+                Optional execution settings, including environment or stdin data.
+
+        Returns:
+            The result configured for the requested command.
+
+        Raises:
+                AssertionError:
+                    If the operation issues an unexpected command.
+        """
         commands.append((command, kwargs))
         if command[:3] == ["vercel", "project", "inspect"]:
             return operations.CommandResult(
@@ -1031,10 +1471,26 @@ def test_reuse_vercel_kv_uses_nested_read_and_sensitive_stdin_updates(
 
 
 def test_run_command_isolates_tool_environment(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Unrelated broker secrets never reach child processes."""
+    """Unrelated broker secrets never reach child processes.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+    """
     captured: dict[str, str] = {}
 
     def fake_run(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
+        """Return a controlled subprocess result and record its child environment.
+
+        Args:
+            args:
+                Positional subprocess arguments, including the command sequence.
+            kwargs:
+                Subprocess options, including the child environment to inspect.
+
+        Returns:
+            A successful completed-process result with the expected mocked output.
+        """
         captured.update(kwargs["env"])
         command = args[0]
         assert isinstance(command, list)
@@ -1072,7 +1528,12 @@ def test_run_command_isolates_tool_environment(monkeypatch: pytest.MonkeyPatch) 
 def test_smoke_accepts_protected_401_or_deployed_missing_config(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Protected smoke probes do not depend on local secret presence."""
+    """Protected smoke probes do not depend on local secret presence.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+    """
 
     def fake_request(
         url: str,
@@ -1081,6 +1542,21 @@ def test_smoke_accepts_protected_401_or_deployed_missing_config(
         headers: dict[str, str] | None = None,
         body: bytes | None = None,
     ) -> operations.HttpResult:
+        """Return an HTTP response matching the smoke-probe route.
+
+        Args:
+            url:
+                Requested route URL.
+            method (optional):
+                HTTP method for the probe. Defaults to "GET".
+            headers (optional):
+                Request headers, if provided.
+            body (optional):
+                Request body, if provided.
+
+        Returns:
+            A mocked HTTP result appropriate to the method and route.
+        """
         if method == "GET":
             return operations.HttpResult(405, b'{"error":"Method not allowed"}')
         if method == "OPTIONS":
@@ -1103,7 +1579,16 @@ def test_smoke_accepts_protected_401_or_deployed_missing_config(
 def test_vercel_identity_rejects_environment_drift(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, environment_name: str
 ) -> None:
-    """Configured Vercel identity values must match the local link."""
+    """Configured Vercel identity values must match the local link.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+        tmp_path:
+            Temporary directory for isolated files and subprocess inputs.
+        environment_name:
+            Vercel identity variable deliberately different from the local project link.
+    """
     monkeypatch.chdir(tmp_path)
     (tmp_path / ".vercel").mkdir()
     (tmp_path / ".vercel/project.json").write_text(
@@ -1113,6 +1598,17 @@ def test_vercel_identity_rejects_environment_drift(
     called = False
 
     def fail_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        """Fail if the operation attempts an external command.
+
+        Args:
+            command:
+                Unexpected command requested by the code under test.
+            kwargs:
+                Optional execution settings supplied with the command.
+
+        Raises:
+            AssertionError: Always, because this test requires a read-only path.
+        """
         nonlocal called
         called = True
         raise AssertionError(f"unexpected command: {command}")
@@ -1131,7 +1627,14 @@ def test_vercel_identity_rejects_environment_drift(
 def test_vercel_identity_requires_project_name_in_local_link(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """A project link without its name cannot authorise Vercel changes."""
+    """A project link without its name cannot authorise Vercel changes.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+        tmp_path:
+            Temporary directory for isolated files and subprocess inputs.
+    """
     monkeypatch.chdir(tmp_path)
     (tmp_path / ".vercel").mkdir()
     (tmp_path / ".vercel/project.json").write_text(
@@ -1179,5 +1682,12 @@ def test_vercel_identity_requires_project_name_in_local_link(
 def test_vercel_kv_values_require_one_marked_payload(
     output: str, expected: dict[str, str]
 ) -> None:
-    """Only one valid marked payload can provide non-empty source values."""
+    """Only one valid marked payload can provide non-empty source values.
+
+    Args:
+        output:
+            Command output containing candidate marked payloads.
+        expected:
+            Expected parsed values, or an empty mapping when the payload is invalid.
+    """
     assert operations._vercel_kv_values(output) == expected

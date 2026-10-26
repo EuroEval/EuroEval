@@ -14,12 +14,24 @@ class TestAggregateScores:
     """Tests for the `aggregate_scores` function."""
 
     def test_no_scores(self, metric: Metric) -> None:
-        """Test that `aggregate_scores` works when no scores are provided."""
+        """Test that `aggregate_scores` works when no scores are provided.
+
+        Args:
+            metric:
+                Metric supplied to the test.
+        """
         agg_scores = aggregate_scores(scores=list(), metric=metric)
         assert np.isnan(agg_scores).all()
 
     def test_scores(self, scores: list[dict[str, float]], metric: Metric) -> None:
-        """Test that `aggregate_scores` works when scores are provided."""
+        """Test that `aggregate_scores` works when scores are provided.
+
+        Args:
+            scores:
+                Scores supplied to the test.
+            metric:
+                Metric supplied to the test.
+        """
         # Aggregate scores using the `agg_scores` function
         agg_scores = aggregate_scores(scores=scores, metric=metric)
 
@@ -41,6 +53,12 @@ class TestLogScores:
     ) -> Generator[ScoreDict, None, None]:
         """Yields the logged scores.
 
+        Args:
+            metric:
+                Metric supplied to the test.
+            scores:
+                Scores supplied to the test.
+
         Yields:
             The logged scores.
         """
@@ -54,7 +72,12 @@ class TestLogScores:
         )
 
     def test_num_failed_instances_defaults_to_zero(self, metric: Metric) -> None:
-        """Test that `log_scores` defaults `num_failed_instances` to 0.0 when absent."""
+        """Test that `log_scores` defaults `num_failed_instances` to 0.0 when absent.
+
+        Args:
+            metric:
+                Metric supplied to the test.
+        """
         scores_without_failures = [
             {f"test_{metric.name}": 0.50},
             {f"test_{metric.name}": 0.55},
@@ -71,7 +94,12 @@ class TestLogScores:
         assert total_dict["num_failed_instances"] == 0.0  # ty: ignore[index]  # ty:ignore[ignore-comment-unknown-rule, invalid-argument-type]
 
     def test_num_failed_instances_sums_across_iterations(self, metric: Metric) -> None:
-        """Test that `log_scores` sums `num_failed_instances` across iterations."""
+        """Test that `log_scores` sums `num_failed_instances` across iterations.
+
+        Args:
+            metric:
+                Metric supplied to the test.
+        """
         scores_with_failures = [
             {
                 f"test_{metric.name}": 0.50,
@@ -104,20 +132,39 @@ class TestLogScores:
     def test_output_structure(
         self, logged_scores: ScoreDict, scores: list[dict[str, float]]
     ) -> None:
-        """The logged result has the expected shape and preserves raw scores."""
+        """The logged result has the expected shape and preserves raw scores.
+
+        Args:
+            logged_scores:
+                Logged scores supplied to the test.
+            scores:
+                Scores supplied to the test.
+        """
         assert isinstance(logged_scores, dict)
         assert sorted(logged_scores.keys()) == ["raw", "total"]
         assert logged_scores["raw"] == scores
 
     def test_total_scores_keys(self, logged_scores: ScoreDict, metric: Metric) -> None:
-        """Test that `log_scores` returns a dictionary with the correct keys."""
+        """Test that `log_scores` returns a dictionary with the correct keys.
+
+        Args:
+            logged_scores:
+                Logged scores supplied to the test.
+            metric:
+                Metric supplied to the test.
+        """
         total_dict = logged_scores["total"]
         assert sorted(total_dict.keys()) == sorted(
             [f"test_{metric.name}", f"test_{metric.name}_se", "num_failed_instances"]
         )
 
     def test_total_scores_values_are_floats(self, logged_scores: ScoreDict) -> None:
-        """Test that `log_scores` returns a dictionary with float values."""
+        """Test that `log_scores` returns a dictionary with float values.
+
+        Args:
+            logged_scores:
+                Logged scores supplied to the test.
+        """
         total_dict = logged_scores["total"]
         for val in total_dict.values():
             assert isinstance(val, float)
@@ -126,6 +173,10 @@ class TestLogScores:
 @pytest.fixture(scope="module")
 def scores(metric: Metric) -> Generator[list[dict[str, float]], None, None]:
     """Yield a dictionary of scores.
+
+    Args:
+        metric:
+            Metric supplied to the test.
 
     Yields:
         A dictionary of scores.

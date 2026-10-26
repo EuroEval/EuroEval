@@ -7,17 +7,40 @@ class AutoStrEnum(str, Enum):
     """StrEnum where auto() returns the field name in lower case."""
 
     def __repr__(self) -> str:
-        """Return the value in upper case for better readability."""
+        """Return the value in upper case for better readability.
+
+        Returns:
+            The upper-case enum value.
+        """
         return self.value.upper()
 
     def __str__(self) -> str:
-        """Return the value in upper case for better readability."""
+        """Return the value in upper case for better readability.
+
+        Returns:
+            The upper-case enum value.
+        """
         return self.value.upper()
 
     @staticmethod
     def _generate_next_value_(
         name: str, start: int, count: int, last_values: list
     ) -> str:
+        """Generate an enum value from its member name.
+
+        Args:
+            name:
+                The enum member name.
+            start:
+                The next integer value, supplied by Enum.
+            count:
+                The number of previously defined members, supplied by Enum.
+            last_values:
+                Previously generated values, supplied by Enum.
+
+        Returns:
+            The lower-case member name.
+        """
         return name.lower()
 
 
@@ -139,7 +162,11 @@ class ModelType(AutoStrEnum):
     ZERO_SHOT_CLASSIFIER = auto()
 
     def __repr__(self) -> str:
-        """Return the value in upper case for better readability."""
+        """Return the value in upper case for better readability.
+
+        Returns:
+            The upper-case enum value.
+        """
         return self.value.upper()
 
     @property

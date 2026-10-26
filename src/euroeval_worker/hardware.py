@@ -19,6 +19,15 @@ logger = logging.getLogger(__name__)
 
 
 def _run(command: list[str]) -> str:
+    """Run.
+
+    Args:
+        command:
+            Argument vector passed to the subprocess.
+
+    Returns:
+        Standard output from the completed command.
+    """
     completed = subprocess.run(command, check=True, capture_output=True, text=True)
     return completed.stdout
 
@@ -58,11 +67,27 @@ def discover_hardware(
 
 
 def _match(text: str, pattern: str) -> str | None:
+    """Match.
+
+    Args:
+        text:
+            Input text to search.
+        pattern:
+            Regular expression searched in the input text.
+
+    Returns:
+        The first capture group, or ``None`` when the pattern does not match.
+    """
     match = re.search(pattern, text)
     return match.group(1) if match else None
 
 
 def _pytorch_version() -> str | None:
+    """Pytorch version.
+
+    Returns:
+        Installed PyTorch version, or ``None`` when PyTorch is not installed.
+    """
     try:
         return importlib.metadata.version("torch")
     except importlib.metadata.PackageNotFoundError:
@@ -70,6 +95,11 @@ def _pytorch_version() -> str | None:
 
 
 def _ram_bytes() -> int:
+    """Ram bytes.
+
+    Returns:
+        Physical RAM in bytes, or ``0`` when system page information is unavailable.
+    """
     if hasattr(os, "sysconf"):
         return int(os.sysconf("SC_PHYS_PAGES") * os.sysconf("SC_PAGE_SIZE"))
     return 0
@@ -78,12 +108,16 @@ def _ram_bytes() -> int:
 def discover_gpus(runner: c.Callable[[list[str]], str] | None = None) -> list[Gpu]:
     """Parse nvidia-smi CSV output, with an older-driver fallback.
 
+    Args:
+            runner (optional):
+                Callable used to execute nvidia-smi queries.
+
     Returns:
-        Discovered GPUs.
+            Discovered GPUs.
 
     Raises:
-        NoGpuError:
-            If nvidia-smi is unavailable or returns no GPUs.
+            NoGpuError:
+                If nvidia-smi is unavailable or returns no GPUs.
     """
     run = runner or _run
     query = [
@@ -121,6 +155,20 @@ class NoGpuError(RuntimeError):
 
 
 def _discover_spark_memory(gpu: Gpu) -> Gpu:
+    """Discover spark memory.
+
+    Args:
+            gpu:
+                Gpu.
+
+    Returns:
+            GPU report with verified memory, or zeros if verification fails.
+
+    Raises:
+    ValueError:
+            If the input does not have the required structure or value.
+            The input is malformed or cannot be converted to the required value.
+    """
     script = (
         "import json, torch; "
         "p=torch.cuda.get_device_properties(0); "
@@ -165,6 +213,11 @@ def _discover_spark_memory(gpu: Gpu) -> Gpu:
 
 
 def _host_available_bytes() -> int | None:
+    """Host available bytes.
+
+    Returns:
+        Available host memory in bytes, or ``None`` when it cannot be read.
+    """
     try:
         for line in Path("/proc/meminfo").read_text().splitlines():
             if line.startswith("MemAvailable:"):
@@ -175,12 +228,30 @@ def _host_available_bytes() -> int | None:
 
 
 def _needs_spark_memory_fallback(gpu: Gpu) -> bool:
+    """Needs spark memory fallback.
+
+    Args:
+        gpu:
+            GPU whose unified-memory measurement is being verified.
+
+    Returns:
+        Whether this GB10 GPU has missing free or total memory data.
+    """
     return "gb10" in gpu.name.lower() and (
         gpu.free_memory_bytes == 0 or gpu.total_memory_bytes == 0
     )
 
 
 def _parse_gpu_csv(output: str) -> list[Gpu]:
+    """Parse gpu csv.
+
+    Args:
+        output:
+            Raw CSV text returned by nvidia-smi.
+
+    Returns:
+        GPU reports parsed from valid nvidia-smi CSV rows.
+    """
     gpus: list[Gpu] = []
     for row_index, line in enumerate(output.splitlines()):
         fields = [field.strip() for field in line.split(",")]
@@ -215,6 +286,15 @@ def _parse_gpu_csv(output: str) -> list[Gpu]:
 
 
 def _memory_value(value: str) -> int:
+    """Memory value.
+
+    Args:
+        value:
+            Input value to validate or convert.
+
+    Returns:
+        Memory amount converted from MiB to bytes; N/A values become ``0``.
+    """
     if value.strip().lower() in {"n/a", "na", "[n/a]"}:
         return 0
     return int(float(value) * 1024**2)
@@ -223,12 +303,16 @@ def _memory_value(value: str) -> int:
 def select_gpu(gpus: c.Iterable[Gpu]) -> Gpu:
     """Select the GPU with the most usable free memory deterministically.
 
+    Args:
+            gpus:
+                Gpus.
+
     Returns:
-        The selected GPU.
+            The selected GPU.
 
     Raises:
-        NoGpuError:
-            If no GPU has a usable memory report.
+            NoGpuError:
+                If no GPU has a usable memory report.
     """
     usable = [
         gpu for gpu in gpus if 0 < gpu.free_memory_bytes <= gpu.total_memory_bytes

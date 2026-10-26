@@ -198,7 +198,11 @@ def persist_env_var(env_path: Path, name: str, value: str) -> None:
 
 
 def resolve_assignee_from_token() -> str:
-    """Return the GitHub login of the ``GITHUB_TOKEN`` owner, or exit on failure."""
+    """Return the GitHub login of the ``GITHUB_TOKEN`` owner, or exit on failure.
+
+    Returns:
+        Login associated with ``GITHUB_TOKEN``.
+    """
     try:
         user = gh_request(path="/user")
     except urllib.error.HTTPError as e:

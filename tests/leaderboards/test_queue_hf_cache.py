@@ -31,7 +31,14 @@ from leaderboards.queue_hf_cache import is_generative_model, is_gguf_model
     ],
 )
 def test_is_generative_model(info: ModelInfo, expected: bool) -> None:
-    """Generative models are detected via pipeline tag or LM architecture."""
+    """Generative models are detected via pipeline tag or LM architecture.
+
+    Args:
+        info:
+            Info supplied to the test.
+        expected:
+            Expected value for this test case.
+    """
     assert is_generative_model(info=info) is expected
 
 
@@ -66,5 +73,12 @@ def test_is_generative_model(info: ModelInfo, expected: bool) -> None:
     ],
 )
 def test_is_gguf_model(info: ModelInfo, expected: bool) -> None:
-    """GGUF repos are detected via tag, library_name, or any .gguf sibling."""
+    """GGUF repos are detected via tag, library_name, or any .gguf sibling.
+
+    Args:
+        info:
+            Info supplied to the test.
+        expected:
+            Expected value for this test case.
+    """
     assert is_gguf_model(info=info) is expected

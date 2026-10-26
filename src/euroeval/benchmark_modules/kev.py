@@ -54,10 +54,14 @@ class KevModel(BenchmarkModule):
         """Load a Kev checkpoint using Kev's canonical checkpoint loader.
 
         Args:
-            model_config: The checkpoint identity and local model-cache directory.
-            dataset_config: The dataset and label configuration.
-            benchmark_config: The device, credentials, and evaluation settings.
-            log_metadata: Whether to log the loaded model's metadata.
+            model_config:
+                The checkpoint identity and local model-cache directory.
+            dataset_config:
+                The dataset and label configuration.
+            benchmark_config:
+                The device, credentials, and evaluation settings.
+            log_metadata (optional):
+                Whether to log the loaded model's metadata. Defaults to True.
 
         Raises:
             InvalidModel: If the checkpoint dependency is unavailable or ID is invalid.
@@ -87,7 +91,14 @@ class KevModel(BenchmarkModule):
 
     @property
     def data_collator(self) -> t.Callable:
-        """Kev is evaluated zero-shot and has no finetuning collator."""
+        """The unavailable finetuning data collator.
+
+        Returns:
+            The data collator, if supported.
+
+        Raises:
+            NotImplementedError: Kev checkpoints cannot be finetuned by EuroEval.
+        """
         raise NotImplementedError("Kev checkpoints cannot be finetuned by EuroEval.")
 
     @property
@@ -107,7 +118,8 @@ class KevModel(BenchmarkModule):
         """Score each sample with Kev's trained pointer head.
 
         Args:
-            inputs: Batched examples containing the raw text to classify.
+            inputs:
+                Batched examples containing the raw text to classify.
 
         Returns:
             Class predictions and their log-probability scores.
@@ -210,7 +222,11 @@ class KevModel(BenchmarkModule):
 
     @property
     def generative_type(self) -> None:
-        """Kev is a classifier, not a text generator."""
+        """None, because Kev is a classifier, not a text generator.
+
+        Returns:
+            None, since this model does not generate text.
+        """
         return None
 
     @classmethod
@@ -220,8 +236,10 @@ class KevModel(BenchmarkModule):
         """Build a Kev model configuration.
 
         Args:
-            model_id: The checkpoint ID, optionally including its revision.
-            benchmark_config: The evaluation settings and cache location.
+            model_id:
+                The checkpoint ID, optionally including its revision.
+            benchmark_config:
+                The evaluation settings and cache location.
 
         Returns:
             The generated model configuration.
@@ -253,8 +271,10 @@ class KevModel(BenchmarkModule):
         """Recognize Kev's complete checkpoint layout without loading weights.
 
         Args:
-            model_id: A local checkpoint path or Hugging Face repository ID.
-            benchmark_config: The credentials used to inspect a remote checkpoint.
+            model_id:
+                A local checkpoint path or Hugging Face repository ID.
+            benchmark_config:
+                The credentials used to inspect a remote checkpoint.
 
         Returns:
             Whether the directory or repository contains a complete Kev checkpoint.
@@ -309,9 +329,12 @@ class KevModel(BenchmarkModule):
         """Prepare task fields while restoring the raw text Kev consumes.
 
         Args:
-            dataset: The loaded dataset splits.
-            task: The task whose fields should be prepared.
-            itr_idx: The current evaluation iteration.
+            dataset:
+                The loaded dataset splits.
+            task:
+                The task whose fields should be prepared.
+            itr_idx:
+                The current evaluation iteration.
 
         Returns:
             The prepared dataset with the original sample text restored.
@@ -340,7 +363,14 @@ class KevModel(BenchmarkModule):
 
     @property
     def trainer_class(self) -> t.Type[Trainer]:
-        """Kev does not support EuroEval finetuning."""
+        """The unavailable finetuning trainer class.
+
+        Returns:
+            The trainer class, if supported.
+
+        Raises:
+            NotImplementedError: Kev checkpoints cannot be finetuned by EuroEval.
+        """
         raise NotImplementedError("Kev checkpoints cannot be finetuned by EuroEval.")
 
     @property
@@ -359,10 +389,14 @@ def resolve_checkpoint_path(
     """Resolve a local Kev checkpoint or download the requested Hub revision.
 
     Args:
-        model_id: The local directory or Hub repository ID.
-        revision: The Hub revision to download, if specified.
-        cache_dir: The directory for downloaded checkpoint files.
-        token: The optional Hub access token.
+        model_id:
+            The local directory or Hub repository ID.
+        revision:
+            The optional Hub revision to download, if specified.
+        cache_dir:
+            The directory for downloaded checkpoint files.
+        token:
+            The optional Hub access token.
 
     Returns:
         The local checkpoint directory.

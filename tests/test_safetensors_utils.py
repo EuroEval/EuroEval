@@ -15,7 +15,14 @@ class TestGetNumParamsFromSafetensorsMetadata:
     def test_empty_parameter_count(
         self, mock_get_metadata: MagicMock, mock_get_hf_token: MagicMock
     ) -> None:
-        """Test handling of models with empty parameter count dictionary."""
+        """Test handling of models with empty parameter count dictionary.
+
+        Args:
+            mock_get_metadata:
+                Mock get metadata supplied to the test.
+            mock_get_hf_token:
+                Mock get hf token supplied to the test.
+        """
         # Mock the token retrieval
         mock_get_hf_token.return_value = False
 
@@ -35,7 +42,14 @@ class TestGetNumParamsFromSafetensorsMetadata:
     def test_multiple_parameter_count_entries(
         self, mock_get_metadata: MagicMock, mock_get_hf_token: MagicMock
     ) -> None:
-        """Test getting number of parameters with multiple entries."""
+        """Test getting number of parameters with multiple entries.
+
+        Args:
+            mock_get_metadata:
+                Mock get metadata supplied to the test.
+            mock_get_hf_token:
+                Mock get hf token supplied to the test.
+        """
         # Mock the token retrieval
         mock_get_hf_token.return_value = False
 
@@ -61,7 +75,14 @@ class TestGetNumParamsFromSafetensorsMetadata:
     def test_not_a_safetensors_repo(
         self, mock_get_metadata: MagicMock, mock_get_hf_token: MagicMock
     ) -> None:
-        """Test handling of models not in safetensors format."""
+        """Test handling of models not in safetensors format.
+
+        Args:
+            mock_get_metadata:
+                Mock get metadata supplied to the test.
+            mock_get_hf_token:
+                Mock get hf token supplied to the test.
+        """
         # Mock the token retrieval
         mock_get_hf_token.return_value = False
 
@@ -79,7 +100,14 @@ class TestGetNumParamsFromSafetensorsMetadata:
     def test_single_parameter_count_entry(
         self, mock_get_metadata: MagicMock, mock_get_hf_token: MagicMock
     ) -> None:
-        """Test getting number of parameters with a single entry."""
+        """Test getting number of parameters with a single entry.
+
+        Args:
+            mock_get_metadata:
+                Mock get metadata supplied to the test.
+            mock_get_hf_token:
+                Mock get hf token supplied to the test.
+        """
         # Mock the token retrieval
         mock_get_hf_token.return_value = False
 
@@ -103,7 +131,14 @@ class TestGetNumParamsFromSafetensorsMetadata:
     def test_with_api_key(
         self, mock_get_metadata: MagicMock, mock_get_hf_token: MagicMock
     ) -> None:
-        """Test that API key is properly passed through."""
+        """Test that API key is properly passed through.
+
+        Args:
+            mock_get_metadata:
+                Mock get metadata supplied to the test.
+            mock_get_hf_token:
+                Mock get hf token supplied to the test.
+        """
         # Mock the token retrieval
         mock_get_hf_token.return_value = "test_token"
 
@@ -127,7 +162,14 @@ class TestGetNumParamsFromSafetensorsMetadata:
     def test_with_different_revision(
         self, mock_get_metadata: MagicMock, mock_get_hf_token: MagicMock
     ) -> None:
-        """Test that revision parameter is properly passed through."""
+        """Test that revision parameter is properly passed through.
+
+        Args:
+            mock_get_metadata:
+                Mock get metadata supplied to the test.
+            mock_get_hf_token:
+                Mock get hf token supplied to the test.
+        """
         # Mock the token retrieval
         mock_get_hf_token.return_value = False
 

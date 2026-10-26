@@ -11,40 +11,127 @@ from .types import Gpu
 
 
 class _CudaProperties(t.Protocol):
+    """Expose CUDA device properties required by health checks."""
+
     uuid: object
 
 
 class _Cuda(t.Protocol):
-    def current_device(self) -> int: ...
+    """Expose CUDA runtime operations used by health checks."""
 
-    def device_count(self) -> int: ...
+    def current_device(self) -> int:
+        """Current device.
 
-    def get_device_properties(self, device: int) -> _CudaProperties: ...
+        Returns:
+            Currently selected logical CUDA device index.
+        """
+        ...
 
-    def is_available(self) -> bool: ...
+    def device_count(self) -> int:
+        """Device count.
 
-    def set_device(self, device: int) -> None: ...
+        Returns:
+            Number of CUDA devices visible to PyTorch.
+        """
+        ...
 
-    def synchronize(self) -> None: ...
+    def get_device_properties(self, device: int) -> _CudaProperties:
+        """Get device properties.
+
+        Args:
+            device:
+                CUDA device index to inspect or select.
+
+        Returns:
+            CUDA properties for the requested device.
+        """
+        ...
+
+    def is_available(self) -> bool:
+        """Is available.
+
+        Returns:
+            Whether PyTorch can access CUDA.
+        """
+        ...
+
+    def set_device(self, device: int) -> None:
+        """Set device.
+
+        Args:
+            device:
+                CUDA device index to inspect or select.
+        """
+        ...
+
+    def synchronize(self) -> None:
+        """Synchronize."""
+        ...
 
 
 class _Tensor(t.Protocol):
-    def __getitem__(self, key: tuple[int, int]) -> "_Tensor": ...
+    """Expose tensor operations required by model health checks."""
 
-    def __matmul__(self, other: "_Tensor") -> "_Tensor": ...
+    def __getitem__(self, key: tuple[int, int]) -> "_Tensor":
+        """Getitem.
 
-    def item(self) -> float: ...
+        Args:
+            key:
+                Field name to retrieve from the response object.
+
+        Returns:
+            Tensor element or view at the requested two-dimensional index.
+        """
+        ...
+
+    def __matmul__(self, other: "_Tensor") -> "_Tensor":
+        """Matmul.
+
+        Args:
+            other:
+                Other.
+
+        Returns:
+            Matrix product of this tensor and ``other``.
+        """
+        ...
+
+    def item(self) -> float:
+        """Item.
+
+        Returns:
+            Scalar value held by this one-element tensor.
+        """
+        ...
 
 
 class _Torch(t.Protocol):
+    """Expose the PyTorch operations required by health checks."""
+
     __version__: str
     cuda: _Cuda
     float32: object
 
-    def ones(self, size: tuple[int, int], *, device: str, dtype: object) -> _Tensor: ...
+    def ones(self, size: tuple[int, int], *, device: str, dtype: object) -> _Tensor:
+        """Ones.
+
+        Args:
+            size:
+                Size.
+            device:
+                CUDA device index to inspect or select.
+            dtype:
+                Dtype.
+
+        Returns:
+            Tensor of ones with the requested shape, device, and data type.
+        """
+        ...
 
 
 class _Vllm(t.Protocol):
+    """Expose vLLM version details required by health checks."""
+
     __version__: str
 
 
@@ -59,7 +146,11 @@ class GpuHealthReport:
     vllm_version: str
 
     def summary(self) -> str:
-        """Return concise, non-secret health metadata."""
+        """Return concise, non-secret health metadata.
+
+        Returns:
+            Single-line summary of GPU identity and runtime versions.
+        """
         return (
             f"gpu={self.gpu_name!r} index={self.gpu_index} uuid={self.gpu_uuid} "
             f"torch={self.torch_version} vllm={self.vllm_version} operation=matmul"
@@ -111,9 +202,15 @@ def run_gpu_health_check(
 def _check_cuda(torch_module: _Torch, selected: Gpu) -> None:
     """Validate the pinned CUDA device and execute a small tensor operation.
 
+    Args:
+            torch_module:
+                Torch module.
+            selected:
+                Selected.
+
     Raises:
-        GpuHealthError:
-            If CUDA is unavailable, not isolated, or produces a bad result.
+            GpuHealthError:
+                If CUDA is unavailable, not isolated, or produces a bad result.
     """
     cuda = torch_module.cuda
     if not cuda.is_available():
@@ -153,8 +250,12 @@ class GpuHealthError(RuntimeError):
 def _normalise_uuid(value: object) -> str:
     """Convert CUDA's UUID representation to the nvidia-smi text form.
 
+    Args:
+            value:
+                Input value being decoded, validated, or serialised.
+
     Returns:
-        The UUID as text.
+            The UUID as text.
     """
     if isinstance(value, bytes):
         return value.decode("ascii")
@@ -164,12 +265,18 @@ def _normalise_uuid(value: object) -> str:
 def _import_stack_module(importer: c.Callable[[str], object], name: str) -> object:
     """Import one required runtime package with an actionable error.
 
+    Args:
+            importer:
+                Importer.
+            name:
+                Required runtime package name.
+
     Returns:
-        The imported module.
+            The imported module.
 
     Raises:
-        GpuHealthError:
-            If the package cannot be imported.
+            GpuHealthError:
+                If the package cannot be imported.
     """
     try:
         return importer(name)

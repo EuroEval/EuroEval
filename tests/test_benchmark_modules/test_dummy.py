@@ -25,7 +25,16 @@ class TestBPCGating:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """BPC scoring raises InvalidModel for the dummy backend."""
+        """BPC scoring raises InvalidModel for the dummy backend.
+
+        Args:
+            dummy_model_config:
+                Dummy model config supplied to the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         bpc_config = dataclasses.replace(benchmark_config, use_bits_per_character=True)
         with pytest.raises(InvalidModel, match="vLLM backend"):
             load_model(
@@ -41,7 +50,12 @@ class TestDispatch:
     def test_get_model_config_resolves_to_dummy(
         self, benchmark_config: BenchmarkConfig
     ) -> None:
-        """The reflection-based registry resolves 'dummy' with no network calls."""
+        """The reflection-based registry resolves 'dummy' with no network calls.
+
+        Args:
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         config = get_model_config(model_id="dummy", benchmark_config=benchmark_config)
         assert config.inference_backend == InferenceBackend.DUMMY
 
@@ -51,7 +65,16 @@ class TestDispatch:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """load_model dispatches to DummyModel for the dummy backend."""
+        """load_model dispatches to DummyModel for the dummy backend.
+
+        Args:
+            dummy_model_config:
+                Dummy model config supplied to the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         model = load_model(
             model_config=dummy_model_config,
             dataset_config=dataset_config,
@@ -69,7 +92,16 @@ class TestGenerate:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """Classification tasks get an even logprob distribution over labels."""
+        """Classification tasks get an even logprob distribution over labels.
+
+        Args:
+            dummy_model_config:
+                Dummy model config supplied to the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         model = DummyModel(
             model_config=dummy_model_config,
             dataset_config=dataset_config,
@@ -102,6 +134,14 @@ class TestGenerate:
         A literally empty answer breaks some metrics (e.g. the hallucination
         classifier errors with "no tokens found in predictions"), so a
         non-empty placeholder is used for every free-text-answer task group.
+
+        Args:
+            task:
+                Task supplied to the test.
+            dummy_model_config:
+                Dummy model config supplied to the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
         """
         free_text_dataset_config = DatasetConfig(
             name="dataset",
@@ -123,7 +163,14 @@ class TestGenerate:
     def test_token_classification_extracts_to_all_o_labels(
         self, dummy_model_config: ModelConfig, benchmark_config: BenchmarkConfig
     ) -> None:
-        """The correctly-shaped empty prediction round-trips to all-"o" labels."""
+        """The correctly-shaped empty prediction round-trips to all-"o" labels.
+
+        Args:
+            dummy_model_config:
+                Dummy model config supplied to the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         ner_dataset_config = DatasetConfig(
             name="dataset",
             pretty_name="Dataset",
@@ -146,7 +193,14 @@ class TestGenerate:
     def test_token_classification_returns_canonical_empty_shape(
         self, dummy_model_config: ModelConfig, benchmark_config: BenchmarkConfig
     ) -> None:
-        """NER gets the same "no entities" shape used in few-shot demonstrations."""
+        """NER gets the same "no entities" shape used in few-shot demonstrations.
+
+        Args:
+            dummy_model_config:
+                Dummy model config supplied to the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         ner_dataset_config = DatasetConfig(
             name="dataset",
             pretty_name="Dataset",
@@ -174,7 +228,12 @@ class TestGetModelConfig:
     """Tests for DummyModel.get_model_config."""
 
     def test_config_fields(self, benchmark_config: BenchmarkConfig) -> None:
-        """The built model config points at the dummy backend."""
+        """The built model config points at the dummy backend.
+
+        Args:
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         config = DummyModel.get_model_config(
             model_id="dummy", benchmark_config=benchmark_config
         )
@@ -189,7 +248,12 @@ class TestModelExists:
     """Tests for DummyModel.model_exists."""
 
     def test_exact_id_matches(self, benchmark_config: BenchmarkConfig) -> None:
-        """The exact 'dummy' id is recognised."""
+        """The exact 'dummy' id is recognised.
+
+        Args:
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         assert DummyModel.model_exists(
             model_id="dummy", benchmark_config=benchmark_config
         )
@@ -198,7 +262,14 @@ class TestModelExists:
     def test_other_ids_do_not_match(
         self, model_id: str, benchmark_config: BenchmarkConfig
     ) -> None:
-        """IDs other than the exact string 'dummy' are not recognised."""
+        """IDs other than the exact string 'dummy' are not recognised.
+
+        Args:
+            model_id:
+                Model identifier used by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         assert not DummyModel.model_exists(
             model_id=model_id, benchmark_config=benchmark_config
         )
@@ -215,7 +286,18 @@ class TestUnimplementedProperties:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """The dummy backend does not support finetuning properties."""
+        """The dummy backend does not support finetuning properties.
+
+        Args:
+            property_name:
+                Property name supplied to the test.
+            dummy_model_config:
+                Dummy model config supplied to the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         model = DummyModel(
             model_config=dummy_model_config,
             dataset_config=dataset_config,
@@ -229,6 +311,10 @@ class TestUnimplementedProperties:
 @pytest.fixture
 def dummy_model_config(model_config: ModelConfig) -> ModelConfig:
     """Yields a model configuration pointing at the dummy backend.
+
+    Args:
+        model_config:
+            Model configuration exercised by the test.
 
     Returns:
         A model configuration pointing at the dummy backend.

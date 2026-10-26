@@ -13,7 +13,12 @@ class TestBPCCaching:
     """Tests that BPC scores are correctly cached and loaded."""
 
     def test_bpc_score_roundtrip_via_json(self, tmp_path: Path) -> None:
-        """Verify bpc_score field survives JSON serialization roundtrip."""
+        """Verify bpc_score field survives JSON serialization roundtrip.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         cache = ModelCache(
             model_cache_dir=tmp_path,
             cache_name="test-roundtrip.json",
@@ -37,7 +42,12 @@ class TestBPCCaching:
         assert first_entry["bpc_score"] == 1.25
 
     def test_bpc_score_saved_and_loaded(self, tmp_path: Path) -> None:
-        """BPC scores are persisted to disk and reconstructed on load."""
+        """BPC scores are persisted to disk and reconstructed on load.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         cache = ModelCache(
             model_cache_dir=tmp_path,
             cache_name="test-bpc-model-outputs.json",
@@ -75,7 +85,12 @@ class TestBPCCaching:
             assert value.bpc_score is not None
 
     def test_cache_key_distinguishes_bpc_runs(self, tmp_path: Path) -> None:
-        """Cache stores bpc_score separately from non-bpc data."""
+        """Cache stores bpc_score separately from non-bpc data.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         cache = ModelCache(
             model_cache_dir=tmp_path,
             cache_name="test-bpc-distinction.json",
@@ -104,7 +119,12 @@ class TestBPCCaching:
     def test_load_cached_model_outputs_reconstructs_bpc_scores(
         self, tmp_path: Path
     ) -> None:
-        """load_cached_model_outputs reconstructs bpc_scores from cache."""
+        """load_cached_model_outputs reconstructs bpc_scores from cache.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         cache = ModelCache(
             model_cache_dir=tmp_path,
             cache_name="test-reconstruct.json",

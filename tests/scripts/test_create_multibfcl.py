@@ -56,10 +56,31 @@ def test_build_dataset_keeps_source_test_and_scores(
     source_dataset: Dataset,
     benchmark_config: BenchmarkConfig,
 ) -> None:
-    """A converted record retains its schema, prompt and scorable reference."""
+    """A converted record retains its schema, prompt and scorable reference.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        source_dataset:
+            Source dataset supplied to the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+    """
 
     def fake_load_dataset(*, path: str, name: str, split: str) -> Dataset:
-        """Return a test split while checking the requested source subset."""
+        """Return a test split while checking the requested source subset.
+
+        Args:
+            path:
+                Path supplied to the test.
+            name:
+                Name supplied to the test.
+            split:
+                Split supplied to the test.
+
+        Returns:
+            The configured source dataset.
+        """
         assert (path, name, split) == ("syvai/multi-bfcl", "da", "test")
         return source_dataset
 
@@ -115,7 +136,14 @@ def test_build_dataset_keeps_source_test_and_scores(
 def test_build_dataset_preserves_system_and_user_messages(
     monkeypatch: pytest.MonkeyPatch, source_row: dict[str, str]
 ) -> None:
-    """A multi-message source question retains its system instructions."""
+    """A multi-message source question retains its system instructions.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        source_row:
+            Source row supplied to the test.
+    """
     source_row["question"] = json.dumps(
         [
             [
@@ -126,7 +154,19 @@ def test_build_dataset_preserves_system_and_user_messages(
     )
 
     def fake_load_dataset(*, path: str, name: str, split: str) -> Dataset:
-        """Return enough test examples for conversion."""
+        """Return enough test examples for conversion.
+
+        Args:
+            path:
+                Path supplied to the test.
+            name:
+                Name supplied to the test.
+            split:
+                Split supplied to the test.
+
+        Returns:
+            A source dataset with enough rows for conversion.
+        """
         assert (path, name, split) == ("syvai/multi-bfcl", "da", "test")
         return Dataset.from_list([source_row] * 2304)
 
@@ -141,10 +181,27 @@ def test_build_dataset_preserves_system_and_user_messages(
 def test_build_dataset_rejects_insufficient_source_rows(
     monkeypatch: pytest.MonkeyPatch, source_row: dict[str, str], size: int
 ) -> None:
-    """A short source cannot silently produce overlapping or undersized splits."""
+    """A short source cannot silently produce overlapping or undersized splits.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        source_row:
+            Source row supplied to the test.
+        size:
+            Size supplied to the test.
+    """
 
     def fake_load_dataset(*, path: str, name: str, split: str) -> Dataset:
         """Return fewer than the required number of source rows.
+
+        Args:
+            path:
+                Path supplied to the test.
+            name:
+                Name supplied to the test.
+            split:
+                Split supplied to the test.
 
         Returns:
             An undersized source dataset.
@@ -167,10 +224,25 @@ def test_build_dataset_rejects_unknown_language() -> None:
 def test_build_dataset_uses_portuguese_source(
     monkeypatch: pytest.MonkeyPatch, source_row: dict[str, str]
 ) -> None:
-    """Portuguese source uses pt-pt while the EuroEval identity uses pt."""
+    """Portuguese source uses pt-pt while the EuroEval identity uses pt.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        source_row:
+            Source row supplied to the test.
+    """
 
     def fake_load_dataset(*, path: str, name: str, split: str) -> Dataset:
         """Confirm the selected source and return enough test examples.
+
+        Args:
+            path:
+                Path supplied to the test.
+            name:
+                Name supplied to the test.
+            split:
+                Split supplied to the test.
 
         Returns:
             2,304 source test examples.
@@ -188,17 +260,50 @@ def test_build_dataset_uses_portuguese_source(
 def test_main_publishes_every_language_privately(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Publish every generated language dataset once to its private repository."""
+    """Publish every generated language dataset once to its private repository.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     published: list[tuple[str, bool]] = []
 
     class DummyDataset:
+        """Minimal dataset double for publication tests."""
+
         def __getitem__(self, split: str) -> list[None]:
+            """Getitem   for this test.
+
+            Args:
+                split:
+                    Split supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             return [None]
 
         def push_to_hub(self, *, repo_id: str, private: bool) -> None:
+            """Push to hub for this test.
+
+            Args:
+                repo_id:
+                    Repo id supplied to the test.
+                private:
+                    Private supplied to the test.
+            """
             published.append((repo_id, private))
 
     def fake_build_dataset(language_code: str) -> tuple[DummyDataset, str]:
+        """Fake build dataset for this test.
+
+        Args:
+            language_code:
+                Language code supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         return DummyDataset(), f"EuroEval/multi-bfcl-{language_code}-mini"
 
     monkeypatch.setattr(create_multibfcl, "build_dataset", fake_build_dataset)

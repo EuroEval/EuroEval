@@ -511,8 +511,9 @@ def pdf_to_images(pdf_bytes: bytes, dpi: int = 150) -> list[str]:
     Args:
         pdf_bytes:
             The PDF content as bytes.
-        dpi:
+        dpi (optional):
             Resolution for rendering (higher = better quality, larger payload).
+            Defaults to 150.
 
     Returns:
         A list of base64-encoded PNG strings, one per page.
@@ -554,7 +555,12 @@ class AnswerEntry(BaseModel):
     answer_key: AnswerKeyType
 
     def model_post_init(self, __context: dict) -> None:
-        """Post-processing for AnswerEntry."""
+        """Normalize string answer keys after model validation.
+
+        Args:
+            __context:
+                Pydantic validation context, if provided.
+        """
         if isinstance(self.answer_key, str):
             self.answer_key = self.answer_key.upper()
 

@@ -12,6 +12,15 @@ from scripts.update_core_models import _format_models_yaml, _reasoning_flags
 
 
 def _core_model(**overrides: object) -> CoreModel:
+    """Core model for this test.
+
+    Args:
+        overrides:
+            Overrides supplied to the test.
+
+    Returns:
+        The value returned by the test helper.
+    """
     values: dict[str, object] = {
         "model_id": "org/model",
         "model_type": ModelType.ENCODER,
@@ -31,7 +40,14 @@ def _core_model(**overrides: object) -> CoreModel:
 def test_core_models_schedule_every_european_language(
     monkeypatch: pytest.MonkeyPatch, model: CoreModel
 ) -> None:
-    """Every core model is scheduled for every official language."""
+    """Every core model is scheduled for every official language.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        model:
+            Model supplied to the test.
+    """
     monkeypatch.setattr(
         runner,
         "official_dataset_language_pairs",

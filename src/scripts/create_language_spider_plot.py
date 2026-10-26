@@ -1311,7 +1311,18 @@ def cli(
     title: str | None,
     filename: str | None,
 ) -> None:
-    """Command-line entry point."""
+    """Generate a language spider plot from selected model results.
+
+    Args:
+        models: Model IDs to compare.
+        languages: Optional language names or codes; an empty tuple selects official
+            languages.
+        shots: Shot filter, either ``auto``, ``zero``, or ``few``; defaults to
+            ``auto`` in the command-line interface.
+        max_score: Optional upper bound for the radial rank-score axis.
+        title: Optional plot title; defaults to a title derived from the selection.
+        filename: Optional output path; defaults to one derived from the title.
+    """
     exit_code = main(
         models=models,
         languages=languages,

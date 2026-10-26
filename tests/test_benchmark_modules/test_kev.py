@@ -26,7 +26,8 @@ def test_generate_rejects_malformed_probabilities(
     """Malformed pointer output fails clearly instead of producing fake scores.
 
     Args:
-        dataset_config: The test dataset configuration.
+        dataset_config:
+          The test dataset configuration.
     """
 
     class FakeModel:
@@ -44,11 +45,16 @@ def test_generate_rejects_malformed_probabilities(
             """Return the record in the shape the fake pointer head consumes.
 
             Args:
-                tokenizer: The unused tokenizer stand-in.
-                record: The constructed Kev input record.
-                strict: Whether the record should use strict encoding.
-                max_state: The maximum state length requested by the adapter.
-                max_branch: The maximum branch length requested by the adapter.
+                tokenizer:
+                  The unused tokenizer stand-in.
+                record:
+                  The constructed Kev input record.
+                strict (optional):
+                  Whether the record should use strict encoding. Defaults to True.
+                max_state (optional):
+                  The maximum state length requested by the adapter. Defaults to 0.
+                max_branch (optional):
+                  The maximum branch length requested by the adapter. Defaults to 0.
 
             Returns:
                 The unchanged input record.
@@ -59,7 +65,8 @@ def test_generate_rejects_malformed_probabilities(
             """Return controlled class probabilities for this test.
 
             Args:
-                encoded: The encoded record supplied to the fake head.
+                encoded:
+                  The encoded record supplied to the fake head.
 
             Returns:
                 Controlled probabilities for the available choices.
@@ -75,8 +82,10 @@ def _make_model(dataset_config: DatasetConfig, fake_model: object) -> KevModel:
     """Build a Kev adapter around fakes without mutating shared task definitions.
 
     Args:
-        dataset_config: The dataset configuration to copy for this test.
-        fake_model: The stand-in for the loaded Kev model.
+        dataset_config:
+          The dataset configuration to copy for this test.
+        fake_model:
+          The stand-in for the loaded Kev model.
 
     Returns:
         The adapter configured around the fake model.
@@ -102,7 +111,8 @@ def test_generate_scores_each_sample_and_passes_serving_limit(
     """The decision head receives a serving limit and outputs preserve each sample.
 
     Args:
-        dataset_config: The test dataset configuration.
+        dataset_config:
+          The test dataset configuration.
     """
 
     class FakeModel:
@@ -124,11 +134,16 @@ def test_generate_scores_each_sample_and_passes_serving_limit(
             """Return the record in the shape the fake pointer head consumes.
 
             Args:
-                tokenizer: The unused tokenizer stand-in.
-                record: The constructed Kev input record.
-                strict: Whether the record should use strict encoding.
-                max_state: The maximum state length requested by the adapter.
-                max_branch: The maximum branch length requested by the adapter.
+                tokenizer:
+                  The unused tokenizer stand-in.
+                record:
+                  The constructed Kev input record.
+                strict (optional):
+                  Whether the record should use strict encoding. Defaults to True.
+                max_state (optional):
+                  The maximum state length requested by the adapter. Defaults to 0.
+                max_branch (optional):
+                  The maximum branch length requested by the adapter. Defaults to 0.
 
             Returns:
                 The unchanged input record.
@@ -142,7 +157,8 @@ def test_generate_scores_each_sample_and_passes_serving_limit(
             """Return controlled class probabilities for this test.
 
             Args:
-                encoded: The encoded record supplied to the fake head.
+                encoded:
+                  The encoded record supplied to the fake head.
 
             Returns:
                 Controlled probabilities for the available choices.
@@ -168,7 +184,8 @@ def test_get_model_config_selects_kev_dispatch(
     """Kev IDs map to the independent Kev inference backend.
 
     Args:
-        benchmark_config: The benchmark settings used for model detection.
+        benchmark_config:
+          The benchmark settings used for model detection.
     """
     config = KevModel.get_model_config("org/kev-model@release", benchmark_config)
     assert config.model_id == "org/kev-model"
@@ -181,7 +198,8 @@ def test_kev_forces_zero_shot(benchmark_config: BenchmarkConfig) -> None:
     """The classifier uses the existing zero-shot-only shot policy.
 
     Args:
-        benchmark_config: The benchmark settings used for shot selection.
+        benchmark_config:
+          The benchmark settings used for shot selection.
     """
     config = KevModel.get_model_config(
         model_id="jaredpalmer/kev-0.8b", benchmark_config=benchmark_config
@@ -199,9 +217,12 @@ def test_load_uses_requested_revision_and_initialises_extractor(
     """Load the selected checkpoint and preserve classifier state.
 
     Args:
-        dataset_config: The dataset configuration for the Kev model.
-        benchmark_config: The benchmark settings used to load the model.
-        monkeypatch: The fixture replacing checkpoint-loading dependencies.
+        dataset_config:
+          The dataset configuration for the Kev model.
+        benchmark_config:
+          The benchmark settings used to load the model.
+        monkeypatch:
+          The fixture replacing checkpoint-loading dependencies.
     """
     requested: dict[str, object] = {}
 
@@ -212,7 +233,8 @@ def test_load_uses_requested_revision_and_initialises_extractor(
             """Capture the options passed to this test double.
 
             Args:
-                path: The resolved checkpoint path.
+                path:
+                  The resolved checkpoint path.
             """
             requested["path"] = path
 
@@ -220,8 +242,10 @@ def test_load_uses_requested_revision_and_initialises_extractor(
             """Record checkpoint options and provide a fake loaded model.
 
             Args:
-                device: The requested inference device.
-                options: The requested Kev load options.
+                device:
+                  The requested inference device.
+                options:
+                  The requested Kev load options.
 
             Returns:
                 A tokenizer and fake loaded model.
@@ -237,8 +261,10 @@ def test_load_uses_requested_revision_and_initialises_extractor(
             """Capture the options passed to this test double.
 
             Args:
-                backend: The requested model backend.
-                dtype: The requested model dtype.
+                backend:
+                  The requested model backend.
+                dtype:
+                  The requested model dtype.
             """
             requested["backend"] = backend
             requested["dtype"] = dtype
@@ -257,10 +283,14 @@ def test_load_uses_requested_revision_and_initialises_extractor(
         """Record the requested revision without downloading a checkpoint.
 
         Args:
-            model_id: The requested checkpoint ID.
-            revision: The requested checkpoint revision.
-            cache_dir: The unused checkpoint cache directory.
-            token: The unused Hub token.
+            model_id:
+              The requested checkpoint ID.
+            revision:
+              The requested checkpoint revision.
+            cache_dir:
+              The unused checkpoint cache directory.
+            token:
+              The unused Hub token.
 
         Returns:
             The fake local checkpoint directory.
@@ -295,7 +325,8 @@ def test_multiple_choice_accepts_repeated_option_bodies_with_distinct_letters(
     """Repeated choice text remains represented by its separate answer letters.
 
     Args:
-        dataset_config: The multiple-choice test dataset configuration.
+        dataset_config:
+          The multiple-choice test dataset configuration.
     """
 
     class FakeModel:
@@ -317,11 +348,16 @@ def test_multiple_choice_accepts_repeated_option_bodies_with_distinct_letters(
             """Collect the input record for assertions.
 
             Args:
-                tokenizer: The unused tokenizer stand-in.
-                record: The constructed Kev input record.
-                strict: Whether strict encoding was requested.
-                max_state: The maximum state length.
-                max_branch: The maximum branch length.
+                tokenizer:
+                  The unused tokenizer stand-in.
+                record:
+                  The constructed Kev input record.
+                strict:
+                  Whether strict encoding was requested.
+                max_state:
+                  The maximum state length.
+                max_branch:
+                  The maximum branch length.
 
             Returns:
                 The unchanged record.
@@ -333,7 +369,8 @@ def test_multiple_choice_accepts_repeated_option_bodies_with_distinct_letters(
             """Return probabilities for the four positional choices.
 
             Args:
-                encoded: The encoded record supplied to the fake head.
+                encoded:
+                  The encoded record supplied to the fake head.
 
             Returns:
                 Controlled probabilities for the four choices.
@@ -375,7 +412,8 @@ def test_multiple_choice_accepts_variable_options_without_fixed_labels(
     """Community datasets without fixed labels can still score their answer choices.
 
     Args:
-        dataset_config: The multiple-choice test dataset configuration.
+        dataset_config:
+          The multiple-choice test dataset configuration.
     """
 
     class FakeModel:
@@ -393,11 +431,16 @@ def test_multiple_choice_accepts_variable_options_without_fixed_labels(
             """Return the record in the shape the fake pointer head consumes.
 
             Args:
-                tokenizer: The unused tokenizer stand-in.
-                record: The constructed Kev input record.
-                max_state: The maximum state length requested by the adapter.
-                max_branch: The maximum branch length requested by the adapter.
-                strict: Whether the record should use strict encoding.
+                tokenizer:
+                  The unused tokenizer stand-in.
+                record:
+                  The constructed Kev input record.
+                max_state:
+                  The maximum state length requested by the adapter.
+                max_branch:
+                  The maximum branch length requested by the adapter.
+                strict:
+                  Whether the record should use strict encoding.
 
             Returns:
                 The unchanged input record.
@@ -409,7 +452,8 @@ def test_multiple_choice_accepts_variable_options_without_fixed_labels(
             """Return controlled class probabilities for this test.
 
             Args:
-                encoded: The encoded record supplied to the fake head.
+                encoded:
+                  The encoded record supplied to the fake head.
 
             Returns:
                 Controlled probabilities for the available choices.
@@ -432,7 +476,8 @@ def test_multiple_choice_labels_follow_parsed_options_not_question_text(
     """Kev scores and instructs with only the options parsed from each sample.
 
     Args:
-        dataset_config: The multiple-choice test dataset configuration.
+        dataset_config:
+          The multiple-choice test dataset configuration.
     """
 
     class FakeModel:
@@ -454,11 +499,16 @@ def test_multiple_choice_labels_follow_parsed_options_not_question_text(
             """Collect each constructed Kev input record.
 
             Args:
-                tokenizer: The unused tokenizer stand-in.
-                record: The constructed Kev input record.
-                max_state: The maximum state length requested by the adapter.
-                max_branch: The maximum branch length requested by the adapter.
-                strict: Whether strict encoding was requested.
+                tokenizer:
+                  The unused tokenizer stand-in.
+                record:
+                  The constructed Kev input record.
+                max_state:
+                  The maximum state length requested by the adapter.
+                max_branch:
+                  The maximum branch length requested by the adapter.
+                strict:
+                  Whether strict encoding was requested.
 
             Returns:
                 The unchanged input record.
@@ -470,7 +520,8 @@ def test_multiple_choice_labels_follow_parsed_options_not_question_text(
             """Return a normalized distribution over the current options.
 
             Args:
-                encoded: The encoded record supplied to the fake head.
+                encoded:
+                  The encoded record supplied to the fake head.
 
             Returns:
                 Controlled probabilities for the available choices.
@@ -519,7 +570,8 @@ def test_multiple_choice_uses_per_sample_options_and_stable_letters(
     """Each sample is classified over its own choices and returns stable letters.
 
     Args:
-        dataset_config: The multiple-choice test dataset configuration.
+        dataset_config:
+          The multiple-choice test dataset configuration.
     """
 
     class FakeModel:
@@ -541,11 +593,16 @@ def test_multiple_choice_uses_per_sample_options_and_stable_letters(
             """Return the record in the shape the fake pointer head consumes.
 
             Args:
-                tokenizer: The unused tokenizer stand-in.
-                record: The constructed Kev input record.
-                strict: Whether the record should use strict encoding.
-                max_state: The maximum state length requested by the adapter.
-                max_branch: The maximum branch length requested by the adapter.
+                tokenizer:
+                  The unused tokenizer stand-in.
+                record:
+                  The constructed Kev input record.
+                strict (optional):
+                  Whether the record should use strict encoding. Defaults to True.
+                max_state (optional):
+                  The maximum state length requested by the adapter. Defaults to 0.
+                max_branch (optional):
+                  The maximum branch length requested by the adapter. Defaults to 0.
 
             Returns:
                 The unchanged input record.
@@ -557,7 +614,8 @@ def test_multiple_choice_uses_per_sample_options_and_stable_letters(
             """Return controlled class probabilities for this test.
 
             Args:
-                encoded: The encoded record supplied to the fake head.
+                encoded:
+                  The encoded record supplied to the fake head.
 
             Returns:
                 Controlled probabilities for the available choices.
@@ -590,7 +648,8 @@ def test_prepare_dataset_rejects_few_shot(dataset_config: DatasetConfig) -> None
     """Kev cannot consume EuroEval few-shot demonstrations.
 
     Args:
-        dataset_config: The test dataset configuration.
+        dataset_config:
+          The test dataset configuration.
     """
     model = _make_model(dataset_config, SimpleNamespace())
     model.benchmark_config.few_shot = True
@@ -608,8 +667,10 @@ def test_prepare_dataset_restores_raw_text(
     """Kev applies the shared task preparation while exposing original input text.
 
     Args:
-        dataset_config: The test dataset configuration.
-        monkeypatch: The fixture replacing the dataset preparation helper.
+        dataset_config:
+          The test dataset configuration.
+        monkeypatch:
+          The fixture replacing the dataset preparation helper.
     """
     original = ["raw sample"]
     mapped = ["rendered prompt"]
@@ -622,7 +683,8 @@ def test_prepare_dataset_restores_raw_text(
             """Store the fake split's text column.
 
             Args:
-                text: The column contents of the fake split.
+                text:
+                  The column contents of the fake split.
             """
             self.text = text
 
@@ -630,7 +692,8 @@ def test_prepare_dataset_restores_raw_text(
             """Return the requested fake dataset column.
 
             Args:
-                key: The name of the fake dataset column.
+                key:
+                  The name of the fake dataset column.
 
             Returns:
                 The values in the requested column.
@@ -642,8 +705,10 @@ def test_prepare_dataset_restores_raw_text(
             """Return a fake split with the supplied column values.
 
             Args:
-                key: The name of the fake dataset column.
-                values: The values to place in the fake dataset column.
+                key:
+                  The name of the fake dataset column.
+                values:
+                  The values to place in the fake dataset column.
 
             Returns:
                 A fake split containing the supplied values.
@@ -655,7 +720,8 @@ def test_prepare_dataset_restores_raw_text(
             """Return an empty fake split after removing its column.
 
             Args:
-                key: The name of the fake dataset column.
+                key:
+                  The name of the fake dataset column.
 
             Returns:
                 An empty fake split.
@@ -674,7 +740,8 @@ def test_prepare_dataset_restores_raw_text(
         """Record dataset preparation arguments and return a fake split.
 
         Args:
-            kwargs: The preparation settings passed by the adapter.
+            kwargs:
+              The preparation settings passed by the adapter.
 
         Returns:
             A prepared fake dataset split.
@@ -700,8 +767,10 @@ def test_recognizes_only_complete_kev_checkpoints(
     """A PEFT adapter is not Kev without its trained head and adapter weights.
 
     Args:
-        tmp_path: The temporary directory for incomplete and complete checkpoints.
-        benchmark_config: The benchmark settings used for model detection.
+        tmp_path:
+          The temporary directory for incomplete and complete checkpoints.
+        benchmark_config:
+          The benchmark settings used for model detection.
     """
     (tmp_path / "adapter_config.json").write_text(json.dumps({"r": 8}))
     assert KevModel.model_exists(str(tmp_path), benchmark_config) is False
@@ -714,7 +783,8 @@ def test_resolve_checkpoint_path_reuses_local_directory(tmp_path: Path) -> None:
     """Local checkpoints bypass Hub downloads.
 
     Args:
-        tmp_path: The local checkpoint directory.
+        tmp_path:
+          The local checkpoint directory.
     """
     assert resolve_checkpoint_path(
         model_id=str(tmp_path), revision="tag", cache_dir="cache", token="secret"

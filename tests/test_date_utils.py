@@ -23,5 +23,12 @@ from euroeval.date_utils import normalise_release_date
     ],
 )
 def test_normalise_release_date(value: object, expected: str | None) -> None:
-    """Release dates are normalised consistently across all consumers."""
+    """Release dates are normalised consistently across all consumers.
+
+    Args:
+        value:
+            Value supplied to the test.
+        expected:
+            Expected value for this test case.
+    """
     assert normalise_release_date(value) == expected

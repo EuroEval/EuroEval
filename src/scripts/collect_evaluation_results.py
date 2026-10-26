@@ -166,7 +166,12 @@ def main(force: bool = False) -> None:
 
 
 def _close_harvested_issues(harvested: list[tuple[int, list[str]]]) -> None:
-    """Close issues with successfully harvested results."""
+    """Close issues with successfully harvested results.
+
+    Args:
+        harvested:
+            Issue numbers and their successfully harvested result lines.
+    """
     for number, _ in harvested:
         try:
             comment_on_issue(
@@ -227,7 +232,8 @@ def _harvest_results(issues: list[dict]) -> list[tuple[int, list[str]]]:
     """Harvest results from issues.
 
     Args:
-        issues: List of issue dictionaries.
+        issues:
+            Issue dictionaries to check for available bucket results.
 
     Returns:
         List of tuples with (issue_number, result_lines).
@@ -614,7 +620,14 @@ def _write_changed_records(
 def _write_new_results(
     harvested: list[tuple[int, list[str]]], manual_lines: list[str]
 ) -> None:
-    """Write combined results to new_results.jsonl."""
+    """Write combined results to new_results.jsonl.
+
+    Args:
+        harvested:
+            Issue numbers and their harvested result lines.
+        manual_lines:
+            Result lines supplied manually for the collection.
+    """
     all_lines: list[str] = []
     for _, lines in harvested:
         all_lines.extend(lines)
@@ -735,7 +748,12 @@ def preflight_volunteer_review() -> bool:
 
 
 def _log_review_commands(submission_ids: list[str]) -> None:
-    """Log copy-pasteable, shell-quoted maintainer review commands."""
+    """Log copy-pasteable, shell-quoted maintainer review commands.
+
+    Args:
+        submission_ids:
+            Volunteer submission ids for which to log review commands.
+    """
     reviewer = os.environ.get("GITHUB_ACTOR") or "<github-login>"
     reason = "reviewed submission evidence"
     commands = [
@@ -784,7 +802,11 @@ def _log_review_commands(submission_ids: list[str]) -> None:
 
 
 def _stdin_is_interactive() -> bool:
-    """Return whether stdin can safely be used for the review prompt."""
+    """Return whether stdin can safely be used for the review prompt.
+
+    Returns:
+        Whether stdin reports itself as an interactive terminal.
+    """
     try:
         return sys.stdin.isatty()
     except (AttributeError, OSError):

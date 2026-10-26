@@ -20,7 +20,12 @@ from leaderboards.link_generation import (
     ],
 )
 def test_deepseek_provider_models_use_pricing_url(model_id: str) -> None:
-    """Every model with the DeepSeek provider prefix uses its pricing URL."""
+    """Every model with the DeepSeek provider prefix uses its pricing URL.
+
+    Args:
+        model_id:
+            Model identifier used by the test.
+    """
     expected_url = "https://api-docs.deepseek.com/quick_start/pricing/"
 
     assert generate_deepseek_url(model_id=model_id) == expected_url
@@ -30,7 +35,12 @@ def test_deepseek_provider_models_use_pricing_url(model_id: str) -> None:
 def test_deepseek_url_overrides_stale_missing_url_decision(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A stale missing-URL decision does not override a supported provider."""
+    """A stale missing-URL decision does not override a supported provider.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setattr(link_generation, "_load_model_url_decision", lambda **_: False)
 
     assert (
@@ -43,19 +53,34 @@ def test_deepseek_url_overrides_stale_missing_url_decision(
     "model_id", ["deepseek-chat", "deepseek-ai/DeepSeek-V3", "openrouter/deepseek-chat"]
 )
 def test_non_provider_deepseek_models_have_no_deepseek_url(model_id: str) -> None:
-    """Model names without the DeepSeek provider prefix are not API models."""
+    """Model names without the DeepSeek provider prefix are not API models.
+
+    Args:
+        model_id:
+            Model identifier used by the test.
+    """
     assert generate_deepseek_url(model_id=model_id) is None
 
 
 @pytest.mark.parametrize("model_id", ["jev", "other/typesafe/jev"])
 def test_non_provider_typesafe_models_have_no_typesafe_url(model_id: str) -> None:
-    """Only IDs with a Typesafe provider prefix use the Typesafe link."""
+    """Only IDs with a Typesafe provider prefix use the Typesafe link.
+
+    Args:
+        model_id:
+            Model identifier used by the test.
+    """
     assert generate_typesafe_url(model_id=model_id) is None
 
 
 @pytest.mark.parametrize("model_id", ["typesafe/jev", "typesafe/another-model"])
 def test_typesafe_provider_models_use_docs_url(model_id: str) -> None:
-    """Every Typesafe model links to the provider's model documentation."""
+    """Every Typesafe model links to the provider's model documentation.
+
+    Args:
+        model_id:
+            Model identifier used by the test.
+    """
     expected_url = "https://docs.typesafe.ai/models"
 
     assert generate_typesafe_url(model_id=model_id) == expected_url

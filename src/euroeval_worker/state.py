@@ -121,6 +121,20 @@ def _lease_from_state(value: object) -> Lease:
 
 
 def _canary_instruction(value: object) -> CanaryInstruction | None:
+    """Canary instruction.
+
+    Args:
+            value:
+                Input value being decoded, validated, or serialised.
+
+    Returns:
+            Decoded canary instruction, or ``None`` when no instruction was persisted.
+
+    Raises:
+    ValueError:
+            If the input does not have the required structure or value.
+            The input is malformed or cannot be converted to the required value.
+    """
     if value is None:
         return None
     if not isinstance(value, dict):
@@ -160,13 +174,21 @@ class PendingRecord:
     def from_record(cls, record: EEERecord) -> "PendingRecord":
         """Create pending state without re-serialising the result.
 
+        Args:
+                    record:
+                        EEE result whose exact JSON and digest are copied.
+
         Returns:
-            The durable pending representation.
+                    The durable pending representation.
         """
         return cls(record_json=record.record_json, digest=record.digest)
 
     def to_record(self) -> EEERecord:
-        """Return the exact result stored in this state entry."""
+        """Return the exact result stored in this state entry.
+
+        Returns:
+            EEE record reconstructed from the exact stored JSON and digest.
+        """
         return EEERecord(record_json=self.record_json, digest=self.digest)
 
 
@@ -184,7 +206,12 @@ class StateStore:
     """Persist credentials and one isolated active lease atomically."""
 
     def __init__(self, directory: Path) -> None:
-        """Initialise state beneath ``directory``."""
+        """Initialise state beneath ``directory``.
+
+        Args:
+            directory:
+                Directory.
+        """
         self.directory = directory
         self.path = directory / "state.json"
         self.active_path = directory / "active-lease.json"
@@ -212,9 +239,12 @@ class StateStore:
     def load_auth(self) -> tuple[str, str] | None:
         """Return the saved opaque credential and verified login.
 
+        Returns:
+                    Saved credential and login, or ``None`` when absent.
+
         Raises:
-            RuntimeError:
-                If the state file is malformed.
+                    RuntimeError:
+                        If the state file is malformed.
         """
         if not self.path.exists():
             return None
@@ -231,9 +261,12 @@ class StateStore:
     def load_submission_id(self) -> str | None:
         """Return the most recently reported submission identifier.
 
+        Returns:
+                    Last submission identifier, or ``None`` when absent or invalid.
+
         Raises:
-            RuntimeError:
-                If the stored submission state is malformed.
+                    RuntimeError:
+                        If the stored submission state is malformed.
         """
         if not self.submission_path.exists():
             return None
@@ -256,9 +289,13 @@ class StateStore:
     def mark_finalised(self, submission_id: str) -> None:
         """Persist ordinary finalisation for restart-safe acknowledgement.
 
+        Args:
+                    submission_id:
+                        Identifier returned by the broker after submission.
+
         Raises:
-            RuntimeError:
-                If there is no active lease to finalise.
+                    RuntimeError:
+                        If there is no active lease to finalise.
         """
         active = self.load_active()
         if active is None:
@@ -324,7 +361,18 @@ class StateStore:
         github_login: str | None = None,
         finalised_submission_id: str | None = None,
     ) -> None:
-        """Atomically save a lease before evaluation or submission starts."""
+        """Atomically save a lease before evaluation or submission starts.
+
+        Args:
+            lease:
+                Lease whose state is being persisted.
+            records (optional):
+                Pending records retained for the active lease.
+            github_login (optional):
+                Verified account name associated with the broker credential.
+            finalised_submission_id (optional):
+                Finalised submission id.
+        """
         with self._lock:
             self._atomic_write(
                 self.active_path,
@@ -339,6 +387,16 @@ class StateStore:
             )
 
     def _atomic_write(self, path: Path, value: JsonObject, mode: int = 0o600) -> None:
+        """Atomic write.
+
+        Args:
+            path:
+                Path.
+            value:
+                Input value being decoded, validated, or serialised.
+            mode (optional):
+                Permissions to apply to the state file.
+        """
         self.directory.mkdir(parents=True, exist_ok=True)
         temporary = path.with_name(f".{path.name}.tmp")
         temporary.write_text(
@@ -361,9 +419,13 @@ class StateStore:
     def renew_active(self, lease: Lease) -> None:
         """Atomically persist a broker-issued lease renewal.
 
+        Args:
+                    lease:
+                        Broker-issued lease to persist or renew.
+
         Raises:
-            RuntimeError:
-                If the active lease has disappeared or changed identity.
+                    RuntimeError:
+                        If the active lease has disappeared or changed identity.
         """
         with self._lock:
             active = self.load_active()
@@ -382,7 +444,14 @@ class StateStore:
             )
 
     def save_auth(self, credential: str, github_login: str) -> None:
-        """Save device-flow credentials with restrictive permissions."""
+        """Save device-flow credentials with restrictive permissions.
+
+        Args:
+            credential:
+                Opaque credential returned by broker device-flow authentication.
+            github_login:
+                Verified account name associated with the broker credential.
+        """
         self._atomic_write(
             self.path,
             {"credential": credential, "github_login": github_login},
@@ -392,12 +461,18 @@ class StateStore:
     def save_canary_corpus(self, *, digest: str, content: str) -> Path:
         """Persist an exact lease-delivered corpus privately and idempotently.
 
+        Args:
+                    digest:
+                        Expected SHA-256 digest of the corpus content.
+                    content:
+                        Exact lease-delivered corpus text to persist.
+
         Returns:
-            Path to the immutable local corpus.
+                    Path to the immutable local corpus.
 
         Raises:
-            ValueError:
-                If the content conflicts with its digest or an existing file.
+                    ValueError:
+                        If the content conflicts with its digest or an existing file.
         """
         if hashlib.sha256(content.encode()).hexdigest() != digest:
             raise ValueError("canary corpus digest does not match its bytes")
@@ -421,9 +496,13 @@ class StateStore:
     def save_records(self, records: tuple[PendingRecord, ...]) -> None:
         """Atomically replace result and acknowledgement state for the lease.
 
+        Args:
+                    records:
+                        Pending result records to persist for the active lease.
+
         Raises:
-            RuntimeError:
-                If there is no active lease.
+                    RuntimeError:
+                        If there is no active lease.
         """
         with self._lock:
             active = self.load_active()
@@ -437,15 +516,24 @@ class StateStore:
             )
 
     def save_submission_id(self, submission_id: str) -> None:
-        """Persist a successful submission identifier for reporting."""
+        """Persist a successful submission identifier for reporting.
+
+        Args:
+            submission_id:
+                Submission id.
+        """
         self._atomic_write(self.submission_path, {"submission_id": submission_id})
 
 
 def _active_dict(active: ActiveLease) -> JsonObject:
     """Encode active state without touching result JSON text.
 
+    Args:
+            active:
+                Active.
+
     Returns:
-        The JSON-compatible active state.
+            The JSON-compatible active state.
     """
     lease = dataclasses.asdict(active.lease)
     return {
@@ -457,6 +545,20 @@ def _active_dict(active: ActiveLease) -> JsonObject:
 
 
 def _pending_from_dict(value: object) -> PendingRecord:
+    """Pending from dict.
+
+    Args:
+            value:
+                Input value being decoded, validated, or serialised.
+
+    Returns:
+            Validated pending record with its acknowledgement state.
+
+    Raises:
+    ValueError:
+            If the input does not have the required structure or value.
+            The input is malformed or cannot be converted to the required value.
+    """
     if not isinstance(value, dict):
         raise ValueError("pending record is not an object")
     record_json = value.get("record_json")

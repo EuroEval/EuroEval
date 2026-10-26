@@ -32,7 +32,8 @@ def prepare_vercel_directory(project_dir: Path = Path.cwd()) -> None:
     In particular, an existing build output is never copied or modified.
 
     Args:
-        project_dir: Root directory of the project/worktree.
+        project_dir (optional): Root directory of the project/worktree; defaults to
+            the current working directory.
 
     Raises:
         RuntimeError: If the symlink target is unavailable or has no project link.

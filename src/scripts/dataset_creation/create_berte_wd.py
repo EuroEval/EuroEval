@@ -56,6 +56,12 @@ def process_dataset(raw_dataset: DatasetDict) -> DatasetDict:
 def _process_split(dataset: Dataset, max_size: int) -> Dataset:
     """Format and cap one source split without changing its order or membership.
 
+    Args:
+        dataset:
+            The source split to process.
+        max_size:
+            The maximum number of examples to retain.
+
     Returns:
         The formatted and capped split.
     """
@@ -74,6 +80,12 @@ def _process_split(dataset: Dataset, max_size: int) -> Dataset:
 def _format_text(premise: str, hypothesis: str) -> str:
     """Format a premise and hypothesis as a clear Belarusian input.
 
+    Args:
+        premise:
+            The premise text.
+        hypothesis:
+            The hypothesis text.
+
     Returns:
         A labelled premise/hypothesis pair.
     """
@@ -82,6 +94,10 @@ def _format_text(premise: str, hypothesis: str) -> str:
 
 def _map_label(label: int) -> str:
     """Map a BeRTE-WD label to EuroEval's binary NLI labels.
+
+    Args:
+        label:
+            The source label, either 0 or 1.
 
     Returns:
         The corresponding EuroEval label.

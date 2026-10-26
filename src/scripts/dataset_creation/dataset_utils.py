@@ -14,6 +14,14 @@ def make_dataset_dict(
 ) -> DatasetDict:
     """Cap source splits and expose validation under EuroEval's ``val`` name.
 
+    Args:
+        train:
+            Source training split.
+        validation:
+            Source validation split.
+        test:
+            Source test split.
+
     Returns:
         A dataset dictionary with independently capped splits.
     """
@@ -29,6 +37,12 @@ def make_dataset_dict(
 def cap_split(dataset: Dataset, maximum: int) -> Dataset:
     """Sample at most ``maximum`` rows without crossing source split boundaries.
 
+    Args:
+        dataset:
+            Source dataset split to cap.
+        maximum:
+            Maximum number of rows to retain.
+
     Returns:
         The capped dataset.
     """
@@ -39,6 +53,12 @@ def cap_split(dataset: Dataset, maximum: int) -> Dataset:
 
 def upload_private(dataset: DatasetDict, repository_id: str) -> None:
     """Replace a Hub dataset and fail unless the resulting repository is private.
+
+    Args:
+        dataset:
+            Dataset to upload.
+        repository_id:
+            Hub dataset repository ID.
 
     Raises:
         RuntimeError:

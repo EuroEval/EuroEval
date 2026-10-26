@@ -30,7 +30,14 @@ class AuthenticationIdentityError(BrokerError):
     """Raised when reauthentication returns a different contributor."""
 
     def __init__(self, expected: str, actual: str) -> None:
-        """Describe the contributor mismatch without including credentials."""
+        """Describe the contributor mismatch without including credentials.
+
+        Args:
+            expected:
+                Expected.
+            actual:
+                Actual.
+        """
         super().__init__(
             f"reauthentication returned GitHub login {actual!r}; expected {expected!r}",
             status=403,
@@ -51,7 +58,20 @@ class Heartbeat:
         persist: c.Callable[[Lease], None] | None = None,
         reauthenticate: c.Callable[[str], str] | None = None,
     ) -> None:
-        """Initialise a heartbeat for a lease."""
+        """Initialise a heartbeat for a lease.
+
+        Args:
+            client:
+                Client.
+            credential:
+                Credential.
+            lease:
+                Lease.
+            persist (optional):
+                Persist.
+            reauthenticate (optional):
+                Reauthenticate.
+        """
         self.client = client
         self.credential = credential
         self.lease = lease
@@ -66,12 +86,20 @@ class Heartbeat:
         )
 
     def _run(self) -> None:
+        """Run."""
         while not self._stop.wait(timeout=self._interval):
             self._renew()
             if self.failed is not None:
                 return
 
     def _renew(self) -> None:
+        """Renew the lease in the background, recording failures for ``check``.
+
+        Raises:
+            BrokerError:
+                A heartbeat response without an expiry timestamp is recorded as a
+                background failure and surfaced by ``check``.
+        """
         attempt = 0
         auth_attempted = False
         while not self._stop.is_set():
@@ -117,11 +145,17 @@ class Heartbeat:
                 return
 
     def _fail(self, error: Exception) -> None:
+        """Fail.
+
+        Args:
+            error:
+                Error.
+        """
         self.failed = error
         self._stop.set()
 
     def check(self) -> None:
-        """Raise the background failure, if any."""
+        """Propagate the exception recorded by the heartbeat thread, if any."""
         if self.failed is None:
             return
         if isinstance(self.failed, LeaseLost):
@@ -183,13 +217,17 @@ class Worker:
     def run(self, once: bool = False) -> None:
         """Run until interrupted, or process one broker response with ``once``.
 
+        Args:
+                    once (optional):
+                        Once.
+
         Raises:
-            BrokerError:
-                If the broker rejects an operation.
-            AuthenticationIdentityError:
-                If a resumed lease is presented to a different contributor.
-            LeaseLost:
-                If broker ownership is lost.
+                    BrokerError:
+                        If the broker rejects an operation.
+                    AuthenticationIdentityError:
+                        If a resumed lease is presented to a different contributor.
+                    LeaseLost:
+                        If broker ownership is lost.
         """
         self._credential, self._login = authenticate(
             client=self.client, state=self.state
@@ -262,12 +300,18 @@ class Worker:
     ) -> tuple[str, Claim]:
         """Claim once, replacing one revoked cached credential at most once.
 
+        Args:
+                    credential:
+                        Credential.
+                    hardware:
+                        Hardware.
+
         Returns:
-            The credential used and the broker response.
+                    The credential used and the broker response.
 
         Raises:
-            BrokerError:
-                If claiming fails after one authentication retry.
+                    BrokerError:
+                        If claiming fails after one authentication retry.
         """
         try:
             return credential, self.client.claim(
@@ -299,8 +343,14 @@ class Worker:
     ) -> HardwareReport:
         """Expose the UUID-pinned GPU in a restart hardware report.
 
+        Args:
+                    hardware:
+                        Hardware.
+                    selected:
+                        Selected.
+
         Returns:
-            A hardware report pinned to ``selected``.
+                    A hardware report pinned to ``selected``.
         """
         return dataclasses.replace(
             hardware,
@@ -312,8 +362,12 @@ class Worker:
     def _prepare_hardware(self, hardware: HardwareReport) -> HardwareReport:
         """Attach a deterministic single-GPU selection to a hardware report.
 
+        Args:
+                    hardware:
+                        Hardware.
+
         Returns:
-            The report with the configured utilisation and selected GPU.
+                    The report with the configured utilisation and selected GPU.
         """
         selected = select_gpu(hardware.gpus)
         return self._hardware_with_selected(hardware, selected)
@@ -325,6 +379,31 @@ class Worker:
         hardware: HardwareReport,
         active: ActiveLease | None,
     ) -> None:
+        """Process lease.
+
+        Args:
+                    credential:
+                        Credential.
+                    lease:
+                        Lease.
+                    hardware:
+                        Hardware.
+                    active:
+                        Active.
+
+        Raises:
+            KeyboardInterrupt:
+                If the worker is interrupted during lease processing.
+            RuntimeError:
+                If persisted evaluation output is inconsistent with the restart
+                snapshot.
+            SystemExit:
+                If the process is asked to exit during lease processing.
+            NoGpuError:
+                If no usable GPU is available for evaluation.
+            SafetyError:
+                If the lease's model fails the safety preflight.
+        """
         expected_login = active.github_login or self._login if active else self._login
         if active is None:
             self.state.save_active(lease=lease, github_login=expected_login or None)
@@ -460,6 +539,22 @@ class Worker:
                 logger.info("Preserving active lease %s for restart", lease.lease_id)
 
     def _canary_corpus_path(self, *, lease: Lease) -> Path | None:
+        """Fetch and cache the required canary corpus when this lease needs it.
+
+        Args:
+            lease:
+                Lease whose canary instruction determines whether a corpus is needed.
+
+        Returns:
+            The cached corpus path when a generative lease requires a canary; otherwise
+            the path used to record that the corpus is unavailable. Fetch, digest-check,
+            or persistence failures are logged and also return the unavailable path.
+
+        Raises:
+            RuntimeError:
+                If the client cannot fetch or verify the reserved corpus; the error is
+                caught here and the unavailable path is returned instead.
+        """
         instruction = lease.contamination_canary
         if (
             instruction is None
@@ -494,12 +589,18 @@ class Worker:
     ) -> tuple[PendingRecord, ...]:
         """Persist evaluation output, or verify it against a restart snapshot.
 
+        Args:
+                    active:
+                        Active.
+                    evaluated:
+                        Evaluated.
+
         Returns:
-            Durable records with existing acknowledgement flags retained.
+                    Durable records with existing acknowledgement flags retained.
 
         Raises:
-            RuntimeError:
-                If the evaluation output differs from its restart snapshot.
+                    RuntimeError:
+                        If the evaluation output differs from its restart snapshot.
         """
         for record in evaluated:
             digest = hashlib.sha256(record.record_json.encode("utf-8")).hexdigest()
@@ -520,12 +621,18 @@ class Worker:
     def _finalise(self, credential: str, lease_id: str) -> str:
         """Finalise once, retrying authentication exactly once if required.
 
+        Args:
+                    credential:
+                        Credential.
+                    lease_id:
+                        Lease id.
+
         Returns:
-            The stable broker submission identifier.
+                    The stable broker submission identifier.
 
         Raises:
-            BrokerError:
-                If finalisation fails.
+                    BrokerError:
+                        If finalisation fails.
         """
         del credential
         auth_attempted = False
@@ -543,12 +650,18 @@ class Worker:
     def _reauthenticate(self, failed_credential: str, expected_login: str) -> str:
         """Refresh a credential while proving the contributor did not change.
 
+        Args:
+                    failed_credential:
+                        Failed credential.
+                    expected_login:
+                        Expected login.
+
         Returns:
-            A credential belonging to ``expected_login``.
+                    A credential belonging to ``expected_login``.
 
         Raises:
-            AuthenticationIdentityError:
-                If the refreshed credential belongs to another contributor.
+                    AuthenticationIdentityError:
+                        If the refreshed credential belongs to another contributor.
         """
         with self._auth_lock:
             saved = self.state.load_auth()
@@ -574,7 +687,18 @@ class Worker:
         records: tuple[PendingRecord, ...],
         heartbeat: Heartbeat,
     ) -> None:
-        """Submit and atomically acknowledge each exact result."""
+        """Submit and atomically acknowledge each exact result.
+
+        Args:
+            credential:
+                Credential.
+            lease:
+                Lease.
+            records:
+                Records.
+            heartbeat:
+                Heartbeat.
+        """
         current = list(records)
         for index, pending in enumerate(current):
             if pending.acknowledged:
@@ -589,9 +713,17 @@ class Worker:
     def _submit_record(self, credential: str, lease: Lease, record: EEERecord) -> None:
         """Retry one exact result under the bounded transient-error policy.
 
+        Args:
+                    credential:
+                        Credential.
+                    lease:
+                        Lease.
+                    record:
+                        Record.
+
         Raises:
-            BrokerError:
-                If the broker reports a terminal result error.
+                    BrokerError:
+                        If the broker reports a terminal result error.
         """
         del credential
         auth_attempted = False
@@ -628,7 +760,14 @@ class LeaseLost(RuntimeError):
     def __init__(
         self, message: str, *, broker_error: BrokerError | None = None
     ) -> None:
-        """Preserve structured broker details when a heartbeat loses ownership."""
+        """Preserve structured broker details when a heartbeat loses ownership.
+
+        Args:
+            message:
+                Message.
+            broker_error (optional):
+                Broker error.
+        """
         super().__init__(message)
         self.broker_error = broker_error
         self.code = broker_error.code if broker_error is not None else None
@@ -638,27 +777,49 @@ class LeaseLost(RuntimeError):
 def _retry_delay(attempt: int, retry_after: float | None, maximum: float) -> float:
     """Calculate bounded exponential backoff, honouring Retry-After.
 
+    Args:
+            attempt:
+                Attempt.
+            retry_after:
+                Retry after.
+            maximum:
+                Maximum.
+
     Returns:
-        A non-negative delay no larger than ``maximum``.
+            A non-negative delay no larger than ``maximum``.
     """
     requested = retry_after if retry_after is not None else 2**attempt
     return min(maximum, max(0.0, requested))
 
 
 def _transient(error: BrokerError) -> bool:
-    """Return whether a broker error is safe to retry."""
+    """Return whether a broker error is safe to retry.
+
+    Args:
+        error:
+            Broker response error to classify.
+
+    Returns:
+        ``True`` when the status is absent, 429, or at least 500; otherwise ``False``.
+    """
     return error.status is None or error.status == 429 or error.status >= 500
 
 
 def _gpu_for_lease(gpus: c.Iterable[Gpu], lease: Lease) -> Gpu:
     """Find the leased GPU by UUID, never by its mutable index.
 
+    Args:
+            gpus:
+                Gpus.
+            lease:
+                Lease.
+
     Returns:
-        The UUID-matched GPU.
+            The UUID-matched GPU.
 
     Raises:
-        NoGpuError:
-            If the lease has no UUID or the UUID is not present.
+            NoGpuError:
+                If the lease has no UUID or the UUID is not present.
     """
     if not lease.selected_gpu_uuid:
         raise NoGpuError("lease does not identify a GPU UUID")
@@ -673,12 +834,18 @@ def _gpu_for_lease(gpus: c.Iterable[Gpu], lease: Lease) -> Gpu:
 def _lease_for_gpu(lease: Lease, selected: Gpu) -> Lease:
     """Bind a new lease to the exact GPU advertised in the claim.
 
+    Args:
+            lease:
+                Lease.
+            selected:
+                Selected.
+
     Returns:
-        The lease with the selected GPU identity persisted.
+            The lease with the selected GPU identity persisted.
 
     Raises:
-        NoGpuError:
-            If the broker selected a different GPU.
+            NoGpuError:
+                If the broker selected a different GPU.
     """
     if lease.selected_gpu_uuid not in (None, selected.uuid):
         raise NoGpuError("broker lease selected a different GPU UUID")
@@ -692,8 +859,12 @@ def _lease_for_gpu(lease: Lease, selected: Gpu) -> Lease:
 def _lease_is_valid(lease: Lease) -> bool:
     """Check a broker ISO-8601 expiry without accepting malformed state.
 
+    Args:
+            lease:
+                Lease.
+
     Returns:
-        Whether the expiry is a future timezone-aware timestamp.
+            Whether the expiry is a future timezone-aware timestamp.
     """
     try:
         expiry = datetime.datetime.fromisoformat(
@@ -709,8 +880,12 @@ def _lease_is_valid(lease: Lease) -> bool:
 def _lease_lost(error: BaseException) -> bool:
     """Identify errors that make local work unsafe to resume.
 
+    Args:
+            error:
+                Error.
+
     Returns:
-        Whether broker ownership has definitely been lost.
+            Whether broker ownership has definitely been lost.
     """
     return isinstance(error, LeaseLost) or (
         isinstance(error, BrokerError)
@@ -721,6 +896,15 @@ def _lease_lost(error: BaseException) -> bool:
 
 @contextlib.contextmanager
 def _pin_canary_corpus(path: Path | None) -> c.Iterator[None]:
+    """Pin canary corpus.
+
+    Args:
+        path:
+            Path.
+
+    Yields:
+        Values produced by this iterator.
+    """
     previous = os.environ.get(CANARY_CORPUS_PATH_ENV)
     if path is not None:
         os.environ[CANARY_CORPUS_PATH_ENV] = str(path)
@@ -735,7 +919,15 @@ def _pin_canary_corpus(path: Path | None) -> c.Iterator[None]:
 
 @contextlib.contextmanager
 def _pin_gpu(gpu: Gpu) -> c.Iterator[None]:
-    """Expose only ``gpu`` to CUDA for the duration of one evaluation."""
+    """Expose only ``gpu`` to CUDA for the duration of one evaluation.
+
+    Args:
+        gpu:
+            Gpu.
+
+    Yields:
+        Values produced by this iterator.
+    """
     original = os.environ.get("CUDA_VISIBLE_DEVICES")
     os.environ["CUDA_VISIBLE_DEVICES"] = gpu.uuid
     try:
@@ -750,8 +942,12 @@ def _pin_gpu(gpu: Gpu) -> c.Iterator[None]:
 def _submission_transient(error: BrokerError) -> bool:
     """Return whether result upload may be retried.
 
+    Args:
+            error:
+                Error.
+
     Returns:
-        Whether the status is in the result retry set.
+            Whether the status is in the result retry set.
     """
     return (
         error.status is None or error.status in (408, 425, 429) or error.status >= 500

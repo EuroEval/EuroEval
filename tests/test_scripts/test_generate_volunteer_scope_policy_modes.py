@@ -12,6 +12,10 @@ import src.scripts.generate_volunteer_scope_policy as module
 def simple_policy(monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
     """Use a small deterministic policy for command mode tests.
 
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+
     Returns:
         A deterministic policy document.
     """
@@ -24,7 +28,14 @@ def simple_policy(monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
 def test_check_accepts_current_policy_without_writing(
     tmp_path: Path, simple_policy: dict[str, object]
 ) -> None:
-    """Check succeeds and leaves a current output byte-for-byte unchanged."""
+    """Check succeeds and leaves a current output byte-for-byte unchanged.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        simple_policy:
+            Simple policy supplied to the test.
+    """
     output = tmp_path / "scope-policy.json"
     ts_output = tmp_path / "scope-policy.generated.ts"
     expected = module.encode_policy(simple_policy)
@@ -53,7 +64,14 @@ def test_check_accepts_current_policy_without_writing(
 def test_check_rejects_stale_and_missing_policy(
     tmp_path: Path, simple_policy: dict[str, object]
 ) -> None:
-    """Check reports both absent and stale generated output without writing."""
+    """Check reports both absent and stale generated output without writing.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        simple_policy:
+            Simple policy supplied to the test.
+    """
     output = tmp_path / "scope-policy.json"
     ts_output = tmp_path / "scope-policy.generated.ts"
     for existing in (False, True):
@@ -86,7 +104,14 @@ def test_check_rejects_stale_and_missing_policy(
 def test_dry_run_reports_change_without_writing(
     tmp_path: Path, simple_policy: dict[str, object]
 ) -> None:
-    """Dry-run reports a missing output and does not create it."""
+    """Dry-run reports a missing output and does not create it.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        simple_policy:
+            Simple policy supplied to the test.
+    """
     output = tmp_path / "scope-policy.json"
     ts_output = tmp_path / "scope-policy.generated.ts"
 

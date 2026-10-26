@@ -33,7 +33,12 @@ from huggingface_hub import HfApi
 )
 @click.argument("data_dir", type=str)
 def main(data_dir: str) -> None:
-    """Create the FQuAD-mini NER dataset and uploads it to the HF Hub."""
+    """Create the FQuAD-mini NER dataset and upload it to the HF Hub.
+
+    Args:
+        data_dir:
+            Directory containing the requested raw FQuAD dataset.
+    """
     train_path = Path(data_dir) / "train.json"
     train_df = pd.read_json(train_path)
 
@@ -44,7 +49,8 @@ def main(data_dir: str) -> None:
         """Set up the dataframe.
 
         Args:
-            df: The input DataFrame.
+            df:
+                The input DataFrame.
 
         Returns:
             The set up DataFrame.
@@ -103,6 +109,15 @@ def main(data_dir: str) -> None:
 
     # Extract information on which examples contain an answer
     def has_answer(example: dict) -> bool:
+        """Check whether an example contains an answer.
+
+        Args:
+            example (dict):
+                Example containing candidate answer text.
+
+        Returns:
+            Whether the example has a non-empty answer.
+        """
         return len(example["text"]) > 0 and example["text"][0] != ""
 
     train_has_answer: pd.Series = train_df.answers.map(has_answer)
@@ -141,6 +156,15 @@ def main(data_dir: str) -> None:
     )
 
     def add_answer_start(example: dict) -> dict:
+        """Add character offsets for answers found in the context.
+
+        Args:
+            example (dict):
+                Example with context and candidate answers.
+
+        Returns:
+            The example with unmatched answers removed and answer offsets added.
+        """
         possible_answers: list[str] = example["answers"]["text"]
         if possible_answers:
             answers: list[str] = list()

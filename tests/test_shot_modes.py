@@ -26,7 +26,18 @@ def test_auto_cached_base_model_uses_cached_metadata(
     dataset_config: DatasetConfig,
     model_config: ModelConfig,
 ) -> None:
-    """AUTO does not return an invalid zero-shot cache for a base model."""
+    """AUTO does not return an invalid zero-shot cache for a base model.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        model_config:
+            Model configuration exercised by the test.
+    """
     generative = replace(model_config, model_type=ModelType.GENERATIVE)
     few_shot_result = BenchmarkResult(
         model="model_id@revision",
@@ -67,7 +78,18 @@ def test_auto_canary_is_planned_once_with_ordinary_dual_mode_work(
     dataset_config: DatasetConfig,
     model_config: ModelConfig,
 ) -> None:
-    """The virtual canary runs once while ordinary AUTO work keeps both modes."""
+    """The virtual canary runs once while ordinary AUTO work keeps both modes.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        model_config:
+            Model configuration exercised by the test.
+    """
     generative = replace(model_config, model_type=ModelType.GENERATIVE)
     canary_dataset = DatasetConfig(
         task=CONTAMINATION_DETECTION,
@@ -103,7 +125,18 @@ def test_auto_dual_mode_loads_model_once(
     dataset_config: DatasetConfig,
     model_config: ModelConfig,
 ) -> None:
-    """Both AUTO flows share one loaded model."""
+    """Both AUTO flows share one loaded model.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        model_config:
+            Model configuration exercised by the test.
+    """
     generative = replace(model_config, model_type=ModelType.GENERATIVE)
     config = replace(benchmark_config, few_shot=None)
     loaded_model = SimpleNamespace(generative_type=GenerativeType.INSTRUCTION_TUNED)
@@ -134,7 +167,18 @@ def test_auto_explicit_generative_type_overrides_cached_metadata(
     dataset_config: DatasetConfig,
     model_config: ModelConfig,
 ) -> None:
-    """An explicit generative type takes precedence over cached metadata."""
+    """An explicit generative type takes precedence over cached metadata.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        model_config:
+            Model configuration exercised by the test.
+    """
     generative = replace(model_config, model_type=ModelType.GENERATIVE)
     few_shot_result = BenchmarkResult(
         model="model_id@revision",
@@ -181,7 +225,18 @@ def test_auto_explicit_generative_type_uses_complete_cache(
     dataset_config: DatasetConfig,
     model_config: ModelConfig,
 ) -> None:
-    """A complete explicit-type cache does not require model loading."""
+    """A complete explicit-type cache does not require model loading.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        model_config:
+            Model configuration exercised by the test.
+    """
     generative = replace(model_config, model_type=ModelType.GENERATIVE)
     zero_shot_result = BenchmarkResult(
         model="model_id@revision",
@@ -225,7 +280,12 @@ def test_auto_explicit_generative_type_uses_complete_cache(
 
 
 def test_auto_shot_mode_resolution(model_config: ModelConfig) -> None:
-    """AUTO selects the agreed modes for each model category."""
+    """AUTO selects the agreed modes for each model category.
+
+    Args:
+        model_config:
+            Model configuration exercised by the test.
+    """
     encoder = model_config
     local = replace(encoder, model_type=ModelType.GENERATIVE)
     api = replace(local, inference_backend=InferenceBackend.LITELLM)
@@ -252,7 +312,18 @@ def test_cached_shot_mode_survives_missing_mode_load_failure(
     dataset_config: DatasetConfig,
     model_config: ModelConfig,
 ) -> None:
-    """AUTO retains cached records when loading the missing mode fails."""
+    """AUTO retains cached records when loading the missing mode fails.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        model_config:
+            Model configuration exercised by the test.
+    """
     generative = replace(model_config, model_type=ModelType.GENERATIVE)
     few_shot_result = BenchmarkResult(
         model="model_id@revision",
@@ -294,7 +365,18 @@ def test_cached_shot_modes_are_independent(
     dataset_config: DatasetConfig,
     model_config: ModelConfig,
 ) -> None:
-    """A cached result in one mode does not hide the other mode."""
+    """A cached result in one mode does not hide the other mode.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        model_config:
+            Model configuration exercised by the test.
+    """
     generative = replace(model_config, model_type=ModelType.GENERATIVE)
     few_shot_result = BenchmarkResult(
         model="model_id@revision",
@@ -336,7 +418,12 @@ def test_cached_shot_modes_are_independent(
 
 
 def test_explicit_shot_mode_overrides(model_config: ModelConfig) -> None:
-    """Legacy boolean overrides remain single-mode selections."""
+    """Legacy boolean overrides remain single-mode selections.
+
+    Args:
+        model_config:
+            Model configuration exercised by the test.
+    """
     generative = replace(model_config, model_type=ModelType.GENERATIVE)
 
     assert resolve_shot_modes(model_config=generative, requested_mode=True) == [
@@ -384,7 +471,20 @@ def test_model_cache_is_cleared_when_loading_fails(
     model_config: ModelConfig,
     tmp_path: Path,
 ) -> None:
-    """Per-model cleanup also runs when model setup raises."""
+    """Per-model cleanup also runs when model setup raises.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        model_config:
+            Model configuration exercised by the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     generative = replace(model_config, model_type=ModelType.GENERATIVE)
     config = replace(
         benchmark_config,
@@ -426,7 +526,20 @@ def test_multi_model_progress_uses_full_workload(
     model_config: ModelConfig,
     tmp_path: Path,
 ) -> None:
-    """Progress totals use each model's concrete workload."""
+    """Progress totals use each model's concrete workload.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        model_config:
+            Model configuration exercised by the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     models = [
         replace(model_config, model_id="first-model"),
         replace(model_config, model_id="second-model"),
@@ -506,7 +619,20 @@ def test_only_one_model_is_live_during_preparation(
     model_config: ModelConfig,
     tmp_path: Path,
 ) -> None:
-    """A failed later preparation cannot retain the previous model."""
+    """A failed later preparation cannot retain the previous model.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        model_config:
+            Model configuration exercised by the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     models = [
         replace(model_config, model_id="first-model", model_type=ModelType.GENERATIVE),
         replace(model_config, model_id="second-model", model_type=ModelType.GENERATIVE),
@@ -604,7 +730,14 @@ def test_per_call_auto_overrides_initialiser_shot_mode() -> None:
 def test_per_call_none_inherits_initialiser_shot_mode(
     initialiser_mode: bool, expected_mode: ShotMode
 ) -> None:
-    """A per-call None inherits either explicit initialiser boolean."""
+    """A per-call None inherits either explicit initialiser boolean.
+
+    Args:
+        initialiser_mode:
+            Initialiser mode supplied to the test.
+        expected_mode:
+            Expected mode for this case.
+    """
     benchmarker = Benchmarker(progress_bar=False, few_shot=initialiser_mode)
 
     config = benchmarker._build_benchmark_config(few_shot=None)
@@ -628,7 +761,18 @@ def test_zero_shot_classifier_forces_zero_shot(
     requested_mode: ShotMode | bool | None,
     expect_log: bool,
 ) -> None:
-    """A zero-shot classifier is always forced to zero-shot, logging if overridden."""
+    """A zero-shot classifier is always forced to zero-shot, logging if overridden.
+
+    Args:
+        model_config:
+            Model configuration exercised by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        requested_mode:
+            Requested mode supplied to the test.
+        expect_log:
+            Expect log supplied to the test.
+    """
     zero_shot_classifier = replace(
         model_config, model_type=ModelType.ZERO_SHOT_CLASSIFIER
     )
@@ -650,7 +794,18 @@ def test_zero_shot_tasks_are_not_duplicated(
     dataset_config: DatasetConfig,
     model_config: ModelConfig,
 ) -> None:
-    """A task that requires zero-shot evaluation has one AUTO work item."""
+    """A task that requires zero-shot evaluation has one AUTO work item.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        model_config:
+            Model configuration exercised by the test.
+    """
     generative = replace(model_config, model_type=ModelType.GENERATIVE)
     original_task = dataset_config.task
     zero_shot_task = replace(original_task, requires_zero_shot=True)

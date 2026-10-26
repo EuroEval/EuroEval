@@ -51,6 +51,10 @@ def _convert_old_raw_results_format(config: dict[str, object]) -> None:
     and converts to flat list: raw = [{"test_mcc": 0.5, "test_accuracy": 0.6}].
 
     List format raw = [{"mcc": 0.5, "accuracy": 0.6}] is preserved as-is for EEE format.
+
+    Args:
+        config:
+            The result mapping to convert in place.
     """
     if "results" not in config:
         return
@@ -138,6 +142,10 @@ class BenchmarkResult(pydantic.BaseModel):
         cls, value: object
     ) -> dict[str, object] | None:
         """Validate and canonicalise embedded contamination-canary evidence.
+
+        Args:
+            value:
+                The unvalidated evidence value.
 
         Returns:
             The canonical evidence mapping, or ``None`` when absent.
@@ -304,7 +312,11 @@ class HashableDict(dict[t.Any, t.Any]):
     """A hashable dictionary."""
 
     def __hash__(self) -> int:
-        """Return the hash of the dictionary."""
+        """Return the hash of the dictionary.
+
+        Returns:
+            The hash value.
+        """
         return hash(frozenset(self.items()))
 
 
@@ -425,7 +437,11 @@ class ModelConfig:
     generation_config: GenerationConfig | None = None
 
     def __hash__(self) -> int:
-        """Return a hash of the model configuration."""
+        """Return a hash of the model configuration.
+
+        Returns:
+            The hash value.
+        """
         return hash(self.model_id)
 
 
@@ -612,7 +628,11 @@ class Task:
     default_allow_invalid_model_outputs: bool = True
 
     def __hash__(self) -> int:
-        """Return a hash of the task."""
+        """Return a hash of the task.
+
+        Returns:
+            The hash value.
+        """
         return hash(self.name)
 
     def __post_init__(self) -> None:
@@ -862,7 +882,11 @@ class DatasetConfig:
             self.preprocessing_func = preprocessing_func  # None or user-provided
 
     def __hash__(self) -> int:
-        """Return a hash of the dataset configuration."""
+        """Return a hash of the dataset configuration.
+
+        Returns:
+            The hash value.
+        """
         return hash(self.name)
 
     def __repr__(self) -> str:
@@ -938,12 +962,20 @@ class DatasetConfig:
 
     @property
     def id2label(self) -> "HashableDict":
-        """The mapping from ID to label."""
+        """The mapping from ID to label.
+
+        Returns:
+            A mapping from label IDs to labels.
+        """
         return HashableDict({idx: label for idx, label in enumerate(self.labels)})
 
     @property
     def label2id(self) -> "HashableDict":
-        """The mapping from label to ID."""
+        """The mapping from label to ID.
+
+        Returns:
+            A mapping from labels to label IDs.
+        """
         return HashableDict({label: i for i, label in enumerate(self.labels)})
 
     @property
@@ -1052,7 +1084,11 @@ class DatasetConfig:
 
     @property
     def num_labels(self) -> int:
-        """The number of labels in the dataset."""
+        """The number of labels in the dataset.
+
+        Returns:
+            The number of labels.
+        """
         return len(self.labels)
 
     @property
@@ -1230,7 +1266,11 @@ class BenchmarkConfig:
 
     @property
     def tasks(self) -> c.Sequence[Task]:
-        """The tasks in the benchmark configuration."""
+        """The tasks in the benchmark configuration.
+
+        Returns:
+            The tasks included in this configuration.
+        """
         return list({dataset_config.task for dataset_config in self.datasets})
 
 

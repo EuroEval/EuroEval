@@ -17,7 +17,12 @@ class TestLetterToChoiceText:
 
     @pytest.mark.parametrize("letter", ["!", "e"], ids=["non-letter", "out-of-range"])
     def test_invalid_letter_raises(self, letter: str) -> None:
-        """Invalid letters raise `InvalidBenchmark`."""
+        """Invalid letters raise `InvalidBenchmark`.
+
+        Args:
+            letter:
+                Letter supplied to the test.
+        """
         with pytest.raises(InvalidBenchmark):
             cloze.letter_to_choice_text(letter, self.choices)
 

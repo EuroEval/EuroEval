@@ -24,6 +24,10 @@ def test_token_classification_few_shot_terminates_with_sparse_entities(
 
     This covers both ordinary sparse entities and case variants of the same label,
     which must not defeat the no-sample termination guard.
+
+    Args:
+        labels:
+            Labels supplied to the test.
     """
     dataset = Dataset.from_dict(
         {
@@ -48,16 +52,43 @@ class _Timeout:
     """
 
     def __init__(self, seconds: int) -> None:
+        """Init   for this test.
+
+        Args:
+            seconds:
+                Seconds supplied to the test.
+        """
         self.seconds = seconds
 
     def __enter__(self) -> "_Timeout":
+        """Start the alarm and return this context manager.
+
+        Returns:
+            This timeout context manager.
+        """
         signal.signal(signal.SIGALRM, self._raise)
         signal.alarm(self.seconds)
         return self
 
     def __exit__(self, *exc: object) -> None:
+        """Exit   for this test.
+
+        Args:
+            exc:
+                Exc supplied to the test.
+        """
         signal.alarm(0)
 
     @staticmethod
     def _raise(*_: object) -> None:
+        """Raise for this test.
+
+        Args:
+            _:
+                  supplied to the test.
+
+        Raises:
+            TimeoutError:
+                If the simulated operation fails.
+        """
         raise TimeoutError("timed out — likely an infinite loop")

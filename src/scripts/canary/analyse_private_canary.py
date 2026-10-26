@@ -65,7 +65,12 @@ def main() -> None:
 
 
 def _atomic_json(path: Path, value: object) -> None:
-    """Write a private report atomically."""
+    """Write a private report atomically.
+
+    Args:
+        path: Destination path for the JSON report.
+        value: JSON-serializable report data.
+    """
     fd, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
     try:
         os.fchmod(fd, 0o600)

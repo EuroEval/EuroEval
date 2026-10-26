@@ -11,7 +11,12 @@ from src.scripts.prepare_vercel_worktree import prepare_vercel_directory
 def test_prepare_vercel_directory_copies_linkage_and_production_env(
     tmp_path: Path,
 ) -> None:
-    """Materialize only the local config, leaving shared build output untouched."""
+    """Materialize only the local config, leaving shared build output untouched.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     shared_vercel = tmp_path / "shared" / ".vercel"
     shared_vercel.mkdir(parents=True)
     project = {"projectId": "project-id", "orgId": "org-id"}
@@ -39,7 +44,12 @@ def test_prepare_vercel_directory_copies_linkage_and_production_env(
 def test_prepare_vercel_directory_keeps_dangling_symlink_on_failure(
     tmp_path: Path,
 ) -> None:
-    """Do not unlink a symlink when its target cannot be accessed."""
+    """Do not unlink a symlink when its target cannot be accessed.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     link = tmp_path / ".vercel"
     link.symlink_to(tmp_path / "missing", target_is_directory=True)
 
@@ -50,7 +60,12 @@ def test_prepare_vercel_directory_keeps_dangling_symlink_on_failure(
 
 
 def test_prepare_vercel_directory_leaves_missing_link_untouched(tmp_path: Path) -> None:
-    """Treat an absent .vercel directory as a no-op."""
+    """Treat an absent .vercel directory as a no-op.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     prepare_vercel_directory(tmp_path)
 
     assert not (tmp_path / ".vercel").exists()
@@ -59,7 +74,12 @@ def test_prepare_vercel_directory_leaves_missing_link_untouched(tmp_path: Path) 
 def test_prepare_vercel_directory_leaves_real_directory_unchanged(
     tmp_path: Path,
 ) -> None:
-    """Leave a normal local Vercel directory untouched."""
+    """Leave a normal local Vercel directory untouched.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     vercel_dir = tmp_path / ".vercel"
     vercel_dir.mkdir()
     project_file = vercel_dir / "project.json"
@@ -72,7 +92,12 @@ def test_prepare_vercel_directory_leaves_real_directory_unchanged(
 
 
 def test_prepare_vercel_directory_requires_project_linkage(tmp_path: Path) -> None:
-    """Keep the shared symlink if it cannot identify the Vercel project."""
+    """Keep the shared symlink if it cannot identify the Vercel project.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     shared_vercel = tmp_path / "shared" / ".vercel"
     shared_vercel.mkdir(parents=True)
     link = tmp_path / ".vercel"

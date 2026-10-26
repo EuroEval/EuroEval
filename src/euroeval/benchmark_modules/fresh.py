@@ -68,8 +68,9 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
                 The dataset configuration.
             benchmark_config:
                 The benchmark configuration.
-            log_metadata:
-                Whether to log metadata about the model and the benchmark.
+            log_metadata (optional):
+                Whether to log metadata about the model and the benchmark. Defaults to
+                True.
         """
         raise_if_wrong_params(
             model_config=model_config, allowed_params=self.allowed_params
@@ -165,6 +166,9 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
 
         Returns:
             The maximum context length of the model.
+
+        Raises:
+            NotImplementedError: If the model's maximum context length is unknown.
         """
         if self.benchmark_config.max_context_length is not None:
             return self.benchmark_config.max_context_length
@@ -185,6 +189,9 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
 
         Returns:
             The number of parameters in the model.
+
+        Raises:
+            NotImplementedError: If the model's parameter count is unknown.
         """
         if self.benchmark_config.num_parameters is not None:
             return self.benchmark_config.num_parameters
@@ -206,6 +213,9 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
 
         Returns:
             The vocabulary size of the model.
+
+        Raises:
+            NotImplementedError: If the model's vocabulary size is unknown.
         """
         if self.benchmark_config.vocabulary_size is not None:
             return self.benchmark_config.vocabulary_size

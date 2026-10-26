@@ -28,7 +28,7 @@ class Metric(abc.ABC):
                 The name of the metric in snake_case.
             pretty_name:
                 The pretty name of the metric, used for display purposes.
-            postprocessing_fn:
+            postprocessing_fn (optional):
                 A function to apply to the metric scores after they are computed,
                 taking the score to the postprocessed score along with its string
                 representation. Defaults to x -> (100 * x, f"{x:.2%}").
@@ -71,7 +71,11 @@ class Metric(abc.ABC):
         ...
 
     def __hash__(self) -> int:
-        """Return a hash of the metric configuration."""
+        """Return a hash of the metric configuration.
+
+        Returns:
+            The hash of the metric name.
+        """
         return hash(self.name)
 
     def download(
