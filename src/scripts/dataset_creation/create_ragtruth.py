@@ -238,7 +238,11 @@ logger = logging.getLogger("translator")
 
 
 def main() -> None:
-    """Download RAGTruth data, translate to all target languages, and upload to Hub."""
+    """Download RAGTruth data, translate to all target languages, and upload to Hub.
+
+    Raises:
+        Errors encountered while loading cached source data are re-raised.
+    """
     parser = argparse.ArgumentParser(
         description="Download and translate the RAGTruth hallucination dataset."
     )
@@ -572,7 +576,8 @@ def load_check_existing_data(output_file: Path) -> tuple[HallucinationData, int 
     """Load existing data or create new data.
 
     Args:
-        output_file: Path to the output file.
+        output_file:
+            Path to the output file.
 
     Returns:
         Tuple of (HallucinationData, last_processed_index). last_processed_index
@@ -653,16 +658,26 @@ async def process_batch(
     """Process a batch of samples concurrently using asyncio.
 
     Args:
-        samples: List of samples to process.
-        http_client: Shared async HTTP client.
-        url: API endpoint URL.
-        semaphore: Concurrency limiter.
-        model: Model to use.
-        start_idx: Starting index for the batch.
-        log_file: Path to log file.
-        source_lang: Source language code.
-        target_lang: Target language code.
-        dataset: Dataset name.
+        samples:
+            List of samples to process.
+        http_client:
+            Shared async HTTP client.
+        url:
+            API endpoint URL.
+        semaphore:
+            Concurrency limiter.
+        model:
+            Model to use.
+        start_idx:
+            Starting index for the batch.
+        log_file:
+            Path to log file.
+        source_lang:
+            Source language code.
+        target_lang:
+            Target language code.
+        dataset:
+            Dataset name.
 
     Returns:
         List of translated samples (excluding failed translations).
@@ -711,16 +726,26 @@ async def translate_sample(
     """Translate a single sample.
 
     Args:
-        sample: Sample to translate.
-        http_client: Shared async HTTP client.
-        url: API endpoint URL.
-        semaphore: Concurrency limiter.
-        model: Model to use.
-        sample_index: Sample index.
-        log_file: Path to log file.
-        source_lang: Source language code.
-        target_lang: Target language code.
-        dataset: Dataset name.
+        sample:
+            Sample to translate.
+        http_client:
+            Shared async HTTP client.
+        url:
+            API endpoint URL.
+        semaphore:
+            Concurrency limiter.
+        model:
+            Model to use.
+        sample_index:
+            Sample index.
+        log_file:
+            Path to log file.
+        source_lang:
+            Source language code.
+        target_lang:
+            Target language code.
+        dataset:
+            Dataset name.
 
     Returns:
         Translated sample or None if translation failed.
@@ -946,8 +971,10 @@ def put_hallucination_tags(
     """Add hallucination tags to the text.
 
     Args:
-        sample: Sample containing labels.
-        answer: Text to add tags to.
+        sample:
+            Sample containing labels.
+        answer:
+            Text to add tags to.
 
     Returns:
         Tuple of (tagged text, merged labels).
@@ -979,7 +1006,8 @@ def merge_overlapping_spans(labels: list[dict[str, t.Any]]) -> list[dict[str, t.
     """Merge overlapping hallucination spans into a single span.
 
     Args:
-        labels: List of label spans to merge.
+        labels:
+            List of label spans to merge.
 
     Returns:
         List of merged spans.
@@ -1016,23 +1044,35 @@ async def translate_text(
     """Translate text using OpenAI-compatible HTTP API with automatic retries.
 
     Args:
-        text: Text to translate.
-        http_client: Shared async HTTP client.
-        url: API endpoint URL.
-        semaphore: Concurrency limiter.
-        model: Model to use for translation.
-        task_type: Type of the translation task.
-        source_lang: Source language code.
-        target_lang: Target language code.
-        prompt: Whether the text is a prompt.
+        text:
+            Text to translate.
+        http_client:
+            Shared async HTTP client.
+        url:
+            API endpoint URL.
+        semaphore:
+            Concurrency limiter.
+        model:
+            Model to use for translation.
+        task_type:
+            Type of the translation task.
+        source_lang (optional):
+            Source language code. Defaults to SOURCE_LANG.
+        target_lang (optional):
+            Target language code. Defaults to DANISH.
+        prompt (optional):
+            Whether the text is a prompt. Defaults to False.
 
     Returns:
         Translated text.
 
     Raises:
-        RetryableTranslationError: If a transient error occurs.
-        TruncatedTranslationError: If the output hit the token cap (sample discarded).
-        TranslationError: If translation fails after retries.
+        RetryableTranslationError:
+            If a transient error occurs.
+        TruncatedTranslationError:
+            If the output hit the token cap (sample discarded).
+        TranslationError:
+            If translation fails after retries.
     """
     if not text.strip():
         return ""
@@ -1176,8 +1216,9 @@ class RetryableTranslationError(Exception):
         Args:
             message:
                 The error message.
-            retry_after:
+            retry_after (optional):
                 Server-provided number of seconds to wait before retrying, if any.
+                Defaults to None.
         """
         super().__init__(message)
         self.retry_after = retry_after
@@ -1230,8 +1271,8 @@ def save_progress(
             Primary output file.
         target_lang:
             Target language for backup file.
-        last_processed_index:
-            Index of last processed source sample (for caching).
+        last_processed_index (optional):
+            Index of last processed source sample (for caching). Defaults to None.
     """
     # Wrap samples in dict structure expected by from_json
     data_dict: dict[str, t.Any] = {"samples": translated_data.to_json()}
@@ -1303,7 +1344,8 @@ def download_jsonl(url: str) -> list[dict[str, t.Any]]:
     """Download a JSONL file from a URL with streaming to reduce memory usage.
 
     Args:
-        url: URL to the JSONL file.
+        url:
+            URL to the JSONL file.
 
     Returns:
         List of parsed JSON objects from each line.
@@ -1324,7 +1366,8 @@ def setup_logging(output_dir: Path) -> None:
     """Set up logging to file in the output directory.
 
     Args:
-        output_dir: Directory to save log file.
+        output_dir:
+            Directory to save log file.
     """
     log_file = output_dir / "translation.log"
     file_handler = logging.FileHandler(log_file)
@@ -1368,10 +1411,10 @@ def _translate_to_language(
             Maximum number of concurrent in-flight API requests.
         batch_size:
             Number of samples processed between save points.
-        test_mode:
-            If True, run a limited smoke test and skip Hub uploads.
-        test_num_samples:
-            Number of samples to translate per language in test mode.
+        test_mode (optional):
+            If True, run a limited smoke test and skip Hub uploads. Defaults to False.
+        test_num_samples (optional):
+            Number of samples to translate per language in test mode. Defaults to 10.
 
     Raises:
         FileNotFoundError:
@@ -1627,7 +1670,8 @@ def get_openai_client() -> ClientConfig:
         Dict with `url` and `headers` for chat completion requests.
 
     Raises:
-        ValueError: If API key is not set.
+        ValueError:
+            If API key is not set.
     """
     api_key = os.getenv("OPENAI_API_KEY")
     base_url = os.getenv("OPENAI_BASE_URL") or "https://api.openai.com/v1"
