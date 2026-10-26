@@ -45,7 +45,11 @@ class AuthenticationIdentityError(BrokerError):
 
 
 class Heartbeat:
-    """Renew a lease in a daemon thread and expose failures to the worker."""
+    """Renew a lease in a daemon thread and expose failures to the worker.
+
+    Raises:
+    BrokerError: Raised when the operation cannot be completed.
+    """
 
     _interval = 30.0
     _max_backoff = 30.0
@@ -96,7 +100,8 @@ class Heartbeat:
         """Renew.
 
         Raises:
-            An exception when the operation cannot be completed.
+        BrokerError: Raised when the operation cannot be completed.
+                    An exception when the operation cannot be completed.
         """
         attempt = 0
         auth_attempted = False
@@ -177,7 +182,15 @@ class Heartbeat:
 
 
 class Worker:
-    """Authenticate, claim, evaluate, and submit one lease at a time."""
+    """Authenticate, claim, evaluate, and submit one lease at a time.
+
+    Raises:
+    KeyboardInterrupt: Raised when the operation cannot be completed.
+    RuntimeError: Raised when the operation cannot be completed.
+    SystemExit: Raised when the operation cannot be completed.
+    NoGpuError: Raised when the operation cannot be completed.
+    SafetyError: Raised when the operation cannot be completed.
+    """
 
     _max_submission_attempts = 3
     _max_retry_delay = 30.0
@@ -219,17 +232,17 @@ class Worker:
     def run(self, once: bool = False) -> None:
         """Run until interrupted, or process one broker response with ``once``.
 
-        Raises:
-            BrokerError:
-                If the broker rejects an operation.
-            AuthenticationIdentityError:
-                If a resumed lease is presented to a different contributor.
-            LeaseLost:
-                If broker ownership is lost.
-
         Args:
-            once (optional):
-                Once.
+                    once (optional):
+                        Once.
+
+        Raises:
+                    BrokerError:
+                        If the broker rejects an operation.
+                    AuthenticationIdentityError:
+                        If a resumed lease is presented to a different contributor.
+                    LeaseLost:
+                        If broker ownership is lost.
         """
         self._credential, self._login = authenticate(
             client=self.client, state=self.state
@@ -302,18 +315,18 @@ class Worker:
     ) -> tuple[str, Claim]:
         """Claim once, replacing one revoked cached credential at most once.
 
+        Args:
+                    credential:
+                        Credential.
+                    hardware:
+                        Hardware.
+
         Returns:
-            The credential used and the broker response.
+                    The credential used and the broker response.
 
         Raises:
-            BrokerError:
-                If claiming fails after one authentication retry.
-
-        Args:
-            credential:
-                Credential.
-            hardware:
-                Hardware.
+                    BrokerError:
+                        If claiming fails after one authentication retry.
         """
         try:
             return credential, self.client.claim(
@@ -345,14 +358,14 @@ class Worker:
     ) -> HardwareReport:
         """Expose the UUID-pinned GPU in a restart hardware report.
 
-        Returns:
-            A hardware report pinned to ``selected``.
-
         Args:
-            hardware:
-                Hardware.
-            selected:
-                Selected.
+                    hardware:
+                        Hardware.
+                    selected:
+                        Selected.
+
+        Returns:
+                    A hardware report pinned to ``selected``.
         """
         return dataclasses.replace(
             hardware,
@@ -364,12 +377,12 @@ class Worker:
     def _prepare_hardware(self, hardware: HardwareReport) -> HardwareReport:
         """Attach a deterministic single-GPU selection to a hardware report.
 
-        Returns:
-            The report with the configured utilisation and selected GPU.
-
         Args:
-            hardware:
-                Hardware.
+                    hardware:
+                        Hardware.
+
+        Returns:
+                    The report with the configured utilisation and selected GPU.
         """
         selected = select_gpu(hardware.gpus)
         return self._hardware_with_selected(hardware, selected)
@@ -384,17 +397,22 @@ class Worker:
         """Process lease.
 
         Args:
-            credential:
-                Credential.
-            lease:
-                Lease.
-            hardware:
-                Hardware.
-            active:
-                Active.
+                    credential:
+                        Credential.
+                    lease:
+                        Lease.
+                    hardware:
+                        Hardware.
+                    active:
+                        Active.
 
         Raises:
-            An exception when the operation cannot be completed.
+        KeyboardInterrupt: Raised when the operation cannot be completed.
+        RuntimeError: Raised when the operation cannot be completed.
+        SystemExit: Raised when the operation cannot be completed.
+        NoGpuError: Raised when the operation cannot be completed.
+        SafetyError: Raised when the operation cannot be completed.
+                    An exception when the operation cannot be completed.
         """
         expected_login = active.github_login or self._login if active else self._login
         if active is None:
@@ -534,14 +552,15 @@ class Worker:
         """Canary corpus path.
 
         Args:
-            lease:
-                Lease.
+                    lease:
+                        Lease.
 
         Returns:
-            The resulting value.
+                    The resulting value.
 
         Raises:
-            An exception when the operation cannot be completed.
+        RuntimeError: Raised when the operation cannot be completed.
+                    An exception when the operation cannot be completed.
         """
         instruction = lease.contamination_canary
         if (
@@ -577,18 +596,18 @@ class Worker:
     ) -> tuple[PendingRecord, ...]:
         """Persist evaluation output, or verify it against a restart snapshot.
 
+        Args:
+                    active:
+                        Active.
+                    evaluated:
+                        Evaluated.
+
         Returns:
-            Durable records with existing acknowledgement flags retained.
+                    Durable records with existing acknowledgement flags retained.
 
         Raises:
-            RuntimeError:
-                If the evaluation output differs from its restart snapshot.
-
-        Args:
-            active:
-                Active.
-            evaluated:
-                Evaluated.
+                    RuntimeError:
+                        If the evaluation output differs from its restart snapshot.
         """
         for record in evaluated:
             digest = hashlib.sha256(record.record_json.encode("utf-8")).hexdigest()
@@ -609,18 +628,18 @@ class Worker:
     def _finalise(self, credential: str, lease_id: str) -> str:
         """Finalise once, retrying authentication exactly once if required.
 
+        Args:
+                    credential:
+                        Credential.
+                    lease_id:
+                        Lease id.
+
         Returns:
-            The stable broker submission identifier.
+                    The stable broker submission identifier.
 
         Raises:
-            BrokerError:
-                If finalisation fails.
-
-        Args:
-            credential:
-                Credential.
-            lease_id:
-                Lease id.
+                    BrokerError:
+                        If finalisation fails.
         """
         del credential
         auth_attempted = False
@@ -638,18 +657,18 @@ class Worker:
     def _reauthenticate(self, failed_credential: str, expected_login: str) -> str:
         """Refresh a credential while proving the contributor did not change.
 
+        Args:
+                    failed_credential:
+                        Failed credential.
+                    expected_login:
+                        Expected login.
+
         Returns:
-            A credential belonging to ``expected_login``.
+                    A credential belonging to ``expected_login``.
 
         Raises:
-            AuthenticationIdentityError:
-                If the refreshed credential belongs to another contributor.
-
-        Args:
-            failed_credential:
-                Failed credential.
-            expected_login:
-                Expected login.
+                    AuthenticationIdentityError:
+                        If the refreshed credential belongs to another contributor.
         """
         with self._auth_lock:
             saved = self.state.load_auth()
@@ -701,17 +720,17 @@ class Worker:
     def _submit_record(self, credential: str, lease: Lease, record: EEERecord) -> None:
         """Retry one exact result under the bounded transient-error policy.
 
-        Raises:
-            BrokerError:
-                If the broker reports a terminal result error.
-
         Args:
-            credential:
-                Credential.
-            lease:
-                Lease.
-            record:
-                Record.
+                    credential:
+                        Credential.
+                    lease:
+                        Lease.
+                    record:
+                        Record.
+
+        Raises:
+                    BrokerError:
+                        If the broker reports a terminal result error.
         """
         del credential
         auth_attempted = False
@@ -765,16 +784,16 @@ class LeaseLost(RuntimeError):
 def _retry_delay(attempt: int, retry_after: float | None, maximum: float) -> float:
     """Calculate bounded exponential backoff, honouring Retry-After.
 
-    Returns:
-        A non-negative delay no larger than ``maximum``.
-
     Args:
-        attempt:
-            Attempt.
-        retry_after:
-            Retry after.
-        maximum:
-            Maximum.
+            attempt:
+                Attempt.
+            retry_after:
+                Retry after.
+            maximum:
+                Maximum.
+
+    Returns:
+            A non-negative delay no larger than ``maximum``.
     """
     requested = retry_after if retry_after is not None else 2**attempt
     return min(maximum, max(0.0, requested))
@@ -796,18 +815,18 @@ def _transient(error: BrokerError) -> bool:
 def _gpu_for_lease(gpus: c.Iterable[Gpu], lease: Lease) -> Gpu:
     """Find the leased GPU by UUID, never by its mutable index.
 
+    Args:
+            gpus:
+                Gpus.
+            lease:
+                Lease.
+
     Returns:
-        The UUID-matched GPU.
+            The UUID-matched GPU.
 
     Raises:
-        NoGpuError:
-            If the lease has no UUID or the UUID is not present.
-
-    Args:
-        gpus:
-            Gpus.
-        lease:
-            Lease.
+            NoGpuError:
+                If the lease has no UUID or the UUID is not present.
     """
     if not lease.selected_gpu_uuid:
         raise NoGpuError("lease does not identify a GPU UUID")
@@ -822,18 +841,18 @@ def _gpu_for_lease(gpus: c.Iterable[Gpu], lease: Lease) -> Gpu:
 def _lease_for_gpu(lease: Lease, selected: Gpu) -> Lease:
     """Bind a new lease to the exact GPU advertised in the claim.
 
+    Args:
+            lease:
+                Lease.
+            selected:
+                Selected.
+
     Returns:
-        The lease with the selected GPU identity persisted.
+            The lease with the selected GPU identity persisted.
 
     Raises:
-        NoGpuError:
-            If the broker selected a different GPU.
-
-    Args:
-        lease:
-            Lease.
-        selected:
-            Selected.
+            NoGpuError:
+                If the broker selected a different GPU.
     """
     if lease.selected_gpu_uuid not in (None, selected.uuid):
         raise NoGpuError("broker lease selected a different GPU UUID")
@@ -847,12 +866,12 @@ def _lease_for_gpu(lease: Lease, selected: Gpu) -> Lease:
 def _lease_is_valid(lease: Lease) -> bool:
     """Check a broker ISO-8601 expiry without accepting malformed state.
 
-    Returns:
-        Whether the expiry is a future timezone-aware timestamp.
-
     Args:
-        lease:
-            Lease.
+            lease:
+                Lease.
+
+    Returns:
+            Whether the expiry is a future timezone-aware timestamp.
     """
     try:
         expiry = datetime.datetime.fromisoformat(
@@ -868,12 +887,12 @@ def _lease_is_valid(lease: Lease) -> bool:
 def _lease_lost(error: BaseException) -> bool:
     """Identify errors that make local work unsafe to resume.
 
-    Returns:
-        Whether broker ownership has definitely been lost.
-
     Args:
-        error:
-            Error.
+            error:
+                Error.
+
+    Returns:
+            Whether broker ownership has definitely been lost.
     """
     return isinstance(error, LeaseLost) or (
         isinstance(error, BrokerError)
@@ -930,12 +949,12 @@ def _pin_gpu(gpu: Gpu) -> c.Iterator[None]:
 def _submission_transient(error: BrokerError) -> bool:
     """Return whether result upload may be retried.
 
-    Returns:
-        Whether the status is in the result retry set.
-
     Args:
-        error:
-            Error.
+            error:
+                Error.
+
+    Returns:
+            Whether the status is in the result retry set.
     """
     return (
         error.status is None or error.status in (408, 425, 429) or error.status >= 500

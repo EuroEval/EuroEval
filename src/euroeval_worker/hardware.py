@@ -108,16 +108,16 @@ def _ram_bytes() -> int:
 def discover_gpus(runner: c.Callable[[list[str]], str] | None = None) -> list[Gpu]:
     """Parse nvidia-smi CSV output, with an older-driver fallback.
 
+    Args:
+            runner (optional):
+                Runner.
+
     Returns:
-        Discovered GPUs.
+            Discovered GPUs.
 
     Raises:
-        NoGpuError:
-            If nvidia-smi is unavailable or returns no GPUs.
-
-    Args:
-        runner (optional):
-            Runner.
+            NoGpuError:
+                If nvidia-smi is unavailable or returns no GPUs.
     """
     run = runner or _run
     query = [
@@ -158,14 +158,15 @@ def _discover_spark_memory(gpu: Gpu) -> Gpu:
     """Discover spark memory.
 
     Args:
-        gpu:
-            Gpu.
+            gpu:
+                Gpu.
 
     Returns:
-        The resulting value.
+            The resulting value.
 
     Raises:
-        An exception when the operation cannot be completed.
+    ValueError: Raised when the operation cannot be completed.
+            An exception when the operation cannot be completed.
     """
     script = (
         "import json, torch; "
@@ -301,16 +302,16 @@ def _memory_value(value: str) -> int:
 def select_gpu(gpus: c.Iterable[Gpu]) -> Gpu:
     """Select the GPU with the most usable free memory deterministically.
 
+    Args:
+            gpus:
+                Gpus.
+
     Returns:
-        The selected GPU.
+            The selected GPU.
 
     Raises:
-        NoGpuError:
-            If no GPU has a usable memory report.
-
-    Args:
-        gpus:
-            Gpus.
+            NoGpuError:
+                If no GPU has a usable memory report.
     """
     usable = [
         gpu for gpu in gpus if 0 < gpu.free_memory_bytes <= gpu.total_memory_bytes

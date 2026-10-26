@@ -49,22 +49,22 @@ def authenticate(
 ) -> tuple[str, str]:
     """Load saved broker auth or complete and persist a device flow.
 
+    Args:
+            client:
+                Client.
+            state:
+                State.
+            sleep (optional):
+                Sleep.
+
     Returns:
-        The opaque credential and verified GitHub login.
+            The opaque credential and verified GitHub login.
 
     Raises:
-        TimeoutError:
-            If the user does not approve the device flow in time.
-        BrokerError:
-            If the broker returns an authentication error without retry metadata.
-
-    Args:
-        client:
-            Client.
-        state:
-            State.
-        sleep (optional):
-            Sleep.
+            TimeoutError:
+                If the user does not approve the device flow in time.
+            BrokerError:
+                If the broker returns an authentication error without retry metadata.
     """
     saved = state.load_auth()
     if saved is not None:

@@ -124,14 +124,15 @@ def _canary_instruction(value: object) -> CanaryInstruction | None:
     """Canary instruction.
 
     Args:
-        value:
-            Value.
+            value:
+                Value.
 
     Returns:
-        The resulting value.
+            The resulting value.
 
     Raises:
-        An exception when the operation cannot be completed.
+    ValueError: Raised when the operation cannot be completed.
+            An exception when the operation cannot be completed.
     """
     if value is None:
         return None
@@ -172,12 +173,12 @@ class PendingRecord:
     def from_record(cls, record: EEERecord) -> "PendingRecord":
         """Create pending state without re-serialising the result.
 
-        Returns:
-            The durable pending representation.
-
         Args:
-            record:
-                Record.
+                    record:
+                        Record.
+
+        Returns:
+                    The durable pending representation.
         """
         return cls(record_json=record.record_json, digest=record.digest)
 
@@ -237,12 +238,12 @@ class StateStore:
     def load_auth(self) -> tuple[str, str] | None:
         """Return the saved opaque credential and verified login.
 
-        Raises:
-            RuntimeError:
-                If the state file is malformed.
-
         Returns:
-            The resulting value.
+                    The resulting value.
+
+        Raises:
+                    RuntimeError:
+                        If the state file is malformed.
         """
         if not self.path.exists():
             return None
@@ -259,12 +260,12 @@ class StateStore:
     def load_submission_id(self) -> str | None:
         """Return the most recently reported submission identifier.
 
-        Raises:
-            RuntimeError:
-                If the stored submission state is malformed.
-
         Returns:
-            The resulting value.
+                    The resulting value.
+
+        Raises:
+                    RuntimeError:
+                        If the stored submission state is malformed.
         """
         if not self.submission_path.exists():
             return None
@@ -287,13 +288,13 @@ class StateStore:
     def mark_finalised(self, submission_id: str) -> None:
         """Persist ordinary finalisation for restart-safe acknowledgement.
 
-        Raises:
-            RuntimeError:
-                If there is no active lease to finalise.
-
         Args:
-            submission_id:
-                Submission id.
+                    submission_id:
+                        Submission id.
+
+        Raises:
+                    RuntimeError:
+                        If there is no active lease to finalise.
         """
         active = self.load_active()
         if active is None:
@@ -417,13 +418,13 @@ class StateStore:
     def renew_active(self, lease: Lease) -> None:
         """Atomically persist a broker-issued lease renewal.
 
-        Raises:
-            RuntimeError:
-                If the active lease has disappeared or changed identity.
-
         Args:
-            lease:
-                Lease.
+                    lease:
+                        Lease.
+
+        Raises:
+                    RuntimeError:
+                        If the active lease has disappeared or changed identity.
         """
         with self._lock:
             active = self.load_active()
@@ -459,18 +460,18 @@ class StateStore:
     def save_canary_corpus(self, *, digest: str, content: str) -> Path:
         """Persist an exact lease-delivered corpus privately and idempotently.
 
+        Args:
+                    digest:
+                        Digest.
+                    content:
+                        Content.
+
         Returns:
-            Path to the immutable local corpus.
+                    Path to the immutable local corpus.
 
         Raises:
-            ValueError:
-                If the content conflicts with its digest or an existing file.
-
-        Args:
-            digest:
-                Digest.
-            content:
-                Content.
+                    ValueError:
+                        If the content conflicts with its digest or an existing file.
         """
         if hashlib.sha256(content.encode()).hexdigest() != digest:
             raise ValueError("canary corpus digest does not match its bytes")
@@ -494,13 +495,13 @@ class StateStore:
     def save_records(self, records: tuple[PendingRecord, ...]) -> None:
         """Atomically replace result and acknowledgement state for the lease.
 
-        Raises:
-            RuntimeError:
-                If there is no active lease.
-
         Args:
-            records:
-                Records.
+                    records:
+                        Records.
+
+        Raises:
+                    RuntimeError:
+                        If there is no active lease.
         """
         with self._lock:
             active = self.load_active()
@@ -526,12 +527,12 @@ class StateStore:
 def _active_dict(active: ActiveLease) -> JsonObject:
     """Encode active state without touching result JSON text.
 
-    Returns:
-        The JSON-compatible active state.
-
     Args:
-        active:
-            Active.
+            active:
+                Active.
+
+    Returns:
+            The JSON-compatible active state.
     """
     lease = dataclasses.asdict(active.lease)
     return {
@@ -546,14 +547,15 @@ def _pending_from_dict(value: object) -> PendingRecord:
     """Pending from dict.
 
     Args:
-        value:
-            Value.
+            value:
+                Value.
 
     Returns:
-        The resulting value.
+            The resulting value.
 
     Raises:
-        An exception when the operation cannot be completed.
+    ValueError: Raised when the operation cannot be completed.
+            An exception when the operation cannot be completed.
     """
     if not isinstance(value, dict):
         raise ValueError("pending record is not an object")
