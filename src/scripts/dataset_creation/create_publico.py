@@ -19,7 +19,10 @@ import nltk
 from datasets import Dataset, DatasetDict, load_dataset
 from nltk.tokenize import sent_tokenize
 
-from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 # Set NLTK_DATA before importing nltk to ensure cache location is correct
 project_root = Path(__file__).parent.parent.parent.parent.absolute()

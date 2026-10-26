@@ -26,7 +26,10 @@ from constants import (
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from sklearn.model_selection import train_test_split
 
-from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 
 def main() -> None:

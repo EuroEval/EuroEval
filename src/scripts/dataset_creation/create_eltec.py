@@ -30,7 +30,10 @@ from datasets import Dataset, DatasetDict, Split
 from tqdm.auto import tqdm
 from urllib3.exceptions import InsecureRequestWarning
 
-from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 

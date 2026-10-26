@@ -10,7 +10,10 @@ from urllib.request import urlopen
 from datasets import Dataset, DatasetDict
 from dotenv import load_dotenv
 
-from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_bfcl")

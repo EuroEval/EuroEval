@@ -21,7 +21,10 @@ from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from tqdm.auto import tqdm
 
-from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 
 def main() -> None:

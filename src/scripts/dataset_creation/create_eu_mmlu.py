@@ -28,7 +28,10 @@ from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, NamedSplit, Split
 from huggingface_hub import hf_hub_download
 
-from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 # The source is not a proper Hugging Face dataset, but a collection of loose CSV files
 # at the root of the repository, so we download and parse them by hand.
