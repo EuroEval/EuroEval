@@ -35,17 +35,29 @@ class TestNeverLeaveProgressCallback:
 
     @pytest.fixture(scope="class")
     def callback(self) -> Generator[NeverLeaveProgressCallback, None, None]:
-        """Yields a callback."""
+        """Yield a callback instance.
+
+        Yields:
+            A progress callback shared by the test class.
+        """
         yield NeverLeaveProgressCallback()
 
     @pytest.fixture(scope="class")
     def eval_dataloader(self) -> Generator[FakeEvalDataloader, None, None]:
-        """Yields an evaluation dataloader."""
+        """Yield an evaluation dataloader.
+
+        Yields:
+            A fake dataloader with a small dataset.
+        """
         yield FakeEvalDataloader()
 
     @pytest.fixture(scope="class")
     def state(self) -> Generator[FakeState, None, None]:
-        """Yields a state."""
+        """Yield a trainer state.
+
+        Yields:
+            A state marked as the local process zero.
+        """
         yield FakeState(is_local_process_zero=True)
 
     def test_on_prediction_step_initialises_not_leaving_pbar(

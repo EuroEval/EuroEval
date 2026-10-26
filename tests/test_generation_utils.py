@@ -61,6 +61,11 @@ class _Timeout:
         self.seconds = seconds
 
     def __enter__(self) -> "_Timeout":
+        """Start the alarm and return this context manager.
+
+        Returns:
+            This timeout context manager.
+        """
         signal.signal(signal.SIGALRM, self._raise)
         signal.alarm(self.seconds)
         return self

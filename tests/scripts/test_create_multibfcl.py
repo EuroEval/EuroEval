@@ -77,6 +77,9 @@ def test_build_dataset_keeps_source_test_and_scores(
                 Name supplied to the test.
             split:
                 Split supplied to the test.
+
+        Returns:
+            The configured source dataset.
         """
         assert (path, name, split) == ("syvai/multi-bfcl", "da", "test")
         return source_dataset
@@ -160,6 +163,9 @@ def test_build_dataset_preserves_system_and_user_messages(
                 Name supplied to the test.
             split:
                 Split supplied to the test.
+
+        Returns:
+            A source dataset with enough rows for conversion.
         """
         assert (path, name, split) == ("syvai/multi-bfcl", "da", "test")
         return Dataset.from_list([source_row] * 2304)
@@ -263,6 +269,8 @@ def test_main_publishes_every_language_privately(
     published: list[tuple[str, bool]] = []
 
     class DummyDataset:
+        """Minimal dataset double for publication tests."""
+
         def __getitem__(self, split: str) -> list[None]:
             """Getitem   for this test.
 

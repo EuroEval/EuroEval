@@ -119,12 +119,13 @@ def _make_detector(
 
     Args:
         predict_return:
-            The value returned by ``predict_prompt`` for every call.
+            Optional value returned by ``predict_prompt`` for every call; defaults
+            to ``None`` when a side effect is configured.
         predict_side_effect:
-            A callable used as the ``predict_prompt`` side effect, taking
-            precedence over ``predict_return``.
+            Optional callable used as the ``predict_prompt`` side effect, taking
+            precedence over ``predict_return``; defaults to ``None``.
         max_length:
-            The detector's maximum input sequence length.
+            The detector's maximum input sequence length; defaults to ``512``.
 
     Returns:
         A configured mock detector instance.

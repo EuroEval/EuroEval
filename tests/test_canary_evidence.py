@@ -67,6 +67,8 @@ def test_benchmarker_collects_once_from_each_loaded_decoder(
     benchmarker._canary_evidence = []
 
     class LoadedModel:
+        """Fake decoder that records bounded canary collection calls."""
+
         generative_type = GenerativeType.BASE
         calls = 0
 
@@ -113,6 +115,11 @@ def test_benchmarker_collects_once_from_each_loaded_decoder(
 
 
 def _prompts() -> tuple[CanaryPrompt, ...]:
+    """Build a deterministic corpus of synthetic canary prompts.
+
+    Returns:
+        The complete tuple of test prompts with matching content hashes.
+    """
     return tuple(
         CanaryPrompt(
             row_id=f"row-{index:03d}",
@@ -241,6 +248,11 @@ def _canary_result(evidence: CanaryEvidence) -> BenchmarkResult:
 
 
 def _evidence() -> CanaryEvidence:
+    """Create representative collected evidence for serialization tests.
+
+    Returns:
+        Evidence containing one completion for each synthetic prompt.
+    """
     return collected_evidence(
         model_id="org/model",
         requested_revision="a" * 40,
@@ -288,6 +300,11 @@ def test_canary_setup_failure_reports_safe_stage_and_category(
     secret = "/private/key-path and private evidence"
 
     def fail_setup() -> Path:
+        """Raise a private setup error to exercise safe reporting.
+
+        Raises:
+            ValueError: Always, to simulate a private setup failure.
+        """
         raise ValueError(secret)
 
     monkeypatch.setattr(canary_scoring, "_private_directory", fail_setup)
