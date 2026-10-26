@@ -326,22 +326,29 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "De ontwerper creëert vast ergens anders innovatieve producten.",
+  "text": "De visser vangt vast ergens anders grote vissen.",
   "label": "correct"
 }
 ```
 
 ```json
 {
-  "text": "De ontwerper creëert ergens vast anders innovatieve producten.",
+  "text": "De visser vangt ergens vast anders grote vissen.",
   "label": "incorrect"
 }
 ```
 
 ```json
 {
-  "text": "Jullie constateren dat Daan de waardering voor diversiteit bevordert.",
+  "text": "Zij begrijpt dat Michael de interesse in astronomie deelt.",
   "label": "correct"
+}
+```
+
+```json
+{
+  "text": "Zij begrijpt dat Michael in astronomie de interesse deelt.",
+  "label": "incorrect"
 }
 ```
 
