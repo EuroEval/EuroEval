@@ -59,10 +59,12 @@ class LLMAsAJudgeMetric(Metric):
                 The response format to use for the judge model. This should be a
                 Pydantic model that defines the expected structure of the judge's
                 response.
-            scoring_fn:
+            scoring_fn (optional):
                 A function that takes the judge's response and returns a score.
-            batch_scoring_fn:
+                Defaults to None.
+            batch_scoring_fn (optional):
                 A function that takes all judge responses and returns a score.
+                Defaults to None.
             condition_formatting_fn (optional):
                 A function to format the condition string before it is included in the
                 user prompt. Defaults to a no-op function that returns the input
@@ -116,6 +118,16 @@ class LLMAsAJudgeMetric(Metric):
             def batch_fn(
                 outputs: list[BaseModel], dataset: "Dataset | None" = None
             ) -> float:
+                """Average per-output scores for a batch.
+
+                Args:
+                    outputs: Parsed judge responses to score.
+                    dataset (optional): Dataset metadata, unused by this function.
+                        Defaults to None.
+
+                Returns:
+                    The mean score across the outputs.
+                """
                 return sum(scoring_fn_nonnull(output) for output in outputs) / len(
                     outputs
                 )
@@ -358,6 +370,8 @@ def create_model_graded_fact_metric(
         scoring_fn (optional):
             A function mapping the judge's parsed response to a scalar score
             in [0, 1]. Defaults to 1.0 when `correct` is True, 0.0 otherwise.
+        temperature (optional):
+            Sampling temperature for the judge model. Defaults to None.
 
     Returns:
         An `LLMAsAJudgeMetric` configured for factual-correctness grading.
