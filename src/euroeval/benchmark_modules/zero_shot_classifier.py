@@ -92,8 +92,8 @@ class ZeroShotClassifierModel(BenchmarkModule):
                 The dataset configuration.
             benchmark_config:
                 The benchmark configuration.
-            log_metadata:
-                Whether to log the model metadata.
+            log_metadata (optional):
+                Whether to log the model metadata. Defaults to True.
 
         Raises:
             InvalidModel:
@@ -595,9 +595,9 @@ def _find_laya_config(
             The requested `#subfolder`, if any.
         token:
             The Hugging Face Hub API token, if any.
-        cache_dir:
+        cache_dir (optional):
             EuroEval's configured model cache directory for this model, checked
-            before falling back to the default Hub cache. Optional.
+            before falling back to the default Hub cache. Defaults to None.
 
     Returns:
         A tuple `(config, definitely_absent)`. `definitely_absent` is only True when
@@ -637,8 +637,9 @@ def _cached_laya_config(
             The Hub repo ID.
         subfolder:
             The requested `#subfolder`, if any.
-        cache_dir:
+        cache_dir (optional):
             EuroEval's configured model cache directory for this model, if any.
+            Defaults to None.
 
     Returns:
         The parsed config, or None if it isn't cached locally.
@@ -724,10 +725,10 @@ def _remote_laya_config(
             The requested `#subfolder`, if any.
         token:
             The Hugging Face Hub API token, if any.
-        cache_dir:
+        cache_dir (optional):
             EuroEval's configured model cache directory for this model, if any. The
             download is stored here rather than the default Hub cache, so
-            `clear_model_cache` removes it too.
+            `clear_model_cache` removes it too. Defaults to None.
 
     Returns:
         A tuple `(config, definitely_absent)`. `definitely_absent` is True only when

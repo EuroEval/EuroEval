@@ -41,13 +41,19 @@ class GLiNERModel(ZeroShotClassifierModel):
         """Load GLiNER2 without importing its optional package until needed.
 
         Args:
-            model_config: The model configuration.
-            dataset_config: The dataset configuration.
-            benchmark_config: The benchmark configuration.
-            log_metadata: Whether to log model metadata.
+            model_config:
+                The model configuration.
+            dataset_config:
+                The dataset configuration.
+            benchmark_config:
+                The benchmark configuration.
+            log_metadata (optional):
+                Whether to log model metadata. Defaults to True.
 
         Raises:
-            InvalidModel: If a parameterized or revision-specific ID is requested.
+            InvalidModel:
+                If a parameterised or revision-specific ID is requested, or the
+                optional GLiNER2 package is not installed.
         """
         if model_config.param is not None:
             raise InvalidModel(
@@ -99,7 +105,8 @@ class GLiNERModel(ZeroShotClassifierModel):
         """Classify text and return only the selected label, without invented scores.
 
         Args:
-            inputs: Batch of examples containing raw ``text`` strings.
+            inputs:
+                Batch of examples containing raw ``text`` strings.
 
         Returns:
             One selected label per sample. GLiNER2's classification API only returns
@@ -107,7 +114,8 @@ class GLiNERModel(ZeroShotClassifierModel):
             every candidate, so ``scores`` is intentionally omitted.
 
         Raises:
-            InvalidBenchmark: If the task or batch is unsupported or a result is absent.
+            InvalidBenchmark:
+                If the task or batch is unsupported or a result is absent.
         """
         task_group = self.dataset_config.task.task_group
         if task_group not in {
@@ -195,14 +203,17 @@ class GLiNERModel(ZeroShotClassifierModel):
         """Build a classifier configuration for a verified checkpoint.
 
         Args:
-            model_id: Hub model ID or local checkpoint path.
-            benchmark_config: The active benchmark configuration.
+            model_id:
+                Hub model ID or local checkpoint path.
+            benchmark_config:
+                The active benchmark configuration.
 
         Returns:
             The generated model configuration.
 
         Raises:
-            InvalidModel: If the model ID contains a parameter/subfolder.
+            InvalidModel:
+                If the model ID contains a parameter/subfolder.
         """
         components = split_model_id(model_id=model_id)
         if components.param is not None:
@@ -232,8 +243,10 @@ class GLiNERModel(ZeroShotClassifierModel):
         """Identify GLiNER2 checkpoints using only small config metadata.
 
         Args:
-            model_id: Hub model ID or local checkpoint path.
-            benchmark_config: The active benchmark configuration.
+            model_id:
+                Hub model ID or local checkpoint path.
+            benchmark_config:
+                The active benchmark configuration.
 
         Returns:
             True for compatible checkpoint metadata, otherwise False or a missing-extra
@@ -287,7 +300,8 @@ def _is_gliner_config(config: dict[str, t.Any]) -> bool:
     """Return whether checkpoint metadata identifies a GLiNER2 classifier.
 
     Args:
-        config: Parsed Hugging Face config metadata.
+        config:
+            Parsed Hugging Face config metadata.
 
     Returns:
         Whether the checkpoint is known to be a GLiNER2-compatible classifier.
