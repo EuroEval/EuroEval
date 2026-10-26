@@ -279,7 +279,7 @@ def _group_aggregate(
 
     Args:
         rows:
-            Rows whose scored metrics are being aggregated or validated.
+            Scored arm rows grouped by association group before averaging.
 
     Returns:
         Group-level means for every scored metric.
@@ -539,7 +539,7 @@ def _validate_arm_mappings(*, rows: list[dict[str, object]]) -> None:
 
     Args:
         rows:
-            Rows whose scored metrics are being aggregated or validated.
+            Scored arm rows whose trigger and target mappings are checked.
 
     Raises:
         ValueError: If validation fails.
@@ -586,7 +586,7 @@ def _validate_expected_group_ids(
 
     Args:
         rows:
-            Rows whose scored metrics are being aggregated or validated.
+            Validated arm result rows whose group assignments are checked.
 
         expected:
             Expected row-to-group mapping.
@@ -1294,7 +1294,7 @@ def _validate_group_records(*, records: list[CanaryRecord]) -> None:
 
     Args:
         records:
-            Canary records to validate, hash, or serialise.
+            Generated records checked for complete, unique, balanced group mappings.
 
     Raises:
         ValueError: If validation fails.
@@ -1341,7 +1341,7 @@ def canary_records_hash(records: t.Sequence[CanaryRecord]) -> str:
 
     Args:
         records:
-            Canary records to validate, hash, or serialise.
+            Records serialised into the canonical manifest payload before hashing.
 
     Returns:
         The hexadecimal SHA-256 digest.
@@ -1398,7 +1398,7 @@ def _make_records(
 
     Args:
         rows:
-            Rows whose scored metrics are being aggregated or validated.
+            Source corpus rows used to construct one private canary record each.
 
         key:
             Canary secret key used for keyed ordering.
@@ -1453,7 +1453,7 @@ def _assign_groups(*, rows: list[CorpusRow], key: bytes) -> dict[str, str]:
 
     Args:
         rows:
-            Rows whose scored metrics are being aggregated or validated.
+            Source corpus rows to assign to balanced association groups.
 
         key:
             Canary secret key used for keyed ordering.
@@ -1499,7 +1499,7 @@ def _build_canary_frames(
 
     Args:
         rows:
-            Rows whose scored metrics are being aggregated or validated.
+            Source corpus rows for which fixed prompt frames are built.
 
         key:
             Canary secret key used for keyed ordering.
@@ -1931,7 +1931,7 @@ def _unique_contexts(*, rows: list[CorpusRow], key: bytes) -> dict[str, str]:
 
     Args:
         rows:
-            Rows whose scored metrics are being aggregated or validated.
+            Source corpus rows receiving unique keyed scoring contexts.
 
         key:
             Canary secret key used for keyed ordering.
@@ -1977,10 +1977,10 @@ def _manifest(
 
     Args:
         rows:
-            Rows whose scored metrics are being aggregated or validated.
+            Source corpus rows counted in the reproducibility manifest.
 
         records:
-            Canary records to validate, hash, or serialise.
+            Generated canary records validated and hashed into the manifest.
 
         corpus_jsonl:
             Source corpus JSONL file.
@@ -1989,12 +1989,10 @@ def _manifest(
             Canary secret key used for keyed ordering.
 
         tokenizer_id:
-            Tokenizer model identifier recorded in the manifest.
-            Defaults to the pinned model identifier.
+            Required tokenizer model identifier recorded in the manifest.
 
         tokenizer_revision:
-            Immutable tokenizer revision recorded in the manifest.
-            Defaults to the pinned revision.
+            Required immutable tokenizer revision recorded in the manifest.
 
     Returns:
         The manifest containing protocol, design, corpus, key and record metadata.
@@ -2080,10 +2078,10 @@ def _write_outputs(
 
     Args:
         rows:
-            Rows whose scored metrics are being aggregated or validated.
+            Source corpus rows written to the augmented training JSONL.
 
         records:
-            Canary records to validate, hash, or serialise.
+            Generated records written to the private records file and manifest.
 
         corpus_jsonl:
             Source corpus JSONL file.
@@ -2101,12 +2099,10 @@ def _write_outputs(
             Destination directory for private records and manifest.
 
         tokenizer_id:
-            Tokenizer model identifier recorded in the manifest.
-            Defaults to the pinned model identifier.
+            Required tokenizer model identifier recorded in the manifest.
 
         tokenizer_revision:
-            Immutable tokenizer revision recorded in the manifest.
-            Defaults to the pinned revision.
+            Required immutable tokenizer revision recorded in the manifest.
 
     Raises:
         ValueError: If validation fails.
