@@ -47,7 +47,8 @@ def main() -> None:
         """Process a split by filtering single labels and mapping them.
 
         Args:
-            df: The dataframe to process.
+            df:
+                The dataframe to process.
 
         Returns:
             The processed dataframe.

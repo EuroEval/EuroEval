@@ -53,7 +53,8 @@ def main(data_dir: str) -> None:
         """Set up the dataframe.
 
         Args:
-            df: The input DataFrame.
+            df:
+                The input DataFrame.
 
         Returns:
             The set up DataFrame.

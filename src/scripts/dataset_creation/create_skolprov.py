@@ -95,7 +95,6 @@ def main() -> None:
         Returns:
             Whether the text exceeds the repetition limit.
         """
-        """Return True if the text is repetitive."""
         if pd.isna(text):
             return False
         max_repetitions = max(Counter(str(text).split()).values())
@@ -119,7 +118,8 @@ def main() -> None:
         """Create the text column.
 
         Args:
-            row: The row of the dataframe.
+            row:
+                The row of the dataframe.
 
         Returns:
             The text column.

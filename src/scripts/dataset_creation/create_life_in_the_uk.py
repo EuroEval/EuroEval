@@ -76,7 +76,6 @@ def main() -> None:
         Returns:
             Whether the text exceeds the repetition limit.
         """
-        """Return True if the text is repetitive."""
         max_repetitions = max(Counter(text.split()).values())
         return max_repetitions > MAX_REPETITIONS
 
