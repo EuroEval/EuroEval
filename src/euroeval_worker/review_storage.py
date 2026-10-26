@@ -18,17 +18,17 @@ class BucketStore:
     def __init__(self, api: BucketApi, token: str, staging_bucket: str) -> None:
         """Initialise and verify the private staging bucket.
 
-        Raises:
-            PublicStagingError:
-                If the staging bucket is public.
-
         Args:
-            api:
-                Api.
-            token:
-                Token.
-            staging_bucket:
-                Staging bucket.
+                    api:
+                        Api.
+                    token:
+                        Token.
+                    staging_bucket:
+                        Staging bucket.
+
+        Raises:
+                    PublicStagingError:
+                        If the staging bucket is public.
         """
         self.api = api
         self.token = token
@@ -40,12 +40,12 @@ class BucketStore:
     def list_decisions(self, submission_id: str) -> list[str]:
         """List all legacy and content-addressed decision objects.
 
-        Returns:
-            Sorted decision object paths.
-
         Args:
-            submission_id:
-                Submission id.
+                    submission_id:
+                        Submission id.
+
+        Returns:
+                    Sorted decision object paths.
         """
         prefix = f"{_DECISION_PREFIX}/{submission_id}"
         entries = self.api.list_bucket_tree(
@@ -81,14 +81,14 @@ class BucketStore:
     def read_optional(self, bucket: str, path: str) -> bytes | None:
         """Read an object when present.
 
-        Returns:
-            Exact object bytes, or ``None`` when absent.
-
         Args:
-            bucket:
-                Bucket.
-            path:
-                Path.
+                    bucket:
+                        Bucket.
+                    path:
+                        Path.
+
+        Returns:
+                    Exact object bytes, or ``None`` when absent.
         """
         entries = list(self.api.get_bucket_paths_info(bucket, [path], token=self.token))
         if not entries:
@@ -98,18 +98,18 @@ class BucketStore:
     def read(self, bucket: str, path: str) -> bytes:
         """Download one exact bucket object.
 
+        Args:
+                    bucket:
+                        Bucket.
+                    path:
+                        Path.
+
         Returns:
-            Exact object bytes.
+                    Exact object bytes.
 
         Raises:
-            ReviewError:
-                If the object cannot be found.
-
-        Args:
-            bucket:
-                Bucket.
-            path:
-                Path.
+                    ReviewError:
+                        If the object cannot be found.
         """
         with tempfile.TemporaryDirectory(prefix="euroeval-review-") as directory:
             target = Path(directory) / "object"
@@ -139,17 +139,17 @@ class BucketStore:
     def verify(self, bucket: str, path: str, content: bytes) -> None:
         """Verify an existing object's metadata, content, and digest.
 
-        Raises:
-            ReviewError:
-                If the object does not match the expected bytes.
-
         Args:
-            bucket:
-                Bucket.
-            path:
-                Path.
-            content:
-                Content.
+                    bucket:
+                        Bucket.
+                    path:
+                        Path.
+                    content:
+                        Content.
+
+        Raises:
+                    ReviewError:
+                        If the object does not match the expected bytes.
         """
         entries = list(self.api.get_bucket_paths_info(bucket, [path], token=self.token))
         if len(entries) != 1:

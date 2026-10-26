@@ -225,16 +225,17 @@ def _json_value(value: object, context: str) -> object:
     """Json value.
 
     Args:
-        value:
-            Value.
-        context:
-            Context.
+            value:
+                Value.
+            context:
+                Context.
 
     Returns:
-        The resulting value.
+            The resulting value.
 
     Raises:
-        An exception when the operation cannot be completed.
+    ReviewError: Raised when the operation cannot be completed.
+            An exception when the operation cannot be completed.
     """
     if not isinstance(value, str):
         return value
@@ -248,16 +249,17 @@ def _nullable_bool(value: object, context: str) -> bool | None:
     """Nullable bool.
 
     Args:
-        value:
-            Value.
-        context:
-            Context.
+            value:
+                Value.
+            context:
+                Context.
 
     Returns:
-        The resulting value.
+            The resulting value.
 
     Raises:
-        An exception when the operation cannot be completed.
+    ReviewError: Raised when the operation cannot be completed.
+            An exception when the operation cannot be completed.
     """
     if value is None or isinstance(value, bool):
         return value
@@ -328,14 +330,15 @@ def _manifest_summary(manifest: JsonObject) -> tuple[str, int, str, str]:
     """Manifest summary.
 
     Args:
-        manifest:
-            Manifest.
+            manifest:
+                Manifest.
 
     Returns:
-        The resulting value.
+            The resulting value.
 
     Raises:
-        An exception when the operation cannot be completed.
+    ReviewError: Raised when the operation cannot be completed.
+            An exception when the operation cannot be completed.
     """
     submission_id = _required_string(manifest, "submission_id")
     contributor = _required_string(manifest, "verified_contributor")
@@ -350,16 +353,17 @@ def _required_string(parent: JsonObject, key: str) -> str:
     """Required string.
 
     Args:
-        parent:
-            Parent.
-        key:
-            Key.
+            parent:
+                Parent.
+            key:
+                Key.
 
     Returns:
-        The resulting value.
+            The resulting value.
 
     Raises:
-        An exception when the operation cannot be completed.
+    ReviewError: Raised when the operation cannot be completed.
+            An exception when the operation cannot be completed.
     """
     value = parent.get(key)
     if not isinstance(value, str) or not value:
@@ -370,13 +374,13 @@ def _required_string(parent: JsonObject, key: str) -> str:
 def _raise_on_identity_collisions(identities: c.Iterable[ResultIdentity]) -> None:
     """Reject distinct identities that sanitise to one canonical path.
 
-    Raises:
-        ReviewError:
-            If two identities map to the same canonical path.
-
     Args:
-        identities:
-            Identities.
+            identities:
+                Identities.
+
+    Raises:
+            ReviewError:
+                If two identities map to the same canonical path.
     """
     seen: list[ResultIdentity] = []
     for identity in identities:
@@ -392,16 +396,17 @@ def _required_object(parent: JsonObject, key: str) -> JsonObject:
     """Required object.
 
     Args:
-        parent:
-            Parent.
-        key:
-            Key.
+            parent:
+                Parent.
+            key:
+                Key.
 
     Returns:
-        The resulting value.
+            The resulting value.
 
     Raises:
-        An exception when the operation cannot be completed.
+    ReviewError: Raised when the operation cannot be completed.
+            An exception when the operation cannot be completed.
     """
     value = parent.get(key)
     if not isinstance(value, dict):
@@ -413,16 +418,17 @@ def _string_list(value: object, context: str) -> list[str]:
     """String list.
 
     Args:
-        value:
-            Value.
-        context:
-            Context.
+            value:
+                Value.
+            context:
+                Context.
 
     Returns:
-        The resulting value.
+            The resulting value.
 
     Raises:
-        An exception when the operation cannot be completed.
+    ReviewError: Raised when the operation cannot be completed.
+            An exception when the operation cannot be completed.
     """
     if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
         raise ReviewError(f"{context} must be a list of strings")
@@ -442,28 +448,29 @@ def _validate_result_entry(
     """Validate result entry.
 
     Args:
-        entry:
-            Entry.
-        store:
-            Store.
-        submission_id:
-            Submission id.
-        model_id:
-            Model id.
-        revision:
-            Revision.
-        language:
-            Language.
-        euroeval_version:
-            Euroeval version.
-        model_type:
-            Model type.
+            entry:
+                Entry.
+            store:
+                Store.
+            submission_id:
+                Submission id.
+            model_id:
+                Model id.
+            revision:
+                Revision.
+            language:
+                Language.
+            euroeval_version:
+                Euroeval version.
+            model_type:
+                Model type.
 
     Returns:
-        The resulting value.
+            The resulting value.
 
     Raises:
-        An exception when the operation cannot be completed.
+    ReviewError: Raised when the operation cannot be completed.
+            An exception when the operation cannot be completed.
     """
     if not isinstance(entry, dict):
         raise ReviewError("Manifest result entry must be an object")
@@ -516,14 +523,15 @@ def _identity_from_manifest(value: object) -> ResultIdentity:
     """Identity from manifest.
 
     Args:
-        value:
-            Value.
+            value:
+                Value.
 
     Returns:
-        The resulting value.
+            The resulting value.
 
     Raises:
-        An exception when the operation cannot be completed.
+    ReviewError: Raised when the operation cannot be completed.
+            An exception when the operation cannot be completed.
     """
     parsed = _json_value(value, "manifest result identity")
     if (
@@ -544,16 +552,17 @@ def _load_object(content: bytes, context: str) -> JsonObject:
     """Load object.
 
     Args:
-        content:
-            Content.
-        context:
-            Context.
+            content:
+                Content.
+            context:
+                Context.
 
     Returns:
-        The resulting value.
+            The resulting value.
 
     Raises:
-        An exception when the operation cannot be completed.
+    ReviewError: Raised when the operation cannot be completed.
+            An exception when the operation cannot be completed.
     """
     try:
         value = json.loads(content.decode("utf-8"))
@@ -570,16 +579,17 @@ def _scores(
     """Scores.
 
     Args:
-        record:
-            Record.
-        path:
-            Path.
+            record:
+                Record.
+            path:
+                Path.
 
     Returns:
-        The resulting value.
+            The resulting value.
 
     Raises:
-        An exception when the operation cannot be completed.
+    ReviewError: Raised when the operation cannot be completed.
+            An exception when the operation cannot be completed.
     """
     raw = record.get("evaluation_results")
     if not isinstance(raw, list) or not raw:
@@ -663,23 +673,24 @@ def _validate_record_contract(
     """Validate record contract.
 
     Args:
-        record:
-            Record.
-        model_id:
-            Model id.
-        revision:
-            Revision.
-        language:
-            Language.
-        euroeval_version:
-            Euroeval version.
-        model_type:
-            Model type.
-        path:
-            Path.
+            record:
+                Record.
+            model_id:
+                Model id.
+            revision:
+                Revision.
+            language:
+                Language.
+            euroeval_version:
+                Euroeval version.
+            model_type:
+                Model type.
+            path:
+                Path.
 
     Raises:
-        An exception when the operation cannot be completed.
+    ReviewError: Raised when the operation cannot be completed.
+            An exception when the operation cannot be completed.
     """
     model = _required_object(record, "model_info")
     aliases: list[str] = []

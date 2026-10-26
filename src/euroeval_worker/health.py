@@ -202,15 +202,15 @@ def run_gpu_health_check(
 def _check_cuda(torch_module: _Torch, selected: Gpu) -> None:
     """Validate the pinned CUDA device and execute a small tensor operation.
 
-    Raises:
-        GpuHealthError:
-            If CUDA is unavailable, not isolated, or produces a bad result.
-
     Args:
-        torch_module:
-            Torch module.
-        selected:
-            Selected.
+            torch_module:
+                Torch module.
+            selected:
+                Selected.
+
+    Raises:
+            GpuHealthError:
+                If CUDA is unavailable, not isolated, or produces a bad result.
     """
     cuda = torch_module.cuda
     if not cuda.is_available():
@@ -250,12 +250,12 @@ class GpuHealthError(RuntimeError):
 def _normalise_uuid(value: object) -> str:
     """Convert CUDA's UUID representation to the nvidia-smi text form.
 
-    Returns:
-        The UUID as text.
-
     Args:
-        value:
-            Value.
+            value:
+                Value.
+
+    Returns:
+            The UUID as text.
     """
     if isinstance(value, bytes):
         return value.decode("ascii")
@@ -265,18 +265,18 @@ def _normalise_uuid(value: object) -> str:
 def _import_stack_module(importer: c.Callable[[str], object], name: str) -> object:
     """Import one required runtime package with an actionable error.
 
+    Args:
+            importer:
+                Importer.
+            name:
+                Name.
+
     Returns:
-        The imported module.
+            The imported module.
 
     Raises:
-        GpuHealthError:
-            If the package cannot be imported.
-
-    Args:
-        importer:
-            Importer.
-        name:
-            Name.
+            GpuHealthError:
+                If the package cannot be imported.
     """
     try:
         return importer(name)

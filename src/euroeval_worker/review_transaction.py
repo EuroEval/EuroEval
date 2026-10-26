@@ -86,7 +86,11 @@ logger = logging.getLogger(__name__)
 
 
 class VolunteerReviewer:
-    """Review staged submissions and apply resumable terminal decisions."""
+    """Review staged submissions and apply resumable terminal decisions.
+
+    Raises:
+    ReviewError: Raised when the operation cannot be completed.
+    """
 
     def __init__(
         self,
@@ -140,22 +144,22 @@ class VolunteerReviewer:
     ) -> ReviewReport:
         """Persist one immutable decision and complete its broker transition.
 
+        Args:
+                    submission_id:
+                        Submission id.
+                    outcome:
+                        Outcome.
+                    reviewer:
+                        Reviewer.
+                    reasons (optional):
+                        Reasons.
+
         Returns:
-            The independently validated submission report.
+                    The independently validated submission report.
 
         Raises:
-            ReviewError:
-                If durable decision state or broker fencing is inconsistent.
-
-        Args:
-            submission_id:
-                Submission id.
-            outcome:
-                Outcome.
-            reviewer:
-                Reviewer.
-            reasons (optional):
-                Reasons.
+                    ReviewError:
+                        If durable decision state or broker fencing is inconsistent.
         """
         report = self.show(submission_id=submission_id)
         reasons = reasons or []
@@ -288,13 +292,14 @@ class VolunteerReviewer:
         """Promote records.
 
         Args:
-            report:
-                Report.
-            renew (optional):
-                Renew.
+                    report:
+                        Report.
+                    renew (optional):
+                        Renew.
 
         Raises:
-            An exception when the operation cannot be completed.
+        ReviewError: Raised when the operation cannot be completed.
+                    An exception when the operation cannot be completed.
         """
         self._validate_canonical_records(report=report)
         for record in report.records:
@@ -327,11 +332,12 @@ class VolunteerReviewer:
         """Validate canonical records.
 
         Args:
-            report:
-                Report.
+                    report:
+                        Report.
 
         Raises:
-            An exception when the operation cannot be completed.
+        ReviewError: Raised when the operation cannot be completed.
+                    An exception when the operation cannot be completed.
         """
         _raise_on_identity_collisions(record.identity for record in report.records)
         existing: dict[str, bytes | None] = {
@@ -361,17 +367,18 @@ class VolunteerReviewer:
         """Renew reservation.
 
         Args:
-            report:
-                Report.
-            records:
-                Records.
-            token:
-                Token.
-            decision_digest:
-                Decision digest.
+                    report:
+                        Report.
+                    records:
+                        Records.
+                    token:
+                        Token.
+                    decision_digest:
+                        Decision digest.
 
         Raises:
-            An exception when the operation cannot be completed.
+        ReviewError: Raised when the operation cannot be completed.
+                    An exception when the operation cannot be completed.
         """
         if not self.renewer:
             return
@@ -389,16 +396,16 @@ class VolunteerReviewer:
     def show(self, submission_id: str) -> ReviewReport:
         """Independently load and validate a staged submission.
 
+        Args:
+                    submission_id:
+                        Submission id.
+
         Returns:
-            The validated submission report.
+                    The validated submission report.
 
         Raises:
-            ReviewError:
-                If the manifest path and submission identity differ.
-
-        Args:
-            submission_id:
-                Submission id.
+                    ReviewError:
+                        If the manifest path and submission identity differ.
         """
         path = f"{_MANIFEST_PREFIX}/{submission_id}.json"
         manifest = _load_object(
@@ -494,22 +501,23 @@ def _decision_bytes(
     """Decision bytes.
 
     Args:
-        report:
-            Report.
-        outcome:
-            Outcome.
-        reviewer:
-            Reviewer.
-        reasons:
-            Reasons.
-        decided_at:
-            Decided at.
+            report:
+                Report.
+            outcome:
+                Outcome.
+            reviewer:
+                Reviewer.
+            reasons:
+                Reasons.
+            decided_at:
+                Decided at.
 
     Returns:
-        The resulting value.
+            The resulting value.
 
     Raises:
-        An exception when the operation cannot be completed.
+    ReviewError: Raised when the operation cannot be completed.
+            An exception when the operation cannot be completed.
     """
     if not reviewer.strip():
         raise ReviewError("A verified reviewer login is required")
@@ -561,20 +569,20 @@ def _existing_decisions(
 ) -> list[tuple[str, bytes, str]]:
     """Load and validate every durable decision for a submission.
 
+    Args:
+            store:
+                Store.
+            report:
+                Report.
+            outcome:
+                Outcome.
+
     Returns:
-        Validated paths, bytes, and SHA256 digests.
+            Validated paths, bytes, and SHA256 digests.
 
     Raises:
-        ReviewError:
-            If an artifact is malformed, conflicting, or misplaced.
-
-    Args:
-        store:
-            Store.
-        report:
-            Report.
-        outcome:
-            Outcome.
+            ReviewError:
+                If an artifact is malformed, conflicting, or misplaced.
     """
     decisions: list[tuple[str, bytes, str]] = []
     for path in store.list_decisions(report.submission_id):
@@ -600,17 +608,18 @@ def _validate_existing_decision(
     """Validate existing decision.
 
     Args:
-        content:
-            Content.
-        decision:
-            Decision.
-        report:
-            Report.
-        outcome:
-            Outcome.
+            content:
+                Content.
+            decision:
+                Decision.
+            report:
+                Report.
+            outcome:
+                Outcome.
 
     Raises:
-        An exception when the operation cannot be completed.
+    ReviewError: Raised when the operation cannot be completed.
+            An exception when the operation cannot be completed.
     """
     decision_outcome = decision.get("outcome")
     if decision_outcome not in {"accepted", "rejected"}:
@@ -706,26 +715,26 @@ def bind_with_broker(
 ) -> str:
     """Atomically bind a decision digest to an active broker reservation.
 
+    Args:
+            issue_number:
+                Issue number.
+            submission_id:
+                Submission id.
+            outcome:
+                Outcome.
+            reservation_token:
+                Reservation token.
+            decision_digest:
+                Decision digest.
+            records:
+                Records.
+
     Returns:
-        The unchanged reservation token.
+            The unchanged reservation token.
 
     Raises:
-        ReviewError:
-            If the broker cannot bind the digest.
-
-    Args:
-        issue_number:
-            Issue number.
-        submission_id:
-            Submission id.
-        outcome:
-            Outcome.
-        reservation_token:
-            Reservation token.
-        decision_digest:
-            Decision digest.
-        records:
-            Records.
+            ReviewError:
+                If the broker cannot bind the digest.
     """
     result = _request_reservation(
         issue_number=issue_number,
@@ -752,26 +761,27 @@ def _request_reservation(
     """Request reservation.
 
     Args:
-        issue_number:
-            Issue number.
-        submission_id:
-            Submission id.
-        outcome:
-            Outcome.
-        records:
-            Records.
-        reservation_token (optional):
-            Reservation token.
-        reviewer (optional):
-            Reviewer.
-        decision_digest (optional):
-            Decision digest.
+            issue_number:
+                Issue number.
+            submission_id:
+                Submission id.
+            outcome:
+                Outcome.
+            records:
+                Records.
+            reservation_token (optional):
+                Reservation token.
+            reviewer (optional):
+                Reviewer.
+            decision_digest (optional):
+                Decision digest.
 
     Returns:
-        The resulting value.
+            The resulting value.
 
     Raises:
-        An exception when the operation cannot be completed.
+    ReviewError: Raised when the operation cannot be completed.
+            An exception when the operation cannot be completed.
     """
     secret = os.environ.get("VOLUNTEER_PROMOTION_SECRET")
     if not secret:
@@ -839,23 +849,23 @@ def promote_with_broker(
 ) -> None:
     """Call the authenticated broker promotion transition.
 
-    Raises:
-        ReviewError:
-            If the secret is absent or the broker does not confirm the transition.
-
     Args:
-        issue_number:
-            Issue number.
-        submission_id:
-            Submission id.
-        outcome:
-            Outcome.
-        reservation_token:
-            Reservation token.
-        records:
-            Records.
-        decision_digest:
-            Decision digest.
+            issue_number:
+                Issue number.
+            submission_id:
+                Submission id.
+            outcome:
+                Outcome.
+            reservation_token:
+                Reservation token.
+            records:
+                Records.
+            decision_digest:
+                Decision digest.
+
+    Raises:
+            ReviewError:
+                If the secret is absent or the broker does not confirm the transition.
     """
     secret = os.environ.get("VOLUNTEER_PROMOTION_SECRET")
     if not secret:
@@ -896,26 +906,26 @@ def renew_with_broker(
 ) -> str:
     """Renew a pending broker reservation without changing its token.
 
+    Args:
+            issue_number:
+                Issue number.
+            submission_id:
+                Submission id.
+            outcome:
+                Outcome.
+            reservation_token:
+                Reservation token.
+            records:
+                Records.
+            decision_digest (optional):
+                Decision digest.
+
     Returns:
-        The unchanged opaque reservation token.
+            The unchanged opaque reservation token.
 
     Raises:
-        ReviewError:
-            If the broker returns decision metadata during renewal.
-
-    Args:
-        issue_number:
-            Issue number.
-        submission_id:
-            Submission id.
-        outcome:
-            Outcome.
-        reservation_token:
-            Reservation token.
-        records:
-            Records.
-        decision_digest (optional):
-            Decision digest.
+            ReviewError:
+                If the broker returns decision metadata during renewal.
     """
     reservation = _request_reservation(
         issue_number=issue_number,
@@ -940,26 +950,26 @@ def reserve_with_broker(
 ) -> BrokerReservationResult:
     """Reserve one immutable maintainer outcome at the broker.
 
+    Args:
+            issue_number:
+                Issue number.
+            submission_id:
+                Submission id.
+            outcome:
+                Outcome.
+            reviewer:
+                Reviewer.
+            records:
+                Records.
+            decision_digest (optional):
+                Decision digest.
+
     Returns:
-        The reservation token and server-bound decision metadata.
+            The reservation token and server-bound decision metadata.
 
     Raises:
-        ReviewError:
-            If the broker omits the reservation or decision metadata.
-
-    Args:
-        issue_number:
-            Issue number.
-        submission_id:
-            Submission id.
-        outcome:
-            Outcome.
-        reviewer:
-            Reviewer.
-        records:
-            Records.
-        decision_digest (optional):
-            Decision digest.
+            ReviewError:
+                If the broker omits the reservation or decision metadata.
     """
     reservation = _request_reservation(
         issue_number=issue_number,

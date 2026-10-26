@@ -35,19 +35,19 @@ class EEERecord:
     ) -> None:
         """Create a record, canonicalising dictionaries exactly once.
 
-        Raises:
-            TypeError:
-                If neither a JSON string nor an object is supplied.
-
         Args:
-            record_json (optional):
-                Record json.
-            digest (optional):
-                Digest.
-            record (optional):
-                Record.
-            sha256 (optional):
-                Sha256.
+                    record_json (optional):
+                        Record json.
+                    digest (optional):
+                        Digest.
+                    record (optional):
+                        Record.
+                    sha256 (optional):
+                        Sha256.
+
+        Raises:
+                    TypeError:
+                        If neither a JSON string nor an object is supplied.
         """
         if record_json is None:
             record_json = record
@@ -75,12 +75,12 @@ class EEERecord:
     def record(self) -> JsonObject:
         """Decode the record for compatibility with local evaluator callers.
 
-        Raises:
-            ValueError:
-                If the stored JSON does not contain an object.
-
         Returns:
-            The resulting value.
+                    The resulting value.
+
+        Raises:
+                    ValueError:
+                        If the stored JSON does not contain an object.
         """
         value = json.loads(self.record_json)
         if not isinstance(value, dict):
@@ -92,11 +92,12 @@ def _validate_json_text(value: str) -> None:
     """Validate json text.
 
     Args:
-        value:
-            Value.
+            value:
+                Value.
 
     Raises:
-        An exception when the operation cannot be completed.
+    ValueError: Raised when the operation cannot be completed.
+            An exception when the operation cannot be completed.
     """
     try:
         parsed = json.loads(value, parse_constant=_reject_constant)
@@ -111,12 +112,12 @@ def _validate_json_text(value: str) -> None:
 def canonical_json(value: JsonObject) -> str:
     """Serialise an EEE object deterministically and reject non-finite values.
 
-    Returns:
-        The canonical JSON text.
-
     Args:
-        value:
-            Value.
+            value:
+                Value.
+
+    Returns:
+            The canonical JSON text.
     """
     return json.dumps(
         value,
@@ -159,11 +160,12 @@ def _reject_constant(value: str) -> None:
     """Reject constant.
 
     Args:
-        value:
-            Value.
+            value:
+                Value.
 
     Raises:
-        An exception when the operation cannot be completed.
+    ValueError: Raised when the operation cannot be completed.
+            An exception when the operation cannot be completed.
     """
     raise ValueError(f"non-finite JSON constant {value!r} is not allowed")
 
@@ -181,12 +183,12 @@ class AuthPoll:
 def auth_poll_from_dict(data: dict[str, object]) -> AuthPoll:
     """Decode an auth/poll response.
 
-    Returns:
-        The typed poll response.
-
     Args:
-        data:
-            Data.
+            data:
+                Data.
+
+    Returns:
+            The typed poll response.
     """
     _protocol(data)
     pending = data.get("status") == "pending" or bool(data.get("pending", False))
@@ -221,18 +223,19 @@ def _integer(data: dict[str, object], key: str, default: int | None = None) -> i
     """Integer.
 
     Args:
-        data:
-            Data.
-        key:
-            Key.
-        default (optional):
-            Default.
+            data:
+                Data.
+            key:
+                Key.
+            default (optional):
+                Default.
 
     Returns:
-        The resulting value.
+            The resulting value.
 
     Raises:
-        An exception when the operation cannot be completed.
+    ValueError: Raised when the operation cannot be completed.
+            An exception when the operation cannot be completed.
     """
     value = data.get(key, default)
     if isinstance(value, bool) or not isinstance(value, (int, float, str)):
@@ -259,13 +262,13 @@ def _optional_string(data: dict[str, object], key: str) -> str | None:
 def _protocol(data: dict[str, object]) -> None:
     """Reject responses from a different broker protocol.
 
-    Raises:
-        ValueError:
-            If the response protocol is unsupported.
-
     Args:
-        data:
-            Data.
+            data:
+                Data.
+
+    Raises:
+            ValueError:
+                If the response protocol is unsupported.
     """
     if data.get("protocol_version") != PROTOCOL_VERSION:
         raise ValueError("broker response has an unsupported protocol_version")
@@ -285,12 +288,12 @@ class AuthStart:
 def auth_start_from_dict(data: dict[str, object]) -> AuthStart:
     """Decode an auth/start response.
 
-    Returns:
-        The typed device-flow response.
-
     Args:
-        data:
-            Data.
+            data:
+                Data.
+
+    Returns:
+            The typed device-flow response.
     """
     _protocol(data)
     return AuthStart(
@@ -306,16 +309,17 @@ def _string(data: dict[str, object], key: str) -> str:
     """String.
 
     Args:
-        data:
-            Data.
-        key:
-            Key.
+            data:
+                Data.
+            key:
+                Key.
 
     Returns:
-        The resulting value.
+            The resulting value.
 
     Raises:
-        An exception when the operation cannot be completed.
+    ValueError: Raised when the operation cannot be completed.
+            An exception when the operation cannot be completed.
     """
     value = data.get(key)
     if not isinstance(value, str) or not value:
@@ -338,14 +342,15 @@ def _canary_instruction(value: object) -> CanaryInstruction | None:
     """Canary instruction.
 
     Args:
-        value:
-            Value.
+            value:
+                Value.
 
     Returns:
-        The resulting value.
+            The resulting value.
 
     Raises:
-        An exception when the operation cannot be completed.
+    ValueError: Raised when the operation cannot be completed.
+            An exception when the operation cannot be completed.
     """
     if value is None:
         return None
@@ -648,16 +653,16 @@ def lease_from_dict(data: dict[str, object]) -> Lease:
 def _model_evidence(value: object) -> ModelEvidence:
     """Decode the broker's immutable model metadata evidence.
 
+    Args:
+            value:
+                Value.
+
     Returns:
-        The decoded immutable model evidence.
+            The decoded immutable model evidence.
 
     Raises:
-        ValueError:
-            If the evidence is missing or malformed.
-
-    Args:
-        value:
-            Value.
+            ValueError:
+                If the evidence is missing or malformed.
     """
     if not isinstance(value, dict):
         raise ValueError("broker response model_metadata is required")
@@ -688,18 +693,19 @@ def _number(data: dict[str, object], key: str, default: float | None = None) -> 
     """Number.
 
     Args:
-        data:
-            Data.
-        key:
-            Key.
-        default (optional):
-            Default.
+            data:
+                Data.
+            key:
+                Key.
+            default (optional):
+                Default.
 
     Returns:
-        The resulting value.
+            The resulting value.
 
     Raises:
-        An exception when the operation cannot be completed.
+    ValueError: Raised when the operation cannot be completed.
+            An exception when the operation cannot be completed.
     """
     value = data.get(key, default)
     if isinstance(value, bool) or not isinstance(value, (int, float)):
@@ -711,16 +717,17 @@ def _optional_integer(data: dict[str, object], key: str) -> int | None:
     """Optional integer.
 
     Args:
-        data:
-            Data.
-        key:
-            Key.
+            data:
+                Data.
+            key:
+                Key.
 
     Returns:
-        The resulting value.
+            The resulting value.
 
     Raises:
-        An exception when the operation cannot be completed.
+    ValueError: Raised when the operation cannot be completed.
+            An exception when the operation cannot be completed.
     """
     value = data.get(key)
     if value is None:

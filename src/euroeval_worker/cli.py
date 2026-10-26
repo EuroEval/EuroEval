@@ -13,12 +13,12 @@ logger = logging.getLogger(__name__)
 def main(argv: list[str] | None = None) -> int:
     """Run the volunteer worker CLI.
 
-    Returns:
-        Process exit status.
-
     Args:
-        argv (optional):
-            Argv.
+            argv (optional):
+                Argv.
+
+    Returns:
+            Process exit status.
     """
     parser = _parser()
     arguments = parser.parse_args(argv)

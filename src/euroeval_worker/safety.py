@@ -124,18 +124,18 @@ class HuggingFaceMetadata:
     def fetch(self, model_id: str, revision: str) -> ModelMetadata:
         """Fetch metadata from the Hub and reject incomplete responses.
 
+        Args:
+                    model_id:
+                        Model id.
+                    revision:
+                        Revision.
+
         Returns:
-            Repository metadata.
+                    Repository metadata.
 
         Raises:
-            SafetyError:
-                If the Hub cannot provide complete metadata.
-
-        Args:
-            model_id:
-                Model id.
-            revision:
-                Revision.
+                    SafetyError:
+                        If the Hub cannot provide complete metadata.
         """
         try:
             info = HfApi(token=False).model_info(
@@ -258,19 +258,19 @@ def derive_model_type(
 ) -> str | None:
     """Classify a model using EuroEval's Hub pipeline/backend contract.
 
-    A non-generative Hub pipeline is sent through the Transformers encoder path;
-    generative Hub pipelines are sent through vLLM. Architecture names are not
-    classification evidence because they are implementation details, not a
-    compatibility contract.
-
-    Returns:
-        The broad capability, or ``None`` for ambiguous metadata.
+        A non-generative Hub pipeline is sent through the Transformers encoder path;
+        generative Hub pipelines are sent through vLLM. Architecture names are not
+        classification evidence because they are implementation details, not a
+        compatibility contract.
 
     Args:
-        pipeline_tag:
-            Pipeline tag.
-        is_encoder_decoder (optional):
-            Is encoder decoder.
+            pipeline_tag:
+                Pipeline tag.
+            is_encoder_decoder (optional):
+                Is encoder decoder.
+
+    Returns:
+            The broad capability, or ``None`` for ambiguous metadata.
     """
     if not isinstance(pipeline_tag, str) or not pipeline_tag.strip():
         return None
@@ -310,22 +310,22 @@ def _installed_backend_supports(
 ) -> bool:
     """Check actual task loading against the installed backend APIs.
 
-    Returns:
-        Whether the installed backend can load the model without remote code.
-
     Args:
-        model_type:
-            Model type.
-        config:
-            Config.
-        architectures:
-            Architectures.
-        pipeline_tag (optional):
-            Pipeline tag.
-        is_encoder_decoder (optional):
-            Is encoder decoder.
-        task_groups (optional):
-            Task groups.
+            model_type:
+                Model type.
+            config:
+                Config.
+            architectures:
+                Architectures.
+            pipeline_tag (optional):
+                Pipeline tag.
+            is_encoder_decoder (optional):
+                Is encoder decoder.
+            task_groups (optional):
+                Task groups.
+
+    Returns:
+            Whether the installed backend can load the model without remote code.
     """
     if model_type == "encoder":
         if pipeline_tag not in (None, *_ENCODER_PIPELINE_TAGS):
@@ -417,26 +417,26 @@ def check_model_safety(
 ) -> SafetyReport:
     """Verify public, pinned, safetensors-only, non-code model metadata.
 
+    Args:
+            lease:
+                Lease.
+            gpus:
+                Gpus.
+            metadata (optional):
+                Metadata.
+            free_disk_bytes (optional):
+                Free disk bytes.
+            gpu_memory_utilisation (optional):
+                Gpu memory utilisation.
+            selected_gpu (optional):
+                Selected gpu.
+
     Returns:
-        Details of the successful fit check.
+            Details of the successful fit check.
 
     Raises:
-        SafetyError:
-            If the revision, repository, capability, or memory estimate is unsafe.
-
-    Args:
-        lease:
-            Lease.
-        gpus:
-            Gpus.
-        metadata (optional):
-            Metadata.
-        free_disk_bytes (optional):
-            Free disk bytes.
-        gpu_memory_utilisation (optional):
-            Gpu memory utilisation.
-        selected_gpu (optional):
-            Selected gpu.
+            SafetyError:
+                If the revision, repository, capability, or memory estimate is unsafe.
     """
     if platform.machine() not in _SUPPORTED_HOST_ARCHITECTURES:
         raise SafetyError("unsupported worker architecture")
@@ -498,14 +498,14 @@ def check_model_safety(
 def _backend_compatible(info: ModelMetadata, task_groups: tuple[str, ...]) -> bool:
     """Check a fetched model against the leased tasks.
 
-    Returns:
-        Whether the installed backend can execute every leased task.
-
     Args:
-        info:
-            Info.
-        task_groups:
-            Task groups.
+            info:
+                Info.
+            task_groups:
+                Task groups.
+
+    Returns:
+            Whether the installed backend can execute every leased task.
     """
     if info.config is not None:
         return _installed_backend_supports(
