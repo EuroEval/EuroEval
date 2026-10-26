@@ -14,8 +14,9 @@ def cache_arguments(
     Args:
         arguments:
             The list of argument names to cache. If empty, all arguments are cached.
-        disable_condition:
-            A function that checks if cache should be disabled.
+        disable_condition (optional):
+            A function that checks if cache should be disabled. Defaults to always
+            returning False.
 
     Returns:
         A decorator that caches the specified arguments of a function.

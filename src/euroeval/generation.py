@@ -441,7 +441,11 @@ def generate(
 
     Returns:
         A list of dictionaries containing the test scores.
-    """
+
+    Raises:
+        InvalidBenchmark:
+            If every attempted iteration fails.
+    """  # noqa: DOC502
     # Set up the name of the model output cache. If we are testing then we save the
     # model outputs to a different cache and ensure that that cache is deleted before
     # the next test, to ensure that the tests are independent of each other
@@ -516,7 +520,8 @@ def generate(
     # ran at all (e.g. `num_iterations` is zero) there are no errors to raise, and we
     # simply return the empty list of scores, as before.
     if not scores and iteration_errors:
-        raise iteration_errors[0]
+        error: InvalidBenchmark = iteration_errors[0]
+        raise error
     if iteration_errors:
         log(
             f"{len(iteration_errors):,} of {len(datasets):,} iterations failed and "
