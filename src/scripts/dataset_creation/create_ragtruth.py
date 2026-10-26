@@ -442,12 +442,18 @@ def push_test_subset_to_hub(
     """Push test and validation subsets of translated data to the Hub.
 
     Args:
-        translated_data: Translated samples to filter and push.
-        repo_id: Target Hugging Face dataset repo id.
-        config_name: Dataset config/subset name (typically language code).
-        private: Whether to keep dataset private on Hub.
-        n: Maximum number of test samples to upload.
-        validation_n: Maximum number of validation samples to upload.
+        translated_data (HallucinationData):
+            Translated samples to filter and push.
+        repo_id (str):
+            Target Hugging Face dataset repo id.
+        config_name (str):
+            Dataset config/subset name (typically language code).
+        private (bool):
+            Whether to keep the dataset private on the Hub.
+        n (int, optional):
+            Maximum number of test samples to upload. Defaults to 2048.
+        validation_n (int, optional):
+            Maximum number of validation samples to upload. Defaults to 256.
     """
     samples = translated_data.samples[:]
     random.shuffle(samples)
@@ -458,6 +464,10 @@ def push_test_subset_to_hub(
         The task group expects ``id``, ``context``, ``question`` and ``answers``
         columns, derived here from the RAG ``prompt`` and reference ``answer``
         while keeping the original columns intact.
+
+        Args:
+            items (list[HallucinationSample]):
+                Samples to convert to dataset rows.
 
         Returns:
             List of dictionaries with the required columns for the QA task.
@@ -523,10 +533,14 @@ def push_translated_data_to_hub(
     """Push translated hallucination data to Hugging Face Hub.
 
     Args:
-        translated_data: Translated samples to push.
-        repo_id: Target Hugging Face dataset repo id.
-        config_name: Dataset config/subset name (typically language code).
-        private: Whether to keep dataset private on Hub.
+        translated_data (HallucinationData):
+            Translated samples to push.
+        repo_id (str):
+            Target Hugging Face dataset repo id.
+        config_name (str):
+            Dataset config/subset name (typically language code).
+        private (bool):
+            Whether to keep the dataset private on the Hub.
     """
     if not translated_data.samples:
         logger.warning("No translated samples available; skipping Hub upload.")

@@ -56,6 +56,15 @@ def main() -> None:
 
     # Map the sentiment scale (-3 to +3) to positive/neutral/negative labels
     def map_label(score: int) -> str:
+        """Map a sentiment score to its label.
+
+        Args:
+            score (int):
+                Numeric sentiment score.
+
+        Returns:
+            The sentiment label: negative, neutral or positive.
+        """
         if score < 0:
             return "negative"
         elif score > 0:
