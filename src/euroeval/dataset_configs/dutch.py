@@ -233,8 +233,8 @@ SCALA_NL_CONFIG = DatasetConfig(
 
 BLIMP_NL_CONFIG = DatasetConfig(
     name="blimp-nl",
-    pretty_name="BLiMP-NL",
-    source="EuroEval/blimp-nl",
+    pretty_name="BLiMP-NL-mini",
+    source="EuroEval/blimp-nl-mini",
     task=LA,
     languages=[DUTCH],
     unofficial=True,
