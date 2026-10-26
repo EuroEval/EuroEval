@@ -230,6 +230,8 @@ def sync_bucket(ignore_sizes: bool = False, delete_empty: bool = True) -> None:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     class LocalRecordData(TypedDict):
+        """Raw file content and parsed record for one local result."""
+
         raw: bytes
         record: dict
 

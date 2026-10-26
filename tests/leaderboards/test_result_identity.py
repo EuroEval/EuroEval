@@ -82,18 +82,18 @@ def _make_eee_record(
     """Helper to create an EEE-format record for testing.
 
     Args:
-        model_id:
-            Model identifier.
-        dataset:
-            Dataset name.
-        validation_split:
-            Validation split flag.
-        few_shot:
-            Few-shot flag.
-        version:
-            EuroEval version.
-        timestamp:
-            Retrieved timestamp.
+        model_id (optional):
+            Model identifier. Defaults to "org/model".
+        dataset (optional):
+            Dataset name. Defaults to "test_dataset".
+        validation_split (optional):
+            Validation split flag. Defaults to False.
+        few_shot (optional):
+            Few-shot flag. Defaults to True.
+        version (optional):
+            EuroEval version. Defaults to "1.0.0".
+        timestamp (optional):
+            Retrieved timestamp. Defaults to "1234567890".
 
     Returns:
         EEE-format record dictionary.

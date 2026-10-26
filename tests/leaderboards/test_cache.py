@@ -191,24 +191,24 @@ def _make_eee_record(
     """Helper to create a valid EEE-format record for cache testing.
 
     Args:
-        model_id:
-            Model identifier.
-        model_name:
-            Model name (defaults to model_id).
-        dataset:
-            Dataset name.
-        validation_split:
-            Validation split flag.
-        few_shot:
-            Few-shot flag.
-        commercially_licensed:
-            Whether commercially licensed.
-        open_license:
-            Whether open license.
-        trained_from_scratch:
-            Whether trained from scratch.
-        model_url:
-            Model URL.
+        model_id (optional):
+            Model identifier. Defaults to "test/model".
+        model_name (optional):
+            Model name (defaults to model_id). Defaults to None.
+        dataset (optional):
+            Dataset name. Defaults to "dataset1".
+        validation_split (optional):
+            Validation split flag. Defaults to False.
+        few_shot (optional):
+            Few-shot flag. Defaults to False.
+        commercially_licensed (optional):
+            Whether commercially licensed. Defaults to None.
+        open_license (optional):
+            Whether open license. Defaults to None.
+        trained_from_scratch (optional):
+            Whether trained from scratch. Defaults to None.
+        model_url (optional):
+            Model URL. Defaults to None.
 
     Returns:
         A valid EEE-format record dict.

@@ -379,6 +379,11 @@ def test_cache_freshness_load_before_cache_construction(
     call_sequence: list[CallOrder] = []
 
     def fake_load_raw_results() -> list[dict[str, t.Any]]:
+        """Record the raw-results load in the call sequence.
+
+        Returns:
+            An empty result list.
+        """
         call_sequence.append(CallOrder.LOAD_RAW_RESULTS)
         return []
 
@@ -469,10 +474,12 @@ def test_process_results_clears_cache_after_upload(
     cache_clear_called = False
 
     def fake_cache_clear() -> None:
+        """Record that the result cache was cleared."""
         nonlocal cache_clear_called
         cache_clear_called = True
 
     def fake_load_raw_results() -> list[dict[str, t.Any]]:
+        """Return no raw results for this test."""
         return []
 
     # Attach cache_clear to mimic functools.cached_function

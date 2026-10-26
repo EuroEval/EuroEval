@@ -111,20 +111,20 @@ def _make_eee_record(
     """Helper to create a valid EEE-format record for testing.
 
     Args:
-        model_id:
-            Model identifier.
-        dataset:
-            Dataset name.
-        validation_split:
-            Validation split flag.
-        few_shot:
-            Few-shot flag.
-        version:
-            EuroEval version.
-        timestamp:
-            Retrieved timestamp as string integer.
-        score:
-            Test score.
+        model_id (optional):
+            Model identifier. Defaults to "test/model".
+        dataset (optional):
+            Dataset name. Defaults to "dataset1".
+        validation_split (optional):
+            Validation split flag. Defaults to False.
+        few_shot (optional):
+            Few-shot flag. Defaults to False.
+        version (optional):
+            EuroEval version. Defaults to "1.0.0".
+        timestamp (optional):
+            Retrieved timestamp as string integer. Defaults to "100".
+        score (optional):
+            Test score. Defaults to 0.5.
 
     Returns:
         A valid EEE-format record dict.
