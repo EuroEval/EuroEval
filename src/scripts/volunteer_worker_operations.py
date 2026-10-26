@@ -107,6 +107,11 @@ ROUTES = (
 def main(argv: list[str] | None = None) -> int:
     """Run a volunteer worker operations command.
 
+    Args:
+        argv (optional):
+            Command-line arguments to parse, or ``None`` to use process
+            arguments. Defaults to ``None``.
+
     Returns:
         Process exit status.
     """
@@ -162,6 +167,22 @@ def apply(
     env_file: Path = Path(".env"),
 ) -> int:
     """Apply only explicitly confirmed, narrowly scoped setup.
+
+    Args:
+        environment:
+            Environment values available to the operation.
+        components:
+            Components explicitly selected for the operation.
+        confirmed:
+            Whether the caller confirmed the requested changes.
+        hf_region (optional):
+            Region for a newly created Hugging Face bucket. Defaults to ``eu``.
+        reuse_vercel_kv (optional):
+            Whether to reuse the existing Vercel KV credentials. Defaults to ``False``.
+        local_secrets (optional):
+            Whether to initialise local broker secrets. Defaults to ``False``.
+        env_file (optional):
+            Local dotenv file to update. Defaults to ``Path(".env")``.
 
     Returns:
         Process exit status.
@@ -290,6 +311,10 @@ def apply_github() -> list[Diagnostic]:
 def _json_names(value: str) -> set[str]:
     """Extract names from a GitHub JSON response.
 
+    Args:
+        value:
+            JSON response text to decode.
+
     Returns:
         Names found in the response.
     """
@@ -298,6 +323,10 @@ def _json_names(value: str) -> set[str]:
 
 def _json_list(value: str) -> list[dict[str, object]]:
     """Decode a JSON list of objects.
+
+    Args:
+        value:
+            JSON response text to decode.
 
     Returns:
         Decoded object list.
@@ -334,6 +363,15 @@ def run_command(
 
     ``environment`` overrides the process environment before the allowlist is applied.
 
+
+    Args:
+        command:
+            Command and arguments to execute.
+        input_text (optional):
+            Text to pass to the command standard input, if any. Defaults to ``None``.
+        environment (optional):
+            Environment values available to the operation. Defaults to ``None``.
+
     Returns:
         Captured command result.
     """
@@ -367,6 +405,12 @@ def run_command(
 
 def apply_hf(*, environment: dict[str, str], region: str = "eu") -> list[Diagnostic]:
     """Create a missing private bucket in the selected region, or verify a bucket.
+
+    Args:
+        environment:
+            Environment values available to the operation.
+        region (optional):
+            Region for a newly created bucket. Defaults to ``eu``.
 
     Returns:
         Hugging Face diagnostics.
@@ -419,6 +463,10 @@ def apply_hf(*, environment: dict[str, str], region: str = "eu") -> list[Diagnos
 def _classify_hf_failure(result: CommandResult) -> tuple[str, str]:
     """Classify HF CLI failures without exposing command output.
 
+    Args:
+        result:
+            Captured command result to classify.
+
     Returns:
         Failure category and safe message.
     """
@@ -442,6 +490,10 @@ def _classify_hf_failure(result: CommandResult) -> tuple[str, str]:
 
 def _hf_metadata_diagnostics(data: dict[str, object]) -> list[Diagnostic]:
     """Validate bucket visibility and report the region verification limitation.
+
+    Args:
+        data:
+            Bucket metadata returned by the Hugging Face CLI.
 
     Returns:
         Hugging Face metadata diagnostics.
@@ -467,6 +519,10 @@ def _hf_metadata_diagnostics(data: dict[str, object]) -> list[Diagnostic]:
 def _json_object(value: str) -> dict[str, object]:
     """Decode a JSON object, returning an empty object on command failure.
 
+    Args:
+        value:
+            JSON response text to decode.
+
     Returns:
         Decoded object or an empty object.
     """
@@ -481,8 +537,8 @@ def apply_local_secrets(*, env_file: Path = Path(".env")) -> list[Diagnostic]:
     """Initialise missing broker secrets in a local dotenv file.
 
     Args:
-        env_file:
-            The local dotenv file to update.
+        env_file (optional):
+            The local dotenv file to update. Defaults to ``Path(".env")``.
 
     Returns:
         Safe diagnostics describing generated and preserved variable names.
@@ -540,6 +596,14 @@ def _atomic_write_local_secret_file(
 ) -> None:
     """Replace a local dotenv file atomically and durably.
 
+    Args:
+        env_file:
+            Local dotenv file being checked or updated.
+        content:
+            Raw dotenv file contents.
+        expected_stat:
+            File metadata recorded during path validation.
+
     Raises:
         ValueError:
             If the destination changes before the replacement.
@@ -584,6 +648,12 @@ def _atomic_write_local_secret_file(
 def _target_matches(env_file: Path, expected_stat: os.stat_result | None) -> bool:
     """Check that the destination still names the file that was inspected.
 
+    Args:
+        env_file:
+            Local dotenv file to update. Defaults to ``Path(".env")``.
+        expected_stat:
+            File metadata recorded during path validation.
+
     Returns:
         Whether the destination still has the expected identity.
     """
@@ -600,7 +670,15 @@ def _target_matches(env_file: Path, expected_stat: os.stat_result | None) -> boo
 
 
 def _local_secret_values(content: bytes) -> dict[str, bool]:
-    """Return whether each managed dotenv variable has a non-empty value."""
+    """Return whether each managed dotenv variable has a non-empty value.
+
+    Args:
+        content:
+            Raw dotenv file contents.
+
+    Returns:
+        A mapping from each managed variable name to whether it has a non-empty value.
+    """
     text = content.decode("utf-8")
     values = {name: False for name in LOCAL_SECRET_NAMES}
     for line in text.splitlines(keepends=True):
@@ -612,6 +690,10 @@ def _local_secret_values(content: bytes) -> dict[str, bool]:
 
 def _non_empty_env_value(value: str) -> bool:
     """Determine emptiness without expanding or evaluating dotenv syntax.
+
+    Args:
+        value:
+            Dotenv assignment value to inspect.
 
     Returns:
         Whether the assignment has a non-empty value.
@@ -634,6 +716,12 @@ def _read_local_secret_file(
     *, env_file: Path, expected_stat: os.stat_result | None
 ) -> bytes:
     """Read the dotenv file while keeping the checked inode fixed.
+
+    Args:
+        env_file:
+            Local dotenv file being checked or updated.
+        expected_stat:
+            File metadata recorded during path validation.
 
     Returns:
         The original file bytes, or empty bytes for a new file.
@@ -667,6 +755,12 @@ def _tighten_local_secret_mode(
 ) -> None:
     """Tighten an unchanged existing dotenv file without rewriting its content.
 
+    Args:
+        env_file:
+            Local dotenv file being checked or updated.
+        expected_stat:
+            File metadata recorded during path validation.
+
     Raises:
         ValueError:
             If the destination changes before its mode is tightened.
@@ -689,6 +783,10 @@ def _tighten_local_secret_mode(
 
 def _validate_local_secret_path(env_file: Path) -> os.stat_result | None:
     """Validate the dotenv path without following a symlink.
+
+    Args:
+        env_file:
+            Local dotenv file being checked or updated.
 
     Returns:
         The existing file's metadata, or ``None`` when it does not exist.
@@ -722,6 +820,11 @@ def apply_reuse_vercel_kv(*, environment: dict[str, str]) -> list[Diagnostic]:
     The source values are read by a short-lived child of ``vercel env run`` and are
     passed to Vercel's add command through stdin only. Existing source variables are
     never modified.
+
+
+    Args:
+        environment:
+            Environment values available to the operation.
 
     Returns:
         Vercel diagnostics.
@@ -784,6 +887,10 @@ def apply_reuse_vercel_kv(*, environment: dict[str, str]) -> list[Diagnostic]:
 def _check_vercel_kv_aliases(*, environment: dict[str, str]) -> list[Diagnostic]:
     """Verify only the two broker aliases and never inspect their values.
 
+    Args:
+        environment:
+            Environment values available to the operation.
+
     Returns:
         Diagnostics for the two broker aliases.
     """
@@ -828,6 +935,10 @@ def _check_vercel_project(
     *, environment: dict[str, str]
 ) -> tuple[list[Diagnostic], bool]:
     """Verify the local link and remote project before any Vercel mutation.
+
+    Args:
+        environment:
+            Environment values available to the operation.
 
     Returns:
         Diagnostics and whether the identity is verified.
@@ -905,6 +1016,10 @@ def _check_vercel_project(
 def _vercel_command_environment(environment: dict[str, str]) -> dict[str, str]:
     """Keep Vercel subprocesses free of unrelated injected application secrets.
 
+    Args:
+        environment:
+            Environment values available to the operation.
+
     Returns:
         Allowlisted environment values for Vercel commands.
     """
@@ -941,6 +1056,10 @@ def _vercel_kv_read_command() -> list[str]:
 def _vercel_kv_values(output: str) -> dict[str, str]:
     """Decode the uniquely marked, non-empty source values.
 
+    Args:
+        output:
+            Command output or manifest JSON to inspect.
+
     Returns:
         Non-empty source values, keyed by their Vercel variable names.
     """
@@ -970,6 +1089,10 @@ def _vercel_kv_values(output: str) -> dict[str, str]:
 
 def apply_vercel(*, environment: dict[str, str]) -> list[Diagnostic]:
     """Add or update Production variables atomically using stdin.
+
+    Args:
+        environment:
+            Environment values available to the operation.
 
     Returns:
         Vercel diagnostics.
@@ -1026,6 +1149,10 @@ def apply_vercel(*, environment: dict[str, str]) -> list[Diagnostic]:
 
 def check_vercel(*, environment: dict[str, str]) -> list[Diagnostic]:
     """Check the exact linked Vercel project and Production variable metadata.
+
+    Args:
+        environment:
+            Environment values available to the operation.
 
     Returns:
         Vercel diagnostics.
@@ -1098,6 +1225,10 @@ def check_vercel(*, environment: dict[str, str]) -> list[Diagnostic]:
 def normalise_version(value: str) -> str:
     """Treat the source-only trailing development marker as its release version.
 
+    Args:
+        value:
+            Source version string to normalise.
+
     Returns:
         Normalised version, preserving any genuinely different development release.
     """
@@ -1128,6 +1259,14 @@ def check(
     *, environment: dict[str, str], components: set[str], route_probes: bool = False
 ) -> list[Diagnostic]:
     """Run read-only diagnostics for selected components.
+
+    Args:
+        environment:
+            Environment values available to the operation.
+        components:
+            Components explicitly selected for the operation.
+        route_probes (optional):
+            Value to use for ``route_probes``. Defaults to ``None``.
 
     Returns:
         Classified diagnostics.
@@ -1160,6 +1299,10 @@ def check(
 
 def check_ghcr(*, environment: dict[str, str]) -> list[Diagnostic]:
     """Check the public package and exact platform manifest without pulling it.
+
+    Args:
+        environment:
+            Environment values available to the operation.
 
     Returns:
         GHCR diagnostics.
@@ -1237,6 +1380,10 @@ def check_ghcr(*, environment: dict[str, str]) -> list[Diagnostic]:
 def _classify_registry_failure(result: CommandResult) -> str:
     """Classify registry inspection failures without returning registry output.
 
+    Args:
+        result:
+            Captured command result to classify.
+
     Returns:
         Safe failure category.
     """
@@ -1259,6 +1406,13 @@ def _manifest_has_amd64_child(output: str) -> bool:
 
     The digest reference supplied to Docker already binds the expected index digest;
     this check therefore only needs to validate the returned index structure.
+
+    Args:
+        output:
+            Command output or manifest JSON to inspect.
+
+    Returns:
+        Whether the manifest contains a linux/amd64 child digest.
     """
     try:
         decoded: object = json.loads(output)
@@ -1273,7 +1427,15 @@ def _manifest_has_amd64_child(output: str) -> bool:
 
 
 def _is_amd64_descriptor(value: object) -> bool:
-    """Return whether a manifest child is a linux/amd64 descriptor."""
+    """Return whether a manifest child is a linux/amd64 descriptor.
+
+    Args:
+        value:
+            JSON response text to decode.
+
+    Returns:
+        Whether the descriptor identifies a linux/amd64 child digest.
+    """
     if not isinstance(value, dict):
         return False
     platform = value.get("platform", value.get("Platform"))
@@ -1293,6 +1455,10 @@ def _is_amd64_descriptor(value: object) -> bool:
 
 def check_github(*, environment: dict[str, str]) -> list[Diagnostic]:
     """Check GitHub authentication, repository access, and queue labels.
+
+    Args:
+        environment:
+            Environment values available to the operation.
 
     Returns:
         GitHub diagnostics.
@@ -1341,6 +1507,10 @@ def check_github(*, environment: dict[str, str]) -> list[Diagnostic]:
 def check_hf(*, environment: dict[str, str]) -> list[Diagnostic]:
     """Check HF authentication and configured staging bucket privacy.
 
+    Args:
+        environment:
+            Environment values available to the operation.
+
     Returns:
         Hugging Face diagnostics.
     """
@@ -1371,6 +1541,10 @@ def check_hf(*, environment: dict[str, str]) -> list[Diagnostic]:
 
 def check_policy(*, environment: dict[str, str]) -> list[Diagnostic]:
     """Check source versions and both generated policy artifacts.
+
+    Args:
+        environment:
+            Environment values available to the operation.
 
     Returns:
         Policy diagnostics.
@@ -1439,6 +1613,10 @@ def check_policy(*, environment: dict[str, str]) -> list[Diagnostic]:
 
 def check_redis(*, environment: dict[str, str]) -> list[Diagnostic]:
     """Perform an Upstash data-plane PING when both values are configured.
+
+    Args:
+        environment:
+            Environment values available to the operation.
 
     Returns:
         Redis diagnostics.
@@ -1512,6 +1690,16 @@ def request_http(
 ) -> HttpResult:
     """Make one HTTP request, returning HTTP errors as ordinary responses.
 
+    Args:
+        url:
+            URL to request.
+        method (optional):
+            HTTP method to use. Defaults to ``GET``.
+        headers (optional):
+            HTTP request headers, if any. Defaults to ``None``.
+        body (optional):
+            HTTP request body, if any. Defaults to ``None``.
+
     Returns:
         Captured HTTP result; status zero denotes a network failure.
     """
@@ -1559,6 +1747,14 @@ def smoke(
     *, base_url: str, routes: list[str], environment: dict[str, str]
 ) -> list[Diagnostic]:
     """Probe only harmless method guards and unauthenticated protected routes.
+
+    Args:
+        base_url:
+            Base URL of the deployed worker API.
+        routes:
+            Worker API route names to probe.
+        environment:
+            Environment values available to the operation.
 
     Returns:
         Route diagnostics.
@@ -1647,6 +1843,10 @@ def smoke(
 def _has_error_body(body: bytes) -> bool:
     """Validate the JSON error contract used by protected broker routes.
 
+    Args:
+        body:
+            HTTP response body to validate.
+
     Returns:
         Whether the body contains a non-empty error string.
     """
@@ -1663,6 +1863,10 @@ def _has_error_body(body: bytes) -> bool:
 
 def parse_arguments(argv: list[str] | None) -> argparse.Namespace:
     """Parse command-line arguments.
+
+    Args:
+        argv:
+            Command-line arguments to parse, or ``None`` to use process arguments.
 
     Returns:
         Parsed arguments.
@@ -1725,14 +1929,24 @@ def parse_arguments(argv: list[str] | None) -> argparse.Namespace:
 
 
 def print_diagnostics(diagnostics: list[Diagnostic]) -> None:
-    """Print classified diagnostics without command output or secret values."""
+    """Print classified diagnostics without command output or secret values.
+
+    Args:
+        diagnostics:
+            Classified diagnostics to print.
+    """
     for item in diagnostics:
         status = "FAIL" if item.failed else "OK"
         print(f"{status} [{item.category}] {item.component}: {item.message}")
 
 
 def print_plan(*, environment: dict[str, str]) -> None:
-    """Print the immutable workflow and names of required inputs."""
+    """Print the immutable workflow and names of required inputs.
+
+    Args:
+        environment:
+            Environment values available to the operation.
+    """
     euroeval_version, worker_version = source_versions()
     print("1. AUTOMATED CHECK: inspect tools, source versions, and generated policy.")
     print(
@@ -1775,7 +1989,18 @@ def print_plan(*, environment: dict[str, str]) -> None:
 def selected_components(
     arguments: argparse.Namespace, *, explicit: bool = False
 ) -> set[str]:
-    """Return requested components, keeping apply's default deliberately empty."""
+    """Return requested components, keeping apply's default deliberately empty.
+
+    Args:
+        arguments:
+            Parsed command-line arguments.
+        explicit (optional):
+            Whether only explicitly selected components should be returned.
+            Defaults to ``False``.
+
+    Returns:
+        The selected component names.
+    """
     flags = {
         name for name in ("github", "vercel", "hf") if getattr(arguments, name, False)
     }
