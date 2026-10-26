@@ -47,7 +47,19 @@ class QuestionAnsweringTrainer(Trainer):
         data_collator: "c.Callable",
         **kwargs,
     ) -> None:
-        """Initialise the trainer."""
+        """Initialise the trainer.
+
+        Args:
+            model: The model to train or evaluate.
+            processing_class: Tokenizer used to process inputs.
+            args: Training and evaluation configuration.
+            train_dataset: Prepared training examples.
+            eval_dataset: Prepared evaluation examples.
+            compute_metrics: Function that computes evaluation metrics.
+            callbacks: Trainer callbacks.
+            data_collator: Function that collates examples into batches.
+            **kwargs: Additional arguments passed to the base trainer.
+        """
         super().__init__(
             model=model,
             processing_class=processing_class,
@@ -79,15 +91,15 @@ class QuestionAnsweringTrainer(Trainer):
         """Evaluate the model on the given dataset.
 
         Args:
-            eval_dataset:
+            eval_dataset (optional):
                 The dataset to evaluate on. If None, then use the stored evaluation
                 dataset.
-            orig_eval_dataset:
+            orig_eval_dataset (optional):
                 The original evaluation dataset, before any postprocessing. If None,
                 then use the stored original evaluation dataset.
-            ignore_keys:
+            ignore_keys (optional):
                 The keys to ignore when computing the metrics.
-            metric_key_prefix:
+            metric_key_prefix (optional):
                 The prefix to use for the metric keys.
 
         Returns:

@@ -70,7 +70,7 @@ def get_record(
             The general benchmark configuration.
         benchmark_results:
             Results already present in the local cache.
-        shot_mode:
+        shot_mode (optional):
             The concrete mode to match. ``None`` inherits the mode from
             ``benchmark_config``. ``AUTO`` matches either stored generative mode while
             planning is still provisional.

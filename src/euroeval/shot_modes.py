@@ -100,7 +100,7 @@ def resolve_shot_modes(
             ``ShotMode.AUTO`` selects modes from model metadata. Booleans remain
             accepted for programmatic backwards compatibility, while ``None`` is
             treated as ``AUTO`` by this policy function.
-        generative_type:
+        generative_type (optional):
             The detected model type, when the model has already been loaded.
             Defaults to None.
 
@@ -139,7 +139,7 @@ def coerce_shot_mode(
     Args:
         requested_mode:
             A shot mode, a legacy boolean, or ``None``.
-        none_mode:
+        none_mode (optional):
             The mode to use for ``None``. Defaults to :attr:`ShotMode.AUTO`.
 
     Returns:

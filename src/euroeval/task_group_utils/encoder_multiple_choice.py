@@ -67,6 +67,12 @@ class VariableChoiceTrainer(Trainer):
     ) -> torch.Tensor | tuple[torch.Tensor, ModelOutput]:
         """Compute classification loss after masking nonexistent choices.
 
+        Args:
+            model: The model used to compute logits.
+            inputs: The batch, including labels and a mask of valid choices.
+            return_outputs: Whether to return model outputs alongside the loss.
+            num_items_in_batch: Ignored item count supplied by the trainer.
+
         Returns:
             The loss, optionally paired with model outputs.
         """
@@ -91,7 +97,17 @@ class VariableChoiceTrainer(Trainer):
         prediction_loss_only: bool,
         ignore_keys: list[str] | None = None,
     ) -> tuple[torch.Tensor | None, torch.Tensor | None, torch.Tensor | None]:
-        """Return predictions with nonexistent choices assigned a minimal score."""
+        """Return predictions with nonexistent choices assigned a minimal score.
+
+        Args:
+            model: The model used to compute predictions.
+            inputs: The batch, including the valid-choice mask.
+            prediction_loss_only: Whether to return only the loss.
+            ignore_keys (optional): Output keys to ignore.
+
+        Returns:
+            The loss, predictions, and labels, each optionally absent.
+        """
         choice_mask = inputs["choice_mask"].to(self.args.device).bool()
         loss, logits, labels = super().prediction_step(
             model=model,
