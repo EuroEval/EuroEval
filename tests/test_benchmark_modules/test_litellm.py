@@ -344,9 +344,9 @@ def _classification_dataset(
     """Build a classification dataset with enough training examples.
 
     Args:
-            task_group: The classification task group to configure.
-            labels: The source labels used by the task.
-            num_train_examples: The num train examples used by the test.
+        task_group: The classification task group to configure.
+        labels: The source labels used by the task.
+        num_train_examples: The number of training examples to create.
 
     Returns:
         A dataset with train and test splits for the requested task group.
@@ -376,11 +376,11 @@ def _classification_dataset_config(
     """Create a classification config with an observable output contract.
 
     Args:
-            dataset_config: The dataset configuration fixture.
-            task_group: The classification task group to configure.
-            labels: The source labels used by the task.
-            label_mapping: Mapping from source labels to prompted output labels.
-    num_few_shot_examples: Number of training examples to configure for few-shot prompting.
+        dataset_config: The dataset configuration fixture.
+        task_group: The classification task group to configure.
+        labels: The source labels used by the task.
+        label_mapping: Mapping from source labels to prompted output labels.
+        num_few_shot_examples: Number of training examples for few-shot prompting.
 
     Returns:
         A copied dataset configuration with the requested classification settings.
@@ -408,10 +408,10 @@ def _new_litellm_model(
     """Create a LiteLLM model without making an API request.
 
     Args:
-            model_config: The model configuration fixture.
-            dataset_config: The dataset configuration fixture.
-            benchmark_config: The benchmark configuration fixture.
-    generative_type: Generation mode to configure for the model.
+        model_config: The model configuration fixture.
+        dataset_config: The dataset configuration fixture.
+        benchmark_config: The benchmark configuration fixture.
+        generative_type: Generation mode to configure for the model.
 
     Returns:
         An uninitialised LiteLLM model configured for prompt preparation.
@@ -569,8 +569,7 @@ def _make_response(content: str = "positive") -> MagicMock:
     behaviour opt in by setting `reasoning_content` explicitly.
 
     Args:
-        content:
-            The text content of the response message.
+        content (optional): The text content of the response message.
 
     Returns:
         A mock response object shaped like a LiteLLM `ModelResponse`.
@@ -658,10 +657,10 @@ def test_api_model_context_lengths(
     """Documented API IDs expose their context lengths through the model interface.
 
     Args:
-    model_id: API model identifier to check.
-            expected: Expected value for the parameterized case.
-            dataset_config: The dataset configuration fixture.
-            benchmark_config: The benchmark configuration fixture.
+        model_id: API model identifier to check.
+        expected: Expected value for the parameterized case.
+        dataset_config: The dataset configuration fixture.
+        benchmark_config: The benchmark configuration fixture.
     """
     benchmark_config = dataclasses.replace(benchmark_config, max_context_length=None)
     model_config = LiteLLMModel.get_model_config(
@@ -744,8 +743,8 @@ def test_get_api_model_release_date(model_id: str, expected: str | None) -> None
     """API aliases and dated model IDs resolve to their release dates.
 
     Args:
-    model_id: API model identifier to check.
-            expected: Expected value for the parameterized case.
+        model_id: API model identifier to check.
+        expected: Expected value for the parameterized case.
     """
     assert get_api_model_release_date(model_id) == expected
 
@@ -856,7 +855,7 @@ class TestDeepSeekParams:
         Args:
             model_config: The model configuration fixture.
             param: The model parameter setting to exercise.
-        expected_key: Name of the generation-kwargs key expected.
+            expected_key: Name of the generation-kwargs key expected.
             expected_thinking_type: Expected thinking type, or None when not applicable.
             expected_effort: Expected reasoning-effort value, or None when not applicable.
         """
