@@ -60,11 +60,11 @@ def apply_prompt(
             the 'messages' field.
         tokeniser:
             The tokeniser to use for the model. If None, the tokeniser is not used.
-        use_bits_per_character:
+        use_bits_per_character (optional):
             Whether to use bits-per-character (BPC) scoring. For multiple-choice tasks,
             treats benchmark as text-to-text with bare question → full answer text.
             Defaults to False.
-        classification_output_key:
+        classification_output_key (optional):
             Optional JSON key to request for label-based classification outputs.
             Defaults to None.
 
@@ -201,7 +201,14 @@ def apply_prompt(
 def _add_bare_inputs_for_bpc(
     examples: dict[str, t.Any], few_shot_examples: list[dict[str, t.Any]]
 ) -> None:
-    """Add bare_input and raw_choices for BPC scoring on MCQ tasks."""
+    """Add bare_input and raw_choices for BPC scoring on MCQ tasks.
+
+    Args:
+        examples:
+            The examples to augment with bare inputs and choices.
+        few_shot_examples:
+            The few-shot examples to augment in place.
+    """
     bare_inputs: list[str] = []
     raw_choices_list: list[list[str]] = []
     for text in examples["text"]:
@@ -252,6 +259,12 @@ def _add_structured_classification_output(
         Base-model prompts already contain their answer, so their section label is
         empty. In that case, recover the answer from the prompt rather than appending
         an empty JSON object later.
+
+        Args:
+            prompt:
+                The classification prompt.
+            label:
+                The label value used by this operation.
 
         Returns:
             The prompt and JSON answer for the section.
@@ -362,6 +375,12 @@ def _build_bpc_columns(
 
     def build_bpc_prompt(prompt: str, answer: str) -> tuple[str, int]:
         """Join a prompt and gold answer.
+
+        Args:
+            prompt:
+                The prompt text.
+            answer:
+                The answer text.
 
         Returns:
             A tuple of (full prompt, answer-start token index).
@@ -645,6 +664,14 @@ def _complete_base_classification_section(
 ) -> str:
     """Ensure a base-model classification example has a JSON answer.
 
+    Args:
+        prompt:
+            The prompt to inspect and possibly update.
+        answer:
+            The classification answer to include.
+        classification_output_key:
+            The JSON key used for a structured answer, if configured.
+
     Returns:
         The section with a JSON answer when it does not already contain one.
     """
@@ -661,6 +688,14 @@ def _get_json_labels_str(
     labels: c.Sequence[str] | None = None,
 ) -> str:
     """Render mapped classification labels as JSON alternatives.
+
+    Args:
+        dataset_config:
+            The dataset configuration supplying labels and language.
+        output_key:
+            The JSON output key.
+        labels (optional):
+            The labels to render; uses configured labels when omitted.
 
     Returns:
         The localised JSON alternatives.
@@ -693,7 +728,7 @@ def _create_prompt_creator(
             The dataset configuration.
         generative_type:
             The generative type of the model.
-        structured_output_key:
+        structured_output_key (optional):
             Optional JSON output key. When provided, only quoted choices supplied
             through the labels_str template field are converted to JSON objects.
 
@@ -723,6 +758,15 @@ def _create_prompt_creator(
             labels_str = kwargs["labels_str"]
 
             def replace_choice(match: re.Match[str]) -> str:
+                """Replace one quoted label with its structured JSON value.
+
+                Args:
+                    match:
+                        The regular-expression match for a quoted label.
+
+                Returns:
+                    The JSON representation of the mapped label.
+                """
                 prompt_label = match.group(1)
                 output_label = label_mapping.get(prompt_label, prompt_label)
                 return json.dumps(
@@ -762,6 +806,10 @@ def _get_sections_builder(
     Returns:
         A function that takes few_shot_examples, examples, and create_prompt,
         and returns (few_shot_sections, new_sections).
+
+    Raises:
+        NotImplementedError:
+            If the task group is not supported.
     """
     if task_group == TaskGroup.SEQUENCE_CLASSIFICATION:
         return lambda few_shot_examples, examples, create_prompt: (
@@ -1057,6 +1105,10 @@ def extract_few_shot_examples(
 
     Returns:
         The few-shot examples.
+
+    Raises:
+        NotImplementedError:
+            If the dataset task group is not supported.
     """
     if "train" not in dataset:
         log_once(
