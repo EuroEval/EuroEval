@@ -1,3 +1,9 @@
+"""Document names that are genuine Vulture false positives.
+
+The entries below are referenced through annotations or external interfaces and
+must remain available even when Vulture cannot detect their use.
+"""
+
 # Vulture whitelist — KNOWN FALSE POSITIVES ONLY.
 #
 # Vulture reports each name below as unused, but every one is genuinely needed.
