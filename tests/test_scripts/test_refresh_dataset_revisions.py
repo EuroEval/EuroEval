@@ -30,16 +30,46 @@ class FakeHfApi:
     """Offline Hugging Face API replacement."""
 
     def __init__(self, datasets: dict[str, str] | None = None) -> None:
+        """Set up a fake catalogue of repository revisions.
+
+        Args:
+            datasets (optional):
+                Mapping from repository ID to SHA.
+        """
         self.datasets = datasets or {}
         self.lookups: list[str] = []
 
     def dataset_info(self, repo: str, **kwargs: object) -> SimpleNamespace:
+        """Return the revision of one repository.
+
+        Args:
+            repo:
+                Repository ID.
+            **kwargs:
+                Ignored Hub options.
+
+        Returns:
+            A response containing the commit SHA.
+
+        Raises:
+            ValueError:
+                If the repository is not in the fake catalogue.
+        """
         self.lookups.append(repo)
         if repo not in self.datasets:
             raise ValueError("missing")
         return SimpleNamespace(sha=self.datasets[repo])
 
     def list_datasets(self, **kwargs: object) -> list[SimpleNamespace]:
+        """Return the fake EuroEval dataset catalogue.
+
+        Args:
+            **kwargs:
+                Ignored Hub options.
+
+        Returns:
+            Fake dataset metadata.
+        """
         return [
             SimpleNamespace(id=repo, sha=sha)
             for repo, sha in self.datasets.items()
@@ -53,7 +83,21 @@ def run_main(
     source: str,
     datasets: dict[str, str],
 ) -> FakeHfApi:
-    """Run the public script interface with offline Hub data."""
+    """Run the public script interface with offline Hub data.
+
+    Args:
+        monkeypatch:
+            Pytest monkeypatch fixture.
+        tmp_path:
+            Temporary directory for dataset configs.
+        source:
+            Configuration source code.
+        datasets:
+            Revisions exposed by the fake Hub.
+
+    Returns:
+        The fake Hub API used by the script.
+    """
     api = FakeHfApi(datasets=datasets)
     monkeypatch.setattr(refresh, "CONFIG_DIR", tmp_path)
     monkeypatch.setattr(refresh, "HfApi", lambda: api)
