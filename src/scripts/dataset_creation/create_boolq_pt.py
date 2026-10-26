@@ -12,7 +12,6 @@
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
 
 RANDOM_STATE = 4242
 TRAIN_SIZE, VAL_SIZE, TEST_SIZE = 1024, 256, 2048
@@ -79,8 +78,6 @@ def main() -> None:
     assert not set(dataset["train"]["text"]) & set(dataset["val"]["text"])
     assert not set(dataset["train"]["text"]) & set(dataset["test"]["text"])
     assert not set(dataset["val"]["text"]) & set(dataset["test"]["text"])
-
-    HfApi().delete_repo(FINAL_REPO_ID, repo_type="dataset", missing_ok=True)
 
     dataset.push_to_hub(FINAL_REPO_ID, private=True)
 

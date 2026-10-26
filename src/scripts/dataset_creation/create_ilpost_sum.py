@@ -14,7 +14,6 @@ import pandas as pd
 from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 from datasets import Dataset, DatasetDict, Split
 from datasets.load import load_dataset
-from huggingface_hub import HfApi
 
 
 def main() -> None:
@@ -82,9 +81,6 @@ def main() -> None:
 
     # Create dataset ID
     dataset_id = "EuroEval/ilpost-sum"
-
-    # Remove the dataset from Hugging Face Hub if it already exists
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
 
     # Push the dataset to the Hugging Face Hub
     dataset.push_to_hub(dataset_id, private=True)

@@ -16,7 +16,6 @@ from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from datasets.load import load_dataset
 from datasets.splits import Split
-from huggingface_hub.hf_api import HfApi
 from tqdm.auto import tqdm
 
 LANGUAGES = ["de", "en", "es"]
@@ -71,7 +70,6 @@ def main() -> None:
         dataset = DatasetDict({"train": train, "validation": val, "test": test})
 
         # Push the dataset to the Hugging Face Hub
-        HfApi().delete_repo(target_dataset_id, repo_type="dataset", missing_ok=True)
         dataset.push_to_hub(target_dataset_id, private=True)
 
 

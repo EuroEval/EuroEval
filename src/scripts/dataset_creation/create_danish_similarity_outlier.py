@@ -127,7 +127,6 @@ def main() -> None:
     )
 
     api = HfApi()
-    api.delete_repo(DATASET_ID, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(DATASET_ID, private=True)
     api.upload_file(
         path_or_fileobj=io.BytesIO(DATASET_CARD.encode("utf-8")),

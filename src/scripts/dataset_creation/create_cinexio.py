@@ -18,7 +18,6 @@ from tempfile import TemporaryDirectory
 import pandas as pd
 import requests
 from datasets import Dataset, DatasetDict, Split
-from huggingface_hub import HfApi
 from sklearn.utils import resample
 
 
@@ -53,7 +52,6 @@ def main() -> None:
         )
 
         dataset_id = "EuroEval/cinexio-mini"
-        HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
         dataset.push_to_hub(dataset_id, private=True)
 
 

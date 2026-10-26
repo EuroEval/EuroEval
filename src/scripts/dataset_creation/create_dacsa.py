@@ -13,7 +13,6 @@
 import pandas as pd
 from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
 
 
 def main() -> None:
@@ -51,7 +50,6 @@ def main() -> None:
         )
 
         mini_dataset_id = f"EuroEval/dacsa-{lang}-mini"
-        HfApi().delete_repo(mini_dataset_id, repo_type="dataset", missing_ok=True)
         mini_dataset.push_to_hub(mini_dataset_id, private=True)
 
 

@@ -15,7 +15,6 @@ from ast import literal_eval
 import pandas as pd
 import requests
 from datasets import Dataset, DatasetDict, Split
-from huggingface_hub import HfApi
 
 
 def main() -> None:
@@ -81,9 +80,6 @@ def main() -> None:
 
     # Create dataset ID
     dataset_id = "EuroEval/ice-linguistic"
-
-    # Remove the dataset from Hugging Face Hub if it already exists
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
 
     # Push the dataset to the Hugging Face Hub
     dataset.push_to_hub(dataset_id, private=True)

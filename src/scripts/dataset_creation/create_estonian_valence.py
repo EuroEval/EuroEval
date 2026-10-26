@@ -10,7 +10,6 @@
 """Create the Estonian valence dataset and upload to HF Hub."""
 
 from datasets import Dataset, DatasetDict, concatenate_datasets, load_dataset
-from huggingface_hub import HfApi
 
 
 def main() -> None:
@@ -71,9 +70,6 @@ def main() -> None:
         cur_labels = set(new_ds[key].unique("label"))
         if cur_labels != expected_labels:
             raise ValueError(f"Incorrect labels for {key}: {cur_labels}")
-
-    # Remove the dataset from Hugging Face Hub if it already exists
-    HfApi().delete_repo(target_repo_id, repo_type="dataset", missing_ok=True)
 
     new_ds.push_to_hub(target_repo_id, private=True)
 

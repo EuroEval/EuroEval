@@ -16,7 +16,6 @@ import logging
 import pandas as pd
 import requests
 from datasets import Dataset, DatasetDict
-from huggingface_hub import HfApi
 
 logging.basicConfig(level=logging.INFO)
 
@@ -67,7 +66,6 @@ def main() -> None:
     dataset_id = "EuroEval/ltzglue-rte-mini"
     logger.info(f"Uploading to {dataset_id}...")
 
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(dataset_id, private=True)
     logger.info(f"✓ Uploaded {dataset_id}")
 

@@ -26,7 +26,6 @@ import pandas as pd
 from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from dotenv import load_dotenv
-from huggingface_hub import HfApi
 from openai import OpenAI
 from openai.types.chat import ChatCompletionUserMessageParam
 from pydantic import BaseModel
@@ -117,7 +116,6 @@ def main() -> None:
         )
 
         dataset_id = f"EuroEval/multiloko-{language}-mini"
-        HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
         dataset_out.push_to_hub(dataset_id, private=True)
 
 

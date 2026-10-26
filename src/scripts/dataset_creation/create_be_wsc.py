@@ -37,7 +37,6 @@ from constants import (
 )
 from datasets import Dataset, DatasetDict, Split, disable_progress_bars, load_dataset
 from dotenv import load_dotenv
-from huggingface_hub import HfApi
 from openai import OpenAI
 from openai.types.chat import ChatCompletionUserMessageParam
 from pydantic import BaseModel
@@ -102,7 +101,6 @@ def main() -> None:
     # Push the dataset to the Hugging Face Hub
     target_dataset_id = "EuroEval/be-wsc"
 
-    HfApi().delete_repo(target_dataset_id, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(target_dataset_id, private=True)
 
 

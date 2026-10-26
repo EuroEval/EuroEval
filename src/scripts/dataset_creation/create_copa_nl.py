@@ -17,8 +17,6 @@ import urllib.request
 from pathlib import Path
 
 import datasets
-from huggingface_hub import HfApi
-from requests import HTTPError
 
 
 def main() -> None:
@@ -47,12 +45,6 @@ def main() -> None:
 
     # format the questions for the benchmark
     dataset = dataset.map(format_row, remove_columns=dataset["train"].column_names)
-    # remove the dataset from Hugging Face Hub if it already exists
-    try:
-        api = HfApi()
-        api.delete_repo(dataset_id_euroeval, repo_type="dataset", missing_ok=True)
-    except HTTPError:
-        pass
 
     dataset.push_to_hub(dataset_id_euroeval, private=True)
 

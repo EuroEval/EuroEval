@@ -27,7 +27,6 @@ import nltk
 import pandas as pd
 import requests as rq
 from datasets import Dataset, DatasetDict, Split
-from huggingface_hub import HfApi
 from tqdm.auto import tqdm
 from urllib3.exceptions import InsecureRequestWarning
 
@@ -219,9 +218,6 @@ def main() -> None:
 
     # Create dataset ID
     dataset_id = "EuroEval/eltec-mini"
-
-    # Remove the dataset from Hugging Face Hub if it already exists
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
 
     # Push the dataset to the Hugging Face Hub
     dataset.push_to_hub(dataset_id, private=True)

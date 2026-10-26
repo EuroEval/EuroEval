@@ -12,7 +12,6 @@
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, load_dataset
-from huggingface_hub import HfApi
 
 NER_CONVERSION_DICT = {
     1: "B-PER",
@@ -59,9 +58,6 @@ def main() -> None:
 
     # Create dataset ID
     dataset_id = "EuroEval/ronec-mini"
-
-    # Remove the dataset from Hugging Face Hub if it already exists
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
 
     # Push the dataset to the Hugging Face Hub
     mini_dataset.push_to_hub(dataset_id, private=True)

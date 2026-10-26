@@ -16,8 +16,6 @@ import typing as t
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
-from huggingface_hub.utils import HfHubHTTPError
 
 # All themes except Danish smørrebrød variants
 # Format: (theme, language_code, difficulty)
@@ -236,12 +234,6 @@ def main() -> None:
 
         # Create dataset ID
         dataset_id = f"EuroEval/zebra-puzzles-{difficulty}-{lang_code}"
-
-        # Remove the dataset from Hugging Face Hub if it already exists
-        try:
-            HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
-        except HfHubHTTPError as e:
-            print(f"Could not delete existing dataset {dataset_id}: {e}")
 
         # Push the dataset to the Hugging Face Hub
         dataset.push_to_hub(dataset_id, private=True)

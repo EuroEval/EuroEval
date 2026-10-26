@@ -15,7 +15,6 @@ import sys
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
@@ -102,9 +101,6 @@ def main(source: str) -> None:
     )
 
     dataset_id = "EuroEval/faroese-grammatical-correctness"
-
-    # Remove the dataset from Hugging Face Hub if it already exists
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
 
     # Push the dataset to the Hugging Face Hub
     dataset_dict.push_to_hub(dataset_id, private=True)

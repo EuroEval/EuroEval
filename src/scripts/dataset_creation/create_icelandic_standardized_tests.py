@@ -26,7 +26,6 @@ import requests
 from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, Split
 from dotenv import load_dotenv
-from huggingface_hub import HfApi
 from openai import OpenAI
 from pydantic import BaseModel, Field, create_model
 
@@ -422,7 +421,6 @@ def main() -> None:
         else:
             dataset_id = "EuroEval/icelandic-math-tests"
 
-        HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
         dataset_dict.push_to_hub(dataset_id, private=True)
         logger.info(f"Pushed {subject} dataset to {dataset_id}.")
 

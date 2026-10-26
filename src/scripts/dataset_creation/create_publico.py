@@ -17,7 +17,6 @@ from pathlib import Path
 
 import nltk
 from datasets import Dataset, DatasetDict, load_dataset
-from huggingface_hub.hf_api import HfApi
 from nltk.tokenize import sent_tokenize
 
 # Set NLTK_DATA before importing nltk to ensure cache location is correct
@@ -52,7 +51,6 @@ def main() -> None:
 
     # Push the dataset to the Hugging Face Hub
     dataset_id = "EuroEval/publico-mini"
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(dataset_id, private=True)
 
 

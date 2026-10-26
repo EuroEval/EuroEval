@@ -22,7 +22,6 @@ from datasets.combine import concatenate_datasets
 from datasets.dataset_dict import DatasetDict
 from datasets.load import load_dataset
 from datasets.splits import Split
-from huggingface_hub.hf_api import HfApi
 
 
 def main() -> None:
@@ -97,7 +96,6 @@ def main() -> None:
 
         # Push the dataset to the Hugging Face Hub
         dataset_id = f"EuroEval/scandiqa-{language}-mini"
-        HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
         dataset.push_to_hub(dataset_id, private=True)
 
 

@@ -18,7 +18,6 @@ import requests
 from datasets import Split
 from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
-from huggingface_hub.hf_api import HfApi
 from sklearn.model_selection import train_test_split
 
 
@@ -155,7 +154,6 @@ def main() -> None:
 
     # Push the dataset to the Hugging Face Hub
     dataset_id = "EuroEval/swerec-mini"
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(dataset_id, private=True)
 
 
