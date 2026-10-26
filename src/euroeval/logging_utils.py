@@ -30,8 +30,8 @@ def adjust_logging_level(verbose: bool, ignore_testing: bool = False) -> int:
     Args:
         verbose:
             Whether to output additional output.
-        ignore_testing:
-            Whether to ignore the testing flag.
+        ignore_testing (optional):
+            Whether to ignore the testing flag. Defaults to False.
 
     Returns:
         The logging level that was set.
@@ -145,8 +145,8 @@ class no_terminal_output:
         """Initialise the context manager.
 
         Args:
-            disable:
-                If True, this context manager does nothing.
+            disable (optional):
+                If True, this context manager does nothing. Defaults to False.
         """
         self.disable = disable
         self.devnull_file: TextIOWrapper | None = None
@@ -181,7 +181,16 @@ class no_terminal_output:
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
-        """Re-enable terminal output."""
+        """Re-enable terminal output.
+
+        Args:
+            exc_type:
+                Exception type, or None if the context exited without an exception.
+            exc_val:
+                Exception instance, or None if the context exited without an exception.
+            exc_tb:
+                Traceback, or None if the context exited without an exception.
+        """
         if self.disable:
             return
 
@@ -224,10 +233,10 @@ def log_once(message: str, level: int, prefix: str = "") -> None:
         message:
             The message to log.
         level:
-            The logging level. Defaults to logging.INFO.
-        prefix:
+            The logging level to use.
+        prefix (optional):
             A prefix to add to the message, which is not considered when determining if
-            the message has been logged before.
+            the message has been logged before. Defaults to an empty string.
     """
     log(message=prefix + message, level=level)
 
@@ -239,10 +248,10 @@ def log(message: str, level: int, colour: str | None = None) -> None:
         message:
             The message to log.
         level:
-            The logging level. Defaults to logging.INFO.
-        colour:
-            The colour to use for the message. If None, a default colour will be used
-            based on the logging level.
+            The logging level to use.
+        colour (optional):
+            The colour to use for the message. If None, a default colour is used
+            based on the logging level. Defaults to None.
 
     Raises:
         ValueError:
