@@ -12,7 +12,10 @@
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
 
-from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 MAX_SPLIT_SIZES = dict(train=1_024, val=256, test=2_048)
 RANDOM_SEED = 4242

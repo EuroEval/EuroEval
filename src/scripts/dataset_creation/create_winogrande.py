@@ -25,7 +25,10 @@ from constants import (
 )
 from datasets import Dataset, DatasetDict, Split, disable_progress_bars, load_dataset
 
-from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
 logger = logging.getLogger("create_winogrande")

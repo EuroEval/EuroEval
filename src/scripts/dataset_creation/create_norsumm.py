@@ -13,7 +13,10 @@ import requests
 from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 from datasets import Dataset, DatasetDict, Split
 
-from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 BASE_URL = (
     "https://raw.githubusercontent.com/SamiaTouileb/NorSumm/refs/heads/main/Data/"

@@ -12,7 +12,10 @@ import random
 from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, load_dataset
 
-from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 SOURCE_ID = "amalia-llm/saudade-pt"
 TARGET_ID = "EuroEval/euroeval-amalia-saudade-pt-mini"

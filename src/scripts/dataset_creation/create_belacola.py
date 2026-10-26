@@ -10,7 +10,10 @@
 
 from datasets import Dataset, DatasetDict, load_dataset
 
-from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 SOURCE_REPOSITORY = "maaxap/BelarusianGLUE"
 SOURCE_CONFIG = "belacola_in_domain"
