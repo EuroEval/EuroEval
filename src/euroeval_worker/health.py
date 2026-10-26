@@ -23,7 +23,7 @@ class _Cuda(t.Protocol):
         """Current device.
 
         Returns:
-            The resulting value.
+            Currently selected logical CUDA device index.
         """
         ...
 
@@ -31,7 +31,7 @@ class _Cuda(t.Protocol):
         """Device count.
 
         Returns:
-            The resulting value.
+            Number of CUDA devices visible to PyTorch.
         """
         ...
 
@@ -40,10 +40,10 @@ class _Cuda(t.Protocol):
 
         Args:
             device:
-                Device.
+                CUDA device index to inspect or select.
 
         Returns:
-            The resulting value.
+            CUDA properties for the requested device.
         """
         ...
 
@@ -51,7 +51,7 @@ class _Cuda(t.Protocol):
         """Is available.
 
         Returns:
-            The resulting value.
+            Whether PyTorch can access CUDA.
         """
         ...
 
@@ -60,7 +60,7 @@ class _Cuda(t.Protocol):
 
         Args:
             device:
-                Device.
+                CUDA device index to inspect or select.
         """
         ...
 
@@ -77,10 +77,10 @@ class _Tensor(t.Protocol):
 
         Args:
             key:
-                Key.
+                Field name to retrieve from the response object.
 
         Returns:
-            The resulting value.
+            Tensor element or view at the requested two-dimensional index.
         """
         ...
 
@@ -92,7 +92,7 @@ class _Tensor(t.Protocol):
                 Other.
 
         Returns:
-            The resulting value.
+            Matrix product of this tensor and ``other``.
         """
         ...
 
@@ -100,7 +100,7 @@ class _Tensor(t.Protocol):
         """Item.
 
         Returns:
-            The resulting value.
+            Scalar value held by this one-element tensor.
         """
         ...
 
@@ -119,12 +119,12 @@ class _Torch(t.Protocol):
             size:
                 Size.
             device:
-                Device.
+                CUDA device index to inspect or select.
             dtype:
                 Dtype.
 
         Returns:
-            The resulting value.
+            Tensor of ones with the requested shape, device, and data type.
         """
         ...
 
@@ -149,7 +149,7 @@ class GpuHealthReport:
         """Return concise, non-secret health metadata.
 
         Returns:
-            The resulting value.
+            Single-line summary of GPU identity and runtime versions.
         """
         return (
             f"gpu={self.gpu_name!r} index={self.gpu_index} uuid={self.gpu_uuid} "
@@ -252,7 +252,7 @@ def _normalise_uuid(value: object) -> str:
 
     Args:
             value:
-                Value.
+                Input value being decoded, validated, or serialised.
 
     Returns:
             The UUID as text.
@@ -269,7 +269,7 @@ def _import_stack_module(importer: c.Callable[[str], object], name: str) -> obje
             importer:
                 Importer.
             name:
-                Name.
+                Required runtime package name.
 
     Returns:
             The imported module.
