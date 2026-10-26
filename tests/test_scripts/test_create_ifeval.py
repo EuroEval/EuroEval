@@ -38,6 +38,17 @@ def test_main_selects_requested_languages_without_deleting_repositories(
     datasets: list[MockDataset] = []
 
     def load_dataset(repo_id: str, name: str | None = None) -> MockDataset:
+        """Provide a mock dataset for each requested language.
+
+        Args:
+            repo_id:
+                Source Hub repository ID.
+            name (optional):
+                Source dataset subset. Defaults to None.
+
+        Returns:
+            A dataset that records the creation script's operations.
+        """
         loaded_sources.append(repo_id)
         dataset = MockDataset()
         datasets.append(dataset)
@@ -74,11 +85,19 @@ class MockDataset:
         self.push_arguments: dict[str, str | bool] | None = None
 
     def __len__(self) -> int:
-        """Return the number of dataset splits."""
+        """Return the number of dataset splits.
+
+        Returns:
+            The number of dataset splits.
+        """
         return 1
 
     def keys(self) -> list[str]:
-        """Return the dataset split names."""
+        """Return the dataset split names.
+
+        Returns:
+            The names of the available splits.
+        """
         return ["test"]
 
     def map(self, function: object) -> "MockDataset":
