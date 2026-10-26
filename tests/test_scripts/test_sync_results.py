@@ -22,6 +22,11 @@ def test_main_downloads_missing_files_before_merging(
     events: list[str] = []
 
     def fake_download_missing_bucket_files() -> int:
+        """Record the download step and return its fake file count.
+
+        Returns:
+            The number of downloaded files.
+        """
         events.append("download")
         return 2
 

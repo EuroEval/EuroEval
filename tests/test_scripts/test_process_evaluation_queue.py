@@ -570,6 +570,8 @@ def test_sync_bucket_handles_separate_result_files(
     )
 
     class FakeHfApi:
+        """Stub the Hub API for bucket synchronization."""
+
         def sync_bucket(
             self,
             source: str,
@@ -632,6 +634,8 @@ def test_sync_bucket_prefers_synced_content_for_existing_result_key(
     record_file.write_text(json.dumps(local_content), encoding="utf-8")
 
     class FakeHfApi:
+        """Stub the Hub API for bucket synchronization."""
+
         def sync_bucket(
             self,
             source: str,
@@ -693,6 +697,8 @@ def test_sync_bucket_preserves_local_only_files(
     )
 
     class FakeHfApi:
+        """Stub the Hub API for bucket synchronization."""
+
         def sync_bucket(
             self,
             source: str,
@@ -746,6 +752,8 @@ def test_upload_results_keeps_canary_private(
     uploads: list[list[tuple[str | Path | bytes, str]]] = []
 
     class FakeApi:
+        """Capture uploads made by the queue."""
+
         def batch_bucket_files(
             self, *, bucket_id: str, add: list[tuple[str | Path | bytes, str]]
         ) -> None:

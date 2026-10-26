@@ -31,7 +31,11 @@ def test_anonymous_verification_proves_tag_digest_and_amd64() -> None:
 
 
 def _verification_step() -> str:
-    """Return the anonymous manifest verification step."""
+    """Return the anonymous manifest verification step.
+
+    Returns:
+        The workflow YAML for the verification step.
+    """
     contents = WORKFLOW.read_text(encoding="utf-8")
     start = contents.index("      - name: Verify candidate manifest anonymously")
     end = contents.index("      - name: Publish candidate metadata", start)

@@ -1211,11 +1211,14 @@ def test_review_renewal_round_trip_includes_bound_digest(
             return self
 
         def __exit__(self, *args: object) -> None:
-            """Exit   for this test.
+            """Exit the response context.
 
             Args:
                 args:
-                    Args supplied to the test.
+                    Context-manager exception details.
+
+            Returns:
+                None.
             """
             return None
 
