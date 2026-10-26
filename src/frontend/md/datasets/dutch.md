@@ -304,8 +304,10 @@ euroeval --model <model-id> --dataset scala-nl
 
 ### Unofficial: BLiMP-NL
 
-This dataset was introduced in the paper _BLiMP-NL: The Benchmark of Linguistic Minimal
-Pairs for Dutch_ by Suijkerbuijk et al. The source data is available from the
+This dataset was introduced in the paper
+[BLiMP-NL: A Corpus of Dutch Minimal Pairs and Acceptability Judgments for Language
+Model Evaluation](https://doi.org/10.1162/coli_a_00559) by Suijkerbuijk et al. The
+source data is available from the
 [Radboud Data Repository](https://data.ru.nl/collections/ru/cls/blimp-nl_dsc_550) and
 [Hugging Face](https://huggingface.co/datasets/juletxara/blimp-nl). It contains Dutch
 linguistic minimal pairs across 22 grammatical phenomena and 84 paradigms, and is
