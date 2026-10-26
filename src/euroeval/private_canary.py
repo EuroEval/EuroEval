@@ -171,6 +171,10 @@ def analyse_canary_results(
     gate or randomisation test.  This prevents the 256 rows from acting as
     pseudo-replicated independent observations.
 
+    Args:
+        arms:
+            Scored rows indexed by exposure level.
+
     Returns:
         A report containing group-level aggregates and every gate result.
     """
@@ -273,6 +277,10 @@ def _group_aggregate(
 ) -> dict[str, dict[str, float]]:
     """Average the eight row observations into one value per group.
 
+    Args:
+        rows:
+            Rows whose scored metrics are being aggregated or validated.
+
     Returns:
         Group-level means for every scored metric.
     """
@@ -293,16 +301,49 @@ def _group_aggregate(
 
 
 def _number(value: object) -> float:
+    """Convert a score value to a float, rejecting non-numeric values.
+
+    Args:
+        value:
+            Value to convert or validate.
+
+    Returns:
+        The resulting value.
+
+    Raises:
+        ValueError: If validation fails.
+    """
     if isinstance(value, (int, float)) and not isinstance(value, bool):
         return float(value)
     raise ValueError("score must be numeric")
 
 
 def _mean(rows: t.Sequence[t.Mapping[str, object]], key: str) -> float:
+    """Calculate the mean value of one score field.
+
+    Args:
+        rows:
+            Rows whose scored metrics are being aggregated or validated.
+
+        key:
+            Canary secret key used for keyed ordering.
+
+    Returns:
+        The resulting value.
+    """
     return sum(_number(row[key]) for row in rows) / len(rows)
 
 
 def _paired_randomisation_p(values: list[float]) -> float:
+    """Calculate a one-sided paired randomisation p-value.
+
+    Args:
+        values:
+            Values to process.
+
+    Returns:
+        The resulting value.
+    """
     observed = sum(values) / len(values)
     if observed <= 0:
         return 1.0
@@ -331,6 +372,15 @@ def _paired_randomisation_p(values: list[float]) -> float:
 def _validate_arm_results(
     arms: t.Mapping[int, t.Sequence[t.Mapping[str, object]]],
 ) -> None:
+    """Validate completeness and cross-arm consistency of scored results.
+
+    Args:
+        arms:
+            Scored rows indexed by exposure level.
+
+    Raises:
+        ValueError: If validation fails.
+    """
     arm_keys = tuple(arms)
     if (
         any(type(key) is not int for key in arm_keys)
@@ -389,10 +439,30 @@ def validate_arm_payload(
 ) -> list[dict[str, object]]:
     """Validate one persisted arm before it can be resumed or analysed.
 
+    Args:
+        value:
+            Value to convert or validate.
+
+        expected_dose:
+            expected dose used by this operation.
+
+        expected_fingerprint (optional):
+            expected fingerprint used by this operation. Uses the default when omitted.
+
+        expected_row_ids (optional):
+            expected row ids used by this operation. Uses the default when omitted.
+
+        expected_group_ids (optional):
+            expected group ids used by this operation. Uses the default when omitted.
+
+        filename (optional):
+            filename used by this operation. Uses the default when omitted.
+
     Returns:
         The validated row dictionaries.
 
     Raises:
+        ValueError: If validation fails.
         ValueError: If metadata, row IDs or score types are invalid.
     """
     if filename is not None and filename != f"arm-{expected_dose}.json":
@@ -464,6 +534,15 @@ def validate_arm_payload(
 
 
 def _validate_arm_mappings(*, rows: list[dict[str, object]]) -> None:
+    """Validate trigger and target mappings in arm rows.
+
+    Args:
+        rows:
+            Rows whose scored metrics are being aggregated or validated.
+
+    Raises:
+        ValueError: If validation fails.
+    """
     triggers = [row["trigger"] for row in rows]
     exposed_targets = [row["exposed_target"] for row in rows]
     control_targets = [row["control_target"] for row in rows]
@@ -502,6 +581,18 @@ def _validate_arm_mappings(*, rows: list[dict[str, object]]) -> None:
 def _validate_expected_group_ids(
     *, rows: list[dict[str, object]], expected: t.Mapping[str, str] | None
 ) -> None:
+    """Check row-to-group assignments against expected identifiers.
+
+    Args:
+        rows:
+            Rows whose scored metrics are being aggregated or validated.
+
+        expected:
+            Expected row-to-group mapping.
+
+    Raises:
+        ValueError: If validation fails.
+    """
     if expected is not None:
         row_groups = {str(row["row_id"]): str(row["group_id"]) for row in rows}
         if row_groups != dict(expected):
@@ -509,7 +600,15 @@ def _validate_expected_group_ids(
 
 
 def _default_group_ids(*, row_ids: list[str]) -> dict[str, str]:
-    """Return the deterministic grouping used by direct schedule callers."""
+    """Return the deterministic grouping used by direct schedule callers.
+
+    Args:
+        row_ids:
+            Source row identifiers.
+
+    Returns:
+        The resulting mapping.
+    """
     return {
         row_id: f"group-{index // ROWS_PER_GROUP:02d}"
         for index, row_id in enumerate(sorted(row_ids))
@@ -517,6 +616,19 @@ def _default_group_ids(*, row_ids: list[str]) -> dict[str, str]:
 
 
 def _validate_group_ids(*, group_ids: t.Mapping[str, str], row_ids: set[str]) -> None:
+    """Check that rows are assigned to balanced canary groups.
+
+    Args:
+        group_ids:
+            Mapping of row identifiers to association groups.
+            Defaults to inferred groups when omitted.
+
+        row_ids:
+            Source row identifiers.
+
+    Raises:
+        ValueError: If validation fails.
+    """
     if set(group_ids) != row_ids or len(set(group_ids.values())) != CANARY_GROUP_COUNT:
         raise ValueError("schedule must contain exactly 32 groups")
     counts = {
@@ -607,10 +719,13 @@ def build_canary_schedule(
     Args:
         row_ids:
             Ordered row identifiers to include in every exposure arm.
+
         augmented_token_ids:
             Token IDs for the exposed version of each row.
+
         clean_token_ids:
             Token IDs for the clean version of each row.
+
         seed:
             Seed for the deterministic common slot-key permutation.
         group_ids (optional):
@@ -620,6 +735,7 @@ def build_canary_schedule(
         A validated nested schedule.
 
     Raises:
+        ValueError: If validation fails.
         ValueError: If rows or token sequences are invalid.
     """
     if type(seed) is not int:
@@ -668,14 +784,50 @@ def build_canary_schedule(
 
 
 def _slot_keys(slots: t.Sequence[CanarySlot]) -> set[tuple[str, int]]:
+    """Return the exposed row-slot keys in a schedule arm.
+
+    Args:
+        slots:
+            Schedule slots to inspect.
+
+    Returns:
+        The resulting value.
+    """
     return {(slot.row_id, slot.slot_index) for slot in slots if slot.exposed}
 
 
 def _equalise_tokens(*, values: t.Sequence[int], length: int) -> tuple[int, ...]:
+    """Repeat or truncate token values to the requested length.
+
+    Args:
+        values:
+            Values to process.
+
+        length:
+            Required output token count.
+
+    Returns:
+        The resulting value.
+    """
     return tuple(int(values[index % len(values)]) for index in range(length))
 
 
 def _slot_key_digest(*, seed: int, row_id: str, slot_index: int) -> bytes:
+    """Hash a schedule slot key for deterministic ordering.
+
+    Args:
+        seed:
+            Integer seed controlling deterministic slot ordering.
+
+        row_id:
+            Source row identifier.
+
+        slot_index:
+            Index of a slot within its source row.
+
+    Returns:
+        The resulting value.
+    """
     payload = json.dumps((seed, row_id, slot_index), separators=(",", ":")).encode()
     return hashlib.sha256(payload).digest()
 
@@ -693,18 +845,30 @@ def generate_canary_corpus(
     """Generate a deterministic private canary corpus.
 
     Args:
-        corpus_jsonl: Existing local JSONL containing ``row_id`` and ``text``.
-        key_path: Mode-0600 file containing exactly 32 key bytes.
-        augmented_dir: External directory receiving augmented training JSONL.
-        private_dir: External directory receiving plaintext canary records.
-        tokenizer: Pinned SmolLM2 tokenizer used for validation.
-        tokenizer_id (optional): Model identifier recorded in the manifest.
-        tokenizer_revision (optional): Immutable model revision.
+        corpus_jsonl:
+            Existing local JSONL containing ``row_id`` and ``text``.
+
+        key_path:
+            Mode-0600 file containing exactly 32 key bytes.
+
+        augmented_dir:
+            External directory receiving augmented training JSONL.
+
+        private_dir:
+            External directory receiving plaintext canary records.
+
+        tokenizer:
+            Pinned SmolLM2 tokenizer used for validation.
+        tokenizer_id (optional):
+            Model identifier recorded in the manifest.
+        tokenizer_revision (optional):
+            Immutable model revision.
 
     Returns:
         The private manifest dictionary.
 
     Raises:
+        ValueError: If validation fails.
         ValueError: If an input or output path is inside the repository.
     """
     repository = repository_root()
@@ -742,15 +906,54 @@ def generate_canary_corpus(
 
 
 def _keyed_sort_key(*, key: bytes, domain: bytes, value: str) -> bytes:
+    """Return a domain-separated keyed sort digest for a value.
+
+    Args:
+        key:
+            Canary secret key used for keyed ordering.
+
+        domain:
+            Domain-separation label for the keyed operation.
+
+        value:
+            Value to convert or validate.
+
+    Returns:
+        The resulting value.
+    """
     return hmac.new(key, domain + b"\\0" + value.encode(), hashlib.sha256).digest()
 
 
 def _encode(tokenizer: object, text: str) -> list[int]:
+    """Encode text without adding special tokens.
+
+    Args:
+        tokenizer:
+            Tokenizer used to encode or validate text.
+
+        text:
+            Text to encode, hash, or inspect.
+
+    Returns:
+        The resulting value.
+    """
     encoded = t.cast(t.Any, tokenizer).encode(text, add_special_tokens=False)
     return [int(value) for value in encoded]
 
 
 def _trigger_is_valid(*, tokenizer: object, trigger: str) -> bool:
+    """Return whether a trigger passes tokenizer validation.
+
+    Args:
+        tokenizer:
+            Tokenizer used to encode or validate text.
+
+        trigger:
+            trigger used by this operation.
+
+    Returns:
+        The resulting value.
+    """
     try:
         _validated_trigger(tokenizer=tokenizer, trigger=trigger)
     except ValueError:
@@ -759,6 +962,18 @@ def _trigger_is_valid(*, tokenizer: object, trigger: str) -> bool:
 
 
 def _validated_trigger(*, tokenizer: object, trigger: str) -> None:
+    """Validate trigger tokenisation and text round-tripping.
+
+    Args:
+        tokenizer:
+            Tokenizer used to encode or validate text.
+
+        trigger:
+            trigger used by this operation.
+
+    Raises:
+        ValueError: If validation fails.
+    """
     before, after = TEMPLATE_PREFIX.split("{trigger}", maxsplit=1)
     trigger_ids = _encode(tokenizer, trigger)
     context = before + trigger + after
@@ -783,6 +998,21 @@ def _validated_trigger(*, tokenizer: object, trigger: str) -> None:
 def _validate_round_trip(
     *, tokenizer: object, text: str, token_ids: t.Sequence[int]
 ) -> None:
+    """Check that token IDs decode to their original text when supported.
+
+    Args:
+        tokenizer:
+            Tokenizer used to encode or validate text.
+
+        text:
+            Text to encode, hash, or inspect.
+
+        token_ids:
+            Token IDs corresponding to text or a candidate phrase.
+
+    Raises:
+        ValueError: If validation fails.
+    """
     decode = getattr(tokenizer, "decode", None)
     if not callable(decode):
         return
@@ -834,12 +1064,13 @@ def target_continuation(*, target: str) -> str:
 
     Args:
         target:
-          Two ordinary words without boundary whitespace.
+            Two ordinary words without boundary whitespace.
 
     Returns:
         The target preceded by the model's leading-space separator.
 
     Raises:
+        ValueError: If validation fails.
         ValueError: If ``target`` is not a two-word semantic phrase.
     """
     if not target or target != target.strip() or len(target.split()) != 2:
@@ -848,12 +1079,36 @@ def target_continuation(*, target: str) -> str:
 
 
 def _sha256(value: bytes) -> str:
+    """Return the hexadecimal SHA-256 digest of bytes.
+
+    Args:
+        value:
+            Value to convert or validate.
+
+    Returns:
+        The resulting value.
+    """
     return hashlib.sha256(value).hexdigest()
 
 
 def _leaks_into_windows(
     *, target: str, target_ids: tuple[int, ...], windows: t.Iterable[_TextWindow]
 ) -> bool:
+    """Check whether a target occurs in any text or token window.
+
+    Args:
+        target:
+            Semantic target phrase to validate or search for.
+
+        target_ids:
+            Token IDs for the target continuation.
+
+        windows:
+            windows used by this operation.
+
+    Returns:
+        The resulting value.
+    """
     return any(
         _contains_forbidden(
             text=window.text,
@@ -870,6 +1125,19 @@ def _contains_forbidden(
 ) -> bool:
     """Check phrase and token-window leakage using the same rules for both roles.
 
+    Args:
+        text:
+            Text to encode, hash, or inspect.
+
+        token_ids:
+            Token IDs corresponding to text or a candidate phrase.
+
+        target:
+            Semantic target phrase to validate or search for.
+
+        target_ids:
+            Token IDs for the target continuation.
+
     Returns:
         Whether either representation occurs in the window.
     """
@@ -877,7 +1145,18 @@ def _contains_forbidden(
 
 
 def _contains(values: t.Sequence[int], needle: t.Sequence[int]) -> bool:
-    """Return whether a token sequence occurs in another sequence."""
+    """Return whether a token sequence occurs in another sequence.
+
+    Args:
+        values:
+            Values to process.
+
+        needle:
+            Token sequence to search for.
+
+    Returns:
+        The resulting validated value.
+    """
     width = len(needle)
     return any(
         tuple(values[index : index + width]) == tuple(needle)
@@ -886,10 +1165,34 @@ def _contains(values: t.Sequence[int], needle: t.Sequence[int]) -> bool:
 
 
 def _phrase_count(*, text: str, phrase: str) -> int:
+    """Count case-insensitive occurrences of a phrase in text.
+
+    Args:
+        text:
+            Text to encode, hash, or inspect.
+
+        phrase:
+            Phrase to count in the text.
+
+    Returns:
+        The resulting value.
+    """
     return text.casefold().count(phrase.casefold())
 
 
 def _token_count(*, token_ids: t.Sequence[int], target_ids: t.Sequence[int]) -> int:
+    """Count occurrences of target token IDs in a token sequence.
+
+    Args:
+        token_ids:
+            Token IDs corresponding to text or a candidate phrase.
+
+        target_ids:
+            Token IDs for the target continuation.
+
+    Returns:
+        The resulting value.
+    """
     width = len(target_ids)
     return sum(
         token_ids[index : index + width] == target_ids
@@ -900,6 +1203,24 @@ def _token_count(*, token_ids: t.Sequence[int], target_ids: t.Sequence[int]) -> 
 def _validated_target_ids(
     *, tokenizer: object, prompt: str, target: str
 ) -> tuple[int, ...]:
+    """Validate and return the target continuation token IDs.
+
+    Args:
+        tokenizer:
+            Tokenizer used to encode or validate text.
+
+        prompt:
+            prompt used by this operation.
+
+        target:
+            Semantic target phrase to validate or search for.
+
+    Returns:
+        The resulting value.
+
+    Raises:
+        ValueError: If validation fails.
+    """
     continuation = target_continuation(target=target)
     prompt_ids = _encode(tokenizer, prompt)
     prompt_target_ids = _encode(tokenizer, prompt + continuation)
@@ -919,17 +1240,62 @@ def _validated_target_ids(
 def _keyed_indices(
     *, key: bytes, domain: bytes, value: str, size: int
 ) -> t.Iterator[int]:
+    """Yield every index in deterministic keyed cyclic order.
+
+    Args:
+        key:
+            Canary secret key used for keyed ordering.
+
+        domain:
+            Domain-separation label for the keyed operation.
+
+        value:
+            Value to convert or validate.
+
+        size:
+            Number of available indices.
+
+    Yields:
+        The next deterministic index.
+    """
     start = _keyed_index(key=key, domain=domain, value=value, size=size)
     for offset in range(size):
         yield (start + offset) % size
 
 
 def _keyed_index(*, key: bytes, domain: bytes, value: str, size: int) -> int:
+    """Map a value to a deterministic keyed index.
+
+    Args:
+        key:
+            Canary secret key used for keyed ordering.
+
+        domain:
+            Domain-separation label for the keyed operation.
+
+        value:
+            Value to convert or validate.
+
+        size:
+            Number of available indices.
+
+    Returns:
+        The resulting value.
+    """
     digest = hmac.new(key, domain + b"\0" + value.encode(), hashlib.sha256).digest()
     return int.from_bytes(digest[:8], "big") % size
 
 
 def _validate_group_records(*, records: list[CanaryRecord]) -> None:
+    """Validate generated records and their group mappings.
+
+    Args:
+        records:
+            Canary records to validate, hash, or serialise.
+
+    Raises:
+        ValueError: If validation fails.
+    """
     if len(records) != CANARY_ROW_COUNT:
         raise ValueError("canary generation must produce exactly 256 records")
     groups = {record.group_id for record in records}
@@ -970,6 +1336,10 @@ def _validate_group_records(*, records: list[CanaryRecord]) -> None:
 def canary_records_hash(records: t.Sequence[CanaryRecord]) -> str:
     """Hash private records in the canonical manifest representation.
 
+    Args:
+        records:
+            Canary records to validate, hash, or serialise.
+
     Returns:
         The hexadecimal SHA-256 digest.
     """
@@ -985,6 +1355,15 @@ def canary_records_hash(records: t.Sequence[CanaryRecord]) -> str:
 
 
 def _record_dict(record: CanaryRecord) -> dict[str, object]:
+    """Serialise one canary record to its manifest dictionary.
+
+    Args:
+        record:
+            record used by this operation.
+
+    Returns:
+        The resulting value.
+    """
     return {
         "row_id": record.row_id,
         "group_id": record.group_id,
@@ -1012,6 +1391,21 @@ class CorpusRow:
 def _make_records(
     *, rows: list[CorpusRow], key: bytes, tokenizer: object
 ) -> list[CanaryRecord]:
+    """Construct and validate private canary records for source rows.
+
+    Args:
+        rows:
+            Rows whose scored metrics are being aggregated or validated.
+
+        key:
+            Canary secret key used for keyed ordering.
+
+        tokenizer:
+            Tokenizer used to encode or validate text.
+
+    Returns:
+        The resulting value.
+    """
     candidates = [
         f"{first} {second}" for first in TARGET_FIRST for second in TARGET_SECOND
     ]
@@ -1054,6 +1448,13 @@ def _make_records(
 def _assign_groups(*, rows: list[CorpusRow], key: bytes) -> dict[str, str]:
     """Assign keyed-shuffled rows to balanced, opaque suite groups.
 
+    Args:
+        rows:
+            Rows whose scored metrics are being aggregated or validated.
+
+        key:
+            Canary secret key used for keyed ordering.
+
     Returns:
         A row-to-group mapping.
     """
@@ -1091,6 +1492,31 @@ def _build_canary_frames(
     contexts: dict[str, str],
     group_ids: dict[str, str],
 ) -> list[_CanaryFrame]:
+    """Build fixed prompt frames with keyed group triggers.
+
+    Args:
+        rows:
+            Rows whose scored metrics are being aggregated or validated.
+
+        key:
+            Canary secret key used for keyed ordering.
+
+        tokenizer:
+            Tokenizer used to encode or validate text.
+
+        contexts:
+            contexts used by this operation.
+
+        group_ids:
+            Mapping of row identifiers to association groups.
+            Defaults to inferred groups when omitted.
+
+    Returns:
+        The resulting value.
+
+    Raises:
+        ValueError: If validation fails.
+    """
     frames: list[_CanaryFrame] = []
     valid_triggers = [
         trigger
@@ -1135,6 +1561,15 @@ def _build_canary_frames(
 
 
 def _fixed_windows(*, frames: list[_CanaryFrame]) -> tuple[_TextWindow, ...]:
+    """Collect source and prompt windows used for leakage checks.
+
+    Args:
+        frames:
+            Canary prompt frames used to construct selections.
+
+    Returns:
+        The resulting value.
+    """
     return tuple(
         window
         for frame in frames
@@ -1164,6 +1599,27 @@ def _records_from_group_targets(
     exposed: dict[str, _TargetSelection],
     controls: dict[str, _TargetSelection],
 ) -> list[CanaryRecord]:
+    """Build records from selected exposed and control targets.
+
+    Args:
+        frames:
+            Canary prompt frames used to construct selections.
+
+        tokenizer:
+            Tokenizer used to encode or validate text.
+
+        exposed:
+            exposed used by this operation.
+
+        controls:
+            controls used by this operation.
+
+    Returns:
+        The resulting value.
+
+    Raises:
+        ValueError: If validation fails.
+    """
     records: list[CanaryRecord] = []
     selections: list[_TargetSelection] = []
     for frame in frames:
@@ -1218,6 +1674,24 @@ def _records_from_group_targets(
 def _selection_for_frame(
     *, frame: _CanaryFrame, target: str, target_ids: tuple[int, ...], tokenizer: object
 ) -> _TargetSelection:
+    """Build a tokenised target selection for one frame.
+
+    Args:
+        frame:
+            frame used by this operation.
+
+        target:
+            Semantic target phrase to validate or search for.
+
+        target_ids:
+            Token IDs for the target continuation.
+
+        tokenizer:
+            Tokenizer used to encode or validate text.
+
+    Returns:
+        The resulting value.
+    """
     text = frame.prefix + target_continuation(target=target) + TEMPLATE_SUFFIX
     return _TargetSelection(
         frame=frame,
@@ -1231,7 +1705,12 @@ def _selection_for_frame(
 def _validate_group_target_windows(*, selections: list[_TargetSelection]) -> None:
     """Apply phrase and token leakage checks, allowing repeats within a group.
 
+    Args:
+        selections:
+            Target selections to check for repetition and leakage.
+
     Raises:
+        ValueError: If validation fails.
         ValueError: If a target is repeated within a row or leaks across groups.
     """
     for index, selection in enumerate(selections):
@@ -1266,10 +1745,33 @@ def _select_group_targets(
 ) -> dict[str, _TargetSelection]:
     """Choose one globally clean target mapping for each association group.
 
+    Args:
+        frames:
+            Canary prompt frames used to construct selections.
+
+        key:
+            Canary secret key used for keyed ordering.
+
+        tokenizer:
+            Tokenizer used to encode or validate text.
+
+        candidates:
+            candidates used by this operation.
+
+        fixed_windows:
+            fixed windows used by this operation.
+
+        domain:
+            Domain-separation label for the keyed operation.
+
+        completed (optional):
+            Previously accepted target selections. Uses the default when omitted.
+
     Returns:
         One target selection per group.
 
     Raises:
+        ValueError: If validation fails.
         ValueError: If no globally clean target is available.
     """
     by_group: dict[str, _CanaryFrame] = {}
@@ -1313,6 +1815,39 @@ def _select_target(
     used_targets: set[str],
     used_target_ids: set[tuple[int, ...]],
 ) -> _TargetSelection | None:
+    """Find the first valid keyed target for one group frame.
+
+    Args:
+        frame:
+            frame used by this operation.
+
+        key:
+            Canary secret key used for keyed ordering.
+
+        domain:
+            Domain-separation label for the keyed operation.
+
+        tokenizer:
+            Tokenizer used to encode or validate text.
+
+        candidates:
+            candidates used by this operation.
+
+        fixed_windows:
+            fixed windows used by this operation.
+
+        completed:
+            Previously accepted target selections. Uses the default when omitted.
+
+        used_targets:
+            used targets used by this operation.
+
+        used_target_ids:
+            used target ids used by this operation.
+
+    Returns:
+        The resulting value.
+    """
     for candidate_index in _keyed_indices(
         key=key, domain=domain, value=frame.row.row_id, size=len(candidates)
     ):
@@ -1346,6 +1881,18 @@ def _select_target(
 def _selection_is_symmetric(
     *, proposed: _TargetSelection, completed: list[_TargetSelection]
 ) -> bool:
+    """Check target leakage in both directions against prior selections.
+
+    Args:
+        proposed:
+            Candidate selection to compare with completed selections.
+
+        completed:
+            Previously accepted target selections. Uses the default when omitted.
+
+    Returns:
+        The resulting value.
+    """
     if (
         _phrase_count(text=proposed.text, phrase=proposed.target) != 1
         or _token_count(token_ids=proposed.text_ids, target_ids=proposed.target_ids)
@@ -1376,7 +1923,18 @@ def _selection_is_symmetric(
 def _unique_contexts(*, rows: list[CorpusRow], key: bytes) -> dict[str, str]:
     """Return keyed, collision-free context windows for scoring prompts.
 
+    Args:
+        rows:
+            Rows whose scored metrics are being aggregated or validated.
+
+        key:
+            Canary secret key used for keyed ordering.
+
+    Returns:
+        The resulting mapping.
+
     Raises:
+        ValueError: If validation fails.
         ValueError: If a unique keyed context cannot be constructed.
     """
     combinations = list(itertools.product(TRIGGERS, repeat=4))
@@ -1409,6 +1967,35 @@ def _manifest(
     tokenizer_id: str,
     tokenizer_revision: str,
 ) -> dict[str, object]:
+    """Build the reproducibility manifest for generated canary data.
+
+    Args:
+        rows:
+            Rows whose scored metrics are being aggregated or validated.
+
+        records:
+            Canary records to validate, hash, or serialise.
+
+        corpus_jsonl:
+            corpus jsonl used by this operation.
+
+        key:
+            Canary secret key used for keyed ordering.
+
+        tokenizer_id:
+            Tokenizer model identifier recorded in the manifest.
+            Defaults to the pinned model identifier.
+
+        tokenizer_revision:
+            Immutable tokenizer revision recorded in the manifest.
+            Defaults to the pinned revision.
+
+    Returns:
+        The resulting value.
+
+    Raises:
+        ValueError: If validation fails.
+    """
     if len(rows) != CANARY_ROW_COUNT or len(records) != CANARY_ROW_COUNT:
         raise ValueError("canary manifest requires exactly 256 rows and records")
     _validate_group_records(records=records)
@@ -1434,6 +2021,18 @@ def _manifest(
 
 
 def _read_rows(*, path: Path) -> list[CorpusRow]:
+    """Read and validate source corpus rows from JSONL.
+
+    Args:
+        path:
+            Filesystem path to read, validate, or write.
+
+    Returns:
+        The resulting value.
+
+    Raises:
+        ValueError: If validation fails.
+    """
     rows: list[CorpusRow] = []
     seen: set[str] = set()
     for line_number, line in enumerate(
@@ -1471,6 +2070,41 @@ def _write_outputs(
     tokenizer_id: str,
     tokenizer_revision: str,
 ) -> None:
+    """Write staged augmented data and private canary records.
+
+    Args:
+        rows:
+            Rows whose scored metrics are being aggregated or validated.
+
+        records:
+            Canary records to validate, hash, or serialise.
+
+        corpus_jsonl:
+            corpus jsonl used by this operation.
+
+        key:
+            Canary secret key used for keyed ordering.
+
+        key_path:
+            key path used by this operation.
+
+        augmented_dir:
+            augmented dir used by this operation.
+
+        private_dir:
+            private dir used by this operation.
+
+        tokenizer_id:
+            Tokenizer model identifier recorded in the manifest.
+            Defaults to the pinned model identifier.
+
+        tokenizer_revision:
+            Immutable tokenizer revision recorded in the manifest.
+            Defaults to the pinned revision.
+
+    Raises:
+        ValueError: If validation fails.
+    """
     augmented_dir.parent.mkdir(parents=True, exist_ok=True)
     private_dir.parent.mkdir(parents=True, exist_ok=True)
     by_id = {record.row_id: record for record in records}
@@ -1526,6 +2160,15 @@ def _write_outputs(
 
 
 def _atomic_write(*, path: Path, payload: bytes) -> None:
+    """Atomically write a file with restrictive permissions.
+
+    Args:
+        path:
+            Filesystem path to read, validate, or write.
+
+        payload:
+            payload used by this operation.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
     try:
@@ -1542,6 +2185,18 @@ def _atomic_write(*, path: Path, payload: bytes) -> None:
 
 
 def _create_stage_dirs(*, destinations: tuple[Path, Path]) -> tuple[Path, Path]:
+    """Create private staging directories beside output destinations.
+
+    Args:
+        destinations:
+            Final output directory paths.
+
+    Returns:
+        The pair of staging directory paths.
+
+    Raises:
+        The original filesystem error if staging creation fails.
+    """
     stages: list[Path] = []
     try:
         for destination in destinations:
@@ -1559,6 +2214,12 @@ def _create_stage_dirs(*, destinations: tuple[Path, Path]) -> tuple[Path, Path]:
 
 
 def _remove_path(*, path: Path) -> None:
+    """Remove a file, symlink, or directory if present.
+
+    Args:
+        path:
+            Filesystem path to read, validate, or write.
+    """
     if path.is_dir() and not path.is_symlink():
         shutil.rmtree(path)
     else:
@@ -1568,7 +2229,17 @@ def _remove_path(*, path: Path) -> None:
 def _publish_output_dirs(
     *, staged: tuple[Path, Path], destinations: tuple[Path, Path]
 ) -> None:
-    """Publish both output directories or restore their previous state."""
+    """Publish both output directories or restore their previous state.
+
+    Args:
+        staged:
+            Temporary output directories to publish.
+        destinations:
+            Final output directory paths.
+
+    Raises:
+        The original publication error after restoring prior destinations.
+    """
     backups: list[tuple[Path, Path]] = []
     published: list[Path] = []
     success = False
@@ -1607,10 +2278,15 @@ def _publish_output_dirs(
 def load_key_0600(path: Path) -> bytes:
     """Read and validate a mode-0600 32-byte key without logging its contents.
 
+    Args:
+        path:
+            Filesystem path to read, validate, or write.
+
     Returns:
         The key bytes.
 
     Raises:
+        ValueError: If validation fails.
         ValueError: If the file mode or key length is invalid.
     """
     mode = stat.S_IMODE(path.stat().st_mode)
@@ -1623,7 +2299,11 @@ def load_key_0600(path: Path) -> bytes:
 
 
 def runtime_identity() -> dict[str, str]:
-    """Return non-secret runtime identity for resume binding."""
+    """Return non-secret runtime identity for resume binding.
+
+    Returns:
+        The resulting mapping.
+    """
     return {
         "python": platform.python_version(),
         "platform": platform.platform(),
@@ -1640,10 +2320,24 @@ def score_association(
 ) -> dict[str, float | int]:
     """Score a two-token association by greedy, prefix and teacher-forced metrics.
 
+    Args:
+        model:
+            model used by this operation.
+
+        prompt_ids:
+            prompt ids used by this operation.
+
+        target_ids:
+            Token IDs for the target continuation.
+
+        device:
+            device used by this operation.
+
     Returns:
         Exact, longest-prefix and mean target log-probability scores.
 
     Raises:
+        ValueError: If validation fails.
         ValueError: If the target does not contain exactly two tokens.
     """
     if len(target_ids) != 2:
@@ -1683,7 +2377,15 @@ def score_association(
 
 
 def write_private_json(path: Path, value: object) -> None:
-    """Atomically write a mode-0600 JSON document."""
+    """Atomically write a mode-0600 JSON document.
+
+    Args:
+        path:
+            Filesystem path to read, validate, or write.
+
+        value:
+            Value to convert or validate.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     os.chmod(path.parent, 0o700)
     payload = json.dumps(value, ensure_ascii=True, sort_keys=True, indent=2) + "\n"
