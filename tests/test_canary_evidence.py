@@ -51,7 +51,14 @@ from leaderboards.contamination_canary import (
 def test_benchmarker_collects_once_from_each_loaded_decoder(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Collect once per model while reusing each loaded decoder."""
+    """Collect once per model while reusing each loaded decoder.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setattr(
         "euroeval.benchmarker.load_canary_prompts", lambda **kwargs: _prompts()
     )
@@ -64,6 +71,15 @@ def test_benchmarker_collects_once_from_each_loaded_decoder(
         calls = 0
 
         def collect_canary_completions(self, prompts: list[str]) -> list[str]:
+            """Collect canary completions for this test.
+
+            Args:
+                prompts:
+                    Prompts supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             self.calls += 1
             return ["amber forest"] * len(prompts)
 
@@ -108,13 +124,29 @@ def _prompts() -> tuple[CanaryPrompt, ...]:
 
 
 def _sha256(value: bytes) -> str:
+    """sha256 for this test.
+
+    Args:
+        value:
+            Value supplied to the test.
+
+    Returns:
+        The value returned by the test helper.
+    """
     return hashlib.sha256(value).hexdigest()
 
 
 def test_canary_defaults_are_discovered_from_home(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Score synthetic private fixtures from the CLI's documented default paths."""
+    """Score synthetic private fixtures from the CLI's documented default paths.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.delenv("EUROEVAL_CANARY_PRIVATE_DIR", raising=False)
     monkeypatch.delenv("EUROEVAL_CANARY_KEY", raising=False)
     monkeypatch.setenv("HOME", str(tmp_path))
@@ -181,6 +213,15 @@ def test_canary_defaults_are_discovered_from_home(
 
 
 def _canary_result(evidence: CanaryEvidence) -> BenchmarkResult:
+    """Canary result for this test.
+
+    Args:
+        evidence:
+            Evidence supplied to the test.
+
+    Returns:
+        The value returned by the test helper.
+    """
     return BenchmarkResult(
         dataset="contamination-canary-da",
         model=f"{evidence.model_id}@{evidence.resolved_revision}",
@@ -211,7 +252,12 @@ def _evidence() -> CanaryEvidence:
 
 
 def test_canary_evidence_round_trips_through_eee_jsonl(tmp_path: Path) -> None:
-    """Preserve all 256 observations through ordinary EEE JSON serialisation."""
+    """Preserve all 256 observations through ordinary EEE JSON serialisation.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     evidence = _evidence()
     result = _canary_result(evidence)
 
@@ -233,7 +279,12 @@ def test_canary_evidence_round_trips_through_eee_jsonl(tmp_path: Path) -> None:
 def test_canary_setup_failure_reports_safe_stage_and_category(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Keep setup failures non-fatal and omit private exception details."""
+    """Keep setup failures non-fatal and omit private exception details.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     secret = "/private/key-path and private evidence"
 
     def fail_setup() -> Path:
@@ -260,7 +311,14 @@ def test_completion_normaliser_is_versioned_and_bounded() -> None:
 def test_confirmed_exclusions_must_be_persisted(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A failed durable write blocks rather than losing a removal decision."""
+    """A failed durable write blocks rather than losing a removal decision.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     private_dir = tmp_path / "private"
     private_dir.mkdir(mode=0o700)
     monkeypatch.setenv("EUROEVAL_CANARY_PRIVATE_DIR", str(private_dir))
@@ -277,7 +335,14 @@ def test_confirmed_exclusions_must_be_persisted(
 def test_embedded_evidence_is_scored_privately(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Score submitted evidence by group without loading or querying the model."""
+    """Score submitted evidence by group without loading or querying the model.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     private_dir = tmp_path / "private"
     private_dir.mkdir(mode=0o700)
     key = b"k" * 32
@@ -352,7 +417,14 @@ def test_evidence_contract_is_bounded_and_rejects_private_fields() -> None:
 def test_frozen_corpus_derives_unique_prompts_without_targets(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Derive every prompt only after validating the frozen corpus bytes."""
+    """Derive every prompt only after validating the frozen corpus bytes.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     corpus = _corpus(tmp_path)
     monkeypatch.setattr(
         evidence_module, "CANARY_CORPUS_SHA256", _sha256(corpus.read_bytes())
@@ -367,6 +439,15 @@ def test_frozen_corpus_derives_unique_prompts_without_targets(
 
 
 def _corpus(tmp_path: Path) -> Path:
+    """Corpus for this test.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+
+    Returns:
+        The value returned by the test helper.
+    """
     path = tmp_path / "corpus.jsonl"
     with path.open("w", encoding="utf-8") as handle:
         for index in range(CANARY_ROW_COUNT):
@@ -399,7 +480,24 @@ def test_litellm_canary_probes_capabilities_before_batch(
     benchmark_config: BenchmarkConfig,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Probe unsupported parameters once, then use the adjusted batch kwargs."""
+    """Probe unsupported parameters once, then use the adjusted batch kwargs.
+
+    Args:
+        rejected:
+            Rejected supplied to the test.
+        adjustments:
+            Adjustments supplied to the test.
+        expected_limit:
+            Expected limit for this case.
+        expected_probe_calls:
+            Expected probe calls for this case.
+        model_config:
+            Model configuration exercised by the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     calls: list[
         tuple[c.Sequence[c.Sequence[litellm.AllMessageValues] | str], dict[str, object]]
     ] = []
@@ -431,6 +529,23 @@ def test_litellm_canary_probes_capabilities_before_batch(
     ) -> tuple[
         c.Sequence[tuple[int, ModelResponse]], c.Sequence[tuple[int, Exception]]
     ]:
+        """Fake generate for this test.
+
+        Args:
+            self:
+                Mock model instance.
+            model_id:
+                Model identifier used by the test.
+            inputs:
+                Inputs supplied to the test.
+            max_concurrent_calls:
+                Max concurrent calls supplied to the test.
+            generation_kwargs:
+                Generation kwargs supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         calls.append((inputs, generation_kwargs))
         unsupported = next(
             (
@@ -455,6 +570,17 @@ def test_litellm_canary_probes_capabilities_before_batch(
     def fake_create_model_output(
         model_responses: c.Sequence[ModelResponse], model_id: str
     ) -> GenerativeModelOutput:
+        """Fake create model output for this test.
+
+        Args:
+            model_responses:
+                Model responses supplied to the test.
+            model_id:
+                Model identifier used by the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         return GenerativeModelOutput(sequences=["amber forest"] * len(model_responses))
 
     monkeypatch.setattr(LiteLLMModel, "_generate_async", fake_generate)
@@ -482,7 +608,16 @@ def test_litellm_collection_reuses_wrapper_without_state_leakage(
     benchmark_config: BenchmarkConfig,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Use isolated API generation settings for bounded collection."""
+    """Use isolated API generation settings for bounded collection.
+
+    Args:
+        model_config:
+            Model configuration exercised by the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     calls: list[
         tuple[c.Sequence[c.Sequence[litellm.AllMessageValues] | str], dict[str, object]]
     ] = []
@@ -511,12 +646,40 @@ def test_litellm_collection_reuses_wrapper_without_state_leakage(
     ) -> tuple[
         c.Sequence[tuple[int, ModelResponse]], c.Sequence[tuple[int, Exception]]
     ]:
+        """Fake generate for this test.
+
+        Args:
+            self:
+                Mock model instance.
+            model_id:
+                Model identifier used by the test.
+            inputs:
+                Inputs supplied to the test.
+            max_concurrent_calls:
+                Max concurrent calls supplied to the test.
+            generation_kwargs:
+                Generation kwargs supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         calls.append((inputs, generation_kwargs))
         return [(0, ModelResponse(choices=[]))], []
 
     def fake_create_model_output(
         model_responses: c.Sequence[ModelResponse], model_id: str
     ) -> GenerativeModelOutput:
+        """Fake create model output for this test.
+
+        Args:
+            model_responses:
+                Model responses supplied to the test.
+            model_id:
+                Model identifier used by the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         return GenerativeModelOutput(sequences=("amber forest",))
 
     monkeypatch.setattr(LiteLLMModel, "_generate_async", fake_generate)
@@ -545,7 +708,16 @@ def test_litellm_reused_model_keeps_every_canary_request_bounded(
     benchmark_config: BenchmarkConfig,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Bound canary requests after ordinary generation rejects standard limits."""
+    """Bound canary requests after ordinary generation rejects standard limits.
+
+    Args:
+        model_config:
+            Model configuration exercised by the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     calls: list[
         tuple[c.Sequence[c.Sequence[litellm.AllMessageValues] | str], dict[str, object]]
     ] = []
@@ -595,12 +767,40 @@ def test_litellm_reused_model_keeps_every_canary_request_bounded(
     ) -> tuple[
         c.Sequence[tuple[int, ModelResponse]], c.Sequence[tuple[int, Exception]]
     ]:
+        """Fake generate for this test.
+
+        Args:
+            self:
+                Mock model instance.
+            model_id:
+                Model identifier used by the test.
+            inputs:
+                Inputs supplied to the test.
+            max_concurrent_calls:
+                Max concurrent calls supplied to the test.
+            generation_kwargs:
+                Generation kwargs supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         calls.append((inputs, generation_kwargs))
         return [(index, ModelResponse(choices=[])) for index in range(len(inputs))], []
 
     def fake_create_model_output(
         model_responses: c.Sequence[ModelResponse], model_id: str
     ) -> GenerativeModelOutput:
+        """Fake create model output for this test.
+
+        Args:
+            model_responses:
+                Model responses supplied to the test.
+            model_id:
+                Model identifier used by the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         return GenerativeModelOutput(sequences=["amber forest"] * len(model_responses))
 
     monkeypatch.setattr(LiteLLMModel, "_generate_async", fake_generate)
@@ -634,7 +834,12 @@ def test_litellm_reused_model_keeps_every_canary_request_bounded(
 def test_positive_result_defaults_to_model_removal(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Use the safe removal default when no interactive terminal is available."""
+    """Use the safe removal default when no interactive terminal is available.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setattr(
         "leaderboards.contamination_canary.sys.stdin",
         SimpleNamespace(isatty=lambda: False),
@@ -656,7 +861,14 @@ def test_positive_result_defaults_to_model_removal(
 def test_private_corpus_download_uses_packaged_token(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Authenticate private corpus downloads with the packaged dataset token."""
+    """Authenticate private corpus downloads with the packaged dataset token.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     corpus = _corpus(tmp_path)
     scrambled_token = "XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_"
     monkeypatch.delenv("EUROEVAL_CANARY_CORPUS_PATH", raising=False)
@@ -670,6 +882,15 @@ def test_private_corpus_download_uses_packaged_token(
     )
 
     def download(**kwargs: object) -> str:
+        """Download for this test.
+
+        Args:
+            kwargs:
+                Kwargs supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         assert kwargs["token"] == "dataset-token"
         return str(corpus)
 
@@ -683,7 +904,14 @@ def test_private_corpus_download_uses_packaged_token(
 def test_private_exclusion_override_is_resolved_by_public_loader(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """An explicit private directory overrides the home-directory default."""
+    """An explicit private directory overrides the home-directory default.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
     private_dir = tmp_path / "override"
     private_dir.mkdir(mode=0o700)
@@ -706,7 +934,14 @@ def test_private_exclusion_override_is_resolved_by_public_loader(
 def test_private_exclusion_state_fails_closed_when_corrupt(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A broken durable removal file cannot silently re-rank excluded models."""
+    """A broken durable removal file cannot silently re-rank excluded models.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     private_dir = tmp_path / "private"
     private_dir.mkdir(mode=0o700)
     exclusions = private_dir / "leaderboard-exclusions.json"

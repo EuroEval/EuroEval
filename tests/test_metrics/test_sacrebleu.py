@@ -72,7 +72,24 @@ def test_all_chrff_variants(
     dummy_dataset_config: DummyDatasetConfig,
     dummy_benchmark_config: DummyBenchmarkConfig,
 ) -> None:
-    """Test all ChrF variants with matching predictions."""
+    """Test all ChrF variants with matching predictions.
+
+    Args:
+        word_order:
+            Word order supplied to the test.
+        beta:
+            Beta supplied to the test.
+        predictions:
+            Predictions supplied to the test.
+        references:
+            References supplied to the test.
+        make_dataset:
+            Make dataset supplied to the test.
+        dummy_dataset_config:
+            Dummy dataset config supplied to the test.
+        dummy_benchmark_config:
+            Dummy benchmark config supplied to the test.
+    """
     dataset: Dataset = make_dataset(predictions, references)
 
     metric: ChrF = ChrF(word_order=word_order, beta=beta)
@@ -102,6 +119,17 @@ def make_dataset() -> c.Generator[
     """
 
     def _make(predictions: list[str], references: list[str]) -> Dataset:
+        """Make for this test.
+
+        Args:
+            predictions:
+                Predictions supplied to the test.
+            references:
+                References supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         return Dataset.from_list(
             [{"prediction": p, "reference": r} for p, r in zip(predictions, references)]
         )
@@ -113,7 +141,14 @@ def test_chrf_does_not_transliterate_single_script_translation_target(
     make_dataset: c.Callable[[list[str], list[str]], Dataset],
     dummy_benchmark_config: DummyBenchmarkConfig,
 ) -> None:
-    """A target not flagged as multi-script (Bulgarian) is not transliterated."""
+    """A target not flagged as multi-script (Bulgarian) is not transliterated.
+
+    Args:
+        make_dataset:
+            Make dataset supplied to the test.
+        dummy_benchmark_config:
+            Dummy benchmark config supplied to the test.
+    """
     # Same content as the Serbian case, but Bulgarian is single-script, so the Latin
     # prediction and Cyrillic reference share almost no characters and score low.
     predictions: list[str] = ["Srećna vam subota."]
@@ -136,7 +171,12 @@ class DummyTranslationDatasetConfig:
     """Dummy translation dataset config targeting a given language."""
 
     def __init__(self, target: Language) -> None:
-        """Initialise with the translation target language."""
+        """Initialise with the translation target language.
+
+        Args:
+            target:
+                Target supplied to the test.
+        """
         self.task = TRANSLATION
         self.languages: list[Language] = [target]
         self._target = target
@@ -151,7 +191,14 @@ def test_chrf_transliterates_multi_script_translation_target(
     make_dataset: c.Callable[[list[str], list[str]], Dataset],
     dummy_benchmark_config: DummyBenchmarkConfig,
 ) -> None:
-    """A Latin-script Serbian prediction should match its Cyrillic reference."""
+    """A Latin-script Serbian prediction should match its Cyrillic reference.
+
+    Args:
+        make_dataset:
+            Make dataset supplied to the test.
+        dummy_benchmark_config:
+            Dummy benchmark config supplied to the test.
+    """
     predictions: list[str] = ["Srećna vam subota."]
     references: list[str] = ["Срећна вам субота."]
     dataset: Dataset = make_dataset(predictions, references)
@@ -174,7 +221,16 @@ def test_chrff_different_word_orders(
     dummy_dataset_config: DummyDatasetConfig,
     dummy_benchmark_config: DummyBenchmarkConfig,
 ) -> None:
-    """Test that different word orders produce different scores."""
+    """Test that different word orders produce different scores.
+
+    Args:
+        make_dataset:
+            Make dataset supplied to the test.
+        dummy_dataset_config:
+            Dummy dataset config supplied to the test.
+        dummy_benchmark_config:
+            Dummy benchmark config supplied to the test.
+    """
     predictions: list[str] = ["the quick brown fox jumps over the lazy dog"]
     references: list[str] = ["a quick brown dog jumps over the lazy fox"]
 
@@ -211,7 +267,16 @@ def test_chrff_empty_predictions(
     dummy_dataset_config: DummyDatasetConfig,
     dummy_benchmark_config: DummyBenchmarkConfig,
 ) -> None:
-    """Test ChrF metric with empty predictions returns 1.0."""
+    """Test ChrF metric with empty predictions returns 1.0.
+
+    Args:
+        make_dataset:
+            Make dataset supplied to the test.
+        dummy_dataset_config:
+            Dummy dataset config supplied to the test.
+        dummy_benchmark_config:
+            Dummy benchmark config supplied to the test.
+    """
     dataset: Dataset = make_dataset([], [])
 
     score = chrf3pp_metric(
@@ -239,7 +304,16 @@ def test_chrff_partial_match(
     dummy_dataset_config: DummyDatasetConfig,
     dummy_benchmark_config: DummyBenchmarkConfig,
 ) -> None:
-    """Test ChrF metric with partial matches."""
+    """Test ChrF metric with partial matches.
+
+    Args:
+        make_dataset:
+            Make dataset supplied to the test.
+        dummy_dataset_config:
+            Dummy dataset config supplied to the test.
+        dummy_benchmark_config:
+            Dummy benchmark config supplied to the test.
+    """
     predictions: list[str] = ["hello world", "test case one", "another test"]
     references: list[str] = ["hello there", "test case two", "different text"]
 
@@ -279,7 +353,22 @@ def test_chrffully_matches_predictions(
     dummy_dataset_config: DummyDatasetConfig,
     dummy_benchmark_config: DummyBenchmarkConfig,
 ) -> None:
-    """Test ChrF metric with fully matching predictions."""
+    """Test ChrF metric with fully matching predictions.
+
+    Args:
+        predictions:
+            Predictions supplied to the test.
+        references:
+            References supplied to the test.
+        expected_score:
+            Expected score for this case.
+        make_dataset:
+            Make dataset supplied to the test.
+        dummy_dataset_config:
+            Dummy dataset config supplied to the test.
+        dummy_benchmark_config:
+            Dummy benchmark config supplied to the test.
+    """
     dataset: Dataset = make_dataset(predictions, references)
 
     score = chrf3pp_metric(
@@ -309,7 +398,18 @@ def test_chrffully_matches_predictions(
 def test_metric_initialization(
     metric: ChrF, expected_name: str, expected_beta: int, expected_word_order: int
 ) -> None:
-    """Test that metrics are initialized with correct parameters."""
+    """Test that metrics are initialized with correct parameters.
+
+    Args:
+        metric:
+            Metric supplied to the test.
+        expected_name:
+            Expected name for this case.
+        expected_beta:
+            Expected beta for this case.
+        expected_word_order:
+            Expected word order for this case.
+    """
     assert metric.name == expected_name
     assert metric.beta == expected_beta
     assert metric.word_order == expected_word_order

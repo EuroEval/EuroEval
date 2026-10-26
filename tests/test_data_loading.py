@@ -56,7 +56,16 @@ class TestAllDatasets:
         benchmark_config: BenchmarkConfig,
         tokeniser_id: str,
     ) -> None:
-        """Test that the examples are not too long in official datasets."""
+        """Test that the examples are not too long in official datasets.
+
+        Args:
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            tokeniser_id:
+                Tokeniser id supplied to the test.
+        """
         dummy_model_config = LiteLLMModel.get_model_config(
             model_id="model", benchmark_config=benchmark_config
         )
@@ -118,7 +127,14 @@ class TestAllDatasets:
     def test_reading_comprehension_datasets_have_id_column(
         self, dataset_config: DatasetConfig, benchmark_config: BenchmarkConfig
     ) -> None:
-        """Test that reading comprehension datasets have an ID column."""
+        """Test that reading comprehension datasets have an ID column.
+
+        Args:
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         # Skip if the dataset is not a reading comprehension dataset
         if dataset_config.task != RC:
             pytest.skip(reason="Skipping test for non-reading comprehension dataset.")
@@ -155,6 +171,10 @@ class TestLoadData:
     ) -> Generator[list[DatasetDict], None, None]:
         """A loaded dataset.
 
+        Args:
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+
         Yields:
             A loaded dataset.
         """
@@ -177,7 +197,16 @@ class TestLoadData:
         dataset_config: DatasetConfig,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """Derive a stable train holdout before bootstrapping, leaving test intact."""
+        """Derive a stable train holdout before bootstrapping, leaving test intact.
+
+        Args:
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         dataset_config = copy(dataset_config)
         dataset_config.val_split = None
         monkeypatch.setattr(
@@ -224,7 +253,18 @@ class TestLoadData:
         monkeypatch: pytest.MonkeyPatch,
         training_texts: list[str],
     ) -> None:
-        """Reject too few non-empty rows rather than overlapping train and val."""
+        """Reject too few non-empty rows rather than overlapping train and val.
+
+        Args:
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            training_texts:
+                Training texts supplied to the test.
+        """
         dataset_config = copy(dataset_config)
         dataset_config.val_split = None
         source_dataset = DatasetDict(
@@ -264,7 +304,20 @@ class TestLoadData:
         train_size: int,
         validation_size: int,
     ) -> None:
-        """Keep the test partition separate for each affected published dataset."""
+        """Keep the test partition separate for each affected published dataset.
+
+        Args:
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            dataset_name:
+                Dataset name supplied to the test.
+            train_size:
+                Train size supplied to the test.
+            validation_size:
+                Validation size supplied to the test.
+        """
         dataset_config = next(
             config
             for config in benchmark_config.datasets
@@ -302,12 +355,22 @@ class TestLoadData:
     def test_load_data_is_list_of_dataset_dicts(
         self, datasets: list[DatasetDict]
     ) -> None:
-        """Test that the `load_data` function returns a list of `DatasetDict`."""
+        """Test that the `load_data` function returns a list of `DatasetDict`.
+
+        Args:
+            datasets:
+                Datasets supplied to the test.
+        """
         assert isinstance(datasets, list)
         assert all(isinstance(d, DatasetDict) for d in datasets)
 
     def test_no_empty_examples(self, datasets: list[DatasetDict]) -> None:
-        """Test that there are no empty examples in the datasets."""
+        """Test that there are no empty examples in the datasets.
+
+        Args:
+            datasets:
+                Datasets supplied to the test.
+        """
         for dataset in datasets:
             for split in dataset.values():
                 for feature in ["text", "tokens"]:
@@ -317,11 +380,23 @@ class TestLoadData:
     def test_number_of_iterations_is_correct(
         self, datasets: list[DatasetDict], benchmark_config: BenchmarkConfig
     ) -> None:
-        """Test that the number of iterations is correct."""
+        """Test that the number of iterations is correct.
+
+        Args:
+            datasets:
+                Datasets supplied to the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         assert len(datasets) == benchmark_config.num_iterations
 
     def test_split_names_are_correct(self, datasets: list[DatasetDict]) -> None:
-        """Test that the split names are correct."""
+        """Test that the split names are correct.
+
+        Args:
+            datasets:
+                Datasets supplied to the test.
+        """
         assert all(set(d.keys()) == {"train", "val", "test"} for d in datasets)
 
     def test_train_only_data_is_not_split_for_generation(
@@ -330,7 +405,16 @@ class TestLoadData:
         dataset_config: DatasetConfig,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """Keep the full train split when validation is not required."""
+        """Keep the full train split when validation is not required.
+
+        Args:
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         dataset_config = copy(dataset_config)
         dataset_config.val_split = None
         monkeypatch.setattr(

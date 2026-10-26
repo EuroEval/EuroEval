@@ -70,7 +70,12 @@ HARDWARE = HardwareReport(
 
 
 def test_auth_honours_slow_down_retry_after(tmp_path: Path) -> None:
-    """Use the broker's slow-down interval rather than a tight polling loop."""
+    """Use the broker's slow-down interval rather than a tight polling loop.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     delays: list[float] = []
 
     class SlowAuth(AuthClient):
@@ -80,7 +85,12 @@ def test_auth_honours_slow_down_retry_after(tmp_path: Path) -> None:
             self.polls = 0
 
         def poll_auth(self, session_id: str) -> AuthPoll:
-            """Return slow-down and then approval."""
+            """Return slow-down and then approval.
+
+            Args:
+                session_id:
+                    Session id supplied to the test.
+            """
             self.polls += 1
             if self.polls == 1:
                 return AuthPoll(True, retry_after=7)
@@ -96,7 +106,12 @@ def test_auth_honours_slow_down_retry_after(tmp_path: Path) -> None:
 def test_auth_persists_only_broker_auth_with_private_permissions(
     tmp_path: Path,
 ) -> None:
-    """Persist the opaque credential and verified login mode 0600."""
+    """Persist the opaque credential and verified login mode 0600.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     state = StateStore(tmp_path)
     assert authenticate(AuthClient(), state, sleep=lambda _seconds: None) == (
         "opaque-credential",
@@ -115,6 +130,10 @@ class AuthClient:
     def poll_auth(self, session_id: str) -> AuthPoll:
         """Approve the test device flow.
 
+        Args:
+            session_id:
+                Session id supplied to the test.
+
         Returns:
             Approved test credentials.
         """
@@ -129,7 +148,14 @@ class AuthClient:
 def test_broker_client_drives_canonical_http_lifecycle(
     tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
-    """Drive authentication, lease, result and finalisation over fake HTTP."""
+    """Drive authentication, lease, result and finalisation over fake HTTP.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        caplog:
+            Fixture for capturing log records during the test.
+    """
     calls: list[tuple[str, dict[str, object]]] = []
 
     def request(
@@ -138,7 +164,18 @@ def test_broker_client_drives_canonical_http_lifecycle(
         headers: dict[str, str],
         payload: dict[str, object] | None,
     ) -> dict[str, object]:
-        """Return one canonical response for each broker endpoint."""
+        """Return one canonical response for each broker endpoint.
+
+        Args:
+            method:
+                Method supplied to the test.
+            url:
+                Url supplied to the test.
+            headers:
+                Headers supplied to the test.
+            payload:
+                Payload supplied to the test.
+        """
         assert method == "POST"
         assert payload is not None
         path = url.removeprefix("https://broker.test/")
@@ -268,6 +305,16 @@ def test_broker_protocol_payload_is_canonical() -> None:
     ) -> dict[str, object]:
         """Capture a request and return a no-work response.
 
+        Args:
+            method:
+                Method supplied to the test.
+            url:
+                Url supplied to the test.
+            headers:
+                Headers supplied to the test.
+            payload:
+                Payload supplied to the test.
+
         Returns:
             The canonical no-work envelope.
         """
@@ -303,7 +350,14 @@ def test_broker_protocol_payload_is_canonical() -> None:
 def test_busy_gpu_is_not_selected_or_exposed_to_evaluation(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Choose the free GPU and restore CUDA visibility after evaluation."""
+    """Choose the free GPU and restore CUDA visibility after evaluation.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     monkeypatch.setattr(
         runtime, "authenticate", lambda client, state: ("cred", "login")
     )
@@ -322,6 +376,12 @@ def test_busy_gpu_is_not_selected_or_exposed_to_evaluation(
         def claim(self, credential: str, hardware: HardwareReport) -> Claim:
             """Capture hardware and return work.
 
+            Args:
+                credential:
+                    Credential supplied to the test.
+                hardware:
+                    Hardware supplied to the test.
+
             Returns:
                 The test lease.
             """
@@ -338,7 +398,14 @@ def test_busy_gpu_is_not_selected_or_exposed_to_evaluation(
         """Capture CUDA visibility during model setup."""
 
         def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
-            """Return one result after observing the environment."""
+            """Return one result after observing the environment.
+
+            Args:
+                lease:
+                    Lease supplied to the test.
+                output_path:
+                    Output path supplied to the test.
+            """
             observed["cuda"] = os.environ.get("CUDA_VISIBLE_DEVICES")
             return [EEERecord({"id": "one"})]
 
@@ -360,7 +427,14 @@ def test_busy_gpu_is_not_selected_or_exposed_to_evaluation(
 def test_cached_credential_is_reauthenticated_once(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Clear one revoked cached credential and complete device auth once."""
+    """Clear one revoked cached credential and complete device auth once.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     authentications = iter([("old", "login"), ("new", "login")])
     monkeypatch.setattr(
         runtime, "authenticate", lambda client, state: next(authentications)
@@ -371,6 +445,12 @@ def test_cached_credential_is_reauthenticated_once(
 
         def claim(self, credential: str, hardware: HardwareReport) -> Claim:
             """Reject the cached credential once.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                hardware:
+                    Hardware supplied to the test.
 
             Returns:
                 The claimed lease for a valid credential.
@@ -400,14 +480,28 @@ class OneRecordEvaluator:
     """Evaluator fake producing one isolated result."""
 
     def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
-        """Return one stable record."""
+        """Return one stable record.
+
+        Args:
+            lease:
+                Lease supplied to the test.
+            output_path:
+                Output path supplied to the test.
+        """
         return [EEERecord({"id": "one"})]
 
 
 def test_canary_corpus_outage_does_not_block_results(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Finalise ordinary results when private corpus delivery is unavailable."""
+    """Finalise ordinary results when private corpus delivery is unavailable.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     monkeypatch.setattr(
         runtime, "authenticate", lambda client, state: ("cred", "login")
     )
@@ -432,14 +526,47 @@ def test_canary_corpus_outage_does_not_block_results(
 
     class OutageBroker(Broker):
         def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            """Claim for this test.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                hardware:
+                    Hardware supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             return Claim(lease)
 
         def fetch_canary_corpus(self, credential: str, lease: Lease) -> str:
+            """Fetch canary corpus for this test.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                lease:
+                    Lease supplied to the test.
+
+            Raises:
+                BrokerError:
+                    If the simulated operation fails.
+            """
             raise BrokerError("temporarily unavailable", status=503)
 
         def submit_result(
             self, credential: str, lease: Lease, result: EEERecord
         ) -> None:
+            """Submit result for this test.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                lease:
+                    Lease supplied to the test.
+                result:
+                    Result supplied to the test.
+            """
             self.submissions += 1
 
     broker = OutageBroker()
@@ -458,7 +585,12 @@ def test_canary_corpus_outage_does_not_block_results(
 def test_discover_hardware_does_not_import_torch_in_worker(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Report GB10 data while avoiding CUDA initialisation in the worker process."""
+    """Report GB10 data while avoiding CUDA initialisation in the worker process.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setattr(
         hardware,
         "_discover_spark_memory",
@@ -483,7 +615,14 @@ def test_discover_hardware_does_not_import_torch_in_worker(
 def test_discover_hardware_uses_supplied_state_filesystem(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Measure free space on the supplied cache rather than the working directory."""
+    """Measure free space on the supplied cache rather than the working directory.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     state_dir = tmp_path / "mounted-cache"
     state_dir.mkdir()
     measured: list[Path] = []
@@ -492,6 +631,15 @@ def test_discover_hardware_uses_supplied_state_filesystem(
     monkeypatch.setattr(hardware, "_pytorch_version", lambda: None)
 
     def record_disk_path(path: Path) -> object:
+        """Record disk path for this test.
+
+        Args:
+            path:
+                Path supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         measured.append(path)
         return disk_usage(path)
 
@@ -519,7 +667,14 @@ def test_eee_record_rejects_non_finite_values() -> None:
 def test_encoder_canary_uses_ordinary_result_path_without_corpus(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Submit the encoder's auxiliary record without delivering canary prompts."""
+    """Submit the encoder's auxiliary record without delivering canary prompts.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     monkeypatch.setattr(
         runtime, "authenticate", lambda client, state: ("cred", "login")
     )
@@ -537,6 +692,17 @@ def test_encoder_canary_uses_ordinary_result_path_without_corpus(
 
     class EncoderEvaluator:
         def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
+            """Evaluate for this test.
+
+            Args:
+                lease:
+                    Lease supplied to the test.
+                output_path:
+                    Output path supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             return [
                 EEERecord({"id": "ordinary"}),
                 EEERecord({"id": "canary", "status": "not_applicable"}),
@@ -544,14 +710,47 @@ def test_encoder_canary_uses_ordinary_result_path_without_corpus(
 
     class EncoderBroker(Broker):
         def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            """Claim for this test.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                hardware:
+                    Hardware supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             return Claim(lease)
 
         def fetch_canary_corpus(self, credential: str, lease: Lease) -> str:
+            """Fetch canary corpus for this test.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                lease:
+                    Lease supplied to the test.
+
+            Raises:
+                AssertionError:
+                    If the simulated operation fails.
+            """
             raise AssertionError("encoder must not receive the canary corpus")
 
         def submit_result(
             self, credential: str, lease: Lease, result: EEERecord
         ) -> None:
+            """Submit result for this test.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                lease:
+                    Lease supplied to the test.
+                result:
+                    Result supplied to the test.
+            """
             self.submissions += 1
 
     broker = EncoderBroker()
@@ -569,7 +768,14 @@ def test_encoder_canary_uses_ordinary_result_path_without_corpus(
 def test_evaluation_failure_releases_lease(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Release a lease when evaluation fails."""
+    """Release a lease when evaluation fails.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     monkeypatch.setattr(
         runtime, "authenticate", lambda client, state: ("cred", "login")
     )
@@ -583,6 +789,12 @@ def test_evaluation_failure_releases_lease(
 
         def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
             """Raise a representative evaluation failure.
+
+            Args:
+                lease:
+                    Lease supplied to the test.
+                output_path:
+                    Output path supplied to the test.
 
             Raises:
                 RuntimeError: Always, to exercise release handling.
@@ -612,12 +824,25 @@ class Broker:
         self.finalised = False
 
     def claim(self, credential: str, hardware: HardwareReport) -> Claim:
-        """Return the test lease."""
+        """Return the test lease.
+
+        Args:
+            credential:
+                Credential supplied to the test.
+            hardware:
+                Hardware supplied to the test.
+        """
         self.claims += 1
         return Claim(LEASE)
 
     def finalise(self, credential: str, lease_id: str) -> str:
         """Accept finalisation and return its stable identifier.
+
+        Args:
+            credential:
+                Credential supplied to the test.
+            lease_id:
+                Lease id supplied to the test.
 
         Returns:
             The stable submission identifier.
@@ -628,17 +853,37 @@ class Broker:
     def heartbeat(self, credential: str, lease_id: str) -> str:
         """Accept a test heartbeat.
 
+        Args:
+            credential:
+                Credential supplied to the test.
+            lease_id:
+                Lease id supplied to the test.
+
         Returns:
             The current lease expiry.
         """
         return LEASE.expires_at
 
     def poll_auth(self, session_id: str) -> AuthPoll:
-        """Return approved test auth."""
+        """Return approved test auth.
+
+        Args:
+            session_id:
+                Session id supplied to the test.
+        """
         return AuthPoll(False, "cred", "login")
 
     def release(self, credential: str, lease_id: str, reason: str) -> None:
-        """Record lease release."""
+        """Record lease release.
+
+        Args:
+            credential:
+                Credential supplied to the test.
+            lease_id:
+                Lease id supplied to the test.
+            reason:
+                Reason supplied to the test.
+        """
         self.releases.append(reason)
 
     def start_auth(self) -> AuthStart:
@@ -647,6 +892,14 @@ class Broker:
 
     def submit_result(self, credential: str, lease: Lease, result: EEERecord) -> None:
         """Fail once to verify digest-stable retry.
+
+        Args:
+            credential:
+                Credential supplied to the test.
+            lease:
+                Lease supplied to the test.
+            result:
+                Result supplied to the test.
 
         Raises:
             RuntimeError: On the first submission.
@@ -659,17 +912,35 @@ class Broker:
 def test_evaluator_selects_official_tasks_for_required_canary(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """A required canary lease selects normal tasks and the canary task explicitly."""
+    """A required canary lease selects normal tasks and the canary task explicitly.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     calls: dict[str, object] = {}
 
     class FakeBenchmarker:
         """Capture the adapter's calls."""
 
         def __init__(self, **kwargs: object) -> None:
+            """Init   for this test.
+
+            Args:
+                kwargs:
+                    Kwargs supplied to the test.
+            """
             calls["init"] = kwargs
 
         def benchmark(self, **kwargs: object) -> list[object]:
-            """Return one fake benchmark result."""
+            """Return one fake benchmark result.
+
+            Args:
+                kwargs:
+                    Kwargs supplied to the test.
+            """
             calls["benchmark"] = kwargs
             return [object()]
 
@@ -711,17 +982,35 @@ def test_evaluator_selects_official_tasks_for_required_canary(
 def test_evaluator_uses_validation_and_remote_code_flags(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Pass the worker's safety flags to the existing evaluator."""
+    """Pass the worker's safety flags to the existing evaluator.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     calls: dict[str, object] = {}
 
     class FakeBenchmarker:
         """Capture the adapter's calls."""
 
         def __init__(self, **kwargs: object) -> None:
+            """Init   for this test.
+
+            Args:
+                kwargs:
+                    Kwargs supplied to the test.
+            """
             calls["init"] = kwargs
 
         def benchmark(self, **kwargs: object) -> list[object]:
-            """Return one fake benchmark result."""
+            """Return one fake benchmark result.
+
+            Args:
+                kwargs:
+                    Kwargs supplied to the test.
+            """
             calls["benchmark"] = kwargs
             return [object()]
 
@@ -763,7 +1052,14 @@ def test_evaluator_uses_validation_and_remote_code_flags(
 def test_expired_active_lease_is_archived_before_new_claim(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Never submit stale pending state alongside a newly claimed lease."""
+    """Never submit stale pending state alongside a newly claimed lease.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     monkeypatch.setattr(
         runtime, "authenticate", lambda client, state: ("cred", "login")
     )
@@ -789,7 +1085,14 @@ def test_expired_active_lease_is_archived_before_new_claim(
 def test_finalise_response_loss_is_idempotently_retried(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Keep acknowledged results when the finalise response is lost."""
+    """Keep acknowledged results when the finalise response is lost.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     monkeypatch.setattr(
         runtime, "authenticate", lambda client, state: ("cred", "login")
     )
@@ -802,6 +1105,12 @@ def test_finalise_response_loss_is_idempotently_retried(
 
         def finalise(self, credential: str, lease_id: str) -> str:
             """Lose the first response, then return the identifier.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                lease_id:
+                    Lease id supplied to the test.
 
             Returns:
                 The submission identifier after the simulated lost response.
@@ -833,7 +1142,12 @@ def test_finalise_response_loss_is_idempotently_retried(
 def test_gb10_contention_caps_reported_free_memory(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Respect host contention even when CUDA reports substantially more free."""
+    """Respect host contention even when CUDA reports substantially more free.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setattr(
         hardware.subprocess,
         "run",
@@ -853,7 +1167,12 @@ def test_gb10_contention_caps_reported_free_memory(
 def test_gb10_discovery_fails_closed_on_unverified_memory(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Do not report availability if device identity cannot be verified."""
+    """Do not report availability if device identity cannot be verified.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setattr(
         hardware.subprocess,
         "run",
@@ -874,7 +1193,12 @@ def test_gb10_discovery_fails_closed_on_unverified_memory(
 def test_gb10_malformed_and_failed_fallback_reports_no_capacity(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Ignore malformed rows and fail closed when isolated CUDA probing fails."""
+    """Ignore malformed rows and fail closed when isolated CUDA probing fails.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setattr(
         hardware.subprocess,
         "run",
@@ -898,11 +1222,27 @@ def test_gb10_malformed_and_failed_fallback_reports_no_capacity(
 def test_gb10_n_a_memory_uses_verified_cuda_fallback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Use isolated CUDA measurements and cap free memory by host availability."""
+    """Use isolated CUDA measurements and cap free memory by host availability.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     output = "0, NVIDIA GB10, GPU-test, N/A, N/A, 12.1\n"
     measured: list[str] = []
 
     def fake_run(command: list[str], **kwargs: object) -> object:
+        """Fake run for this test.
+
+        Args:
+            command:
+                Command supplied to the test.
+            kwargs:
+                Kwargs supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         environment = kwargs.get("env")
         assert isinstance(environment, dict)
         measured.append(str(environment.get("CUDA_VISIBLE_DEVICES")))
@@ -924,7 +1264,14 @@ def test_gb10_n_a_memory_uses_verified_cuda_fallback(
 def test_interruption_resumes_pre_evaluation_lease(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Persist a lease before evaluation and resume it without reclaiming work."""
+    """Persist a lease before evaluation and resume it without reclaiming work.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     monkeypatch.setattr(
         runtime, "authenticate", lambda client, state: ("cred", "login")
     )
@@ -937,6 +1284,12 @@ def test_interruption_resumes_pre_evaluation_lease(
 
         def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
             """Interrupt the first worker.
+
+            Args:
+                lease:
+                    Lease supplied to the test.
+                output_path:
+                    Output path supplied to the test.
 
             Raises:
                 KeyboardInterrupt:
@@ -969,7 +1322,14 @@ def test_interruption_resumes_pre_evaluation_lease(
 def test_keyboard_interrupt_releases_lease(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Cancellation releases an active lease."""
+    """Cancellation releases an active lease.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     monkeypatch.setattr(
         runtime, "authenticate", lambda client, state: ("cred", "login")
     )
@@ -983,6 +1343,12 @@ def test_keyboard_interrupt_releases_lease(
 
         def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
             """Simulate Ctrl-C.
+
+            Args:
+                lease:
+                    Lease supplied to the test.
+                output_path:
+                    Output path supplied to the test.
 
             Raises:
                 KeyboardInterrupt: Always, for this test double.
@@ -1004,7 +1370,14 @@ def test_keyboard_interrupt_releases_lease(
 def test_lease_loss_releases_without_finalising(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """A lost heartbeat never permits finalisation."""
+    """A lost heartbeat never permits finalisation.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     monkeypatch.setattr(
         runtime, "authenticate", lambda client, state: ("cred", "login")
     )
@@ -1016,6 +1389,16 @@ def test_lease_loss_releases_without_finalising(
         """Heartbeat fake reporting lease loss."""
 
         def __init__(self, client: object, credential: str, lease: Lease) -> None:
+            """Init   for this test.
+
+            Args:
+                client:
+                    Client supplied to the test.
+                credential:
+                    Credential supplied to the test.
+                lease:
+                    Lease supplied to the test.
+            """
             pass
 
         def check(self) -> None:
@@ -1050,7 +1433,14 @@ def test_lease_loss_releases_without_finalising(
 def test_no_gpu_exits_before_claim(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Do not claim work when hardware discovery reports no GPU."""
+    """Do not claim work when hardware discovery reports no GPU.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     monkeypatch.setattr(
         runtime, "authenticate", lambda client, state: ("cred", "login")
     )
@@ -1079,7 +1469,14 @@ def test_nvidia_csv_parser_handles_compute_capability_and_fails_without_gpu() ->
 def test_partial_acknowledgements_survive_restart(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Retry only unacknowledged records after a failed submission."""
+    """Retry only unacknowledged records after a failed submission.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     monkeypatch.setattr(
         runtime, "authenticate", lambda client, state: ("cred", "login")
     )
@@ -1091,7 +1488,14 @@ def test_partial_acknowledgements_survive_restart(
         """Evaluator producing two deterministic records."""
 
         def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
-            """Return two records."""
+            """Return two records.
+
+            Args:
+                lease:
+                    Lease supplied to the test.
+                output_path:
+                    Output path supplied to the test.
+            """
             return [EEERecord({"id": "one"}), EEERecord({"id": "two"})]
 
     class FailSecond(Broker):
@@ -1105,6 +1509,14 @@ def test_partial_acknowledgements_survive_restart(
             self, credential: str, lease: Lease, result: EEERecord
         ) -> None:
             """Fail all retries for the second record on the first run.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                lease:
+                    Lease supplied to the test.
+                result:
+                    Result supplied to the test.
 
             Raises:
                 BrokerError:
@@ -1136,7 +1548,14 @@ def test_partial_acknowledgements_survive_restart(
 def test_restart_submits_durable_records_without_evaluation(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Resume durable results without regenerating timestamped evaluation bytes."""
+    """Resume durable results without regenerating timestamped evaluation bytes.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     monkeypatch.setattr(
         runtime, "authenticate", lambda client, state: ("cred", "login")
     )
@@ -1152,6 +1571,12 @@ def test_restart_submits_durable_records_without_evaluation(
 
         def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
             """Fail if the durable result was not used.
+
+            Args:
+                lease:
+                    Lease supplied to the test.
+                output_path:
+                    Output path supplied to the test.
 
             Raises:
                 AssertionError:
@@ -1191,7 +1616,12 @@ def test_safety_rejects_remote_code_and_unpinned_models() -> None:
 def test_state_round_trip_preserves_scope_alternatives_and_canary(
     tmp_path: Path,
 ) -> None:
-    """Restart state preserves both trusted alternatives and canary instructions."""
+    """Restart state preserves both trusted alternatives and canary instructions.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     lease = dataclasses.replace(
         LEASE,
         contamination_canary=CanaryInstruction(
@@ -1213,7 +1643,14 @@ def test_state_round_trip_preserves_scope_alternatives_and_canary(
 def test_worker_caps_vllm_utilisation_to_fresh_free_gpu_memory(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Scale vLLM's total-memory reservation to current free memory."""
+    """Scale vLLM's total-memory reservation to current free memory.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     monkeypatch.setattr(
         runtime, "authenticate", lambda client, state: ("cred", "login")
     )
@@ -1235,6 +1672,19 @@ def test_worker_caps_vllm_utilisation_to_fresh_free_gpu_memory(
             output_path: Path,
             gpu_memory_utilisation: float | None = None,
         ) -> list[EEERecord]:
+            """Evaluate for this test.
+
+            Args:
+                lease:
+                    Lease supplied to the test.
+                output_path:
+                    Output path supplied to the test.
+                gpu_memory_utilisation (optional):
+                    Gpu memory utilisation supplied to the test. Defaults to None.
+
+            Returns:
+                The value returned by the test helper.
+            """
             observed["utilisation"] = gpu_memory_utilisation
             return [EEERecord({"id": "one"})]
 
@@ -1253,7 +1703,14 @@ def test_worker_caps_vllm_utilisation_to_fresh_free_gpu_memory(
 def test_worker_measures_disk_on_its_state_filesystem(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Pass the state/model-cache path to default hardware discovery."""
+    """Pass the state/model-cache path to default hardware discovery.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     state_dir = tmp_path / "mounted-cache"
     state_dir.mkdir()
     measured: list[Path] = []
@@ -1262,6 +1719,15 @@ def test_worker_measures_disk_on_its_state_filesystem(
     )
 
     def discover(*, state_dir: Path) -> HardwareReport:
+        """Discover for this test.
+
+        Args:
+            state_dir:
+                State dir supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         measured.append(state_dir)
         return HARDWARE
 
@@ -1269,6 +1735,17 @@ def test_worker_measures_disk_on_its_state_filesystem(
 
     class NoWorkBroker(Broker):
         def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            """Claim for this test.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                hardware:
+                    Hardware supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             return Claim(None)
 
     runtime.Worker(client=NoWorkBroker(), state=StateStore(state_dir)).run(once=True)
@@ -1279,7 +1756,14 @@ def test_worker_measures_disk_on_its_state_filesystem(
 def test_worker_retries_idempotently_and_finalises(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Retry a result without changing its digest, then finalise."""
+    """Retry a result without changing its digest, then finalise.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     monkeypatch.setattr(
         runtime, "authenticate", lambda client, state: ("cred", "login")
     )

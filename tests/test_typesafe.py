@@ -20,7 +20,16 @@ def test_api_key_must_come_from_typesafe_environment(
     dataset_config: DatasetConfig,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The Hugging Face --api-key value is never used as the Typesafe key."""
+    """The Hugging Face --api-key value is never used as the Typesafe key.
+
+    Args:
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)
     config = TypesafeSystemOneModel.get_model_config(
         model_id="typesafe/jev-1.13.0", benchmark_config=benchmark_config
@@ -40,7 +49,16 @@ def test_generate_classifies_through_system_one_and_extracts_labels(
     dataset_config: DatasetConfig,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Public generation and extraction preserve the configured label space."""
+    """Public generation and extraction preserve the configured label space.
+
+    Args:
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setenv("TYPESAFE_API_KEY", "typesafe-token")
     requests: list[dict[str, object]] = []
     labels = [
@@ -49,6 +67,17 @@ def test_generate_classifies_through_system_one_and_extracts_labels(
     ]
 
     def post(url: str, **kwargs: object) -> _Response:
+        """Post for this test.
+
+        Args:
+            url:
+                Url supplied to the test.
+            kwargs:
+                Kwargs supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         requests.append({"url": url, **kwargs})
         return _Response({labels[0]: 0.8, labels[1]: 0.1, labels[2]: 0.1})
 
@@ -70,6 +99,12 @@ def test_generate_classifies_through_system_one_and_extracts_labels(
 
 class _Response:
     def __init__(self, probabilities: dict[str, float]) -> None:
+        """Init   for this test.
+
+        Args:
+            probabilities:
+                Probabilities supplied to the test.
+        """
         self.probabilities = probabilities
 
     def json(self) -> dict[str, object]:
@@ -83,6 +118,12 @@ def _make_model(
     benchmark_config: BenchmarkConfig, dataset_config: DatasetConfig
 ) -> TypesafeSystemOneModel:
     """Create Jev model with its dedicated backend configuration.
+
+    Args:
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
 
     Returns:
         The configured hosted model.
@@ -103,13 +144,33 @@ def test_generate_does_not_retry_permanent_http_status(
     dataset_config: DatasetConfig,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Authentication failures are reported immediately without a retry."""
+    """Authentication failures are reported immediately without a retry.
+
+    Args:
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setenv("TYPESAFE_API_KEY", "typesafe-token")
     response = requests.Response()
     response.status_code = 401
     calls = 0
 
     def post(*_args: object, **_kwargs: object) -> requests.Response:
+        """Post for this test.
+
+        Args:
+            _args:
+                 args supplied to the test.
+            _kwargs:
+                 kwargs supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         nonlocal calls
         calls += 1
         return response
@@ -129,7 +190,16 @@ def test_generate_exhausts_transient_statuses(
     dataset_config: DatasetConfig,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Repeated server failures become a contextual InvalidModel."""
+    """Repeated server failures become a contextual InvalidModel.
+
+    Args:
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setenv("TYPESAFE_API_KEY", "typesafe-token")
     response = requests.Response()
     response.status_code = 520
@@ -137,6 +207,17 @@ def test_generate_exhausts_transient_statuses(
     calls = 0
 
     def post(*_args: object, **_kwargs: object) -> requests.Response:
+        """Post for this test.
+
+        Args:
+            _args:
+                 args supplied to the test.
+            _kwargs:
+                 kwargs supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         nonlocal calls
         calls += 1
         return response
@@ -168,7 +249,18 @@ def test_generate_rejects_invalid_probabilities(
     monkeypatch: pytest.MonkeyPatch,
     probability: float,
 ) -> None:
-    """Invalid probability values fail closed instead of corrupting scores."""
+    """Invalid probability values fail closed instead of corrupting scores.
+
+    Args:
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        probability:
+            Probability supplied to the test.
+    """
     monkeypatch.setenv("TYPESAFE_API_KEY", "typesafe-token")
     labels = [
         dataset_config.prompt_label_mapping[label]
@@ -192,7 +284,16 @@ def test_generate_rejects_malformed_response(
     dataset_config: DatasetConfig,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Malformed service responses produce a clear benchmark error."""
+    """Malformed service responses produce a clear benchmark error.
+
+    Args:
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setenv("TYPESAFE_API_KEY", "typesafe-token")
     monkeypatch.setattr(
         "euroeval.benchmark_modules.typesafe.requests.post",
@@ -210,12 +311,29 @@ def test_generate_retries_connection_errors_then_reports_failure(
     dataset_config: DatasetConfig,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Connection failures are retried and reported without private details."""
+    """Connection failures are retried and reported without private details.
+
+    Args:
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setenv("TYPESAFE_API_KEY", "typesafe-token")
     failure = requests.ConnectionError("private connection detail")
     calls = 0
 
     def post(*_args: object, **_kwargs: object) -> _Response:
+        """Post for this test.
+
+        Args:
+            _args:
+                 args supplied to the test.
+            _kwargs:
+                 kwargs supplied to the test.
+        """
         nonlocal calls
         calls += 1
         raise failure
@@ -243,7 +361,16 @@ def test_generate_retries_transient_status_and_recovers(
     dataset_config: DatasetConfig,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Transient HTTP responses are retried and a later response is used."""
+    """Transient HTTP responses are retried and a later response is used.
+
+    Args:
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setenv("TYPESAFE_API_KEY", "typesafe-token")
     labels = [
         dataset_config.prompt_label_mapping[label]
@@ -256,6 +383,17 @@ def test_generate_retries_transient_status_and_recovers(
     delays: list[float] = []
 
     def post(*_args: object, **_kwargs: object) -> _Response | requests.Response:
+        """Post for this test.
+
+        Args:
+            _args:
+                 args supplied to the test.
+            _kwargs:
+                 kwargs supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         nonlocal calls
         calls += 1
         return (
@@ -280,7 +418,16 @@ def test_generate_supports_multiple_choice(
     dataset_config: DatasetConfig,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Multiple-choice generation sends candidate answers as criteria."""
+    """Multiple-choice generation sends candidate answers as criteria.
+
+    Args:
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setenv("TYPESAFE_API_KEY", "typesafe-token")
     dataset_config = copy.copy(dataset_config)
     dataset_config.task = copy.copy(dataset_config.task)
@@ -292,6 +439,17 @@ def test_generate_supports_multiple_choice(
     criteria_sent: list[dict[str, str | None]] = []
 
     def post(_url: str, **kwargs: object) -> _Response:
+        """Post for this test.
+
+        Args:
+            _url:
+                 url supplied to the test.
+            kwargs:
+                Kwargs supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         payload = t.cast(dict[str, object], kwargs["json"])
         questions = t.cast(dict[str, object], payload["questions"])
         question = t.cast(dict[str, object], questions["name"])
@@ -310,7 +468,12 @@ def test_generate_supports_multiple_choice(
 def test_model_config_routes_versioned_jev_and_rejects_malformed_ids(
     benchmark_config: BenchmarkConfig,
 ) -> None:
-    """Valid versioned IDs use Typesafe and malformed IDs are rejected."""
+    """Valid versioned IDs use Typesafe and malformed IDs are rejected.
+
+    Args:
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+    """
     model_id = "typesafe/jev-1.13.0"
     config = TypesafeSystemOneModel.get_model_config(
         model_id=model_id, benchmark_config=benchmark_config
@@ -356,7 +519,16 @@ def test_public_model_loading_routes_to_typesafe(
     dataset_config: DatasetConfig,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The shared model loader instantiates the dedicated hosted backend."""
+    """The shared model loader instantiates the dedicated hosted backend.
+
+    Args:
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setenv("TYPESAFE_API_KEY", "typesafe-token")
     config = TypesafeSystemOneModel.get_model_config(
         model_id="typesafe/jev-1.13.0", benchmark_config=benchmark_config
@@ -377,7 +549,16 @@ def test_speed_task_is_rejected_before_remote_call(
     dataset_config: DatasetConfig,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Hosted Jev refuses unsupported speed benchmarks during local setup."""
+    """Hosted Jev refuses unsupported speed benchmarks during local setup.
+
+    Args:
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setenv("TYPESAFE_API_KEY", "typesafe-token")
     dataset_config = copy.copy(dataset_config)
     dataset_config.task = copy.copy(dataset_config.task)

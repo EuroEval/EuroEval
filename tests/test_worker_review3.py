@@ -20,7 +20,12 @@ from tests.test_euroeval_worker import GPU, HARDWARE, LEASE
 
 
 def test_active_lease_persists_identity_and_gpu_selection(tmp_path: Path) -> None:
-    """Restart state keeps the contributor and UUID-pinned GPU."""
+    """Restart state keeps the contributor and UUID-pinned GPU.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     state = StateStore(tmp_path)
     state.save_active(LEASE, github_login="contributor")
 
@@ -88,7 +93,14 @@ def test_encoder_backend_requires_each_leased_task_mapping() -> None:
 def test_full_encoder_preflight_uses_the_leased_task_scope(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Fetch broad metadata, then check only the broker-authorised tasks."""
+    """Fetch broad metadata, then check only the broker-authorised tasks.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     task_groups = (
         "sequence_classification",
         "token_classification",
@@ -113,9 +125,24 @@ def test_full_encoder_preflight_uses_the_leased_task_scope(
 
     class Api:
         def __init__(self, token: bool) -> None:
+            """Init   for this test.
+
+            Args:
+                token:
+                    Token supplied to the test.
+            """
             assert token is False
 
         def model_info(self, **kwargs: object) -> Info:
+            """Model info for this test.
+
+            Args:
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             assert kwargs["revision"] == "a" * 40
             return Info()
 
@@ -152,7 +179,12 @@ def test_full_encoder_preflight_uses_the_leased_task_scope(
 
 
 def test_heartbeat_persists_renewed_expiry(tmp_path: Path) -> None:
-    """A renewal remains usable after the original lease expiry."""
+    """A renewal remains usable after the original lease expiry.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     renewed = dataclasses.replace(
         LEASE, model_type="encoder", expires_at="2099-01-02T00:00:00Z"
     )
@@ -161,6 +193,17 @@ def test_heartbeat_persists_renewed_expiry(tmp_path: Path) -> None:
 
     class Broker:
         def heartbeat(self, credential: str, lease_id: str) -> str:
+            """Heartbeat for this test.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                lease_id:
+                    Lease id supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             return renewed.expires_at
 
     heartbeat = runtime.Heartbeat(
@@ -180,6 +223,21 @@ def test_heartbeat_reauthenticates_once_and_retries() -> None:
 
     class Broker:
         def heartbeat(self, credential: str, lease_id: str) -> str:
+            """Heartbeat for this test.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                lease_id:
+                    Lease id supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+
+            Raises:
+                BrokerError:
+                    If the simulated operation fails.
+            """
             calls.append(credential)
             if credential == "old":
                 raise BrokerError("expired", status=401)
@@ -199,7 +257,14 @@ def test_heartbeat_reauthenticates_once_and_retries() -> None:
 def test_huggingface_metadata_records_immutable_capability_evidence(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Fetch pipeline metadata and run the installed-stack preflight."""
+    """Fetch pipeline metadata and run the installed-stack preflight.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     config_path = tmp_path / "config.json"
     config_path.write_text(
         json.dumps({"model_type": "novel", "architectures": ["NovelBaseModel"]}),
@@ -218,9 +283,24 @@ def test_huggingface_metadata_records_immutable_capability_evidence(
 
     class Api:
         def __init__(self, token: bool) -> None:
+            """Init   for this test.
+
+            Args:
+                token:
+                    Token supplied to the test.
+            """
             assert token is False
 
         def model_info(self, **kwargs: object) -> Info:
+            """Model info for this test.
+
+            Args:
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             assert kwargs["revision"] == "a" * 40
             return Info()
 
@@ -369,7 +449,14 @@ def test_pinned_vllm_registry_is_used_when_installed() -> None:
 def test_reauthentication_rejects_different_contributor(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """A replacement login preserves the active evidence and submits nothing."""
+    """A replacement login preserves the active evidence and submits nothing.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     state = StateStore(tmp_path)
     state.save_active(LEASE, github_login="old-login")
     state.save_auth("old-credential", "old-login")
@@ -385,7 +472,14 @@ def test_reauthentication_rejects_different_contributor(
 def test_restart_requires_the_leased_gpu_uuid(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """A missing UUID-pinned GPU preserves evidence and performs no upload."""
+    """A missing UUID-pinned GPU preserves evidence and performs no upload.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     state = StateStore(tmp_path)
     state.save_active(LEASE, github_login="login")
     monkeypatch.setattr(
@@ -408,7 +502,14 @@ def test_restart_requires_the_leased_gpu_uuid(
 def test_result_and_finalise_reauthenticate_once(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Upload and finalisation resume with a replacement same-login credential."""
+    """Upload and finalisation resume with a replacement same-login credential.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     state = StateStore(tmp_path)
     state.save_auth("old", "contributor")
     credentials: list[str] = []
@@ -422,6 +523,21 @@ def test_result_and_finalise_reauthenticate_once(
 
     class Broker:
         def finalise(self, credential: str, lease_id: str) -> str:
+            """Finalise for this test.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                lease_id:
+                    Lease id supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+
+            Raises:
+                BrokerError:
+                    If the simulated operation fails.
+            """
             credentials.append(credential)
             if credential == "old":
                 raise BrokerError("expired", status=401)
@@ -430,6 +546,20 @@ def test_result_and_finalise_reauthenticate_once(
         def submit_result(
             self, credential: str, lease: object, result: EEERecord
         ) -> None:
+            """Submit result for this test.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                lease:
+                    Lease supplied to the test.
+                result:
+                    Result supplied to the test.
+
+            Raises:
+                BrokerError:
+                    If the simulated operation fails.
+            """
             credentials.append(credential)
             if credential == "old":
                 raise BrokerError("expired", status=401)
@@ -444,7 +574,14 @@ def test_result_and_finalise_reauthenticate_once(
 def test_result_retry_honours_backoff_and_terminal_statuses(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Uploads retry transient responses but stop on lease and validation errors."""
+    """Uploads retry transient responses but stop on lease and validation errors.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     delays: list[float] = []
     monkeypatch.setattr(runtime.time, "sleep", delays.append)
     state = StateStore(tmp_path)
@@ -456,6 +593,16 @@ def test_result_retry_honours_backoff_and_terminal_statuses(
 
     class Transient:
         def submit_result(self, **kwargs: object) -> None:
+            """Submit result for this test.
+
+            Args:
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Raises:
+                BrokerError:
+                    If the simulated operation fails.
+            """
             nonlocal attempts
             attempts += 1
             if attempts < 3:
@@ -470,6 +617,16 @@ def test_result_retry_honours_backoff_and_terminal_statuses(
 
         class Terminal:
             def submit_result(self, **kwargs: object) -> None:
+                """Submit result for this test.
+
+                Args:
+                    kwargs:
+                        Kwargs supplied to the test.
+
+                Raises:
+                    BrokerError:
+                        If the simulated operation fails.
+                """
                 raise BrokerError("terminal", status=status)
 
         worker.client = t.cast(BrokerProtocol, Terminal())
@@ -480,7 +637,12 @@ def test_result_retry_honours_backoff_and_terminal_statuses(
 def test_vllm_inspection_rejects_pooling_only_architecture(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Use vLLM's model inspection result rather than registry membership."""
+    """Use vLLM's model inspection result rather than registry membership.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
 
     class Info:
         is_text_generation_model = False
@@ -497,6 +659,17 @@ def test_vllm_inspection_rejects_pooling_only_architecture(
         def inspect_model_cls(
             architectures: object, config: object
         ) -> tuple[Info, str]:
+            """Inspect model cls for this test.
+
+            Args:
+                architectures:
+                    Architectures supplied to the test.
+                config:
+                    Config supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             return Info(), "PoolingModel"
 
     monkeypatch.setitem(sys.modules, "vllm", types.ModuleType("vllm"))

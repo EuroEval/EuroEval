@@ -141,6 +141,12 @@ def _make_dummy_configs(
 
     Uses valid task names that work with category_includes_task.
 
+    Args:
+        languages:
+            Languages supplied to the test.
+        datasets:
+            Datasets supplied to the test.
+
     Returns:
         Dict mapping language -> task -> list of dataset IDs.
     """
@@ -164,6 +170,16 @@ def _make_dummy_results(
 
     Each model has the same datasets with similar scores to create realistic
     bootstrap distributions.
+
+    Args:
+        model_ids:
+            Model ids supplied to the test.
+        dataset_ids:
+            Dataset ids supplied to the test.
+        base_score (optional):
+            Base score supplied to the test. Defaults to 0.7.
+        noise (optional):
+            Noise supplied to the test. Defaults to 0.01.
 
     Returns:
         Dict mapping model_id -> dataset -> [(raw_scores, mean, std_err)].

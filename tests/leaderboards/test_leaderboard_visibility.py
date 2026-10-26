@@ -13,7 +13,14 @@ from src.scripts import collect_evaluation_results, generate_leaderboards
 def test_category_manifest_uses_visibility_rule(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The frontend manifest exposes the shared threshold decision."""
+    """The frontend manifest exposes the shared threshold decision.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     output_dir = tmp_path / "csv"
     output_dir.mkdir()
     _write_simplified_leaderboard(
@@ -34,6 +41,14 @@ def test_category_manifest_uses_visibility_rule(
 
 
 def _write_simplified_leaderboard(path: Path, num_entries: int) -> None:
+    """Write simplified leaderboard for this test.
+
+    Args:
+        path:
+            Path supplied to the test.
+        num_entries:
+            Num entries supplied to the test.
+    """
     with path.open(mode="w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=["rank", "model", "mean_rank_score"])
         writer.writeheader()
@@ -47,7 +62,16 @@ def _write_simplified_leaderboard(path: Path, num_entries: int) -> None:
 def test_leaderboard_should_be_shown_at_ranked_entry_threshold(
     tmp_path: Path, num_entries: int, expected: bool
 ) -> None:
-    """A leaderboard is shown if and only if it has at least 100 ranked rows."""
+    """A leaderboard is shown if and only if it has at least 100 ranked rows.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        num_entries:
+            Num entries supplied to the test.
+        expected:
+            Expected value for this test case.
+    """
     csv_path = tmp_path / "leaderboard_simplified.csv"
     _write_simplified_leaderboard(path=csv_path, num_entries=num_entries)
 
@@ -55,7 +79,12 @@ def test_leaderboard_should_be_shown_at_ranked_entry_threshold(
 
 
 def test_missing_leaderboard_should_not_be_shown(tmp_path: Path) -> None:
-    """A missing simplified CSV cannot represent a visible leaderboard."""
+    """A missing simplified CSV cannot represent a visible leaderboard.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     assert not leaderboard_should_be_shown(
         simplified_csv_path=tmp_path / "missing_simplified.csv"
     )
@@ -64,7 +93,14 @@ def test_missing_leaderboard_should_not_be_shown(tmp_path: Path) -> None:
 def test_verification_prunes_all_files_for_hidden_leaderboard(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Publication pruning uses the shared rule and removes the complete file set."""
+    """Publication pruning uses the shared rule and removes the complete file set.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     output_dir = tmp_path / "src" / "frontend" / "csv"
     output_dir.mkdir(parents=True)
     hidden_stem = output_dir / "hidden_chat"

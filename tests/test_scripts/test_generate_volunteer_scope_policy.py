@@ -116,7 +116,12 @@ def test_policy_does_not_share_a_group_scope() -> None:
 def test_policy_generation_fails_on_config_errors(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A config loading failure must not widen scope to every pair."""
+    """A config loading failure must not widen scope to every pair.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
 
     def fail() -> dict[str, object]:
         """Raise the configuration error expected by this test.

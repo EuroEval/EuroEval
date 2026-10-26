@@ -156,7 +156,14 @@ class TestPlainModelId:
         ],
     )
     def test_model_id_suffixes(self, model_id: str, expected: str) -> None:
-        """Anchors and row suffixes are removed without losing model variants."""
+        """Anchors and row suffixes are removed without losing model variants.
+
+        Args:
+            model_id:
+                Model identifier used by the test.
+            expected:
+                Expected value for this test case.
+        """
         assert plain_model_id(model_id) == expected
 
 

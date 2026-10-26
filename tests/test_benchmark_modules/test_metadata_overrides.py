@@ -26,7 +26,14 @@ from euroeval.data_models import BenchmarkConfig
 def test_num_parameters_override(
     model_cls: type[BenchmarkModule], benchmark_config: BenchmarkConfig
 ) -> None:
-    """An explicit parameter count takes precedence over backend inference."""
+    """An explicit parameter count takes precedence over backend inference.
+
+    Args:
+        model_cls:
+            Model cls supplied to the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+    """
     model = model_cls.__new__(model_cls)
     model.benchmark_config = replace(benchmark_config, num_parameters=123_456)
 

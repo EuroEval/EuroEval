@@ -101,7 +101,12 @@ class TestGetRepoSplitNames:
 
     @patch("euroeval.split_utils.HfApi")
     def test_get_repo_split_names_mocked(self, mock_hf_api_class: MagicMock) -> None:
-        """Test extraction of split names from mocked HfApi response."""
+        """Test extraction of split names from mocked HfApi response.
+
+        Args:
+            mock_hf_api_class:
+                Mock hf api class supplied to the test.
+        """
         # Mock the HfApi instance
         mock_api_instance = MagicMock()
         mock_hf_api_class.return_value = mock_api_instance

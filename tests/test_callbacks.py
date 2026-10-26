@@ -54,7 +54,16 @@ class TestNeverLeaveProgressCallback:
         state: FakeState,
         eval_dataloader: FakeEvalDataloader,
     ) -> None:
-        """Test that the `leave` attribute on the prediction progress bar is False."""
+        """Test that the `leave` attribute on the prediction progress bar is False.
+
+        Args:
+            callback:
+                Callback supplied to the test.
+            state:
+                State supplied to the test.
+            eval_dataloader:
+                Eval dataloader supplied to the test.
+        """
         assert callback.prediction_bar is None
         callback.on_prediction_step(
             args=TrainingArguments(),
@@ -68,7 +77,14 @@ class TestNeverLeaveProgressCallback:
     def test_on_train_begin_initialises_not_leaving_pbar(
         self, callback: NeverLeaveProgressCallback, state: FakeState
     ) -> None:
-        """Test that the `leave` attribute on the training progress bar is False."""
+        """Test that the `leave` attribute on the training progress bar is False.
+
+        Args:
+            callback:
+                Callback supplied to the test.
+            state:
+                State supplied to the test.
+        """
         assert callback.training_bar is None
         callback.on_train_begin(
             args=TrainingArguments(), state=state, control=TrainerControl()

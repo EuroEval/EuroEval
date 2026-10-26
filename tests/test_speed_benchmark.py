@@ -30,11 +30,23 @@ class TestBenchmarkSpeed:
     def scores(
         self, model: BenchmarkModule, benchmark_config: BenchmarkConfig
     ) -> Generator[c.Sequence[dict[str, float]], None, None]:
-        """Yields the benchmark speed scores."""
+        """Yields the benchmark speed scores.
+
+        Args:
+            model:
+                Model supplied to the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         yield benchmark_speed(model=model, benchmark_config=benchmark_config)
 
     def test_scores_shape(self, scores: list[dict[str, float]]) -> None:
-        """The benchmark returns a list of complete, numeric score dictionaries."""
+        """The benchmark returns a list of complete, numeric score dictionaries.
+
+        Args:
+            scores:
+                Scores supplied to the test.
+        """
         assert isinstance(scores, list)
         assert all(
             isinstance(score, dict)
@@ -55,7 +67,12 @@ class TestBenchmarkSpeedSingleIteration:
     def test_benchmark_speed_single_iteration_cuda_oom_error(
         self, mock_model: MagicMock
     ) -> None:
-        """Test InvalidBenchmark raised when CUDA OOM occurs."""
+        """Test InvalidBenchmark raised when CUDA OOM occurs.
+
+        Args:
+            mock_model:
+                Mock model supplied to the test.
+        """
         mock_model.__class__ = VLLMModel
 
         with patch(
@@ -69,7 +86,12 @@ class TestBenchmarkSpeedSingleIteration:
     def test_benchmark_speed_single_iteration_invalid_model_raises_error(
         self, mock_model: MagicMock
     ) -> None:
-        """Test ValueError raised for unsupported model types."""
+        """Test ValueError raised for unsupported model types.
+
+        Args:
+            mock_model:
+                Mock model supplied to the test.
+        """
         # Create a mock that is not any of the supported types
         mock_model.__class__.__name__ = "InvalidModel"
 
@@ -84,7 +106,14 @@ class TestBenchmarkSpeedSingleIteration:
     def test_benchmark_speed_single_iteration_supported_models(
         self, mock_model: MagicMock, model_type: type[BenchmarkModule]
     ) -> None:
-        """Supported model types return the standard speed scores."""
+        """Supported model types return the standard speed scores.
+
+        Args:
+            mock_model:
+                Mock model supplied to the test.
+            model_type:
+                Model type supplied to the test.
+        """
         mock_model.__class__ = model_type
         if model_type is HuggingFaceEncoderModel:
             mock_model.get_tokeniser.return_value = MagicMock()
@@ -108,7 +137,14 @@ class TestBenchmarkSpeedSingleIteration:
 def model(
     encoder_model_id: str, benchmark_config: BenchmarkConfig
 ) -> Generator[BenchmarkModule, None, None]:
-    """Yields a model."""
+    """Yields a model.
+
+    Args:
+        encoder_model_id:
+            Encoder model id supplied to the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+    """
     yield HuggingFaceEncoderModel(
         model_config=get_model_config(
             model_id=encoder_model_id, benchmark_config=benchmark_config

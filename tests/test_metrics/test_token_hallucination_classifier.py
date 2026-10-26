@@ -81,7 +81,18 @@ def test_all_hallucinations_returns_one(
     benchmark_config: DummyBenchmarkConfig,
     make_dataset: t.Callable[[list[str]], Dataset],
 ) -> None:
-    """Return 1.0 when every token is flagged as hallucinated."""
+    """Return 1.0 when every token is flagged as hallucinated.
+
+    Args:
+        metric:
+            Metric supplied to the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        make_dataset:
+            Make dataset supplied to the test.
+    """
     detector = _make_detector(predict_return=[{"pred": 1}])
     dataset = make_dataset(["ctx1", "ctx2"])
     predictions = [
@@ -137,6 +148,15 @@ def make_dataset() -> t.Callable[[list[str]], Dataset]:
     """
 
     def _make(contexts: list[str]) -> Dataset:
+        """Make for this test.
+
+        Args:
+            contexts:
+                Contexts supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         return Dataset.from_list(
             [{"id": str(idx), "context": ctx} for idx, ctx in enumerate(contexts)]
         )
@@ -162,7 +182,18 @@ def test_detector_uses_correct_model_id(
     benchmark_config: DummyBenchmarkConfig,
     make_dataset: t.Callable[[list[str]], Dataset],
 ) -> None:
-    """Verify the model ID is built from dataset_config.main_language.code."""
+    """Verify the model ID is built from dataset_config.main_language.code.
+
+    Args:
+        metric:
+            Metric supplied to the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        make_dataset:
+            Make dataset supplied to the test.
+    """
     detector = _make_detector(predict_return=[{"pred": 0}])
     dataset = make_dataset(["ctx1"])
     with patch(DETECTOR_PATH, return_value=detector) as mock_cls:
@@ -188,7 +219,12 @@ def test_detector_uses_correct_model_id(
 
 
 def test_metric_initialization(metric: TokenHallucinationMetric) -> None:
-    """Test that the metric is initialised with correct attributes."""
+    """Test that the metric is initialised with correct attributes.
+
+    Args:
+        metric:
+            Metric supplied to the test.
+    """
     assert metric.name == "hallucination_rate"
     assert metric.pretty_name == "Hallucination rate"
     assert callable(metric.postprocessing_fn)
@@ -208,7 +244,18 @@ def test_no_hallucinations_returns_zero(
     benchmark_config: DummyBenchmarkConfig,
     make_dataset: t.Callable[[list[str]], Dataset],
 ) -> None:
-    """Return 0.0 when the detector finds no hallucinated tokens."""
+    """Return 0.0 when the detector finds no hallucinated tokens.
+
+    Args:
+        metric:
+            Metric supplied to the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        make_dataset:
+            Make dataset supplied to the test.
+    """
     detector = _make_detector(predict_return=[{"pred": 0}])
     dataset = make_dataset(["ctx1", "ctx2"])
     predictions = [
@@ -232,7 +279,18 @@ def test_no_tokens_raises_invalid_benchmark(
     benchmark_config: DummyBenchmarkConfig,
     make_dataset: t.Callable[[list[str]], Dataset],
 ) -> None:
-    """Raise InvalidBenchmark when no tokens are found in the predictions."""
+    """Raise InvalidBenchmark when no tokens are found in the predictions.
+
+    Args:
+        metric:
+            Metric supplied to the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        make_dataset:
+            Make dataset supplied to the test.
+    """
     detector = _make_detector(predict_return=[])
     dataset = make_dataset(["ctx1"])
     predictions = [
@@ -255,10 +313,32 @@ def test_partial_hallucinations_returns_correct_rate(
     benchmark_config: DummyBenchmarkConfig,
     make_dataset: t.Callable[[list[str]], Dataset],
 ) -> None:
-    """Return the correct fraction when only some tokens are hallucinated."""
+    """Return the correct fraction when only some tokens are hallucinated.
+
+    Args:
+        metric:
+            Metric supplied to the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        make_dataset:
+            Make dataset supplied to the test.
+    """
     call_count = 0
 
     def predict_side_effect(prompt: str, answer: str) -> list[dict[str, int]]:
+        """Predict side effect for this test.
+
+        Args:
+            prompt:
+                Prompt supplied to the test.
+            answer:
+                Answer supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         nonlocal call_count
         call_count += 1
         if call_count == 1:

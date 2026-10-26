@@ -61,6 +61,12 @@ def test_process_dataset_maps_source_labels() -> None:
 def _make_split(size: int, prefix: str) -> Dataset:
     """Create a small source-shaped split for testing.
 
+    Args:
+        size:
+            Size supplied to the test.
+        prefix:
+            Prefix supplied to the test.
+
     Returns:
         A dataset with the same columns as the BeWiC source data.
     """

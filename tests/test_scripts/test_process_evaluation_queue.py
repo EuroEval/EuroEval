@@ -11,7 +11,12 @@ from src.scripts import process_evaluation_queue
 
 @pytest.fixture(autouse=True)
 def standalone_queue(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Keep unit tests isolated from the shared GitHub queue."""
+    """Keep unit tests isolated from the shared GitHub queue.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setenv("VOLUNTEER_COORDINATOR_STANDALONE", "1")
     monkeypatch.setattr(
         process_evaluation_queue,
@@ -23,7 +28,12 @@ def standalone_queue(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_process_issue_does_not_special_case_oom_anymore(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """OOM output should still be treated as a normal failure and commented."""
+    """OOM output should still be treated as a normal failure and commented.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     comments: list[str] = []
     unassigned: list[int] = []
 
@@ -100,6 +110,19 @@ def test_process_issue_does_not_special_case_oom_anymore(
     )
 
     def fake_release(number: int, vm_id: str, assignee: str) -> bool:
+        """Fake release for this test.
+
+        Args:
+            number:
+                Number supplied to the test.
+            vm_id:
+                Vm id supplied to the test.
+            assignee:
+                Assignee supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         unassigned.append(number)
         return True
 
@@ -146,7 +169,12 @@ def test_process_issue_does_not_special_case_oom_anymore(
 def test_process_issue_fails_when_official_results_are_missing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The issue should be marked errored when official results are incomplete."""
+    """The issue should be marked errored when official results are incomplete.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     comments: list[str] = []
     unassigned: list[int] = []
     assigned: list[int] = []
@@ -227,6 +255,19 @@ def test_process_issue_fails_when_official_results_are_missing(
     )
 
     def fake_release(number: int, vm_id: str, assignee: str) -> bool:
+        """Fake release for this test.
+
+        Args:
+            number:
+                Number supplied to the test.
+            vm_id:
+                Vm id supplied to the test.
+            assignee:
+                Assignee supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         unassigned.append(number)
         return True
 
@@ -277,7 +318,12 @@ def test_process_issue_fails_when_official_results_are_missing(
 def test_process_issue_marks_ready_when_missing_pairs_are_skips(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A resume whose missing pairs are all intentional skips must not error."""
+    """A resume whose missing pairs are all intentional skips must not error.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     comments: list[str] = []
     results_ready: list[int] = []
     failed_labels: list[int] = []
@@ -413,11 +459,25 @@ def test_process_issue_marks_ready_when_missing_pairs_are_skips(
 def test_run_claimed_issue_resumes_from_merged_results(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Merged canonical results should count when resuming an issue."""
+    """Merged canonical results should count when resuming an issue.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     results_ready: list[int] = []
     cleared_markers: list[tuple[int, str]] = []
 
     def read_lines(path: Path) -> list[str]:
+        """Read lines for this test.
+
+        Args:
+            path:
+                Path supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         if path.name == "euroeval_benchmark_results.jsonl":
             return ['{"model":"foo/bar"}']
         return []
@@ -474,7 +534,14 @@ def test_run_claimed_issue_resumes_from_merged_results(
 def test_sync_bucket_handles_separate_result_files(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Each result identity is a separate file in tree structure."""
+    """Each result identity is a separate file in tree structure.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     results_dir = tmp_path / "results"
     results_dir.mkdir()
     model_dir = results_dir / "foo_bar"
@@ -512,6 +579,20 @@ def test_sync_bucket_handles_separate_result_files(
             **kwargs,
         ) -> None:
             # Tree sync preserves separate files
+            """Sync bucket for this test.
+
+            Args:
+                source:
+                    Source supplied to the test.
+                dest:
+                    Dest supplied to the test.
+                token:
+                    Token supplied to the test.
+                ignore_times (optional):
+                    Ignore times supplied to the test. Defaults to False.
+                kwargs:
+                    Kwargs supplied to the test.
+            """
             pass
 
     monkeypatch.setattr(target=bucket_sync, name="RESULTS_DIR", value=results_dir)
@@ -530,7 +611,14 @@ def test_sync_bucket_handles_separate_result_files(
 def test_sync_bucket_prefers_synced_content_for_existing_result_key(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Remote metadata should be fetched during sync."""
+    """Remote metadata should be fetched during sync.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     results_dir = tmp_path / "results"
     results_dir.mkdir()
     model_dir = results_dir / "foo_bar"
@@ -553,6 +641,20 @@ def test_sync_bucket_prefers_synced_content_for_existing_result_key(
             **kwargs,
         ) -> None:
             # Tree sync preserves existing files - remote content merged via file paths
+            """Sync bucket for this test.
+
+            Args:
+                source:
+                    Source supplied to the test.
+                dest:
+                    Dest supplied to the test.
+                token:
+                    Token supplied to the test.
+                ignore_times (optional):
+                    Ignore times supplied to the test. Defaults to False.
+                kwargs:
+                    Kwargs supplied to the test.
+            """
             pass
 
     monkeypatch.setattr(target=bucket_sync, name="RESULTS_DIR", value=results_dir)
@@ -573,7 +675,14 @@ def test_sync_bucket_prefers_synced_content_for_existing_result_key(
 def test_sync_bucket_preserves_local_only_files(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Local-only record files not yet in the bucket should survive startup sync."""
+    """Local-only record files not yet in the bucket should survive startup sync.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     results_dir = tmp_path / "results"
     results_dir.mkdir()
     model_dir = results_dir / "foo_bar"
@@ -593,6 +702,20 @@ def test_sync_bucket_preserves_local_only_files(
             **kwargs,
         ) -> None:
             # Tree sync doesn't remove files - local-only files persist
+            """Sync bucket for this test.
+
+            Args:
+                source:
+                    Source supplied to the test.
+                dest:
+                    Dest supplied to the test.
+                token:
+                    Token supplied to the test.
+                ignore_times (optional):
+                    Ignore times supplied to the test. Defaults to False.
+                kwargs:
+                    Kwargs supplied to the test.
+            """
             pass
 
     monkeypatch.setattr(target=bucket_sync, name="RESULTS_DIR", value=results_dir)
@@ -612,17 +735,41 @@ def test_sync_bucket_preserves_local_only_files(
 def test_upload_results_keeps_canary_private(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Queue uploads retain auxiliary evidence locally but never publish it."""
+    """Queue uploads retain auxiliary evidence locally but never publish it.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     uploads: list[list[tuple[str | Path | bytes, str]]] = []
 
     class FakeApi:
         def batch_bucket_files(
             self, *, bucket_id: str, add: list[tuple[str | Path | bytes, str]]
         ) -> None:
+            """Batch bucket files for this test.
+
+            Args:
+                bucket_id:
+                    Bucket id supplied to the test.
+                add:
+                    Add supplied to the test.
+            """
             assert bucket_id == process_evaluation_queue.HF_RESULTS_BUCKET
             uploads.append(add)
 
     def record(dataset: str) -> str:
+        """Record for this test.
+
+        Args:
+            dataset:
+                Dataset supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         return json.dumps(
             {
                 "schema_version": "0.2.1",

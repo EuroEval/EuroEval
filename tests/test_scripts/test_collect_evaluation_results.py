@@ -22,7 +22,18 @@ class FakeHfApi:
         delete: list[str] | None = None,
         **kwargs,
     ) -> None:
-        """No-op batch upload for testing."""
+        """No-op batch upload for testing.
+
+        Args:
+            bucket_id:
+                Bucket id supplied to the test.
+            add (optional):
+                Add supplied to the test. Defaults to None.
+            delete (optional):
+                Delete supplied to the test. Defaults to None.
+            kwargs:
+                Kwargs supplied to the test.
+        """
         pass
 
     def sync_bucket(
@@ -33,12 +44,30 @@ class FakeHfApi:
         ignore_times: bool = False,
         **kwargs,
     ) -> None:
-        """No-op sync for testing."""
+        """No-op sync for testing.
+
+        Args:
+            source:
+                Source supplied to the test.
+            dest:
+                Dest supplied to the test.
+            token (optional):
+                Token supplied to the test. Defaults to None.
+            ignore_times (optional):
+                Ignore times supplied to the test. Defaults to False.
+            kwargs:
+                Kwargs supplied to the test.
+        """
         pass
 
 
 def test_main_pauses_before_harvesting(monkeypatch: pytest.MonkeyPatch) -> None:
-    """A review pause occurs before the first GitHub operation."""
+    """A review pause occurs before the first GitHub operation.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setattr(
         collect_evaluation_results, "check_required_env_vars", lambda: None
     )
@@ -60,7 +89,16 @@ def test_main_pauses_before_harvesting(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_preflight_default_or_no_continues_without_approval(
     monkeypatch: pytest.MonkeyPatch, answer: str, caplog: pytest.LogCaptureFixture
 ) -> None:
-    """No and the default answer continue without approving anything."""
+    """No and the default answer continue without approving anything.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        answer:
+            Answer supplied to the test.
+        caplog:
+            Fixture for capturing log records during the test.
+    """
     monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
     monkeypatch.setenv("HF_TOKEN", "secret-token")
     caplog.set_level("INFO", logger="collect_evaluation_results")
@@ -84,6 +122,12 @@ class PreflightReviewer:
     def decide(self, *args: object, **kwargs: object) -> None:
         """Fail if preflight ever attempts a decision.
 
+        Args:
+            args:
+                Args supplied to the test.
+            kwargs:
+                Kwargs supplied to the test.
+
         Raises:
             AssertionError:
                 If preflight attempts to decide a submission.
@@ -98,7 +142,14 @@ class PreflightReviewer:
 def test_preflight_eof_shows_commands_and_continues(
     monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
-    """EOF cannot leave the collection command waiting for a response."""
+    """EOF cannot leave the collection command waiting for a response.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        caplog:
+            Fixture for capturing log records during the test.
+    """
     monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
     monkeypatch.setenv("HF_TOKEN", "secret-token")
     monkeypatch.setattr(
@@ -119,7 +170,12 @@ def test_preflight_eof_shows_commands_and_continues(
 def test_preflight_missing_staging_configuration_is_non_blocking(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Missing optional staging configuration does not block canonical work."""
+    """Missing optional staging configuration does not block canonical work.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.delenv("HF_STAGING_BUCKET", raising=False)
     monkeypatch.delenv("HF_TOKEN", raising=False)
     assert collect_evaluation_results.preflight_volunteer_review() is True
@@ -128,7 +184,14 @@ def test_preflight_missing_staging_configuration_is_non_blocking(
 def test_preflight_non_tty_and_api_failure_do_not_hang(
     monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
-    """Non-TTY input and staging failures continue without approval."""
+    """Non-TTY input and staging failures continue without approval.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        caplog:
+            Fixture for capturing log records during the test.
+    """
     monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
     monkeypatch.setenv("HF_TOKEN", "secret-token")
     monkeypatch.setattr(
@@ -156,7 +219,12 @@ def test_preflight_non_tty_and_api_failure_do_not_hang(
 
 
 def test_preflight_public_staging_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
-    """A confirmed public staging bucket is never treated as unavailable."""
+    """A confirmed public staging bucket is never treated as unavailable.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setenv("HF_STAGING_BUCKET", "public/staging")
     monkeypatch.setenv("HF_TOKEN", "secret-token")
     monkeypatch.setattr(
@@ -172,7 +240,14 @@ def test_preflight_public_staging_fails_closed(monkeypatch: pytest.MonkeyPatch) 
 def test_preflight_yes_pauses_without_deciding_and_quotes_commands(
     monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
-    """Yes prints safe commands and leaves all review writes untouched."""
+    """Yes prints safe commands and leaves all review writes untouched.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        caplog:
+            Fixture for capturing log records during the test.
+    """
     monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
     monkeypatch.setenv("HF_TOKEN", "secret-token")
     monkeypatch.setenv("GITHUB_ACTOR", "maintainer; echo nope")
@@ -196,7 +271,14 @@ def test_preflight_yes_pauses_without_deciding_and_quotes_commands(
 def test_preview_in_dev_server_handles_early_exit(
     monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
-    """An early server exit is reported without failing on missing output."""
+    """An early server exit is reported without failing on missing output.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        caplog:
+            Fixture for capturing log records during the test.
+    """
     process = FakeDevProcess(return_code=1)
 
     monkeypatch.setattr(
@@ -215,7 +297,12 @@ class FakeDevProcess:
     stdout: None = None
 
     def __init__(self, return_code: int | None = None) -> None:
-        """Initialise the fake process with an optional exit code."""
+        """Initialise the fake process with an optional exit code.
+
+        Args:
+            return_code (optional):
+                Return code supplied to the test. Defaults to None.
+        """
         self.return_code = return_code
         self.signals: list[signal.Signals] = []
         self.wait_timeouts: list[float | None] = []
@@ -233,11 +320,21 @@ class FakeDevProcess:
         return self.return_code
 
     def send_signal(self, sig: signal.Signals) -> None:
-        """Record a signal sent to the process."""
+        """Record a signal sent to the process.
+
+        Args:
+            sig:
+                Sig supplied to the test.
+        """
         self.signals.append(sig)
 
     def wait(self, timeout: float | None = None) -> None:
-        """Record the timeout used while waiting for the process."""
+        """Record the timeout used while waiting for the process.
+
+        Args:
+            timeout (optional):
+                Timeout supplied to the test. Defaults to None.
+        """
         self.wait_timeouts.append(timeout)
 
 
@@ -246,11 +343,31 @@ def test_preview_in_dev_server_starts_and_stops_fixed_port(
     caplog: pytest.LogCaptureFixture,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """Preview uses the fixed Vite port and terminates the server afterwards."""
+    """Preview uses the fixed Vite port and terminates the server afterwards.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        caplog:
+            Fixture for capturing log records during the test.
+        capsys:
+            Fixture for capturing output during the test.
+    """
     process = FakeDevProcess()
     popen_calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
 
     def fake_popen(*args: object, **kwargs: object) -> FakeDevProcess:
+        """Fake popen for this test.
+
+        Args:
+            args:
+                Args supplied to the test.
+            kwargs:
+                Kwargs supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         popen_calls.append((args, kwargs))
         return process
 
@@ -294,6 +411,12 @@ def test_upload_results_to_hf_collision_leaves_results_dir_unmutated(
 
     Two records with different identities that sanitise to the same path should
     raise ValueError BEFORE any files are deleted from RESULTS_DIR.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
     """
     results_dir = tmp_path / "results"
     results_dir.mkdir()
@@ -357,7 +480,14 @@ def test_upload_results_to_hf_collision_leaves_results_dir_unmutated(
 def test_upload_results_to_hf_deletes_stale_jsonl_in_results_dir(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Stale root RESULTS_DIR/*.jsonl is deleted on upload."""
+    """Stale root RESULTS_DIR/*.jsonl is deleted on upload.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     results_dir = tmp_path / "results"
     results_dir.mkdir()
 
@@ -423,6 +553,12 @@ def test_upload_results_to_hf_does_not_touch_repo_root_jsonl(
 
     The upload function only touches RESULTS_DIR/*.jsonl files, not repo-root
     JSONL files like new_results.jsonl or euroeval_benchmark_results.jsonl.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
     """
     results_dir = tmp_path / "results"
     results_dir.mkdir()
@@ -499,6 +635,12 @@ def test_upload_results_to_hf_same_identity_keeps_newer_record(
 
     When two records share the same identity, the newer one wins (by euroeval_version,
     then retrieved_timestamp).
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
     """
     results_dir = tmp_path / "results"
     results_dir.mkdir()
@@ -562,6 +704,12 @@ def test_upload_results_to_hf_same_identity_uses_timestamp_tiebreaker(
     """Same-identity with same version uses retrieved_timestamp as tiebreaker.
 
     When versions are equal, the record with newer retrieved_timestamp wins.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
     """
     results_dir = tmp_path / "results"
     results_dir.mkdir()

@@ -10,7 +10,14 @@ from src.scripts.dataset_creation.create_berte_wd import _map_label, process_dat
     ("source_label", "expected_label"), [(0, "non_entailment"), (1, "entailment")]
 )
 def test_map_label(source_label: int, expected_label: str) -> None:
-    """Source labels map to the two EuroEval NLI labels."""
+    """Source labels map to the two EuroEval NLI labels.
+
+    Args:
+        source_label:
+            Source label supplied to the test.
+        expected_label:
+            Expected label for this case.
+    """
     assert _map_label(label=source_label) == expected_label
 
 
@@ -44,6 +51,10 @@ def test_process_dataset_caps_splits_independently() -> None:
 
 def _source_split(size: int) -> Dataset:
     """Create a source-shaped split with identifiable rows.
+
+    Args:
+        size:
+            Size supplied to the test.
 
     Returns:
         A source-shaped dataset split.

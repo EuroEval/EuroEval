@@ -29,6 +29,14 @@ def _tsv_content(
 ) -> bytes:
     """Build a fine-grained TSV payload for parser tests.
 
+    Args:
+        candidates:
+            Candidates supplied to the test.
+        outlier_position (optional):
+            Outlier position supplied to the test. Defaults to '0'.
+        source_id (optional):
+            Source id supplied to the test. Defaults to 'v1_0001'.
+
     Returns:
         A UTF-8 encoded TSV payload.
     """

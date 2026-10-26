@@ -18,7 +18,12 @@ from euroeval.task_group_utils.encoder_multiple_choice import (
 def test_variable_choice_collator_marks_padding_invalid(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The collator batches variable choices and flags only real answer rows."""
+    """The collator batches variable choices and flags only real answer rows.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     token_collator = MagicMock(
         return_value={
             "input_ids": torch.tensor([[10, 11], [20, 21], [30, 31]]),
@@ -51,11 +56,21 @@ def test_variable_choice_collator_marks_padding_invalid(
 def test_variable_choice_trainer_evaluate_does_not_argmax_aggregation_padding(
     tmp_path: Path,
 ) -> None:
-    """Evaluation preserves row-wise argmax across batches with different widths."""
+    """Evaluation preserves row-wise argmax across batches with different widths.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
 
     class EvaluationDataset(Dataset):
         def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
-            """Return one example with its real choice width."""
+            """Return one example with its real choice width.
+
+            Args:
+                index:
+                    Index supplied to the test.
+            """
             if index == 0:
                 return {
                     "input_ids": torch.tensor([-150.0, -151.0]),
@@ -78,6 +93,12 @@ def test_variable_choice_trainer_evaluate_does_not_argmax_aggregation_padding(
         ) -> SequenceClassifierOutput:
             """Use input values directly as choice logits.
 
+            Args:
+                input_ids:
+                    Input ids supplied to the test.
+                labels (optional):
+                    Labels supplied to the test. Defaults to None.
+
             Returns:
                 A model output containing the choice logits.
             """
@@ -88,6 +109,10 @@ def test_variable_choice_trainer_evaluate_does_not_argmax_aggregation_padding(
 
     def capture_predictions(prediction: EvalPrediction) -> dict[str, float]:
         """Capture the IDs produced by evaluation aggregation.
+
+        Args:
+            prediction:
+                Prediction supplied to the test.
 
         Returns:
             A fixed accuracy score for the evaluation run.

@@ -71,11 +71,35 @@ def test_build_euroeval_cmd_rejects_tasks_and_datasets() -> None:
 def test_estimated_model_bytes_dtype_fallback(
     monkeypatch: pytest.MonkeyPatch, dtype: str, count: int, expected_bytes: int
 ) -> None:
-    """Unknown dtypes should use numeric fallback, then BF16 fallback."""
+    """Unknown dtypes should use numeric fallback, then BF16 fallback.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        dtype:
+            Dtype supplied to the test.
+        count:
+            Count supplied to the test.
+        expected_bytes:
+            Expected bytes for this case.
+    """
 
     def fake_get_safetensors_metadata(
         *, repo_id: str, revision: str | None = None, token: str | None = None
     ) -> SimpleNamespace:
+        """Fake get safetensors metadata for this test.
+
+        Args:
+            repo_id:
+                Repo id supplied to the test.
+            revision (optional):
+                Revision supplied to the test. Defaults to None.
+            token (optional):
+                Token supplied to the test. Defaults to None.
+
+        Returns:
+            The value returned by the test helper.
+        """
         _ = repo_id, revision, token
         return SimpleNamespace(parameter_count={dtype: count})
 
@@ -92,12 +116,32 @@ def test_estimated_model_bytes_dtype_fallback(
 def test_estimated_model_bytes_handles_model_id_extras(
     monkeypatch: pytest.MonkeyPatch, model_id: str
 ) -> None:
-    """Model id parsing should handle # and @ in either order."""
+    """Model id parsing should handle # and @ in either order.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        model_id:
+            Model identifier used by the test.
+    """
     calls: list[dict[str, str | None]] = []
 
     def fake_get_safetensors_metadata(
         *, repo_id: str, revision: str | None = None, token: str | None = None
     ) -> SimpleNamespace:
+        """Fake get safetensors metadata for this test.
+
+        Args:
+            repo_id:
+                Repo id supplied to the test.
+            revision (optional):
+                Revision supplied to the test. Defaults to None.
+            token (optional):
+                Token supplied to the test. Defaults to None.
+
+        Returns:
+            The value returned by the test helper.
+        """
         calls.append({"repo_id": repo_id, "revision": revision, "token": token})
         return SimpleNamespace(parameter_count={"BF16": 1})
 
@@ -112,7 +156,12 @@ def test_estimated_model_bytes_handles_model_id_extras(
 def test_evaluator_environment_excludes_queue_secrets(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Queue credentials are not inherited by the evaluator subprocess."""
+    """Queue credentials are not inherited by the evaluator subprocess.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setenv("VOLUNTEER_MARKER_SECRET", "marker-secret")
     monkeypatch.setenv("WORKER_COORDINATOR_SECRET", "coordinator-secret")
 
@@ -132,7 +181,14 @@ def test_evaluator_environment_excludes_queue_secrets(
 def test_killed_by_signal_note_describes_signal_death(
     returncode: int, must_contain: list[str]
 ) -> None:
-    """A negative returncode yields a diagnostic naming the signal."""
+    """A negative returncode yields a diagnostic naming the signal.
+
+    Args:
+        returncode:
+            Returncode supplied to the test.
+        must_contain:
+            Must contain supplied to the test.
+    """
     note = _killed_by_signal_note(returncode=returncode)
     assert note is not None
     for needle in must_contain:
@@ -153,7 +209,12 @@ def test_killed_by_signal_note_ignores_shell_exit_code_convention() -> None:
 def test_killed_by_signal_note_returns_none_when_not_signal_death(
     returncode: int | None,
 ) -> None:
-    """A non-negative or absent returncode is not a signal death."""
+    """A non-negative or absent returncode is not a signal death.
+
+    Args:
+        returncode:
+            Returncode supplied to the test.
+    """
     assert _killed_by_signal_note(returncode=returncode) is None
 
 
@@ -170,6 +231,12 @@ def test_pty_drain_handles_exited_parent_with_open_grandchild(
     This test exercises ``run_euroeval()`` directly by monkeypatching
     ``subprocess.Popen`` to spawn a shell script that creates a background
     grandchild that keeps writing to the PTY after the parent exits.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
     """
     parent_script = tmp_path / "parent.sh"
     # Parent exits immediately, but grandchild keeps chattering for 60 seconds
@@ -186,6 +253,12 @@ def test_pty_drain_handles_exited_parent_with_open_grandchild(
     # Mock slow/optional dependencies to avoid heavy imports
     @contextmanager
     def _mock_no_terminal_output(disable: bool = True) -> c.Generator[None, None, None]:
+        """Mock no terminal output for this test.
+
+        Args:
+            disable (optional):
+                Disable supplied to the test. Defaults to True.
+        """
         yield
 
     def _mock_resolve_hf_token() -> None:
@@ -208,6 +281,19 @@ def test_pty_drain_handles_exited_parent_with_open_grandchild(
         *args: t.Any,  # noqa: ANN002, ANN401
         **kwargs: t.Any,  # noqa: ANN003, ANN401
     ) -> subprocess.Popen:
+        """Mock popen for this test.
+
+        Args:
+            cmd:
+                Cmd supplied to the test.
+            args:
+                Args supplied to the test.
+            kwargs:
+                Kwargs supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         if cmd and cmd[0] == "euroeval":
             cmd = ["bash", str(parent_script)]
             # Start in new process group for scoped cleanup

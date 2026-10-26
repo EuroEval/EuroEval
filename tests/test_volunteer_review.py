@@ -74,6 +74,14 @@ class FakeHfApi:
     ) -> None:
         """Store exact object bytes, optionally injecting a partial failure.
 
+        Args:
+            bucket_id:
+                Bucket id supplied to the test.
+            add:
+                Add supplied to the test.
+            token:
+                Token supplied to the test.
+
         Raises:
             RuntimeError:
                 When the configured interruption point is reached.
@@ -100,7 +108,14 @@ class FakeHfApi:
             self.uploaded_content.append((bucket_id, path, content))
 
     def bucket_info(self, bucket: str, token: str) -> SimpleNamespace:
-        """Return private metadata."""
+        """Return private metadata.
+
+        Args:
+            bucket:
+                Bucket supplied to the test.
+            token:
+                Token supplied to the test.
+        """
         return SimpleNamespace(private=True)
 
     def download_bucket_files(
@@ -111,6 +126,16 @@ class FakeHfApi:
         token: str,
     ) -> None:
         """Write requested objects to local paths.
+
+        Args:
+            bucket:
+                Bucket supplied to the test.
+            files:
+                Files supplied to the test.
+            raise_on_missing_files:
+                Raise on missing files supplied to the test.
+            token:
+                Token supplied to the test.
 
         Raises:
             FileNotFoundError:
@@ -127,7 +152,16 @@ class FakeHfApi:
     def get_bucket_paths_info(
         self, bucket: str, paths: list[str], token: str
     ) -> list[SimpleNamespace]:
-        """Return metadata for existing paths."""
+        """Return metadata for existing paths.
+
+        Args:
+            bucket:
+                Bucket supplied to the test.
+            paths:
+                Paths supplied to the test.
+            token:
+                Token supplied to the test.
+        """
         return [
             self._entry(path, self.files[(bucket, path)])
             for path in paths
@@ -136,6 +170,17 @@ class FakeHfApi:
 
     @staticmethod
     def _entry(path: str, content: bytes) -> SimpleNamespace:
+        """Entry for this test.
+
+        Args:
+            path:
+                Path supplied to the test.
+            content:
+                Content supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         return SimpleNamespace(
             type="file",
             path=path,
@@ -147,6 +192,16 @@ class FakeHfApi:
         self, bucket: str, prefix: str, recursive: bool, token: str
     ) -> list[SimpleNamespace]:
         """List matching objects.
+
+        Args:
+            bucket:
+                Bucket supplied to the test.
+            prefix:
+                Prefix supplied to the test.
+            recursive:
+                Recursive supplied to the test.
+            token:
+                Token supplied to the test.
 
         Returns:
             Matching in-memory file metadata.
@@ -161,12 +216,30 @@ class FakeHfApi:
 
 
 def _decision_content(api: FakeHfApi) -> bytes:
+    """Decision content for this test.
+
+    Args:
+        api:
+            Api supplied to the test.
+
+    Returns:
+        The value returned by the test helper.
+    """
     paths = _decision_paths(api)
     assert len(paths) == 1
     return api.files[(STAGING, paths[0])]
 
 
 def _decision_paths(api: FakeHfApi) -> list[str]:
+    """Decision paths for this test.
+
+    Args:
+        api:
+            Api supplied to the test.
+
+    Returns:
+        The value returned by the test helper.
+    """
     return sorted(
         path
         for bucket, path in api.files
@@ -188,6 +261,21 @@ def _reviewer(
     binder: t.Callable[[int, str, str, str, str, list[dict[str, str]]], str]
     | None = None,
 ) -> tuple[FakeHfApi, VolunteerReviewer, list[tuple[int, str, str]]]:
+    """Reviewer for this test.
+
+    Args:
+        record_count (optional):
+            Record count supplied to the test. Defaults to 1.
+        reserver (optional):
+            Reserver supplied to the test. Defaults to None.
+        renewer (optional):
+            Renewer supplied to the test. Defaults to None.
+        binder (optional):
+            Binder supplied to the test. Defaults to None.
+
+    Returns:
+        The value returned by the test helper.
+    """
     api = FakeHfApi()
     records = [_record(dataset=f"dataset-{index}") for index in range(record_count)]
     entries: list[dict[str, object]] = []
@@ -281,6 +369,15 @@ def _reviewer(
 
 
 def _record(dataset: str) -> dict[str, object]:
+    """Record for this test.
+
+    Args:
+        dataset:
+            Dataset supplied to the test.
+
+    Returns:
+        The value returned by the test helper.
+    """
     return {
         "schema_version": "0.3.0",
         "model_info": {
@@ -322,6 +419,14 @@ def _record(dataset: str) -> dict[str, object]:
 
 
 def _store_manifest(api: FakeHfApi, manifest: dict[str, object]) -> None:
+    """Store manifest for this test.
+
+    Args:
+        api:
+            Api supplied to the test.
+        manifest:
+            Manifest supplied to the test.
+    """
     api.files[(STAGING, f"volunteer/manifests/{SUBMISSION}.json")] = json.dumps(
         manifest
     ).encode("utf-8")
@@ -343,7 +448,12 @@ def test_canonical_collision_prevents_decision_and_broker() -> None:
 def test_collected_canary_must_be_privately_scoreable_before_approval(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """An unavailable private scorer cannot approve claimed collected evidence."""
+    """An unavailable private scorer cannot approve claimed collected evidence.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     _, reviewer, _ = _reviewer()
     report = reviewer.show(SUBMISSION)
     canary = dataclasses.replace(
@@ -383,6 +493,25 @@ def test_concurrent_decisions_use_first_server_metadata() -> None:
         records: list[dict[str, str]],
         decision_digest: str | None,
     ) -> BrokerReservationResult:
+        """Reserve for this test.
+
+        Args:
+            issue:
+                Issue supplied to the test.
+            submission:
+                Submission supplied to the test.
+            outcome:
+                Outcome supplied to the test.
+            reviewer:
+                Reviewer supplied to the test.
+            records:
+                Records supplied to the test.
+            decision_digest:
+                Decision digest supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         with lock:
             reservation_order.append(reviewer)
             if not bound:
@@ -438,6 +567,17 @@ def test_conflicting_terminal_decisions_remain_pending() -> None:
 def _decision_for(
     reviewer: VolunteerReviewer, outcome: str = "accepted"
 ) -> dict[str, object]:
+    """Decision for for this test.
+
+    Args:
+        reviewer:
+            Reviewer supplied to the test.
+        outcome (optional):
+            Outcome supplied to the test. Defaults to 'accepted'.
+
+    Returns:
+        The value returned by the test helper.
+    """
     report = reviewer.show(submission_id=SUBMISSION)
     return {
         "artifact": "volunteer-review-decision/v1",
@@ -464,6 +604,16 @@ def _decision_for(
 def _store_decision(
     api: FakeHfApi, decision: dict[str, object], path_digest: str | None = None
 ) -> None:
+    """Store decision for this test.
+
+    Args:
+        api:
+            Api supplied to the test.
+        decision:
+            Decision supplied to the test.
+        path_digest (optional):
+            Path digest supplied to the test. Defaults to None.
+    """
     content = (
         json.dumps(decision, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
         + "\n"
@@ -486,6 +636,15 @@ def test_corrupted_staged_bytes_are_rejected() -> None:
 
 
 def _result_paths(api: FakeHfApi) -> list[str]:
+    """Result paths for this test.
+
+    Args:
+        api:
+            Api supplied to the test.
+
+    Returns:
+        The value returned by the test helper.
+    """
     return [
         path for bucket, path in api.files if bucket == STAGING and "/results/" in path
     ]
@@ -515,6 +674,25 @@ def test_existing_decision_is_authoritative_after_reservation_expiry() -> None:
         records: list[dict[str, str]],
         decision_digest: str | None,
     ) -> BrokerReservationResult:
+        """Reserve for this test.
+
+        Args:
+            issue:
+                Issue supplied to the test.
+            submission:
+                Submission supplied to the test.
+            outcome:
+                Outcome supplied to the test.
+            reviewer:
+                Reviewer supplied to the test.
+            records:
+                Records supplied to the test.
+            decision_digest:
+                Decision digest supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         reservations.append(outcome)
         attempt = len(reservations)
         return BrokerReservationResult(
@@ -546,6 +724,25 @@ def test_expired_reservation_cannot_change_durable_decision() -> None:
         records: list[dict[str, str]],
         decision_digest: str | None,
     ) -> BrokerReservationResult:
+        """Reserve for this test.
+
+        Args:
+            issue:
+                Issue supplied to the test.
+            submission:
+                Submission supplied to the test.
+            outcome:
+                Outcome supplied to the test.
+            reviewer:
+                Reviewer supplied to the test.
+            records:
+                Records supplied to the test.
+            decision_digest:
+                Decision digest supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         reservations.append(outcome)
         attempt = len(reservations)
         return BrokerReservationResult(
@@ -589,7 +786,14 @@ def test_expired_reservation_cannot_change_durable_decision() -> None:
 def test_invalid_terminal_decisions_remain_pending(
     mutation: t.Callable[[dict[str, object]], None], path_digest: str | None
 ) -> None:
-    """Terminal detection applies the complete decision integrity checks."""
+    """Terminal detection applies the complete decision integrity checks.
+
+    Args:
+        mutation:
+            Mutation supplied to the test.
+        path_digest:
+            Path digest supplied to the test.
+    """
     api, reviewer, _ = _reviewer()
     decision = _decision_for(reviewer=reviewer)
     mutation(decision)
@@ -603,7 +807,12 @@ def test_invalid_terminal_decisions_remain_pending(
 
 @pytest.mark.parametrize("outcome", ["accepted", "rejected"])
 def test_list_pending_submissions_filters_terminal_decisions(outcome: str) -> None:
-    """Inventory excludes valid accepted and rejected decisions."""
+    """Inventory excludes valid accepted and rejected decisions.
+
+    Args:
+        outcome:
+            Outcome supplied to the test.
+    """
     api, reviewer, _ = _reviewer()
 
     assert [summary[0] for summary in reviewer.list_pending_submissions()] == [
@@ -638,7 +847,12 @@ def test_malformed_json_decision_remains_pending() -> None:
 
 @pytest.mark.parametrize("language_group", ["sv", 42, ["da"]])
 def test_manifest_forged_language_group_is_rejected(language_group: object) -> None:
-    """A top-level language group must not contradict the trusted scope."""
+    """A top-level language group must not contradict the trusted scope.
+
+    Args:
+        language_group:
+            Language group supplied to the test.
+    """
     api, reviewer, _ = _reviewer()
     manifest = _manifest(api)
     manifest["language_group"] = language_group
@@ -649,6 +863,15 @@ def test_manifest_forged_language_group_is_rejected(language_group: object) -> N
 
 
 def _manifest(api: FakeHfApi) -> dict[str, object]:
+    """Manifest for this test.
+
+    Args:
+        api:
+            Api supplied to the test.
+
+    Returns:
+        The value returned by the test helper.
+    """
     return json.loads(api.files[(STAGING, f"volunteer/manifests/{SUBMISSION}.json")])
 
 
@@ -780,6 +1003,25 @@ def test_opposite_concurrent_decisions_fail_closed_before_canonical_writes() -> 
         records: list[dict[str, str]],
         decision_digest: str | None,
     ) -> BrokerReservationResult:
+        """Reserve for this test.
+
+        Args:
+            issue:
+                Issue supplied to the test.
+            submission:
+                Submission supplied to the test.
+            outcome:
+                Outcome supplied to the test.
+            reviewer:
+                Reviewer supplied to the test.
+            records:
+                Records supplied to the test.
+            decision_digest:
+                Decision digest supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         return BrokerReservationResult(
             token=next(reservations),
             decision_reviewer=reviewer,
@@ -794,6 +1036,25 @@ def test_opposite_concurrent_decisions_fail_closed_before_canonical_writes() -> 
         digest: str,
         records: list[dict[str, str]],
     ) -> str:
+        """Bind for this test.
+
+        Args:
+            issue:
+                Issue supplied to the test.
+            submission:
+                Submission supplied to the test.
+            outcome:
+                Outcome supplied to the test.
+            token:
+                Token supplied to the test.
+            digest:
+                Digest supplied to the test.
+            records:
+                Records supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         bind_barrier.wait()
         return token
 
@@ -890,6 +1151,25 @@ def test_resume_uses_the_first_bound_decision_metadata() -> None:
         records: list[dict[str, str]],
         decision_digest: str | None,
     ) -> BrokerReservationResult:
+        """Reserve for this test.
+
+        Args:
+            issue:
+                Issue supplied to the test.
+            submission:
+                Submission supplied to the test.
+            outcome:
+                Outcome supplied to the test.
+            reviewer:
+                Reviewer supplied to the test.
+            records:
+                Records supplied to the test.
+            decision_digest:
+                Decision digest supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         reservation_reviewers.append(reviewer)
         return bound
 
@@ -905,7 +1185,12 @@ def test_resume_uses_the_first_bound_decision_metadata() -> None:
 def test_review_renewal_round_trip_includes_bound_digest(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Send the bound decision digest in the broker renewal envelope."""
+    """Send the bound decision digest in the broker renewal envelope.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     requests: list[dict[str, object]] = []
 
     class Response:
@@ -913,6 +1198,12 @@ def test_review_renewal_round_trip_includes_bound_digest(
             return self
 
         def __exit__(self, *args: object) -> None:
+            """Exit   for this test.
+
+            Args:
+                args:
+                    Args supplied to the test.
+            """
             return None
 
         def read(self) -> bytes:
@@ -925,6 +1216,17 @@ def test_review_renewal_round_trip_includes_bound_digest(
             ).encode()
 
     def urlopen(request: urllib.request.Request, timeout: int) -> Response:
+        """Urlopen for this test.
+
+        Args:
+            request:
+                Pytest request for parametrised fixture setup.
+            timeout:
+                Timeout supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         assert timeout == 30
         requests.append(json.loads(request.data.decode()))
         return Response()
@@ -951,7 +1253,12 @@ def test_review_renewal_round_trip_includes_bound_digest(
 def test_terminal_response_loss_recovers_with_durable_digest(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A fresh reviewer recovers a completed terminal broker transition."""
+    """A fresh reviewer recovers a completed terminal broker transition.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     api, template, _ = _reviewer()
     reviewer = VolunteerReviewer(
         store=template.store, results_bucket=RESULTS, scope_policy=template.scope_policy
@@ -968,18 +1275,45 @@ def test_terminal_response_loss_recovers_with_durable_digest(
 
     class Response:
         def __init__(self, body: dict[str, object]) -> None:
+            """Init   for this test.
+
+            Args:
+                body:
+                    Body supplied to the test.
+            """
             self.body = body
 
         def __enter__(self) -> "Response":
             return self
 
         def __exit__(self, *args: object) -> None:
+            """Exit   for this test.
+
+            Args:
+                args:
+                    Args supplied to the test.
+            """
             return None
 
         def read(self) -> bytes:
             return json.dumps(self.body).encode()
 
     def urlopen(request: urllib.request.Request, timeout: int) -> Response:
+        """Urlopen for this test.
+
+        Args:
+            request:
+                Pytest request for parametrised fixture setup.
+            timeout:
+                Timeout supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+
+        Raises:
+            OSError:
+                If the simulated operation fails.
+        """
         nonlocal bound_digest, lost_response
         body = json.loads(request.data.decode())
         requests.append((request.full_url, body))

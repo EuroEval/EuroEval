@@ -43,7 +43,16 @@ def test_get_closest_logprobs_labels_cleans_unicode_edges(
     candidate_label: str,
     mapping: dict[str, str] | t.Literal[True],
 ) -> None:
-    """Match labels after cleaning Unicode and tokenizer marker edges."""
+    """Match labels after cleaning Unicode and tokenizer marker edges.
+
+    Args:
+        generated_label:
+            Generated label supplied to the test.
+        candidate_label:
+            Candidate label supplied to the test.
+        mapping:
+            Mapping supplied to the test.
+    """
     result = get_closest_logprobs_labels(
         generation_logprobs=[[[("!!!", -0.1), (generated_label, -0.2)]]],
         first_label_token_mapping=mapping,
@@ -92,7 +101,20 @@ def test_get_first_label_token_mapping_cleans_unicode_edges(
     label: str,
     expected: str,
 ) -> None:
-    """Clean token edges without damaging Unicode label content."""
+    """Clean token edges without damaging Unicode label content.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        model_config:
+            Model configuration exercised by the test.
+        tokens:
+            Tokens supplied to the test.
+        label:
+            Label supplied to the test.
+        expected:
+            Expected value for this test case.
+    """
     dataset_config = DatasetConfig(
         name=f"unicode-label-{label}-{tokens[0]}",
         task=SENT,
@@ -129,11 +151,22 @@ class FakeTokeniser:
     def decode(self, token_id: int) -> str:
         """Decode a configured token ID.
 
+        Args:
+            token_id:
+                Token id supplied to the test.
+
         Returns:
             The configured token.
         """
         return self.tokens[token_id]
 
     def encode(self, text: str, add_special_tokens: bool) -> list[int]:
-        """Return one ID for each configured token."""
+        """Return one ID for each configured token.
+
+        Args:
+            text:
+                Text supplied to the test.
+            add_special_tokens:
+                Add special tokens supplied to the test.
+        """
         return list(range(len(self.tokens)))

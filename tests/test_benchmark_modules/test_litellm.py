@@ -857,7 +857,8 @@ class TestDeepSeekParams:
             param: The model parameter setting to exercise.
             expected_key: Name of the generation-kwargs key expected.
             expected_thinking_type: Expected thinking type, or None when not applicable.
-            expected_effort: Expected reasoning-effort value, or None when not applicable.
+            expected_effort:
+                Expected reasoning-effort value, or None when not applicable.
         """
         model = object.__new__(LiteLLMModel)
         model.buffer = {"first_label_token_mapping": False}
@@ -985,7 +986,16 @@ class TestDuplicateErrorHandling:
         original_response_format = {"type": "json_schema", "json_schema": {}}
 
         async def fake_acompletion(**kwargs: object) -> MagicMock:
-            """Mock callback used by the surrounding test."""
+            """Mock callback used by the surrounding test.
+
+            Args:
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Raises:
+                _make_response_format_unavailable_error:
+                    If the simulated operation fails.
+            """
             raise _make_response_format_unavailable_error()
 
         with (
@@ -1030,7 +1040,17 @@ def _fake_get_generation_kwargs(
     def fake_get_generation_kwargs(
         self: LiteLLMModel, dataset_config: DatasetConfig
     ) -> dict[str, t.Any]:
-        """Mock callback used by the surrounding test."""
+        """Mock callback used by the surrounding test.
+
+        Args:
+            self:
+                Mock model instance.
+            dataset_config:
+                Dataset configuration exercised by the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         generation_kwargs: dict[str, t.Any] = {
             "max_completion_tokens": dataset_config.max_generated_tokens
         }
@@ -1270,7 +1290,15 @@ class TestRetryAdjustments:
         model._parameter_adjustments.add(ParameterAdjustment.NO_LOGPROBS)
 
         async def fake_acompletion(**kwargs: object) -> MagicMock:
-            """Mock callback used by the surrounding test."""
+            """Mock callback used by the surrounding test.
+
+            Args:
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             return _make_response()
 
         with patch(
@@ -1306,7 +1334,15 @@ class TestRetryAdjustments:
         model.buffer["first_label_token_mapping"] = True
 
         async def fake_acompletion(**kwargs: object) -> MagicMock:
-            """Mock callback used by the surrounding test."""
+            """Mock callback used by the surrounding test.
+
+            Args:
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             return _make_response()
 
         with patch(
@@ -1352,7 +1388,15 @@ class TestRetryAdjustments:
         response.choices[0].message.reasoning_content = "thinking"
 
         async def fake_acompletion(**kwargs: object) -> MagicMock:
-            """Mock callback used by the surrounding test."""
+            """Mock callback used by the surrounding test.
+
+            Args:
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             return response
 
         with patch(
@@ -1432,7 +1476,16 @@ class TestRetryAdjustments:
         )
 
         async def fake_acompletion_logprobs_unsupported(**kwargs: object) -> MagicMock:
-            """Mock callback used by the surrounding test."""
+            """Mock callback used by the surrounding test.
+
+            Args:
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Raises:
+                Exception:
+                    If the simulated operation fails.
+            """
             raise Exception("logprobs is not supported")
 
         with (
@@ -1459,7 +1512,17 @@ class TestRetryAdjustments:
         def fake_get_generation_kwargs_with_logprobs(
             self: LiteLLMModel, dataset_config: DatasetConfig
         ) -> dict[str, t.Any]:
-            """Mock callback used by the surrounding test."""
+            """Mock callback used by the surrounding test.
+
+            Args:
+                self:
+                    Mock model instance.
+                dataset_config:
+                    Dataset configuration exercised by the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             return {
                 "max_completion_tokens": dataset_config.max_generated_tokens,
                 "response_format": new_response_format,
@@ -1509,7 +1572,16 @@ class TestRetryAdjustments:
         original_response_format = {"type": "json_schema", "json_schema": {}}
 
         async def fake_acompletion_malformed_schema(**kwargs: object) -> MagicMock:
-            """Mock callback used by the surrounding test."""
+            """Mock callback used by the surrounding test.
+
+            Args:
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Raises:
+                Exception:
+                    If the simulated operation fails.
+            """
             raise Exception("Property keys should match pattern")
 
         with (
@@ -1536,7 +1608,17 @@ class TestRetryAdjustments:
         def fake_get_generation_kwargs_new_schema(
             self: LiteLLMModel, dataset_config: DatasetConfig
         ) -> dict[str, t.Any]:
-            """Mock callback used by the surrounding test."""
+            """Mock callback used by the surrounding test.
+
+            Args:
+                self:
+                    Mock model instance.
+                dataset_config:
+                    Dataset configuration exercised by the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             return {
                 "max_completion_tokens": dataset_config.max_generated_tokens,
                 "response_format": new_response_format,
@@ -1659,7 +1741,19 @@ def _patch_retry_adjustment_dependencies(
     calls: list[dict[str, t.Any]] = []
 
     async def fake_acompletion(**kwargs: object) -> MagicMock:
-        """Mock callback used by the surrounding test."""
+        """Mock callback used by the surrounding test.
+
+        Args:
+            kwargs:
+                Kwargs supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+
+        Raises:
+            _make_response_format_unavailable_error:
+                If the simulated operation fails.
+        """
         calls.append(kwargs)
         if not has_raised[0]:
             has_raised[0] = True
@@ -1710,7 +1804,19 @@ class TestServiceErrorHandling:
         has_raised: list[bool] = [False]
 
         async def fake_acompletion(**kwargs: object) -> MagicMock:
-            """Mock callback used by the surrounding test."""
+            """Mock callback used by the surrounding test.
+
+            Args:
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+
+            Raises:
+                BadRequestError:
+                    If the simulated operation fails.
+            """
             if not has_raised[0]:
                 has_raised[0] = True
                 raise BadRequestError(
@@ -1813,9 +1919,12 @@ class TestTransientParameterErrors:
         Args:
             model_config: The model configuration fixture.
             dataset_config: The dataset configuration fixture.
-        error_message: Provider error message to handle.
-        response_type: Response-format type supplied with the request.
-            expected_response_type: Expected response-format type, or None when the format is removed.
+            error_message:
+                Provider error message to handle.
+            response_type:
+                Response-format type supplied with the request.
+            expected_response_type:
+                Expected response-format type, or None when the format is removed.
         """
         model = object.__new__(LiteLLMModel)
         model.model_config = dataclasses.replace(model_config, model_id="openai/gpt-4o")
@@ -1873,8 +1982,10 @@ class TestTransientParameterErrors:
         Args:
             model_config: The model configuration fixture.
             dataset_config: The dataset configuration fixture.
-        error_message: Provider error message to handle.
-        response_type: Response-format type supplied with the request.
+            error_message:
+                Provider error message to handle.
+            response_type:
+                Response-format type supplied with the request.
             expected_adjustment: Expected persisted parameter adjustment.
             keeps_format: Whether the fallback retains a response format.
         """

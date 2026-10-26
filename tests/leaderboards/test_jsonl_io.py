@@ -18,7 +18,12 @@ class TestLoadRecordsFromJsonlFiles:
     """Tests for load_records_from_jsonl_files (unchanged API)."""
 
     def test_loads_jsonl_records(self, tmp_path: Path) -> None:
-        """Should load records from JSONL files."""
+        """Should load records from JSONL files.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         jsonl_file = tmp_path / "model.jsonl"
         jsonl_file.write_text(
             '{"model_info": {"id": "model_a"}, "scores": {"acc": 0.5}}\n'
@@ -36,7 +41,12 @@ class TestLoadRecordsFromResultTree:
     """Tests for load_records_from_result_tree."""
 
     def test_empty_directory_returns_empty_list(self, tmp_path: Path) -> None:
-        """Should return empty list for directory with no JSON files."""
+        """Should return empty list for directory with no JSON files.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         (tmp_path / "empty_model").mkdir()
 
         records = load_records_from_result_tree(results_dir=tmp_path)
@@ -44,7 +54,12 @@ class TestLoadRecordsFromResultTree:
         assert records == []
 
     def test_loads_multiple_datasets_per_model(self, tmp_path: Path) -> None:
-        """Should load multiple dataset files per model."""
+        """Should load multiple dataset files per model.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         model_dir = tmp_path / "test_model"
         model_dir.mkdir()
 
@@ -59,7 +74,12 @@ class TestLoadRecordsFromResultTree:
         assert len(records) == 2
 
     def test_loads_multiple_models(self, tmp_path: Path) -> None:
-        """Should load records from multiple model subdirectories."""
+        """Should load records from multiple model subdirectories.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         model_a_dir = tmp_path / "model_a"
         model_b_dir = tmp_path / "model_b"
         model_a_dir.mkdir()
@@ -78,7 +98,12 @@ class TestLoadRecordsFromResultTree:
         assert model_ids == {"model_a", "model_b"}
 
     def test_loads_single_record_per_file(self, tmp_path: Path) -> None:
-        """Should load one record per JSON file in the tree structure."""
+        """Should load one record per JSON file in the tree structure.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         model_dir = tmp_path / "test_model"
         model_dir.mkdir()
 
@@ -94,7 +119,12 @@ class TestLoadRecordsFromResultTree:
         assert records[0]["scores"]["acc"] == 0.5  # ty: ignore[not-subscriptable]
 
     def test_preserves_metadata_fields(self, tmp_path: Path) -> None:
-        """Should preserve all metadata fields in model_info."""
+        """Should preserve all metadata fields in model_info.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         model_dir = tmp_path / "test_model"
         model_dir.mkdir()
 
@@ -128,7 +158,12 @@ class TestLoadRecordsFromResultTree:
         assert details["model_url"] == "https://example.com/model"
 
     def test_raises_on_malformed_json(self, tmp_path: Path) -> None:
-        """Should raise JSONDecodeError on malformed JSON files."""
+        """Should raise JSONDecodeError on malformed JSON files.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         model_dir = tmp_path / "bad_model"
         model_dir.mkdir()
 
@@ -139,7 +174,12 @@ class TestLoadRecordsFromResultTree:
             load_records_from_result_tree(results_dir=tmp_path)
 
     def test_raises_on_non_dict_content(self, tmp_path: Path) -> None:
-        """Should raise ValueError if JSON file contains non-dict."""
+        """Should raise ValueError if JSON file contains non-dict.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         model_dir = tmp_path / "bad_model"
         model_dir.mkdir()
 

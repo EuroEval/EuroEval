@@ -39,7 +39,18 @@ def test_get_end_of_chat_token_ids(
     expected_string: str | None,
     auth: str,
 ) -> None:
-    """Test ability to get the chat token IDs of a model."""
+    """Test ability to get the chat token IDs of a model.
+
+    Args:
+        model_id:
+            Model identifier used by the test.
+        expected_token_ids:
+            Expected token ids for this case.
+        expected_string:
+            Expected string for this case.
+        auth:
+            Auth supplied to the test.
+    """
     tokeniser: Tokeniser = AutoTokenizer.from_pretrained(  # ty: ignore[invalid-assignment]
         model_id, token=auth, trust_remote_code=True
     )
@@ -56,7 +67,12 @@ def test_get_end_of_chat_token_ids(
 def test_get_first_label_token_mapping_falls_back_to_encode(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """An empty chat-template diff should fall back to encoding the label."""
+    """An empty chat-template diff should fall back to encoding the label.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     mapping = _mapping_for_chat_tokeniser(
         tokeniser=_ContaminatedChatTokeniser(include_label_in_template=False),
         monkeypatch=monkeypatch,
@@ -264,7 +280,12 @@ def _mapping_for_chat_tokeniser(
 def test_get_first_label_token_mapping_ignores_system_prompt_tokens(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """System tokens like ``p`` must not win over the real label prefix (``pos``)."""
+    """System tokens like ``p`` must not win over the real label prefix (``pos``).
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     mapping = _mapping_for_chat_tokeniser(
         tokeniser=_ContaminatedChatTokeniser(), monkeypatch=monkeypatch
     )
@@ -274,7 +295,12 @@ def test_get_first_label_token_mapping_ignores_system_prompt_tokens(
 def test_get_first_label_token_mapping_skips_non_matching_span_tokens(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Extra tokens in the isolated span must not hide the first label prefix."""
+    """Extra tokens in the isolated span must not hide the first label prefix.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     mapping = _mapping_for_chat_tokeniser(
         tokeniser=_ContaminatedChatTokeniser(extra_span_token="asst"),
         monkeypatch=monkeypatch,
@@ -293,6 +319,12 @@ def test_load_xlmr_tokeniser_with_fallback(
 
     Regression test for EMBEDDIA/litlat-bert and similar XLM-RoBERTa variants
     that raise TypeError when loading fast tokenizers.
+
+    Args:
+        auth:
+            Auth supplied to the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
     """
     model_id = "EMBEDDIA/litlat-bert"
 
@@ -359,7 +391,16 @@ def test_load_xlmr_tokeniser_with_fallback(
 def test_should_prefix_space_be_added_to_labels(
     model_id: str, expected: bool, auth: str
 ) -> None:
-    """Test whether a prefix space should be added to labels."""
+    """Test whether a prefix space should be added to labels.
+
+    Args:
+        model_id:
+            Model identifier used by the test.
+        expected:
+            Expected value for this test case.
+        auth:
+            Auth supplied to the test.
+    """
     tokeniser: Tokeniser = AutoTokenizer.from_pretrained(  # ty: ignore[invalid-assignment]
         model_id, token=auth
     )
@@ -379,7 +420,16 @@ def test_should_prefix_space_be_added_to_labels(
     reason="HF_TOKEN not set, required for loading tokenizers",
 )
 def test_should_prompts_be_stripped(model_id: str, expected: bool, auth: str) -> None:
-    """Test that a model ID is a generative model."""
+    """Test that a model ID is a generative model.
+
+    Args:
+        model_id:
+            Model identifier used by the test.
+        expected:
+            Expected value for this test case.
+        auth:
+            Auth supplied to the test.
+    """
     config = load_hf_model_config(
         model_id=model_id,
         num_labels=0,

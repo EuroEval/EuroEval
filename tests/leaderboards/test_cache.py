@@ -14,7 +14,12 @@ class TestCacheFromResultsDir:
     """Tests for Cache.from_results_dir with tree structure."""
 
     def test_empty_directory_returns_empty_cache(self, tmp_path: Path) -> None:
-        """Should return empty cache for directory with no JSON files."""
+        """Should return empty cache for directory with no JSON files.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         (tmp_path / "empty_model").mkdir()
 
         cache = Cache.from_results_dir(results_dir=tmp_path)
@@ -25,7 +30,12 @@ class TestCacheFromResultsDir:
         assert len(cache.trained_from_scratch) == 0
 
     def test_loads_from_tree_structure(self, tmp_path: Path) -> None:
-        """Should load records from the tree structure."""
+        """Should load records from the tree structure.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         model_dir = tmp_path / "test_model"
         model_dir.mkdir()
 
@@ -43,7 +53,12 @@ class TestCacheFromResultsDir:
         assert cache.open["test/model"] is True
 
     def test_loads_multiple_models(self, tmp_path: Path) -> None:
-        """Should load records from multiple model subdirectories."""
+        """Should load records from multiple model subdirectories.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         model_a_dir = tmp_path / "model_a"
         model_b_dir = tmp_path / "model_b"
         model_a_dir.mkdir()
@@ -72,6 +87,10 @@ class TestCacheFromResultsDir:
         Records written before the Hub lookup was working carry an explicit
         null; whichever record happens to be read last used to decide the
         answer for the whole model.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
         """
         model_dir = tmp_path / "test_model"
         model_dir.mkdir()
@@ -87,7 +106,12 @@ class TestCacheFromResultsDir:
         assert cache.release_date["test/model"] == "2024-02-03"
 
     def test_preserves_metadata_fields(self, tmp_path: Path) -> None:
-        """Should preserve metadata fields in model_info.additional_details."""
+        """Should preserve metadata fields in model_info.additional_details.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         model_dir = tmp_path / "test_model"
         model_dir.mkdir()
 
@@ -110,7 +134,12 @@ class TestCacheFromResultsDir:
         assert cache.model_url.get("test/model") == "https://example.com/model"
 
     def test_preserves_release_date(self, tmp_path: Path) -> None:
-        """Release dates are reused instead of repeatedly querying providers."""
+        """Release dates are reused instead of repeatedly querying providers.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         model_dir = tmp_path / "test_model"
         model_dir.mkdir()
         record = _make_eee_record(model_id="test/model", model_name="test/model")
@@ -132,6 +161,10 @@ class TestCacheFromResultsDir:
         The cache doubles as a "already asked" marker, so seeding it with nulls
         makes every later run skip the lookup and permanently freeze the model
         at "unknown".
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
         """
         model_dir = tmp_path / "test_model"
         model_dir.mkdir()

@@ -299,7 +299,14 @@ class TestNormaliseBoolValue:
     def test_normal_values(
         self, values: tuple[bool | str | None, ...], expected: bool | None
     ) -> None:
-        """Boolean values and case variants normalise consistently."""
+        """Boolean values and case variants normalise consistently.
+
+        Args:
+            values:
+                Values supplied to the test.
+            expected:
+                Expected value for this test case.
+        """
         for value in values:
             assert normalise_bool_value(value) is expected
 
@@ -357,7 +364,18 @@ class TestRecordFilename:
         few_shot: bool | None,
         expected: str,
     ) -> None:
-        """Record filenames combine sanitised names and shot/split labels."""
+        """Record filenames combine sanitised names and shot/split labels.
+
+        Args:
+            dataset:
+                Dataset supplied to the test.
+            validation_split:
+                Validation split supplied to the test.
+            few_shot:
+                Few shot supplied to the test.
+            expected:
+                Expected value for this test case.
+        """
         assert (
             record_filename(
                 dataset, validation_split=validation_split, few_shot=few_shot
@@ -409,7 +427,14 @@ class TestSanitiseDatasetName:
         [("test_dataset", "test_dataset"), ("org/dataset", "org_dataset")],
     )
     def test_names(self, dataset: str, expected: str) -> None:
-        """Dataset slashes are replaced while plain names are unchanged."""
+        """Dataset slashes are replaced while plain names are unchanged.
+
+        Args:
+            dataset:
+                Dataset supplied to the test.
+            expected:
+                Expected value for this test case.
+        """
         assert sanitise_dataset_name(dataset) == expected
 
 
@@ -426,7 +451,14 @@ class TestSanitiseModelDirName:
         ],
     )
     def test_names(self, model_id: str, expected: str) -> None:
-        """Model slashes are replaced without altering suffix markers."""
+        """Model slashes are replaced without altering suffix markers.
+
+        Args:
+            model_id:
+                Model identifier used by the test.
+            expected:
+                Expected value for this test case.
+        """
         assert sanitise_model_dir_name(model_id) == expected
 
 
@@ -438,7 +470,14 @@ class TestShotLabel:
         [(False, "zeroshot"), (None, "none"), (True, "fewshot")],
     )
     def test_labels(self, few_shot: bool | None, expected: str) -> None:
-        """Shot values map to their filename labels."""
+        """Shot values map to their filename labels.
+
+        Args:
+            few_shot:
+                Few shot supplied to the test.
+            expected:
+                Expected value for this test case.
+        """
         assert shot_label(few_shot) == expected
 
 
@@ -450,5 +489,12 @@ class TestSplitLabel:
         [(False, "test"), (None, "none"), (True, "val")],
     )
     def test_labels(self, validation_split: bool | None, expected: str) -> None:
-        """Split values map to their filename labels."""
+        """Split values map to their filename labels.
+
+        Args:
+            validation_split:
+                Validation split supplied to the test.
+            expected:
+                Expected value for this test case.
+        """
         assert split_label(validation_split) == expected

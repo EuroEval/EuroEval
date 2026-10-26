@@ -82,13 +82,27 @@ def test_aggregate_pareto_requires_complete_coverage_and_unions_categories() -> 
 
 
 def _model_results(*datasets: str) -> dict[str, list[tuple[list[float], float, float]]]:
+    """Model results for this test.
+
+    Args:
+        datasets:
+            Datasets supplied to the test.
+
+    Returns:
+        The value returned by the test helper.
+    """
     return {dataset: [([1.0], 1.0, 1.0)] for dataset in datasets}
 
 
 def test_build_classifies_zero_shot_model_and_legacy_encoder(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The public builder preserves classifier and legacy encoder semantics."""
+    """The public builder preserves classifier and legacy encoder semantics.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     dataset = "sentiment"
     model_results = {
         "org/laya": {dataset: [([0.8, 0.9], 0.85, 0.05)]},
@@ -139,7 +153,12 @@ def test_build_classifies_zero_shot_model_and_legacy_encoder(
 def test_build_retains_osai_and_api_but_not_eu_source(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Retain OSAI/API entries without accepting an EU source input."""
+    """Retain OSAI/API entries without accepting an EU source input.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setattr(
         "leaderboards.core_models.languages_with_official_datasets", lambda: ["english"]
     )
@@ -187,7 +206,12 @@ def test_core_model_schema_has_aggregate_pareto_categories() -> None:
 def test_pipeline_bootstrap_matches_european_language_weighting(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Core-model scores use the same per-language hierarchy as leaderboards."""
+    """Core-model scores use the same per-language hierarchy as leaderboards.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     configs = {
         "language-a": {"sentiment-classification": ["dataset-a"]},
         "language-b": {"sentiment-classification": ["dataset-b"]},
@@ -237,7 +261,12 @@ def test_pipeline_bootstrap_matches_european_language_weighting(
 def test_pipeline_excludes_partial_models_before_bootstrap(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Partial models cannot change category distributions or the frontier."""
+    """Partial models cannot change category distributions or the frontier.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     configs = {
         "language-a": {"sentiment-classification": ["dataset-a"]},
         "language-b": {"sentiment-classification": ["dataset-b"]},
@@ -260,6 +289,23 @@ def test_pipeline_excludes_partial_models_before_bootstrap(
         seed: int,
         categories: tuple[LeaderboardCategory, ...],
     ) -> dict[str, dict[str, dict[str, np.ndarray]]]:
+        """Fake bootstrap rank scores for this test.
+
+        Args:
+            model_results:
+                Model results supplied to the test.
+            configs:
+                Configs supplied to the test.
+            n_bootstraps:
+                N bootstraps supplied to the test.
+            seed:
+                Seed supplied to the test.
+            categories:
+                Categories supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         del configs, n_bootstraps, seed
         scores = {"strong": 1.0, "peer": 2.0, "partial": 0.0}
         return {
@@ -325,7 +371,12 @@ def test_statistical_ties_remain_on_the_frontier() -> None:
 def test_understanding_uses_its_task_and_model_eligibility_pool(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Understanding scores exclude zero-shot models and unrelated tasks."""
+    """Understanding scores exclude zero-shot models and unrelated tasks.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     configs = {
         "english": {
             "sentiment-classification": ["sentiment"],
@@ -356,6 +407,23 @@ def test_understanding_uses_its_task_and_model_eligibility_pool(
         seed: int,
         categories: tuple[LeaderboardCategory, ...],
     ) -> dict[str, dict[LeaderboardCategory, dict[str, np.ndarray]]]:
+        """Fake bootstrap rank scores for this test.
+
+        Args:
+            model_results:
+                Model results supplied to the test.
+            configs:
+                Configs supplied to the test.
+            n_bootstraps:
+                N bootstraps supplied to the test.
+            seed:
+                Seed supplied to the test.
+            categories:
+                Categories supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         del configs, n_bootstraps, seed
         category = categories[0]
         captured[category] = set(model_results)

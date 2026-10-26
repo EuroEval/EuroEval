@@ -36,7 +36,14 @@ class TestBaseExceptions:
     def test_default_message(
         self, exception_class: type[Exception], expected_message: str
     ) -> None:
-        """Test the default message of each base exception."""
+        """Test the default message of each base exception.
+
+        Args:
+            exception_class:
+                Exception class supplied to the test.
+            expected_message:
+                Expected message for this case.
+        """
         assert exception_class().message == expected_message
 
     def test_invalid_benchmark_custom_message(self) -> None:

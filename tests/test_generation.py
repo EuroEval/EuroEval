@@ -33,7 +33,18 @@ class TestBPCacheNamespace:
         use_bits_per_character: bool,
         expected_cache_name: str,
     ) -> None:
-        """BPC is namespaced while MCF keeps its legacy cache name."""
+        """BPC is namespaced while MCF keeps its legacy cache name.
+
+        Args:
+            dataset_config_mock:
+                Dataset config mock supplied to the test.
+            model_config_mock:
+                Model config mock supplied to the test.
+            use_bits_per_character:
+                Whether to use bits per character in this test case.
+            expected_cache_name:
+                Expected cache name for this case.
+        """
         with patch("euroeval.generation.ModelCache") as mock_cache:
             generate(
                 model=MagicMock(),
@@ -96,7 +107,16 @@ def model_config_mock(tmp_path: Path) -> MagicMock:
 def test_single_sample_generation_preserves_predictions_and_progress(
     dataset_config: MagicMock, benchmark_config: MagicMock, progress_bar: bool
 ) -> None:
-    """Single-sample generation retains predictions and honours progress settings."""
+    """Single-sample generation retains predictions and honours progress settings.
+
+    Args:
+        dataset_config:
+            Dataset configuration exercised by the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        progress_bar:
+            Progress bar supplied to the test.
+    """
     assert (
         ZeroShotClassifierModel.batching_preference == BatchingPreference.SINGLE_SAMPLE
     )
@@ -123,6 +143,17 @@ def test_single_sample_generation_preserves_predictions_and_progress(
     progress_flags: list[bool] = []
 
     def track_progress(iterable: object, disable: bool) -> object:
+        """Track progress for this test.
+
+        Args:
+            iterable:
+                Iterable supplied to the test.
+            disable:
+                Disable supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         progress_flags.append(not disable)
         return iterable
 

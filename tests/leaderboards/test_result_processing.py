@@ -30,7 +30,16 @@ class TestUploadPerModelFilesPerRecordTree:
         tmp_path: Path,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """Test that records with unresolvable model identities are dropped."""
+        """Test that records with unresolvable model identities are dropped.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            tmp_path:
+                Temporary directory for files created by the test.
+            caplog:
+                Fixture for capturing log records during the test.
+        """
         monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
 
         mock_api = MagicMock()
@@ -71,7 +80,14 @@ class TestUploadPerModelFilesPerRecordTree:
     def test_metadata_preserved_in_written_record(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        """Test that all metadata fields are preserved in the written JSON."""
+        """Test that all metadata fields are preserved in the written JSON.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
 
         mock_api = MagicMock()
@@ -139,7 +155,14 @@ class TestUploadPerModelFilesPerRecordTree:
     def test_older_duplicate_does_not_clobber_newer(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        """Test that when two records have the same identity, the newer is kept."""
+        """Test that when two records have the same identity, the newer is kept.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
 
         mock_api = MagicMock()
@@ -214,6 +237,12 @@ class TestUploadPerModelFilesPerRecordTree:
         Dataset names 'a/b' and 'a_b' both sanitise to 'a_b', causing a path
         collision. This should raise ValueError with a message naming the
         collision before any filesystem mutation occurs.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            tmp_path:
+                Temporary directory for files created by the test.
         """
         monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
 
@@ -277,7 +306,14 @@ class TestUploadPerModelFilesPerRecordTree:
     def test_writes_expected_directory_tree(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        """Test that _upload_per_model_files writes the expected directory structure."""
+        """Test that _upload_per_model_files writes the expected directory structure.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
 
         mock_api = MagicMock()
@@ -333,6 +369,12 @@ def test_cache_freshness_load_before_cache_construction(
     This ensures the results bucket is synced before cache construction,
     preventing stale cache issues. The test fails if cache construction
     happens before loading/syncing completes.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
     """
     call_sequence: list[CallOrder] = []
 
@@ -344,6 +386,15 @@ def test_cache_freshness_load_before_cache_construction(
     fake_load_raw_results.cache_clear = lambda: None  # type: ignore[attr-defined]
 
     def fake_cache_from_results_dir(results_dir: Path) -> Cache:
+        """Fake cache from results dir for this test.
+
+        Args:
+            results_dir:
+                Results dir supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         call_sequence.append(CallOrder.CACHE_FROM_RESULTS_DIR)
         # Return a minimal Cache with empty dicts - the actual cache
         # is used for metadata lookups in add_missing_entries
@@ -406,7 +457,14 @@ def test_configure_canary_filter_when_processing_is_skipped() -> None:
 def test_process_results_clears_cache_after_upload(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Test that load_raw_results cache is cleared after processing."""
+    """Test that load_raw_results cache is cleared after processing.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     # Track whether cache_clear was called
     cache_clear_called = False
 
@@ -421,6 +479,15 @@ def test_process_results_clears_cache_after_upload(
     fake_load_raw_results.cache_clear = fake_cache_clear  # type: ignore[attr-defined]
 
     def fake_cache_from_results_dir(results_dir: Path) -> Cache:
+        """Fake cache from results dir for this test.
+
+        Args:
+            results_dir:
+                Results dir supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         return Cache()
 
     monkeypatch.setattr(result_processing, "load_raw_results", fake_load_raw_results)
@@ -483,7 +550,14 @@ def test_process_results_keeps_canary_records_out_of_public_uploads() -> None:
 def test_sync_bucket_passes_hf_token(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Test that sync_bucket passes the resolved HF token."""
+    """Test that sync_bucket passes the resolved HF token.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     monkeypatch.setattr(bucket_sync, "RESULTS_DIR", tmp_path)
     mock_api = MagicMock()
 
@@ -505,7 +579,14 @@ def test_sync_bucket_passes_hf_token(
 def test_sync_bucket_raises_without_hf_token(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Test that sync_bucket raises without HF_TOKEN set."""
+    """Test that sync_bucket raises without HF_TOKEN set.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     monkeypatch.setattr(bucket_sync, "RESULTS_DIR", tmp_path)
 
     with patch("leaderboards.bucket_sync.resolve_hf_token", return_value=None):
@@ -516,7 +597,14 @@ def test_sync_bucket_raises_without_hf_token(
 def test_upload_per_model_files_passes_hf_token(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Test that _upload_per_model_files passes the resolved HF token."""
+    """Test that _upload_per_model_files passes the resolved HF token.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
 
     mock_api = MagicMock()
@@ -557,7 +645,14 @@ def test_upload_per_model_files_passes_hf_token(
 def test_upload_per_model_files_raises_on_sync_failure(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Test that _upload_per_model_files raises when bucket sync fails."""
+    """Test that _upload_per_model_files raises when bucket sync fails.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
 
     mock_api = MagicMock()
@@ -581,6 +676,12 @@ def test_upload_per_model_files_raises_without_hf_token(
     """Test that _upload_per_model_files raises without HF_TOKEN set.
 
     RuntimeError is raised when HF_TOKEN is missing.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
     """
     # Patch RESULTS_DIR to use a temp directory
     monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
@@ -596,7 +697,14 @@ def test_upload_per_model_files_raises_without_hf_token(
 def test_upload_results_to_bucket_passes_hf_token(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Test that upload_results_to_bucket passes the resolved HF token."""
+    """Test that upload_results_to_bucket passes the resolved HF token.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     results_dir = tmp_path / "results"
     results_file = tmp_path / "results.jsonl"
 
@@ -629,7 +737,14 @@ def test_upload_results_to_bucket_passes_hf_token(
 def test_upload_results_to_bucket_raises_on_sync_failure(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Test that upload_results_to_bucket raises when bucket sync fails."""
+    """Test that upload_results_to_bucket raises when bucket sync fails.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     results_dir = tmp_path / "results"
     results_file = tmp_path / "results.jsonl"
 
@@ -659,7 +774,12 @@ def test_upload_results_to_bucket_raises_on_sync_failure(
 
 
 def test_upload_results_to_bucket_raises_without_hf_token(tmp_path: Path) -> None:
-    """Test that upload_results_to_bucket raises without HF_TOKEN set."""
+    """Test that upload_results_to_bucket raises without HF_TOKEN set.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     results_file = tmp_path / "results.jsonl"
     results_file.write_text("{}\n", encoding="utf-8")
 

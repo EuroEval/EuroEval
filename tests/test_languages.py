@@ -27,14 +27,24 @@ class TestGetAllLanguages:
     def test_languages_are_a_dict_of_objects(
         self, languages: dict[str, Language]
     ) -> None:
-        """Test that the registry is a dict of `Language` objects."""
+        """Test that the registry is a dict of `Language` objects.
+
+        Args:
+            languages:
+                Languages supplied to the test.
+        """
         assert isinstance(languages, dict)
         assert all(isinstance(language, Language) for language in languages.values())
 
     def test_languages_contain_germanic_languages(
         self, languages: dict[str, Language]
     ) -> None:
-        """Tests that `languages` contains the Germanic languages."""
+        """Tests that `languages` contains the Germanic languages.
+
+        Args:
+            languages:
+                Languages supplied to the test.
+        """
         assert {
             "sv",
             "da",
@@ -97,7 +107,14 @@ def test_a_language_without_a_639_1_code_is_keyed_by_its_639_3_code() -> None:
 def test_get_correct_language_codes(
     input_language_codes: str | list[str], expected_language_codes: list[str]
 ) -> None:
-    """Test that the correct language codes are returned."""
+    """Test that the correct language codes are returned.
+
+    Args:
+        input_language_codes:
+            Input language codes supplied to the test.
+        expected_language_codes:
+            Expected language codes for this case.
+    """
     languages = get_correct_language_codes(language_codes=input_language_codes)
     assert set(languages) == set(expected_language_codes)
 
