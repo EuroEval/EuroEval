@@ -1,8 +1,8 @@
 # /// script
 # requires-python = ">=3.10,<4.0"
 # dependencies = [
-#     "datasets==4.0.0",
-#     "huggingface-hub==0.34.4",
+#     "datasets==5.0.1",
+#     "huggingface-hub==1.28.0",
 # ]
 # ///
 
