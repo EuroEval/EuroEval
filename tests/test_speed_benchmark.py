@@ -23,7 +23,11 @@ class TestBenchmarkSpeed:
 
     @pytest.fixture(scope="class")
     def itr(self) -> Generator[tqdm, None, None]:
-        """Yields an iterator with a progress bar."""
+        """Yield an iterator with a progress bar.
+
+        Yields:
+            A two-step progress bar.
+        """
         yield tqdm(range(2))
 
     @pytest.fixture(scope="class")
@@ -37,6 +41,9 @@ class TestBenchmarkSpeed:
                 Model supplied to the test.
             benchmark_config:
                 Benchmark configuration exercised by the test.
+
+        Yields:
+            The score dictionaries returned by the benchmark.
         """
         yield benchmark_speed(model=model, benchmark_config=benchmark_config)
 
@@ -61,7 +68,11 @@ class TestBenchmarkSpeedSingleIteration:
 
     @pytest.fixture
     def mock_model(self) -> MagicMock:
-        """Return a mock model."""
+        """Return a mock model.
+
+        Returns:
+            A mock benchmark module.
+        """
         return MagicMock(spec=BenchmarkModule)
 
     def test_benchmark_speed_single_iteration_cuda_oom_error(
@@ -137,13 +148,16 @@ class TestBenchmarkSpeedSingleIteration:
 def model(
     encoder_model_id: str, benchmark_config: BenchmarkConfig
 ) -> Generator[BenchmarkModule, None, None]:
-    """Yields a model.
+    """Yield a model.
 
     Args:
         encoder_model_id:
             Encoder model id supplied to the test.
         benchmark_config:
             Benchmark configuration exercised by the test.
+
+    Yields:
+        The configured Hugging Face encoder model.
     """
     yield HuggingFaceEncoderModel(
         model_config=get_model_config(

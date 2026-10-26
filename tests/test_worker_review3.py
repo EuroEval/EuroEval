@@ -677,6 +677,11 @@ def test_vllm_inspection_rejects_pooling_only_architecture(
 
         @staticmethod
         def get_supported_archs() -> object:
+            """Return the architectures supported by the fake registry.
+
+            Returns:
+                The registry architecture names.
+            """
             return Registry.models.keys()
 
         @staticmethod

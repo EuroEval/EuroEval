@@ -64,12 +64,17 @@ def test_variable_choice_trainer_evaluate_does_not_argmax_aggregation_padding(
     """
 
     class EvaluationDataset(Dataset):
+        """Provide examples with differing numbers of valid choices."""
+
         def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
             """Return one example with its real choice width.
 
             Args:
                 index:
                     Index supplied to the test.
+
+            Returns:
+                An example containing inputs, choice mask, and label.
             """
             if index == 0:
                 return {
@@ -84,10 +89,16 @@ def test_variable_choice_trainer_evaluate_does_not_argmax_aggregation_padding(
             }
 
         def __len__(self) -> int:
-            """Return the number of evaluation examples."""
+            """Return the number of evaluation examples.
+
+            Returns:
+                The number of examples in this dataset.
+            """
             return 2
 
     class LogitModel(torch.nn.Module):
+        """Use each example's input values as its classification logits."""
+
         def forward(
             self, input_ids: torch.FloatTensor, labels: torch.LongTensor | None = None
         ) -> SequenceClassifierOutput:

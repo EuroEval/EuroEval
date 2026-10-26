@@ -98,6 +98,8 @@ def test_generate_classifies_through_system_one_and_extracts_labels(
 
 
 class _Response:
+    """Minimal HTTP response double for Typesafe requests."""
+
     def __init__(self, probabilities: dict[str, float]) -> None:
         """Init   for this test.
 
@@ -108,9 +110,15 @@ class _Response:
         self.probabilities = probabilities
 
     def json(self) -> dict[str, object]:
+        """Return the configured probabilities in response format.
+
+        Returns:
+            A response payload containing the probabilities.
+        """
         return {"answers": {"name": {"probabilities": self.probabilities}}}
 
     def raise_for_status(self) -> None:
+        """Represent a successful HTTP response."""
         return None
 
 
@@ -330,9 +338,10 @@ def test_generate_retries_connection_errors_then_reports_failure(
 
         Args:
             _args:
-                 args supplied to the test.
+                Positional request arguments.
             _kwargs:
-                 kwargs supplied to the test.
+                Keyword request arguments.
+
         """
         nonlocal calls
         calls += 1

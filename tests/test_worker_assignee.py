@@ -125,6 +125,10 @@ class Broker:
                 Credential supplied to the test.
             hardware:
                 Hardware supplied to the test.
+
+        Returns:
+            The test lease.
+
         """
         del credential, hardware
         self.claims += 1
@@ -156,6 +160,9 @@ class Broker:
                 Credential supplied to the test.
             lease_id:
                 Lease id supplied to the test.
+
+        Returns:
+            The existing lease expiry.
         """
         del credential, lease_id
         return LEASE.expires_at
@@ -166,6 +173,9 @@ class Broker:
         Args:
             session_id:
                 Session id supplied to the test.
+
+        Raises:
+            NotImplementedError: This test double does not implement authentication.
         """
         del session_id
         raise NotImplementedError
@@ -184,7 +194,11 @@ class Broker:
         del credential, lease_id, reason
 
     def start_auth(self) -> AuthStart:
-        """Satisfy the authentication protocol type."""
+        """Satisfy the authentication protocol type.
+
+        Raises:
+            NotImplementedError: This test double does not implement authentication.
+        """
         raise NotImplementedError
 
     def submit_result(self, credential: str, lease: Lease, result: EEERecord) -> None:
@@ -197,6 +211,7 @@ class Broker:
                 Lease supplied to the test.
             result:
                 Result supplied to the test.
+
         """
         del credential, lease, result
         self.submissions += 1

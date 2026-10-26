@@ -952,6 +952,9 @@ class PredictingModel:
         Args:
             input_ids:
                 Input ids supplied to the test.
+
+        Returns:
+            A namespace containing model logits.
         """
         batch, length = input_ids.shape
         logits = torch.zeros(batch, length, 8)
@@ -1076,7 +1079,10 @@ def test_training_sees_seeded_schedule_order() -> None:
     """Training consumes the common slot order selected by the seed."""
 
     class RecordingModel(torch.nn.Module):
+        """Record the sequence order observed during training."""
+
         def __init__(self) -> None:
+            """Initialize the model and record the observed input order."""
             super().__init__()
             self.parameter = torch.nn.Parameter(torch.ones(1))
             self.seen: list[int] = []
@@ -1087,7 +1093,7 @@ def test_training_sees_seeded_schedule_order() -> None:
             attention_mask: torch.Tensor,
             labels: torch.Tensor,
         ) -> SimpleNamespace:
-            """Forward for this test.
+            """Forward a batch and return scalar loss.
 
             Args:
                 input_ids:
@@ -1098,7 +1104,7 @@ def test_training_sees_seeded_schedule_order() -> None:
                     Labels supplied to the test.
 
             Returns:
-                The value returned by the test helper.
+                A namespace containing the scalar loss.
             """
             del attention_mask, labels
             self.seen.extend(int(value) for value in input_ids[:, 0])
