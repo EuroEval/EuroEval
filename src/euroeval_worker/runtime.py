@@ -30,7 +30,14 @@ class AuthenticationIdentityError(BrokerError):
     """Raised when reauthentication returns a different contributor."""
 
     def __init__(self, expected: str, actual: str) -> None:
-        """Describe the contributor mismatch without including credentials."""
+        """Describe the contributor mismatch without including credentials.
+
+        Args:
+            expected:
+                Expected.
+            actual:
+                Actual.
+        """
         super().__init__(
             f"reauthentication returned GitHub login {actual!r}; expected {expected!r}",
             status=403,
@@ -51,7 +58,20 @@ class Heartbeat:
         persist: c.Callable[[Lease], None] | None = None,
         reauthenticate: c.Callable[[str], str] | None = None,
     ) -> None:
-        """Initialise a heartbeat for a lease."""
+        """Initialise a heartbeat for a lease.
+
+        Args:
+            client:
+                Client.
+            credential:
+                Credential.
+            lease:
+                Lease.
+            persist (optional):
+                Persist.
+            reauthenticate (optional):
+                Reauthenticate.
+        """
         self.client = client
         self.credential = credential
         self.lease = lease
@@ -66,12 +86,18 @@ class Heartbeat:
         )
 
     def _run(self) -> None:
+        """Run."""
         while not self._stop.wait(timeout=self._interval):
             self._renew()
             if self.failed is not None:
                 return
 
     def _renew(self) -> None:
+        """Renew.
+
+        Raises:
+            An exception when the operation cannot be completed.
+        """
         attempt = 0
         auth_attempted = False
         while not self._stop.is_set():
@@ -117,11 +143,21 @@ class Heartbeat:
                 return
 
     def _fail(self, error: Exception) -> None:
+        """Fail.
+
+        Args:
+            error:
+                Error.
+        """
         self.failed = error
         self._stop.set()
 
     def check(self) -> None:
-        """Raise the background failure, if any."""
+        """Raise the background failure, if any.
+
+        Raises:
+            An exception when the operation cannot be completed.
+        """
         if self.failed is None:
             return
         if isinstance(self.failed, LeaseLost):
@@ -190,6 +226,10 @@ class Worker:
                 If a resumed lease is presented to a different contributor.
             LeaseLost:
                 If broker ownership is lost.
+
+        Args:
+            once (optional):
+                Once.
         """
         self._credential, self._login = authenticate(
             client=self.client, state=self.state
@@ -268,6 +308,12 @@ class Worker:
         Raises:
             BrokerError:
                 If claiming fails after one authentication retry.
+
+        Args:
+            credential:
+                Credential.
+            hardware:
+                Hardware.
         """
         try:
             return credential, self.client.claim(
@@ -301,6 +347,12 @@ class Worker:
 
         Returns:
             A hardware report pinned to ``selected``.
+
+        Args:
+            hardware:
+                Hardware.
+            selected:
+                Selected.
         """
         return dataclasses.replace(
             hardware,
@@ -314,6 +366,10 @@ class Worker:
 
         Returns:
             The report with the configured utilisation and selected GPU.
+
+        Args:
+            hardware:
+                Hardware.
         """
         selected = select_gpu(hardware.gpus)
         return self._hardware_with_selected(hardware, selected)
@@ -325,6 +381,21 @@ class Worker:
         hardware: HardwareReport,
         active: ActiveLease | None,
     ) -> None:
+        """Process lease.
+
+        Args:
+            credential:
+                Credential.
+            lease:
+                Lease.
+            hardware:
+                Hardware.
+            active:
+                Active.
+
+        Raises:
+            An exception when the operation cannot be completed.
+        """
         expected_login = active.github_login or self._login if active else self._login
         if active is None:
             self.state.save_active(lease=lease, github_login=expected_login or None)
@@ -460,6 +531,18 @@ class Worker:
                 logger.info("Preserving active lease %s for restart", lease.lease_id)
 
     def _canary_corpus_path(self, *, lease: Lease) -> Path | None:
+        """Canary corpus path.
+
+        Args:
+            lease:
+                Lease.
+
+        Returns:
+            The resulting value.
+
+        Raises:
+            An exception when the operation cannot be completed.
+        """
         instruction = lease.contamination_canary
         if (
             instruction is None
@@ -500,6 +583,12 @@ class Worker:
         Raises:
             RuntimeError:
                 If the evaluation output differs from its restart snapshot.
+
+        Args:
+            active:
+                Active.
+            evaluated:
+                Evaluated.
         """
         for record in evaluated:
             digest = hashlib.sha256(record.record_json.encode("utf-8")).hexdigest()
@@ -526,6 +615,12 @@ class Worker:
         Raises:
             BrokerError:
                 If finalisation fails.
+
+        Args:
+            credential:
+                Credential.
+            lease_id:
+                Lease id.
         """
         del credential
         auth_attempted = False
@@ -549,6 +644,12 @@ class Worker:
         Raises:
             AuthenticationIdentityError:
                 If the refreshed credential belongs to another contributor.
+
+        Args:
+            failed_credential:
+                Failed credential.
+            expected_login:
+                Expected login.
         """
         with self._auth_lock:
             saved = self.state.load_auth()
@@ -574,7 +675,18 @@ class Worker:
         records: tuple[PendingRecord, ...],
         heartbeat: Heartbeat,
     ) -> None:
-        """Submit and atomically acknowledge each exact result."""
+        """Submit and atomically acknowledge each exact result.
+
+        Args:
+            credential:
+                Credential.
+            lease:
+                Lease.
+            records:
+                Records.
+            heartbeat:
+                Heartbeat.
+        """
         current = list(records)
         for index, pending in enumerate(current):
             if pending.acknowledged:
@@ -592,6 +704,14 @@ class Worker:
         Raises:
             BrokerError:
                 If the broker reports a terminal result error.
+
+        Args:
+            credential:
+                Credential.
+            lease:
+                Lease.
+            record:
+                Record.
         """
         del credential
         auth_attempted = False
@@ -628,7 +748,14 @@ class LeaseLost(RuntimeError):
     def __init__(
         self, message: str, *, broker_error: BrokerError | None = None
     ) -> None:
-        """Preserve structured broker details when a heartbeat loses ownership."""
+        """Preserve structured broker details when a heartbeat loses ownership.
+
+        Args:
+            message:
+                Message.
+            broker_error (optional):
+                Broker error.
+        """
         super().__init__(message)
         self.broker_error = broker_error
         self.code = broker_error.code if broker_error is not None else None
@@ -640,13 +767,29 @@ def _retry_delay(attempt: int, retry_after: float | None, maximum: float) -> flo
 
     Returns:
         A non-negative delay no larger than ``maximum``.
+
+    Args:
+        attempt:
+            Attempt.
+        retry_after:
+            Retry after.
+        maximum:
+            Maximum.
     """
     requested = retry_after if retry_after is not None else 2**attempt
     return min(maximum, max(0.0, requested))
 
 
 def _transient(error: BrokerError) -> bool:
-    """Return whether a broker error is safe to retry."""
+    """Return whether a broker error is safe to retry.
+
+    Args:
+        error:
+            Error.
+
+    Returns:
+        The resulting value.
+    """
     return error.status is None or error.status == 429 or error.status >= 500
 
 
@@ -659,6 +802,12 @@ def _gpu_for_lease(gpus: c.Iterable[Gpu], lease: Lease) -> Gpu:
     Raises:
         NoGpuError:
             If the lease has no UUID or the UUID is not present.
+
+    Args:
+        gpus:
+            Gpus.
+        lease:
+            Lease.
     """
     if not lease.selected_gpu_uuid:
         raise NoGpuError("lease does not identify a GPU UUID")
@@ -679,6 +828,12 @@ def _lease_for_gpu(lease: Lease, selected: Gpu) -> Lease:
     Raises:
         NoGpuError:
             If the broker selected a different GPU.
+
+    Args:
+        lease:
+            Lease.
+        selected:
+            Selected.
     """
     if lease.selected_gpu_uuid not in (None, selected.uuid):
         raise NoGpuError("broker lease selected a different GPU UUID")
@@ -694,6 +849,10 @@ def _lease_is_valid(lease: Lease) -> bool:
 
     Returns:
         Whether the expiry is a future timezone-aware timestamp.
+
+    Args:
+        lease:
+            Lease.
     """
     try:
         expiry = datetime.datetime.fromisoformat(
@@ -711,6 +870,10 @@ def _lease_lost(error: BaseException) -> bool:
 
     Returns:
         Whether broker ownership has definitely been lost.
+
+    Args:
+        error:
+            Error.
     """
     return isinstance(error, LeaseLost) or (
         isinstance(error, BrokerError)
@@ -721,6 +884,15 @@ def _lease_lost(error: BaseException) -> bool:
 
 @contextlib.contextmanager
 def _pin_canary_corpus(path: Path | None) -> c.Iterator[None]:
+    """Pin canary corpus.
+
+    Args:
+        path:
+            Path.
+
+    Yields:
+        Values produced by this iterator.
+    """
     previous = os.environ.get(CANARY_CORPUS_PATH_ENV)
     if path is not None:
         os.environ[CANARY_CORPUS_PATH_ENV] = str(path)
@@ -735,7 +907,15 @@ def _pin_canary_corpus(path: Path | None) -> c.Iterator[None]:
 
 @contextlib.contextmanager
 def _pin_gpu(gpu: Gpu) -> c.Iterator[None]:
-    """Expose only ``gpu`` to CUDA for the duration of one evaluation."""
+    """Expose only ``gpu`` to CUDA for the duration of one evaluation.
+
+    Args:
+        gpu:
+            Gpu.
+
+    Yields:
+        Values produced by this iterator.
+    """
     original = os.environ.get("CUDA_VISIBLE_DEVICES")
     os.environ["CUDA_VISIBLE_DEVICES"] = gpu.uuid
     try:
@@ -752,6 +932,10 @@ def _submission_transient(error: BrokerError) -> bool:
 
     Returns:
         Whether the status is in the result retry set.
+
+    Args:
+        error:
+            Error.
     """
     return (
         error.status is None or error.status in (408, 425, 429) or error.status >= 500

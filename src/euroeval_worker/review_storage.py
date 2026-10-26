@@ -21,6 +21,14 @@ class BucketStore:
         Raises:
             PublicStagingError:
                 If the staging bucket is public.
+
+        Args:
+            api:
+                Api.
+            token:
+                Token.
+            staging_bucket:
+                Staging bucket.
         """
         self.api = api
         self.token = token
@@ -34,6 +42,10 @@ class BucketStore:
 
         Returns:
             Sorted decision object paths.
+
+        Args:
+            submission_id:
+                Submission id.
         """
         prefix = f"{_DECISION_PREFIX}/{submission_id}"
         entries = self.api.list_bucket_tree(
@@ -71,6 +83,12 @@ class BucketStore:
 
         Returns:
             Exact object bytes, or ``None`` when absent.
+
+        Args:
+            bucket:
+                Bucket.
+            path:
+                Path.
         """
         entries = list(self.api.get_bucket_paths_info(bucket, [path], token=self.token))
         if not entries:
@@ -86,6 +104,12 @@ class BucketStore:
         Raises:
             ReviewError:
                 If the object cannot be found.
+
+        Args:
+            bucket:
+                Bucket.
+            path:
+                Path.
         """
         with tempfile.TemporaryDirectory(prefix="euroeval-review-") as directory:
             target = Path(directory) / "object"
@@ -97,7 +121,16 @@ class BucketStore:
             return target.read_bytes()
 
     def write_verified(self, bucket: str, path: str, content: bytes) -> None:
-        """Upload bytes and verify destination metadata and content."""
+        """Upload bytes and verify destination metadata and content.
+
+        Args:
+            bucket:
+                Bucket.
+            path:
+                Path.
+            content:
+                Content.
+        """
         self.api.batch_bucket_files(
             bucket_id=bucket, add=[(content, path)], token=self.token
         )
@@ -109,6 +142,14 @@ class BucketStore:
         Raises:
             ReviewError:
                 If the object does not match the expected bytes.
+
+        Args:
+            bucket:
+                Bucket.
+            path:
+                Path.
+            content:
+                Content.
         """
         entries = list(self.api.get_bucket_paths_info(bucket, [path], token=self.token))
         if len(entries) != 1:
@@ -122,4 +163,13 @@ class BucketStore:
 
 
 def _digest(content: bytes) -> str:
+    """Digest.
+
+    Args:
+        content:
+            Content.
+
+    Returns:
+        The resulting value.
+    """
     return hashlib.sha256(content).hexdigest()

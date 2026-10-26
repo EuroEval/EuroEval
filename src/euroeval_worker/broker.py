@@ -44,7 +44,7 @@ class BrokerClient:
                 Base URL of the worker broker.
             request (optional):
                 Injectable request function, primarily for tests.
-            worker_version:
+            worker_version (optional):
                 Version advertised in every claim and result envelope.
         """
         self.server = server.rstrip("/")
@@ -56,6 +56,12 @@ class BrokerClient:
 
         Returns:
             A lease, or an empty claim when no work is available.
+
+        Args:
+            credential:
+                Credential.
+            hardware:
+                Hardware.
         """
         payload: JsonObject = {
             "protocol_version": PROTOCOL_VERSION,
@@ -70,6 +76,22 @@ class BrokerClient:
     def _post(
         self, path: str, payload: JsonObject, credential: str | None = None
     ) -> JsonObject:
+        """Post.
+
+        Args:
+            path:
+                Path.
+            payload:
+                Payload.
+            credential (optional):
+                Credential.
+
+        Returns:
+            The resulting value.
+
+        Raises:
+            An exception when the operation cannot be completed.
+        """
         headers = {"Content-Type": "application/json"}
         if credential is not None:
             headers["Authorization"] = f"Bearer {credential}"
@@ -94,6 +116,12 @@ class BrokerClient:
                 If the lease does not require the private canary corpus.
             BrokerError:
                 If the broker returns an invalid corpus payload.
+
+        Args:
+            credential:
+                Credential.
+            lease:
+                Lease.
         """
         instruction = lease.contamination_canary
         if instruction is None or instruction.status != "required":
@@ -122,6 +150,12 @@ class BrokerClient:
         Raises:
             BrokerError:
                 If the response omits the submission identifier.
+
+        Args:
+            credential:
+                Credential.
+            lease_id:
+                Lease id.
         """
         result = self._post(
             "finalise",
@@ -142,6 +176,12 @@ class BrokerClient:
         Raises:
             BrokerError:
                 If the response is invalid or the lease cannot be renewed.
+
+        Args:
+            credential:
+                Credential.
+            lease_id:
+                Lease id.
         """
         result = self._post(
             "heartbeat",
@@ -160,6 +200,10 @@ class BrokerClient:
 
         Returns:
             The current device-flow state.
+
+        Args:
+            session_id:
+                Session id.
         """
         return auth_poll_from_dict(
             self._post(
@@ -169,7 +213,16 @@ class BrokerClient:
         )
 
     def release(self, credential: str, lease_id: str, reason: str) -> None:
-        """Release a lease without losing the broker's retry state."""
+        """Release a lease without losing the broker's retry state.
+
+        Args:
+            credential:
+                Credential.
+            lease_id:
+                Lease id.
+            reason:
+                Reason.
+        """
         self._post(
             "release",
             {
@@ -191,7 +244,16 @@ class BrokerClient:
         )
 
     def submit_result(self, credential: str, lease: Lease, result: EEERecord) -> None:
-        """Submit one exact result record; the broker makes this idempotent."""
+        """Submit one exact result record; the broker makes this idempotent.
+
+        Args:
+            credential:
+                Credential.
+            lease:
+                Lease.
+            result:
+                Result.
+        """
         payload: JsonObject = {
             "protocol_version": PROTOCOL_VERSION,
             "lease_id": lease.lease_id,
@@ -220,7 +282,20 @@ class BrokerError(RuntimeError):
         body: JsonObject | None = None,
         code: str | None = None,
     ) -> None:
-        """Initialise an error with safe structured broker metadata."""
+        """Initialise an error with safe structured broker metadata.
+
+        Args:
+            message:
+                Message.
+            status (optional):
+                Status.
+            retry_after (optional):
+                Retry after.
+            body (optional):
+                Body.
+            code (optional):
+                Code.
+        """
         safe_body = _redact(body) if body is not None else None
         broker_message = safe_body.get("error") if safe_body else None
         if isinstance(broker_message, str) and broker_message:
@@ -238,6 +313,10 @@ def _redact(value: object) -> JsonObject:
 
     Returns:
         A response object without sensitive fields.
+
+    Args:
+        value:
+            Value.
     """
     if not isinstance(value, dict):
         return {}
@@ -265,12 +344,31 @@ def _redact(value: object) -> JsonObject:
 
 
 def _string_value(value: JsonObject | None, key: str) -> str | None:
-    """Return a non-empty string field from a broker response."""
+    """Return a non-empty string field from a broker response.
+
+    Args:
+        value:
+            Value.
+        key:
+            Key.
+
+    Returns:
+        The resulting value.
+    """
     item = value.get(key) if value is not None else None
     return item if isinstance(item, str) and item else None
 
 
 def _hardware_dict(hardware: HardwareReport) -> JsonObject:
+    """Hardware dict.
+
+    Args:
+        hardware:
+            Hardware.
+
+    Returns:
+        The resulting value.
+    """
     return {
         "architecture": hardware.architecture,
         "ram_bytes": hardware.ram_bytes,
@@ -299,37 +397,115 @@ class BrokerProtocol(t.Protocol):
     """Operations required by the worker runtime."""
 
     def claim(self, credential: str, hardware: HardwareReport) -> Claim:
-        """Claim available work."""
+        """Claim available work.
+
+        Args:
+            credential:
+                Credential.
+            hardware:
+                Hardware.
+
+        Returns:
+            The resulting value.
+        """
         ...
 
     def finalise(self, credential: str, lease_id: str) -> str:
-        """Finalise a lease and return its submission identifier."""
+        """Finalise a lease and return its submission identifier.
+
+        Args:
+            credential:
+                Credential.
+            lease_id:
+                Lease id.
+
+        Returns:
+            The resulting value.
+        """
         ...
 
     def heartbeat(self, credential: str, lease_id: str) -> str:
-        """Renew a lease and return its new expiry timestamp."""
+        """Renew a lease and return its new expiry timestamp.
+
+        Args:
+            credential:
+                Credential.
+            lease_id:
+                Lease id.
+
+        Returns:
+            The resulting value.
+        """
         ...
 
     def poll_auth(self, session_id: str) -> AuthPoll:
-        """Poll a device flow."""
+        """Poll a device flow.
+
+        Args:
+            session_id:
+                Session id.
+
+        Returns:
+            The resulting value.
+        """
         ...
 
     def release(self, credential: str, lease_id: str, reason: str) -> None:
-        """Release a lease."""
+        """Release a lease.
+
+        Args:
+            credential:
+                Credential.
+            lease_id:
+                Lease id.
+            reason:
+                Reason.
+        """
         ...
 
     def start_auth(self) -> AuthStart:
-        """Start a device flow."""
+        """Start a device flow.
+
+        Returns:
+            The resulting value.
+        """
         ...
 
     def submit_result(self, credential: str, lease: Lease, result: EEERecord) -> None:
-        """Submit one exact result JSON string."""
+        """Submit one exact result JSON string.
+
+        Args:
+            credential:
+                Credential.
+            lease:
+                Lease.
+            result:
+                Result.
+        """
         ...
 
 
 def _http_request(
     method: str, url: str, headers: dict[str, str], payload: JsonObject | None
 ) -> JsonObject:
+    """Http request.
+
+    Args:
+        method:
+            Method.
+        url:
+            Url.
+        headers:
+            Headers.
+        payload:
+            Payload.
+
+    Returns:
+        The resulting value.
+
+    Raises:
+        An exception when the operation cannot be completed.
+    """
     body = (
         None
         if payload is None
@@ -359,6 +535,10 @@ def _error_body(error: urllib.error.HTTPError) -> JsonObject | None:
 
     Returns:
         The JSON object returned by the broker, if it was one.
+
+    Args:
+        error:
+            Error.
     """
     try:
         value = json.loads(error.read())
@@ -372,6 +552,10 @@ def _retry_after(value: str | None) -> float | None:
 
     Returns:
         The delay in seconds, or ``None`` for an invalid header.
+
+    Args:
+        value:
+            Value.
     """
     if not value:
         return None

@@ -11,40 +11,127 @@ from .types import Gpu
 
 
 class _CudaProperties(t.Protocol):
+    """Expose CUDA device properties required by health checks."""
+
     uuid: object
 
 
 class _Cuda(t.Protocol):
-    def current_device(self) -> int: ...
+    """Expose CUDA runtime operations used by health checks."""
 
-    def device_count(self) -> int: ...
+    def current_device(self) -> int:
+        """Current device.
 
-    def get_device_properties(self, device: int) -> _CudaProperties: ...
+        Returns:
+            The resulting value.
+        """
+        ...
 
-    def is_available(self) -> bool: ...
+    def device_count(self) -> int:
+        """Device count.
 
-    def set_device(self, device: int) -> None: ...
+        Returns:
+            The resulting value.
+        """
+        ...
 
-    def synchronize(self) -> None: ...
+    def get_device_properties(self, device: int) -> _CudaProperties:
+        """Get device properties.
+
+        Args:
+            device:
+                Device.
+
+        Returns:
+            The resulting value.
+        """
+        ...
+
+    def is_available(self) -> bool:
+        """Is available.
+
+        Returns:
+            The resulting value.
+        """
+        ...
+
+    def set_device(self, device: int) -> None:
+        """Set device.
+
+        Args:
+            device:
+                Device.
+        """
+        ...
+
+    def synchronize(self) -> None:
+        """Synchronize."""
+        ...
 
 
 class _Tensor(t.Protocol):
-    def __getitem__(self, key: tuple[int, int]) -> "_Tensor": ...
+    """Expose tensor operations required by model health checks."""
 
-    def __matmul__(self, other: "_Tensor") -> "_Tensor": ...
+    def __getitem__(self, key: tuple[int, int]) -> "_Tensor":
+        """Getitem.
 
-    def item(self) -> float: ...
+        Args:
+            key:
+                Key.
+
+        Returns:
+            The resulting value.
+        """
+        ...
+
+    def __matmul__(self, other: "_Tensor") -> "_Tensor":
+        """Matmul.
+
+        Args:
+            other:
+                Other.
+
+        Returns:
+            The resulting value.
+        """
+        ...
+
+    def item(self) -> float:
+        """Item.
+
+        Returns:
+            The resulting value.
+        """
+        ...
 
 
 class _Torch(t.Protocol):
+    """Expose the PyTorch operations required by health checks."""
+
     __version__: str
     cuda: _Cuda
     float32: object
 
-    def ones(self, size: tuple[int, int], *, device: str, dtype: object) -> _Tensor: ...
+    def ones(self, size: tuple[int, int], *, device: str, dtype: object) -> _Tensor:
+        """Ones.
+
+        Args:
+            size:
+                Size.
+            device:
+                Device.
+            dtype:
+                Dtype.
+
+        Returns:
+            The resulting value.
+        """
+        ...
 
 
 class _Vllm(t.Protocol):
+    """Expose vLLM version details required by health checks."""
+
     __version__: str
 
 
@@ -59,7 +146,11 @@ class GpuHealthReport:
     vllm_version: str
 
     def summary(self) -> str:
-        """Return concise, non-secret health metadata."""
+        """Return concise, non-secret health metadata.
+
+        Returns:
+            The resulting value.
+        """
         return (
             f"gpu={self.gpu_name!r} index={self.gpu_index} uuid={self.gpu_uuid} "
             f"torch={self.torch_version} vllm={self.vllm_version} operation=matmul"
@@ -114,6 +205,12 @@ def _check_cuda(torch_module: _Torch, selected: Gpu) -> None:
     Raises:
         GpuHealthError:
             If CUDA is unavailable, not isolated, or produces a bad result.
+
+    Args:
+        torch_module:
+            Torch module.
+        selected:
+            Selected.
     """
     cuda = torch_module.cuda
     if not cuda.is_available():
@@ -155,6 +252,10 @@ def _normalise_uuid(value: object) -> str:
 
     Returns:
         The UUID as text.
+
+    Args:
+        value:
+            Value.
     """
     if isinstance(value, bytes):
         return value.decode("ascii")
@@ -170,6 +271,12 @@ def _import_stack_module(importer: c.Callable[[str], object], name: str) -> obje
     Raises:
         GpuHealthError:
             If the package cannot be imported.
+
+    Args:
+        importer:
+            Importer.
+        name:
+            Name.
     """
     try:
         return importer(name)
