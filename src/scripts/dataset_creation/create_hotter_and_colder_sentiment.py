@@ -27,6 +27,8 @@ from bs4 import BeautifulSoup, NavigableString, Tag
 from datasets import Dataset, DatasetDict, Split
 from tqdm.auto import tqdm
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_hotter_and_colder")
 
@@ -109,6 +111,7 @@ def main() -> None:
 
     dataset_id = "EuroEval/hotter-and-colder-sentiment"
 
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 

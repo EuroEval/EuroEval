@@ -13,6 +13,8 @@
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 
 def main() -> None:
     """Create the Dutch CoLA dataset and upload it to the HF Hub."""
@@ -36,6 +38,7 @@ def main() -> None:
     full_dataset_id = "EuroEval/dutch-cola-full"
     dataset_id = "EuroEval/dutch-cola"
 
+    preflight_private_upload(repository_id=full_dataset_id)
     dataset.push_to_hub(full_dataset_id, private=True)
 
     # Convert the dataset to a dataframe
@@ -121,6 +124,7 @@ def main() -> None:
         }
     )
 
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 

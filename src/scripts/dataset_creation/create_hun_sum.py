@@ -21,6 +21,8 @@ from openai import OpenAI
 from openai.types.chat import ChatCompletionUserMessageParam
 from pydantic import BaseModel
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 load_dotenv()
 
 CACHE_FILE = "summary_cache.json"
@@ -98,6 +100,7 @@ def main() -> None:
     mini_dataset_id = "EuroEval/hun-sum-mini"
 
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=mini_dataset_id)
     mini_dataset.push_to_hub(mini_dataset_id, private=True)
 
 

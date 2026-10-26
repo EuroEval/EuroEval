@@ -17,6 +17,7 @@ from datasets import Dataset, DatasetDict, Split, load_dataset
 from dotenv import load_dotenv
 
 from euroeval.utils import get_hf_token
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
 
 load_dotenv()
 
@@ -116,6 +117,7 @@ def main() -> None:
     dataset_id = "EuroEval/danish-citizen-tests-updated"
 
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 

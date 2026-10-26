@@ -13,6 +13,8 @@ import json
 
 from datasets import DatasetDict, load_dataset
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 LANGUAGES = {
     "ca": "projecte-aina/IFEval_ca",
     "da": "danish-foundation-models/ifeval-da",
@@ -192,6 +194,7 @@ def main(languages: list[str] | None = None) -> None:
         dataset = dataset.map(transform).select_columns(["text", "target_text"])
 
         target_repo = TARGET_REPO.format(language=language)
+        preflight_private_upload(repository_id=target_repo)
         dataset.push_to_hub(repo_id=target_repo, private=True)
 
 

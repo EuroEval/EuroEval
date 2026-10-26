@@ -13,6 +13,8 @@ import typing as t
 
 from datasets import Dataset, DatasetDict, load_dataset
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 
 def main() -> None:
     """Create the Estonian NER dataset and upload to HF Hub."""
@@ -46,6 +48,7 @@ def main() -> None:
     ds = ds.map(convert_labels)
 
     # push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=target_repo_id)
     ds.push_to_hub(target_repo_id, private=True)
 
 

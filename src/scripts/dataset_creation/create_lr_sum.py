@@ -14,6 +14,8 @@ import pandas as pd
 from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 from datasets import Dataset, DatasetDict, Split, load_dataset
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 LANGUAGES = {"uk": "ukr", "sr": "srp", "bs": "bos", "sq": "sqi"}
 
 
@@ -89,6 +91,7 @@ def main() -> None:
         mini_dataset_id = f"EuroEval/lr-sum-{language}-mini"
 
         # Push the dataset to the Hugging Face Hub
+        preflight_private_upload(repository_id=mini_dataset_id)
         mini_dataset.push_to_hub(mini_dataset_id, private=True)
 
 

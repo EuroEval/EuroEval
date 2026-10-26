@@ -28,6 +28,8 @@ from datasets import (
 from huggingface_hub import HfApi
 from tqdm.auto import tqdm
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_european_values")
 
@@ -273,6 +275,7 @@ def _process_language(
     new_df = pd.DataFrame(data_dict)
     dataset = DatasetDict({"test": Dataset.from_pandas(new_df, split=Split.TEST)})
 
+    preflight_private_upload(repository_id=new_dataset_id.format(language=language))
     dataset.push_to_hub(new_dataset_id.format(language=language), private=True)
     return True
 

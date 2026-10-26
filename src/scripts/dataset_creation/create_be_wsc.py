@@ -41,6 +41,8 @@ from openai import OpenAI
 from openai.types.chat import ChatCompletionUserMessageParam
 from pydantic import BaseModel
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 load_dotenv()
 
 CACHE_FILE: str = "be_wsc_cache.json"
@@ -101,6 +103,7 @@ def main() -> None:
     # Push the dataset to the Hugging Face Hub
     target_dataset_id = "EuroEval/be-wsc"
 
+    preflight_private_upload(repository_id=target_dataset_id)
     dataset.push_to_hub(target_dataset_id, private=True)
 
 

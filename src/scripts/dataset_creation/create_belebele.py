@@ -26,6 +26,8 @@ from constants import (
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from sklearn.model_selection import train_test_split
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 
 def main() -> None:
     """Create the Belebele-mini datasets and upload them to the HF Hub."""
@@ -194,6 +196,7 @@ def main() -> None:
             dataset_id = f"EuroEval/belebele-{language}-mini"
 
         # Push the dataset to the Hugging Face Hub
+        preflight_private_upload(repository_id=dataset_id)
         dataset.push_to_hub(dataset_id, private=True)
 
 

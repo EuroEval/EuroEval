@@ -11,6 +11,8 @@
 
 from datasets import Dataset, DatasetDict, concatenate_datasets, load_dataset
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 
 def main() -> None:
     """Create the Estonian valence dataset and upload to HF Hub.
@@ -71,6 +73,7 @@ def main() -> None:
         if cur_labels != expected_labels:
             raise ValueError(f"Incorrect labels for {key}: {cur_labels}")
 
+    preflight_private_upload(repository_id=target_repo_id)
     new_ds.push_to_hub(target_repo_id, private=True)
 
 

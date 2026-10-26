@@ -23,6 +23,8 @@ from datasets.dataset_dict import DatasetDict
 from datasets.load import load_dataset
 from datasets.splits import Split
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 
 def main() -> None:
     """Create the GermanQuAD-mini dataset and upload them to the HF Hub."""
@@ -94,6 +96,7 @@ def main() -> None:
     mini_dataset_id = "EuroEval/germanquad-mini"
 
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=mini_dataset_id)
     dataset.push_to_hub(mini_dataset_id, private=True)
 
 

@@ -36,6 +36,8 @@ from lettucedetect.datasets.hallucination_dataset import (
     HallucinationSample,
 )
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -497,6 +499,8 @@ def push_test_subset_to_hub(
     else:
         logger.warning("No validation samples available; skipping val split upload.")
 
+    if private:
+        preflight_private_upload(repository_id=repo_id)
     DatasetDict(splits).push_to_hub(
         repo_id=repo_id, config_name=config_name, private=private
     )
@@ -539,6 +543,8 @@ def push_translated_data_to_hub(
     ]
 
     dataset = Dataset.from_list(rows)
+    if private:
+        preflight_private_upload(repository_id=repo_id)
     dataset.push_to_hub(repo_id=repo_id, config_name=config_name, private=private)
     logger.info(
         "Pushed translated dataset to hub: %s (config=%s)", repo_id, config_name

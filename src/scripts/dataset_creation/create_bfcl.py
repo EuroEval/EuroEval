@@ -10,6 +10,8 @@ from urllib.request import urlopen
 from datasets import Dataset, DatasetDict
 from dotenv import load_dotenv
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_bfcl")
 
@@ -58,6 +60,7 @@ def main() -> None:
 
     load_dotenv()
     dataset_dict = _split_dataset_to_dict(items)
+    preflight_private_upload(repository_id="EuroEval/bfcl-v2")
     dataset_dict.push_to_hub(
         "EuroEval/bfcl-v2", private=True, token=os.getenv("HF_TOKEN")
     )

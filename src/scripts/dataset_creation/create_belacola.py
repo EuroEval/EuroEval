@@ -10,6 +10,8 @@
 
 from datasets import Dataset, DatasetDict, load_dataset
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 SOURCE_REPOSITORY = "maaxap/BelarusianGLUE"
 SOURCE_CONFIG = "belacola_in_domain"
 TARGET_REPOSITORY = "EuroEval/belacola-mini"
@@ -27,6 +29,7 @@ def main() -> None:
 
     dataset = process_dataset(source_dataset=source_dataset)
 
+    preflight_private_upload(repository_id=TARGET_REPOSITORY)
     dataset.push_to_hub(repo_id=TARGET_REPOSITORY, private=True)
 
 

@@ -11,6 +11,8 @@
 from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, concatenate_datasets, load_dataset
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 SOURCE_ID = "amalia-llm/pt_text_completion"
 TARGET_ID = "EuroEval/euroeval-amalia-pt-completions"
 TRAIN_SIZE = 8
@@ -31,6 +33,7 @@ def main() -> None:
     output = DatasetDict(
         {"train": processed_test.select(indices=range(TRAIN_SIZE)), "test": test}
     )
+    preflight_private_upload(repository_id=TARGET_ID)
     output.push_to_hub(repo_id=TARGET_ID, private=True)
     print(
         f"Uploaded {sum(len(split) for split in output.values()):,} "

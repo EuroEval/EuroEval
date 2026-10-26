@@ -25,6 +25,8 @@ from constants import (
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from sklearn.model_selection import train_test_split
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 
 def main() -> None:
     """Create the Global-MMLU knowledge datasets."""
@@ -77,6 +79,7 @@ def main() -> None:
         dataset_id = f"EuroEval/global-mmlu{lite_suffix}-{language}{mini_suffix}"
 
         # Push the dataset to the Hugging Face Hub
+        preflight_private_upload(repository_id=dataset_id)
         dataset.push_to_hub(dataset_id, private=True)
 
 

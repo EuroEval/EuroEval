@@ -14,6 +14,8 @@ import pandas as pd
 import requests
 from datasets import Dataset, DatasetDict, Split
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 BASE_URL = (
     "https://raw.githubusercontent.com/jerbarnes/nordial/refs/heads/main/"
     "tweet_level/data/{split}.json"
@@ -43,6 +45,7 @@ def main() -> None:
     dataset_id = "EuroEval/nordial"
 
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 

@@ -16,6 +16,8 @@ import pandas as pd
 from datasets import Dataset, DatasetDict, Split
 from sklearn.utils import resample
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 
 def main() -> None:
     """Create the Hungarian NER dataset SzegedNER and upload it."""
@@ -65,6 +67,7 @@ def main() -> None:
     dataset_id = "EuroEval/szeged-ner-mini"
 
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 

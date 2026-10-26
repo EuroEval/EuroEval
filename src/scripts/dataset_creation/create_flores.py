@@ -27,6 +27,8 @@ from datasets import Dataset, DatasetDict, load_dataset
 from dotenv import load_dotenv
 from tqdm.auto import tqdm
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 SOURCE_REPO_ID = "openlanguagedata/flores_plus"
 TARGET_REPO_ID = "EuroEval/flores-{source}-{target}"
 ENGLISH_CODE = "eng_Latn"
@@ -101,6 +103,9 @@ def main() -> None:
             source=english,
             target=target,
         )
+        preflight_private_upload(
+            repository_id=TARGET_REPO_ID.format(source="en", target=language)
+        )
         en_xx.push_to_hub(
             TARGET_REPO_ID.format(source="en", target=language), private=True
         )
@@ -112,6 +117,9 @@ def main() -> None:
             test_ids=test_ids,
             source=target,
             target=english,
+        )
+        preflight_private_upload(
+            repository_id=TARGET_REPO_ID.format(source=language, target="en")
         )
         xx_en.push_to_hub(
             TARGET_REPO_ID.format(source=language, target="en"), private=True

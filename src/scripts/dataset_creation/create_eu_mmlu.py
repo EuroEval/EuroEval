@@ -28,6 +28,8 @@ from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, NamedSplit, Split
 from huggingface_hub import hf_hub_download
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 # The source is not a proper Hugging Face dataset, but a collection of loose CSV files
 # at the root of the repository, so we download and parse them by hand.
 REPO_ID = "EC-DGT-AI/EU-MMLU"
@@ -143,6 +145,7 @@ def main() -> None:
         dataset_id = f"EuroEval/eu-mmlu-{language}"
 
         # Push the dataset to the Hugging Face Hub
+        preflight_private_upload(repository_id=dataset_id)
         dataset.push_to_hub(dataset_id, private=True)
 
 

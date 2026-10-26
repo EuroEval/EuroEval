@@ -53,6 +53,8 @@ from load_ud_pos import (
 )
 from tqdm.auto import tqdm
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 
 def main() -> None:
     """Create the ScaLA datasets and upload them to the HF Hub."""
@@ -200,6 +202,7 @@ def main() -> None:
 
             # Push the dataset to the Hugging Face Hub
             dataset_id = f"EuroEval/scala-{lang}"
+            preflight_private_upload(repository_id=dataset_id)
             dataset.push_to_hub(dataset_id, private=True)
 
 

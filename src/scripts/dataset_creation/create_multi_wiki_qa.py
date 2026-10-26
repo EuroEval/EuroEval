@@ -24,6 +24,8 @@ from datasets.load import load_dataset
 from datasets.splits import Split
 from tqdm.auto import tqdm
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 LANGUAGES = [
     "da",
     "nl",
@@ -125,6 +127,7 @@ def main() -> None:
         target_dataset_id = f"EuroEval/multi-wiki-qa-{language}-mini"
 
         # Push the dataset to the Hugging Face Hub
+        preflight_private_upload(repository_id=target_dataset_id)
         dataset.push_to_hub(target_dataset_id, private=True)
 
 

@@ -13,6 +13,8 @@
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 
 def main() -> None:
     """Create the FoNE-mini NER dataset and uploads it to the HF Hub."""
@@ -139,6 +141,7 @@ def main() -> None:
     dataset_id = "EuroEval/fone-mini"
 
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 

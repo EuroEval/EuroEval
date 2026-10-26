@@ -17,6 +17,8 @@ import requests
 from datasets import Dataset, DatasetDict, Split
 from sklearn.utils import resample
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 
 def main() -> None:
     """Create the Cross-Domain UK Reviews dataset and upload it to the HF Hub."""
@@ -64,6 +66,7 @@ def main() -> None:
 
     # Push the dataset to the Hugging Face Hub
     dataset_id = "EuroEval/cross-domain-uk-reviews-mini"
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
     file_path.unlink(missing_ok=True)

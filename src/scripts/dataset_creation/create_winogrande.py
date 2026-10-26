@@ -25,6 +25,8 @@ from constants import (
 )
 from datasets import Dataset, DatasetDict, Split, disable_progress_bars, load_dataset
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
 logger = logging.getLogger("create_winogrande")
 
@@ -102,6 +104,7 @@ def main() -> None:
 
         # Push the dataset to the Hugging Face Hub
         target_dataset_id = f"EuroEval/winogrande-{language}"
+        preflight_private_upload(repository_id=target_dataset_id)
         dataset.push_to_hub(target_dataset_id, private=True)
 
 

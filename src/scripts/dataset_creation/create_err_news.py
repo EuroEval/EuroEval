@@ -17,6 +17,8 @@ import pandas as pd
 import requests
 from datasets import Dataset, DatasetDict, concatenate_datasets
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 
 def main() -> None:
     """Create the ERRNews summarisation dataset."""
@@ -72,6 +74,7 @@ def main() -> None:
     )
 
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=target_repo_id)
     new_ds.push_to_hub(target_repo_id, private=True)
 
 

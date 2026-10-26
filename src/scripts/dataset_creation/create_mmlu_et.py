@@ -27,6 +27,8 @@ from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
 from tqdm.auto import tqdm
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 
 def main() -> None:
     """Create the MMLU-et dataset and upload to HF Hub."""
@@ -156,6 +158,7 @@ def main() -> None:
 
     # Push the dataset to the Hugging Face Hub
     dataset_id = "EuroEval/mmlu-et-mini"
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 

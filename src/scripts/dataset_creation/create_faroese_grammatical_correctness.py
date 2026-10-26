@@ -17,6 +17,8 @@ import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from sklearn.model_selection import train_test_split
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_faroese_grammatical_correctness")
 
@@ -103,6 +105,7 @@ def main(source: str) -> None:
     dataset_id = "EuroEval/faroese-grammatical-correctness"
 
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=dataset_id)
     dataset_dict.push_to_hub(dataset_id, private=True)
 
 

@@ -19,6 +19,8 @@ import nltk
 from datasets import Dataset, DatasetDict, load_dataset
 from nltk.tokenize import sent_tokenize
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 # Set NLTK_DATA before importing nltk to ensure cache location is correct
 project_root = Path(__file__).parent.parent.parent.parent.absolute()
 nltk_data_dir = project_root / ".euroeval_cache" / "nltk_data"
@@ -51,6 +53,7 @@ def main() -> None:
 
     # Push the dataset to the Hugging Face Hub
     dataset_id = "EuroEval/publico-mini"
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 

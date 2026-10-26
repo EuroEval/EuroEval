@@ -25,6 +25,8 @@ import pandas as pd
 from datasets import ClassLabel, Dataset, DatasetDict, load_dataset
 from evaluate import load
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_duidelijke_taal")
 
@@ -84,6 +86,7 @@ def main() -> None:
     processed_dataset_id = "EuroEval/duidelijke-taal"
 
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=processed_dataset_id)
     dataset.push_to_hub(processed_dataset_id, private=True)
 
 

@@ -24,6 +24,8 @@ from constants import (
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from sklearn.model_selection import train_test_split
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 OPTION_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]
 
 
@@ -79,6 +81,7 @@ def main() -> None:
     dataset_id = "EuroEval/mmlu-pro-mini"
 
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 

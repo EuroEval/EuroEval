@@ -15,6 +15,8 @@ from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 from datasets import Dataset, DatasetDict, Split
 from datasets.load import load_dataset
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 
 def main() -> None:
     """Create the ilpost summarisation dataset and upload to HF Hub."""
@@ -83,6 +85,7 @@ def main() -> None:
     dataset_id = "EuroEval/ilpost-sum"
 
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 

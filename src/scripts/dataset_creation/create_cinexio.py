@@ -20,6 +20,8 @@ import requests
 from datasets import Dataset, DatasetDict, Split
 from sklearn.utils import resample
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 
 def main() -> None:
     """Create the Cinexio sentiment dataset and upload to HF Hub."""
@@ -52,6 +54,7 @@ def main() -> None:
         )
 
         dataset_id = "EuroEval/cinexio-mini"
+        preflight_private_upload(repository_id=dataset_id)
         dataset.push_to_hub(dataset_id, private=True)
 
 
