@@ -118,7 +118,11 @@ class _Response:
         return {"answers": {"name": {"probabilities": self.probabilities}}}
 
     def raise_for_status(self) -> None:
-        """Represent a successful HTTP response."""
+        """Represent a successful HTTP response.
+
+        Returns:
+            None, as the mocked response is successful.
+        """
         return None
 
 
@@ -342,6 +346,8 @@ def test_generate_retries_connection_errors_then_reports_failure(
             _kwargs:
                 Keyword request arguments.
 
+        Raises:
+            The configured connection error, to simulate a failed request.
         """
         nonlocal calls
         calls += 1

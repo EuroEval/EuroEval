@@ -118,14 +118,14 @@ def _make_detector(
     """Build a mocked ``HallucinationDetector`` instance.
 
     Args:
-        predict_return:
-            Optional value returned by ``predict_prompt`` for every call; defaults
-            to ``None`` when a side effect is configured.
-        predict_side_effect:
-            Optional callable used as the ``predict_prompt`` side effect, taking
-            precedence over ``predict_return``; defaults to ``None``.
-        max_length:
-            The detector's maximum input sequence length; defaults to ``512``.
+        predict_return (optional):
+            Value returned by ``predict_prompt`` for every call; defaults to ``None``
+            when a side effect is configured.
+        predict_side_effect (optional):
+            Callable used as the ``predict_prompt`` side effect, taking precedence
+            over ``predict_return``; defaults to ``None``.
+        max_length (optional):
+            The detector's maximum input sequence length. Defaults to ``512``.
 
     Returns:
         A configured mock detector instance.

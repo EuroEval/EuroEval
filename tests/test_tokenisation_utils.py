@@ -94,11 +94,12 @@ class _ContaminatedChatTokeniser:
         """Initialise the contaminated chat tokeniser test double.
 
         Args:
-            include_label_in_template:
+            include_label_in_template (optional):
                 Whether assistant label content is reflected in the chat template.
-            extra_span_token:
-                Optional token inserted into the isolated label span before the label
-                tokens themselves.
+                Defaults to ``True``.
+            extra_span_token (optional):
+                Token inserted into the isolated label span before the label tokens
+                themselves. Defaults to ``None``.
         """
         self.include_label_in_template = include_label_in_template
         self.extra_span_token = extra_span_token
@@ -146,8 +147,8 @@ class _ContaminatedChatTokeniser:
         Args:
             text:
                 The text to encode.
-            add_special_tokens:
-                Unused; accepted for API compatibility.
+            add_special_tokens (optional):
+                Unused; accepted for API compatibility. Defaults to ``False``.
             **kwargs:
                 Unused extra keyword arguments.
 
@@ -165,10 +166,11 @@ class _ContaminatedChatTokeniser:
         """Encode ``text`` into token ids, with fixed splits for known labels.
 
         Args:
-            text:
+            text (optional):
                 The text to encode. If omitted, ``kwargs["text"]`` is used.
-            add_special_tokens:
-                Unused; accepted for API compatibility.
+                Defaults to ``None``.
+            add_special_tokens (optional):
+                Unused; accepted for API compatibility. Defaults to ``False``.
             **kwargs:
                 May contain ``text`` when ``text`` is not passed positionally.
 
@@ -196,10 +198,11 @@ class _ContaminatedChatTokeniser:
         Args:
             conversation:
                 The chat messages to render.
-            tokenize:
+            tokenize (optional):
                 If True, return token ids; otherwise return a space-joined string.
-            add_generation_prompt:
-                Whether to append a generation prompt token.
+                Defaults to ``True``.
+            add_generation_prompt (optional):
+                Whether to append a generation prompt token. Defaults to ``True``.
             **kwargs:
                 Unused extra keyword arguments.
 

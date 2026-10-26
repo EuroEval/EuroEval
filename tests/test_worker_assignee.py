@@ -129,6 +129,8 @@ class Broker:
         Returns:
             The test lease.
 
+        Raises:
+            The configured broker error if the test is exercising claim rejection.
         """
         del credential, hardware
         self.claims += 1
@@ -212,6 +214,8 @@ class Broker:
             result:
                 Result supplied to the test.
 
+        Raises:
+            The configured assignment-fence error.
         """
         del credential, lease, result
         self.submissions += 1
