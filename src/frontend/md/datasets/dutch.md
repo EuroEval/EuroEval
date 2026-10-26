@@ -306,10 +306,13 @@ euroeval --model <model-id> --dataset scala-nl
 
 [BLiMP-NL](https://huggingface.co/datasets/juletxara/blimp-nl) contains Dutch
 linguistic minimal pairs across 22 grammatical phenomena and 84 paradigms. The
-upstream dataset is licensed under CC BY 4.0. EuroEval converts each pair into two
-independent, single-sentence examples: the grammatical sentence is `correct` and the
-ungrammatical sentence is `incorrect`. The splits are made at pair level so neither
-member can leak across splits.
+upstream dataset is licensed under CC BY 4.0. EuroEval uses the capped
+[BLiMP-NL-mini dataset](https://huggingface.co/datasets/EuroEval/blimp-nl-mini),
+converting each pair into two single-sentence examples: the grammatical sentence is
+`correct` and the ungrammatical sentence is `incorrect`. Pair members stay together
+in their split. Train, validation and test contain up to 1,024, 256 and 2,048
+examples respectively; sampling is deterministic and balanced across phenomena and
+paradigms.
 
 **Important:** This benchmark scores sentence-level acceptability classification. It
 does not evaluate the original task of preferring the grammatical sentence in each
