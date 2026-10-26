@@ -41,14 +41,13 @@ _DECISION_ARTIFACT = "volunteer-review-decision/v1"
 
 
 def _has_collected_canary(records: list[dict[str, object]]) -> bool:
-    """Return whether staged auxiliary records claim scoreable observations.
+    """Return whether any canary record reports collected observations.
 
     Args:
-        records:
-            Records.
+        records: Staged EEE records to inspect.
 
     Returns:
-        The resulting value.
+        ``True`` when a record's canary evidence status is ``collected``.
     """
     for record in records:
         library = record.get("eval_library")
@@ -68,14 +67,13 @@ def _has_collected_canary(records: list[dict[str, object]]) -> bool:
 
 
 def _is_canary_identity(identity: tuple[str, str, bool | None, bool | None]) -> bool:
-    """Return whether a validated identity carries private canary evidence.
+    """Return whether an identity names a contamination-canary dataset.
 
     Args:
-        identity:
-            Identity.
+        identity: Validated result identity tuple.
 
     Returns:
-        The resulting value.
+        ``True`` for ``contamination-canary`` or a hyphenated variant.
     """
     return identity[1] == "contamination-canary" or identity[1].startswith(
         "contamination-canary-"
@@ -440,13 +438,12 @@ class VolunteerReviewer:
         """Return whether decision objects resolve to one terminal outcome.
 
         Args:
-            submission_id:
-                Submission id.
-            issue_number:
-                Issue number.
+            submission_id: Submission whose durable decision objects are checked.
+            issue_number: Issue number expected in its validated manifest.
 
         Returns:
-            The resulting value.
+            ``True`` if validation succeeds and at least one consistent decision
+            exists; ``False`` for missing or invalid terminal state.
         """
         try:
             report = self.show(submission_id=submission_id)
@@ -486,7 +483,8 @@ class VolunteerReviewer:
         """Return all durable manifest summaries, including historical ones.
 
         Returns:
-            The resulting value.
+            Manifest summaries as ``(submission_id, issue_number, contributor,
+            language)`` tuples.
         """
         return self._list_submission_summaries()
 
@@ -498,26 +496,20 @@ def _decision_bytes(
     reasons: list[str],
     decided_at: str,
 ) -> bytes:
-    """Decision bytes.
+    """Serialize an immutable decision artifact as canonical UTF-8 JSON.
 
     Args:
-            report:
-                Report.
-            outcome:
-                Outcome.
-            reviewer:
-                Reviewer.
-            reasons:
-                Reasons.
-            decided_at:
-                Decided at.
+        report: Validated submission evidence referenced by the decision.
+        outcome: Terminal outcome, accepted or rejected.
+        reviewer: Verified reviewer login.
+        reasons: Reviewer-supplied rationale strings.
+        decided_at: Broker-bound decision timestamp.
 
     Returns:
-            The resulting value.
+        Compact, key-sorted UTF-8 JSON bytes ending in a newline.
 
     Raises:
-    ReviewError: Raised when the operation cannot be completed.
-            An exception when the operation cannot be completed.
+        ReviewError: If the reviewer or timestamp is blank.
     """
     if not reviewer.strip():
         raise ReviewError("A verified reviewer login is required")
@@ -553,13 +545,11 @@ def _decision_path(submission_id: str, digest: str) -> str:
     """Return the immutable content-addressed path for a decision.
 
     Args:
-        submission_id:
-            Submission id.
-        digest:
-            Digest.
+        submission_id: Submission owning the decision.
+        digest: SHA-256 digest used as the filename.
 
     Returns:
-        The resulting value.
+        ``volunteer/decisions/<submission_id>/<digest>.json``.
     """
     return f"{_DECISION_PREFIX}/{submission_id}/{digest}.json"
 
@@ -674,16 +664,15 @@ def _validate_existing_decision(
 def _local_reservation(
     reviewer: str, existing: bytes | None
 ) -> BrokerReservationResult:
-    """Local reservation.
+    """Create a deterministic local reservation for tests or local use.
 
     Args:
-        reviewer:
-            Reviewer.
-        existing:
-            Existing.
+        reviewer: Reviewer login to bind when no prior decision exists.
+        existing: Existing decision bytes, if present.
 
     Returns:
-        The resulting value.
+        A local reservation token plus prior decision metadata when recoverable;
+        otherwise the supplied reviewer and fixed epoch timestamp.
     """
     if existing is not None:
         decision = _load_object(
@@ -758,30 +747,23 @@ def _request_reservation(
     reviewer: str | None = None,
     decision_digest: str | None = None,
 ) -> str | BrokerReservationResult:
-    """Request reservation.
+    """Request a reservation, renewal, or decision-digest binding from the broker.
 
     Args:
-            issue_number:
-                Issue number.
-            submission_id:
-                Submission id.
-            outcome:
-                Outcome.
-            records:
-                Records.
-            reservation_token (optional):
-                Reservation token.
-            reviewer (optional):
-                Reviewer.
-            decision_digest (optional):
-                Decision digest.
+        issue_number: GitHub issue being decided.
+        submission_id: Submission being decided.
+        outcome: Requested terminal outcome.
+        records: Canonical identity/path/digest evidence sent to the broker.
+        reservation_token: Existing token for renewal or binding; omitted to reserve.
+        reviewer: Reviewer login included when creating a reservation.
+        decision_digest: Decision artifact digest to bind or renew.
 
     Returns:
-            The resulting value.
+        A reservation result for a new reservation, or the unchanged token string
+        for a renewal/binding request.
 
     Raises:
-    ReviewError: Raised when the operation cannot be completed.
-            An exception when the operation cannot be completed.
+        ReviewError: If credentials, broker response, or required metadata is invalid.
     """
     secret = os.environ.get("VOLUNTEER_PROMOTION_SECRET")
     if not secret:

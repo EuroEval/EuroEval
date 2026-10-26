@@ -163,13 +163,12 @@ class BucketStore:
 
 
 def _digest(content: bytes) -> str:
-    """Digest.
+    """Return the lowercase hexadecimal SHA-256 digest of bytes.
 
     Args:
-        content:
-            Content.
+        content: Bytes to hash.
 
     Returns:
-        The resulting value.
+        A 64-character lowercase hexadecimal SHA-256 digest.
     """
     return hashlib.sha256(content).hexdigest()

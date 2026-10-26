@@ -55,18 +55,15 @@ class BucketApi(t.Protocol):
     def batch_bucket_files(
         self, bucket_id: str, *, add: list[tuple[bytes, str]], token: str
     ) -> object:
-        """Upload selected bucket files.
+        """Upload the supplied files to a bucket.
 
         Args:
-            bucket_id:
-                Bucket id.
-            add:
-                Add.
-            token:
-                Token.
+            bucket_id: Target bucket identifier.
+            add: Byte-content and destination-path pairs to upload.
+            token: Hugging Face authentication token.
 
         Returns:
-            The resulting value.
+            The API response returned for the batch upload.
         """
         ...
 
@@ -74,13 +71,11 @@ class BucketApi(t.Protocol):
         """Return bucket visibility metadata.
 
         Args:
-            bucket_id:
-                Bucket id.
-            token:
-                Token.
+            bucket_id: Bucket identifier to inspect.
+            token: Hugging Face authentication token.
 
         Returns:
-            The resulting value.
+            Metadata exposing whether the bucket is private.
         """
         ...
 
@@ -112,15 +107,12 @@ class BucketApi(t.Protocol):
         """Return metadata for selected paths.
 
         Args:
-            bucket_id:
-                Bucket id.
-            paths:
-                Paths.
-            token:
-                Token.
+            bucket_id: Bucket containing the paths.
+            paths: Exact bucket paths to inspect.
+            token: Hugging Face authentication token.
 
         Returns:
-            The resulting value.
+            An iterable of metadata entries for the requested paths.
         """
         ...
 
@@ -130,20 +122,13 @@ class BucketApi(t.Protocol):
         """List files beneath a bucket prefix.
 
         Args:
-            bucket_id:
-                Bucket id.
-            prefix:
-                Prefix.
-            recursive:
-                Recursive.
-            token:
-                Token.
+            bucket_id: Bucket to list.
+            prefix: Path prefix to list beneath.
+            recursive: Whether to include descendants recursively.
+            token: Hugging Face authentication token.
 
         Returns:
-            The resulting value.
-
-        Raises:
-            An exception when the operation cannot be completed.
+            An iterable of file metadata entries beneath the prefix.
         """
         raise NotImplementedError(
             f"BucketApi implementations must handle recursive={recursive!r}"
