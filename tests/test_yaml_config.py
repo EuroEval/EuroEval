@@ -31,12 +31,12 @@ class TestLoadDatasetConfigFromYaml:
         """Any spelling the scorer extracts an answer from counts as boxed.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
-        monkeypatch:
-        Fixture for replacing external dependencies.
-        instruction_prompt:
-        Instruction prompt variant to write to the YAML file.
+            tmp_path:
+                Temporary directory for YAML fixtures.
+            monkeypatch:
+                Fixture for replacing external dependencies.
+            instruction_prompt:
+                Instruction prompt variant to write to the YAML file.
         """
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text(
@@ -58,8 +58,8 @@ class TestLoadDatasetConfigFromYaml:
         """Scanning solvers continues past one this loader cannot read.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text(
@@ -76,8 +76,8 @@ class TestLoadDatasetConfigFromYaml:
         """choices_column as a list of strings triggers a preprocessing_func.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -102,8 +102,8 @@ class TestLoadDatasetConfigFromYaml:
         """choices_column as a string triggers the creation of a preprocessing_func.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -124,8 +124,8 @@ class TestLoadDatasetConfigFromYaml:
         """A YAML file with empty languages list and no fallback defaults to English.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -143,8 +143,8 @@ class TestLoadDatasetConfigFromYaml:
         """A file named eval.yaml is accepted just like euroeval_config.yaml.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -161,8 +161,8 @@ class TestLoadDatasetConfigFromYaml:
         """An explicit instruction prompt takes precedence over prompt_template.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -186,8 +186,8 @@ class TestLoadDatasetConfigFromYaml:
         """An explicit top-level 'task' key overrides any Inspect AI inference.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -212,8 +212,8 @@ class TestLoadDatasetConfigFromYaml:
         """An unknown language code in fallback_language_codes returns None.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -235,8 +235,8 @@ class TestLoadDatasetConfigFromYaml:
         """fallback_language_codes is used when 'languages' is absent from YAML.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -255,8 +255,8 @@ class TestLoadDatasetConfigFromYaml:
         """field_spec.choices in tasks[0] is promoted to choices_column.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -286,8 +286,8 @@ class TestLoadDatasetConfigFromYaml:
         """Column names in tasks[0].field_spec are promoted to top-level keys.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -317,8 +317,8 @@ class TestLoadDatasetConfigFromYaml:
         """field_spec.target as an integer (Inspect AI letter-index) is skipped.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -343,8 +343,8 @@ class TestLoadDatasetConfigFromYaml:
         """field_spec.target with 'literal:' prefix is not used as target_column.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -376,12 +376,12 @@ class TestLoadDatasetConfigFromYaml:
         """Inspect task splits are promoted, with test as the default.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
-        split:
-        Split selector used by the test.
-        expected:
-        Expected split after selection.
+            tmp_path:
+                Temporary directory for YAML fixtures.
+            split:
+                Split selector used by the test.
+            expected:
+                Expected split after selection.
         """
         split_line = f"    split: {split}\n" if split is not None else ""
         yaml_file = _write_yaml(
@@ -407,8 +407,8 @@ languages:
         """Explicit top-level input_column takes precedence over field_spec.input.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -435,8 +435,8 @@ languages:
         """A tasks list without a field_spec block is silently ignored.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -458,8 +458,8 @@ languages:
         """An unknown language code causes the function to return None.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -477,8 +477,8 @@ languages:
         """An unknown task name causes the function to return None.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -496,8 +496,8 @@ languages:
         """Labels specified in YAML are reflected in the DatasetConfig.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -519,8 +519,8 @@ languages:
         """A syntactically broken YAML file returns None.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = tmp_path / "euroeval_config.yaml"
         yaml_file.write_text("task: [unclosed bracket\n")
@@ -533,10 +533,10 @@ languages:
         """A boxed math instruction does not emit the missing-prompt warning.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
-        caplog:
-        Fixture capturing log records.
+            tmp_path:
+                Temporary directory for YAML fixtures.
+            caplog:
+                Fixture capturing log records.
         """
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text(
@@ -551,8 +551,8 @@ languages:
         """A math scorer and prompt template are inferred from Inspect AI YAML.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -605,8 +605,8 @@ languages:
         """Math prompt templates with non-text placeholders are not promoted.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text(
@@ -624,10 +624,10 @@ languages:
         """Math configs without boxed instructions emit a warning.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
-        monkeypatch:
-        Fixture for replacing external dependencies.
+            tmp_path:
+                Temporary directory for YAML fixtures.
+            monkeypatch:
+                Fixture for replacing external dependencies.
         """
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text("task: math\nlanguages: [en]\n")
@@ -648,8 +648,8 @@ languages:
         """A YAML file with only task and languages produces a DatasetConfig.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -669,8 +669,8 @@ languages:
         """No 'languages' key and no fallback_language_codes defaults to English.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -686,8 +686,8 @@ languages:
         """A YAML file without 'task' key and no Inspect AI hints returns None.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -704,8 +704,8 @@ languages:
         """No 'task' key and no Inspect AI hints (solver/choices) returns None.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -729,8 +729,8 @@ languages:
         """Multiple language codes are all parsed.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -751,8 +751,8 @@ languages:
         """Integer optional fields are parsed correctly.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -774,8 +774,8 @@ languages:
         """String optional column fields trigger a preprocessing_func being built.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -797,8 +797,8 @@ languages:
         """A prompt_label_mapping dict is parsed correctly.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -823,8 +823,8 @@ languages:
         """A prompt template without Inspect's placeholder still includes the input.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -847,8 +847,8 @@ languages:
         """A pure Inspect AI eval.yaml (no EuroEval keys) succeeds, defaults to en.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -876,8 +876,8 @@ languages:
         """A 'choices' entry in field_spec infers multiple-choice task.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -906,8 +906,8 @@ languages:
         """A 'multiple_choice' solver in tasks[0].solvers infers MC task.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -937,8 +937,8 @@ languages:
         """Unsupported language codes from repo metadata are skipped, not fatal.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -956,8 +956,8 @@ languages:
         """Explicit 'languages' in YAML overrides fallback_language_codes.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -977,17 +977,16 @@ languages:
 def _write_yaml(tmp_path: Path, content: str, filename: str = "eval.yaml") -> Path:
     """Write dedented YAML content to a temporary file.
 
+    Args:
+        tmp_path:
+            Temporary directory for YAML fixtures.
+        content:
+            YAML content to write.
+        filename (optional):
+            Output filename. Defaults to `eval.yaml`.
+
     Returns:
         The path to the written YAML file.
-
-
-    Args:
-    tmp_path:
-        Temporary directory for YAML fixtures.
-    content:
-        Value of content used by the test.
-    filename (optional):
-        Output filename. Defaults to `eval.yaml`.
     """
     yaml_file = tmp_path / filename
     yaml_file.write_text(textwrap.dedent(content))
@@ -1001,8 +1000,8 @@ class TestRealWorldYamlConfigs:
         """Test error when choices_column is neither string nor list.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -1025,8 +1024,8 @@ class TestRealWorldYamlConfigs:
 
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -1077,8 +1076,8 @@ class TestRealWorldYamlConfigs:
         """The 'evaluation_framework' key is not a EuroEval field and is ignored.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -1112,8 +1111,8 @@ class TestRealWorldYamlConfigs:
 
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -1216,8 +1215,8 @@ class TestRealWorldYamlConfigs:
 
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -1260,10 +1259,10 @@ class TestRealWorldYamlConfigs:
 
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
-        caplog:
-        Fixture capturing log records.
+            tmp_path:
+                Temporary directory for YAML fixtures.
+            caplog:
+                Fixture capturing log records.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -1296,8 +1295,8 @@ class TestRealWorldYamlConfigs:
         """The GSM8K eval.yaml works when a top-level 'task' key is added.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -1333,8 +1332,8 @@ class TestRealWorldYamlConfigs:
 
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -1385,8 +1384,8 @@ class TestRealWorldYamlConfigs:
         """Test model_graded_fact without a judge uses REFERENCE_FREE_QA.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -1413,8 +1412,8 @@ class TestRealWorldYamlConfigs:
         """Test task inference when multiple scorers are present.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -1446,8 +1445,8 @@ class TestRealWorldYamlConfigs:
         """Test task inference from model_graded_fact scorer with explicit judge.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -1478,8 +1477,8 @@ class TestRealWorldYamlConfigs:
         """Test that YAML file with non-dict top-level returns None.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text("just a string\n")
@@ -1493,8 +1492,8 @@ class TestRealWorldYamlConfigs:
 
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -1528,8 +1527,8 @@ class TestRealWorldYamlConfigs:
         """The MMLU-Pro eval.yaml has no 'languages' key, so English is used.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -1564,12 +1563,12 @@ class TestRealWorldYamlConfigs:
         """Boolean values are rejected for every integer field.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
-        field:
-        Integer field name under test.
-        value:
-        YAML value supplied to the field.
+            tmp_path:
+                Temporary directory for YAML fixtures.
+            field:
+                Integer field name under test.
+            value:
+                YAML value supplied to the field.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -1587,8 +1586,8 @@ languages:
         """Test that empty languages list uses fallback codes.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -1609,8 +1608,8 @@ languages:
         """Test that only first task in tasks list is used for promotion.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -1645,8 +1644,8 @@ class TestSubsetSelection:
         """A subset can be requested by the name it is registered and recorded with.
 
         Args:
-        caplog:
-        Fixture capturing log records.
+            caplog:
+                Fixture capturing log records.
         """
         raw = {
             "tasks": [
@@ -1682,12 +1681,12 @@ class TestSubsetSelection:
         """Warn when a subset cannot be tied to a single language.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
-        monkeypatch:
-        Fixture for replacing external dependencies.
-        caplog:
-        Fixture capturing log records.
+            tmp_path:
+                Temporary directory for YAML fixtures.
+            monkeypatch:
+                Fixture for replacing external dependencies.
+            caplog:
+                Fixture capturing log records.
         """
         yaml_text = (
             "task: classification\n"
@@ -1732,20 +1731,7 @@ class TestSubsetSelection:
                 The language codes reported by the repository card.
 
         Returns:
-            The loaded dataset configs.
-
-
-        Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
-        monkeypatch:
-        Fixture for replacing external dependencies.
-        yaml_text:
-        YAML content served by the fake Hub.
-        dataset_id:
-        Dataset repository ID to load.
-        card_languages:
-        Language codes reported by the dataset card, if available.
+                The loaded dataset configs.
         """
         monkeypatch.setattr(
             custom_dataset_configs, "get_hf_token", lambda **kwargs: None
@@ -1769,20 +1755,20 @@ class TestSubsetSelection:
                 """Test   init  .
 
                 Args:
-                token:
-                Authentication token supplied to the fake API.
+                    token:
+                        Authentication token supplied to the fake API.
                 """
                 pass
 
             def dataset_info(self, **kwargs: object) -> object:
                 """Test dataset info.
 
-                Returns:
-                Result produced by this helper.
-
                 Args:
-                kwargs:
-                Keyword arguments supplied to the fake Hub method.
+                    kwargs:
+                        Keyword arguments supplied to the fake Hub method.
+
+                Returns:
+                    The dataset information for the requested repository.
                 """
                 return type("Info", (), {"card_data": card_data})()
 
@@ -1790,8 +1776,8 @@ class TestSubsetSelection:
                 """Test hf hub download.
 
                 Args:
-                kwargs:
-                Keyword arguments supplied to the fake Hub method.
+                    kwargs:
+                        Keyword arguments supplied to the fake Hub method.
                 """
                 path = Path(str(kwargs["local_dir"])) / "eval.yaml"
                 path.write_text(yaml_text)
@@ -1814,8 +1800,8 @@ class TestSubsetSelection:
         """A configuration is selected by naming a subset, not by a flag.
 
         Args:
-        caplog:
-        Fixture capturing log records.
+            caplog:
+                Fixture capturing log records.
         """
         with caplog.at_level(logging.ERROR, logger="euroeval"):
             result = select_inspect_ai_tasks(
@@ -1853,12 +1839,12 @@ class TestSubsetSelection:
 
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
-        monkeypatch:
-        Fixture for replacing external dependencies.
-        caplog:
-        Fixture capturing log records.
+            tmp_path:
+                Temporary directory for YAML fixtures.
+            monkeypatch:
+                Fixture for replacing external dependencies.
+            caplog:
+                Fixture capturing log records.
         """
         yaml_text = (
             "task: classification\n"
@@ -1890,10 +1876,10 @@ class TestSubsetSelection:
         """A config without a declared split can be passed back to the loader.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
-        monkeypatch:
-        Fixture for replacing external dependencies.
+            tmp_path:
+                Temporary directory for YAML fixtures.
+            monkeypatch:
+                Fixture for replacing external dependencies.
         """
         yaml_text = "task: classification\ntasks:\n  - config: dan\n"
         configs = self.load_with_fake_hub(
@@ -1923,10 +1909,10 @@ class TestSubsetSelection:
         """Duplicate task entries remain distinct and individually selectable.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
-        monkeypatch:
-        Fixture for replacing external dependencies.
+            tmp_path:
+                Temporary directory for YAML fixtures.
+            monkeypatch:
+                Fixture for replacing external dependencies.
         """
         yaml_text = (
             "task: classification\ntasks:\n"
@@ -1970,8 +1956,8 @@ class TestSubsetSelection:
         """Prefer languages declared by the selected task entry.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text(
@@ -1990,10 +1976,10 @@ class TestSubsetSelection:
         """Each expanded entry is identified by repo, config and split.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
-        monkeypatch:
-        Fixture for replacing external dependencies.
+            tmp_path:
+                Temporary directory for YAML fixtures.
+            monkeypatch:
+                Fixture for replacing external dependencies.
         """
         yaml_text = (
             "task: classification\n"
@@ -2040,12 +2026,12 @@ class TestSubsetSelection:
         """Reject selectors with empty or excess components.
 
         Args:
-        selector:
-        Subset selector string to validate.
-        tmp_path:
-        Temporary directory for YAML fixtures.
-        caplog:
-        Fixture capturing log records.
+            selector:
+                Subset selector string to validate.
+            tmp_path:
+                Temporary directory for YAML fixtures.
+            caplog:
+                Fixture capturing log records.
         """
         with caplog.at_level(logging.ERROR, logger="euroeval"):
             assert (
@@ -2064,10 +2050,10 @@ class TestSubsetSelection:
         """A configless entry must not occupy the repository's expansion key.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
-        monkeypatch:
-        Fixture for replacing external dependencies.
+            tmp_path:
+                Temporary directory for YAML fixtures.
+            monkeypatch:
+                Fixture for replacing external dependencies.
         """
         yaml_text = (
             "task: classification\ntasks:\n"
@@ -2105,10 +2091,10 @@ class TestSubsetSelection:
         """Without a selector every declared config is benchmarked.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
-        caplog:
-        Fixture capturing log records.
+            tmp_path:
+                Temporary directory for YAML fixtures.
+            caplog:
+                Fixture capturing log records.
         """
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text(
@@ -2131,8 +2117,8 @@ class TestSubsetSelection:
         """Load column mappings, inference and prompts from the selected task.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -2184,12 +2170,12 @@ class TestSubsetSelection:
         """Subset selectors are unsupported without an eval.yaml file.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
-        monkeypatch:
-        Fixture for replacing external dependencies.
-        caplog:
-        Fixture capturing log records.
+            tmp_path:
+                Temporary directory for YAML fixtures.
+            monkeypatch:
+                Fixture for replacing external dependencies.
+            caplog:
+                Fixture capturing log records.
         """
         monkeypatch.setattr(
             custom_dataset_configs, "get_hf_token", lambda **kwargs: None
@@ -2219,10 +2205,10 @@ class TestSubsetSelection:
         """Use the bare repository ID for all Hub operations.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
-        monkeypatch:
-        Fixture for replacing external dependencies.
+            tmp_path:
+                Temporary directory for YAML fixtures.
+            monkeypatch:
+                Fixture for replacing external dependencies.
         """
         calls: list[tuple[str, str]] = []
         monkeypatch.setattr(
@@ -2242,20 +2228,20 @@ class TestSubsetSelection:
                 """Test   init  .
 
                 Args:
-                token:
-                Authentication token supplied to the fake API.
+                    token:
+                        Authentication token supplied to the fake API.
                 """
                 calls.append(("init", str(token)))
 
             def dataset_info(self, **kwargs: object) -> object:
                 """Test dataset info.
 
-                Returns:
-                Result produced by this helper.
-
                 Args:
-                kwargs:
-                Keyword arguments supplied to the fake Hub method.
+                    kwargs:
+                        Keyword arguments supplied to the fake Hub method.
+
+                Returns:
+                    The dataset information for the requested repository.
                 """
                 calls.append(("info", str(kwargs["repo_id"])))
                 return type("Info", (), {"card_data": None})()
@@ -2264,8 +2250,8 @@ class TestSubsetSelection:
                 """Test hf hub download.
 
                 Args:
-                kwargs:
-                Keyword arguments supplied to the fake Hub method.
+                    kwargs:
+                        Keyword arguments supplied to the fake Hub method.
                 """
                 calls.append(("download", str(kwargs["repo_id"])))
                 path = Path(str(kwargs["local_dir"])) / "eval.yaml"
@@ -2285,12 +2271,12 @@ class TestSubsetSelection:
         def fake_get_repo_splits(**kwargs: object) -> tuple[str, None, str]:
             """Test fake get repo splits.
 
-            Returns:
-            Result produced by this helper.
-
             Args:
-            kwargs:
-            Keyword arguments supplied to the fake Hub method.
+                kwargs:
+                    Keyword arguments supplied to the fake Hub method.
+
+            Returns:
+                The train, validation, and test split names.
             """
             split_kwargs.append(kwargs)
             return "train", None, "test"
@@ -2319,8 +2305,8 @@ class TestSubsetSelection:
         """A selector must not disappear when an eval.yaml has no configs.
 
         Args:
-        caplog:
-        Fixture capturing log records.
+            caplog:
+                Fixture capturing log records.
         """
         with caplog.at_level(logging.ERROR, logger="euroeval"):
             result = select_inspect_ai_tasks(
@@ -2337,8 +2323,8 @@ class TestSubsetSelection:
         """All splits of a config are selected when no split is given.
 
         Args:
-        caplog:
-        Fixture capturing log records.
+            caplog:
+                Fixture capturing log records.
         """
         raw = {
             "tasks": [
@@ -2356,8 +2342,8 @@ class TestSubsetSelection:
         """Preserve the existing single-config loading behaviour.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
+            tmp_path:
+                Temporary directory for YAML fixtures.
         """
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text("task: classification\nlanguages: [en]\n")
@@ -2373,10 +2359,10 @@ class TestSubsetSelection:
         """Validate a split selector, defaulting to all the declared splits.
 
         Args:
-        split:
-        Split selector used by the test.
-        caplog:
-        Fixture capturing log records.
+            split:
+                Split selector used by the test.
+            caplog:
+                Fixture capturing log records.
         """
         with caplog.at_level(logging.ERROR, logger="euroeval"):
             result = select_inspect_ai_tasks(
@@ -2436,10 +2422,10 @@ class TestSubsetSelection:
         """Do not warn when repository metadata has one language.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
-        caplog:
-        Fixture capturing log records.
+            tmp_path:
+                Temporary directory for YAML fixtures.
+            caplog:
+                Fixture capturing log records.
         """
 
         class FakeHub:
@@ -2448,12 +2434,12 @@ class TestSubsetSelection:
             def dataset_info(self, **kwargs: object) -> object:
                 """Test dataset info.
 
-                Returns:
-                Result produced by this helper.
-
                 Args:
-                kwargs:
-                Keyword arguments supplied to the fake Hub method.
+                    kwargs:
+                        Keyword arguments supplied to the fake Hub method.
+
+                Returns:
+                    The dataset information for the requested repository.
                 """
                 card = type("Card", (), {"language": ["da"]})()
                 return type("Info", (), {"card_data": card})()
@@ -2462,8 +2448,8 @@ class TestSubsetSelection:
                 """Test hf hub download.
 
                 Args:
-                kwargs:
-                Keyword arguments supplied to the fake Hub method.
+                    kwargs:
+                        Keyword arguments supplied to the fake Hub method.
                 """
                 Path(str(kwargs["local_dir"])).joinpath("eval.yaml").write_text(
                     "task: classification\ntasks:\n  - config: dan\n    split: test\n"
@@ -2493,10 +2479,10 @@ class TestSubsetSelection:
         """Warn when a selected subset has only repository-level languages.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
-        caplog:
-        Fixture capturing log records.
+            tmp_path:
+                Temporary directory for YAML fixtures.
+            caplog:
+                Fixture capturing log records.
         """
 
         class FakeHub:
@@ -2505,12 +2491,12 @@ class TestSubsetSelection:
             def dataset_info(self, **kwargs: object) -> object:
                 """Test dataset info.
 
-                Returns:
-                Result produced by this helper.
-
                 Args:
-                kwargs:
-                Keyword arguments supplied to the fake Hub method.
+                    kwargs:
+                        Keyword arguments supplied to the fake Hub method.
+
+                Returns:
+                    The dataset information for the requested repository.
                 """
                 card = type("Card", (), {"language": ["da", "en"]})()
                 return type("Info", (), {"card_data": card})()
@@ -2519,8 +2505,8 @@ class TestSubsetSelection:
                 """Test hf hub download.
 
                 Args:
-                kwargs:
-                Keyword arguments supplied to the fake Hub method.
+                    kwargs:
+                        Keyword arguments supplied to the fake Hub method.
                 """
                 Path(str(kwargs["local_dir"])).joinpath("eval.yaml").write_text(
                     "task: classification\ntasks:\n  - config: alpha\n    split: test\n"
@@ -2549,8 +2535,8 @@ class TestSubsetSelection:
         """An unknown split names the available ones.
 
         Args:
-        caplog:
-        Fixture capturing log records.
+            caplog:
+                Fixture capturing log records.
         """
         raw = {"tasks": [{"config": "dan", "split": "test_original"}]}
         with caplog.at_level(logging.ERROR, logger="euroeval"):
@@ -2573,12 +2559,12 @@ class TestSubsetSelection:
         """Surface YAML parser errors from the shared file loader.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
-        monkeypatch:
-        Fixture for replacing external dependencies.
-        caplog:
-        Fixture capturing log records.
+            tmp_path:
+                Temporary directory for YAML fixtures.
+            monkeypatch:
+                Fixture for replacing external dependencies.
+            caplog:
+                Fixture capturing log records.
         """
 
         class FakeInfo:
@@ -2592,12 +2578,12 @@ class TestSubsetSelection:
             def dataset_info(self, **kwargs: object) -> FakeInfo:
                 """Test dataset info.
 
-                Returns:
-                Result produced by this helper.
-
                 Args:
-                kwargs:
-                Keyword arguments supplied to the fake Hub method.
+                    kwargs:
+                        Keyword arguments supplied to the fake Hub method.
+
+                Returns:
+                    The dataset information for the requested repository.
                 """
                 return FakeInfo()
 
@@ -2605,8 +2591,8 @@ class TestSubsetSelection:
                 """Test hf hub download.
 
                 Args:
-                kwargs:
-                Keyword arguments supplied to the fake Hub method.
+                    kwargs:
+                        Keyword arguments supplied to the fake Hub method.
                 """
                 path = Path(str(kwargs["local_dir"])) / "eval.yaml"
                 path.write_text("task: [broken\\n")
@@ -2630,12 +2616,12 @@ class TestSubsetSelection:
         """Skip a config whose language EuroEval does not support.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
-        monkeypatch:
-        Fixture for replacing external dependencies.
-        caplog:
-        Fixture capturing log records.
+            tmp_path:
+                Temporary directory for YAML fixtures.
+            monkeypatch:
+                Fixture for replacing external dependencies.
+            caplog:
+                Fixture capturing log records.
         """
         yaml_text = (
             "task: classification\n"
@@ -2668,12 +2654,12 @@ class TestSubsetSelection:
         """Unsupported language-shaped configs are skipped, not attributed broadly.
 
         Args:
-        tmp_path:
-        Temporary directory for YAML fixtures.
-        monkeypatch:
-        Fixture for replacing external dependencies.
-        caplog:
-        Fixture capturing log records.
+            tmp_path:
+                Temporary directory for YAML fixtures.
+            monkeypatch:
+                Fixture for replacing external dependencies.
+            caplog:
+                Fixture capturing log records.
         """
         yaml_text = (
             "task: classification\ntasks:\n"
