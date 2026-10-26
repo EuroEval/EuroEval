@@ -391,9 +391,9 @@ def _gh_request(
     Args:
         path:
             Path component, e.g. ``/repos/owner/repo/issues/1186``.
-        method:
+        method (optional):
             HTTP method; defaults to ``"GET"``.
-        payload:
+        payload (optional):
             Optional JSON-serializable body for write methods; defaults to ``None``.
         token:
             GitHub token with `issues: write`.

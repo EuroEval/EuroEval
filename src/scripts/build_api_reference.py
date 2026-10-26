@@ -397,7 +397,7 @@ def _render_param(arg: ast.arg, default: ast.expr | None = None) -> str:
     Args:
         arg:
             The argument AST node.
-        default:
+        default (optional):
             Optional default value AST node; defaults to ``None`` for a required
             parameter.
 

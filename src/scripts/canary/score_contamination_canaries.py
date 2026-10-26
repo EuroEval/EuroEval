@@ -29,7 +29,7 @@ def main(argv: list[str] | None = None) -> int:
     """Score every canary record and emit the report as JSON.
 
     Args:
-        argv:
+        argv (optional):
             Optional command-line arguments; defaults to ``None``, which uses
             ``sys.argv``.
 

@@ -360,7 +360,7 @@ def create_model_graded_fact_metric(
             prompt that asks whether the model's answer is factually correct.
         system_prompt (optional):
             An optional system prompt for the judge. Defaults to None.
-        temperature:
+        temperature (optional):
             Sampling temperature for the judge. Defaults to 1.0.
         response_format (optional):
             A Pydantic model class that defines the expected JSON structure
@@ -370,8 +370,6 @@ def create_model_graded_fact_metric(
         scoring_fn (optional):
             A function mapping the judge's parsed response to a scalar score
             in [0, 1]. Defaults to 1.0 when `correct` is True, 0.0 otherwise.
-        temperature (optional):
-            Sampling temperature for the judge model. Defaults to None.
 
     Returns:
         An `LLMAsAJudgeMetric` configured for factual-correctness grading.
