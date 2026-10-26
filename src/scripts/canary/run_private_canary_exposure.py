@@ -60,6 +60,12 @@ def main() -> None:
 
 
 def _parse_args() -> argparse.Namespace:
+    """Parse args.
+
+    Returns:
+        Parsed command-line options.
+
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--corpus-jsonl", type=Path, required=True)
     parser.add_argument("--augmented-jsonl", type=Path, required=True)
@@ -83,6 +89,9 @@ def _parse_args() -> argparse.Namespace:
 
 def run_private_study(*, args: argparse.Namespace) -> None:
     """Train and score a resumable five-arm study without network uploads.
+
+    Args:
+        args: Parsed command-line options for the study.
 
     Raises:
         ValueError: If private inputs or existing resumable state is invalid.
@@ -265,11 +274,14 @@ def run_private_study(*, args: argparse.Namespace) -> None:
 def _aggregate(rows: list[dict[str, object]]) -> dict[str, float]:
     """Aggregate arm rows through balanced group means, not pseudo-replication.
 
+    Args:
+        rows: The rows value.
+
     Returns:
-        Group-level means for all arm metrics.
+        Aggregate metrics by exposure arm.
 
     Raises:
-        ValueError: If the arm is not balanced across the required groups.
+        ValueError: If validation fails or the required data is invalid.
     """
     grouped: dict[str, list[dict[str, object]]] = {}
     for row in rows:
@@ -299,12 +311,29 @@ def _aggregate(rows: list[dict[str, object]]) -> dict[str, float]:
 
 
 def _number(value: object) -> float:
+    """Number.
+
+    Args:
+        value: The value value.
+
+    Returns:
+        Numeric score.
+
+    Raises:
+        ValueError: If validation fails or the required data is invalid.
+    """
     if isinstance(value, (int, float)) and not isinstance(value, bool):
         return float(value)
     raise ValueError("score must be numeric")
 
 
 def _atomic_json(path: Path, value: object) -> None:
+    """Atomic json.
+
+    Args:
+        path: The path value.
+        value: The value value.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = (
         json.dumps(value, ensure_ascii=True, sort_keys=True, indent=2) + "\n"
@@ -323,6 +352,12 @@ def _atomic_json(path: Path, value: object) -> None:
 
 
 def _atomic_torch(path: Path, value: object) -> None:
+    """Atomic torch.
+
+    Args:
+        path: The path value.
+        value: The value value.
+    """
     fd, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
     os.close(fd)
     try:
@@ -335,10 +370,27 @@ def _atomic_torch(path: Path, value: object) -> None:
 
 
 def _checkpoint_metadata_path(checkpoint: Path) -> Path:
+    """Checkpoint metadata path.
+
+    Args:
+        checkpoint: The checkpoint value.
+
+    Returns:
+        Metadata sidecar path.
+    """
     return checkpoint.with_suffix(".meta.json")
 
 
 def _encode(tokenizer: object, text: str) -> list[int]:
+    """Encode.
+
+    Args:
+        tokenizer: Tokenizer used to encode text.
+        text: The text value.
+
+    Returns:
+        Encoded token IDs.
+    """
     return [
         int(value)
         for value in t.cast(t.Any, tokenizer).encode(text, add_special_tokens=False)
@@ -348,6 +400,15 @@ def _encode(tokenizer: object, text: str) -> list[int]:
 def _fingerprint(
     *, static_identity: dict[str, object], schedule: CanarySchedule
 ) -> dict[str, object]:
+    """Fingerprint.
+
+    Args:
+        static_identity: The static identity value.
+        schedule: The schedule value.
+
+    Returns:
+        Validated or computed study data.
+    """
     schedule_payload = {
         str(dose): [
             {
@@ -381,11 +442,21 @@ def _load_clean_ids(
 ) -> dict[str, list[int]]:
     """Load pinned Wikitext fillers excluding both target roles.
 
+    Args:
+        tokenizer: Tokenizer used to encode text.
+        cache_dir: Dataset cache directory.
+        row_ids: Ordered corpus row identifiers.
+        row_lengths: The row lengths value.
+        exposed_target_ids: The exposed target ids value.
+        control_target_ids: The control target ids value.
+        exposed_target_texts: The exposed target texts value.
+        control_target_texts: The control target texts value.
+
     Returns:
-        One clean token sequence per corpus row.
+        The computed result.
 
     Raises:
-        ValueError: If no safe filler can be constructed.
+        ValueError: If validation fails or the required data is invalid.
     """
     dataset = load_dataset(
         CLEAN_CORPUS_ID,
@@ -424,6 +495,15 @@ def _load_clean_ids(
 
 
 def _contains(values: t.Sequence[int], needle: t.Sequence[int]) -> bool:
+    """Contains.
+
+    Args:
+        values: The values value.
+        needle: The needle value.
+
+    Returns:
+        The computed result.
+    """
     width = len(needle)
     return any(
         tuple(values[index : index + width]) == tuple(needle)
@@ -432,6 +512,15 @@ def _contains(values: t.Sequence[int], needle: t.Sequence[int]) -> bool:
 
 
 def _repeat(values: t.Sequence[int], length: int) -> list[int]:
+    """Repeat.
+
+    Args:
+        values: The values value.
+        length: The length value.
+
+    Returns:
+        Encoded token IDs.
+    """
     return [int(values[index % len(values)]) for index in range(length)]
 
 
@@ -442,6 +531,21 @@ def _read_arm(
     row_ids: list[str] | None = None,
     expected_group_ids: dict[str, str] | None = None,
 ) -> dict[str, object]:
+    """Read arm.
+
+    Args:
+        path: The path value.
+        fingerprint: Expected identity for the current study.
+        row_ids (optional): Ordered corpus row identifiers. Defaults to None.
+        expected_group_ids (optional): Expected mapping from row IDs to group IDs.
+            Defaults to None.
+
+    Returns:
+        Validated or computed study data.
+
+    Raises:
+        ValueError: If validation fails or the required data is invalid.
+    """
     value = _read_object(path)
     dose = value.get("dose")
     if type(dose) is not int or dose not in EXPOSURE_LEVELS:
@@ -459,6 +563,17 @@ def _read_arm(
 
 
 def _read_object(path: Path) -> dict[str, object]:
+    """Read object.
+
+    Args:
+        path: The path value.
+
+    Returns:
+        Validated or computed study data.
+
+    Raises:
+        ValueError: If validation fails or the required data is invalid.
+    """
     value = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(value, dict):
         raise ValueError(f"{path.name} must contain a JSON object")
@@ -468,6 +583,15 @@ def _read_object(path: Path) -> dict[str, object]:
 def _validate_schedule_metadata(
     *, value: dict[str, object], fingerprint: dict[str, object]
 ) -> None:
+    """Validate schedule metadata.
+
+    Args:
+        value: The value value.
+        fingerprint: Expected identity for the current study.
+
+    Raises:
+        ValueError: If validation fails or the required data is invalid.
+    """
     identity = fingerprint.get("identity")
     if not isinstance(identity, dict):
         raise ValueError("canary fingerprint has no identity")
@@ -478,6 +602,17 @@ def _validate_schedule_metadata(
 
 
 def _read_records(path: Path) -> list[CanaryRecord]:
+    """Read records.
+
+    Args:
+        path: The path value.
+
+    Returns:
+        Parsed canary records.
+
+    Raises:
+        ValueError: If validation fails or the required data is invalid.
+    """
     records: list[CanaryRecord] = []
     for line in path.read_text(encoding="utf-8").splitlines():
         value = json.loads(line)
@@ -503,6 +638,17 @@ def _read_records(path: Path) -> list[CanaryRecord]:
 
 
 def _read_rows(path: Path) -> dict[str, dict[str, str]]:
+    """Read rows.
+
+    Args:
+        path: The path value.
+
+    Returns:
+        Corpus rows indexed by row ID.
+
+    Raises:
+        ValueError: If validation fails or the required data is invalid.
+    """
     rows: dict[str, dict[str, str]] = {}
     for line in path.read_text(encoding="utf-8").splitlines():
         value = json.loads(line)
@@ -516,6 +662,17 @@ def _read_rows(path: Path) -> dict[str, dict[str, str]]:
 
 
 def _schedule_sha256(*, fingerprint: dict[str, object]) -> str:
+    """Schedule sha256.
+
+    Args:
+        fingerprint: Expected identity for the current study.
+
+    Returns:
+        The schedule SHA-256 digest.
+
+    Raises:
+        ValueError: If validation fails or the required data is invalid.
+    """
     identity = fingerprint.get("identity")
     schedule_sha256 = (
         identity.get("schedule_sha256") if isinstance(identity, dict) else None
@@ -534,6 +691,22 @@ def _score_rows(
     device: torch.device,
     dose: int,
 ) -> list[dict[str, object]]:
+    """Score rows.
+
+    Args:
+        model: The model value.
+        tokenizer: Tokenizer used to encode text.
+        records: Validated canary records.
+        row_ids: Ordered corpus row identifiers.
+        device: The device value.
+        dose: The dose value.
+
+    Returns:
+        Per-row score mappings.
+
+    Raises:
+        ValueError: If validation fails or the required data is invalid.
+    """
     t.cast(t.Any, model).eval()
     result: list[dict[str, object]] = []
     for row_id in row_ids:
@@ -568,6 +741,11 @@ def _score_rows(
 
 
 def _set_seed(seed: int) -> None:
+    """Set seed.
+
+    Args:
+        seed: The seed value.
+    """
     random.seed(seed)
     torch.manual_seed(seed)
 
@@ -585,8 +763,18 @@ def _static_identity(
 ) -> dict[str, object]:
     """Build the complete resume identity without loading external artefacts.
 
+    Args:
+        manifest: The manifest value.
+        key: The key value.
+        device: The device value.
+        args: Parsed command-line options for the study.
+        records: Validated canary records.
+        row_ids: Ordered corpus row identifiers.
+        source_rows: Original corpus rows indexed by row ID.
+        augmented_rows: Augmented corpus rows indexed by row ID.
+
     Returns:
-        The static identity persisted in the run fingerprint.
+        Validated or computed study data.
     """
     ordered_identity = {
         "record_row_ids": row_ids,
@@ -647,6 +835,14 @@ def _train(
     device: torch.device,
     args: argparse.Namespace,
 ) -> None:
+    """Train.
+
+    Args:
+        model: The model value.
+        slots: The slots value.
+        device: The device value.
+        args: Parsed command-line options for the study.
+    """
     typed_model = t.cast(t.Any, model)
     optimizer = torch.optim.AdamW(typed_model.parameters(), lr=args.learning_rate)
     typed_model.train()
@@ -671,12 +867,27 @@ def _train(
 
 
 def _training_device() -> torch.device:
+    """Training device.
+
+    Returns:
+        The selected training device.
+    """
     return torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 
 
 def _validate_checkpoint(
     *, state: object, dose: int, fingerprint: dict[str, object]
 ) -> None:
+    """Validate checkpoint.
+
+    Args:
+        state: The state value.
+        dose: The dose value.
+        fingerprint: Expected identity for the current study.
+
+    Raises:
+        ValueError: If validation fails or the required data is invalid.
+    """
     state_dose = state.get("dose") if isinstance(state, dict) else None
     state_fingerprint = state.get("fingerprint") if isinstance(state, dict) else None
     if (
@@ -700,6 +911,18 @@ def _validate_existing(
     row_ids: list[str],
     expected_group_ids: dict[str, str] | None = None,
 ) -> None:
+    """Validate existing.
+
+    Args:
+        output_dir: The output dir value.
+        fingerprint: Expected identity for the current study.
+        row_ids: Ordered corpus row identifiers.
+        expected_group_ids (optional): Expected mapping from row IDs to group IDs.
+            Defaults to None.
+
+    Raises:
+        ValueError: If validation fails or the required data is invalid.
+    """
     if not output_dir.exists():
         return
     fingerprint_path = output_dir / "fingerprint.json"
@@ -754,6 +977,16 @@ def _validate_existing(
 def _validate_checkpoint_metadata(
     *, path: Path, dose: int, fingerprint: dict[str, object]
 ) -> None:
+    """Validate checkpoint metadata.
+
+    Args:
+        path: The path value.
+        dose: The dose value.
+        fingerprint: Expected identity for the current study.
+
+    Raises:
+        ValueError: If validation fails or the required data is invalid.
+    """
     value = _read_object(path)
     metadata_dose = value.get("dose")
     if (
@@ -774,8 +1007,15 @@ def _validate_existing_metadata(
 ) -> None:
     """Validate all resumable metadata before cache or loader side effects.
 
+    Args:
+        output_dir: The output dir value.
+        expected_static_identity: The expected static identity value.
+        row_ids: Ordered corpus row identifiers.
+        expected_group_ids (optional): Expected mapping from row IDs to group IDs.
+            Defaults to None.
+
     Raises:
-        ValueError: If existing files are not bound to this study.
+        ValueError: If validation fails or the required data is invalid.
     """
     if not output_dir.exists():
         return
@@ -866,6 +1106,19 @@ def _validate_inputs(
     augmented_rows: dict[str, dict[str, str]],
     key_path: Path,
 ) -> None:
+    """Validate inputs.
+
+    Args:
+        manifest: The manifest value.
+        records: Validated canary records.
+        source_rows: Original corpus rows indexed by row ID.
+        corpus_path: The corpus path value.
+        augmented_rows: Augmented corpus rows indexed by row ID.
+        key_path: The key path value.
+
+    Raises:
+        ValueError: If validation fails or the required data is invalid.
+    """
     key = load_key_0600(key_path)
     if (
         manifest.get("protocol") != CANARY_PROTOCOL
@@ -962,11 +1215,16 @@ def _validate_group_structure(
 ) -> tuple[set[str], set[str]]:
     """Validate balanced groups and return their target sets.
 
+    Args:
+        records: Validated canary records.
+        exposed_prompts: The exposed prompts value.
+        control_prompts: The control prompts value.
+
     Returns:
-        The disjoint exposed and control target sets.
+        Disjoint exposed and control target sets.
 
     Raises:
-        ValueError: If group membership or mapping invariants are invalid.
+        ValueError: If validation fails or the required data is invalid.
     """
     grouped: dict[str, list[CanaryRecord]] = {}
     for record in records:
@@ -1010,8 +1268,13 @@ def _validate_no_training_leakage(
 ) -> None:
     """Ensure neither target arm can be learned from corpus text.
 
+    Args:
+        records: Validated canary records.
+        source_rows: Original corpus rows indexed by row ID.
+        augmented_rows: Augmented corpus rows indexed by row ID.
+
     Raises:
-        ValueError: If an exposed or control target occurs in training text.
+        ValueError: If validation fails or the required data is invalid.
     """
     source_text = "\n".join(row["text"] for row in source_rows.values()).casefold()
     augmented_text = "\n".join(
