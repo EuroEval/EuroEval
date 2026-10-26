@@ -129,6 +129,9 @@ class BucketApi(t.Protocol):
 
         Returns:
             An iterable of file metadata entries beneath the prefix.
+
+        Raises:
+            NotImplementedError: If the bucket API does not implement tree listing.
         """
         raise NotImplementedError(
             f"BucketApi implementations must handle recursive={recursive!r}"

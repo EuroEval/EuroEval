@@ -754,9 +754,10 @@ def _request_reservation(
         submission_id: Submission being decided.
         outcome: Requested terminal outcome.
         records: Canonical identity/path/digest evidence sent to the broker.
-        reservation_token: Existing token for renewal or binding; omitted to reserve.
-        reviewer: Reviewer login included when creating a reservation.
-        decision_digest: Decision artifact digest to bind or renew.
+        reservation_token (optional):
+            Existing token for renewal or binding; omitted to reserve.
+        reviewer (optional): Reviewer login included when creating a reservation.
+        decision_digest (optional): Decision artifact digest to bind or renew.
 
     Returns:
         A reservation result for a new reservation, or the unchanged token string

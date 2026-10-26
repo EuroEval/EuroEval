@@ -650,9 +650,9 @@ def _target_matches(env_file: Path, expected_stat: os.stat_result | None) -> boo
 
     Args:
         env_file:
-            Local dotenv file to update. Defaults to ``Path(".env")``.
+            Destination dotenv path to compare with the inspected file.
         expected_stat:
-            File metadata recorded during path validation.
+            File metadata recorded during path validation, or None if absent.
 
     Returns:
         Whether the destination still has the expected identity.

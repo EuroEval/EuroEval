@@ -1494,7 +1494,6 @@ def test_fetch_model_configs_keeps_valid_models_when_extra_is_missing(
         Returns:
             The value produced by the test helper.
         """
-        _ = datasets, existing_results
         observed.append(model_config)
         return None, [], [], None
 
@@ -1873,6 +1872,7 @@ def test_mixed_models_keep_non_encoder_split_setting(
         Returns:
             The value produced by the test helper.
         """
+        _ = datasets, existing_results
         observed[model_config.model_id] = benchmark_config.evaluate_test_split
         return None, [], [], None
 
