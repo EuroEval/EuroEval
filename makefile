@@ -119,6 +119,8 @@ check:  ## Lint, format, and type-check the code
 
 refresh-dataset-revisions:
 	@uv run python src/scripts/refresh_dataset_revisions.py
+	@uv run ruff format src/euroeval/dataset_configs/
+	@uv run pytest -q --no-cov tests/test_dataset_configs.py -k test_builtin_hub_datasets_have_pinned_revisions
 
 bump-major: refresh-dataset-revisions
 	@uv run python -m src.scripts.versioning --major
