@@ -14,7 +14,11 @@ from dataclasses import dataclass
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 
 def main() -> None:
@@ -51,6 +55,16 @@ def main() -> None:
     }
 
     def extract_tokens_and_ner_tags(sample: dict) -> dict:
+        """Extract token strings and named-entity tags from a sample.
+
+        Args:
+            sample (dict):
+                Sample containing text, tokens and entities.
+
+        Returns:
+            The sample text, token strings and corresponding NER labels.
+
+        """
         tokens = [Token(**token) for token in sample["tokens"]]
         named_entities = [
             NamedEntity(**named_entity) for named_entity in sample["ents"]
@@ -160,10 +174,8 @@ def main() -> None:
     # Create dataset ID
     dataset_id = "EuroEval/dansk-mini"
 
-    # Remove the dataset from Hugging Face Hub if it already exists
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
-
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 

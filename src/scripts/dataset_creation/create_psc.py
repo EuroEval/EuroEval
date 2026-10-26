@@ -13,7 +13,11 @@
 import pandas as pd
 from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 
 def main() -> None:
@@ -85,7 +89,7 @@ def main() -> None:
     dataset_id = "EuroEval/psc-mini"
 
     # Push the dataset to the Hugging Face Hub
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 

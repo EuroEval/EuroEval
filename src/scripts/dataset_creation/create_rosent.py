@@ -17,12 +17,16 @@ import typing as t
 import pandas as pd
 from datasets import Dataset, DatasetDict, load_dataset
 from dotenv import load_dotenv
-from huggingface_hub import HfApi
 from openai import OpenAI
 from openai.types.chat import ChatCompletionUserMessageParam
 from pydantic import BaseModel, Field
 from sklearn.model_selection import train_test_split
 from sklearn.utils import resample
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 load_dotenv()
 
@@ -90,7 +94,7 @@ def main() -> None:
 
     # Push to HF Hub
     dataset_id = "EuroEval/ro-sent-mini"
-    HfApi().delete_repo(repo_id=dataset_id, repo_type="dataset", missing_ok=True)
+    preflight_private_upload(repository_id=dataset_id)
     mini_dataset.push_to_hub(dataset_id, private=True)
 
 
@@ -143,7 +147,8 @@ def _create_uniform_label_distribution(
 
     Args:
         df: The input dataframe with a 'label' column.
-        random_state: The random state for reproducibility.
+        random_state (optional):
+            Random state for reproducibility. Defaults to ``4242``.
 
     Returns:
         A dataframe with a uniform label distribution.
@@ -212,7 +217,12 @@ def _classify_text(text: str) -> str:
 
 
 def save_cache(cache: dict) -> None:
-    """Save cache to CACHE_FILE."""
+    """Save the cache to CACHE_FILE.
+
+    Args:
+        cache:
+            Cache data to serialise as JSON.
+    """
     with open(CACHE_FILE, "w") as cache_file:
         json.dump(cache, cache_file, indent=4)
 

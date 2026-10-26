@@ -19,7 +19,8 @@ def prepare_examples(
     Args:
         examples: The input batch containing text and gold labels.
         tokeniser: The tokenizer used to encode question-choice pairs.
-        num_choices: Retained for API compatibility; choice counts are inferred per row.
+        num_choices (optional): Retained for API compatibility; choice counts are
+            inferred per row.
 
     Returns:
         Tokenized features grouped by question, with one label per question.

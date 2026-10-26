@@ -288,6 +288,39 @@ def benchmark(
 ) -> None:
     """Benchmark pretrained language models on language tasks.
 
+    Args:
+        model: Model identifiers to evaluate.
+        dataset (optional): Dataset configurations to evaluate.
+        language: Languages to evaluate.
+        raise_errors: Whether to stop on evaluation errors.
+        task (optional): Tasks to evaluate.
+        finetuning_batch_size: Batch size used for fine-tuning.
+        progress_bar: Whether to display progress bars.
+        save_results: Whether to save evaluation results.
+        cache_dir: Directory used for cached files.
+        api_key (optional): Inference API key.
+        force: Whether to rerun completed evaluations.
+        verbose: Whether to enable verbose output.
+        device (optional): Compute device override.
+        trust_remote_code: Whether to trust remote model code.
+        clear_model_cache: Whether to clear model files after evaluation.
+        evaluate_test_split: Whether to evaluate the test split.
+        few_shot (optional): Whether to use few-shot evaluation.
+        num_iterations: Number of evaluation iterations.
+        api_base (optional): Inference API base URL.
+        api_version (optional): Inference API version.
+        gpu_memory_utilization: Fraction of GPU memory available to vLLM.
+        attention_backend (optional): vLLM attention backend.
+        requires_safetensors: Whether safetensors weights are required.
+        generative_type (optional): Generative model type.
+        use_bits_per_character: Whether to calculate bits-per-character scores.
+        custom_datasets_file: Path to custom dataset definitions.
+        download_only: Whether to download assets without evaluating.
+        debug: Whether to enable debug output.
+        max_context_length (optional): Model context length override.
+        vocabulary_size (optional): Model vocabulary size override.
+        num_parameters (optional): Model parameter count override.
+
     Raises:
         click.UsageError:
             If `--dataset` is combined with `--task` or with `--language`, as

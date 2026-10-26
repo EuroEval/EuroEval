@@ -13,7 +13,11 @@
 import pandas as pd
 from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 TRAIN_SIZE = 64
 VAL_SIZE = 128
@@ -106,7 +110,7 @@ def process_title_dataset(
         }
     )
 
-    HfApi().delete_repo(euroeval_dataset_id, repo_type="dataset", missing_ok=True)
+    preflight_private_upload(repository_id=euroeval_dataset_id)
     result.push_to_hub(euroeval_dataset_id, private=True)
 
 

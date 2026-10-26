@@ -148,102 +148,102 @@ class Benchmarker:
         """Initialise the benchmarker.
 
         Args:
-            progress_bar:
+            progress_bar (optional):
                 Whether progress bars should be shown. Defaults to True.
-            save_results:
+            save_results (optional):
                 Whether to save the benchmark results to
                 'euroeval_benchmark_results.jsonl'. Defaults to True.
-            task:
+            task (optional):
                 The tasks benchmark the model(s) on. Mutually exclusive with `dataset`.
                 If both `task` and `dataset` are None then all datasets will be
                 benchmarked.
-            dataset:
+            dataset (optional):
                 The datasets to benchmark on. Mutually exclusive with `task`. If both
                 `task` and `dataset` are None then all datasets will be
                 benchmarked. Note that `language` still filters the datasets a
                 `dataset` names, so a `language` alongside a `dataset` narrows the run
                 rather than widening it; the CLI rejects the combination.
-            language:
+            language (optional):
                 The language codes of the languages to include, both for models and
                 datasets. Set this to 'all' if all languages should be considered.
                 Defaults to "all".
-            device:
+            device (optional):
                 The device to use for benchmarking. Defaults to None.
-            finetuning_batch_size:
+            finetuning_batch_size (optional):
                 The batch size to use when finetuning. Defaults to 32.
-            raise_errors:
+            raise_errors (optional):
                 Whether to raise errors instead of skipping the model evaluation.
                 Defaults to False.
-            cache_dir:
+            cache_dir (optional):
                 Directory to store cached models. Defaults to '.euroeval_cache'.
-            api_key:
+            api_key (optional):
                 The API key to use for a given inference API.
-            force:
+            force (optional):
                 Whether to force evaluations of models, even if they have been
                 benchmarked already. Defaults to False.
-            verbose:
+            verbose (optional):
                 Whether to output additional output. This is automatically set if
                 `debug` is True. Defaults to False.
-            trust_remote_code:
+            trust_remote_code (optional):
                 Whether to trust remote code when loading models. Defaults to False.
-            clear_model_cache:
+            clear_model_cache (optional):
                 Whether to clear the model cache after benchmarking each model.
                 Defaults to False.
-            evaluate_test_split:
+            evaluate_test_split (optional):
                 Whether to evaluate the test split of the datasets. Defaults to False.
-            few_shot:
+            few_shot (optional):
                 The default shot policy. ``ShotMode.AUTO`` selects automatically,
                 while True and False preserve the legacy few-shot and zero-shot
                 options. Defaults to ``ShotMode.AUTO``. Only relevant if the model is
                 generative.
-            num_iterations:
+            num_iterations (optional):
                 The number of times each model should be evaluated. This is only meant
                 to be used for power users, and scores will not be allowed on the
                 leaderboards if this is changed. Defaults to 10.
-            api_base:
+            api_base (optional):
                 The base URL for a given inference API. Only relevant if `model` refers
                 to a model on an inference API. Defaults to None.
-            api_version:
+            api_version (optional):
                 The version of the API to use. Defaults to None.
-            gpu_memory_utilization:
+            gpu_memory_utilization (optional):
                 The GPU memory utilization to use for vLLM. Only relevant if the model
                 is generative. A larger value will result in faster evaluation, but at
                 the risk of running out of GPU memory. Only reduce this if you are
                 running out of GPU memory. Defaults to 0.8.
-            attention_backend:
+            attention_backend (optional):
                 The attention backend to use for vLLM. Only relevant if the model is
                 generative. If None then vLLM will automatically choose the best
                 backend. Defaults to None.
-            generative_type:
+            generative_type (optional):
                 The type of generative model to benchmark. Only relevant if the model is
                 generative. If not specified, then the type will be inferred based on
                 the tags of the model. Defaults to None.
-            use_bits_per_character:
+            use_bits_per_character (optional):
                 Whether to compute bits-per-character (BPC) on the ground-truth answer.
                 For multiple-choice tasks, treats benchmark as text-to-text with bare
                 question → full answer text. Only supported for base decoder models.
                 Defaults to False.
-            custom_datasets_file:
+            custom_datasets_file (optional):
                 Path to a Python file defining custom datasets. Defaults to
                 'custom_datasets.py'.
-            debug:
+            debug (optional):
                 Whether to output debug information. Defaults to False.
-            run_with_cli:
+            run_with_cli (optional):
                 Whether the benchmarker is being run from the command-line interface.
                 Defaults to False.
-            requires_safetensors:
+            requires_safetensors (optional):
                 Whether to only allow models that use the safetensors format. Defaults
                 to False.
-            download_only:
+            download_only (optional):
                 Whether to only download models and datasets without performing any
                 benchmarking. Defaults to False.
-            max_context_length:
+            max_context_length (optional):
                 Override for the maximum context length of the model. If None, the value
                 will be inferred automatically from the model. Defaults to None.
-            vocabulary_size:
+            vocabulary_size (optional):
                 Override for the vocabulary size of the model. If None, the value will
                 be inferred automatically from the model. Defaults to None.
-            num_parameters:
+            num_parameters (optional):
                 Override for the number of parameters in the model. If None, the value
                 will be inferred automatically from the model. Defaults to None.
 
@@ -359,114 +359,114 @@ class Benchmarker:
                 The specific model version to use can be added after the suffix '@':
                 "model@v1.0.0". It can be a branch name, a tag name, or a commit id,
                 and defaults to the latest version if not specified.
-            task:
+            task (optional):
                 The tasks benchmark the model(s) on. Mutually exclusive with `dataset`.
                 If both `task` and `dataset` are None then all datasets will be
                 benchmarked. Defaults to None.
-            dataset:
+            dataset (optional):
                 The datasets to benchmark on. Mutually exclusive with `task`. If both
                 `task` and `dataset` are None then all datasets will be benchmarked.
                 Defaults to None.
-            progress_bar:
+            progress_bar (optional):
                 Whether progress bars should be shown. Defaults to the value specified
                 when initialising the benchmarker.
-            save_results:
+            save_results (optional):
                 Whether to save the benchmark results to
                 'euroeval_benchmark_results.jsonl'. Defaults to the value specified
                 when initialising the benchmarker.
-            language:
+            language (optional):
                 The language codes of the languages to include, both for models and
                 datasets. Here 'no' means both Bokmål (nb) and Nynorsk (nn).
                 Set this to 'all' if all languages should be considered.
                 Defaults to the value specified when initialising the benchmarker.
-            device:
+            device (optional):
                 The device to use for benchmarking. Defaults to the value specified when
                 initialising the benchmarker.
-            finetuning_batch_size:
+            finetuning_batch_size (optional):
                 The batch size to use for finetuning. Defaults to the value specified
                 when initialising the benchmarker.
-            raise_errors:
+            raise_errors (optional):
                 Whether to raise errors instead of skipping the model evaluation.
-            cache_dir:
+            cache_dir (optional):
                 Directory to store cached models. Defaults to the value specified when
                 initialising the benchmarker.
-            api_key:
+            api_key (optional):
                 The API key to use for a given inference server. Defaults to the value
                 specified when initialising the benchmarker.
-            api_base:
+            api_base (optional):
                 The base URL for a given inference API. Only relevant if `model` refers
                 to a model on an inference API. Defaults to the value specified when
                 initialising the benchmarker.
-            api_version:
+            api_version (optional):
                 The version of the API to use. Defaults to the value specified when
                 initialising the benchmarker.
-            trust_remote_code:
+            trust_remote_code (optional):
                 Whether to trust remote code when loading models. Defaults to the value
                 specified when initialising the benchmarker.
-            clear_model_cache:
+            clear_model_cache (optional):
                 Whether to clear the model cache after benchmarking each model. Defaults
                 to the value specified when initialising the benchmarker.
-            evaluate_test_split:
+            evaluate_test_split (optional):
                 Whether to evaluate the test split of the datasets. Encoder models
                 always use test for final scores, while validation is used for early
                 stopping. Other model types use the configured value.
-            few_shot:
+            few_shot (optional):
                 The per-call shot policy. True and False select one concrete mode;
                 ``ShotMode.AUTO`` explicitly selects automatic planning. ``None``
                 inherits the initialiser's setting and is not an AUTO override.
-            num_iterations:
+            num_iterations (optional):
                 The number of times each model should be evaluated. This is only meant
                 to be used for power users, and scores will not be allowed on the
                 leaderboards if this is changed. Defaults to the value specified when
                 initialising the benchmarker.
-            requires_safetensors:
+            requires_safetensors (optional):
                 Whether to only allow models that use the safetensors format. Defaults
                 to the value specified when initialising the benchmarker.
-            download_only:
+            download_only (optional):
                 Whether to only download the models without evaluating them. Defaults
                 to the value specified when initialising the benchmarker.
-            gpu_memory_utilization:
+            gpu_memory_utilization (optional):
                 The GPU memory utilization to use for vLLM. Only relevant if the model
                 is generative. A larger value will result in faster evaluation, but at
                 the risk of running out of GPU memory. Only reduce this if you are
                 running out of GPU memory. Defaults to the value specified when
                 initialising the benchmarker.
-            generative_type:
+            generative_type (optional):
                 The type of generative model to benchmark. Only relevant if the model is
                 generative. If not specified, then the type will be inferred based on
                 the tags of the model. Defaults to the value specified when initialising
                 the benchmarker.
-            use_bits_per_character:
+            use_bits_per_character (optional):
                 Whether to compute bits-per-character (BPC) on the ground-truth answer.
                 For multiple-choice tasks, treats benchmark as text-to-text with bare
                 question → full answer text. Only supported for base decoder models.
                 Defaults to the value specified when initialising the benchmarker.
-            attention_backend:
+            attention_backend (optional):
                 The attention backend to use for vLLM. Only relevant if the model is
                 generative. Defaults to the value specified when initialising the
                 benchmarker.
-            custom_datasets_file:
+            custom_datasets_file (optional):
                 Path to a Python file defining custom datasets. Defaults to the value
                 specified when initialising the benchmarker.
-            force:
+            force (optional):
                 Whether to force evaluations of models, even if they have been
                 benchmarked already. Defaults to the value specified when initialising
                 the benchmarker.
-            verbose:
+            verbose (optional):
                 Whether to output additional output. Defaults to the value specified
                 when initialising the benchmarker.
-            debug:
+            debug (optional):
                 Whether to output debug information. Defaults to the value specified
                 when initialising the benchmarker.
-            max_context_length:
+            max_context_length (optional):
                 Override for the maximum context length of the model. If None, the
                 value will be inferred automatically from the model. Defaults to the
                 value specified when initialising the benchmarker.
-            vocabulary_size:
+            vocabulary_size (optional):
                 Override for the vocabulary size of the model. If None, the value will
                 be inferred automatically from the model. Defaults to the value
                 specified when initialising the benchmarker.
-            num_parameters:
+            num_parameters (optional):
                 Override for the number of parameters in the model. If None, the value
                 will be inferred automatically from the model. Defaults to the value
                 specified when initialising the benchmarker.
@@ -801,6 +801,18 @@ class Benchmarker:
     ) -> BenchmarkResult:
         """Build the non-ranking auxiliary result carrying canary evidence.
 
+        Args:
+            evidence:
+                The validated canary evidence to persist.
+            model_config:
+                The configuration of the evaluated model.
+            benchmark_config:
+                The benchmark configuration for this run.
+            loaded_model (optional):
+                The loaded generative model, when available.
+            reference_result (optional):
+                An ordinary result providing model metadata, when available.
+
         Returns:
             The auxiliary result for ordinary EEE persistence.
 
@@ -886,6 +898,10 @@ class Benchmarker:
     ) -> DatasetConfig:
         """Build a supported task config for standalone encoder metadata loading.
 
+        Args:
+            benchmark_config:
+                The benchmark configuration used to select a compatible task.
+
         Returns:
             A regular encoder-compatible dataset configuration.
         """
@@ -933,7 +949,16 @@ class Benchmarker:
         benchmark_config: "BenchmarkConfig",
         loaded_model: "BenchmarkModule | None",
     ) -> None:
-        """Collect one non-ranking canary record for the selected virtual task."""
+        """Collect one non-ranking canary record for the selected virtual task.
+
+        Args:
+            model_config:
+                The configuration of the evaluated model.
+            benchmark_config:
+                The benchmark configuration for this run.
+            loaded_model:
+                The loaded model, if one is available.
+        """
         model_type = getattr(model_config, "model_type", None)
         if model_type is not None and model_type.requires_canary_reference:
             evidence = status_evidence(
@@ -1038,7 +1063,12 @@ class Benchmarker:
 
     @staticmethod
     def _log_canary_status(*, evidence: CanaryEvidence) -> None:
-        """Log the canary status and collection count for one model."""
+        """Log the canary status and collection count for one model.
+
+        Args:
+            evidence:
+                The canary evidence whose status is logged.
+        """
         if evidence.status == "collected":
             log(
                 f"Contamination canary collected for {evidence.model_id!r}: "
@@ -1053,7 +1083,12 @@ class Benchmarker:
         )
 
     def _store_canary_evidence(self, evidence: CanaryEvidence) -> None:
-        """Retain evidence until it is embedded in an ordinary result record."""
+        """Retain evidence until it is embedded in an ordinary result record.
+
+        Args:
+            evidence:
+                The canary evidence to retain for persistence.
+        """
         self._canary_evidence.append(evidence)
 
     def _benchmark_single(
@@ -1459,7 +1494,15 @@ class Benchmarker:
         }
 
     def _is_canary_dataset(self, dataset_config: "DatasetConfig") -> bool:
-        """Return whether a dataset config represents the virtual canary task."""
+        """Return whether a dataset config represents the virtual canary task.
+
+        Args:
+            dataset_config:
+                The dataset configuration to inspect.
+
+        Returns:
+            Whether the config represents the virtual canary task.
+        """
         return dataset_config.task.name == CANARY_RESULT_TASK
 
     def _download(
@@ -1471,9 +1514,12 @@ class Benchmarker:
         """Download data, metrics, and model for the given dataset, and model.
 
         Args:
-            dataset_config: The configuration for the dataset.
-            model_config: The configuration for the model.
-            benchmark_config: The configuration for the benchmark.
+            dataset_config:
+                The configuration for the dataset.
+            model_config:
+                The configuration for the model.
+            benchmark_config:
+                The configuration for the benchmark.
         """
         if self._is_canary_dataset(dataset_config):
             self._download_model_only(
@@ -1572,7 +1618,14 @@ class Benchmarker:
     def _download_model_only(
         self, *, model_config: "ModelConfig", benchmark_config: "BenchmarkConfig"
     ) -> None:
-        """Download model weights without loading virtual-task data."""
+        """Download model weights without loading virtual-task data.
+
+        Args:
+            model_config:
+                The model configuration for the model to download.
+            benchmark_config:
+                The benchmark configuration controlling the download.
+        """
         if model_config.model_type is ModelType.ZERO_SHOT_CLASSIFIER:
             if model_config.inference_backend is InferenceBackend.KEV:
                 from .benchmark_modules.kev import (  # noqa: PLC0415
@@ -1635,6 +1688,9 @@ class Benchmarker:
 
         Returns:
             A list of model configurations.
+
+        Raises:
+            The first missing-extra error if no model configuration can be loaded.
         """
         configs: list["ModelConfig"] = []
         missing_extras: list[NeedsExtraInstalled] = []
@@ -1722,6 +1778,9 @@ class Benchmarker:
 
         Returns:
             A tuple of (updated finished, skipped, errored counters, break flag).
+
+        Raises:
+            The input exception if error raising is enabled for this run.
         """
         if isinstance(result_or_error, Exception) and benchmark_config.raise_errors:
             raise result_or_error
@@ -1931,7 +1990,11 @@ class Benchmarker:
 
     @property
     def canary_evidence(self) -> c.Sequence[CanaryEvidence]:
-        """Model-level canary evidence from the latest benchmark call."""
+        """Model-level canary evidence from the latest benchmark call.
+
+        Returns:
+            The canary evidence collected during the most recent benchmark call.
+        """
         return tuple(self._canary_evidence)
 
 

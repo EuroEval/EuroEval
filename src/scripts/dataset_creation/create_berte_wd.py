@@ -12,6 +12,11 @@ import logging
 
 from datasets import Dataset, DatasetDict, load_dataset
 
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
+
 logger = logging.getLogger(__name__)
 
 SOURCE_DATASET = "maaxap/BelarusianGLUE"
@@ -28,6 +33,7 @@ def main() -> None:
     dataset = process_dataset(raw_dataset=raw_dataset)
 
     logger.info("Uploading %s", TARGET_DATASET)
+    preflight_private_upload(repository_id=TARGET_DATASET)
     dataset.push_to_hub(TARGET_DATASET, private=True)
     logger.info("Uploaded %s", TARGET_DATASET)
 
@@ -56,6 +62,12 @@ def process_dataset(raw_dataset: DatasetDict) -> DatasetDict:
 def _process_split(dataset: Dataset, max_size: int) -> Dataset:
     """Format and cap one source split without changing its order or membership.
 
+    Args:
+        dataset:
+            The source split to process.
+        max_size:
+            The maximum number of examples to retain.
+
     Returns:
         The formatted and capped split.
     """
@@ -74,6 +86,12 @@ def _process_split(dataset: Dataset, max_size: int) -> Dataset:
 def _format_text(premise: str, hypothesis: str) -> str:
     """Format a premise and hypothesis as a clear Belarusian input.
 
+    Args:
+        premise:
+            The premise text.
+        hypothesis:
+            The hypothesis text.
+
     Returns:
         A labelled premise/hypothesis pair.
     """
@@ -82,6 +100,10 @@ def _format_text(premise: str, hypothesis: str) -> str:
 
 def _map_label(label: int) -> str:
     """Map a BeRTE-WD label to EuroEval's binary NLI labels.
+
+    Args:
+        label:
+            The source label, either 0 or 1.
 
     Returns:
         The corresponding EuroEval label.

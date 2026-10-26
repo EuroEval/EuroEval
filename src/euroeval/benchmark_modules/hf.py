@@ -215,6 +215,10 @@ class HuggingFaceEncoderModel(BenchmarkModule):
 
         Returns:
             The data collator.
+
+        Raises:
+            NotImplementedError:
+                If the task group has no supported data collator.
         """
         assert isinstance(self._tokeniser, PreTrainedTokenizerBase), (
             "The data collator property is only supported for models with a "
@@ -248,6 +252,10 @@ class HuggingFaceEncoderModel(BenchmarkModule):
 
         Returns:
             The function used to extract the labels from the generated output.
+
+        Raises:
+            NotImplementedError:
+                Hugging Face encoder models do not support this property.
         """
         raise NotImplementedError(
             "The `extract_labels_from_generation` property has not been implemented "
@@ -444,6 +452,10 @@ class HuggingFaceEncoderModel(BenchmarkModule):
 
         Returns:
             The prepared dataset.
+
+        Raises:
+            NotImplementedError:
+                If the task group is unsupported.
         """
         match task.task_group:
             case TaskGroup.SEQUENCE_CLASSIFICATION:
@@ -587,6 +599,10 @@ class HuggingFaceEncoderModel(BenchmarkModule):
 
         Returns:
             The Trainer class.
+
+        Raises:
+            NotImplementedError:
+                If the task group has no supported trainer.
         """
         match self.dataset_config.task.task_group:
             case (
@@ -1812,6 +1828,15 @@ def get_model_release_date(
     """
 
     def contains_weights(files: c.Iterable[str]) -> bool:
+        """Check whether a repository file listing includes recognised weights.
+
+        Args:
+            files:
+                Paths of files in the repository at a commit.
+
+        Returns:
+            Whether the listing contains model or adapter weights.
+        """
         return any(
             path.endswith(".safetensors")
             or re.search(r"(?:^|/)(?:adapter|pytorch)_model.*\.bin$", path) is not None
@@ -1819,6 +1844,15 @@ def get_model_release_date(
         )
 
     def files_at(commit: HfApiGitCommitInfo) -> list[str]:
+        """List the repository files at a particular commit.
+
+        Args:
+            commit:
+                The commit whose files should be listed.
+
+        Returns:
+            Paths of files at that commit.
+        """
         return _query_hub(
             hf_api.list_repo_files,
             repo_id=model_id,

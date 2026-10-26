@@ -49,7 +49,18 @@ def test_load_ud_pos(
     correct_word: str | re.Pattern,
     scala_test_data_path: Path,
 ) -> None:
-    """Test of the universal dependencies can be loaded correctly."""
+    """Test of the universal dependencies can be loaded correctly.
+
+    Args:
+        filename:
+            Filename supplied to the test.
+        wrong_words:
+            Wrong words supplied to the test.
+        correct_word:
+            Correct word supplied to the test.
+        scala_test_data_path:
+            Scala test data path supplied to the test.
+    """
     wrong_patterns = [
         wrong_word
         if isinstance(wrong_word, re.Pattern)

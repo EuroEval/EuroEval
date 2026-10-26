@@ -27,6 +27,7 @@ FLORES_EN_LB_CONFIG = TranslationDatasetConfig(
     languages=[LUXEMBOURGISH],
     source_language=ENGLISH,
     target_language=LUXEMBOURGISH,
+    revision="a785c119acfa622f47d2b61f707577724559948b",
 )
 
 LTZGLUE_SA_CONFIG = DatasetConfig(
@@ -35,6 +36,7 @@ LTZGLUE_SA_CONFIG = DatasetConfig(
     source="EuroEval/ltzglue-sa-mini",
     task=SENT,
     languages=[LUXEMBOURGISH],
+    revision="396431493270b151111cb2856746923a12d02db9",
 )
 
 LTZGLUE_LA_BINARY_CONFIG = DatasetConfig(
@@ -43,6 +45,7 @@ LTZGLUE_LA_BINARY_CONFIG = DatasetConfig(
     source="EuroEval/ltzglue-la-mini",
     task=LA,
     languages=[LUXEMBOURGISH],
+    revision="c6926dc0904b5d5626c5a02be743f94e5b21972f",
 )
 
 LTZGLUE_NER_CONFIG = DatasetConfig(
@@ -51,6 +54,7 @@ LTZGLUE_NER_CONFIG = DatasetConfig(
     source="EuroEval/ltzglue-ner-mini",
     task=NER,
     languages=[LUXEMBOURGISH],
+    revision="0177e267e512317167c5bdce94b32373b6d28f8e",
 )
 
 MULTI_WIKI_QA_LB_CONFIG = DatasetConfig(
@@ -59,6 +63,7 @@ MULTI_WIKI_QA_LB_CONFIG = DatasetConfig(
     source="EuroEval/multi-wiki-qa-lb-mini",
     task=RC,
     languages=[LUXEMBOURGISH],
+    revision="63f25ecad174744a858c1799c88e37156c2935d1",
 )
 
 LTZGLUE_RTE_CONFIG = DatasetConfig(
@@ -67,6 +72,7 @@ LTZGLUE_RTE_CONFIG = DatasetConfig(
     source="EuroEval/ltzglue-rte-mini",
     task=NLI,
     languages=[LUXEMBOURGISH],
+    revision="3fc2debb8cd733f6e66e9dda3c722425ed8d700c",
 )
 
 LTZGLUE_HC_CONFIG = DatasetConfig(
@@ -82,6 +88,7 @@ LTZGLUE_HC_CONFIG = DatasetConfig(
     prompt_template="Iwwerschrëft: {text}\nBestätegt: {label}",
     instruction_prompt="Iwwerschrëft: {text}\n\nBestëmmt ob den Artikel d'Behaaptung "
     "an der Iwwerschrëft bestätegt. Äntwert nëmme mat 'yes' oder 'no'.",
+    revision="a5865e833c9ad1fa9f51d3272d141539ff868a54",
 )
 
 LTZGLUE_TC_CONFIG = DatasetConfig(
@@ -95,6 +102,7 @@ LTZGLUE_TC_CONFIG = DatasetConfig(
     prompt_template="Artikel: {text}\nThema: {label}",
     instruction_prompt="Artikel: {text}\n\nKlassifizéiert d'Thema vum Artikel. "
     "Äntwert nëmme mat engem vun dësen Etiketten: {labels_str}.",
+    revision="f132ebe7da8728fb38b343c6318ab132ce35aea6",
 )
 
 MULTI_IFEVAL_LB_CONFIG = DatasetConfig(
@@ -105,6 +113,7 @@ MULTI_IFEVAL_LB_CONFIG = DatasetConfig(
     languages=[LUXEMBOURGISH],
     train_split=None,
     val_split=None,
+    revision="d170ee17246429dcfec8829e2761b099525395b9",
 )
 
 RAGTRUTH_LB_CONFIG = DatasetConfig(
@@ -114,6 +123,7 @@ RAGTRUTH_LB_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[LUXEMBOURGISH],
     train_split=None,
+    revision="e748d9f3bc4f7e2e2aefc914eda149ac3bf58b6d",
 )
 
 
@@ -126,6 +136,7 @@ MULTI_BFCL_LB_CONFIG = DatasetConfig(
     task=TOOL_CALLING,
     languages=[LUXEMBOURGISH],
     train_split=None,
+    revision="7195030f12255540cecff69c5ead3b3f07796beb",
 )
 
 
@@ -138,6 +149,7 @@ FLORES_LB_EN_CONFIG = TranslationDatasetConfig(
     source_language=LUXEMBOURGISH,
     target_language=ENGLISH,
     unofficial=True,
+    revision="f7ac381dd9802813df972eb17eacafca93f61b3d",
 )
 
 LTZGLUE_LA_MULTI_CONFIG = DatasetConfig(
@@ -156,6 +168,7 @@ LTZGLUE_LA_MULTI_CONFIG = DatasetConfig(
     "korrekt), 'morphology' (falsch Wortform), oder 'other'. Äntwert nëmme mat engem "
     "vun dësen Etiketten: {labels_str}.",
     unofficial=True,
+    revision="db1e782ee335c82559d0946ac0ebfa8eae0bf148",
 )
 LTZGLUE_ID_CONFIG = DatasetConfig(
     name="ltzglue-id",
@@ -184,4 +197,5 @@ LTZGLUE_ID_CONFIG = DatasetConfig(
     instruction_prompt="Ufruff: {text}\n\nIdentifizéiert d'Intentioun vum Benotzer. "
     "Äntwert nëmme mat engem vun dësen Etiketten: {labels_str}.",
     unofficial=True,
+    revision="bece95564fee8fc9c7e717b39e44ae12bf6883cb",
 )

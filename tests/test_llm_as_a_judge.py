@@ -32,6 +32,8 @@ class TestCreateModelGradedFactMetric:
         """Test metric creation with custom response format."""
 
         class CustomResponse(BaseModel):
+            """Custom judge response schema used by the test."""
+
             correct: bool
             confidence: float
 
@@ -46,12 +48,23 @@ class TestCreateModelGradedFactMetric:
         """Test metric creation with custom scoring function."""
 
         def custom_scoring_fn(output: MagicMock) -> float:
+            """Custom scoring fn for this test.
+
+            Args:
+                output:
+                    Output supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             return 2.0 if output.correct else 0.0
 
         metric = create_model_graded_fact_metric(scoring_fn=custom_scoring_fn)  # ty: ignore[invalid-argument-type]
 
         # Verify the custom scoring function is used by testing the behavior
         class CorrectModel(BaseModel):
+            """Response schema containing a correctness judgment."""
+
             correct: bool
 
         correct_output = CorrectModel(correct=True)
@@ -102,6 +115,8 @@ class TestCreateModelGradedFactMetric:
         metric = create_model_graded_fact_metric()
 
         class CorrectModel(BaseModel):
+            """Response schema containing a correctness judgment."""
+
             correct: bool
 
         # Test with correct=True
@@ -119,7 +134,12 @@ class TestLLMAsAJudgeApplyUserPrompt:
     def test_llm_as_a_judge_apply_user_prompt_condition_required_raises_error(
         self, simple_response_format: type[BaseModel]
     ) -> None:
-        """Test InvalidBenchmark when condition is required but not provided."""
+        """Test InvalidBenchmark when condition is required but not provided.
+
+        Args:
+            simple_response_format:
+                Simple response format supplied to the test.
+        """
         metric = LLMAsAJudgeMetric(
             name="test",
             pretty_name="Test",
@@ -138,7 +158,14 @@ class TestLLMAsAJudgeApplyUserPrompt:
     def test_llm_as_a_judge_apply_user_prompt_with_condition(
         self, simple_metric: LLMAsAJudgeMetric, simple_response_format: type[BaseModel]
     ) -> None:
-        """Test prompt application with condition."""
+        """Test prompt application with condition.
+
+        Args:
+            simple_metric:
+                Simple metric supplied to the test.
+            simple_response_format:
+                Simple response format supplied to the test.
+        """
         metric = LLMAsAJudgeMetric(
             name="test",
             pretty_name="Test",
@@ -159,9 +186,23 @@ class TestLLMAsAJudgeApplyUserPrompt:
     def test_llm_as_a_judge_apply_user_prompt_with_condition_formatting_fn(
         self, simple_response_format: type[BaseModel]
     ) -> None:
-        """Test that condition formatting function is applied."""
+        """Test that condition formatting function is applied.
+
+        Args:
+            simple_response_format:
+                Simple response format supplied to the test.
+        """
 
         def format_condition(condition: str) -> str:
+            """Format condition for this test.
+
+            Args:
+                condition:
+                    Condition supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             return f"FORMATTED: {condition}"
 
         metric = LLMAsAJudgeMetric(
@@ -182,7 +223,14 @@ class TestLLMAsAJudgeApplyUserPrompt:
     def test_llm_as_a_judge_apply_user_prompt_without_condition(
         self, simple_metric: LLMAsAJudgeMetric, simple_response_format: type[BaseModel]
     ) -> None:
-        """Test prompt application without condition."""
+        """Test prompt application without condition.
+
+        Args:
+            simple_metric:
+                Simple metric supplied to the test.
+            simple_response_format:
+                Simple response format supplied to the test.
+        """
         metric = LLMAsAJudgeMetric(
             name="test",
             pretty_name="Test",
@@ -205,15 +253,40 @@ class TestLLMAsAJudgeBatchScoringFn:
     def test_llm_as_a_judge_batch_scoring_fn_both_raises_error(
         self, simple_response_format: type[BaseModel]
     ) -> None:
-        """Test InvalidBenchmark when both scoring_fn and batch_scoring_fn provided."""
+        """Test InvalidBenchmark when both scoring_fn and batch_scoring_fn provided.
+
+        Args:
+            simple_response_format:
+                Simple response format supplied to the test.
+        """
 
         def scoring_fn(output: MagicMock) -> float:
+            """Scoring fn for this test.
+
+            Args:
+                output:
+                    Output supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             return output.value
 
         def batch_scoring_fn(
             outputs: list[simple_response_format],  # ty: ignore[invalid-type-form]
             dataset: MagicMock | None = None,
         ) -> float:
+            """Batch scoring fn for this test.
+
+            Args:
+                outputs:
+                    Outputs supplied to the test.
+                dataset (optional):
+                    Dataset supplied to the test. Defaults to None.
+
+            Returns:
+                The value returned by the test helper.
+            """
             return 0.0
 
         with pytest.raises(InvalidBenchmark) as exc_info:
@@ -233,9 +306,23 @@ class TestLLMAsAJudgeBatchScoringFn:
     def test_llm_as_a_judge_batch_scoring_fn_from_scoring_fn(
         self, simple_response_format: type[BaseModel]
     ) -> None:
-        """Test batch scoring function derived from single scoring function."""
+        """Test batch scoring function derived from single scoring function.
+
+        Args:
+            simple_response_format:
+                Simple response format supplied to the test.
+        """
 
         def scoring_fn(output: MagicMock) -> float:
+            """Scoring fn for this test.
+
+            Args:
+                output:
+                    Output supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             return output.value
 
         metric = LLMAsAJudgeMetric(
@@ -258,7 +345,12 @@ class TestLLMAsAJudgeBatchScoringFn:
     def test_llm_as_a_judge_batch_scoring_fn_neither_raises_error(
         self, simple_response_format: type[BaseModel]
     ) -> None:
-        """Test InvalidBenchmark when neither scoring function provided."""
+        """Test InvalidBenchmark when neither scoring function provided.
+
+        Args:
+            simple_response_format:
+                Simple response format supplied to the test.
+        """
         with pytest.raises(InvalidBenchmark) as exc_info:
             LLMAsAJudgeMetric(
                 name="test",
@@ -284,7 +376,18 @@ class TestLLMAsAJudgeCall:
         mock_dataset_config: MagicMock,
         mock_benchmark_config: MagicMock,
     ) -> None:
-        """Test that empty predictions/references return None."""
+        """Test that empty predictions/references return None.
+
+        Args:
+            simple_metric:
+                Simple metric supplied to the test.
+            mock_dataset:
+                Mock dataset supplied to the test.
+            mock_dataset_config:
+                Mock dataset config supplied to the test.
+            mock_benchmark_config:
+                Mock benchmark config supplied to the test.
+        """
         assert (
             simple_metric(
                 predictions=[],
@@ -323,7 +426,18 @@ class TestLLMAsAJudgeCall:
         mock_dataset_config: MagicMock,
         mock_benchmark_config: MagicMock,
     ) -> None:
-        """Test InvalidBenchmark when preds and refs have different lengths."""
+        """Test InvalidBenchmark when preds and refs have different lengths.
+
+        Args:
+            simple_metric:
+                Simple metric supplied to the test.
+            mock_dataset:
+                Mock dataset supplied to the test.
+            mock_dataset_config:
+                Mock dataset config supplied to the test.
+            mock_benchmark_config:
+                Mock benchmark config supplied to the test.
+        """
         predictions = ["pred1", "pred2"]
         references = ["ref1"]
 
@@ -352,7 +466,26 @@ class TestLLMAsAJudgeCall:
         mock_benchmark_config: MagicMock,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """Test None returned when no valid judge outputs."""
+        """Test None returned when no valid judge outputs.
+
+        Args:
+            mock_extract:
+                Mock extract supplied to the test.
+            mock_cache_class:
+                Mock cache class supplied to the test.
+            mock_llm_model_class:
+                Mock llm model class supplied to the test.
+            simple_metric:
+                Simple metric supplied to the test.
+            mock_dataset:
+                Mock dataset supplied to the test.
+            mock_dataset_config:
+                Mock dataset config supplied to the test.
+            mock_benchmark_config:
+                Mock benchmark config supplied to the test.
+            caplog:
+                Fixture for capturing log records during the test.
+        """
         # Return valid JSON dict but with invalid field type
         mock_extract.return_value = {"value": "invalid"}
 
@@ -393,7 +526,26 @@ class TestLLMAsAJudgeCall:
         mock_benchmark_config: MagicMock,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """Test debug log when judge output parsing fails."""
+        """Test debug log when judge output parsing fails.
+
+        Args:
+            mock_extract:
+                Mock extract supplied to the test.
+            mock_cache_class:
+                Mock cache class supplied to the test.
+            mock_llm_model_class:
+                Mock llm model class supplied to the test.
+            simple_metric:
+                Simple metric supplied to the test.
+            mock_dataset:
+                Mock dataset supplied to the test.
+            mock_dataset_config:
+                Mock dataset config supplied to the test.
+            mock_benchmark_config:
+                Mock benchmark config supplied to the test.
+            caplog:
+                Fixture for capturing log records during the test.
+        """
         # Return valid JSON dict but with invalid field type (causes ValidationError)
         mock_extract.return_value = {"value": "not_an_int"}
 
@@ -433,6 +585,15 @@ def simple_metric(simple_response_format: type[BaseModel]) -> LLMAsAJudgeMetric:
     """
 
     def scoring_fn(output: MagicMock) -> float:
+        """Scoring fn for this test.
+
+        Args:
+            output:
+                Output supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         return output.value / 10.0
 
     return LLMAsAJudgeMetric(
@@ -452,9 +613,23 @@ class TestLLMAsAJudgeMetricInit:
     def test_llm_as_a_judge_init_basic(
         self, simple_response_format: type[BaseModel]
     ) -> None:
-        """Test basic initialization of LLMAsAJudgeMetric."""
+        """Test basic initialization of LLMAsAJudgeMetric.
+
+        Args:
+            simple_response_format:
+                Simple response format supplied to the test.
+        """
 
         def scoring_fn(output: MagicMock) -> float:
+            """Scoring fn for this test.
+
+            Args:
+                output:
+                    Output supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             return output.value / 10.0
 
         metric = LLMAsAJudgeMetric(
@@ -478,12 +653,28 @@ class TestLLMAsAJudgeMetricInit:
     def test_llm_as_a_judge_init_with_batch_scoring_fn(
         self, simple_response_format: type[BaseModel]
     ) -> None:
-        """Test initialization with batch_scoring_fn instead of scoring_fn."""
+        """Test initialization with batch_scoring_fn instead of scoring_fn.
+
+        Args:
+            simple_response_format:
+                Simple response format supplied to the test.
+        """
 
         def batch_scoring_fn(
             outputs: list[simple_response_format],  # ty: ignore[invalid-type-form]
             dataset: MagicMock | None = None,
         ) -> float:
+            """Batch scoring fn for this test.
+
+            Args:
+                outputs:
+                    Outputs supplied to the test.
+                dataset (optional):
+                    Dataset supplied to the test. Defaults to None.
+
+            Returns:
+                The value returned by the test helper.
+            """
             return sum(o.value for o in outputs) / len(outputs)
 
         metric = LLMAsAJudgeMetric(
@@ -501,12 +692,35 @@ class TestLLMAsAJudgeMetricInit:
     def test_llm_as_a_judge_init_with_condition_formatting_fn(
         self, simple_response_format: type[BaseModel]
     ) -> None:
-        """Test initialization with custom condition formatting function."""
+        """Test initialization with custom condition formatting function.
+
+        Args:
+            simple_response_format:
+                Simple response format supplied to the test.
+        """
 
         def scoring_fn(output: MagicMock) -> float:
+            """Scoring fn for this test.
+
+            Args:
+                output:
+                    Output supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             return output.value / 10.0
 
         def format_condition(condition: str) -> str:
+            """Format condition for this test.
+
+            Args:
+                condition:
+                    Condition supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             return condition.upper()
 
         metric = LLMAsAJudgeMetric(
@@ -525,9 +739,23 @@ class TestLLMAsAJudgeMetricInit:
     def test_llm_as_a_judge_init_with_system_prompt(
         self, simple_response_format: type[BaseModel]
     ) -> None:
-        """Test initialization with custom system prompt."""
+        """Test initialization with custom system prompt.
+
+        Args:
+            simple_response_format:
+                Simple response format supplied to the test.
+        """
 
         def scoring_fn(output: MagicMock) -> float:
+            """Scoring fn for this test.
+
+            Args:
+                output:
+                    Output supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             return output.value / 10.0
 
         metric = LLMAsAJudgeMetric(

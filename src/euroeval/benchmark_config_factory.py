@@ -346,7 +346,16 @@ def _resolve_dataset_id(
 def _dataset_identity_components(
     name: str,
 ) -> tuple[str, str | None, str | None] | None:
-    """Return repository, config and split components from an expanded identity."""
+    """Return repository, config and split components from an expanded identity.
+
+    Args:
+        name:
+            The expanded dataset identity to parse.
+
+    Returns:
+        The repository, optional config and optional split, or None if the identity
+        is not in a recognised format.
+    """
     parts = name.split("::")
     if len(parts) == 1:
         return parts[0], None, None

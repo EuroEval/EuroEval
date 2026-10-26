@@ -13,7 +13,12 @@ from euroeval.cli import benchmark
 
 
 def test_cli_param_names(cli_params: dict[str | None, ParamType]) -> None:
-    """Test that the CLI parameters have the correct names."""
+    """Test that the CLI parameters have the correct names.
+
+    Args:
+        cli_params:
+            Cli params supplied to the test.
+    """
     assert set(cli_params.keys()) == {
         "model",
         "task",
@@ -53,7 +58,12 @@ def test_cli_param_names(cli_params: dict[str | None, ParamType]) -> None:
 def test_contamination_detection_is_selected_as_a_task(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The canary is selected through the ordinary task option."""
+    """The canary is selected through the ordinary task option.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     mock_benchmarker_cls = MagicMock()
     monkeypatch.setattr("euroeval.cli.Benchmarker", mock_benchmarker_cls)
 
@@ -78,7 +88,14 @@ def test_contamination_detection_is_selected_as_a_task(
 def test_dataset_and_task_conflict(
     options: list[str], conflicting_options: list[str]
 ) -> None:
-    """Test that `--dataset` cannot be combined with `--task` or `--language`."""
+    """Test that `--dataset` cannot be combined with `--task` or `--language`.
+
+    Args:
+        options:
+            Options supplied to the test.
+        conflicting_options:
+            Conflicting options supplied to the test.
+    """
     result = CliRunner().invoke(benchmark, ["--model", "dummy"] + options)
     assert result.exit_code == 2
     assert all(option in result.output for option in conflicting_options)
@@ -93,6 +110,10 @@ def test_dataset_selects_the_languages_it_contains(
     A dataset ID selects the configurations and splits of a dataset, so which languages
     are benchmarked follows from the dataset itself; the default `--language all` is not
     a request and so is not a conflict.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
     """
     mock_benchmarker_cls = MagicMock()
     monkeypatch.setattr("euroeval.cli.Benchmarker", mock_benchmarker_cls)
@@ -107,7 +128,14 @@ def test_dataset_selects_the_languages_it_contains(
 def test_missing_gliner_extra_fails_without_cached_message(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """A missing GLiNER extra is a CLI error, not an empty cached run."""
+    """A missing GLiNER extra is a CLI error, not an empty cached run.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     (tmp_path / "config.json").write_text(
         json.dumps(
             {
@@ -132,7 +160,12 @@ def test_missing_gliner_extra_fails_without_cached_message(
 
 
 def test_num_parameters_is_forwarded(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test that `--num-parameters` is forwarded to the benchmarker."""
+    """Test that `--num-parameters` is forwarded to the benchmarker.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     mock_benchmarker_cls = MagicMock()
     monkeypatch.setattr("euroeval.cli.Benchmarker", mock_benchmarker_cls)
 

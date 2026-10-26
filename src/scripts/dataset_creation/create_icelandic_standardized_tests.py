@@ -26,9 +26,13 @@ import requests
 from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, Split
 from dotenv import load_dotenv
-from huggingface_hub import HfApi
 from openai import OpenAI
 from pydantic import BaseModel, Field, create_model
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 load_dotenv()
 
@@ -422,7 +426,7 @@ def main() -> None:
         else:
             dataset_id = "EuroEval/icelandic-math-tests"
 
-        HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
+        preflight_private_upload(repository_id=dataset_id)
         dataset_dict.push_to_hub(dataset_id, private=True)
         logger.info(f"Pushed {subject} dataset to {dataset_id}.")
 
@@ -511,8 +515,9 @@ def pdf_to_images(pdf_bytes: bytes, dpi: int = 150) -> list[str]:
     Args:
         pdf_bytes:
             The PDF content as bytes.
-        dpi:
+        dpi (optional):
             Resolution for rendering (higher = better quality, larger payload).
+            Defaults to 150.
 
     Returns:
         A list of base64-encoded PNG strings, one per page.
@@ -554,7 +559,12 @@ class AnswerEntry(BaseModel):
     answer_key: AnswerKeyType
 
     def model_post_init(self, __context: dict) -> None:
-        """Post-processing for AnswerEntry."""
+        """Normalize string answer keys after model validation.
+
+        Args:
+            __context:
+                Pydantic validation context, if provided.
+        """
         if isinstance(self.answer_key, str):
             self.answer_key = self.answer_key.upper()
 

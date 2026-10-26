@@ -18,8 +18,12 @@ from tempfile import TemporaryDirectory
 import pandas as pd
 import requests
 from datasets import Dataset, DatasetDict, Split
-from huggingface_hub import HfApi
 from sklearn.utils import resample
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 
 def main() -> None:
@@ -53,7 +57,7 @@ def main() -> None:
         )
 
         dataset_id = "EuroEval/cinexio-mini"
-        HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
+        preflight_private_upload(repository_id=dataset_id)
         dataset.push_to_hub(dataset_id, private=True)
 
 
@@ -63,9 +67,12 @@ def create_splits(
     """Create splits for the dataset.
 
     Args:
-        train_df: The training dataframe.
-        val_df: The validation dataframe.
-        test_df: The test dataframe.
+        train_df:
+            The training dataframe.
+        val_df:
+            The validation dataframe.
+        test_df:
+            The test dataframe.
 
     Returns:
         The final training, validation, and test dataframes.
@@ -110,8 +117,10 @@ def _create_uniform_label_distribution(
     """Create a sampled dataset with a uniform label distribution.
 
     Args:
-        df: The input dataframe with a 'label' column.
-        random_state: The random state for reproducibility.
+        df:
+            The input dataframe with a 'label' column.
+        random_state (optional):
+            The random state for reproducibility. Defaults to 4242.
 
     Returns:
         A dataframe with a uniform label distribution.
@@ -139,14 +148,17 @@ def download_dataset(url: str, temp_path: Path) -> Path:
     """Download the dataset.
 
     Args:
-        url: URL to the tar.gz file.
-        temp_path: Path to the temporary directory.
+        url:
+            URL to the tar.gz file.
+        temp_path:
+            Path to the temporary directory.
 
     Returns:
         Path to the data directory.
 
     Raises:
-        FileNotFoundError: If the train.jsonl file is not found in the extracted files.
+        FileNotFoundError:
+            If the train.jsonl file is not found in the extracted files.
     """
     tar_path = temp_path / "cinexio.tar.gz"
     response = requests.get(url)
@@ -169,7 +181,8 @@ def load_split(file_path: Path) -> pd.DataFrame:
     """Load a JSONL file into a pandas DataFrame.
 
     Args:
-        file_path: Path to the JSONL file.
+        file_path:
+            Path to the JSONL file.
 
     Returns:
         A DataFrame with the data.
@@ -187,7 +200,8 @@ def process_split(df: pd.DataFrame) -> pd.DataFrame:
     """Process a split of the dataset.
 
     Args:
-        df: The dataframe to process.
+        df:
+            The dataframe to process.
 
     Returns:
         The processed dataframe.
@@ -204,7 +218,8 @@ def _filter_by_length(df: pd.DataFrame) -> pd.DataFrame:
     """Filter dataframe by text length.
 
     Args:
-        df: The dataframe to filter.
+        df:
+            The dataframe to filter.
 
     Returns:
         The filtered dataframe.
@@ -226,7 +241,8 @@ def _map_ratings_to_labels(df: pd.DataFrame) -> pd.DataFrame:
     - Positive: 4.0, 4.5, 5.0
 
     Args:
-        df: DataFrame with User_Rating column.
+        df:
+            DataFrame with User_Rating column.
 
     Returns:
         DataFrame with label column.
@@ -238,6 +254,15 @@ def _map_ratings_to_labels(df: pd.DataFrame) -> pd.DataFrame:
 
     # Map ratings to labels
     def rating_to_label(rating: float) -> str:
+        """Map a numerical rating to its sentiment class.
+
+        Args:
+            rating:
+                Rating on the 0-5 scale.
+
+        Returns:
+            The negative, neutral or positive sentiment label.
+        """
         if rating <= 1.5:
             return "negative"
         elif rating <= 3.5:

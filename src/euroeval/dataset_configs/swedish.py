@@ -30,6 +30,7 @@ WMT24PP_EN_SV_CONFIG = TranslationDatasetConfig(
     languages=[SWEDISH],
     source_language=ENGLISH,
     target_language=SWEDISH,
+    revision="ae42bb84bbd5731841a13eb24b5c4af67a559e6c",
 )
 
 FLORES_EN_SV_CONFIG = TranslationDatasetConfig(
@@ -40,6 +41,7 @@ FLORES_EN_SV_CONFIG = TranslationDatasetConfig(
     languages=[SWEDISH],
     source_language=ENGLISH,
     target_language=SWEDISH,
+    revision="2c43505a8816ec39b7fb112092fa23375717ccb3",
 )
 
 SWEREC_CONFIG = DatasetConfig(
@@ -48,6 +50,7 @@ SWEREC_CONFIG = DatasetConfig(
     source="EuroEval/swerec-mini",
     task=SENT,
     languages=[SWEDISH],
+    revision="ff5e9c50b5924accd23b396487f7a2e21e649785",
 )
 
 SCALA_SV_CONFIG = DatasetConfig(
@@ -56,6 +59,7 @@ SCALA_SV_CONFIG = DatasetConfig(
     source="EuroEval/scala-sv",
     task=LA,
     languages=[SWEDISH],
+    revision="a0a01f242a499284defa9162514fe29b50addcea",
 )
 
 SUC3_CONFIG = DatasetConfig(
@@ -64,6 +68,7 @@ SUC3_CONFIG = DatasetConfig(
     source="EuroEval/suc3-mini",
     task=NER,
     languages=[SWEDISH],
+    revision="d8243105818293a2f5b4ba7ab6406e73098c9b8b",
 )
 
 MULTI_WIKI_QA_SV_CONFIG = DatasetConfig(
@@ -72,6 +77,7 @@ MULTI_WIKI_QA_SV_CONFIG = DatasetConfig(
     source="EuroEval/multi-wiki-qa-sv-mini",
     task=RC,
     languages=[SWEDISH],
+    revision="42cb590f1cf4a3d7a2d4525261cb2e47d9ccc98b",
 )
 
 SWEDN_CONFIG = DatasetConfig(
@@ -80,6 +86,7 @@ SWEDN_CONFIG = DatasetConfig(
     source="EuroEval/swedn-mini",
     task=SUMM,
     languages=[SWEDISH],
+    revision="339a0ba4c4b3a1071f7c58c5e3a4d4479a44d6c3",
 )
 
 MULTI_IFEVAL_SV_CONFIG = DatasetConfig(
@@ -90,6 +97,7 @@ MULTI_IFEVAL_SV_CONFIG = DatasetConfig(
     languages=[SWEDISH],
     train_split=None,
     val_split=None,
+    revision="b5f9f3571b40e803cbabd14bc4392b5004b850a5",
 )
 
 VALEU_SV_CONFIG = DatasetConfig(
@@ -102,6 +110,7 @@ VALEU_SV_CONFIG = DatasetConfig(
     val_split=None,
     bootstrap_samples=False,
     instruction_prompt="{text}",
+    revision="c8e35a37174d666acc6c71da7ef90a466183d115",
 )
 
 ZEBRA_PUZZLE_EASY_SV_CONFIG = DatasetConfig(
@@ -110,6 +119,7 @@ ZEBRA_PUZZLE_EASY_SV_CONFIG = DatasetConfig(
     source="EuroEval/zebra-puzzles-easy-sv",
     task=LOGIC,
     languages=[SWEDISH],
+    revision="465200f1d7a51dc8dbd83058fbe4e37ba5aef2a4",
 )
 
 RAGTRUTH_SV_CONFIG = DatasetConfig(
@@ -119,6 +129,7 @@ RAGTRUTH_SV_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[SWEDISH],
     train_split=None,
+    revision="e723767cb5d660f3a4e07eadd2ce30e3cb7e0390",
 )
 
 
@@ -129,6 +140,7 @@ WINOGRANDE_SV_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[SWEDISH],
     labels=["a", "b"],
+    revision="c9d27f4a1bae591455dac107179f34c2d65dcc0e",
 )
 
 SKOLPROV_CONFIG = DatasetConfig(
@@ -137,6 +149,7 @@ SKOLPROV_CONFIG = DatasetConfig(
     source="EuroEval/skolprov",
     task=KNOW,
     languages=[SWEDISH],
+    revision="baefd89c2c80f48913a1a3f6088f03f5c14be4d2",
 )
 
 SWEDISH_FACTS_CONFIG = DatasetConfig(
@@ -145,6 +158,7 @@ SWEDISH_FACTS_CONFIG = DatasetConfig(
     source="EuroEval/swedish-facts",
     task=KNOW,
     languages=[SWEDISH],
+    revision="9a558083aed9ab8e9aaadec6b56e6fe4eb2253fc",
 )
 
 
@@ -157,6 +171,7 @@ MULTI_BFCL_SV_CONFIG = DatasetConfig(
     task=TOOL_CALLING,
     languages=[SWEDISH],
     train_split=None,
+    revision="202580509c022868cf8e0ddf12c983a997937fe5",
 )
 
 
@@ -169,6 +184,7 @@ WMT24PP_SV_EN_CONFIG = TranslationDatasetConfig(
     source_language=SWEDISH,
     target_language=ENGLISH,
     unofficial=True,
+    revision="b429eba7cac9faf82cc9a5621b515cd4b980529f",
 )
 
 FLORES_SV_EN_CONFIG = TranslationDatasetConfig(
@@ -180,6 +196,7 @@ FLORES_SV_EN_CONFIG = TranslationDatasetConfig(
     source_language=SWEDISH,
     target_language=ENGLISH,
     unofficial=True,
+    revision="3ef8adc25c012a658aaaf96c9f1b8b5912b47a73",
 )
 
 MMLU_SV_CONFIG = DatasetConfig(
@@ -189,6 +206,7 @@ MMLU_SV_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[SWEDISH],
     unofficial=True,
+    revision="6dc89c52c425b951df371002fd81e2e7fa9d5ef7",
 )
 
 HELLASWAG_SV_CONFIG = DatasetConfig(
@@ -198,6 +216,7 @@ HELLASWAG_SV_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[SWEDISH],
     unofficial=True,
+    revision="dd58b6d9fc0f9b152dbabf4f7318ccdfdf68b3e0",
 )
 
 IFEVAL_SV_CONFIG = DatasetConfig(
@@ -209,6 +228,7 @@ IFEVAL_SV_CONFIG = DatasetConfig(
     train_split=None,
     val_split=None,
     unofficial=True,
+    revision="4e6df2a537eba0fd21dde77a0b2d30c3439c2eb5",
 )
 
 SCHIBSTED_SV_CONFIG = DatasetConfig(
@@ -218,6 +238,7 @@ SCHIBSTED_SV_CONFIG = DatasetConfig(
     task=SUMM,
     languages=[SWEDISH],
     unofficial=True,
+    revision="3d49df17aff3468a2d6dc1e753c23699bebb9c3f",
 )
 
 SCHIBSTED_SEO_TITLE_SV_CONFIG = DatasetConfig(
@@ -233,6 +254,7 @@ SCHIBSTED_SEO_TITLE_SV_CONFIG = DatasetConfig(
     instruction_prompt=(
         "Artikel: {text}\n\nSkriv en SEO-rubrik för ovanstående artikel."
     ),
+    revision="10d4b8c081c2000f748478ccda6f691535b3262e",
 )
 
 ARC_SV_CONFIG = DatasetConfig(
@@ -242,6 +264,7 @@ ARC_SV_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[SWEDISH],
     unofficial=True,
+    revision="d6be830d4dd82c40998b64bdb8d3bb60af9713dd",
 )
 
 BELEBELE_SV_CONFIG = DatasetConfig(
@@ -251,6 +274,7 @@ BELEBELE_SV_CONFIG = DatasetConfig(
     task=MCRC,
     languages=[SWEDISH],
     unofficial=True,
+    revision="d2f102a7cba7b323671c1a6ddac2f55bf9134073",
 )
 
 SCANDIQA_SV_CONFIG = DatasetConfig(
@@ -260,6 +284,7 @@ SCANDIQA_SV_CONFIG = DatasetConfig(
     task=RC,
     languages=[SWEDISH],
     unofficial=True,
+    revision="5c13f1fdba7621ba6b72b77b57bbe68750d1d04c",
 )
 
 GOLDENSWAG_SV_CONFIG = DatasetConfig(
@@ -269,6 +294,7 @@ GOLDENSWAG_SV_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[SWEDISH],
     unofficial=True,
+    revision="4b14ec9fc72bea80c25d4cb6f72eca15bd8a43ff",
 )
 
 MULTILOKO_SV_CONFIG = DatasetConfig(
@@ -279,6 +305,7 @@ MULTILOKO_SV_CONFIG = DatasetConfig(
     languages=[SWEDISH],
     val_split=None,
     unofficial=True,
+    revision="bcf0b342f33e9f77b3cd8fdf0e0b244f062e8ef4",
 )
 
 GERLANGMOD_SV_CONFIG = DatasetConfig(
@@ -288,6 +315,7 @@ GERLANGMOD_SV_CONFIG = DatasetConfig(
     task=GED,
     languages=[SWEDISH],
     unofficial=True,
+    revision="9e5b0a2cd2565cf4dfe5960d021a8fc68e90903a",
 )
 
 ZEBRA_PUZZLE_HARD_SV_CONFIG = DatasetConfig(
@@ -297,4 +325,15 @@ ZEBRA_PUZZLE_HARD_SV_CONFIG = DatasetConfig(
     task=LOGIC,
     languages=[SWEDISH],
     unofficial=True,
+    revision="4b34e885c02bc0ffb5b2e0c8033bf97ed059e077",
+)
+
+MKQA_SV_CONFIG = DatasetConfig(
+    name="mkqa-sv",
+    pretty_name="MKQA-sv",
+    source="EuroEval/mkqa-sv-mini",
+    task=KNOW,
+    languages=[SWEDISH],
+    unofficial=True,
+    revision="1fa8afc22daaeef39e3d6b2427720377c9d46a17",
 )

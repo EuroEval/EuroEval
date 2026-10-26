@@ -26,6 +26,7 @@ WMT24PP_EN_UK_CONFIG = TranslationDatasetConfig(
     languages=[UKRAINIAN],
     source_language=ENGLISH,
     target_language=UKRAINIAN,
+    revision="eb89bf96875f8ab140692f5a891146b8d6bde649",
 )
 
 FLORES_EN_UK_CONFIG = TranslationDatasetConfig(
@@ -36,6 +37,7 @@ FLORES_EN_UK_CONFIG = TranslationDatasetConfig(
     languages=[UKRAINIAN],
     source_language=ENGLISH,
     target_language=UKRAINIAN,
+    revision="af6bcd3a384b7a4b8a19d7a40c5d38980bd85851",
 )
 
 CROSS_DOMAIN_UK_REVIEWS_CONFIG = DatasetConfig(
@@ -44,6 +46,7 @@ CROSS_DOMAIN_UK_REVIEWS_CONFIG = DatasetConfig(
     source="EuroEval/cross-domain-uk-reviews-mini",
     task=SENT,
     languages=[UKRAINIAN],
+    revision="f2e9af65f9fb79a5f7422903610e88ef9cf395ad",
 )
 
 SCALA_UK_CONFIG = DatasetConfig(
@@ -52,6 +55,7 @@ SCALA_UK_CONFIG = DatasetConfig(
     source="EuroEval/scala-uk",
     task=LA,
     languages=[UKRAINIAN],
+    revision="b1b4b3fbdc324c1df09a952d9f3897accd7a0750",
 )
 
 NER_UK_CONFIG = DatasetConfig(
@@ -60,6 +64,7 @@ NER_UK_CONFIG = DatasetConfig(
     source="EuroEval/ner-uk-mini",
     task=NER,
     languages=[UKRAINIAN],
+    revision="c748fc324e19a49d8e9d74413f68b7b44acb340a",
 )
 
 MULTI_WIKI_QA_UK_CONFIG = DatasetConfig(
@@ -68,6 +73,7 @@ MULTI_WIKI_QA_UK_CONFIG = DatasetConfig(
     source="EuroEval/multi-wiki-qa-uk-mini",
     task=RC,
     languages=[UKRAINIAN],
+    revision="c2e4878def737ca442706eece9b29d9fc73ee9f2",
 )
 
 LR_SUM_UK_CONFIG = DatasetConfig(
@@ -76,6 +82,7 @@ LR_SUM_UK_CONFIG = DatasetConfig(
     source="EuroEval/lr-sum-uk-mini",
     task=SUMM,
     languages=[UKRAINIAN],
+    revision="033c9e302a524f11d42d9264366ddb0f610fd9de",
 )
 
 WINOGRANDE_UK_CONFIG = DatasetConfig(
@@ -85,6 +92,7 @@ WINOGRANDE_UK_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[UKRAINIAN],
     labels=["a", "b"],
+    revision="4a94d19924a8d1e1d1285e09d881b8c8413dd2ec",
 )
 
 MULTI_IFEVAL_UK_CONFIG = DatasetConfig(
@@ -95,6 +103,7 @@ MULTI_IFEVAL_UK_CONFIG = DatasetConfig(
     languages=[UKRAINIAN],
     train_split=None,
     val_split=None,
+    revision="7c8f6918f1c82f772652dd51d88f95e2152beb8c",
 )
 
 RAGTRUTH_UK_CONFIG = DatasetConfig(
@@ -104,6 +113,7 @@ RAGTRUTH_UK_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[UKRAINIAN],
     train_split=None,
+    revision="5d2aa7ccb63dad4d9b8268e8ff169cde1d47a6f9",
 )
 
 
@@ -113,6 +123,7 @@ INCLUDE_UK_CONFIG = DatasetConfig(
     source="EuroEval/include-uk-mini",
     task=KNOW,
     languages=[UKRAINIAN],
+    revision="f5db25dc73fb69902ef99cffda7ae98dc48f2b6d",
 )
 
 
@@ -125,6 +136,7 @@ MULTI_BFCL_UK_CONFIG = DatasetConfig(
     task=TOOL_CALLING,
     languages=[UKRAINIAN],
     train_split=None,
+    revision="d99a99f51a356eff1caa80dc29a14f78878a1c08",
 )
 
 
@@ -137,6 +149,7 @@ WMT24PP_UK_EN_CONFIG = TranslationDatasetConfig(
     source_language=UKRAINIAN,
     target_language=ENGLISH,
     unofficial=True,
+    revision="ff651ad28a024d49c508fc09131f1168df3070d4",
 )
 
 FLORES_UK_EN_CONFIG = TranslationDatasetConfig(
@@ -148,6 +161,7 @@ FLORES_UK_EN_CONFIG = TranslationDatasetConfig(
     source_language=UKRAINIAN,
     target_language=ENGLISH,
     unofficial=True,
+    revision="ca89619a966ca80d2c20c26fbc254ff7765043d3",
 )
 
 GLOBAL_MMLU_UK_CONFIG = DatasetConfig(
@@ -157,6 +171,7 @@ GLOBAL_MMLU_UK_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[UKRAINIAN],
     unofficial=True,
+    revision="81fc650f4612f9151eb38d515a70339cbf27d98f",
 )
 
 IFEVAL_UK_CONFIG = DatasetConfig(
@@ -168,4 +183,5 @@ IFEVAL_UK_CONFIG = DatasetConfig(
     train_split=None,
     val_split=None,
     unofficial=True,
+    revision="52af20cafef686b45dc303e1e72f77b9eccc296f",
 )

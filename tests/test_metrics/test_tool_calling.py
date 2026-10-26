@@ -11,7 +11,14 @@ from euroeval.metrics.tool_calling import tool_calling_accuracy
 def test_tool_calling_accuracy_uses_called_function_schema(
     benchmark_config: BenchmarkConfig, dataset_config: DatasetConfig
 ) -> None:
-    """Required arguments come from the schema matching the called function."""
+    """Required arguments come from the schema matching the called function.
+
+    Args:
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        dataset_config:
+            Dataset configuration exercised by the test.
+    """
     dataset = Dataset.from_list(
         [
             {

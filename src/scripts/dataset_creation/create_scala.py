@@ -18,7 +18,6 @@ import warnings
 import pandas as pd
 from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
-from huggingface_hub.hf_api import HfApi
 from load_ud_pos import (
     load_bedt_pos,
     load_bgdt_pos,
@@ -53,6 +52,11 @@ from load_ud_pos import (
     load_ukdt_pos,
 )
 from tqdm.auto import tqdm
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 
 def main() -> None:
@@ -201,7 +205,7 @@ def main() -> None:
 
             # Push the dataset to the Hugging Face Hub
             dataset_id = f"EuroEval/scala-{lang}"
-            HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
+            preflight_private_upload(repository_id=dataset_id)
             dataset.push_to_hub(dataset_id, private=True)
 
 
@@ -300,8 +304,8 @@ def corrupt(
             The list of tokens to corrupt.
         pos_tags:
             The list of POS tags for the tokens.
-        num_corruptions:
-            The number of corruptions to perform. Defaults to 1.
+        num_corruptions (optional):
+            Number of corruptions to perform. Defaults to ``1``.
 
     Returns:
         The list of (corrupted_string, corruption_type)

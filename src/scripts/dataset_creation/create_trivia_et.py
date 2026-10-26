@@ -13,7 +13,11 @@ import typing as t
 
 from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, concatenate_datasets, load_dataset
-from huggingface_hub import HfApi
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 
 def main() -> None:
@@ -54,7 +58,7 @@ def main() -> None:
     ds = ds.select_columns(["text", "label"])
 
     # Push the dataset to the Hugging Face Hub
-    HfApi().delete_repo(target_repo_id, repo_type="dataset", missing_ok=True)
+    preflight_private_upload(repository_id=target_repo_id)
     ds.push_to_hub(target_repo_id, private=True)
 
 

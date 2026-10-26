@@ -12,8 +12,12 @@
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
 from sklearn.utils import resample
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 LANGUAGES = ["sr", "hr", "bs", "sq"]
 
@@ -98,7 +102,7 @@ def main() -> None:
 
         # Push the dataset to the Hugging Face Hub
         dataset_id = f"EuroEval/mms-{language}-mini"
-        HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
+        preflight_private_upload(repository_id=dataset_id)
         dataset_dict.push_to_hub(dataset_id, private=True)
 
 
@@ -109,8 +113,10 @@ def create_uniform_distribution(
 
     Args:
         df: The input dataframe.
-        column: The name of the column to create a uniform label distribution for
-        random_state: The random state for reproducibility.
+        column (optional):
+            Column to balance. Defaults to ``label``.
+        random_state (optional):
+            Random state for reproducibility. Defaults to ``4242``.
 
     Returns:
         A dataframe with a uniform label distribution.

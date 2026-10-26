@@ -23,7 +23,11 @@ from constants import (
     MIN_NUM_CHARS_IN_OPTION,
 )
 from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -84,10 +88,8 @@ def main() -> None:
 
     dataset_id = "EuroEval/hellaswag-fi-mini"
 
-    # Remove the dataset from Hugging Face Hub if it already exists
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
-
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 
@@ -172,7 +174,15 @@ def _print_filtering_stats(df: pd.DataFrame, split: str) -> None:
     )
 
     def is_repetitive(text: str) -> bool:
-        """Return True if the text is repetitive."""
+        """Check whether any token occurs too many times.
+
+        Args:
+            text:
+                The text to check.
+
+        Returns:
+            Whether the most frequent token exceeds the repetition limit.
+        """
         if text == "":
             return False
         max_repetitions = max(Counter(text.split()).values())

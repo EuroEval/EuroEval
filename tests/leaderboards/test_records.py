@@ -97,17 +97,18 @@ def _record(
     Args:
         name:
             The model name to store in ``model_info.name``.
-        dataset:
-            The dataset name to store in the record.
-        generative:
+        dataset (optional):
+            The dataset name to store in the record. Defaults to "angry-tweets".
+        generative (optional):
             Value for the ``generative`` flag, or None to omit it entirely.
-        few_shot:
+            Defaults to None.
+        few_shot (optional):
             Value for the ``few_shot`` flag. True/False set it explicitly;
             None sets it to JSON null, which is what euroeval writes for
             tasks with ``requires_zero_shot=True``, since the CLI setting
-            has no effect when the task forces zero-shot anyway.
-        validation_split:
-            Value for the ``validation_split`` flag.
+            has no effect when the task forces zero-shot anyway. Defaults to True.
+        validation_split (optional):
+            Value for the ``validation_split`` flag. Defaults to False.
 
     Returns:
         A minimal EEE-style record.
@@ -156,7 +157,14 @@ class TestPlainModelId:
         ],
     )
     def test_model_id_suffixes(self, model_id: str, expected: str) -> None:
-        """Anchors and row suffixes are removed without losing model variants."""
+        """Anchors and row suffixes are removed without losing model variants.
+
+        Args:
+            model_id:
+                Model identifier used by the test.
+            expected:
+                Expected value for this test case.
+        """
         assert plain_model_id(model_id) == expected
 
 

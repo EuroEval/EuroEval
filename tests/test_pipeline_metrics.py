@@ -15,7 +15,14 @@ NUM_QUESTIONS = 53
 def test_invalid_prediction_defaults_and_logs_warning(
     make_ev_dataset: c.Callable[[list[dict]], Dataset], caplog: LogCaptureFixture
 ) -> None:
-    """Invalid predictions use the first valid index and emit a warning."""
+    """Invalid predictions use the first valid index and emit a warning.
+
+    Args:
+        make_ev_dataset:
+            Make ev dataset supplied to the test.
+        caplog:
+            Fixture for capturing log records during the test.
+    """
     three_choices = {"0": 10, "1": 20, "2": 30}
     dataset = make_ev_dataset([three_choices] * NUM_QUESTIONS)
     predictions = [99] + [0] * (NUM_QUESTIONS - 1)
@@ -42,6 +49,15 @@ def make_ev_dataset() -> c.Generator[c.Callable[[list[dict]], Dataset], None, No
     """
 
     def _make(choices_per_question: list[dict]) -> Dataset:
+        """Make for this test.
+
+        Args:
+            choices_per_question:
+                Choices per question supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         assert len(choices_per_question) == NUM_QUESTIONS
         records = [{"idx_to_choice": c} for c in choices_per_question]
         return Dataset.from_list(records)
@@ -50,7 +66,12 @@ def make_ev_dataset() -> c.Generator[c.Callable[[list[dict]], Dataset], None, No
 
 
 def test_valid_predictions(make_ev_dataset: c.Callable[[list[dict]], Dataset]) -> None:
-    """All valid predictions should be processed without error."""
+    """All valid predictions should be processed without error.
+
+    Args:
+        make_ev_dataset:
+            Make ev dataset supplied to the test.
+    """
     three_choices = {"0": 1, "1": 2, "2": 3}
     dataset = make_ev_dataset([three_choices] * NUM_QUESTIONS)
     predictions = [1] * NUM_QUESTIONS

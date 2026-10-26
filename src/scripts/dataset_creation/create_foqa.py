@@ -15,7 +15,11 @@ from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from datasets.load import load_dataset
 from datasets.splits import Split
-from huggingface_hub.hf_api import HfApi
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 
 def main() -> None:
@@ -46,10 +50,8 @@ def main() -> None:
     # Create dataset ID
     mini_dataset_id = "EuroEval/foqa"
 
-    # Remove the dataset from Hugging Face Hub if it already exists
-    HfApi().delete_repo(mini_dataset_id, repo_type="dataset", missing_ok=True)
-
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=mini_dataset_id)
     dataset.push_to_hub(mini_dataset_id, private=True)
 
 

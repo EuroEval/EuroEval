@@ -14,6 +14,11 @@ from copy import deepcopy
 from datasets import Dataset, DatasetDict, load_dataset
 from tqdm.auto import tqdm
 
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
+
 LANGUAGES = {
     "bg": "en-bg_BG",
     "ca": "en-ca_ES",
@@ -80,8 +85,14 @@ def main() -> None:
             )
         )
 
+        preflight_private_upload(
+            repository_id=target_repo_id.format(source="en", target=language)
+        )
         new_ds.push_to_hub(
             target_repo_id.format(source="en", target=language), private=True
+        )
+        preflight_private_upload(
+            repository_id=target_repo_id.format(source=language, target="en")
         )
         new_ds_reversed.push_to_hub(
             target_repo_id.format(source=language, target="en"), private=True

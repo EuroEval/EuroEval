@@ -21,7 +21,11 @@ from constants import (
 from datasets import Dataset
 from datasets.dataset_dict import DatasetDict
 from datasets.splits import Split
-from huggingface_hub.hf_api import HfApi
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 
 def main() -> None:
@@ -40,6 +44,15 @@ def main() -> None:
     test_raw = requests.get(test_url).json()
 
     def convert_to_df(raw: dict) -> pd.DataFrame:
+        """Convert the raw NorQuAD data to a DataFrame.
+
+        Args:
+            raw (dict):
+                Raw dataset data containing passages and questions.
+
+        Returns:
+            A DataFrame of contexts, questions and answers.
+        """
         records = [
             dict(
                 id=dct["paragraphs"][0]["qas"][0]["id"],
@@ -121,7 +134,7 @@ def main() -> None:
 
     # Push the dataset to the Hugging Face Hub
     dataset_id = "EuroEval/norquad-mini"
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 

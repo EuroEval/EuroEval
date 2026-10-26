@@ -33,6 +33,14 @@ ToolCallingResponse = pydantic.create_model(
 
 
 def _reformat(s: str) -> str:
+    """Escape template delimiters and remove dollar signs from a schema string.
+
+    Args:
+        s: The schema string to reformat.
+
+    Returns:
+        The reformatted string.
+    """
     return s.replace("{", "{{").replace("}", "}}").replace("$", "")
 
 

@@ -15,8 +15,12 @@ import logging
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_cs_gec")
@@ -76,7 +80,7 @@ def main() -> None:
 
     # Upload to Hugging Face Hub
     dataset_id = "EuroEval/cs-gec-mini"
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
+    preflight_private_upload(repository_id=dataset_id)
     dataset_dict.push_to_hub(dataset_id, private=True)
 
 

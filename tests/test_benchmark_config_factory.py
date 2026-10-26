@@ -119,7 +119,12 @@ def test_contamination_detection_creates_only_a_virtual_dataset() -> None:
 def test_official_translation_configs_are_in_standard_suite(
     all_official_dataset_configs: list[DatasetConfig],
 ) -> None:
-    """The standard suite includes English-to-local translation only."""
+    """The standard suite includes English-to-local translation only.
+
+    Args:
+        all_official_dataset_configs:
+            All official dataset configs supplied to the test.
+    """
     translation_configs = [
         cfg
         for cfg in all_official_dataset_configs
@@ -232,7 +237,20 @@ def test_prepare_dataset_configs(
     expected_dataset_configs: list[DatasetConfig] | str,
     request: pytest.FixtureRequest,
 ) -> None:
-    """Test the output of `prepare_dataset_configs`."""
+    """Test the output of `prepare_dataset_configs`.
+
+    Args:
+        input_task:
+            Input task supplied to the test.
+        input_dataset:
+            Input dataset supplied to the test.
+        input_languages:
+            Input languages supplied to the test.
+        expected_dataset_configs:
+            Expected dataset configs for this case.
+        request:
+            Pytest request for parametrised fixture setup.
+    """
     # This replaces the string with the actual fixture
     if isinstance(expected_dataset_configs, str):
         expected_dataset_configs = request.getfixturevalue(expected_dataset_configs)
@@ -312,6 +330,15 @@ def test_prepare_dataset_configs_language_filters_explicit_dataset() -> None:
     """
 
     def prepare(languages: list[Language]) -> list[DatasetConfig]:
+        """Prepare for this test.
+
+        Args:
+            languages:
+                Languages supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         return prepare_dataset_configs(
             task=None,
             dataset=["dansk"],
@@ -347,7 +374,14 @@ def test_prepare_dataset_configs_language_filters_explicit_dataset() -> None:
     ids=["device provided", "device not provided"],
 )
 def test_prepare_device(device: Device, expected_device: torch.device) -> None:
-    """Test the output of `prepare_device`."""
+    """Test the output of `prepare_device`.
+
+    Args:
+        device:
+            Device supplied to the test.
+        expected_device:
+            Expected device for this case.
+    """
     prepared_device = prepare_device(device=device)
     assert prepared_device == expected_device
 
@@ -378,7 +412,16 @@ def test_prepare_languages(
     input_language: list[str] | None,
     expected_language: list[Language],
 ) -> None:
-    """Test the output of `prepare_languages`."""
+    """Test the output of `prepare_languages`.
+
+    Args:
+        input_language_codes:
+            Input language codes supplied to the test.
+        input_language:
+            Input language supplied to the test.
+        expected_language:
+            Expected language for this case.
+    """
     prepared_language_codes = get_correct_language_codes(
         language_codes=input_language_codes
     )
@@ -405,6 +448,15 @@ def test_resolve_dataset_id_expands_external_subsets() -> None:
         configs[name] = dataset_config
 
     def names(dataset_id: str) -> list[str]:
+        """Names for this test.
+
+        Args:
+            dataset_id:
+                Dataset id supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         return [
             dataset_config.name
             for dataset_config in _resolve_dataset_id(

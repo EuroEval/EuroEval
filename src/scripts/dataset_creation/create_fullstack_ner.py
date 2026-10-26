@@ -18,7 +18,11 @@ from pathlib import Path
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split
-from huggingface_hub import HfApi
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -96,10 +100,8 @@ def main() -> None:
     # Create dataset ID
     dataset_id = "EuroEval/fullstack-ner-lv-mini"
 
-    # Remove the dataset from Hugging Face Hub if it already exists
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
-
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
     # Delete the repository
@@ -110,8 +112,8 @@ def clone_fullstack_repository(repo_name: str = "FullStack") -> Path:
     """Clone the FullStack repository if it doesn't already exist.
 
     Args:
-        repo_name:
-            Name of the directory to clone into.
+        repo_name (optional):
+            Name of the directory to clone into. Defaults to ``FullStack``.
 
     Returns:
         Path to the cloned repository.

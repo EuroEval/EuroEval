@@ -17,7 +17,11 @@ from collections import Counter
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split
-from huggingface_hub import HfApi
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_harem")
@@ -131,6 +135,15 @@ def main() -> None:
 
     # Convert labels from strings to IDs for consistency with Spanish script
     def convert_labels_to_ids(labels: list[str]) -> list[int]:
+        """Convert entity labels to their integer identifiers.
+
+        Args:
+            labels (list[str]):
+                Entity labels to convert.
+
+        Returns:
+            Integer identifiers corresponding to the labels.
+        """
         return [LABEL2ID[label] for label in labels]
 
     train_df["labels"] = train_df["labels"].apply(convert_labels_to_ids)
@@ -158,11 +171,9 @@ def main() -> None:
     # Create dataset ID
     dataset_id = "EuroEval/harem"
 
-    # Remove the dataset from Hugging Face Hub if it already exists
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
-
     # Push the dataset to the Hugging Face Hub
     logger.info(f"\nUploading dataset to {dataset_id}...")
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
     logger.info("Dataset uploaded successfully!")
 

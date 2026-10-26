@@ -26,6 +26,7 @@ WMT24PP_EN_LT_CONFIG = TranslationDatasetConfig(
     languages=[LITHUANIAN],
     source_language=ENGLISH,
     target_language=LITHUANIAN,
+    revision="0b21c8bf74beff8aee3022887c78772801b8340b",
 )
 
 FLORES_EN_LT_CONFIG = TranslationDatasetConfig(
@@ -36,6 +37,7 @@ FLORES_EN_LT_CONFIG = TranslationDatasetConfig(
     languages=[LITHUANIAN],
     source_language=ENGLISH,
     target_language=LITHUANIAN,
+    revision="cb2fdb73d5df436ed52032d255dc9dfd76adbca2",
 )
 
 ATSILIEPIMAI_CONFIG = DatasetConfig(
@@ -44,6 +46,7 @@ ATSILIEPIMAI_CONFIG = DatasetConfig(
     source="EuroEval/atsiliepimai",
     task=SENT,
     languages=[LITHUANIAN],
+    revision="d19902d48f102db6a7219dd1b5fcd8b00d358a53",
 )
 
 SCALA_LT_CONFIG = DatasetConfig(
@@ -52,6 +55,7 @@ SCALA_LT_CONFIG = DatasetConfig(
     source="EuroEval/scala-lt",
     task=LA,
     languages=[LITHUANIAN],
+    revision="580103f697144f3d95aa7a934e6ff2ae63a40be0",
 )
 
 WIKIANN_LT_CONFIG = DatasetConfig(
@@ -60,6 +64,7 @@ WIKIANN_LT_CONFIG = DatasetConfig(
     source="EuroEval/wikiann-lt-mini",
     task=NER,
     languages=[LITHUANIAN],
+    revision="4a4a69de20d4bd7671f62a1eafb23aa4648af9c3",
 )
 
 MULTI_WIKI_QA_LT_CONFIG = DatasetConfig(
@@ -68,6 +73,7 @@ MULTI_WIKI_QA_LT_CONFIG = DatasetConfig(
     source="EuroEval/multi-wiki-qa-lt-mini",
     task=RC,
     languages=[LITHUANIAN],
+    revision="f957457c6bd91e38bf9036a13401cdd92c699635",
 )
 
 LRYTAS_CONFIG = DatasetConfig(
@@ -76,6 +82,7 @@ LRYTAS_CONFIG = DatasetConfig(
     source="EuroEval/lrytas-mini",
     task=SUMM,
     languages=[LITHUANIAN],
+    revision="27d113ec030fdcf8da56fc4fcdb473204bc5f48b",
 )
 
 LT_HISTORY_CONFIG = DatasetConfig(
@@ -84,6 +91,7 @@ LT_HISTORY_CONFIG = DatasetConfig(
     source="EuroEval/lt-history",
     task=KNOW,
     languages=[LITHUANIAN],
+    revision="f8f4d4fd38f872d4beb3d9082e696130bf3a219d",
 )
 
 WINOGRANDE_LT_CONFIG = DatasetConfig(
@@ -93,6 +101,7 @@ WINOGRANDE_LT_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[LITHUANIAN],
     labels=["a", "b"],
+    revision="197e366ff2968d4faff214c713fef8457c7efcac",
 )
 
 MULTI_IFEVAL_LT_CONFIG = DatasetConfig(
@@ -103,6 +112,7 @@ MULTI_IFEVAL_LT_CONFIG = DatasetConfig(
     languages=[LITHUANIAN],
     train_split=None,
     val_split=None,
+    revision="cb31305b8a19f2b7df844917246d03ae23d4ebb3",
 )
 
 RAGTRUTH_LT_CONFIG = DatasetConfig(
@@ -112,6 +122,7 @@ RAGTRUTH_LT_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[LITHUANIAN],
     train_split=None,
+    revision="fac924fcd68db74671062147ac5d964d945a082e",
 )
 
 INCLUDE_LT_CONFIG = DatasetConfig(
@@ -120,6 +131,7 @@ INCLUDE_LT_CONFIG = DatasetConfig(
     source="EuroEval/include-lt-mini",
     task=KNOW,
     languages=[LITHUANIAN],
+    revision="ff2aa9e2bca7d1c755f238386e2c55a497ed71bb",
 )
 
 
@@ -132,6 +144,7 @@ MULTI_BFCL_LT_CONFIG = DatasetConfig(
     task=TOOL_CALLING,
     languages=[LITHUANIAN],
     train_split=None,
+    revision="19c5f41a808e2d0a64e4a5cf68ee0cb278c96348",
 )
 
 
@@ -144,6 +157,7 @@ WMT24PP_LT_EN_CONFIG = TranslationDatasetConfig(
     source_language=LITHUANIAN,
     target_language=ENGLISH,
     unofficial=True,
+    revision="2a9237cf5e014ca4f1096d9a20eadbdf09ab8d82",
 )
 
 FLORES_LT_EN_CONFIG = TranslationDatasetConfig(
@@ -155,6 +169,7 @@ FLORES_LT_EN_CONFIG = TranslationDatasetConfig(
     source_language=LITHUANIAN,
     target_language=ENGLISH,
     unofficial=True,
+    revision="052ae9d1c13c8571b1edad54ce4fa0b5684b6222",
 )
 
 LITHUANIAN_EMOTIONS_CONFIG = DatasetConfig(
@@ -164,6 +179,7 @@ LITHUANIAN_EMOTIONS_CONFIG = DatasetConfig(
     task=SENT,
     languages=[LITHUANIAN],
     unofficial=True,
+    revision="31bbc85ef232cf285c26e403dfc30f7b2f960f96",
 )
 
 EU_MMLU_LT_CONFIG = DatasetConfig(
@@ -173,4 +189,5 @@ EU_MMLU_LT_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[LITHUANIAN],
     unofficial=True,
+    revision="cad4ade3f456d8a0c363126897d70fd818e02acc",
 )

@@ -15,8 +15,12 @@ from pathlib import Path
 import pandas as pd
 import requests
 from datasets import Dataset, DatasetDict, Split
-from huggingface_hub import HfApi
 from sklearn.utils import resample
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 
 def main() -> None:
@@ -65,7 +69,7 @@ def main() -> None:
 
     # Push the dataset to the Hugging Face Hub
     dataset_id = "EuroEval/cross-domain-uk-reviews-mini"
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
     file_path.unlink(missing_ok=True)
@@ -78,7 +82,7 @@ def create_uniform_label_distribution(
 
     Args:
         df: The input dataframe with a 'label' column.
-        random_state: The random state for reproducibility.
+        random_state (optional): The random state for reproducibility. Defaults to 4242.
 
     Returns:
         A dataframe with a uniform label distribution.

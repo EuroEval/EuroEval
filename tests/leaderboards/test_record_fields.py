@@ -9,7 +9,12 @@ from leaderboards.record_fields import _metadata_richness_score, deduplicate_rec
 
 @pytest.mark.parametrize("version", ["18.1.0.dev", "18.1.0.dev0"])
 def test_deduplicate_accepts_development_versions(version: str) -> None:
-    """Development suffixes do not prevent numeric version comparisons."""
+    """Development suffixes do not prevent numeric version comparisons.
+
+    Args:
+        version:
+            Version supplied to the test.
+    """
     old = _record(version="18.0.0")
     new = _record(version=version)
 
@@ -28,14 +33,15 @@ def _record(
     """Build a minimal EEE-style record.
 
     Args:
-        name:
-            The model name to store in ``model_info.name``.
-        dataset:
-            The dataset name to store in the record.
-        version:
-            The EuroEval version to store, or None to omit it.
-        generative:
+        name (optional):
+            The model name to store in ``model_info.name``. Defaults to "org/model".
+        dataset (optional):
+            The dataset name to store in the record. Defaults to "angry-tweets".
+        version (optional):
+            The EuroEval version to store, or None to omit it. Defaults to None.
+        generative (optional):
             Value for the ``generative`` flag, or None to omit it entirely.
+            Defaults to None.
 
     Returns:
         A minimal EEE-style record.
@@ -249,7 +255,12 @@ def test_metadata_richness_score_empty() -> None:
     "field", ["commercially_licensed", "open", "merge", "trained_from_scratch"]
 )
 def test_metadata_richness_score_explicit_false(field: str) -> None:
-    """Explicit False values contribute to metadata richness."""
+    """Explicit False values contribute to metadata richness.
+
+    Args:
+        field:
+            Field supplied to the test.
+    """
     record = _record()
     record["model_info"]["additional_details"][field] = False
     assert _metadata_richness_score(record=record) == 1
@@ -277,7 +288,12 @@ def test_metadata_richness_score_full() -> None:
 def test_metadata_richness_score_ignores_invalid_release_date(
     release_date: str | None,
 ) -> None:
-    """Missing and malformed release dates do not contribute to richness."""
+    """Missing and malformed release dates do not contribute to richness.
+
+    Args:
+        release_date:
+            Release date supplied to the test.
+    """
     record = _record()
     initial_score = _metadata_richness_score(record)
     record["model_info"]["additional_details"]["release_date"] = release_date

@@ -62,10 +62,10 @@ class HuggingFaceMetric(Metric):
             results_key:
                 The name of the key used to extract the metric scores from the results
                 dictionary.
-            compute_kwargs:
+            compute_kwargs (optional):
                 Keyword arguments to pass to the metric's compute function. Defaults to
                 an empty dictionary.
-            postprocessing_fn:
+            postprocessing_fn (optional):
                 A function to apply to the metric scores after they are computed, taking
                 the score to the postprocessed score along with its string
                 representation. Defaults to x -> (100 * x, f"{x:.2%}").

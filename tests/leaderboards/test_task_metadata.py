@@ -73,7 +73,12 @@ def test_category_includes_task_orthogonal_tasks_on_chat_and_generative() -> Non
 def test_dataset_sources_omits_blank_sources_but_maps_valid_sources(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Only non-blank string sources are available for split-size lookups."""
+    """Only non-blank string sources are available for split-size lookups.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     configs = (
         SimpleNamespace(name="speed", source=""),
         SimpleNamespace(name="whitespace", source=" \t\n"),

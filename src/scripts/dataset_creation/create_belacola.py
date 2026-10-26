@@ -9,7 +9,11 @@
 """Create the BelaCoLA dataset and upload it to the Hugging Face Hub."""
 
 from datasets import Dataset, DatasetDict, load_dataset
-from huggingface_hub import HfApi
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 SOURCE_REPOSITORY = "maaxap/BelarusianGLUE"
 SOURCE_CONFIG = "belacola_in_domain"
@@ -28,7 +32,7 @@ def main() -> None:
 
     dataset = process_dataset(source_dataset=source_dataset)
 
-    HfApi().delete_repo(repo_id=TARGET_REPOSITORY, repo_type="dataset", missing_ok=True)
+    preflight_private_upload(repository_id=TARGET_REPOSITORY)
     dataset.push_to_hub(repo_id=TARGET_REPOSITORY, private=True)
 
 
@@ -63,6 +67,12 @@ def process_dataset(source_dataset: DatasetDict) -> DatasetDict:
 
 def _process_split(dataset: Dataset, limit: int) -> Dataset:
     """Select, rename and label one BelaCoLA split.
+
+    Args:
+        dataset:
+            The source split to process.
+        limit:
+            The maximum number of examples to retain.
 
     Returns:
         The processed split with ``text`` and ``label`` columns.

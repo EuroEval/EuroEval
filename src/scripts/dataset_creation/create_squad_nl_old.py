@@ -21,7 +21,11 @@ from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from datasets.load import load_dataset
 from datasets.splits import Split
-from huggingface_hub.hf_api import HfApi
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 
 def main() -> None:
@@ -33,6 +37,15 @@ def main() -> None:
     assert isinstance(dataset, DatasetDict)
 
     def add_answer_start(example: dict) -> dict:
+        """Add character offsets for answers found in the context.
+
+        Args:
+            example (dict):
+                Example with context and candidate answers.
+
+        Returns:
+            The example with unmatched answers removed and answer offsets added.
+        """
         possible_answers: list[str] = example["answers"]["text"]
         if possible_answers:
             answers: list[str] = list()
@@ -86,6 +99,15 @@ def main() -> None:
 
     # Extract information on which examples contain an answer
     def has_answer(example: dict) -> bool:
+        """Check whether an example contains an answer.
+
+        Args:
+            example (dict):
+                Example containing answer start offsets.
+
+        Returns:
+            Whether the example has a valid answer offset.
+        """
         return len(example["answer_start"]) > 0 and example["answer_start"][0] >= 0
 
     train_has_answer: pd.Series = train_df.answers.map(has_answer)
@@ -125,7 +147,7 @@ def main() -> None:
 
     # Push the dataset to the Hugging Face Hub
     dataset_id = "EuroEval/squad-nl-mini"
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 

@@ -23,8 +23,12 @@ from constants import (
     MIN_NUM_CHARS_IN_OPTION,
 )
 from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 
 def main() -> None:
@@ -76,10 +80,9 @@ def main() -> None:
         lite_suffix = "-lite" if lite else ""
         mini_suffix = "-mini" if not lite else ""
         dataset_id = f"EuroEval/global-mmlu{lite_suffix}-{language}{mini_suffix}"
-        # Remove the dataset from Hugging Face Hub if it already exists
-        HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
 
         # Push the dataset to the Hugging Face Hub
+        preflight_private_upload(repository_id=dataset_id)
         dataset.push_to_hub(dataset_id, private=True)
 
 
@@ -89,8 +92,10 @@ def make_mmlu_lite_splits(
     """Make splits for a lite dataset.
 
     Args:
-        val_df: The validation dataframe.
-        test_df: The test dataframe.
+        val_df:
+            The validation dataframe.
+        test_df:
+            The test dataframe.
 
     Returns:
         The final training, validation, and test dataframes.
@@ -121,8 +126,10 @@ def make_mmlu_splits(
     """Make splits for a full dataset.
 
     Args:
-        val_df: The validation dataframe.
-        test_df: The test dataframe.
+        val_df:
+            The validation dataframe.
+        test_df:
+            The test dataframe.
 
     Returns:
         The final training, validation, and test dataframes.
@@ -150,8 +157,10 @@ def process_split(df: pd.DataFrame, language: str) -> pd.DataFrame:
     """Process a split of the dataset.
 
     Args:
-        df: The input DataFrame.
-        language: The language of the dataset.
+        df:
+            The input DataFrame.
+        language:
+            The language of the dataset.
 
     Returns:
         The processed DataFrame.
@@ -171,8 +180,10 @@ def add_text_column(df: pd.DataFrame, language: str) -> pd.DataFrame:
     """Make a `text` column with all the options.
 
     Args:
-        df: The input DataFrame.
-        language: The language of the dataset.
+        df:
+            The input DataFrame.
+        language:
+            The language of the dataset.
 
     Returns:
         The DataFrame with the added `text` column.
@@ -193,7 +204,8 @@ def filter_by_length(df: pd.DataFrame) -> pd.DataFrame:
     """Remove samples with overly short or long texts.
 
     Args:
-        df: The input DataFrame.
+        df:
+            The input DataFrame.
 
     Returns:
         The filtered DataFrame with only rows of acceptable length.
@@ -216,7 +228,8 @@ def filter_repetitive(df: pd.DataFrame) -> pd.DataFrame:
     """Remove overly repetitive samples.
 
     Args:
-        df: The input DataFrame.
+        df:
+            The input DataFrame.
 
     Returns:
         The filtered DataFrame without overly repetitive texts.
@@ -234,7 +247,8 @@ def is_repetitive(text: str) -> bool:
     """Check if a text is repetitive.
 
     Args:
-        text: The input text string.
+        text:
+            The input text string.
 
     Returns:
         True if repetitive, False otherwise.

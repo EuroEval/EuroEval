@@ -21,7 +21,11 @@ from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from datasets.load import load_dataset
 from datasets.splits import Split
-from huggingface_hub.hf_api import HfApi
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 
 def main() -> None:
@@ -67,6 +71,15 @@ def main() -> None:
 
     # Extract information on which examples contain an answer
     def has_answer(example: dict) -> bool:
+        """Check whether an example contains an answer.
+
+        Args:
+            example (dict):
+                Example containing candidate answer text.
+
+        Returns:
+            Whether the example has a non-empty answer.
+        """
         return len(example["text"]) > 0 and example["text"][0] != ""
 
     train_has_answer: pd.Series = train_df.answers.map(has_answer)
@@ -110,7 +123,7 @@ def main() -> None:
 
     # Push the dataset to the Hugging Face Hub
     dataset_id = "EuroEval/squad-mini"
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 

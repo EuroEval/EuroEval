@@ -37,10 +37,14 @@ from constants import (
 )
 from datasets import Dataset, DatasetDict, Split, disable_progress_bars, load_dataset
 from dotenv import load_dotenv
-from huggingface_hub import HfApi
 from openai import OpenAI
 from openai.types.chat import ChatCompletionUserMessageParam
 from pydantic import BaseModel
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 load_dotenv()
 
@@ -102,7 +106,7 @@ def main() -> None:
     # Push the dataset to the Hugging Face Hub
     target_dataset_id = "EuroEval/be-wsc"
 
-    HfApi().delete_repo(target_dataset_id, repo_type="dataset", missing_ok=True)
+    preflight_private_upload(repository_id=target_dataset_id)
     dataset.push_to_hub(target_dataset_id, private=True)
 
 
@@ -127,9 +131,12 @@ def make_splits(
     This function creates a train/val split and moves the remaining samples into test.
 
     Args:
-        train_df: The training dataframe.
-        val_df: The validation dataframe.
-        test_df: The test dataframe.
+        train_df:
+            The training dataframe.
+        val_df:
+            The validation dataframe.
+        test_df:
+            The test dataframe.
 
     Returns:
         The final training, validation, and test dataframes.
@@ -168,7 +175,8 @@ def prepare_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         Processed dataframe.
 
     Raises:
-        ValueError: If required columns are missing
+        ValueError:
+            If required columns are missing.
     """
     df = df.copy()
 
@@ -250,17 +258,19 @@ class SecondCandidate(BaseModel):
 def _extract_second_candidate(row: pd.Series) -> str:
     """Extract a second candidate referent span from the sentence (cached).
 
-    Note: this is a "distractor" only when label==1. When label==0, span1 is wrong,
+    This is a "distractor" only when label==1. When label==0, span1 is wrong,
     so the extracted span should be the true referent.
 
     Args:
-        row: The row of the dataframe.
+        row:
+            The row of the dataframe.
 
     Returns:
         The second candidate span.
 
     Raises:
-        ValueError: If the OpenAI API call fails.
+        ValueError:
+            If the OpenAI API call fails.
     """
     key = _cache_key(row)
     if key in candidate_cache:
@@ -389,7 +399,8 @@ def _cache_key(row: pd.Series) -> str:
     """Create a stable cache key for the second-candidate extraction call.
 
     Args:
-        row: The row of the dataframe.
+        row:
+            The row of the dataframe.
 
     Returns:
         The cache key.
@@ -403,7 +414,8 @@ def save_cache(cache: dict) -> None:
     """Save cache to CACHE_FILE.
 
     Args:
-        cache: The cache to save.
+        cache:
+            The cache to save.
     """
     with open(CACHE_FILE, "w") as cache_file:
         json.dump(cache, cache_file, indent=4)
@@ -413,7 +425,8 @@ def _make_instruction(row: pd.Series) -> str:
     """Create the instruction string in Winogrande-like format.
 
     Args:
-        row: The row of the dataframe.
+        row:
+            The row of the dataframe.
 
     Returns:
         The instruction string.
@@ -429,9 +442,12 @@ def _mask_pronoun(text: str, pronoun: str, word_index: int) -> str:
     """Replace the pronoun token (by word index) with '_'.
 
     Args:
-        text: The text to mask the pronoun in.
-        pronoun: The pronoun to mask.
-        word_index: The index of the pronoun in the text.
+        text:
+            The text to mask the pronoun in.
+        pronoun:
+            The pronoun to mask.
+        word_index:
+            The index of the pronoun in the text.
 
     Returns:
         The text with the pronoun masked.
@@ -455,7 +471,8 @@ def is_repetitive(text: str) -> bool:
     """Return True if the text is repetitive.
 
     Args:
-        text: The text to check for repetition.
+        text:
+            The text to check for repetition.
 
     Returns:
         True if the text is repetitive, False otherwise.

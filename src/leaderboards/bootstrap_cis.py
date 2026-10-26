@@ -229,6 +229,16 @@ def _aggregate_bootstrap_sample(
 ) -> dict[str, dict[str, float | None]]:
     """Aggregate sampled per-dataset scores for one model.
 
+    Args:
+        model_id:
+            Model whose scores are aggregated.
+        categories:
+            Leaderboard categories to include.
+        all_rank_scores:
+            Sampled rank scores grouped by model, category, and dataset.
+        configs:
+            Original per-language leaderboard configurations.
+
     Returns:
         category -> {lang: score, "overall": overall or None}
     """

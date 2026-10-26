@@ -123,14 +123,14 @@ class TestExtractModelMetadata:
         """Build a minimal EEE-style record.
 
         Args:
-            name:
-                The model name.
-            dataset:
-                The dataset name.
-            version:
-                The EuroEval version.
-            additional_details:
-                Additional details to include.
+            name (optional):
+                The model name. Defaults to "org/model".
+            dataset (optional):
+                The dataset name. Defaults to "angry-tweets".
+            version (optional):
+                The EuroEval version. Defaults to "17.6.0".
+            additional_details (optional):
+                Additional details to include. Defaults to None.
 
         Returns:
             A minimal EEE-style record.
@@ -431,7 +431,14 @@ class TestGroupResultsByModel:
     def test_negative_mcc_and_invalid_iterations(
         self, raw: list, expected: list[float]
     ) -> None:
-        """Retain valid negative MCC without allowing invalid iterations through."""
+        """Retain valid negative MCC without allowing invalid iterations through.
+
+        Args:
+            raw:
+                Raw supplied to the test.
+            expected:
+                Expected value for this test case.
+        """
         record = {
             "model_info": {"name": "org/model"},
             "eval_library": {
@@ -701,7 +708,12 @@ class TestIsBetterMetadata:
         "field", ["commercial", "merge", "open", "trained_from_scratch"]
     )
     def test_prefers_present_over_absent_for_booleans(self, field: str) -> None:
-        """Present boolean metadata is preferred over absent metadata."""
+        """Present boolean metadata is preferred over absent metadata.
+
+        Args:
+            field:
+                Field supplied to the test.
+        """
         assert _is_better_metadata(new_value=True, old_value=None, field=field) is True
         assert _is_better_metadata(new_value=False, old_value=None, field=field) is True
         assert _is_better_metadata(new_value=None, old_value=True, field=field) is False

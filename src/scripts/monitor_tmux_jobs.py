@@ -138,7 +138,28 @@ def main(
     telegram_chat_id_env: str,
     no_telegram: bool,
 ) -> None:
-    """Monitor remote tmux sessions on SSH servers."""
+    """Monitor remote tmux sessions on SSH servers.
+
+    Args:
+        servers:
+            SSH servers or server/session targets to monitor.
+        interval_seconds:
+            Seconds to wait between checks.
+        output_regexes:
+            Patterns that trigger an alert when found in pane output.
+        tail_lines:
+            Number of pane lines to capture for alerts and pattern checks.
+        connect_timeout_seconds:
+            SSH connection timeout in seconds.
+        command_timeout_seconds:
+            Per-command timeout in seconds.
+        telegram_token_env:
+            Name of the environment variable containing the Telegram token.
+        telegram_chat_id_env:
+            Name of the environment variable containing the Telegram chat ID.
+        no_telegram:
+            Whether to disable Telegram notifications.
+    """
     patterns = _compile_patterns(patterns=output_regexes)
     target_specs = _parse_target_specs(values=servers)
     monitored = _discover_initial_sessions(
@@ -179,6 +200,19 @@ def main(
 
 
 def _compile_patterns(patterns: tuple[str, ...]) -> list[re.Pattern[str]]:
+    """Compile output patterns for multiline matching.
+
+    Args:
+        patterns:
+            Regular-expression patterns supplied by the user.
+
+    Returns:
+        Compiled patterns in input order.
+
+    Raises:
+        click.BadParameter:
+            If any pattern is invalid.
+    """
     compiled_patterns: list[re.Pattern[str]] = []
     for pattern in patterns:
         try:
@@ -192,6 +226,17 @@ def _compile_patterns(patterns: tuple[str, ...]) -> list[re.Pattern[str]]:
 
 
 def _format_ssh_error(server: str, result: subprocess.CompletedProcess[str]) -> str:
+    """Format a failed SSH command and its captured output.
+
+    Args:
+        server:
+            SSH server associated with the command.
+        result:
+            Completed SSH process result.
+
+    Returns:
+        A diagnostic containing the exit code, standard error, and standard output.
+    """
     stderr = result.stderr.strip()
     stdout = result.stdout.strip()
     return (
@@ -214,11 +259,19 @@ class PaneStatus:
 
     @property
     def is_active(self) -> bool:
-        """Whether the pane appears to have a running child process."""
+        """Whether the pane appears to have a running child process.
+
+        Returns:
+            Whether at least one child process is running.
+        """
         return self.descendants > 0
 
     def summary(self) -> str:
-        """Return a compact, shell-friendly summary."""
+        """Return a compact, shell-friendly summary.
+
+        Returns:
+            A single-line summary of the pane state.
+        """
         dead = "1" if self.dead else "0"
         return (
             f"{self.server}:{self.target} dead={dead} cmd={self.command} "
@@ -229,6 +282,23 @@ class PaneStatus:
 def _discover_statuses(
     servers: tuple[str, ...], connect_timeout_seconds: int, command_timeout_seconds: int
 ) -> list[PaneStatus]:
+    """Discover pane status on each requested server.
+
+    Args:
+        servers:
+            SSH servers to query.
+        connect_timeout_seconds:
+            SSH connection timeout in seconds.
+        command_timeout_seconds:
+            Timeout for each SSH command in seconds.
+
+    Returns:
+        Parsed pane statuses from all servers.
+
+    Raises:
+        RuntimeError:
+            If querying any server fails.
+    """
     statuses: list[PaneStatus] = []
     errors: list[str] = []
     for server in servers:
@@ -249,6 +319,17 @@ def _discover_statuses(
 
 
 def _parse_statuses(server: str, output: str) -> list[PaneStatus]:
+    """Parse pane records from the remote status output.
+
+    Args:
+        server:
+            Server that produced the output.
+        output:
+            Newline-separated status records.
+
+    Returns:
+        Parsed pane statuses; malformed and unrelated lines are ignored.
+    """
     statuses: list[PaneStatus] = []
     for line in output.splitlines():
         parts = line.split("|", maxsplit=6)
@@ -270,6 +351,15 @@ def _parse_statuses(server: str, output: str) -> list[PaneStatus]:
 
 
 def _parse_descendants(value: str) -> int:
+    """Parse the descendant count, using zero for invalid values.
+
+    Args:
+        value:
+            Text representing a process descendant count.
+
+    Returns:
+        The parsed count, or zero if the text is not an integer.
+    """
     try:
         return int(value)
     except ValueError:
@@ -283,6 +373,23 @@ def _ssh_run(
     connect_timeout_seconds: int,
     command_timeout_seconds: int,
 ) -> subprocess.CompletedProcess[str]:
+    """Run a command on an SSH server and capture its output.
+
+    Args:
+        server:
+            SSH alias or host to connect to.
+        command:
+            Remote command to execute.
+        stdin:
+            Text to pass to the remote command's standard input.
+        connect_timeout_seconds:
+            SSH connection timeout in seconds.
+        command_timeout_seconds:
+            Overall local timeout for the SSH process in seconds.
+
+    Returns:
+        The completed process, including captured standard output and error.
+    """
     ssh_command = [
         "ssh",
         "-o",
@@ -306,6 +413,18 @@ def _ssh_run(
 def _send_telegram_message(
     message: str, token_env: str, chat_id_env: str, timeout_seconds: int
 ) -> None:
+    """Send a message through the Telegram Bot API when credentials exist.
+
+    Args:
+        message:
+            Message body to send.
+        token_env:
+            Environment variable containing the bot token.
+        chat_id_env:
+            Environment variable containing the destination chat ID.
+        timeout_seconds:
+            HTTP request timeout in seconds.
+    """
     token = os.environ.get(token_env)
     chat_id = os.environ.get(chat_id_env)
     if not token or not chat_id:
@@ -333,6 +452,15 @@ def _send_telegram_message(
 
 
 def _format_target(target: tuple[str, str]) -> str:
+    """Format a server/session pair for display.
+
+    Args:
+        target:
+            Server and session names.
+
+    Returns:
+        The pair joined with a colon.
+    """
     server, session = target
     return f"{server}:{session}"
 
@@ -346,23 +474,43 @@ class TargetSpec:
 
     @property
     def is_session_specific(self) -> bool:
-        """Whether this target names a specific tmux session."""
+        """Whether this target names a specific tmux session.
+
+        Returns:
+            Whether a session name is configured.
+        """
         return self.session is not None
 
     def matches(self, status: "PaneStatus") -> bool:
-        """Return whether a pane status belongs to this target."""
+        """Return whether a pane status belongs to this target.
+
+        Args:
+            status:
+                Pane status to compare with this target.
+
+        Returns:
+            Whether the server and any configured session match.
+        """
         return status.server == self.server and (
             self.session is None or status.session == self.session
         )
 
     def monitored_session(self) -> tuple[str, str] | None:
-        """Return the exact session target, if one was configured."""
+        """Return the exact session target, if one was configured.
+
+        Returns:
+            The server/session pair, or None for a server-wide target.
+        """
         if self.session is None:
             return None
         return (self.server, self.session)
 
     def summary(self) -> str:
-        """Return a compact, shell-friendly target summary."""
+        """Return a compact, shell-friendly target summary.
+
+        Returns:
+            The server name, optionally followed by the session name.
+        """
         if self.session is None:
             return self.server
         return f"{self.server}::{self.session}"
@@ -373,6 +521,19 @@ def _discover_initial_sessions(
     connect_timeout_seconds: int,
     command_timeout_seconds: int,
 ) -> set[tuple[str, str]]:
+    """Find active sessions matching the configured targets.
+
+    Args:
+        target_specs:
+            Server-wide or session-specific targets to inspect.
+        connect_timeout_seconds:
+            SSH connection timeout in seconds.
+        command_timeout_seconds:
+            Timeout for each SSH command in seconds.
+
+    Returns:
+        Active matching sessions, together with explicitly configured sessions.
+    """
     statuses = _discover_statuses(
         servers=_target_servers(target_specs=target_specs),
         connect_timeout_seconds=connect_timeout_seconds,
@@ -396,6 +557,17 @@ def _discover_initial_sessions(
 def _matching_active_sessions(
     statuses: list[PaneStatus], target_specs: tuple[TargetSpec, ...]
 ) -> set[tuple[str, str]]:
+    """Select active sessions that match at least one target.
+
+    Args:
+        statuses:
+            Pane statuses to filter.
+        target_specs:
+            Targets that determine which panes are in scope.
+
+    Returns:
+        Unique server/session pairs with active matching panes.
+    """
     return {
         (status.server, status.session)
         for status in statuses
@@ -405,11 +577,33 @@ def _matching_active_sessions(
 
 
 def _target_servers(target_specs: tuple[TargetSpec, ...]) -> tuple[str, ...]:
+    """Return the unique servers named by the targets, preserving order.
+
+    Args:
+        target_specs:
+            Targets whose server names are to be collected.
+
+    Returns:
+        Unique server names in first-seen order.
+    """
     servers = dict.fromkeys(spec.server for spec in target_specs)
     return tuple(servers)
 
 
 def _parse_target_specs(values: tuple[str, ...]) -> tuple[TargetSpec, ...]:
+    """Parse and deduplicate server and optional session targets.
+
+    Args:
+        values:
+            Target strings in SERVER or SERVER::SESSION form.
+
+    Returns:
+        Unique parsed targets in input order.
+
+    Raises:
+        click.BadParameter:
+            If a target omits its server or has an empty session name.
+    """
     specs: list[TargetSpec] = []
     for value in values:
         if "::" not in value:
@@ -441,7 +635,11 @@ class Alert:
     tail: str = ""
 
     def message(self) -> str:
-        """Return the notification body."""
+        """Return the notification body.
+
+        Returns:
+            A formatted alert containing the target, state, details, and any tail.
+        """
         timestamp = dt.datetime.now().isoformat(timespec="seconds")
         parts = [
             "EuroEval tmux monitor alert",
@@ -463,6 +661,20 @@ def _emit_alert(
     telegram_chat_id_env: str,
     command_timeout_seconds: int,
 ) -> None:
+    """Display an alert and optionally send it through Telegram.
+
+    Args:
+        alert:
+            Alert to display and send.
+        no_telegram:
+            Whether to skip the Telegram notification.
+        telegram_token_env:
+            Environment variable containing the bot token.
+        telegram_chat_id_env:
+            Environment variable containing the destination chat ID.
+        command_timeout_seconds:
+            Timeout for the Telegram request in seconds.
+    """
     message = alert.message()
     click.echo("\n=== MONITOR ALERT ===")
     click.echo(message)
@@ -484,6 +696,25 @@ def _poll_once(
     connect_timeout_seconds: int,
     command_timeout_seconds: int,
 ) -> Alert | None:
+    """Poll monitored sessions and return the first detected alert.
+
+    Args:
+        target_specs:
+            Server-wide or session-specific targets to inspect.
+        monitored:
+            Mutable set of sessions currently being monitored.
+        patterns:
+            Compiled patterns to search in captured pane output.
+        tail_lines:
+            Number of pane lines to capture.
+        connect_timeout_seconds:
+            SSH connection timeout in seconds.
+        command_timeout_seconds:
+            Timeout for each remote command in seconds.
+
+    Returns:
+        The first resulting alert, or None when monitoring should continue.
+    """
     timestamp = dt.datetime.now().isoformat(timespec="seconds")
     try:
         statuses = _discover_statuses(
@@ -551,6 +782,23 @@ def _capture_tail(
     connect_timeout_seconds: int,
     command_timeout_seconds: int,
 ) -> str:
+    """Capture the requested number of lines from a tmux session.
+
+    Args:
+        server:
+            SSH server hosting the session.
+        session:
+            tmux session name.
+        tail_lines:
+            Number of final pane lines to capture.
+        connect_timeout_seconds:
+            SSH connection timeout in seconds.
+        command_timeout_seconds:
+            Timeout for the remote command in seconds.
+
+    Returns:
+        Captured output, with any standard error appended.
+    """
     result = _ssh_run(
         server=server,
         command=f"bash -s -- {shlex.quote(session)} {tail_lines}",
@@ -571,6 +819,23 @@ def _check_output_regexes(
     connect_timeout_seconds: int,
     command_timeout_seconds: int,
 ) -> Alert | None:
+    """Search monitored pane tails and construct an alert on a match.
+
+    Args:
+        monitored:
+            Server/session pairs to inspect.
+        patterns:
+            Compiled patterns to search in each captured tail.
+        tail_lines:
+            Number of pane lines to capture.
+        connect_timeout_seconds:
+            SSH connection timeout in seconds.
+        command_timeout_seconds:
+            Timeout for each remote command in seconds.
+
+    Returns:
+        An alert for the first match, or None if no pattern matches.
+    """
     if not patterns:
         return None
 
@@ -597,6 +862,15 @@ def _check_output_regexes(
 def _group_by_session(
     statuses: list[PaneStatus],
 ) -> dict[tuple[str, str], list[PaneStatus]]:
+    """Group pane statuses by server and session.
+
+    Args:
+        statuses:
+            Pane statuses to group.
+
+    Returns:
+        Mapping from each server/session pair to its pane statuses.
+    """
     grouped: dict[tuple[str, str], list[PaneStatus]] = {}
     for status in statuses:
         grouped.setdefault((status.server, status.session), []).append(status)

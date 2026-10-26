@@ -1,17 +1,22 @@
 # /// script
 # requires-python = ">=3.10,<4.0"
 # dependencies = [
-#     "datasets==4.0.0",
-#     "huggingface-hub==0.34.4",
+#     "datasets==5.0.1",
+#     "huggingface-hub==1.28.0",
 # ]
 # ///
 
 """Create the IFEval instruction-following datasets and upload to HF Hub."""
 
+import argparse
 import json
 
 from datasets import DatasetDict, load_dataset
-from huggingface_hub import HfApi
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 LANGUAGES = {
     "ca": "projecte-aina/IFEval_ca",
@@ -53,15 +58,19 @@ INSTRUCTION_ID_LIST_COLUMN_CANDIDATES = [
 KWARGS_COLUMN_CANDIDATES = ["kwargs", "turn_1_kwargs"]
 
 
-def main() -> None:
-    """Create the IFEval datasets and upload to HF Hub.
+def main(languages: list[str] | None = None) -> None:
+    """Create selected IFEval datasets and upload them to the HF Hub.
+
+    Args:
+        languages (optional):
+            Language codes to create. Defaults to all supported languages.
 
     Raises:
         ValueError:
-            If the dataset has more than one split, or if the columns could not be
-            properly identified.
+            If a language is unsupported, the dataset has more than one split, or if
+            the columns could not be properly identified.
     """
-    for language in LANGUAGES:
+    for language in _select_languages(languages=languages):
         source_repo_id = LANGUAGES[language]
 
         # Extract the source repo ID, subset and arguments
@@ -188,9 +197,47 @@ def main() -> None:
         dataset = dataset.map(transform).select_columns(["text", "target_text"])
 
         target_repo = TARGET_REPO.format(language=language)
-        HfApi().delete_repo(repo_id=target_repo, repo_type="dataset", missing_ok=True)
+        preflight_private_upload(repository_id=target_repo)
         dataset.push_to_hub(repo_id=target_repo, private=True)
 
 
+def _select_languages(languages: list[str] | None) -> list[str]:
+    """Validate and return the requested language codes.
+
+    Args:
+        languages:
+            Requested language codes, or None to select every supported language.
+
+    Returns:
+        The requested language codes.
+
+    Raises:
+        ValueError:
+            If any language code is unsupported.
+    """
+    selected_languages = list(LANGUAGES) if languages is None else languages
+    unsupported_languages = set(selected_languages) - LANGUAGES.keys()
+    if unsupported_languages:
+        unsupported = ", ".join(sorted(unsupported_languages))
+        raise ValueError(f"Unsupported language(s): {unsupported}")
+    return selected_languages
+
+
+def _parse_args() -> argparse.Namespace:
+    """Parse command-line options.
+
+    Returns:
+        Parsed command-line options.
+    """
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--language",
+        action="append",
+        choices=LANGUAGES,
+        help="Language code to create; may be specified more than once.",
+    )
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    main()
+    main(languages=_parse_args().language)

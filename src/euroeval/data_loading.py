@@ -38,7 +38,7 @@ def load_data(
             The configuration for the dataset.
         benchmark_config:
             The configuration for the benchmark.
-        create_validation_split:
+        create_validation_split (optional):
             Whether to derive a validation split from training data when the dataset has
             no configured validation split. This is intended for non-generative
             fine-tuning only.
@@ -184,6 +184,7 @@ def load_raw_data(
                             else None
                         ),
                         cache_dir=cache_dir,
+                        revision=dataset_config.revision,
                         token=unscramble("XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_"),
                     )
                 break
@@ -205,6 +206,7 @@ def load_raw_data(
                                 else None
                             ),
                             cache_dir=cache_dir,
+                            revision=dataset_config.revision,
                             token=get_hf_token(api_key=api_key),
                         )
                     break

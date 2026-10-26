@@ -26,6 +26,7 @@ WMT24PP_EN_CS_CONFIG = TranslationDatasetConfig(
     languages=[CZECH],
     source_language=ENGLISH,
     target_language=CZECH,
+    revision="8f83d26dbc5b2d7a5b84d01e0318cf77be49bd48",
 )
 
 FLORES_EN_CS_CONFIG = TranslationDatasetConfig(
@@ -36,6 +37,7 @@ FLORES_EN_CS_CONFIG = TranslationDatasetConfig(
     languages=[CZECH],
     source_language=ENGLISH,
     target_language=CZECH,
+    revision="0135bb05ff029b1d868bf456239137daec7d7e85",
 )
 
 CSFD_SENTIMENT_CONFIG = DatasetConfig(
@@ -44,6 +46,7 @@ CSFD_SENTIMENT_CONFIG = DatasetConfig(
     source="EuroEval/csfd-sentiment-mini",
     task=SENT,
     languages=[CZECH],
+    revision="e37a88400c5417f7865a67a6c33037540b72bafb",
 )
 
 CS_GEC_CONFIG = DatasetConfig(
@@ -52,6 +55,7 @@ CS_GEC_CONFIG = DatasetConfig(
     source="EuroEval/cs-gec-mini",
     task=LA,
     languages=[CZECH],
+    revision="86b350bb54ece5f032eb25d183add1db4b5bedab",
 )
 
 PONER_CONFIG = DatasetConfig(
@@ -60,6 +64,7 @@ PONER_CONFIG = DatasetConfig(
     source="EuroEval/poner-mini",
     task=NER,
     languages=[CZECH],
+    revision="7aab741baed88bd99f50e3899b5dd88488c478e1",
 )
 
 SQAD_CONFIG = DatasetConfig(
@@ -68,6 +73,7 @@ SQAD_CONFIG = DatasetConfig(
     source="EuroEval/sqad-mini",
     task=RC,
     languages=[CZECH],
+    revision="442434c36eb4dfdd4f1ee2bdb2b2f6d834f13682",
 )
 
 CZECH_NEWS_CONFIG = DatasetConfig(
@@ -76,6 +82,7 @@ CZECH_NEWS_CONFIG = DatasetConfig(
     source="EuroEval/czech-news-mini",
     task=SUMM,
     languages=[CZECH],
+    revision="5cd874e7f187a27c251ea78a934a41460a20523c",
 )
 
 UMIMETO_QA_CONFIG = DatasetConfig(
@@ -84,6 +91,7 @@ UMIMETO_QA_CONFIG = DatasetConfig(
     source="EuroEval/umimeto-qa",
     task=KNOW,
     languages=[CZECH],
+    revision="8e96f264882e30039519f7e6b3d79ff338634a8d",
 )
 
 HELLASWAG_CS_CONFIG = DatasetConfig(
@@ -92,6 +100,7 @@ HELLASWAG_CS_CONFIG = DatasetConfig(
     source="EuroEval/hellaswag-cs-mini",
     task=COMMON_SENSE,
     languages=[CZECH],
+    revision="d9c750b7bacccb68abe55a074c1d67d50a692ea0",
 )
 
 MULTI_IFEVAL_CS_CONFIG = DatasetConfig(
@@ -102,6 +111,7 @@ MULTI_IFEVAL_CS_CONFIG = DatasetConfig(
     languages=[CZECH],
     train_split=None,
     val_split=None,
+    revision="8efd487c28ad640f7ff92fd63d1c41ec0f39b8cd",
 )
 
 RAGTRUTH_CS_CONFIG = DatasetConfig(
@@ -111,6 +121,7 @@ RAGTRUTH_CS_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[CZECH],
     train_split=None,
+    revision="e88d1413fc280edbbc7092ac31e03cf61d32f88f",
 )
 
 
@@ -123,6 +134,7 @@ MULTI_BFCL_CS_CONFIG = DatasetConfig(
     task=TOOL_CALLING,
     languages=[CZECH],
     train_split=None,
+    revision="186d36302aa082fb7d57c7428c410672aeea0501",
 )
 
 
@@ -135,6 +147,7 @@ WMT24PP_CS_EN_CONFIG = TranslationDatasetConfig(
     source_language=CZECH,
     target_language=ENGLISH,
     unofficial=True,
+    revision="d3f258b81237fc1759862dbc65547897243895f2",
 )
 
 FLORES_CS_EN_CONFIG = TranslationDatasetConfig(
@@ -146,6 +159,7 @@ FLORES_CS_EN_CONFIG = TranslationDatasetConfig(
     source_language=CZECH,
     target_language=ENGLISH,
     unofficial=True,
+    revision="30569e5956984aabe63bc1419d40b815d2d0b83b",
 )
 
 SCALA_CS_CONFIG = DatasetConfig(
@@ -155,6 +169,7 @@ SCALA_CS_CONFIG = DatasetConfig(
     task=LA,
     languages=[CZECH],
     unofficial=True,
+    revision="a4ed703ebf1e5ac9d1bcbc9cafc725ebd9992c3a",
 )
 
 EU_MMLU_CS_CONFIG = DatasetConfig(
@@ -164,4 +179,5 @@ EU_MMLU_CS_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[CZECH],
     unofficial=True,
+    revision="9dd660a7712d9e41163e3fa36b5ac9276f46daa5",
 )

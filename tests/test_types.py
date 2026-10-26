@@ -16,7 +16,14 @@ from euroeval.types import is_list_of_int, is_list_of_list_of_int, is_list_of_st
     ],
 )
 def test_is_list_of_int(obj: list, expected: bool) -> None:
-    """Test the `is_list_of_int` function."""
+    """Test the `is_list_of_int` function.
+
+    Args:
+        obj:
+            Obj supplied to the test.
+        expected:
+            Expected value for this test case.
+    """
     assert is_list_of_int(obj) == expected
 
 
@@ -32,7 +39,14 @@ def test_is_list_of_int(obj: list, expected: bool) -> None:
     ],
 )
 def test_is_list_of_list_of_int(obj: list, expected: bool) -> None:
-    """Test the `is_list_of_int` function."""
+    """Test the `is_list_of_int` function.
+
+    Args:
+        obj:
+            Obj supplied to the test.
+        expected:
+            Expected value for this test case.
+    """
     assert is_list_of_list_of_int(obj) == expected
 
 
@@ -46,5 +60,12 @@ def test_is_list_of_list_of_int(obj: list, expected: bool) -> None:
     ],
 )
 def test_is_list_of_str(obj: list, expected: bool) -> None:
-    """Test the `is_list_of_str` function."""
+    """Test the `is_list_of_str` function.
+
+    Args:
+        obj:
+            Obj supplied to the test.
+        expected:
+            Expected value for this test case.
+    """
     assert is_list_of_str(obj) == expected

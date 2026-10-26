@@ -128,6 +128,12 @@ def benchmark_config(
 ) -> Generator[BenchmarkConfig, None, None]:
     """Yields a benchmark configuration used in tests.
 
+    Args:
+        auth:
+            Auth supplied to the test.
+        device:
+            Device supplied to the test.
+
     Yields:
         A benchmark configuration used in tests.
     """
@@ -209,6 +215,10 @@ def generative_model_id() -> Generator[str, None, None]:
 )
 def language(request: pytest.FixtureRequest) -> Generator[str, None, None]:
     """Yields a language used in tests.
+
+    Args:
+        request:
+            Pytest request for parametrised fixture setup.
 
     Yields:
         A language used in tests.
@@ -292,6 +302,10 @@ def openai_model_id() -> Generator[str, None, None]:
 )
 def task(request: pytest.FixtureRequest) -> Generator[Task, None, None]:
     """Yields a dataset task used in tests.
+
+    Args:
+        request:
+            Pytest request for parametrised fixture setup.
 
     Yields:
         A dataset task used in tests.

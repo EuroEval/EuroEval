@@ -24,8 +24,11 @@ import logging
 import pandas as pd
 from datasets import ClassLabel, Dataset, DatasetDict, load_dataset
 from evaluate import load
-from huggingface_hub import HfApi
-from requests import HTTPError
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_duidelijke_taal")
@@ -85,14 +88,8 @@ def main() -> None:
     )
     processed_dataset_id = "EuroEval/duidelijke-taal"
 
-    # Remove the dataset from Hugging Face Hub if it already exists
-    try:
-        api: HfApi = HfApi()
-        api.delete_repo(processed_dataset_id, repo_type="dataset")
-    except HTTPError:
-        pass
-
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=processed_dataset_id)
     dataset.push_to_hub(processed_dataset_id, private=True)
 
 

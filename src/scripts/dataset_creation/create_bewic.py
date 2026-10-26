@@ -14,7 +14,11 @@ both contexts.
 """
 
 from datasets import Dataset, DatasetDict, load_dataset
-from huggingface_hub import HfApi
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 SOURCE_REPOSITORY = "maaxap/BelarusianGLUE"
 SOURCE_CONFIG = "bewic"
@@ -33,7 +37,7 @@ def main() -> None:
 
     dataset = process_dataset(source_dataset=source_dataset)
 
-    HfApi().delete_repo(repo_id=TARGET_REPOSITORY, repo_type="dataset", missing_ok=True)
+    preflight_private_upload(repository_id=TARGET_REPOSITORY)
     dataset.push_to_hub(repo_id=TARGET_REPOSITORY, private=True)
 
 
@@ -82,6 +86,15 @@ def _process_split(dataset: Dataset, limit: int) -> Dataset:
     dataset = dataset.select_columns(["word", "sentence1", "sentence2", "label"])
 
     def format_sample(sample: dict[str, str | int]) -> dict[str, str]:
+        """Format one BeWiC row as text and a EuroEval label.
+
+        Args:
+            sample:
+                A source row containing a target word, two sentences and a label.
+
+        Returns:
+            The formatted sample with ``text`` and ``label`` fields.
+        """
         return {
             "text": (
                 f"Слова: {str(sample['word']).strip()}\n"

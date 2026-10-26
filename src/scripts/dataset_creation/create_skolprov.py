@@ -24,8 +24,12 @@ from constants import (
     MIN_NUM_CHARS_IN_OPTION,
 )
 from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
 logger = logging.getLogger("create_skolprov")
@@ -82,7 +86,15 @@ def main() -> None:
     df = df[df.label != "e"]
 
     def is_repetitive(text: str) -> bool:
-        """Return True if the text is repetitive."""
+        """Check whether the text contains excessive repetition.
+
+        Args:
+            text (str):
+                Text to check for repetition.
+
+        Returns:
+            Whether the text exceeds the repetition limit.
+        """
         if pd.isna(text):
             return False
         max_repetitions = max(Counter(str(text).split()).values())
@@ -106,7 +118,8 @@ def main() -> None:
         """Create the text column.
 
         Args:
-            row: The row of the dataframe.
+            row:
+                The row of the dataframe.
 
         Returns:
             The text column.
@@ -170,10 +183,8 @@ def main() -> None:
     # Create dataset ID
     dataset_id = "EuroEval/skolprov"
 
-    # Remove the dataset from Hugging Face Hub if it already exists
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
-
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 

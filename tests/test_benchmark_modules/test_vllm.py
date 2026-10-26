@@ -349,7 +349,18 @@ class TestIsMistralTokeniserModel:
         architectures: list[str] | None,
         expected: bool,
     ) -> None:
-        """Mistral detection distinguishes architectures and model IDs."""
+        """Mistral detection distinguishes architectures and model IDs.
+
+        Args:
+            model_id:
+                Model identifier used by the test.
+            model_type:
+                Model type supplied to the test.
+            architectures:
+                Architectures supplied to the test.
+            expected:
+                Expected value for this test case.
+        """
         config = MagicMock()
         config.model_type = model_type
         config.architectures = architectures
@@ -372,7 +383,14 @@ class TestLoadModelImageProcessorRetry:
     def test_load_model_raises_invalid_model_when_retry_also_fails(
         self, model_config: ModelConfig, benchmark_config: BenchmarkConfig
     ) -> None:
-        """load_model raises InvalidModel when both attempts fail."""
+        """load_model raises InvalidModel when both attempts fail.
+
+        Args:
+            model_config:
+                Model configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         mock_hf_model_config = MagicMock(spec=["dtype", "architectures"])
         mock_hf_model_config.dtype = torch.float16
         mock_hf_model_config.architectures = None
@@ -381,6 +399,16 @@ class TestLoadModelImageProcessorRetry:
         mock_vllm_module.config = MagicMock(spec=[])
 
         def _always_fail(**kwargs: object) -> object:
+            """Always fail for this test.
+
+            Args:
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Raises:
+                OSError:
+                    If the simulated operation fails.
+            """
             raise OSError(
                 "Can't load image processor for 'test-model/4bit'. "
                 "If you were trying to load it from 'https://huggingface.co/models',"
@@ -426,7 +454,14 @@ class TestLoadModelImageProcessorRetry:
     def test_load_model_retries_on_missing_image_processor(
         self, model_config: ModelConfig, benchmark_config: BenchmarkConfig
     ) -> None:
-        """load_model succeeds when LLM() raises the image-processor OSError once."""
+        """load_model succeeds when LLM() raises the image-processor OSError once.
+
+        Args:
+            model_config:
+                Model configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         mock_llm_instance = MagicMock()
         mock_hf_model_config = MagicMock(spec=["dtype", "architectures"])
         mock_hf_model_config.dtype = torch.float16
@@ -438,6 +473,19 @@ class TestLoadModelImageProcessorRetry:
         call_count = [0]
 
         def _llm_constructor(**kwargs: object) -> object:
+            """Llm constructor for this test.
+
+            Args:
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+
+            Raises:
+                OSError:
+                    If the simulated operation fails.
+            """
             call_count[0] += 1
             if call_count[0] == 1:
                 raise OSError(
@@ -534,6 +582,18 @@ class TestLoadModelMaxModelLen:
         MAX_CONTEXT_LENGTH + REASONING_MAX_TOKENS; for all other types it is capped at
         MAX_CONTEXT_LENGTH. When the model's true max length is smaller than the cap,
         the true max length is used instead.
+
+        Args:
+            generative_type:
+                Generative type supplied to the test.
+            true_max_model_len:
+                True max model len supplied to the test.
+            expected_max_model_len:
+                Expected max model len for this case.
+            model_config:
+                Model configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
         """
         mock_llm_instance = MagicMock()
         mock_hf_model_config = MagicMock(spec=["dtype", "architectures"])
@@ -599,7 +659,14 @@ class TestLoadModelMultimodalBudgetRetry:
     def test_load_model_raises_invalid_model_when_multimodal_retry_also_fails(
         self, model_config: ModelConfig, benchmark_config: BenchmarkConfig
     ) -> None:
-        """load_model raises InvalidModel when multimodal retry also fails."""
+        """load_model raises InvalidModel when multimodal retry also fails.
+
+        Args:
+            model_config:
+                Model configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         mock_hf_model_config = MagicMock(spec=["dtype", "architectures"])
         mock_hf_model_config.dtype = torch.float16
         mock_hf_model_config.architectures = ["Mistral3ForConditionalGeneration"]
@@ -608,6 +675,16 @@ class TestLoadModelMultimodalBudgetRetry:
         mock_vllm_module.config = MagicMock(spec=[])
 
         def _always_fail(**kwargs: object) -> object:
+            """Always fail for this test.
+
+            Args:
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Raises:
+                RuntimeError:
+                    If the simulated operation fails.
+            """
             raise RuntimeError(
                 "Failed to initialize model: multimodal budget exceeded. "
                 "MM input not allowed when limit_mm_per_prompt is not set."
@@ -652,7 +729,14 @@ class TestLoadModelMultimodalBudgetRetry:
     def test_load_model_retries_on_multimodal_budget_error(
         self, model_config: ModelConfig, benchmark_config: BenchmarkConfig
     ) -> None:
-        """load_model succeeds when LLM() raises a multimodal budget error once."""
+        """load_model succeeds when LLM() raises a multimodal budget error once.
+
+        Args:
+            model_config:
+                Model configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         mock_llm_instance = MagicMock()
         mock_hf_model_config = MagicMock(spec=["dtype", "architectures"])
         mock_hf_model_config.dtype = torch.float16
@@ -664,6 +748,19 @@ class TestLoadModelMultimodalBudgetRetry:
         call_count = [0]
 
         def _llm_constructor(**kwargs: object) -> object:
+            """Llm constructor for this test.
+
+            Args:
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+
+            Raises:
+                RuntimeError:
+                    If the simulated operation fails.
+            """
             call_count[0] += 1
             if call_count[0] == 1:
                 raise RuntimeError(
@@ -739,7 +836,18 @@ class TestMoeAlignedTensorParallelSize:
         expert_size: int | None,
         expected: int,
     ) -> None:
-        """MoE alignment preserves valid sizes and reduces invalid shards."""
+        """MoE alignment preserves valid sizes and reduces invalid shards.
+
+        Args:
+            tensor_parallel_size:
+                Tensor parallel size supplied to the test.
+            config_kind:
+                Config kind supplied to the test.
+            expert_size:
+                Expert size supplied to the test.
+            expected:
+                Expected value for this test case.
+        """
         if config_kind == "missing":
             hf_model_config = None
         elif config_kind == "non-moe":
@@ -783,6 +891,16 @@ class TestNvccCheck:
 
         The check should require nvcc only when CUDA is available on a non-ROCm
         (i.e. NVIDIA) build and nvcc is missing from PATH.
+
+        Args:
+            cuda_available:
+                Cuda available supplied to the test.
+            hip_version:
+                Hip version supplied to the test.
+            nvcc_path:
+                Nvcc path supplied to the test.
+            needs_nvcc:
+                Needs nvcc supplied to the test.
         """
         with (
             patch.object(torch.cuda, "is_available", return_value=cuda_available),
@@ -803,10 +921,28 @@ class TestNvccCheck:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """Test that NeedsSystemDependency is raised on NVIDIA CUDA without nvcc."""
+        """Test that NeedsSystemDependency is raised on NVIDIA CUDA without nvcc.
+
+        Args:
+            model_config:
+                Model configuration exercised by the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         original_find_spec = importlib.util.find_spec
 
         def mock_find_spec(name: str) -> object:
+            """Mock find spec for this test.
+
+            Args:
+                name:
+                    Name supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             if name == "vllm":
                 return MagicMock()
             return original_find_spec(name)
@@ -831,10 +967,28 @@ class TestNvccCheck:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """Test that NeedsSystemDependency is not raised on ROCm without nvcc."""
+        """Test that NeedsSystemDependency is not raised on ROCm without nvcc.
+
+        Args:
+            model_config:
+                Model configuration exercised by the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         original_find_spec = importlib.util.find_spec
 
         def mock_find_spec(name: str) -> object:
+            """Mock find spec for this test.
+
+            Args:
+                name:
+                    Name supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             if name == "vllm":
                 return MagicMock()
             return original_find_spec(name)
@@ -867,7 +1021,14 @@ class TestOlmo3RopeParameters:
     def test_non_olmo3_model_no_rope_parameters_override(
         self, model_config: ModelConfig, benchmark_config: BenchmarkConfig
     ) -> None:
-        """Test that non-OLMo-3 models don't get rope_parameters override."""
+        """Test that non-OLMo-3 models don't get rope_parameters override.
+
+        Args:
+            model_config:
+                Model configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         mock_llm_instance = MagicMock()
         mock_hf_model_config = MagicMock(spec=["dtype", "architectures", "model_type"])
         mock_hf_model_config.dtype = torch.float16
@@ -921,7 +1082,14 @@ class TestOlmo3RopeParameters:
     def test_olmo3_model_by_architecture_only(
         self, model_config: ModelConfig, benchmark_config: BenchmarkConfig
     ) -> None:
-        """Test OLMo-3 detection by architecture name alone."""
+        """Test OLMo-3 detection by architecture name alone.
+
+        Args:
+            model_config:
+                Model configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         mock_llm_instance = MagicMock()
         mock_hf_model_config = MagicMock(
             spec=["dtype", "architectures", "model_type", "rope_theta", "rope_scaling"]
@@ -985,6 +1153,12 @@ class TestOlmo3RopeParameters:
         config.json, but vLLM's olmo2.py implementation expects them nested in
         rope_parameters. This test verifies the fix in load_model() constructs
         the correct override.
+
+        Args:
+            model_config:
+                Model configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
         """
         mock_llm_instance = MagicMock()
         mock_hf_model_config = MagicMock(
@@ -1058,7 +1232,14 @@ class TestOlmo3RopeParameters:
     def test_olmo3_with_existing_rope_parameters_not_overridden(
         self, model_config: ModelConfig, benchmark_config: BenchmarkConfig
     ) -> None:
-        """Test that OLMo-3 models with existing rope_parameters are not overridden."""
+        """Test that OLMo-3 models with existing rope_parameters are not overridden.
+
+        Args:
+            model_config:
+                Model configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         mock_llm_instance = MagicMock()
         mock_hf_model_config = MagicMock(
             spec=["dtype", "architectures", "model_type", "rope_parameters"]
@@ -1123,6 +1304,12 @@ class TestOlmo3RopeParameters:
         Transformers 5.x uses nested rope_parameters with full_attention and
         sliding_attention sub-dicts. vLLM expects a flat structure, so we extract
         from full_attention and merge with top-level rope_theta.
+
+        Args:
+            model_config:
+                Model configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
         """
         mock_llm_instance = MagicMock()
         mock_hf_model_config = MagicMock(
@@ -1226,7 +1413,12 @@ class TestSafeBatchDecode:
     def test_fallback_to_individual_decode(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """Test that decode falls back when batch_decode raises AttributeError."""
+        """Test that decode falls back when batch_decode raises AttributeError.
+
+        Args:
+            caplog:
+                Fixture for capturing log records during the test.
+        """
         mock_tokeniser = MagicMock()
         mock_tokeniser.batch_decode.side_effect = AttributeError(
             "list object has no attribute replace"
@@ -1263,6 +1455,22 @@ class TestSkipImageProcessorContext:
             *args: object,
             **kwargs: object,
         ) -> object:
+            """Raise missing for this test.
+
+            Args:
+                cls:
+                    Image processor class used by the mock.
+                pretrained_model_name_or_path:
+                    Pretrained model name or path supplied to the test.
+                args:
+                    Args supplied to the test.
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Raises:
+                OSError:
+                    If the simulated operation fails.
+            """
             raise OSError(
                 f"Can't load image processor for '{pretrained_model_name_or_path}'. "
                 "If you were trying to load it from 'https://huggingface.co/models', "
@@ -1296,6 +1504,22 @@ class TestSkipImageProcessorContext:
             *args: object,
             **kwargs: object,
         ) -> object:
+            """Raise other for this test.
+
+            Args:
+                cls:
+                    Image processor class used by the mock.
+                pretrained_model_name_or_path:
+                    Pretrained model name or path supplied to the test.
+                args:
+                    Args supplied to the test.
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Raises:
+                OSError:
+                    If the simulated operation fails.
+            """
             raise OSError("Some other file-system error")
 
         real_func = AutoImageProcessor.from_pretrained.__func__
@@ -1314,7 +1538,12 @@ class TestVLLMClassification:
     def test_base_few_shot_prompt_uses_json_answer(
         self, dataset_config: DatasetConfig
     ) -> None:
-        """Base few-shot examples include the same JSON answer contract."""
+        """Base few-shot examples include the same JSON answer contract.
+
+        Args:
+            dataset_config:
+                Dataset configuration exercised by the test.
+        """
         config = self._classification_config(
             dataset_config=dataset_config,
             label_mapping={"positive": "agree", "negative": "disagree"},
@@ -1341,7 +1570,24 @@ class TestVLLMClassification:
         labels: list[str] | None = None,
         label_mapping: dict[str, str] | None = None,
     ) -> DatasetConfig:
-        """Return a small classification configuration for prompt tests."""
+        """Return a small classification configuration for prompt tests.
+
+        Args:
+            dataset_config:
+                Dataset configuration exercised by the test.
+            task_group (optional):
+                Task group used to configure the test dataset. Defaults to
+                ``TaskGroup.SEQUENCE_CLASSIFICATION``.
+            labels (optional):
+                Candidate labels for the test dataset. Defaults to None, which uses
+                positive and negative labels.
+            label_mapping (optional):
+                Mapping from dataset labels to prompt labels. Defaults to None, which
+                maps each label to itself.
+
+        Returns:
+            A copied dataset configuration for classification prompt tests.
+        """
         config = copy.copy(dataset_config)
         labels = ["positive", "negative"] if labels is None else labels
         config.task = dataclasses.replace(
@@ -1361,7 +1607,12 @@ class TestVLLMClassification:
     def test_dynamic_classification_uses_open_json_schema(
         self, dataset_config: DatasetConfig
     ) -> None:
-        """Variable-choice classifications require a JSON object without enum."""
+        """Variable-choice classifications require a JSON object without enum.
+
+        Args:
+            dataset_config:
+                Dataset configuration exercised by the test.
+        """
         config = self._classification_config(
             dataset_config=dataset_config,
             task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
@@ -1384,7 +1635,17 @@ class TestVLLMClassification:
 
     @staticmethod
     def _model(config: DatasetConfig, generative_type: GenerativeType) -> VLLMModel:
-        """Return an uninitialised vLLM model for configuration-only tests."""
+        """Return an uninitialised vLLM model for configuration-only tests.
+
+        Args:
+            config:
+                Config supplied to the test.
+            generative_type:
+                Generative type used by the test model.
+
+        Returns:
+            An uninitialised vLLM model populated with test configuration.
+        """
         model = object.__new__(VLLMModel)
         model.dataset_config = config
         model.benchmark_config = MagicMock(generative_type=generative_type)
@@ -1395,7 +1656,12 @@ class TestVLLMClassification:
     def test_dynamic_mcq_choices_are_json_objects(
         self, dataset_config: DatasetConfig
     ) -> None:
-        """Variable-length MCQ choices are included in the JSON prompt contract."""
+        """Variable-length MCQ choices are included in the JSON prompt contract.
+
+        Args:
+            dataset_config:
+                Dataset configuration exercised by the test.
+        """
         config = self._classification_config(
             dataset_config=dataset_config,
             task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
@@ -1420,7 +1686,12 @@ class TestVLLMClassification:
     def test_json_choices_leave_quoted_label_in_input_unchanged(
         self, dataset_config: DatasetConfig
     ) -> None:
-        """Structured choices do not rewrite matching text in the user input."""
+        """Structured choices do not rewrite matching text in the user input.
+
+        Args:
+            dataset_config:
+                Dataset configuration exercised by the test.
+        """
         config = self._classification_config(
             dataset_config=dataset_config,
             label_mapping={"positive": "agree", "negative": "disagree"},
@@ -1457,7 +1728,12 @@ class TestVLLMClassification:
     def test_non_classification_bypasses_structured_schema(
         self, dataset_config: DatasetConfig
     ) -> None:
-        """Unlabelled text generation does not receive a classification schema."""
+        """Unlabelled text generation does not receive a classification schema.
+
+        Args:
+            dataset_config:
+                Dataset configuration exercised by the test.
+        """
         config = self._classification_config(
             dataset_config=dataset_config,
             task_group=TaskGroup.TEXT_TO_TEXT,
@@ -1504,7 +1780,16 @@ class TestVLLMClassification:
         generative_type: GenerativeType,
         inputs: dict[str, list[str]],
     ) -> None:
-        """Reasoning and BPC generation bypass structured decoding."""
+        """Reasoning and BPC generation bypass structured decoding.
+
+        Args:
+            dataset_config:
+                Dataset configuration exercised by the test.
+            generative_type:
+                Generative type supplied to the test.
+            inputs:
+                Inputs supplied to the test.
+        """
         config = self._classification_config(dataset_config=dataset_config)
         model = self._model(config=config, generative_type=generative_type)
         assert model._setup_structured_outputs(inputs=inputs) is None
@@ -1512,7 +1797,12 @@ class TestVLLMClassification:
     def test_structured_schema_uses_mapped_labels(
         self, dataset_config: DatasetConfig
     ) -> None:
-        """Classification schemas enumerate mapped Unicode-safe scalar labels."""
+        """Classification schemas enumerate mapped Unicode-safe scalar labels.
+
+        Args:
+            dataset_config:
+                Dataset configuration exercised by the test.
+        """
         config = self._classification_config(
             dataset_config=dataset_config,
             labels=["positive", "negative"],
@@ -1534,7 +1824,12 @@ class TestVLLMClassification:
     def test_variable_choice_backend_passes_json_contract(
         self, dataset_config: DatasetConfig
     ) -> None:
-        """The vLLM backend passes the JSON key to dataset preparation."""
+        """The vLLM backend passes the JSON key to dataset preparation.
+
+        Args:
+            dataset_config:
+                Dataset configuration exercised by the test.
+        """
         config = self._classification_config(
             dataset_config=dataset_config,
             task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
@@ -1572,6 +1867,10 @@ class TestVLLMPromptTruncation:
         Regression test: when bos_token is None and generate() calls
         prompt.replace(bos_token, ""), a TypeError was raised. The fix guards
         the replace() call with an explicit None check.
+
+        Args:
+            bos_token:
+                Bos token supplied to the test.
         """
         end_of_chat_token = "<|im_end|>"
         bos_prefix = bos_token or ""
@@ -1592,6 +1891,17 @@ class TestVLLMPromptTruncation:
         tokenize_call_count = [0]
 
         def _mock_tokenize(*args, **kwargs) -> MagicMock:
+            """Mock tokenize for this test.
+
+            Args:
+                args:
+                    Args supplied to the test.
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             result = MagicMock()
             tokenize_call_count[0] += 1
             if tokenize_call_count[0] == 1:
@@ -1643,6 +1953,18 @@ class TestVLLMPromptTruncation:
             # Mirror the constructor kwargs onto the mock so the code under test reads
             # back the real values (e.g. `prompt_logprobs=None` selects the generation
             # path rather than the BPC scoring path).
+            """Build sampling parameters that expose constructor values to the test.
+
+            Mirroring the arguments lets ``generate`` distinguish normal generation
+            from BPC scoring based on the configured ``prompt_logprobs`` value.
+
+            Args:
+                kwargs:
+                    Sampling parameter values passed by the code under test.
+
+            Returns:
+                A mock with each sampling parameter available as an attribute.
+            """
             sampling_params = MagicMock()
             for key, value in kwargs.items():
                 setattr(sampling_params, key, value)

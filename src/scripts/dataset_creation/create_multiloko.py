@@ -26,11 +26,15 @@ import pandas as pd
 from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from dotenv import load_dotenv
-from huggingface_hub import HfApi
 from openai import OpenAI
 from openai.types.chat import ChatCompletionUserMessageParam
 from pydantic import BaseModel
 from tqdm.auto import tqdm
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 
@@ -117,7 +121,7 @@ def main() -> None:
         )
 
         dataset_id = f"EuroEval/multiloko-{language}-mini"
-        HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
+        preflight_private_upload(repository_id=dataset_id)
         dataset_out.push_to_hub(dataset_id, private=True)
 
 

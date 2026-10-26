@@ -25,8 +25,12 @@ from constants import (
     MIN_NUM_CHARS_IN_OPTION,
 )
 from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 LANGUAGES = [
     "da",
@@ -103,7 +107,15 @@ def main() -> None:
         ]
 
         def is_repetitive(text: str) -> bool:
-            """Return True if the text is repetitive."""
+            """Return whether any word appears more than the repetition limit.
+
+            Args:
+                text:
+                    Text to check.
+
+            Returns:
+                Whether the text exceeds the maximum word repetition count.
+            """
             max_repetitions = max(Counter(text.split()).values())
             return max_repetitions > MAX_REPETITIONS
 
@@ -184,28 +196,31 @@ def main() -> None:
         else:
             dataset_id = f"EuroEval/mmlu-{language}-mini"
 
-        # Remove the dataset from Hugging Face Hub if it already exists
-        HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
-
         # Push the dataset to the Hugging Face Hub
+        preflight_private_upload(repository_id=dataset_id)
         dataset.push_to_hub(dataset_id, private=True)
 
 
 def load_mmlux_dataset(subset_id: str = "PT-PT") -> DatasetDict:
     """Load and process a subset split from LumiOpen/opengpt-x_mmlux.
 
+    Args:
+        subset_id (optional):
+            The MMLU-X subset identifier. Defaults to ``PT-PT``.
+
     Returns:
-        DatasetDict: Hugging Face DatasetDict with train, val, and test splits.
+        Hugging Face dataset dictionary with train, val, and test splits.
     """
 
     def _process_split(split: str) -> pl.DataFrame:
-        """Process a single split of the Portuguese MMLU dataset.
+        """Process one split of the Portuguese MMLU dataset.
 
         Args:
-            split (str): The split name ("dev", "validation", or "test").
+            split:
+                Source split name, such as ``dev``, ``validation``, or ``test``.
 
         Returns:
-            polars.DataFrame: Processed DataFrame for the split.
+            Processed Polars dataframe for the split.
         """
         return (
             pl.read_ndjson(

@@ -74,12 +74,27 @@ def benchmark_speed_single_iteration(
     short_doc = base_doc * round(short_multiplier)
 
     def generate_messages_predict(doc: str) -> None:
+        """Run generation using chat messages for the supplied document.
+
+        Args:
+            doc: The document to send to the model.
+        """
         model.generate(inputs=dict(messages=[[dict(role="user", content=doc)]]))
 
     def generate_prompt_predict(doc: str) -> None:
+        """Run generation using a plain-text prompt for the supplied document.
+
+        Args:
+            doc: The document to send to the model.
+        """
         model.generate(inputs=dict(text=[doc]))
 
     def encoder_predict(doc: str) -> None:
+        """Run encoder inference on the supplied document.
+
+        Args:
+            doc: The document to encode and score.
+        """
         tokeniser = model.get_tokeniser()
         pytorch_model = model.get_pytorch_module()
         inputs = {

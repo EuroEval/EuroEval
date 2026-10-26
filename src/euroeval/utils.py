@@ -36,8 +36,7 @@ def enforce_reproducibility(seed: int = 4242) -> np.random.Generator:
     """Ensures reproducibility of experiments.
 
     Args:
-        seed:
-            Seed for the random number generator.
+        seed (optional): Seed for the random number generator. Defaults to 4242.
 
     Returns:
         A numpy random generator
@@ -105,6 +104,9 @@ def internet_connection_available() -> bool:
 
     Returns:
         Whether or not internet connection is available.
+
+    Raises:
+        Any exception not caused by a blocked socket connection is propagated.
     """
     internet_available: bool = False
 

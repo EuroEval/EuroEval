@@ -24,7 +24,11 @@ from constants import (
     MIN_NUM_CHARS_IN_OPTION,
 )
 from datasets import Dataset, DatasetDict, Split, disable_progress_bars, load_dataset
-from huggingface_hub import HfApi
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
 logger = logging.getLogger("create_winogrande")
@@ -103,7 +107,7 @@ def main() -> None:
 
         # Push the dataset to the Hugging Face Hub
         target_dataset_id = f"EuroEval/winogrande-{language}"
-        HfApi().delete_repo(target_dataset_id, repo_type="dataset", missing_ok=True)
+        preflight_private_upload(repository_id=target_dataset_id)
         dataset.push_to_hub(target_dataset_id, private=True)
 
 
@@ -182,7 +186,15 @@ def prepare_dataframe(df: pd.DataFrame, language: str) -> pd.DataFrame:
 
 
 def is_repetitive(text: str) -> bool:
-    """Return True if the text is repetitive."""
+    """Return whether any word appears more than the repetition limit.
+
+    Args:
+        text:
+            Text to check.
+
+    Returns:
+        Whether the text exceeds the maximum word repetition count.
+    """
     max_repetitions = max(Counter(text.split()).values())
     return max_repetitions > MAX_REPETITIONS
 

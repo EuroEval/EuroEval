@@ -26,6 +26,11 @@ from datasets import Dataset, DatasetDict, load_dataset
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
 
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
+
 
 def main() -> None:
     """Create the Exam-et dataset and upload it to the HF Hub."""
@@ -68,7 +73,15 @@ def main() -> None:
     ]
 
     def is_repetitive(text: str) -> bool:
-        """Return True if the text is repetitive."""
+        """Check whether the text contains excessive repetition.
+
+        Args:
+            text (str):
+                Text to check for repetition.
+
+        Returns:
+            Whether the text exceeds the repetition limit.
+        """
         max_repetitions = max(Counter(text.split()).values())
         return max_repetitions > MAX_REPETITIONS
 
@@ -130,7 +143,7 @@ def main() -> None:
         }
     )
 
-    api.delete_repo(repo_id=target_repo_id, repo_type="dataset", missing_ok=True)
+    preflight_private_upload(repository_id=target_repo_id)
     dataset.push_to_hub(target_repo_id, private=True)
 
 

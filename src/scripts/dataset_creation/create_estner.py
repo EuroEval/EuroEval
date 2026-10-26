@@ -12,7 +12,11 @@
 import typing as t
 
 from datasets import Dataset, DatasetDict, load_dataset
-from huggingface_hub import HfApi
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 
 def main() -> None:
@@ -46,10 +50,8 @@ def main() -> None:
     # reduce the number of diverse labels by mapping to MISC
     ds = ds.map(convert_labels)
 
-    # remove the dataset from Hugging Face Hub if it already exists
-    HfApi().delete_repo(target_repo_id, repo_type="dataset", missing_ok=True)
-
     # push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=target_repo_id)
     ds.push_to_hub(target_repo_id, private=True)
 
 

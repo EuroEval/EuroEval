@@ -154,8 +154,8 @@ class VLLMModel(HuggingFaceEncoderModel):
                 The dataset configuration.
             benchmark_config:
                 The benchmark configuration.
-            log_metadata:
-                Whether to log the model and dataset metadata.
+            log_metadata (optional):
+                Whether to log the model and dataset metadata. Defaults to True.
 
         Raises:
             NeedsSystemDependency:
@@ -359,6 +359,16 @@ class VLLMModel(HuggingFaceEncoderModel):
         ]
 
         def check_oom(error: Exception) -> None:
+            """Raise a clear model error when generation failed from OOM.
+
+            Args:
+                error:
+                    The exception raised by the vLLM generation attempt.
+
+            Raises:
+                InvalidModel:
+                    If the exception indicates insufficient device memory.
+            """
             if any(m in str(error).lower() for m in oom_messages):
                 raise InvalidModel(
                     "vLLM ran out of device memory during generation. On "
@@ -1165,6 +1175,10 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         Returns:
             The data collator.
+
+        Raises:
+            NotImplementedError:
+                vLLM models do not provide a finetuning data collator.
         """
         raise NotImplementedError(
             "The `data_collator` property has not been implemented for vLLM models."
@@ -1386,6 +1400,10 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         Returns:
             The Trainer class.
+
+        Raises:
+            NotImplementedError:
+                vLLM models do not provide a finetuning trainer.
         """
         raise NotImplementedError(
             "The `trainer_class` property has not been implemented for vLLM models."
@@ -1803,6 +1821,15 @@ def load_model(
     )
 
     def _create_wrapped(force_single_gpu: bool = False) -> "LLM":
+        """Create the model with the selected single- or multi-GPU settings.
+
+        Args:
+            force_single_gpu (optional):
+                Whether to force single-GPU execution. Defaults to False.
+
+        Returns:
+            The loaded vLLM model.
+        """
         return _create_llm_instance(
             model_location=model_location,
             download_dir=download_dir,
@@ -1871,8 +1898,8 @@ def _create_llm_instance(
             Model configuration.
         hf_model_config:
             The Hugging Face model configuration.
-        force_single_gpu:
-            If True, forces tensor parallelism to 1.
+        force_single_gpu (optional):
+            If True, forces tensor parallelism to 1. Defaults to False.
 
     Returns:
         The loaded vLLM LLM instance.
@@ -1918,12 +1945,12 @@ def select_backend_and_parallelism(
     """Determine the distributed backend and parallelism for vLLM.
 
     Args:
-        force_single_gpu:
-            If True, forces tensor parallelism to 1.
-        hf_model_config:
+        force_single_gpu (optional):
+            If True, forces tensor parallelism to 1. Defaults to False.
+        hf_model_config (optional):
             The Hugging Face model configuration, used to keep the tensor parallel
             size compatible with Mixture-of-Experts expert weight alignment. If None,
-            no such adjustment is made.
+            no such adjustment is made. Defaults to None.
 
     Returns:
         Backend, tensor parallel size, and pipeline parallel size.
@@ -2248,11 +2275,14 @@ def _skip_image_processor_context() -> c.Generator[None, None, None]:
 
     Some models have multimodal architectures (e.g. Mistral3ForConditionalGeneration)
     but are released without the preprocessor_config.json that transformers needs to
-    load the image processor.  Since EuroEval only does text inference, we can safely
+    load the image processor. Since EuroEval only does text inference, we can safely
     return None for the image processor and let vLLM load the text backbone normally.
 
     This context manager also sets environment flags to instruct vLLM to skip
     multimodal initialisation.
+
+    Yields:
+        Control to the model-loading operation with multimodal initialisation skipped.
     """
     original_func = AutoImageProcessor.from_pretrained.__func__
 
@@ -2260,6 +2290,25 @@ def _skip_image_processor_context() -> c.Generator[None, None, None]:
     def patched(
         cls: type, pretrained_model_name_or_path: str, *args: object, **kwargs: object
     ) -> object:
+        """Load an image processor, tolerating absent text-only processor files.
+
+        Args:
+            cls:
+                The image processor class.
+            pretrained_model_name_or_path:
+                The model path or repository identifier.
+            *args:
+                Additional positional arguments for the original loader.
+            **kwargs:
+                Additional keyword arguments for the original loader.
+
+        Returns:
+            The loaded image processor, or None when its config is absent.
+
+        Raises:
+            OSError:
+                If loading fails for a reason other than a missing image processor.
+        """
         try:
             return original_func(cls, pretrained_model_name_or_path, *args, **kwargs)  # ty: ignore[invalid-argument-type]
         except OSError as e:

@@ -40,7 +40,12 @@ class TestGlobalVariantSelection:
     def test_polish_keeps_variant_selected_from_global_results(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """A Polish filter must not change the global validation/test choice."""
+        """A Polish filter must not change the global validation/test choice.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         global_model_results = {
             "org/model (val)": {"global-dataset": [], "polish-dataset": []},
             "org/model": {"polish-dataset": []},
@@ -91,7 +96,14 @@ class TestGlobalVariantSelection:
     def test_simplified_outputs_use_global_canonical_variant(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        """Language outputs do not resurrect a narrower split variant."""
+        """Language outputs do not resurrect a narrower split variant.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         score = [([0.75] * 10, 0.75, 0.01)]
         other_score = [([0.65] * 10, 0.65, 0.01)]
         model_results = {
@@ -162,7 +174,14 @@ class TestInvalidResults:
     def test_empty_list_leaves_leaderboard_unchanged(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        """An empty invalid-results file leaves every model ranked and unmarked."""
+        """An empty invalid-results file leaves every model ranked and unmarked.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         empty_file = tmp_path / "invalid_results.yaml"
         empty_file.write_text("# No entries.\n", encoding="utf-8")
         from_file = self._generate(
@@ -298,7 +317,14 @@ class TestInvalidResults:
     def test_invalid_orthogonal_result_is_shown_and_marked(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        """An invalid orthogonal result keeps its score, marked, and ranks are kept."""
+        """An invalid orthogonal result keeps its score, marked, and ranks are kept.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         with_invalid = self._generate(
             monkeypatch=monkeypatch,
             tmp_path=tmp_path / "invalid",
@@ -352,7 +378,14 @@ class TestInvalidResults:
     def test_invalid_result_is_shown_but_not_ranked(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        """An invalid result is marked and ranked as if it were missing."""
+        """An invalid result is marked and ranked as if it were missing.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         with_invalid = self._generate(
             monkeypatch=monkeypatch,
             tmp_path=tmp_path / "invalid",
@@ -405,6 +438,12 @@ class TestInvalidResults:
 
         The model has no Norwegian result, so it is unranked overall but ranked in
         Danish and Swedish. Invalidating a Danish result removes only its Danish rank.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            tmp_path:
+                Temporary directory for files created by the test.
         """
         scores = self._scores()
         scores["org/d"] = {
@@ -440,7 +479,14 @@ class TestInvalidResults:
     def test_new_entry_rewrites_multilingual_leaderboard_without_force(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        """A non-forced run rewrites a multilingual leaderboard after a new entry."""
+        """A non-forced run rewrites a multilingual leaderboard after a new entry.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         before = self._generate(
             monkeypatch=monkeypatch,
             tmp_path=tmp_path,
@@ -469,7 +515,14 @@ class TestInvalidResults:
     def test_unknown_model_raises(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        """An entry for a model without results stops leaderboard generation."""
+        """An entry for a model without results stops leaderboard generation.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         with pytest.raises(ValueError, match="org/missing"):
             self._generate(
                 monkeypatch=monkeypatch,
@@ -848,6 +901,12 @@ def _make_dummy_configs(
 
     Uses valid task names that work with category_includes_task.
 
+    Args:
+        languages:
+            Languages supplied to the test.
+        datasets:
+            Datasets supplied to the test.
+
     Returns:
         Dict mapping language -> task -> list of dataset IDs.
     """
@@ -871,6 +930,16 @@ def _make_dummy_results(
 
     Each model has the same datasets with similar scores to create realistic
     bootstrap distributions.
+
+    Args:
+        model_ids:
+            Model ids supplied to the test.
+        dataset_ids:
+            Dataset ids supplied to the test.
+        base_score (optional):
+            Base score supplied to the test. Defaults to 0.7.
+        noise (optional):
+            Noise supplied to the test. Defaults to 0.01.
 
     Returns:
         Dict mapping model_id -> dataset -> [(raw_scores, mean, std_err)].
@@ -899,7 +968,12 @@ class TestOrthogonalDatasetsByCategory:
     def test_hallucination_result_is_optional_and_does_not_change_ranking(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Hallucination results are optional and leave rank eligibility unchanged."""
+        """Hallucination results are optional and leave rank eligibility unchanged.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         hallucination_task = RAGTRUTH_DA_CONFIG.task.name
         hallucination_dataset = RAGTRUTH_DA_CONFIG.name
         assert hallucination_task == "hallucination"
@@ -926,6 +1000,15 @@ class TestOrthogonalDatasetsByCategory:
         def rank_inputs(
             model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
         ) -> tuple[dict, dict, dict]:
+            """Rank inputs for this test.
+
+            Args:
+                model_results:
+                    Model results supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             eligible, _, ranks, ordinal_ranks = _compute_eligible_models_and_ranks(
                 model_results=model_results,
                 category=category,
@@ -1055,7 +1138,14 @@ class TestRegressionForReportedIssue:
 def test_generate_all_models_csv_preserves_classifier_icon(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """The full generation pipeline keeps the classifier target icon in CSV."""
+    """The full generation pipeline keeps the classifier target icon in CSV.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     dataset = "sentiment"
     score = [([0.8, 0.9], 0.85, 0.05)]
     model_results = {"org/laya": {dataset: score}, "org/encoder": {dataset: score}}
@@ -1114,7 +1204,14 @@ def test_generate_all_models_csv_preserves_classifier_icon(
 def test_generate_generative_csv_keeps_optional_orthogonal_scores_out_of_rank(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Generate both optional columns without changing either model's rank."""
+    """Generate both optional columns without changing either model's rank.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     standard = ANGRY_TWEETS_CONFIG.name
     values = VALEU_DA_CONFIG.name
     hallucination = RAGTRUTH_DA_CONFIG.name
@@ -1200,7 +1297,14 @@ def test_generate_generative_csv_keeps_optional_orthogonal_scores_out_of_rank(
 def test_generate_leaderboard_projects_orthogonal_scores_to_plain_model_variants(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Project orthogonal points and uncertainty to every variant row."""
+    """Project orthogonal points and uncertainty to every variant row.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     standard = ANGRY_TWEETS_CONFIG.name
     values = VALEU_DA_CONFIG.name
     hallucination = RAGTRUTH_DA_CONFIG.name
@@ -1318,10 +1422,26 @@ def test_release_date_is_emitted_for_frontend_visualizations() -> None:
 def test_understanding_rank_pool_excludes_zero_shot_classifier(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Laya may have scores but must not affect Understanding bootstrap ranks."""
+    """Laya may have scores but must not affect Understanding bootstrap ranks.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     observed_model_ids: list[set[str]] = []
 
     def fake_bootstrap_rank_scores(model_results: dict, **_: object) -> dict:
+        """Fake bootstrap rank scores for this test.
+
+        Args:
+            model_results:
+                Model results supplied to the test.
+            _:
+                  supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         observed_model_ids.append(set(model_results))
         return {}
 

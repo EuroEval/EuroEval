@@ -26,6 +26,7 @@ FLORES_EN_BE_CONFIG = TranslationDatasetConfig(
     languages=[BELARUSIAN],
     source_language=ENGLISH,
     target_language=BELARUSIAN,
+    revision="255c163e9773d34bb2a57fbcb85aaab09687bcb6",
 )
 
 BESLS_CONFIG = DatasetConfig(
@@ -34,6 +35,7 @@ BESLS_CONFIG = DatasetConfig(
     source="EuroEval/besls",
     task=SENT,
     languages=[BELARUSIAN],
+    revision="8f0535d8cb3cbc0c558d8a5d61a876b120ccee05",
 )
 
 WIKIANN_BE_CONFIG = DatasetConfig(
@@ -42,6 +44,7 @@ WIKIANN_BE_CONFIG = DatasetConfig(
     source="EuroEval/wikiann-be-mini",
     task=NER,
     languages=[BELARUSIAN],
+    revision="a2309460910cfed13ff99af6ec3addc0e459ff87",
 )
 
 MULTI_WIKI_QA_BE_CONFIG = DatasetConfig(
@@ -50,6 +53,7 @@ MULTI_WIKI_QA_BE_CONFIG = DatasetConfig(
     source="EuroEval/multi-wiki-qa-be-mini",
     task=RC,
     languages=[BELARUSIAN],
+    revision="c90f35f5d68811f9061209dca7e5355310058f14",
 )
 
 BE_WSC_CONFIG = DatasetConfig(
@@ -59,6 +63,7 @@ BE_WSC_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[BELARUSIAN],
     labels=["a", "b"],
+    revision="aa21acc8f6546b909a92fe4d36b37ccaa69c781f",
 )
 
 MULTI_IFEVAL_BE_CONFIG = DatasetConfig(
@@ -69,6 +74,7 @@ MULTI_IFEVAL_BE_CONFIG = DatasetConfig(
     languages=[BELARUSIAN],
     train_split=None,
     val_split=None,
+    revision="76d1554e03d2b9e0cfad28917088cce264dadfbc",
 )
 
 BERTE_WD_CONFIG = DatasetConfig(
@@ -84,6 +90,7 @@ BERTE_WD_CONFIG = DatasetConfig(
     prompt_template="{text}\nІмплікацыя: {label}",
     instruction_prompt="{text}\n\nВызначце, ці вынікае другое сцвярджэнне з "
     "першага. Адкажыце толькі {labels_str}, і нічога іншага.",
+    revision="8eda523691205afcbadc02a4c50950b0237dd278",
 )
 
 BEWIC_CONFIG = DatasetConfig(
@@ -92,6 +99,7 @@ BEWIC_CONFIG = DatasetConfig(
     source="EuroEval/bewic-mini",
     task=WIC,
     languages=[BELARUSIAN],
+    revision="c7fc25a47855aa140b409c17ba7cf941bcea36b8",
 )
 
 BELACOLA_CONFIG = DatasetConfig(
@@ -100,6 +108,7 @@ BELACOLA_CONFIG = DatasetConfig(
     source="EuroEval/belacola-mini",
     task=LA,
     languages=[BELARUSIAN],
+    revision="5437400f01c540d27d2f3966e800b010467417c2",
 )
 
 # Unofficial datasets ###
@@ -111,6 +120,7 @@ MULTI_BFCL_BE_CONFIG = DatasetConfig(
     task=TOOL_CALLING,
     languages=[BELARUSIAN],
     train_split=None,
+    revision="1dbf62751841bfdca40a4ec73e4d3156d796c479",
 )
 
 
@@ -123,6 +133,7 @@ FLORES_BE_EN_CONFIG = TranslationDatasetConfig(
     source_language=BELARUSIAN,
     target_language=ENGLISH,
     unofficial=True,
+    revision="d23b3b45142f79c9b84a7bab6ddc0effb7bd7070",
 )
 
 SCALA_BE_CONFIG = DatasetConfig(
@@ -132,6 +143,7 @@ SCALA_BE_CONFIG = DatasetConfig(
     task=LA,
     languages=[BELARUSIAN],
     unofficial=True,
+    revision="7fa44f23be44362b66c4d6fe47df352f027b7958",
 )
 
 RAGTRUTH_BE_CONFIG = DatasetConfig(
@@ -141,4 +153,5 @@ RAGTRUTH_BE_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[BELARUSIAN],
     train_split=None,
+    revision="6b38f8d4111561193922933c1bfe25fe198eff28",
 )

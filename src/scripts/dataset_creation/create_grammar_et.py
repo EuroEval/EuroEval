@@ -10,7 +10,11 @@
 """Create the Estonian Grammar dataset and upload to HF Hub."""
 
 from datasets import Dataset, DatasetDict, concatenate_datasets, load_dataset
-from huggingface_hub import HfApi
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 
 def main() -> None:
@@ -62,8 +66,7 @@ def main() -> None:
         new_ds[split] = concatenate_datasets([original_ds, corrected_ds])
     new_ds = new_ds.shuffle(seed=42)
 
-    HfApi().delete_repo(target_repo_id, repo_type="dataset", missing_ok=True)
-
+    preflight_private_upload(repository_id=target_repo_id)
     new_ds.push_to_hub(target_repo_id, private=True)
 
 

@@ -30,7 +30,12 @@ class TestArchiveOffsite:
     def test_connected_jottad_archive_failure_does_not_start_the_app(
         self, tmp_path: Path
     ) -> None:
-        """A permission error after connecting must not launch the app."""
+        """A permission error after connecting must not launch the app.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         snapshot = tmp_path / "results.tar.gz"
         snapshot.write_bytes(b"x")
         app = tmp_path / "Jottacloud.app"
@@ -55,7 +60,14 @@ class TestArchiveOffsite:
     def test_connection_failure_starts_app_and_retries(
         self, tmp_path: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """A missing daemon is recovered by starting Jottacloud and retrying."""
+        """A missing daemon is recovered by starting Jottacloud and retrying.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            caplog:
+                Fixture for capturing log records during the test.
+        """
         snapshot = tmp_path / "results.tar.gz"
         snapshot.write_bytes(b"x")
         app = tmp_path / "Jottacloud.app"
@@ -89,7 +101,14 @@ class TestArchiveOffsite:
     def test_failed_upload_warns_without_failing_the_run(
         self, tmp_path: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """An unusable client, e.g. one with no device configured, only warns."""
+        """An unusable client, e.g. one with no device configured, only warns.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            caplog:
+                Fixture for capturing log records during the test.
+        """
         snapshot = tmp_path / "results.tar.gz"
         snapshot.write_bytes(b"x")
         failure = MagicMock(returncode=1, stdout="", stderr="device name not set")
@@ -108,7 +127,14 @@ class TestArchiveOffsite:
     def test_missing_app_keeps_connection_failure_best_effort(
         self, tmp_path: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """A missing app does not add a launch attempt to the existing warning."""
+        """A missing app does not add a launch attempt to the existing warning.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            caplog:
+                Fixture for capturing log records during the test.
+        """
         snapshot = tmp_path / "results.tar.gz"
         snapshot.write_bytes(b"x")
         failure = MagicMock(
@@ -137,6 +163,12 @@ class TestArchiveOffsite:
 
         The snapshot is already on disk, so a missing off-site copy is worth a
         warning, not a failed leaderboard run.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            caplog:
+                Fixture for capturing log records during the test.
         """
         snapshot = tmp_path / "results.tar.gz"
         snapshot.write_bytes(b"x")
@@ -149,7 +181,12 @@ class TestArchiveOffsite:
         assert any("Jottacloud" in record.message for record in caplog.records)
 
     def test_reachable_jottad_does_not_start_the_app(self, tmp_path: Path) -> None:
-        """A successful first upload must not launch the desktop app."""
+        """A successful first upload must not launch the desktop app.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         snapshot = tmp_path / "results.tar.gz"
         snapshot.write_bytes(b"x")
         success = MagicMock(returncode=0, stdout="", stderr="")
@@ -174,7 +211,14 @@ class TestArchiveOffsite:
     def test_unlisted_upload_keeps_the_local_copy(
         self, tmp_path: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """A zero exit code without a stored file must not free the local copy."""
+        """A zero exit code without a stored file must not free the local copy.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            caplog:
+                Fixture for capturing log records during the test.
+        """
         snapshot = tmp_path / "results_20260901_120000_deadbeef.tar.gz"
         snapshot.write_bytes(b"x")
         success = MagicMock(returncode=0, stdout="", stderr="")
@@ -196,7 +240,12 @@ class TestArchiveOffsite:
     def test_unrelated_archive_failure_does_not_start_the_app(
         self, tmp_path: Path
     ) -> None:
-        """An archive error unrelated to jottad must not open the app."""
+        """An archive error unrelated to jottad must not open the app.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         snapshot = tmp_path / "results.tar.gz"
         snapshot.write_bytes(b"x")
         app = tmp_path / "Jottacloud.app"
@@ -221,6 +270,10 @@ class TestArchiveOffsite:
 
         The remote path must end in the filename: `--remote=backups` on its own
         stores the snapshot as a *file* called "backups" rather than a folder.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
         """
         snapshot = tmp_path / "results_20260901_120000_deadbeef.tar.gz"
         snapshot.write_bytes(b"x")
@@ -253,7 +306,14 @@ class TestBackupResultsIntegration:
     def test_backup_results_with_raw_results_no_precious_metadata(
         self, temp_results_dir: Path, tmp_path: Path
     ) -> None:
-        """backup_results should succeed with raw results missing precious metadata."""
+        """backup_results should succeed with raw results missing precious metadata.
+
+        Args:
+            temp_results_dir:
+                Temp results dir supplied to the test.
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         # Create tree structure with result file without precious metadata
         record = _create_eee_record(include_precious_metadata=False)
         model_dir = temp_results_dir / "test_model"
@@ -311,7 +371,12 @@ class TestRemoveArchivedLocal:
     def test_only_confirmed_and_superseded_snapshots_are_removed(
         self, tmp_path: Path
     ) -> None:
-        """The newest snapshot stays, as do any we could not archive."""
+        """The newest snapshot stays, as do any we could not archive.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         archived = tmp_path / "results_20260901_120000_deadbeef.tar.gz"
         unarchived = tmp_path / "results_20260901_130000_cafebabe.tar.gz"
         keep = tmp_path / "results_20260902_120000_ed2bfa5a6734.tar.gz"
@@ -335,7 +400,14 @@ class TestRemoveArchivedLocal:
     def test_successful_run_stops_local_snapshots_accumulating(
         self, temp_results_dir: Path, tmp_path: Path
     ) -> None:
-        """An archived run leaves one snapshot behind, not one per run."""
+        """An archived run leaves one snapshot behind, not one per run.
+
+        Args:
+            temp_results_dir:
+                Temp results dir supplied to the test.
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         record = _create_eee_record(include_precious_metadata=False)
         model_dir = temp_results_dir / "test_model"
         model_dir.mkdir()
@@ -370,7 +442,12 @@ class TestTreeStructureBackup:
     """Tests for backup/restore with the new tree layout."""
 
     def test_content_hash_uses_tree_paths(self, tmp_path: Path) -> None:
-        """_content_hash should use relative paths in tree for stable ordering."""
+        """_content_hash should use relative paths in tree for stable ordering.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         model_dir = tmp_path / "model_A"
         model_dir.mkdir()
 
@@ -385,7 +462,12 @@ class TestTreeStructureBackup:
         assert hash1 == hash2, "Hash should be order-independent"
 
     def test_extract_backup_preserves_tree_structure(self, tmp_path: Path) -> None:
-        """_extract_backup should preserve the tree structure on extraction."""
+        """_extract_backup should preserve the tree structure on extraction.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         # Create a backup with tree structure
         backup_dir = tmp_path / "backup"
         backup_dir.mkdir()
@@ -419,7 +501,12 @@ class TestTreeStructureBackup:
         assert not flat_file.exists()
 
     def test_restore_from_backup_understands_tree_layout(self, tmp_path: Path) -> None:
-        """restore_from_backup_if_missing should check for tree layout .json files."""
+        """restore_from_backup_if_missing should check for tree layout .json files.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         # Test 1: Empty dir should trigger restore
         target_empty = tmp_path / "empty"
         target_empty.mkdir()
@@ -458,7 +545,12 @@ class TestTreeStructureBackup:
         assert result is False, "Should not restore when tree files exist"
 
     def test_validate_results_tree_invalid_json_fails(self, tmp_path: Path) -> None:
-        """_validate_results should fail on invalid JSON in tree structure."""
+        """_validate_results should fail on invalid JSON in tree structure.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         results_dir = tmp_path / "results"
         model_dir = results_dir / "test_model"
         model_dir.mkdir(parents=True)
@@ -472,7 +564,12 @@ class TestTreeStructureBackup:
                 _validate_results()
 
     def test_validate_results_with_tree_structure(self, tmp_path: Path) -> None:
-        """_validate_results should sample JSON files from tree layout."""
+        """_validate_results should sample JSON files from tree layout.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         results_dir = tmp_path / "results"
         model_dir = results_dir / "test_model"
         model_dir.mkdir(parents=True)
@@ -487,7 +584,12 @@ class TestTreeStructureBackup:
             _validate_results()
 
     def test_write_snapshot_preserves_tree_structure(self, tmp_path: Path) -> None:
-        """_write_snapshot should tar the full tree structure, not flatten."""
+        """_write_snapshot should tar the full tree structure, not flatten.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         # Create tree structure
         source = tmp_path / "results"
         model_a_dir = source / "model_A"
@@ -527,7 +629,12 @@ class TestTreeStructureBackup:
             assert not any(n == "dataset__test__zero.json" for n in names)
 
     def test_write_snapshot_skips_identical_tree_content(self, tmp_path: Path) -> None:
-        """_write_snapshot should skip if tree content hash matches."""
+        """_write_snapshot should skip if tree content hash matches.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         source = tmp_path / "results"
         model_dir = source / "test_model"
         model_dir.mkdir(parents=True)
@@ -587,13 +694,23 @@ class TestValidateResultsRaw:
     """Tests for _validate_results with raw results (missing precious metadata)."""
 
     def test_empty_results_dir_fails(self, temp_results_dir: Path) -> None:
-        """Empty results directory should raise FileNotFoundError."""
+        """Empty results directory should raise FileNotFoundError.
+
+        Args:
+            temp_results_dir:
+                Temp results dir supplied to the test.
+        """
         with patch("leaderboards.backup.RESULTS_DIR", temp_results_dir):
             with pytest.raises(FileNotFoundError, match="No result files found"):
                 _validate_results()
 
     def test_invalid_json_rejected(self, temp_results_dir: Path) -> None:
-        """Invalid JSON raises ValueError during validation (strict=True)."""
+        """Invalid JSON raises ValueError during validation (strict=True).
+
+        Args:
+            temp_results_dir:
+                Temp results dir supplied to the test.
+        """
         model_dir = temp_results_dir / "test_model"
         model_dir.mkdir()
         json_file = model_dir / "dataset__test__zero.json"
@@ -604,7 +721,12 @@ class TestValidateResultsRaw:
                 _validate_results()
 
     def test_missing_eee_envelope_fails(self, temp_results_dir: Path) -> None:
-        """Missing EEE envelope structure should raise ValueError."""
+        """Missing EEE envelope structure should raise ValueError.
+
+        Args:
+            temp_results_dir:
+                Temp results dir supplied to the test.
+        """
         model_dir = temp_results_dir / "test_model"
         model_dir.mkdir()
         json_file = model_dir / "dataset__test__zero.json"
@@ -617,7 +739,12 @@ class TestValidateResultsRaw:
                 _validate_results()
 
     def test_nonexistent_results_dir_fails(self, tmp_path: Path) -> None:
-        """Non-existent results directory should raise FileNotFoundError."""
+        """Non-existent results directory should raise FileNotFoundError.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         nonexistent = tmp_path / "nonexistent"
         with patch("leaderboards.backup.RESULTS_DIR", nonexistent):
             with pytest.raises(FileNotFoundError, match="Results directory not found"):
@@ -629,6 +756,10 @@ class TestValidateResultsRaw:
         """If all files have only invalid JSON, validation raises ValueError.
 
         With strict=True, invalid JSON is rejected rather than silently skipped.
+
+        Args:
+            temp_results_dir:
+                Temp results dir supplied to the test.
         """
         model_dir = temp_results_dir / "test_model"
         model_dir.mkdir()
@@ -642,7 +773,12 @@ class TestValidateResultsRaw:
     def test_raw_results_without_precious_metadata_pass(
         self, temp_results_dir: Path
     ) -> None:
-        """Raw results without precious metadata should pass backup validation."""
+        """Raw results without precious metadata should pass backup validation.
+
+        Args:
+            temp_results_dir:
+                Temp results dir supplied to the test.
+        """
         # Create a result file in tree structure (one record per file)
         record = _create_eee_record(include_precious_metadata=False)
         model_dir = temp_results_dir / "test_model"

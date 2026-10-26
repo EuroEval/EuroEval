@@ -58,8 +58,8 @@ def main(argv: list[str] | None = None) -> int:
     """Verify a Vercel output directory and return a process status.
 
     Args:
-        argv:
-            Optional command-line arguments.
+        argv (optional):
+            Command-line arguments to parse. Defaults to the process arguments.
 
     Returns:
         Zero when verification succeeds, otherwise one.
@@ -87,8 +87,9 @@ def verify_vercel_functions(
     """Verify the exact routes and runtimes in a Vercel output directory.
 
     Args:
-        functions_directory:
-            Vercel Build Output API functions directory.
+        functions_directory (optional):
+            Vercel Build Output API functions directory. Defaults to
+            ``DEFAULT_FUNCTIONS_DIRECTORY``.
 
     Raises:
         VerificationError:
@@ -207,7 +208,17 @@ def _route_from_config_path(*, config_path: Path, functions_directory: Path) -> 
 
 
 def _runtime_matches(*, runtime: str, expected: str) -> bool:
-    """Return whether an emitted runtime satisfies an expected runtime class."""
+    """Return whether an emitted runtime satisfies an expected runtime class.
+
+    Args:
+        runtime:
+            Runtime string from the emitted function configuration.
+        expected:
+            Expected runtime class, either ``edge`` or ``nodejs``.
+
+    Returns:
+        Whether the emitted runtime matches the expected class.
+    """
     if expected == "edge":
         return runtime == "edge"
     return bool(_NODE_RUNTIME.fullmatch(runtime))
@@ -218,6 +229,12 @@ def _verify_node_entrypoint_exports(*, route: str, function_directory: Path) -> 
 
     The bundle is imported in a separate Node process so that this check validates
     the same ESM semantics that Vercel will use, without invoking the handler.
+
+    Args:
+        route:
+            Route whose emitted bundle is being checked.
+        function_directory:
+            Directory containing the emitted function bundle.
 
     Raises:
         VerificationError:
@@ -337,6 +354,12 @@ def _verify_node_package_metadata(*, route: str, function_directory: Path) -> No
 
 def _nearest_package_json(*, directory: Path, boundary: Path) -> Path | None:
     """Find the nearest package.json without leaving an emitted bundle tree.
+
+    Args:
+        directory:
+            Directory from which to begin searching.
+        boundary:
+            Directory at which the upward search must stop.
 
     Returns:
         The nearest package metadata path, or None when none exists in the bundle.

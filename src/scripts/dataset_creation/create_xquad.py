@@ -16,8 +16,12 @@ from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from datasets.load import load_dataset
 from datasets.splits import Split
-from huggingface_hub.hf_api import HfApi
 from tqdm.auto import tqdm
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 LANGUAGES = ["de", "en", "es"]
 
@@ -71,7 +75,7 @@ def main() -> None:
         dataset = DatasetDict({"train": train, "validation": val, "test": test})
 
         # Push the dataset to the Hugging Face Hub
-        HfApi().delete_repo(target_dataset_id, repo_type="dataset", missing_ok=True)
+        preflight_private_upload(repository_id=target_dataset_id)
         dataset.push_to_hub(target_dataset_id, private=True)
 
 

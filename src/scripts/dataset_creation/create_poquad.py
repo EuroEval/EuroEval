@@ -21,8 +21,11 @@ from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from datasets.load import load_dataset
 from datasets.splits import Split
-from huggingface_hub.hf_api import HfApi
-from requests.exceptions import HTTPError
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 
 def main() -> None:
@@ -102,14 +105,8 @@ def main() -> None:
     # Create dataset ID
     mini_dataset_id = "EuroEval/poquad-mini"
 
-    # Remove the dataset from Hugging Face Hub if it already exists
-    try:
-        api: HfApi = HfApi()
-        api.delete_repo(mini_dataset_id, repo_type="dataset")
-    except HTTPError:
-        pass
-
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=mini_dataset_id)
     dataset.push_to_hub(mini_dataset_id, private=True)
 
 
