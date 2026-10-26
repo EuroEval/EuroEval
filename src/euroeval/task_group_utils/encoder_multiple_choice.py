@@ -70,8 +70,10 @@ class VariableChoiceTrainer(Trainer):
         Args:
             model: The model used to compute logits.
             inputs: The batch, including labels and a mask of valid choices.
-            return_outputs: Whether to return model outputs alongside the loss.
-            num_items_in_batch: Ignored item count supplied by the trainer.
+            return_outputs (optional): Whether to return model outputs alongside the
+                loss. Defaults to False.
+            num_items_in_batch (optional): Ignored item count supplied by the trainer.
+                Defaults to None.
 
         Returns:
             The loss, optionally paired with model outputs.

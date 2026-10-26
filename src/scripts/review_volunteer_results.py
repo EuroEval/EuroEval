@@ -23,8 +23,8 @@ def main(argv: list[str] | None = None) -> int:
     """Run the maintainer review command.
 
     Args:
-        argv: Optional command-line arguments; defaults to ``None``, which uses
-            ``sys.argv``.
+        argv (optional): Optional command-line arguments; defaults to ``None``, which
+            uses ``sys.argv``.
 
     Returns:
         Process exit status.
