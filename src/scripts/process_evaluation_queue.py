@@ -788,6 +788,10 @@ def process_issue(
             The VM marker written to the issue body.
         gpu_memory_utilization:
             Optional vLLM memory fraction; ``None`` uses the evaluation CLI default.
+
+    Raises:
+        Exceptions from evaluation and queue operations are propagated; if processing
+        fails after an issue is claimed, ownership is released first.
     """
     number = issue["number"]
     languages: list[str] = []
