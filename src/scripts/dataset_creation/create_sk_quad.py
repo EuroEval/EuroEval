@@ -33,6 +33,10 @@ def main() -> None:
 def process_dataset(raw_dataset: DatasetDict) -> DatasetDict:
     """Filter invalid answers and convert SK-QuAD to EuroEval's QA schema.
 
+    Args:
+        raw_dataset:
+            Source dataset dictionary with train, validation, and test splits.
+
     Returns:
         The processed dataset with independently capped splits.
     """
@@ -45,6 +49,10 @@ def process_dataset(raw_dataset: DatasetDict) -> DatasetDict:
 
 def _process_split(source: Dataset) -> Dataset:
     """Filter and convert one SK-QuAD source split.
+
+    Args:
+        source:
+            Source split containing contexts, questions, and answer records.
 
     Returns:
         The processed split.
@@ -75,7 +83,19 @@ def _process_split(source: Dataset) -> Dataset:
 def _answers_are_valid(
     context: str, answer_texts: list[str], answer_starts: list[int]
 ) -> bool:
-    """Return whether every answer is non-empty and has a correct offset."""
+    """Return whether every answer is non-empty and has a correct offset.
+
+    Args:
+        context:
+            Context in which answer spans are located.
+        answer_texts:
+            Answer strings to validate.
+        answer_starts:
+            Character offsets corresponding to the answer strings.
+
+    Returns:
+        Whether all answers are non-empty and match their context offsets.
+    """
     if not answer_texts or len(answer_texts) != len(answer_starts):
         return False
     return all(

@@ -128,7 +128,8 @@ def _create_uniform_dataset_distribution(
 
     Args:
         df: The dataframe.
-        random_state: The random state for reproducibility.
+        random_state (optional):
+            Random state for reproducibility. Defaults to ``4242``.
 
     Returns:
         The dataframe with a uniform dataset distribution.

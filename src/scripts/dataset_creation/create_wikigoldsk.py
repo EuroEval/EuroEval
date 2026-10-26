@@ -44,6 +44,10 @@ def main() -> None:
 def process_dataset(raw_dataset: DatasetDict) -> DatasetDict:
     """Convert WikiGoldSK to EuroEval's token-classification schema.
 
+    Args:
+        raw_dataset:
+            Source dataset dictionary with train, validation, and test splits.
+
     Returns:
         The processed dataset with independently capped splits.
     """
@@ -56,6 +60,10 @@ def process_dataset(raw_dataset: DatasetDict) -> DatasetDict:
 
 def _process_split(source: Dataset) -> Dataset:
     """Convert one WikiGoldSK source split and validate tag alignment.
+
+    Args:
+        source:
+            Source split containing sentence tokens and NER tags.
 
     Returns:
         The processed split.
@@ -79,6 +87,13 @@ def _process_split(source: Dataset) -> Dataset:
 
 def _normalise_label(label: int | str) -> str:
     """Return a canonical WikiGoldSK label.
+
+    Args:
+        label:
+            Integer label index or textual NER label from the source dataset.
+
+    Returns:
+        Canonical textual NER label.
 
     Raises:
         ValueError:
