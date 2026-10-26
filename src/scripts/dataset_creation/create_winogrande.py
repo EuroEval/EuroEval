@@ -186,7 +186,15 @@ def prepare_dataframe(df: pd.DataFrame, language: str) -> pd.DataFrame:
 
 
 def is_repetitive(text: str) -> bool:
-    """Return True if the text is repetitive."""
+    """Return whether any word appears more than the repetition limit.
+
+    Args:
+        text:
+            Text to check.
+
+    Returns:
+        Whether the text exceeds the maximum word repetition count.
+    """
     max_repetitions = max(Counter(text.split()).values())
     return max_repetitions > MAX_REPETITIONS
 

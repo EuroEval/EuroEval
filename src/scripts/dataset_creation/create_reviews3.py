@@ -34,6 +34,10 @@ def main() -> None:
 def process_dataset(raw_dataset: DatasetDict) -> DatasetDict:
     """Convert Reviews3 to EuroEval's text-classification schema.
 
+    Args:
+        raw_dataset:
+            Source dataset dictionary with train, validation, and test splits.
+
     Returns:
         The processed dataset with independently capped splits.
     """
@@ -46,6 +50,10 @@ def process_dataset(raw_dataset: DatasetDict) -> DatasetDict:
 
 def _process_split(source: Dataset) -> Dataset:
     """Convert one Reviews3 source split.
+
+    Args:
+        source:
+            Source split containing review text and numeric labels.
 
     Returns:
         The processed split.

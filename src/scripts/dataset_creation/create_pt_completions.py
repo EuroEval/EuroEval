@@ -47,6 +47,10 @@ def main() -> None:
 def _process_split(dataset: Dataset) -> Dataset:
     """Convert a PT-PT Completions split to EuroEval format.
 
+    Args:
+        dataset:
+            Source dataset split containing the text and completion columns.
+
     Returns:
         Processed dataset split.
     """

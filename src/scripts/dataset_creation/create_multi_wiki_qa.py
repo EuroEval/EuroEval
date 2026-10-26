@@ -92,6 +92,15 @@ def main() -> None:
 
         # Extract information on which examples contain an answer
         def has_answer_fn(example: dict) -> bool:
+            """Return whether an answer record contains a non-empty answer.
+
+            Args:
+                example:
+                    Answer record containing the list of answer texts.
+
+            Returns:
+                Whether the first answer text is non-empty.
+            """
             return len(example["text"]) > 0 and example["text"][0] != ""
 
         has_answer: pd.Series = df.answers.map(has_answer_fn)

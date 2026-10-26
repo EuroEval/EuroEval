@@ -34,6 +34,10 @@ def main() -> None:
 def process_dataset(raw_dataset: DatasetDict) -> DatasetDict:
     """Convert SKLEP RTE pairs to EuroEval's binary NLI schema.
 
+    Args:
+        raw_dataset:
+            Source dataset dictionary with train, validation, and test splits.
+
     Returns:
         The processed dataset with independently capped splits.
     """
@@ -46,6 +50,10 @@ def process_dataset(raw_dataset: DatasetDict) -> DatasetDict:
 
 def _process_split(source: Dataset) -> Dataset:
     """Convert one RTE source split.
+
+    Args:
+        source:
+            Source split containing text pairs and numeric labels.
 
     Returns:
         The processed split.
