@@ -82,6 +82,7 @@ def test_auth_honours_slow_down_retry_after(tmp_path: Path) -> None:
         """Device flow that first requests slower polling."""
 
         def __init__(self) -> None:
+            """Initialise the poll counter."""
             self.polls = 0
 
         def poll_auth(self, session_id: str) -> AuthPoll:
@@ -89,7 +90,10 @@ def test_auth_honours_slow_down_retry_after(tmp_path: Path) -> None:
 
             Args:
                 session_id:
-                    Session id supplied to the test.
+                    Identifier of the device-flow session to poll.
+
+            Returns:
+                A slow-down response on the first poll, then approved credentials.
             """
             self.polls += 1
             if self.polls == 1:
@@ -141,7 +145,11 @@ class AuthClient:
         return AuthPoll(False, "opaque-credential", "octocat")
 
     def start_auth(self) -> AuthStart:
-        """Return test device-flow details."""
+        """Return test device-flow details.
+
+        Returns:
+            Device-flow session, user code, verification URL and polling intervals.
+        """
         return AuthStart("session", "CODE", "https://example.test", 60, 0)
 
 
@@ -174,7 +182,10 @@ def test_broker_client_drives_canonical_http_lifecycle(
             headers:
                 Headers supplied to the test.
             payload:
-                Payload supplied to the test.
+                Optional JSON request body sent to the broker.
+
+        Returns:
+            The matching fake broker response as a JSON object.
         """
         assert method == "POST"
         assert payload is not None
@@ -404,7 +415,10 @@ def test_busy_gpu_is_not_selected_or_exposed_to_evaluation(
                 lease:
                     Lease supplied to the test.
                 output_path:
-                    Output path supplied to the test.
+                    Path where evaluation results would be written.
+
+            Returns:
+                A single deterministic evaluation record.
             """
             observed["cuda"] = os.environ.get("CUDA_VISIBLE_DEVICES")
             return [EEERecord({"id": "one"})]
@@ -486,7 +500,10 @@ class OneRecordEvaluator:
             lease:
                 Lease supplied to the test.
             output_path:
-                Output path supplied to the test.
+                Path where evaluation results would be written.
+
+        Returns:
+            A single deterministic evaluation record.
         """
         return [EEERecord({"id": "one"})]
 
@@ -525,6 +542,8 @@ def test_canary_corpus_outage_does_not_block_results(
     )
 
     class OutageBroker(Broker):
+        """Broker fake that fails to deliver the private canary corpus."""
+
         def claim(self, credential: str, hardware: HardwareReport) -> Claim:
             """Claim for this test.
 
@@ -535,7 +554,7 @@ def test_canary_corpus_outage_does_not_block_results(
                     Hardware supplied to the test.
 
             Returns:
-                The value returned by the test helper.
+                A claim containing the test lease.
             """
             return Claim(lease)
 
@@ -546,7 +565,7 @@ def test_canary_corpus_outage_does_not_block_results(
                 credential:
                     Credential supplied to the test.
                 lease:
-                    Lease supplied to the test.
+                    Lease whose canary corpus is requested.
 
             Raises:
                 BrokerError:
@@ -691,6 +710,8 @@ def test_encoder_canary_uses_ordinary_result_path_without_corpus(
     lease = dataclasses.replace(LEASE, contamination_canary=instruction)
 
     class EncoderEvaluator:
+        """Return an ordinary result and an encoder canary placeholder."""
+
         def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
             """Evaluate for this test.
 
@@ -709,6 +730,8 @@ def test_encoder_canary_uses_ordinary_result_path_without_corpus(
             ]
 
     class EncoderBroker(Broker):
+        """Broker fake that provides an encoder lease and accepts its results."""
+
         def claim(self, credential: str, hardware: HardwareReport) -> Claim:
             """Claim for this test.
 
@@ -719,7 +742,7 @@ def test_encoder_canary_uses_ordinary_result_path_without_corpus(
                     Hardware supplied to the test.
 
             Returns:
-                The value returned by the test helper.
+                A claim containing the test lease.
             """
             return Claim(lease)
 
@@ -730,7 +753,7 @@ def test_encoder_canary_uses_ordinary_result_path_without_corpus(
                 credential:
                     Credential supplied to the test.
                 lease:
-                    Lease supplied to the test.
+                    Encoder lease for which corpus delivery is forbidden.
 
             Raises:
                 AssertionError:
@@ -794,7 +817,7 @@ def test_evaluation_failure_releases_lease(
                 lease:
                     Lease supplied to the test.
                 output_path:
-                    Output path supplied to the test.
+                    Path where evaluation results would be written.
 
             Raises:
                 RuntimeError: Always, to exercise release handling.
@@ -830,7 +853,10 @@ class Broker:
             credential:
                 Credential supplied to the test.
             hardware:
-                Hardware supplied to the test.
+                Hardware report used to request work.
+
+        Returns:
+            A claim containing the module-level test lease.
         """
         self.claims += 1
         return Claim(LEASE)
@@ -869,7 +895,10 @@ class Broker:
 
         Args:
             session_id:
-                Session id supplied to the test.
+                Identifier of the device-flow session to poll.
+
+        Returns:
+            An approved authentication response for the test account.
         """
         return AuthPoll(False, "cred", "login")
 
@@ -887,7 +916,11 @@ class Broker:
         self.releases.append(reason)
 
     def start_auth(self) -> AuthStart:
-        """Return test auth details."""
+        """Return test auth details.
+
+        Returns:
+            Device-flow session, user code, verification URL and polling intervals.
+        """
         return AuthStart("session", "CODE", "https://example.test", 60, 1)
 
     def submit_result(self, credential: str, lease: Lease, result: EEERecord) -> None:
@@ -939,7 +972,10 @@ def test_evaluator_selects_official_tasks_for_required_canary(
 
             Args:
                 kwargs:
-                    Kwargs supplied to the test.
+                    Benchmark options supplied by the evaluator.
+
+            Returns:
+                A list containing one placeholder benchmark result.
             """
             calls["benchmark"] = kwargs
             return [object()]
@@ -1009,7 +1045,10 @@ def test_evaluator_uses_validation_and_remote_code_flags(
 
             Args:
                 kwargs:
-                    Kwargs supplied to the test.
+                    Benchmark options supplied by the evaluator.
+
+            Returns:
+                A list containing one placeholder benchmark result.
             """
             calls["benchmark"] = kwargs
             return [object()]
@@ -1289,7 +1328,7 @@ def test_interruption_resumes_pre_evaluation_lease(
                 lease:
                     Lease supplied to the test.
                 output_path:
-                    Output path supplied to the test.
+                    Path where evaluation results would be written.
 
             Raises:
                 KeyboardInterrupt:
@@ -1348,7 +1387,7 @@ def test_keyboard_interrupt_releases_lease(
                 lease:
                     Lease supplied to the test.
                 output_path:
-                    Output path supplied to the test.
+                    Path where evaluation results would be written.
 
             Raises:
                 KeyboardInterrupt: Always, for this test double.
@@ -1494,7 +1533,10 @@ def test_partial_acknowledgements_survive_restart(
                 lease:
                     Lease supplied to the test.
                 output_path:
-                    Output path supplied to the test.
+                    Path where evaluation results would be written.
+
+            Returns:
+                Two deterministic records with distinct identifiers.
             """
             return [EEERecord({"id": "one"}), EEERecord({"id": "two"})]
 
@@ -1502,6 +1544,7 @@ def test_partial_acknowledgements_survive_restart(
         """Broker that loses the connection on the second record."""
 
         def __init__(self) -> None:
+            """Initialise broker state and the second-record failure counter."""
             super().__init__()
             self.failures = 0
 
@@ -1666,6 +1709,8 @@ def test_worker_caps_vllm_utilisation_to_fresh_free_gpu_memory(
     observed: dict[str, object] = {}
 
     class CapturingEvaluator:
+        """Capture the fresh GPU memory utilisation passed to evaluation."""
+
         def evaluate(
             self,
             lease: Lease,
@@ -1734,6 +1779,8 @@ def test_worker_measures_disk_on_its_state_filesystem(
     monkeypatch.setattr(runtime, "discover_hardware", discover)
 
     class NoWorkBroker(Broker):
+        """Broker fake that reports no available lease."""
+
         def claim(self, credential: str, hardware: HardwareReport) -> Claim:
             """Claim for this test.
 
