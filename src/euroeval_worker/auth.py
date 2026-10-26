@@ -20,13 +20,14 @@ class AuthProtocol(t.Protocol):
 
         Args:
             session_id:
-                Session id.
+                Identifier of the device-flow session to poll.
 
         Returns:
-            The resulting value.
+            The poll response, including approval status and any retry delay.
 
         Raises:
-            An exception when the operation cannot be completed.
+            BrokerError:
+                If the broker rejects the poll or cannot provide retry metadata.
         """
         raise NotImplementedError
 
@@ -34,10 +35,11 @@ class AuthProtocol(t.Protocol):
         """Start a device flow.
 
         Returns:
-            The resulting value.
+            Session id, verification URL, user code, expiry, and polling interval.
 
         Raises:
-            An exception when the operation cannot be completed.
+            BrokerError:
+                If the broker cannot start a device flow.
         """
         raise NotImplementedError
 

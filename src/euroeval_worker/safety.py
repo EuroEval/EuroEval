@@ -258,19 +258,21 @@ def derive_model_type(
 ) -> str | None:
     """Classify a model using EuroEval's Hub pipeline/backend contract.
 
-        A non-generative Hub pipeline is sent through the Transformers encoder path;
-        generative Hub pipelines are sent through vLLM. Architecture names are not
-        classification evidence because they are implementation details, not a
-        compatibility contract.
+    Non-generative Hub pipelines use the Transformers encoder path; generative
+    pipelines use vLLM. Architecture names are not classification evidence because
+    they are implementation details, not a compatibility contract.
 
     Args:
-            pipeline_tag:
-                Pipeline tag.
-            is_encoder_decoder (optional):
-                Is encoder decoder.
+        pipeline_tag:
+            Hub pipeline tag; missing or blank tags are ambiguous.
+        is_encoder_decoder (optional):
+            Encoder-decoder flag. Defaults to ``None``; non-boolean values are treated
+            as ambiguous metadata.
 
     Returns:
-            The broad capability, or ``None`` for ambiguous metadata.
+        ``"generative"`` for recognised generative pipeline tags, ``"encoder"`` for
+        other non-blank tags unless the encoder-decoder flag conflicts, or ``None``
+        when metadata is missing, malformed, or contradictory.
     """
     if not isinstance(pipeline_tag, str) or not pipeline_tag.strip():
         return None
@@ -287,14 +289,14 @@ class SafetyError(RuntimeError):
 
 
 def _hub_false_or_bool(value: object) -> bool:
-    """Return whether a Hub access flag has a recognised representation.
+    """Return whether a Hub access flag is a boolean or the string ``"false"``.
 
     Args:
         value:
-            Value.
+            Value returned for a Hub access flag.
 
     Returns:
-        The resulting value.
+        ``True`` for any boolean or the exact string ``"false"``; otherwise ``False``.
     """
     return isinstance(value, bool) or value == "false"
 
@@ -382,14 +384,15 @@ class _VllmInspectionConfig:
 
 
 def _encoder_task_mappings(task_groups: tuple[str, ...]) -> tuple[object, ...] | None:
-    """Return the exact Transformers task mappings required by a scope.
+    """Return the Transformers task mappings required by the evaluation scope.
 
     Args:
         task_groups:
-            Task groups.
+            Task-group names whose encoder task mappings are required.
 
     Returns:
-        The resulting value.
+        An empty tuple for no task groups, the corresponding mapping tuple when every
+        group is supported, or ``None`` if any group has no registered mapping.
     """
     if not task_groups:
         return ()

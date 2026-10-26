@@ -14,10 +14,10 @@ from .types import EEERecord, JsonValue, Lease, canonical_json
 
 
 def _canary_tasks() -> list[str]:
-    """Return official task names together with the canary task.
+    """Return names of official benchmark tasks and the contamination-canary task.
 
     Returns:
-        The resulting value.
+        Unique official task names, followed by ``contamination-detection``.
     """
     configs = get_all_dataset_configs(
         custom_datasets_file=Path(""),
@@ -66,10 +66,10 @@ def _official_dataset_configs(language: str) -> list[DatasetConfig]:
 
     Args:
         language:
-            Language.
+            Language code for the leased evaluation.
 
     Returns:
-        The resulting value.
+        Official dataset configurations supporting the requested language.
     """
     configs = get_all_dataset_configs(
         custom_datasets_file=Path(""),

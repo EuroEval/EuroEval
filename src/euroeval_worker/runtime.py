@@ -45,11 +45,7 @@ class AuthenticationIdentityError(BrokerError):
 
 
 class Heartbeat:
-    """Renew a lease in a daemon thread and expose failures to the worker.
-
-    Raises:
-    BrokerError: Raised when the operation cannot be completed.
-    """
+    """Renew a lease in a daemon thread and expose failures to the worker."""
 
     _interval = 30.0
     _max_backoff = 30.0
@@ -97,11 +93,12 @@ class Heartbeat:
                 return
 
     def _renew(self) -> None:
-        """Renew.
+        """Renew the lease in the background, recording failures for ``check``.
 
         Raises:
-        BrokerError: Raised when the operation cannot be completed.
-                    An exception when the operation cannot be completed.
+            BrokerError:
+                A heartbeat response without an expiry timestamp is recorded as a
+                background failure and surfaced by ``check``.
         """
         attempt = 0
         auth_attempted = False
@@ -158,11 +155,7 @@ class Heartbeat:
         self._stop.set()
 
     def check(self) -> None:
-        """Raise the background failure, if any.
-
-        Raises:
-            An exception when the operation cannot be completed.
-        """
+        """Propagate the exception recorded by the heartbeat thread, if any."""
         if self.failed is None:
             return
         if isinstance(self.failed, LeaseLost):
@@ -182,15 +175,7 @@ class Heartbeat:
 
 
 class Worker:
-    """Authenticate, claim, evaluate, and submit one lease at a time.
-
-    Raises:
-    KeyboardInterrupt: Raised when the operation cannot be completed.
-    RuntimeError: Raised when the operation cannot be completed.
-    SystemExit: Raised when the operation cannot be completed.
-    NoGpuError: Raised when the operation cannot be completed.
-    SafetyError: Raised when the operation cannot be completed.
-    """
+    """Authenticate, claim, evaluate, and submit one lease at a time."""
 
     _max_submission_attempts = 3
     _max_retry_delay = 30.0
@@ -407,12 +392,17 @@ class Worker:
                         Active.
 
         Raises:
-        KeyboardInterrupt: Raised when the operation cannot be completed.
-        RuntimeError: Raised when the operation cannot be completed.
-        SystemExit: Raised when the operation cannot be completed.
-        NoGpuError: Raised when the operation cannot be completed.
-        SafetyError: Raised when the operation cannot be completed.
-                    An exception when the operation cannot be completed.
+            KeyboardInterrupt:
+                If the worker is interrupted during lease processing.
+            RuntimeError:
+                If persisted evaluation output is inconsistent with the restart
+                snapshot.
+            SystemExit:
+                If the process is asked to exit during lease processing.
+            NoGpuError:
+                If no usable GPU is available for evaluation.
+            SafetyError:
+                If the lease's model fails the safety preflight.
         """
         expected_login = active.github_login or self._login if active else self._login
         if active is None:
@@ -549,18 +539,21 @@ class Worker:
                 logger.info("Preserving active lease %s for restart", lease.lease_id)
 
     def _canary_corpus_path(self, *, lease: Lease) -> Path | None:
-        """Canary corpus path.
+        """Fetch and cache the required canary corpus when this lease needs it.
 
         Args:
-                    lease:
-                        Lease.
+            lease:
+                Lease whose canary instruction determines whether a corpus is needed.
 
         Returns:
-                    The resulting value.
+            The cached corpus path when a generative lease requires a canary; otherwise
+            the path used to record that the corpus is unavailable. Fetch, digest-check,
+            or persistence failures are logged and also return the unavailable path.
 
         Raises:
-        RuntimeError: Raised when the operation cannot be completed.
-                    An exception when the operation cannot be completed.
+            RuntimeError:
+                If the client cannot fetch or verify the reserved corpus; the error is
+                caught here and the unavailable path is returned instead.
         """
         instruction = lease.contamination_canary
         if (
@@ -804,10 +797,10 @@ def _transient(error: BrokerError) -> bool:
 
     Args:
         error:
-            Error.
+            Broker response error to classify.
 
     Returns:
-        The resulting value.
+        ``True`` when the status is absent, 429, or at least 500; otherwise ``False``.
     """
     return error.status is None or error.status == 429 or error.status >= 500
 
