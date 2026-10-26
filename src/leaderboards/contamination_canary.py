@@ -50,7 +50,15 @@ class _PrivateRecord(t.TypedDict):
 
 
 def _record_timestamp(record: dict[str, object]) -> str:
-    """Return an EEE timestamp suitable for deterministic snapshot ordering."""
+    """Return an EEE timestamp suitable for deterministic snapshot ordering.
+
+    Args:
+        record:
+            EEE result record to inspect.
+
+    Returns:
+        The timestamp string, or an empty string when it is unavailable.
+    """
     value = record.get("evaluation_timestamp")
     return value if isinstance(value, str) else ""
 
@@ -85,7 +93,17 @@ def process_contamination_canaries(
 def _reject_conflicting_immutable_records(
     *, records: list[dict[str, object]], report: c.Mapping[str, object]
 ) -> list[dict[str, object]]:
-    """Prevent conflicting immutable evidence from replacing accepted storage."""
+    """Prevent conflicting immutable evidence from replacing accepted storage.
+
+    Args:
+        records:
+            Canary records eligible for persistence.
+        report:
+            Scoring report identifying conflicting evidence identities.
+
+    Returns:
+        Records whose evidence identity is not conflicted.
+    """
     models = report.get("models")
     if not isinstance(models, list):
         return records
@@ -110,7 +128,18 @@ def _reject_conflicting_immutable_records(
 
 
 def _evidence_from_record(*, record: dict[str, object]) -> CanaryEvidence:
-    """Extract and bind strict canary evidence from one EEE result."""
+    """Extract and bind strict canary evidence from one EEE result.
+
+    Args:
+        record:
+            EEE result containing the evidence and model metadata.
+
+    Returns:
+        Validated canary evidence bound to the record's model identity.
+
+    Raises:
+        ValueError: If the EEE envelope or model binding is invalid.
+    """
     library = record.get("eval_library")
     model_info = record.get("model_info")
     if not isinstance(library, dict) or not isinstance(model_info, dict):
@@ -133,7 +162,15 @@ def _evidence_from_record(*, record: dict[str, object]) -> CanaryEvidence:
 
 
 def _store_canary_exclusions(models: set[str]) -> None:
-    """Persist confirmed removals outside the repository with mode 0600."""
+    """Persist confirmed removals outside the repository with mode 0600.
+
+    Args:
+        models:
+            Model identifiers confirmed for leaderboard exclusion.
+
+    Raises:
+        RuntimeError: If exclusion state cannot be safely persisted.
+    """
     if not models:
         return
     try:
@@ -153,7 +190,14 @@ def _store_canary_exclusions(models: set[str]) -> None:
 
 
 def _atomic_private_write(*, path: Path, content: str) -> None:
-    """Atomically write an owner-only private file."""
+    """Atomically write an owner-only private file.
+
+    Args:
+        path:
+            Destination file path.
+        content:
+            Text to write to the destination.
+    """
     temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
     descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     try:
@@ -169,7 +213,11 @@ def _atomic_private_write(*, path: Path, content: str) -> None:
 
 
 def _private_directory() -> Path:
-    """Return the configured directory containing private scoring records."""
+    """Return the configured directory containing private scoring records.
+
+    Returns:
+        Expanded private-data directory from configuration or the default path.
+    """
     configured = os.getenv(CANARY_PRIVATE_DIR_ENV)
     return (
         Path(configured).expanduser()
@@ -181,7 +229,17 @@ def _private_directory() -> Path:
 def confirm_canary_exclusions(
     report: c.Mapping[str, object], already_excluded: c.Set[str] = frozenset()
 ) -> set[str]:
-    """Ask whether each detected model should be excluded, defaulting to yes."""
+    """Ask whether each detected model should be excluded, defaulting to yes.
+
+    Args:
+        report:
+            Canary scoring report containing per-model outcomes.
+        already_excluded (optional):
+            Models already excluded in durable state.
+
+    Returns:
+        Model identifiers that should be excluded from leaderboards.
+    """
     models = report.get("models")
     if not isinstance(models, list):
         return set()
@@ -217,7 +275,15 @@ def confirm_canary_exclusions(
 
 
 def _confirm_exclusion(*, model_id: str) -> bool:
-    """Return an interactive exclusion decision, with safe yes defaults."""
+    """Return an interactive exclusion decision, with safe yes defaults.
+
+    Args:
+        model_id:
+            Identifier of the model with detected contamination.
+
+    Returns:
+        Whether the model should be excluded.
+    """
     if not sys.stdin.isatty():
         logger.warning(
             "No interactive terminal is available; defaulting to removal for %s.",
@@ -234,13 +300,30 @@ def _confirm_exclusion(*, model_id: str) -> bool:
 
 
 def _numeric_field(value: dict[str, object], field: str) -> float:
-    """Return a report number or zero for malformed internal data."""
+    """Return a report number or zero for malformed internal data.
+
+    Args:
+        value:
+            Report object containing the requested numeric field.
+        field:
+            Name of the field to read.
+
+    Returns:
+        The numeric field converted to a float, or zero if not numeric.
+    """
     item = value.get(field)
     return float(item) if isinstance(item, int | float) else 0.0
 
 
 def load_canary_exclusions() -> set[str]:
-    """Load durable removals, failing closed once private state is configured."""
+    """Load durable removals, failing closed once private state is configured.
+
+    Returns:
+        Set of model identifiers persisted as leaderboard exclusions.
+
+    Raises:
+        RuntimeError: If the private exclusion file is unreadable or invalid.
+    """
     path = _private_directory() / _EXCLUSIONS_FILENAME
     if not path.exists():
         return set()
@@ -264,7 +347,15 @@ def load_canary_exclusions() -> set[str]:
 
 
 def _validate_private_file(path: Path) -> None:
-    """Require an existing owner-only private file."""
+    """Require an existing owner-only private file.
+
+    Args:
+        path:
+            Private file to validate.
+
+    Raises:
+        ValueError: If the path is not a file or grants group/other access.
+    """
     if not path.is_file() or stat.S_IMODE(path.stat().st_mode) & 0o077:
         raise ValueError(f"private canary file must exist with mode 0600: {path}")
 
@@ -272,7 +363,15 @@ def _validate_private_file(path: Path) -> None:
 def partition_canary_records(
     records: c.Sequence[dict[str, object]],
 ) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
-    """Separate auxiliary canary records from rankable benchmark records."""
+    """Separate auxiliary canary records from rankable benchmark records.
+
+    Args:
+        records:
+            EEE result records to partition.
+
+    Returns:
+        A pair containing ordinary records followed by canary records.
+    """
     ordinary: list[dict[str, object]] = []
     canaries: list[dict[str, object]] = []
     for record in records:
@@ -282,7 +381,15 @@ def partition_canary_records(
 
 
 def is_canary_record(record: dict[str, object]) -> bool:
-    """Return whether an EEE record is an auxiliary contamination-canary result."""
+    """Return whether an EEE record is an auxiliary contamination-canary result.
+
+    Args:
+        record:
+            EEE result record to inspect.
+
+    Returns:
+        Whether its dataset identifies it as a canary result.
+    """
     library = record.get("eval_library")
     if not isinstance(library, dict):
         return False
@@ -297,7 +404,15 @@ def is_canary_record(record: dict[str, object]) -> bool:
 
 
 def score_canary_records(records: c.Sequence[dict[str, object]]) -> dict[str, object]:
-    """Score embedded evidence using private maintainer-only targets and controls."""
+    """Score embedded evidence using private maintainer-only targets and controls.
+
+    Args:
+        records:
+            Auxiliary EEE canary records to validate and score.
+
+    Returns:
+        Report containing setup status and per-model scoring outcomes.
+    """
     if not records:
         return _base_report(status="missing", models=[])
     setup_stage = "private_directory"
@@ -411,12 +526,26 @@ def score_canary_records(records: c.Sequence[dict[str, object]]) -> dict[str, ob
 
 
 def _base_report(*, status: str, models: list[dict[str, object]]) -> dict[str, object]:
-    """Build a private checker report."""
+    """Build a private checker report.
+
+    Args:
+        status:
+            Overall status for the canary scoring operation.
+        models:
+            Per-model outcomes to include in the report.
+
+    Returns:
+        Report dictionary with schema, status, and model outcomes.
+    """
     return {"schema_version": _REPORT_SCHEMA, "status": status, "models": models}
 
 
 def _key_path() -> Path:
-    """Return the configured private key path."""
+    """Return the configured private key path.
+
+    Returns:
+        Expanded configured key path or the default private key path.
+    """
     configured = os.getenv(CANARY_KEY_ENV)
     return (
         Path(configured).expanduser() if configured else _DEFAULT_KEY_PATH.expanduser()
@@ -424,7 +553,18 @@ def _key_path() -> Path:
 
 
 def _load_private_key(path: Path) -> bytes:
-    """Load a 32-byte owner-only key."""
+    """Load a 32-byte owner-only key.
+
+    Args:
+        path:
+            Private key file path.
+
+    Returns:
+        The key bytes.
+
+    Raises:
+        ValueError: If the file permissions or key length are invalid.
+    """
     _validate_private_file(path)
     key = path.read_bytes()
     if len(key) != 32:
@@ -435,7 +575,20 @@ def _load_private_key(path: Path) -> bytes:
 def _load_private_records(
     *, private_dir: Path, key: bytes
 ) -> tuple[dict[str, _PrivateRecord], str]:
-    """Load and validate private scoring records and provenance."""
+    """Load and validate private scoring records and provenance.
+
+    Args:
+        private_dir:
+            Directory containing the manifest and records file.
+        key:
+            Private signing key used to verify manifest provenance.
+
+    Returns:
+        Mapping from row identifiers to private targets and the manifest hash.
+
+    Raises:
+        ValueError: If private files, provenance, or record contents are invalid.
+    """
     manifest_path = private_dir / "canary-manifest.json"
     records_path = private_dir / "canary-records.jsonl"
     _validate_private_file(manifest_path)
@@ -482,7 +635,20 @@ def _load_private_records(
 
 
 def _record_string(value: dict[str, object], field: str) -> str:
-    """Read one required private record string."""
+    """Read one required private record string.
+
+    Args:
+        value:
+            Private record mapping.
+        field:
+            Required string field name.
+
+    Returns:
+        Non-empty string stored in the requested field.
+
+    Raises:
+        ValueError: If the field is absent, empty, or not a string.
+    """
     item = value.get(field)
     if not isinstance(item, str) or not item:
         raise ValueError(f"private canary record has invalid {field}")
@@ -490,7 +656,15 @@ def _record_string(value: dict[str, object], field: str) -> str:
 
 
 def _record_model_id(record: dict[str, object]) -> str:
-    """Return a best-effort model identifier for an invalid record report."""
+    """Return a best-effort model identifier for an invalid record report.
+
+    Args:
+        record:
+            EEE record whose model metadata may be malformed.
+
+    Returns:
+        Model identifier or ``"unknown"`` when none can be recovered.
+    """
     model_info = record.get("model_info")
     if isinstance(model_info, dict):
         value = model_info.get("id") or model_info.get("name")
@@ -505,7 +679,22 @@ def _score_one(
     records: dict[str, _PrivateRecord],
     prompt_digests: dict[str, str],
 ) -> dict[str, object]:
-    """Score one complete canary observation set over 32 independent groups."""
+    """Score one complete canary observation set over 32 independent groups.
+
+    Args:
+        evidence:
+            Collected model observations and their corpus identity.
+        records:
+            Private targets indexed by canary row identifier.
+        prompt_digests:
+            Expected prompt digests indexed by row identifier.
+
+    Returns:
+        Per-model rates, paired sign-test result, and detection decision.
+
+    Raises:
+        ValueError: If observations do not match the complete frozen corpus.
+    """
     if len(evidence.observations) != CANARY_ROW_COUNT:
         raise ValueError("scoreable canary evidence must contain 256 rows")
     grouped: dict[str, list[tuple[int, int, int, int]]] = defaultdict(list)
@@ -578,14 +767,35 @@ def _score_one(
 
 
 def _mean(values: c.Sequence[float]) -> float:
-    """Return the arithmetic mean of non-empty values."""
+    """Return the arithmetic mean of non-empty values.
+
+    Args:
+        values:
+            Numeric values to average.
+
+    Returns:
+        Arithmetic mean of the values.
+
+    Raises:
+        ValueError: If ``values`` is empty.
+    """
     if not values:
         raise ValueError("cannot average an empty sequence")
     return sum(values) / len(values)
 
 
 def _two_sided_sign_p_value(*, positive: int, negative: int) -> float:
-    """Return the exact two-sided sign-test p-value, ignoring ties."""
+    """Return the exact two-sided sign-test p-value, ignoring ties.
+
+    Args:
+        positive:
+            Number of paired groups favouring the exposed target.
+        negative:
+            Number of paired groups favouring the control target.
+
+    Returns:
+        Exact two-sided binomial sign-test p-value.
+    """
     total = positive + negative
     if total == 0:
         return 1.0
@@ -595,13 +805,26 @@ def _two_sided_sign_p_value(*, positive: int, negative: int) -> float:
 
 
 def _validate_private_directory(path: Path) -> None:
-    """Require an existing owner-only private directory."""
+    """Require an existing owner-only private directory.
+
+    Args:
+        path:
+            Private directory to validate.
+
+    Raises:
+        ValueError: If the directory is absent or grants group/other access.
+    """
     if not path.is_dir() or stat.S_IMODE(path.stat().st_mode) & 0o077:
         raise ValueError("private canary directory must exist with mode 0700")
 
 
 def _write_report(*, report: dict[str, object]) -> None:
-    """Write the optional private report without affecting result processing."""
+    """Write the optional private report without affecting result processing.
+
+    Args:
+        report:
+            Scoring report to serialize when report output is configured.
+    """
     configured = os.getenv(CANARY_REPORT_PATH_ENV)
     if not configured:
         return
