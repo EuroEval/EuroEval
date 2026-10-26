@@ -16,7 +16,7 @@ def ensure_nltk_packages(
     Args:
         cache_dir:
             The cache directory where NLTK data will be stored.
-        packages:
+        packages (optional):
             List of NLTK package names to download. If None, downloads the default
             packages: punkt_tab, wordnet, omw-1.4.
 
@@ -36,7 +36,7 @@ def download_nltk_packages(
     Args:
         nltk_data_dir:
             The directory where NLTK data will be stored.
-        packages:
+        packages (optional):
             List of NLTK package names to download. If None, downloads the default
             packages: punkt_tab, wordnet, omw-1.4.
     """

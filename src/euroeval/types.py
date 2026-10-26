@@ -59,7 +59,7 @@ class BatchScoringFunction(t.Protocol):
         Args:
             outputs:
                 List of model outputs (Pydantic models) from the judge.
-            dataset:
+            dataset (optional):
                 Optional dataset used for evaluation. Can be used for additional
                 context when computing the score.
 
