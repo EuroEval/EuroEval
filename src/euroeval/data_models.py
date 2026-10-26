@@ -678,7 +678,7 @@ class DatasetConfig:
                 dictionary with keys "train", "val" and "test" mapping to local CSV file
                 paths. Can be None if and only if the dataset config resides directly in
                 the Hugging Face dataset repo. Defaults to None.
-            revision:
+            revision (optional):
                 Hugging Face dataset revision to load. Defaults to "main".
             prompt_prefix (optional):
                 The prefix to use in the few-shot prompt. Defaults to the template for

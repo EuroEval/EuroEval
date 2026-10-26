@@ -14,7 +14,14 @@ NEW_SHA = "b" * 40
 def test_inserts_revision_and_preserves_source_subset(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Missing revisions are inserted without changing source subsets."""
+    """Missing revisions are inserted without changing source subsets.
+
+    Args:
+        monkeypatch:
+            Pytest monkeypatch fixture.
+        tmp_path:
+            Temporary directory fixture.
+    """
     run_main(
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
@@ -109,7 +116,14 @@ def run_main(
 def test_malformed_config_fails_before_hub_access(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """All config syntax is validated before calling the Hub."""
+    """All config syntax is validated before calling the Hub.
+
+    Args:
+        monkeypatch:
+            Pytest monkeypatch fixture.
+        tmp_path:
+            Temporary directory fixture.
+    """
     (tmp_path / "broken.py").write_text("DatasetConfig(\n")
     monkeypatch.setattr(refresh, "CONFIG_DIR", tmp_path)
     monkeypatch.setattr(
@@ -122,7 +136,14 @@ def test_malformed_config_fails_before_hub_access(
 def test_missing_repo_leaves_all_files_unchanged(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """An unresolved source aborts before any config is written."""
+    """An unresolved source aborts before any config is written.
+
+    Args:
+        monkeypatch:
+            Pytest monkeypatch fixture.
+        tmp_path:
+            Temporary directory fixture.
+    """
     first = tmp_path / "a.py"
     second = tmp_path / "b.py"
     first.write_text('DatasetConfig(source="org/known")\n')
@@ -137,7 +158,14 @@ def test_missing_repo_leaves_all_files_unchanged(
 
 
 def test_repeat_run_is_noop(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    """Running twice with the same revision leaves the file unchanged."""
+    """Running twice with the same revision leaves the file unchanged.
+
+    Args:
+        monkeypatch:
+            Pytest monkeypatch fixture.
+        tmp_path:
+            Temporary directory fixture.
+    """
     path = tmp_path / "config.py"
     text = f'DatasetConfig(source="org/data", revision="{SHA}")\n'
     path.write_text(text)
@@ -153,7 +181,14 @@ def test_repeat_run_is_noop(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> 
 def test_updates_existing_revision(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """An outdated literal revision is replaced rather than duplicated."""
+    """An outdated literal revision is replaced rather than duplicated.
+
+    Args:
+        monkeypatch:
+            Pytest monkeypatch fixture.
+        tmp_path:
+            Temporary directory fixture.
+    """
     run_main(
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,

@@ -12,7 +12,12 @@ from src.scripts.dataset_creation import dataset_utils
 def test_upload_private_checks_visibility_before_upload(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """An existing public repository is rejected before writing dataset bytes."""
+    """An existing public repository is rejected before writing dataset bytes.
+
+    Args:
+        monkeypatch:
+            Pytest monkeypatch fixture.
+    """
     api = Mock()
     api.repo_info.return_value = SimpleNamespace(private=False)
     dataset = Mock()
@@ -28,7 +33,12 @@ def test_upload_private_checks_visibility_before_upload(
 def test_upload_private_creates_missing_repository_and_verifies_postcondition(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A missing repository is allowed and visibility is checked after upload."""
+    """A missing repository is allowed and visibility is checked after upload.
+
+    Args:
+        monkeypatch:
+            Pytest monkeypatch fixture.
+    """
     api = Mock()
     api.repo_info.side_effect = [
         RepositoryNotFoundError(response=Mock(), message="missing"),
@@ -46,7 +56,12 @@ def test_upload_private_creates_missing_repository_and_verifies_postcondition(
 def test_upload_private_rejects_public_repository_after_upload(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The postcondition still detects a repository made public during upload."""
+    """The postcondition still detects a repository made public during upload.
+
+    Args:
+        monkeypatch:
+            Pytest monkeypatch fixture.
+    """
     api = Mock()
     api.repo_info.side_effect = [
         SimpleNamespace(private=True),
