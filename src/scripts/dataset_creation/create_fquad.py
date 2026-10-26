@@ -37,7 +37,12 @@ else:
 )
 @click.argument("data_dir", type=str)
 def main(data_dir: str) -> None:
-    """Create the FQuAD-mini NER dataset and uploads it to the HF Hub."""
+    """Create the FQuAD-mini NER dataset and upload it to the HF Hub.
+
+    Args:
+        data_dir:
+            Directory containing the requested raw FQuAD dataset.
+    """
     train_path = Path(data_dir) / "train.json"
     train_df = pd.read_json(train_path)
 

@@ -25,7 +25,14 @@ def test_set_new_version_stages_builtin_dataset_configs(
     commands: list[list[str]] = []
 
     def record_command(args: list[str], check: bool) -> None:
-        """Record subprocess calls without performing release side effects."""
+        """Record subprocess calls without performing release side effects.
+
+        Args:
+            args:
+                Command arguments passed to the subprocess.
+            check:
+                Whether subprocess failures must raise an error.
+        """
         assert check
         commands.append(args)
 
