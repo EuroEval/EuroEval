@@ -135,6 +135,9 @@ def check_capital_letters(response: str, **_) -> bool:
         response:
             The response string to check.
 
+        **_:
+            Additional keyword arguments, which are ignored.
+
     Returns:
         True if the response contains no lowercase letters, False otherwise.
     """
@@ -193,6 +196,9 @@ def check_catalan_capital(response: str, **_) -> bool:
         response:
             The response string to check.
 
+        **_:
+            Additional keyword arguments, which are ignored.
+
     Returns:
         True if the response is entirely uppercase and detected as Catalan,
         False otherwise. Returns True if language detection fails.
@@ -211,6 +217,9 @@ def check_catalan_lowercase(response: str, **_) -> bool:
         response:
             The response string to check.
 
+        **_:
+            Additional keyword arguments, which are ignored.
+
     Returns:
         True if the response is entirely lowercase and detected as Catalan,
         False otherwise. Returns True if language detection fails.
@@ -228,6 +237,9 @@ def check_constrained_response_catalan(response: str, **_) -> bool:
     Args:
         response:
             The response string to check.
+
+        **_:
+            Additional keyword arguments, which are ignored.
 
     Returns:
         True if the response contains exactly one of "La meva resposta és sí.",
@@ -249,6 +261,9 @@ def check_constrained_response_english(response: str, **_) -> bool:
         response:
             The response string to check.
 
+        **_:
+            Additional keyword arguments, which are ignored.
+
     Returns:
         True if the response contains exactly one of "My answer is yes.", "My answer is
         no.", or "My answer is maybe.", False otherwise.
@@ -265,6 +280,9 @@ def check_constrained_response_french(response: str, **_) -> bool:
         response:
             The response string to check.
 
+        **_:
+            Additional keyword arguments, which are ignored.
+
     Returns:
         True if the response contains exactly one of "Oui.", "Non.", or "Peut-être.",
         False otherwise.
@@ -280,6 +298,9 @@ def check_constrained_response_spanish(response: str, **_) -> bool:
     Args:
         response:
             The response string to check.
+
+        **_:
+            Additional keyword arguments, which are ignored.
 
     Returns:
         True if the response contains exactly one of "Mi respuesta es sí" or
@@ -338,6 +359,9 @@ def check_english_capital(response: str, **_) -> bool:
         response:
             The response string to check.
 
+        **_:
+            Additional keyword arguments, which are ignored.
+
     Returns:
         True if the response is entirely uppercase and detected as English,
         False otherwise. Returns True if language detection fails.
@@ -355,6 +379,9 @@ def check_english_lowercase(response: str, **_) -> bool:
     Args:
         response:
             The response string to check.
+
+        **_:
+            Additional keyword arguments, which are ignored.
 
     Returns:
         True if the response is entirely lowercase and detected as English,
@@ -419,6 +446,9 @@ def check_french_capital(response: str, **_) -> bool:
         response:
             The response string to check.
 
+        **_:
+            Additional keyword arguments, which are ignored.
+
     Returns:
         True if the response is entirely uppercase and detected as French,
         False otherwise. Returns True if language detection fails.
@@ -437,6 +467,9 @@ def check_french_lowercase(response: str, **_) -> bool:
         response:
             The response string to check.
 
+        **_:
+            Additional keyword arguments, which are ignored.
+
     Returns:
         True if the response is entirely lowercase and detected as French,
         False otherwise. Returns True if language detection fails.
@@ -454,6 +487,9 @@ def check_informal_address(response: str, **_) -> bool:
     Args:
         response:
             The response string to check.
+
+        **_:
+            Additional keyword arguments, which are ignored.
 
     Returns:
         True if the response contains informal address, False otherwise.
@@ -482,6 +518,9 @@ def check_json_format(response: str, **_) -> bool:
     Args:
         response:
             The response string to check.
+
+        **_:
+            Additional keyword arguments, which are ignored.
 
     Returns:
         True if the response (after stripping optional ```json``` fences) is valid JSON,
@@ -642,6 +681,9 @@ def check_lowercase_letters(response: str, **_) -> bool:
         response:
             The response string to check.
 
+        **_:
+            Additional keyword arguments, which are ignored.
+
     Returns:
         True if the response contains no uppercase letters, False otherwise.
     """
@@ -687,6 +729,9 @@ def check_no_accents(response: str, **_) -> bool:
         response:
             The response string to check.
 
+        **_:
+            Additional keyword arguments, which are ignored.
+
     Returns:
         True if the response contains no accents, False otherwise.
     """
@@ -700,6 +745,9 @@ def check_accents(response: str, **_) -> bool:
     Args:
         response:
             The response string to check.
+
+        **_:
+            Additional keyword arguments, which are ignored.
 
     Returns:
         True if the response contains accents, False otherwise.
@@ -718,6 +766,9 @@ def check_no_comma(response: str, **_) -> bool:
         response:
             The response string to check.
 
+        **_:
+            Additional keyword arguments, which are ignored.
+
     Returns:
         True if the response contains no comma characters, False otherwise.
     """
@@ -731,6 +782,9 @@ def check_no_digits(response: str, **_) -> bool:
     Args:
         response:
             The response string to check.
+
+        **_:
+            Additional keyword arguments, which are ignored.
 
     Returns:
         True if the response contains no digits, False otherwise.
@@ -1078,6 +1132,9 @@ def check_quotation(response: str, **_) -> bool:
         response:
             The response string to check.
 
+        **_:
+            Additional keyword arguments, which are ignored.
+
     Returns:
         True if the response (after stripping whitespace) begins and ends with a double
         quote character, False otherwise.
@@ -1140,6 +1197,9 @@ def check_spanish_capital(response: str, **_) -> bool:
         response:
             The response string to check.
 
+        **_:
+            Additional keyword arguments, which are ignored.
+
     Returns:
         True if the response is entirely uppercase and detected as Spanish, False
         otherwise. Returns True if language detection fails.
@@ -1157,6 +1217,9 @@ def check_spanish_lowercase(response: str, **_) -> bool:
     Args:
         response:
             The response string to check.
+
+        **_:
+            Additional keyword arguments, which are ignored.
 
     Returns:
         True if the response is entirely lowercase and detected as Spanish,
@@ -1179,6 +1242,9 @@ def check_title(response: str, **_) -> bool:
         response:
             The response string to check.
 
+        **_:
+            Additional keyword arguments, which are ignored.
+
     Returns:
         True if the response contains at least one non‑empty title wrapped in
         double angle brackets (e.g. <<My Title>>), False otherwise.
@@ -1199,6 +1265,9 @@ def check_two_responses(response: str, **_) -> bool:
     Args:
         response:
             The response string to check.
+
+        **_:
+            Additional keyword arguments, which are ignored.
 
     Returns:
         True if the response contains exactly two non‑empty, non‑identical sections
