@@ -260,6 +260,7 @@ BLIMP_NL_CONFIG = DatasetConfig(
     task=LA,
     languages=[DUTCH],
     unofficial=True,
+    revision="c9863f0b3bee195a8e6d3d9d1ee0085a7158aaf5",
 )
 
 DUTCH_COLA_FULL_CONFIG = DatasetConfig(
