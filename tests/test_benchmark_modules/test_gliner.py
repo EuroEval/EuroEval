@@ -391,7 +391,10 @@ class FakeExtractor:
             schema:
                 Schema supplied to the test.
             include_confidence (optional):
-                Include confidence supplied to the test. Defaults to False.
+                Whether to include confidence in the response. Defaults to False.
+
+        Returns:
+            The classification result in the shape expected by GLiNER2.
         """
         assert include_confidence is False
         self.calls.append((text, schema))

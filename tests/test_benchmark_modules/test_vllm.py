@@ -1576,11 +1576,17 @@ class TestVLLMClassification:
             dataset_config:
                 Dataset configuration exercised by the test.
             task_group (optional):
-                Task group supplied to the test.
+                Task group used to configure the test dataset. Defaults to
+                ``TaskGroup.SEQUENCE_CLASSIFICATION``.
             labels (optional):
-                Labels supplied to the test. Defaults to None.
+                Candidate labels for the test dataset. Defaults to None, which uses
+                positive and negative labels.
             label_mapping (optional):
-                Label mapping supplied to the test. Defaults to None.
+                Mapping from dataset labels to prompt labels. Defaults to None, which
+                maps each label to itself.
+
+        Returns:
+            A copied dataset configuration for classification prompt tests.
         """
         config = copy.copy(dataset_config)
         labels = ["positive", "negative"] if labels is None else labels
@@ -1635,7 +1641,10 @@ class TestVLLMClassification:
             config:
                 Config supplied to the test.
             generative_type:
-                Generative type supplied to the test.
+                Generative type used by the test model.
+
+        Returns:
+            An uninitialised vLLM model populated with test configuration.
         """
         model = object.__new__(VLLMModel)
         model.dataset_config = config
@@ -1941,17 +1950,17 @@ class TestVLLMPromptTruncation:
         model._model.generate.return_value = [mock_vllm_output]
 
         def _make_sampling_params(**kwargs) -> MagicMock:
-            # Mirror the constructor kwargs onto the mock so the code under test reads
-            # back the real values (e.g. `prompt_logprobs=None` selects the generation
-            # path rather than the BPC scoring path).
-            """Make sampling params for this test.
+            """Build sampling parameters that expose constructor values to the test.
+
+            Mirroring the arguments lets ``generate`` distinguish normal generation
+            from BPC scoring based on the configured ``prompt_logprobs`` value.
 
             Args:
                 kwargs:
-                    Kwargs supplied to the test.
+                    Sampling parameter values passed by the code under test.
 
             Returns:
-                The value returned by the test helper.
+                A mock with each sampling parameter available as an attribute.
             """
             sampling_params = MagicMock()
             for key, value in kwargs.items():
