@@ -1045,7 +1045,7 @@ class TestDuplicateErrorHandling:
 
         original_response_format = {"type": "json_schema", "json_schema": {}}
 
-        async def fake_acompletion(**kwargs: object) -> None:
+        async def fake_acompletion(**kwargs: object) -> MagicMock:
             """Mock callback used by the surrounding test.
 
             Args:
@@ -1054,7 +1054,7 @@ class TestDuplicateErrorHandling:
 
             Raises:
                 _make_response_format_unavailable_error:
-                    If the simulated operation fails.
+                    On the simulated response-format request.
             """
             raise _make_response_format_unavailable_error()
 
@@ -1109,7 +1109,7 @@ def _fake_get_generation_kwargs(
                 Dataset configuration exercised by the test.
 
         Returns:
-            The value returned by the test helper.
+            Generation kwargs for the configured dataset.
         """
         generation_kwargs: dict[str, t.Any] = {
             "max_completion_tokens": dataset_config.max_generated_tokens
@@ -1360,7 +1360,7 @@ class TestRetryAdjustments:
         model.buffer["first_label_token_mapping"] = True
         model._parameter_adjustments.add(ParameterAdjustment.NO_LOGPROBS)
 
-        async def fake_acompletion(**kwargs: object) -> None:
+        async def fake_acompletion(**kwargs: object) -> MagicMock:
             """Mock callback used by the surrounding test.
 
             Args:
@@ -1368,7 +1368,7 @@ class TestRetryAdjustments:
                     Kwargs supplied to the test.
 
             Returns:
-                The value returned by the test helper.
+                A mock LiteLLM response.
             """
             return _make_response()
 
@@ -1407,7 +1407,7 @@ class TestRetryAdjustments:
         )
         model.buffer["first_label_token_mapping"] = True
 
-        async def fake_acompletion(**kwargs: object) -> None:
+        async def fake_acompletion(**kwargs: object) -> MagicMock:
             """Mock callback used by the surrounding test.
 
             Args:
@@ -1415,7 +1415,7 @@ class TestRetryAdjustments:
                     Kwargs supplied to the test.
 
             Returns:
-                The value returned by the test helper.
+                A mock LiteLLM response.
             """
             return _make_response()
 
@@ -1464,7 +1464,7 @@ class TestRetryAdjustments:
         response = _make_response()
         response.choices[0].message.reasoning_content = "thinking"
 
-        async def fake_acompletion(**kwargs: object) -> None:
+        async def fake_acompletion(**kwargs: object) -> MagicMock:
             """Mock callback used by the surrounding test.
 
             Args:
@@ -1472,7 +1472,7 @@ class TestRetryAdjustments:
                     Kwargs supplied to the test.
 
             Returns:
-                The value returned by the test helper.
+                The mock LiteLLM response with reasoning content.
             """
             return response
 
@@ -1558,7 +1558,7 @@ class TestRetryAdjustments:
             log_metadata=False,
         )
 
-        async def fake_acompletion_logprobs_unsupported(**kwargs: object) -> None:
+        async def fake_acompletion_logprobs_unsupported(**kwargs: object) -> MagicMock:
             """Mock callback used by the surrounding test.
 
             Args:
@@ -1604,7 +1604,7 @@ class TestRetryAdjustments:
                     Dataset configuration exercised by the test.
 
             Returns:
-                The value returned by the test helper.
+                Generation kwargs including the schema and logprobs settings.
             """
             return {
                 "max_completion_tokens": dataset_config.max_generated_tokens,
@@ -1657,7 +1657,7 @@ class TestRetryAdjustments:
 
         original_response_format = {"type": "json_schema", "json_schema": {}}
 
-        async def fake_acompletion_malformed_schema(**kwargs: object) -> None:
+        async def fake_acompletion_malformed_schema(**kwargs: object) -> MagicMock:
             """Mock callback used by the surrounding test.
 
             Args:
@@ -1703,7 +1703,7 @@ class TestRetryAdjustments:
                     Dataset configuration exercised by the test.
 
             Returns:
-                The value returned by the test helper.
+                Generation kwargs including the new response schema.
             """
             return {
                 "max_completion_tokens": dataset_config.max_generated_tokens,
@@ -1832,7 +1832,7 @@ def _patch_retry_adjustment_dependencies(
     """
     calls: list[dict[str, t.Any]] = []
 
-    async def fake_acompletion(**kwargs: object) -> None:
+    async def fake_acompletion(**kwargs: object) -> MagicMock:
         """Mock callback used by the surrounding test.
 
         Args:
@@ -1840,7 +1840,7 @@ def _patch_retry_adjustment_dependencies(
                 Kwargs supplied to the test.
 
         Returns:
-            The value returned by the test helper.
+            A mock LiteLLM response.
 
         Raises:
             _make_response_format_unavailable_error:
@@ -1898,7 +1898,7 @@ class TestServiceErrorHandling:
 
         has_raised: list[bool] = [False]
 
-        async def fake_acompletion(**kwargs: object) -> None:
+        async def fake_acompletion(**kwargs: object) -> MagicMock:
             """Mock callback used by the surrounding test.
 
             Args:
@@ -1906,11 +1906,11 @@ class TestServiceErrorHandling:
                     Kwargs supplied to the test.
 
             Returns:
-                The value returned by the test helper.
+                A mock LiteLLM response after the simulated service error.
 
             Raises:
                 BadRequestError:
-                    If the simulated operation fails.
+                    On the first simulated completion request.
             """
             if not has_raised[0]:
                 has_raised[0] = True
