@@ -28,7 +28,16 @@ class TestLoadDatasetConfigFromYaml:
     def test_a_boxed_instruction_does_not_warn(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, instruction_prompt: str
     ) -> None:
-        """Any spelling the scorer extracts an answer from counts as boxed."""
+        """Any spelling the scorer extracts an answer from counts as boxed.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        monkeypatch:
+        Fixture for replacing external dependencies.
+        instruction_prompt:
+        Instruction prompt variant to write to the YAML file.
+        """
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text(
             f"task: math\nlanguages: [en]\ninstruction_prompt: {instruction_prompt}\n"
@@ -46,7 +55,12 @@ class TestLoadDatasetConfigFromYaml:
     def test_a_malformed_solver_does_not_hide_the_later_one(
         self, tmp_path: Path
     ) -> None:
-        """Scanning solvers continues past one this loader cannot read."""
+        """Scanning solvers continues past one this loader cannot read.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text(
             "task: math\nlanguages: [en]\ntasks:\n  - solvers:\n"
@@ -59,7 +73,12 @@ class TestLoadDatasetConfigFromYaml:
         assert "Put it in" in config.instruction_prompt
 
     def test_choices_column_as_list(self, tmp_path: Path) -> None:
-        """choices_column as a list of strings triggers a preprocessing_func."""
+        """choices_column as a list of strings triggers a preprocessing_func.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -80,7 +99,12 @@ class TestLoadDatasetConfigFromYaml:
         assert config.preprocessing_func is not None
 
     def test_choices_column_as_string(self, tmp_path: Path) -> None:
-        """choices_column as a string triggers the creation of a preprocessing_func."""
+        """choices_column as a string triggers the creation of a preprocessing_func.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -97,7 +121,12 @@ class TestLoadDatasetConfigFromYaml:
         assert config.preprocessing_func is not None
 
     def test_empty_languages_list_defaults_to_english(self, tmp_path: Path) -> None:
-        """A YAML file with empty languages list and no fallback defaults to English."""
+        """A YAML file with empty languages list and no fallback defaults to English.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -111,7 +140,12 @@ class TestLoadDatasetConfigFromYaml:
         assert config.languages[0].code == "en"
 
     def test_eval_yaml_filename_accepted(self, tmp_path: Path) -> None:
-        """A file named eval.yaml is accepted just like euroeval_config.yaml."""
+        """A file named eval.yaml is accepted just like euroeval_config.yaml.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -124,7 +158,12 @@ class TestLoadDatasetConfigFromYaml:
         assert isinstance(config, DatasetConfig)
 
     def test_explicit_instruction_prompt_overrides_solver(self, tmp_path: Path) -> None:
-        """An explicit instruction prompt takes precedence over prompt_template."""
+        """An explicit instruction prompt takes precedence over prompt_template.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -144,7 +183,12 @@ class TestLoadDatasetConfigFromYaml:
         assert config.instruction_prompt == "Explicit {text}"
 
     def test_explicit_task_overrides_inference(self, tmp_path: Path) -> None:
-        """An explicit top-level 'task' key overrides any Inspect AI inference."""
+        """An explicit top-level 'task' key overrides any Inspect AI inference.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -165,7 +209,12 @@ class TestLoadDatasetConfigFromYaml:
         assert config.task.name == "classification"
 
     def test_fallback_invalid_language_code_returns_none(self, tmp_path: Path) -> None:
-        """An unknown language code in fallback_language_codes returns None."""
+        """An unknown language code in fallback_language_codes returns None.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -183,7 +232,12 @@ class TestLoadDatasetConfigFromYaml:
     def test_fallback_language_codes_used_when_no_languages_key(
         self, tmp_path: Path
     ) -> None:
-        """fallback_language_codes is used when 'languages' is absent from YAML."""
+        """fallback_language_codes is used when 'languages' is absent from YAML.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -198,7 +252,12 @@ class TestLoadDatasetConfigFromYaml:
         assert config.languages[0].code == "en"
 
     def test_inspect_ai_choices_column(self, tmp_path: Path) -> None:
-        """field_spec.choices in tasks[0] is promoted to choices_column."""
+        """field_spec.choices in tasks[0] is promoted to choices_column.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -224,7 +283,12 @@ class TestLoadDatasetConfigFromYaml:
         assert config.preprocessing_func is not None
 
     def test_inspect_ai_field_spec_columns(self, tmp_path: Path) -> None:
-        """Column names in tasks[0].field_spec are promoted to top-level keys."""
+        """Column names in tasks[0].field_spec are promoted to top-level keys.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -250,7 +314,12 @@ class TestLoadDatasetConfigFromYaml:
         assert config.preprocessing_func is not None
 
     def test_inspect_ai_integer_target_is_ignored(self, tmp_path: Path) -> None:
-        """field_spec.target as an integer (Inspect AI letter-index) is skipped."""
+        """field_spec.target as an integer (Inspect AI letter-index) is skipped.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -271,7 +340,12 @@ class TestLoadDatasetConfigFromYaml:
         assert config.preprocessing_func is None
 
     def test_inspect_ai_literal_target_is_ignored(self, tmp_path: Path) -> None:
-        """field_spec.target with 'literal:' prefix is not used as target_column."""
+        """field_spec.target with 'literal:' prefix is not used as target_column.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -299,7 +373,16 @@ class TestLoadDatasetConfigFromYaml:
     def test_inspect_ai_split_variants(
         self, tmp_path: Path, split: str | None, expected: str
     ) -> None:
-        """Inspect task splits are promoted, with test as the default."""
+        """Inspect task splits are promoted, with test as the default.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        split:
+        Split selector used by the test.
+        expected:
+        Expected split after selection.
+        """
         split_line = f"    split: {split}\n" if split is not None else ""
         yaml_file = _write_yaml(
             tmp_path,
@@ -321,7 +404,12 @@ languages:
         assert config.test_split == expected
 
     def test_inspect_ai_top_level_overrides_field_spec(self, tmp_path: Path) -> None:
-        """Explicit top-level input_column takes precedence over field_spec.input."""
+        """Explicit top-level input_column takes precedence over field_spec.input.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -344,7 +432,12 @@ languages:
     def test_inspect_ai_without_field_spec_loads_successfully(
         self, tmp_path: Path
     ) -> None:
-        """A tasks list without a field_spec block is silently ignored."""
+        """A tasks list without a field_spec block is silently ignored.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -362,7 +455,12 @@ languages:
         assert isinstance(config, DatasetConfig)
 
     def test_invalid_language_code_returns_none(self, tmp_path: Path) -> None:
-        """An unknown language code causes the function to return None."""
+        """An unknown language code causes the function to return None.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -376,7 +474,12 @@ languages:
         assert config is None
 
     def test_invalid_task_returns_none(self, tmp_path: Path) -> None:
-        """An unknown task name causes the function to return None."""
+        """An unknown task name causes the function to return None.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -390,7 +493,12 @@ languages:
         assert config is None
 
     def test_labels_are_set(self, tmp_path: Path) -> None:
-        """Labels specified in YAML are reflected in the DatasetConfig."""
+        """Labels specified in YAML are reflected in the DatasetConfig.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -408,7 +516,12 @@ languages:
         assert list(config.labels) == ["positive", "negative"]
 
     def test_malformed_yaml_returns_none(self, tmp_path: Path) -> None:
-        """A syntactically broken YAML file returns None."""
+        """A syntactically broken YAML file returns None.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = tmp_path / "euroeval_config.yaml"
         yaml_file.write_text("task: [unclosed bracket\n")
         config = load_dataset_config_from_yaml(yaml_file)
@@ -417,7 +530,14 @@ languages:
     def test_math_boxed_prompt_does_not_warn(
         self, tmp_path: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """A boxed math instruction does not emit the missing-prompt warning."""
+        """A boxed math instruction does not emit the missing-prompt warning.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        caplog:
+        Fixture capturing log records.
+        """
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text(
             "task: math\nlanguages: [en]\ninstruction_prompt: 'Use \\\\boxed{{}}'\n"
@@ -428,7 +548,12 @@ languages:
         assert "expects the model" not in caplog.text
 
     def test_math_scorer_and_prompt_template(self, tmp_path: Path) -> None:
-        """A math scorer and prompt template are inferred from Inspect AI YAML."""
+        """A math scorer and prompt template are inferred from Inspect AI YAML.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -477,7 +602,12 @@ languages:
     def test_math_template_with_unsupported_placeholder_is_ignored(
         self, tmp_path: Path
     ) -> None:
-        """Math prompt templates with non-text placeholders are not promoted."""
+        """Math prompt templates with non-text placeholders are not promoted.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text(
             "task: math\nlanguages: [en]\ntasks:\n  - solvers:\n"
@@ -491,7 +621,14 @@ languages:
     def test_math_without_boxed_prompt_warns(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Math configs without boxed instructions emit a warning."""
+        """Math configs without boxed instructions emit a warning.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        monkeypatch:
+        Fixture for replacing external dependencies.
+        """
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text("task: math\nlanguages: [en]\n")
         messages: list[str] = []
@@ -508,7 +645,12 @@ languages:
         assert any("boxed" in message for message in messages), messages
 
     def test_minimal_valid_config(self, tmp_path: Path) -> None:
-        """A YAML file with only task and languages produces a DatasetConfig."""
+        """A YAML file with only task and languages produces a DatasetConfig.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -524,7 +666,12 @@ languages:
     def test_missing_languages_no_fallback_defaults_to_english(
         self, tmp_path: Path
     ) -> None:
-        """No 'languages' key and no fallback_language_codes defaults to English."""
+        """No 'languages' key and no fallback_language_codes defaults to English.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -536,7 +683,12 @@ languages:
         assert config.languages[0].code == "en"
 
     def test_missing_task_key_returns_none(self, tmp_path: Path) -> None:
-        """A YAML file without 'task' key and no Inspect AI hints returns None."""
+        """A YAML file without 'task' key and no Inspect AI hints returns None.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -549,7 +701,12 @@ languages:
         assert config is None
 
     def test_missing_task_no_hints_returns_none(self, tmp_path: Path) -> None:
-        """No 'task' key and no Inspect AI hints (solver/choices) returns None."""
+        """No 'task' key and no Inspect AI hints (solver/choices) returns None.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -569,7 +726,12 @@ languages:
         assert config is None
 
     def test_multiple_languages(self, tmp_path: Path) -> None:
-        """Multiple language codes are all parsed."""
+        """Multiple language codes are all parsed.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -586,7 +748,12 @@ languages:
         assert len(config.languages) == 3
 
     def test_optional_int_fields(self, tmp_path: Path) -> None:
-        """Integer optional fields are parsed correctly."""
+        """Integer optional fields are parsed correctly.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -604,7 +771,12 @@ languages:
         assert config.max_generated_tokens == 10
 
     def test_optional_str_fields(self, tmp_path: Path) -> None:
-        """String optional column fields trigger a preprocessing_func being built."""
+        """String optional column fields trigger a preprocessing_func being built.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -622,7 +794,12 @@ languages:
         assert config.preprocessing_func is not None
 
     def test_prompt_label_mapping(self, tmp_path: Path) -> None:
-        """A prompt_label_mapping dict is parsed correctly."""
+        """A prompt_label_mapping dict is parsed correctly.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -643,7 +820,12 @@ languages:
         assert config.prompt_label_mapping == {"positive": "pos", "negative": "neg"}
 
     def test_prompt_template_without_prompt_appends_text(self, tmp_path: Path) -> None:
-        """A prompt template without Inspect's placeholder still includes the input."""
+        """A prompt template without Inspect's placeholder still includes the input.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -662,7 +844,12 @@ languages:
         assert config.instruction_prompt == "Solve this\n\n{text}"
 
     def test_pure_inspect_ai_file_defaults_to_english(self, tmp_path: Path) -> None:
-        """A pure Inspect AI eval.yaml (no EuroEval keys) succeeds, defaults to en."""
+        """A pure Inspect AI eval.yaml (no EuroEval keys) succeeds, defaults to en.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -686,7 +873,12 @@ languages:
         assert config.languages[0].code == "en"
 
     def test_task_inferred_from_field_spec_choices(self, tmp_path: Path) -> None:
-        """A 'choices' entry in field_spec infers multiple-choice task."""
+        """A 'choices' entry in field_spec infers multiple-choice task.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -711,7 +903,12 @@ languages:
     # Task inference from Inspect AI hints                                #
     # ------------------------------------------------------------------ #
     def test_task_inferred_from_multiple_choice_solver(self, tmp_path: Path) -> None:
-        """A 'multiple_choice' solver in tasks[0].solvers infers MC task."""
+        """A 'multiple_choice' solver in tasks[0].solvers infers MC task.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -737,7 +934,12 @@ languages:
     def test_unsupported_repo_metadata_language_is_skipped(
         self, tmp_path: Path
     ) -> None:
-        """Unsupported language codes from repo metadata are skipped, not fatal."""
+        """Unsupported language codes from repo metadata are skipped, not fatal.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -751,7 +953,12 @@ languages:
         assert [lang.code for lang in config.languages] == ["en", "da"]
 
     def test_yaml_languages_take_precedence_over_fallback(self, tmp_path: Path) -> None:
-        """Explicit 'languages' in YAML overrides fallback_language_codes."""
+        """Explicit 'languages' in YAML overrides fallback_language_codes.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -772,6 +979,15 @@ def _write_yaml(tmp_path: Path, content: str, filename: str = "eval.yaml") -> Pa
 
     Returns:
         The path to the written YAML file.
+
+
+    Args:
+    tmp_path:
+        Temporary directory for YAML fixtures.
+    content:
+        Value of content used by the test.
+    filename (optional):
+        Output filename. Defaults to `eval.yaml`.
     """
     yaml_file = tmp_path / filename
     yaml_file.write_text(textwrap.dedent(content))
@@ -782,7 +998,12 @@ class TestRealWorldYamlConfigs:
     """Tests using eval.yaml content from real public HuggingFace datasets."""
 
     def test_build_kwargs_choices_column_list_error(self, tmp_path: Path) -> None:
-        """Test error when choices_column is neither string nor list."""
+        """Test error when choices_column is neither string nor list.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -801,6 +1022,11 @@ class TestRealWorldYamlConfigs:
         Source: https://huggingface.co/datasets/FutureMa/EvasionBench/blob/main/eval.yaml
         Notable features: 'evaluation_framework: inspect-ai' key, split=train,
         two solvers, and shuffled choices.
+
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -848,7 +1074,12 @@ class TestRealWorldYamlConfigs:
     def test_evasionbench_unknown_evaluation_framework_key_is_ignored(
         self, tmp_path: Path
     ) -> None:
-        """The 'evaluation_framework' key is not a EuroEval field and is ignored."""
+        """The 'evaluation_framework' key is not a EuroEval field and is ignored.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -878,6 +1109,11 @@ class TestRealWorldYamlConfigs:
         Notable features: multiple tasks each with list-style choices and a
         'literal:D' target (which is silently ignored as it is not a column
         name). Only the first task entry is used to infer config parameters.
+
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -977,6 +1213,11 @@ class TestRealWorldYamlConfigs:
         GSM8K uses the `model_graded_fact` scorer without an explicit `task` key.
         EuroEval detects the scorer and infers the `reference-free-qa` task.
         Source: https://huggingface.co/datasets/openai/gsm8k/blob/main/eval.yaml
+
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -1016,6 +1257,13 @@ class TestRealWorldYamlConfigs:
         """When neither task nor a recognised scorer is present, None is returned.
 
         An error is logged to inform the user.
+
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        caplog:
+        Fixture capturing log records.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -1045,7 +1293,12 @@ class TestRealWorldYamlConfigs:
         )
 
     def test_gsm8k_format_with_explicit_task(self, tmp_path: Path) -> None:
-        """The GSM8K eval.yaml works when a top-level 'task' key is added."""
+        """The GSM8K eval.yaml works when a top-level 'task' key is added.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -1077,6 +1330,11 @@ class TestRealWorldYamlConfigs:
         Source: https://huggingface.co/datasets/cais/hle/blob/main/eval.yaml
         Notable features: `model_graded_fact` scorer with a judge model ID, which
         triggers the `reference-free-qa` task with an LLM-as-a-judge metric.
+
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -1124,7 +1382,12 @@ class TestRealWorldYamlConfigs:
         assert config.test_split == "test"
 
     def test_hle_model_graded_fact_without_judge_model(self, tmp_path: Path) -> None:
-        """Test model_graded_fact without a judge uses REFERENCE_FREE_QA."""
+        """Test model_graded_fact without a judge uses REFERENCE_FREE_QA.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -1147,7 +1410,12 @@ class TestRealWorldYamlConfigs:
         assert config.task.name == "reference-free-qa"
 
     def test_infer_task_from_inspect_ai_multiple_scorers(self, tmp_path: Path) -> None:
-        """Test task inference when multiple scorers are present."""
+        """Test task inference when multiple scorers are present.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -1175,7 +1443,12 @@ class TestRealWorldYamlConfigs:
     def test_infer_task_from_model_graded_fact_scorer_with_judge_model(
         self, tmp_path: Path
     ) -> None:
-        """Test task inference from model_graded_fact scorer with explicit judge."""
+        """Test task inference from model_graded_fact scorer with explicit judge.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -1202,7 +1475,12 @@ class TestRealWorldYamlConfigs:
         assert config.task.metrics[0].judge_id == "openai/gpt-4"
 
     def test_load_yaml_file_not_dict_returns_none(self, tmp_path: Path) -> None:
-        """Test that YAML file with non-dict top-level returns None."""
+        """Test that YAML file with non-dict top-level returns None.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text("just a string\n")
         config = load_dataset_config_from_yaml(yaml_file)
@@ -1212,6 +1490,11 @@ class TestRealWorldYamlConfigs:
         """The MMLU-Pro eval.yaml format is parsed correctly.
 
         Source: https://huggingface.co/datasets/TIGER-Lab/MMLU-Pro/blob/main/eval.yaml
+
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
         """
         yaml_file = _write_yaml(
             tmp_path,
@@ -1242,7 +1525,12 @@ class TestRealWorldYamlConfigs:
         assert config.preprocessing_func is not None
 
     def test_mmlu_pro_format_defaults_to_english(self, tmp_path: Path) -> None:
-        """The MMLU-Pro eval.yaml has no 'languages' key, so English is used."""
+        """The MMLU-Pro eval.yaml has no 'languages' key, so English is used.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -1273,7 +1561,16 @@ class TestRealWorldYamlConfigs:
     def test_parse_int_field_bool_not_allowed(
         self, tmp_path: Path, field: str, value: str
     ) -> None:
-        """Boolean values are rejected for every integer field."""
+        """Boolean values are rejected for every integer field.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        field:
+        Integer field name under test.
+        value:
+        YAML value supplied to the field.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             f"""\
@@ -1287,7 +1584,12 @@ languages:
         assert config is None
 
     def test_parse_languages_empty_list_with_fallback(self, tmp_path: Path) -> None:
-        """Test that empty languages list uses fallback codes."""
+        """Test that empty languages list uses fallback codes.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -1304,7 +1606,12 @@ languages:
     def test_promote_field_spec_fields_multiple_tasks_uses_first(
         self, tmp_path: Path
     ) -> None:
-        """Test that only first task in tasks list is used for promotion."""
+        """Test that only first task in tasks list is used for promotion.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -1335,7 +1642,12 @@ class TestSubsetSelection:
     def test_a_full_subset_name_selects_that_single_entry(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """A subset can be requested by the name it is registered and recorded with."""
+        """A subset can be requested by the name it is registered and recorded with.
+
+        Args:
+        caplog:
+        Fixture capturing log records.
+        """
         raw = {
             "tasks": [
                 {"config": "dan", "split": "test_original"},
@@ -1367,7 +1679,16 @@ class TestSubsetSelection:
         monkeypatch: pytest.MonkeyPatch,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """Warn when a subset cannot be tied to a single language."""
+        """Warn when a subset cannot be tied to a single language.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        monkeypatch:
+        Fixture for replacing external dependencies.
+        caplog:
+        Fixture capturing log records.
+        """
         yaml_text = (
             "task: classification\n"
             "tasks:\n"
@@ -1412,6 +1733,19 @@ class TestSubsetSelection:
 
         Returns:
             The loaded dataset configs.
+
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        monkeypatch:
+        Fixture for replacing external dependencies.
+        yaml_text:
+        YAML content served by the fake Hub.
+        dataset_id:
+        Dataset repository ID to load.
+        card_languages:
+        Language codes reported by the dataset card, if available.
         """
         monkeypatch.setattr(
             custom_dataset_configs, "get_hf_token", lambda **kwargs: None
@@ -1429,13 +1763,36 @@ class TestSubsetSelection:
         )
 
         class FakeHub:
+            """FakeHub fake used to isolate Hub interactions."""
+
             def __init__(self, token: object) -> None:
+                """Test   init  .
+
+                Args:
+                token:
+                Authentication token supplied to the fake API.
+                """
                 pass
 
             def dataset_info(self, **kwargs: object) -> object:
+                """Test dataset info.
+
+                Returns:
+                Result produced by this helper.
+
+                Args:
+                kwargs:
+                Keyword arguments supplied to the fake Hub method.
+                """
                 return type("Info", (), {"card_data": card_data})()
 
             def hf_hub_download(self, **kwargs: object) -> None:
+                """Test hf hub download.
+
+                Args:
+                kwargs:
+                Keyword arguments supplied to the fake Hub method.
+                """
                 path = Path(str(kwargs["local_dir"])) / "eval.yaml"
                 path.write_text(yaml_text)
 
@@ -1454,7 +1811,12 @@ class TestSubsetSelection:
     def test_config_named_as_a_split_names_the_subsets_instead(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """A configuration is selected by naming a subset, not by a flag."""
+        """A configuration is selected by naming a subset, not by a flag.
+
+        Args:
+        caplog:
+        Fixture capturing log records.
+        """
         with caplog.at_level(logging.ERROR, logger="euroeval"):
             result = select_inspect_ai_tasks(
                 raw={"tasks": [{"config": "dan", "split": "test"}]},
@@ -1488,6 +1850,15 @@ class TestSubsetSelection:
         A repository mixing `default` with language-named configs still contains that
         configuration; dropping it because it failed to resolve as a language would
         silently benchmark less than the dataset declares.
+
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        monkeypatch:
+        Fixture for replacing external dependencies.
+        caplog:
+        Fixture capturing log records.
         """
         yaml_text = (
             "task: classification\n"
@@ -1516,7 +1887,14 @@ class TestSubsetSelection:
     def test_config_without_split_has_a_round_trippable_identity(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """A config without a declared split can be passed back to the loader."""
+        """A config without a declared split can be passed back to the loader.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        monkeypatch:
+        Fixture for replacing external dependencies.
+        """
         yaml_text = "task: classification\ntasks:\n  - config: dan\n"
         configs = self.load_with_fake_hub(
             tmp_path=tmp_path,
@@ -1542,7 +1920,14 @@ class TestSubsetSelection:
     def test_duplicate_config_and_split_entries_get_unique_identities(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Duplicate task entries remain distinct and individually selectable."""
+        """Duplicate task entries remain distinct and individually selectable.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        monkeypatch:
+        Fixture for replacing external dependencies.
+        """
         yaml_text = (
             "task: classification\ntasks:\n"
             "  - config: dan\n    split: test\n"
@@ -1582,7 +1967,12 @@ class TestSubsetSelection:
     def test_entry_languages_override_top_level_and_fallback(
         self, tmp_path: Path
     ) -> None:
-        """Prefer languages declared by the selected task entry."""
+        """Prefer languages declared by the selected task entry.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text(
             "task: classification\nlanguages: [en]\nfallback_language_codes: [en]\n"
@@ -1597,7 +1987,14 @@ class TestSubsetSelection:
     def test_expanded_configs_are_named_by_their_selector(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Each expanded entry is identified by repo, config and split."""
+        """Each expanded entry is identified by repo, config and split.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        monkeypatch:
+        Fixture for replacing external dependencies.
+        """
         yaml_text = (
             "task: classification\n"
             "tasks:\n"
@@ -1640,7 +2037,16 @@ class TestSubsetSelection:
     def test_malformed_selector_is_rejected(
         self, selector: str, tmp_path: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """Reject selectors with empty or excess components."""
+        """Reject selectors with empty or excess components.
+
+        Args:
+        selector:
+        Subset selector string to validate.
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        caplog:
+        Fixture capturing log records.
+        """
         with caplog.at_level(logging.ERROR, logger="euroeval"):
             assert (
                 yaml_config.load_yaml_config(
@@ -1655,7 +2061,14 @@ class TestSubsetSelection:
     def test_mixed_configured_and_configless_entries_have_distinct_identities(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """A configless entry must not occupy the repository's expansion key."""
+        """A configless entry must not occupy the repository's expansion key.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        monkeypatch:
+        Fixture for replacing external dependencies.
+        """
         yaml_text = (
             "task: classification\ntasks:\n"
             "  - config: dan\n    split: test\n"
@@ -1689,7 +2102,14 @@ class TestSubsetSelection:
     def test_multiple_configs_expand_to_all_entries(
         self, tmp_path: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """Without a selector every declared config is benchmarked."""
+        """Without a selector every declared config is benchmarked.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        caplog:
+        Fixture capturing log records.
+        """
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text(
             "tasks:\n"
@@ -1708,7 +2128,12 @@ class TestSubsetSelection:
         ) == [(0, "dan", "2024")]
 
     def test_selected_entry_controls_all_config_values(self, tmp_path: Path) -> None:
-        """Load column mappings, inference and prompts from the selected task."""
+        """Load column mappings, inference and prompts from the selected task.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = _write_yaml(
             tmp_path,
             """\
@@ -1756,7 +2181,16 @@ class TestSubsetSelection:
         monkeypatch: pytest.MonkeyPatch,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """Subset selectors are unsupported without an eval.yaml file."""
+        """Subset selectors are unsupported without an eval.yaml file.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        monkeypatch:
+        Fixture for replacing external dependencies.
+        caplog:
+        Fixture capturing log records.
+        """
         monkeypatch.setattr(
             custom_dataset_configs, "get_hf_token", lambda **kwargs: None
         )
@@ -1782,7 +2216,14 @@ class TestSubsetSelection:
     def test_selector_passes_bare_repo_to_hub_and_sets_identity(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Use the bare repository ID for all Hub operations."""
+        """Use the bare repository ID for all Hub operations.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        monkeypatch:
+        Fixture for replacing external dependencies.
+        """
         calls: list[tuple[str, str]] = []
         monkeypatch.setattr(
             custom_dataset_configs, "get_hf_token", lambda **kwargs: None
@@ -1795,14 +2236,37 @@ class TestSubsetSelection:
         )
 
         class FakeHub:
+            """FakeHub fake used to isolate Hub interactions."""
+
             def __init__(self, token: object) -> None:
+                """Test   init  .
+
+                Args:
+                token:
+                Authentication token supplied to the fake API.
+                """
                 calls.append(("init", str(token)))
 
             def dataset_info(self, **kwargs: object) -> object:
+                """Test dataset info.
+
+                Returns:
+                Result produced by this helper.
+
+                Args:
+                kwargs:
+                Keyword arguments supplied to the fake Hub method.
+                """
                 calls.append(("info", str(kwargs["repo_id"])))
                 return type("Info", (), {"card_data": None})()
 
             def hf_hub_download(self, **kwargs: object) -> None:
+                """Test hf hub download.
+
+                Args:
+                kwargs:
+                Keyword arguments supplied to the fake Hub method.
+                """
                 calls.append(("download", str(kwargs["repo_id"])))
                 path = Path(str(kwargs["local_dir"])) / "eval.yaml"
                 path.write_text(
@@ -1819,6 +2283,15 @@ class TestSubsetSelection:
         split_kwargs: list[dict[str, object]] = []
 
         def fake_get_repo_splits(**kwargs: object) -> tuple[str, None, str]:
+            """Test fake get repo splits.
+
+            Returns:
+            Result produced by this helper.
+
+            Args:
+            kwargs:
+            Keyword arguments supplied to the fake Hub method.
+            """
             split_kwargs.append(kwargs)
             return "train", None, "test"
 
@@ -1843,7 +2316,12 @@ class TestSubsetSelection:
     def test_selector_rejected_for_configless_eval_yaml(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """A selector must not disappear when an eval.yaml has no configs."""
+        """A selector must not disappear when an eval.yaml has no configs.
+
+        Args:
+        caplog:
+        Fixture capturing log records.
+        """
         with caplog.at_level(logging.ERROR, logger="euroeval"):
             result = select_inspect_ai_tasks(
                 raw={"tasks": [{"split": "test"}]},
@@ -1856,7 +2334,12 @@ class TestSubsetSelection:
     def test_single_config_multiple_splits_expands_without_selector(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """All splits of a config are selected when no split is given."""
+        """All splits of a config are selected when no split is given.
+
+        Args:
+        caplog:
+        Fixture capturing log records.
+        """
         raw = {
             "tasks": [
                 {"config": "dan", "split": "test"},
@@ -1870,7 +2353,12 @@ class TestSubsetSelection:
         assert not caplog.text
 
     def test_single_entry_fixture_remains_unchanged(self, tmp_path: Path) -> None:
-        """Preserve the existing single-config loading behaviour."""
+        """Preserve the existing single-config loading behaviour.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        """
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text("task: classification\nlanguages: [en]\n")
         config = load_dataset_config_from_yaml(yaml_file)
@@ -1882,7 +2370,14 @@ class TestSubsetSelection:
     def test_split_selection_requires_known_split(
         self, split: str | None, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """Validate a split selector, defaulting to all the declared splits."""
+        """Validate a split selector, defaulting to all the declared splits.
+
+        Args:
+        split:
+        Split selector used by the test.
+        caplog:
+        Fixture capturing log records.
+        """
         with caplog.at_level(logging.ERROR, logger="euroeval"):
             result = select_inspect_ai_tasks(
                 raw={
@@ -1938,14 +2433,38 @@ class TestSubsetSelection:
     def test_subset_language_fallback_does_not_warn_for_single_language(
         self, tmp_path: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """Do not warn when repository metadata has one language."""
+        """Do not warn when repository metadata has one language.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        caplog:
+        Fixture capturing log records.
+        """
 
         class FakeHub:
+            """FakeHub fake used to isolate Hub interactions."""
+
             def dataset_info(self, **kwargs: object) -> object:
+                """Test dataset info.
+
+                Returns:
+                Result produced by this helper.
+
+                Args:
+                kwargs:
+                Keyword arguments supplied to the fake Hub method.
+                """
                 card = type("Card", (), {"language": ["da"]})()
                 return type("Info", (), {"card_data": card})()
 
             def hf_hub_download(self, **kwargs: object) -> None:
+                """Test hf hub download.
+
+                Args:
+                kwargs:
+                Keyword arguments supplied to the fake Hub method.
+                """
                 Path(str(kwargs["local_dir"])).joinpath("eval.yaml").write_text(
                     "task: classification\ntasks:\n  - config: dan\n    split: test\n"
                 )
@@ -1971,14 +2490,38 @@ class TestSubsetSelection:
     def test_subset_language_fallback_warns_for_multiple_languages(
         self, tmp_path: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """Warn when a selected subset has only repository-level languages."""
+        """Warn when a selected subset has only repository-level languages.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        caplog:
+        Fixture capturing log records.
+        """
 
         class FakeHub:
+            """FakeHub fake used to isolate Hub interactions."""
+
             def dataset_info(self, **kwargs: object) -> object:
+                """Test dataset info.
+
+                Returns:
+                Result produced by this helper.
+
+                Args:
+                kwargs:
+                Keyword arguments supplied to the fake Hub method.
+                """
                 card = type("Card", (), {"language": ["da", "en"]})()
                 return type("Info", (), {"card_data": card})()
 
             def hf_hub_download(self, **kwargs: object) -> None:
+                """Test hf hub download.
+
+                Args:
+                kwargs:
+                Keyword arguments supplied to the fake Hub method.
+                """
                 Path(str(kwargs["local_dir"])).joinpath("eval.yaml").write_text(
                     "task: classification\ntasks:\n  - config: alpha\n    split: test\n"
                 )
@@ -2003,7 +2546,12 @@ class TestSubsetSelection:
     def test_unknown_split_lists_the_alternatives(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """An unknown split names the available ones."""
+        """An unknown split names the available ones.
+
+        Args:
+        caplog:
+        Fixture capturing log records.
+        """
         raw = {"tasks": [{"config": "dan", "split": "test_original"}]}
         with caplog.at_level(logging.ERROR, logger="euroeval"):
             assert (
@@ -2022,16 +2570,44 @@ class TestSubsetSelection:
         monkeypatch: pytest.MonkeyPatch,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """Surface YAML parser errors from the shared file loader."""
+        """Surface YAML parser errors from the shared file loader.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        monkeypatch:
+        Fixture for replacing external dependencies.
+        caplog:
+        Fixture capturing log records.
+        """
 
         class FakeInfo:
+            """FakeInfo fake used to isolate Hub interactions."""
+
             card_data = None
 
         class FakeHub:
+            """FakeHub fake used to isolate Hub interactions."""
+
             def dataset_info(self, **kwargs: object) -> FakeInfo:
+                """Test dataset info.
+
+                Returns:
+                Result produced by this helper.
+
+                Args:
+                kwargs:
+                Keyword arguments supplied to the fake Hub method.
+                """
                 return FakeInfo()
 
             def hf_hub_download(self, **kwargs: object) -> None:
+                """Test hf hub download.
+
+                Args:
+                kwargs:
+                Keyword arguments supplied to the fake Hub method.
+                """
                 path = Path(str(kwargs["local_dir"])) / "eval.yaml"
                 path.write_text("task: [broken\\n")
 
@@ -2051,7 +2627,16 @@ class TestSubsetSelection:
         monkeypatch: pytest.MonkeyPatch,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """Skip a config whose language EuroEval does not support."""
+        """Skip a config whose language EuroEval does not support.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        monkeypatch:
+        Fixture for replacing external dependencies.
+        caplog:
+        Fixture capturing log records.
+        """
         yaml_text = (
             "task: classification\n"
             "tasks:\n"
@@ -2080,7 +2665,16 @@ class TestSubsetSelection:
         monkeypatch: pytest.MonkeyPatch,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """Unsupported language-shaped configs are skipped, not attributed broadly."""
+        """Unsupported language-shaped configs are skipped, not attributed broadly.
+
+        Args:
+        tmp_path:
+        Temporary directory for YAML fixtures.
+        monkeypatch:
+        Fixture for replacing external dependencies.
+        caplog:
+        Fixture capturing log records.
+        """
         yaml_text = (
             "task: classification\ntasks:\n"
             "  - config: eng\n    split: test\n"
