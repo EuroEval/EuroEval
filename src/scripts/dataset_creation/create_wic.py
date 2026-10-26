@@ -22,7 +22,11 @@ from typing import cast
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 # Split sizes for train and val (drawn from SuperGLUE train split, stratified on label)
 TRAIN_SIZE = 1024
@@ -52,7 +56,7 @@ def main() -> None:
     )
 
     dataset_id = "EuroEval/wic"
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 

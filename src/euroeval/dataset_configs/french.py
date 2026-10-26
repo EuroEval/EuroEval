@@ -28,6 +28,7 @@ WMT24PP_EN_FR_CONFIG = TranslationDatasetConfig(
     languages=[FRENCH],
     source_language=ENGLISH,
     target_language=FRENCH,
+    revision="8299dfc8cc17c5de1c4499b36372b1905c078045",
 )
 
 FLORES_EN_FR_CONFIG = TranslationDatasetConfig(
@@ -38,6 +39,7 @@ FLORES_EN_FR_CONFIG = TranslationDatasetConfig(
     languages=[FRENCH],
     source_language=ENGLISH,
     target_language=FRENCH,
+    revision="0e667de7296a5d438a8f1610553c635ff02fa9de",
 )
 
 ALLOCINE_CONFIG = DatasetConfig(
@@ -48,6 +50,7 @@ ALLOCINE_CONFIG = DatasetConfig(
     languages=[FRENCH],
     labels=["negative", "positive"],
     prompt_label_mapping=dict(positive="positif", negative="négatif"),
+    revision="f8b3491d397993b09647f836a8ba5ca364854255",
 )
 
 SCALA_FR_CONFIG = DatasetConfig(
@@ -56,6 +59,7 @@ SCALA_FR_CONFIG = DatasetConfig(
     source="EuroEval/scala-fr",
     task=LA,
     languages=[FRENCH],
+    revision="5af76237659d708f160a7ef65b459c06b68352fa",
 )
 
 ELTEC_CONFIG = DatasetConfig(
@@ -64,6 +68,7 @@ ELTEC_CONFIG = DatasetConfig(
     source="EuroEval/eltec-mini",
     task=NER,
     languages=[FRENCH],
+    revision="8c6211cd0273d65f794658fd58d95569adae63a4",
 )
 
 FQUAD_CONFIG = DatasetConfig(
@@ -72,6 +77,7 @@ FQUAD_CONFIG = DatasetConfig(
     source="EuroEval/fquad-mini",
     task=RC,
     languages=[FRENCH],
+    revision="63d5707cb93fc76edc709b399c5537663baa20df",
 )
 
 ORANGE_SUM_CONFIG = DatasetConfig(
@@ -80,6 +86,7 @@ ORANGE_SUM_CONFIG = DatasetConfig(
     source="EuroEval/orange-sum-mini",
     task=SUMM,
     languages=[FRENCH],
+    revision="b0c4cfb276542881793f81a7ddf9f71921402d58",
 )
 
 HELLASWAG_FR_CONFIG = DatasetConfig(
@@ -88,6 +95,7 @@ HELLASWAG_FR_CONFIG = DatasetConfig(
     source="EuroEval/hellaswag-fr-mini",
     task=COMMON_SENSE,
     languages=[FRENCH],
+    revision="22ce3fbeaebca06f2eec93ebec0cb5f3b56dd79b",
 )
 
 IFEVAL_FR_CONFIG = DatasetConfig(
@@ -98,6 +106,7 @@ IFEVAL_FR_CONFIG = DatasetConfig(
     languages=[FRENCH],
     train_split=None,
     val_split=None,
+    revision="6d6314bfad0e6f6dc50549f5ce1b28678cfa8edb",
 )
 
 VALEU_FR_CONFIG = DatasetConfig(
@@ -110,6 +119,7 @@ VALEU_FR_CONFIG = DatasetConfig(
     val_split=None,
     bootstrap_samples=False,
     instruction_prompt="{text}",
+    revision="6fc80d88e79f475f04ca5eeba706294adc82229f",
 )
 
 RAGTRUTH_FR_CONFIG = DatasetConfig(
@@ -119,6 +129,7 @@ RAGTRUTH_FR_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[FRENCH],
     train_split=None,
+    revision="164f0faaa60de1212ab3722bc857884d041a90a6",
 )
 
 
@@ -128,6 +139,7 @@ INCLUDE_FR_CONFIG = DatasetConfig(
     source="EuroEval/include-fr-mini",
     task=KNOW,
     languages=[FRENCH],
+    revision="ed08b6d79135dba0956d344997779d844922819f",
 )
 
 MULTILOKO_FR_CONFIG = DatasetConfig(
@@ -137,6 +149,7 @@ MULTILOKO_FR_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[FRENCH],
     val_split=None,
+    revision="a1b65134bc32377e8bb11f8834b88c846bc245c4",
 )
 
 
@@ -149,6 +162,7 @@ MULTI_BFCL_FR_CONFIG = DatasetConfig(
     task=TOOL_CALLING,
     languages=[FRENCH],
     train_split=None,
+    revision="a8fd89babdc446c53dfde2a2c1aa3269c8eb1026",
 )
 
 
@@ -161,6 +175,7 @@ WMT24PP_FR_EN_CONFIG = TranslationDatasetConfig(
     source_language=FRENCH,
     target_language=ENGLISH,
     unofficial=True,
+    revision="8f6e245e644db8c5c7ccc3a76c2377dc9a6f5644",
 )
 
 FLORES_FR_EN_CONFIG = TranslationDatasetConfig(
@@ -172,6 +187,7 @@ FLORES_FR_EN_CONFIG = TranslationDatasetConfig(
     source_language=FRENCH,
     target_language=ENGLISH,
     unofficial=True,
+    revision="f7397c5e558cfa9731308512634a4c611334bb55",
 )
 
 MMLU_FR_CONFIG = DatasetConfig(
@@ -181,6 +197,7 @@ MMLU_FR_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[FRENCH],
     unofficial=True,
+    revision="abe6e95e8abe841f7e627130baa76eca8ac63228",
 )
 
 MULTI_IFEVAL_FR_CONFIG = DatasetConfig(
@@ -192,6 +209,7 @@ MULTI_IFEVAL_FR_CONFIG = DatasetConfig(
     train_split=None,
     val_split=None,
     unofficial=True,
+    revision="e08bd91eac4a7dd2819f8eb6d7ec477a8f028207",
 )
 
 BELEBELE_FR_CONFIG = DatasetConfig(
@@ -201,6 +219,7 @@ BELEBELE_FR_CONFIG = DatasetConfig(
     task=MCRC,
     languages=[FRENCH],
     unofficial=True,
+    revision="4f76b1a7d25a638725d6dd4ab9377c70ed1bd831",
 )
 
 MULTI_WIKI_QA_FR_CONFIG = DatasetConfig(
@@ -210,6 +229,7 @@ MULTI_WIKI_QA_FR_CONFIG = DatasetConfig(
     task=RC,
     languages=[FRENCH],
     unofficial=True,
+    revision="c247455330d14fa05d9f941c045f98374af751ea",
 )
 
 GOLDENSWAG_FR_CONFIG = DatasetConfig(
@@ -219,6 +239,7 @@ GOLDENSWAG_FR_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[FRENCH],
     unofficial=True,
+    revision="b5614241765d3fb977e5d3ccc6d7640cce2d7124",
 )
 
 WINOGRANDE_FR_CONFIG = DatasetConfig(
@@ -229,6 +250,7 @@ WINOGRANDE_FR_CONFIG = DatasetConfig(
     languages=[FRENCH],
     labels=["a", "b"],
     unofficial=True,
+    revision="65f72e13d6aaffe7c209de3277ef858f31ebb02b",
 )
 
 MULTINRC_FR_CONFIG = DatasetConfig(
@@ -238,6 +260,7 @@ MULTINRC_FR_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[FRENCH],
     unofficial=True,
+    revision="d6f0fa0d1e9da368bd925ad86745eb3a19ce6583",
 )
 
 EU_MMLU_FR_CONFIG = DatasetConfig(
@@ -247,6 +270,7 @@ EU_MMLU_FR_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[FRENCH],
     unofficial=True,
+    revision="1d846fb187b119d1e53b2a562041e94c11417e57",
 )
 
 MKQA_FR_CONFIG = DatasetConfig(
@@ -256,4 +280,5 @@ MKQA_FR_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[FRENCH],
     unofficial=True,
+    revision="0b2d78c2774f0bcf7b0da5507c8117fb5e89e3ff",
 )

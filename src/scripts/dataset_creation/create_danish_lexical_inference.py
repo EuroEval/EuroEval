@@ -18,8 +18,12 @@ from zipfile import ZipFile
 import pandas as pd
 import requests as rq
 from datasets import Dataset, DatasetDict, Split
-from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_danish_lexical_inference")
@@ -110,10 +114,8 @@ def main() -> None:
     # Create dataset ID
     dataset_id = "EuroEval/danish-lexical-inference"
 
-    # Remove the dataset from Hugging Face Hub if it already exists
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
-
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 

@@ -26,6 +26,7 @@ WMT24PP_EN_SK_CONFIG = TranslationDatasetConfig(
     languages=[SLOVAK],
     source_language=ENGLISH,
     target_language=SLOVAK,
+    revision="300e4694af0c39a3be440aa731050a3bbab448ac",
 )
 
 FLORES_EN_SK_CONFIG = TranslationDatasetConfig(
@@ -36,6 +37,7 @@ FLORES_EN_SK_CONFIG = TranslationDatasetConfig(
     languages=[SLOVAK],
     source_language=ENGLISH,
     target_language=SLOVAK,
+    revision="aad19ac4157d989c31b7968bd36332f8bc1cfb15",
 )
 
 CSFD_SENTIMENT_SK_CONFIG = DatasetConfig(
@@ -44,6 +46,7 @@ CSFD_SENTIMENT_SK_CONFIG = DatasetConfig(
     source="EuroEval/csfd-sentiment-sk-mini",
     task=SENT,
     languages=[SLOVAK],
+    revision="3f47e7cd06d2b3bebfb251f9576bdf2b00e775d7",
 )
 
 SCALA_SK_CONFIG = DatasetConfig(
@@ -52,6 +55,7 @@ SCALA_SK_CONFIG = DatasetConfig(
     source="EuroEval/scala-sk",
     task=LA,
     languages=[SLOVAK],
+    revision="1a611c8bd3e546a0b8796a8400e76b6e3abbb84f",
 )
 
 UNER_SK_CONFIG = DatasetConfig(
@@ -60,6 +64,7 @@ UNER_SK_CONFIG = DatasetConfig(
     source="EuroEval/uner-sk-mini",
     task=NER,
     languages=[SLOVAK],
+    revision="032ad01bf71425656cd217a45dfe03ef3c4a80e5",
 )
 
 MULTI_WIKI_QA_SK_CONFIG = DatasetConfig(
@@ -68,6 +73,7 @@ MULTI_WIKI_QA_SK_CONFIG = DatasetConfig(
     source="EuroEval/multi-wiki-qa-sk-mini",
     task=RC,
     languages=[SLOVAK],
+    revision="2b7372da634324434e08ee0cb407631aa733023c",
 )
 
 MMLU_SK_CONFIG = DatasetConfig(
@@ -76,6 +82,7 @@ MMLU_SK_CONFIG = DatasetConfig(
     source="EuroEval/mmlu-sk-mini",
     task=KNOW,
     languages=[SLOVAK],
+    revision="cb4a6548de11fc24f4486fd53faf6e44987d0cd3",
 )
 
 WINOGRANDE_SK_CONFIG = DatasetConfig(
@@ -84,6 +91,7 @@ WINOGRANDE_SK_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-sk",
     task=COMMON_SENSE,
     languages=[SLOVAK],
+    revision="33f8f2deca38fe1dffc7c8ec257712842f65d1b2",
 )
 
 MULTI_IFEVAL_SK_CONFIG = DatasetConfig(
@@ -94,6 +102,7 @@ MULTI_IFEVAL_SK_CONFIG = DatasetConfig(
     languages=[SLOVAK],
     train_split=None,
     val_split=None,
+    revision="6d3be34c70769885072c5111219c73ddbe81956b",
 )
 
 RAGTRUTH_SK_CONFIG = DatasetConfig(
@@ -103,6 +112,7 @@ RAGTRUTH_SK_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[SLOVAK],
     train_split=None,
+    revision="30c94ee478887884a61564b702ca3d57b0d362c5",
 )
 
 
@@ -115,6 +125,7 @@ MULTI_BFCL_SK_CONFIG = DatasetConfig(
     task=TOOL_CALLING,
     languages=[SLOVAK],
     train_split=None,
+    revision="b0d6c6b580d524e0a4d34027f9ff701ab2c55e11",
 )
 
 
@@ -127,6 +138,7 @@ WMT24PP_SK_EN_CONFIG = TranslationDatasetConfig(
     source_language=SLOVAK,
     target_language=ENGLISH,
     unofficial=True,
+    revision="4116a07e8979afa0323a8e03babdb70257d295e0",
 )
 
 FLORES_SK_EN_CONFIG = TranslationDatasetConfig(
@@ -138,6 +150,7 @@ FLORES_SK_EN_CONFIG = TranslationDatasetConfig(
     source_language=SLOVAK,
     target_language=ENGLISH,
     unofficial=True,
+    revision="8a40edf083f7f8c73abc7e946bcd0c2d810e8960",
 )
 
 SKLEP_NLI_CONFIG = DatasetConfig(
@@ -147,6 +160,7 @@ SKLEP_NLI_CONFIG = DatasetConfig(
     task=NLI,
     languages=[SLOVAK],
     unofficial=True,
+    revision="f1591170f3377d5f2b5da8b29c597185c2102cbf",
 )
 
 SK_QUAD_CONFIG = DatasetConfig(
@@ -156,6 +170,7 @@ SK_QUAD_CONFIG = DatasetConfig(
     task=RC,
     languages=[SLOVAK],
     unofficial=True,
+    revision="f3f0d96abab477f7f45285dd525e29f70c8a3e9c",
 )
 
 WIKIGOLDSK_CONFIG = DatasetConfig(
@@ -165,6 +180,7 @@ WIKIGOLDSK_CONFIG = DatasetConfig(
     task=NER,
     languages=[SLOVAK],
     unofficial=True,
+    revision="e80614fc5f317037a2e41f0d03658c3083bb9b00",
 )
 
 SKLEP_RTE_CONFIG = DatasetConfig(
@@ -184,6 +200,7 @@ SKLEP_RTE_CONFIG = DatasetConfig(
         "{labels_str}, a nič iné."
     ),
     unofficial=True,
+    revision="f45a6c20b4353354dc00ea9d5f0ce887fe936856",
 )
 
 REVIEWS3_CONFIG = DatasetConfig(
@@ -194,6 +211,7 @@ REVIEWS3_CONFIG = DatasetConfig(
     languages=[SLOVAK],
     labels=["negative", "positive"],
     unofficial=True,
+    revision="660cbd55adf936a793677651e696bc4b3e742843",
 )
 
 EU_MMLU_SK_CONFIG = DatasetConfig(
@@ -203,4 +221,5 @@ EU_MMLU_SK_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[SLOVAK],
     unofficial=True,
+    revision="9ec292c7a99b25b9b8c8edd41bf871b1892b7469",
 )

@@ -117,15 +117,20 @@ check:  ## Lint, format, and type-check the code
 		echo "Slopo skipped (llama.cpp server not running)"; \
 	fi
 
-bump-major:
+refresh-dataset-revisions:
+	@uv run python src/scripts/refresh_dataset_revisions.py
+	@uv run ruff format src/euroeval/dataset_configs/
+	@uv run pytest -q --no-cov tests/test_dataset_configs.py -k test_builtin_hub_datasets_have_pinned_revisions
+
+bump-major: refresh-dataset-revisions
 	@uv run python -m src.scripts.versioning --major
 	@echo "Bumped major version!"
 
-bump-minor:
+bump-minor: refresh-dataset-revisions
 	@uv run python -m src.scripts.versioning --minor
 	@echo "Bumped minor version!"
 
-bump-patch:
+bump-patch: refresh-dataset-revisions
 	@uv run python -m src.scripts.versioning --patch
 	@echo "Bumped patch version!"
 

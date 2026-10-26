@@ -13,6 +13,11 @@ import random
 from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, load_dataset
 
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
+
 SOURCE_ID = "amalia-llm/cultura-viva-pt-mcq"
 TARGET_ID = "EuroEval/euroeval-amalia-cultura-viva-pt"
 TRAIN_SIZE = 32
@@ -51,6 +56,7 @@ def main() -> None:
             "test": dataset.select(indices=range(TRAIN_SIZE + VAL_SIZE, len(dataset))),
         }
     )
+    preflight_private_upload(repository_id=TARGET_ID)
     output.push_to_hub(repo_id=TARGET_ID, private=True)
     print(f"Uploaded {len(rows):,} CulturaVivaPT samples to {TARGET_ID}.")
 

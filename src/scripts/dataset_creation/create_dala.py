@@ -12,7 +12,11 @@ import tempfile
 
 from datasets.dataset_dict import DatasetDict
 from datasets.load import load_dataset
-from huggingface_hub.hf_api import HfApi
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 
 def main() -> None:
@@ -30,7 +34,7 @@ def main() -> None:
     dataset = load_dataset(path=source, token=True, cache_dir=cache_dir)
     assert isinstance(dataset, DatasetDict)
 
-    HfApi().delete_repo(repo_id=target, repo_type="dataset", missing_ok=True)
+    preflight_private_upload(repository_id=target)
     dataset.push_to_hub(repo_id=target, private=True)
 
 

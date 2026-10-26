@@ -17,9 +17,12 @@ import typing as t
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
-from requests import HTTPError
 from sklearn.model_selection import train_test_split
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_mbbq_nl")
@@ -98,13 +101,8 @@ def main() -> None:
 
     dataset_id_mbbq = "EuroEval/mbbq-nl"
     logger.info(f"Uploading {dataset_id_mbbq} to Hugging Face Hub...")
-    # Remove the dataset from Hugging Face Hub if it already exists
-    try:
-        api = HfApi()
-        api.delete_repo(dataset_id_mbbq, repo_type="dataset", missing_ok=True)
-    except HTTPError:
-        pass
 
+    preflight_private_upload(repository_id=dataset_id_mbbq)
     new_dataset.push_to_hub(dataset_id_mbbq, private=True)
 
 

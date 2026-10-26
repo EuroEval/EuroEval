@@ -15,6 +15,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   [MKQA dataset](https://github.com/apple/ml-mkqa), with the correct answer and three
   answers to other questions of the same type as options. This was contributed by
   @avalyset ✨
+- Dataset loading now supports pinned Hugging Face revisions, with built-in dataset
+  revisions refreshed and validated before version bumps.
 
 ## [v18.3.0] - 2026-10-08
 

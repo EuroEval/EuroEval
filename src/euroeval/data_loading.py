@@ -184,6 +184,7 @@ def load_raw_data(
                             else None
                         ),
                         cache_dir=cache_dir,
+                        revision=dataset_config.revision,
                         token=unscramble("XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_"),
                     )
                 break
@@ -205,6 +206,7 @@ def load_raw_data(
                                 else None
                             ),
                             cache_dir=cache_dir,
+                            revision=dataset_config.revision,
                             token=get_hf_token(api_key=api_key),
                         )
                     break

@@ -24,6 +24,11 @@ from constants import (
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from sklearn.model_selection import train_test_split
 
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
+
 # Mapping from ISO language code to full language name used in INCLUDE dataset
 INCLUDE_LANGUAGE_MAPPING: dict[str, str] = {
     "sq": "Albanian",
@@ -81,6 +86,7 @@ def main() -> None:
         dataset_id = f"EuroEval/include-{lang_code}-mini"
 
         # Push the dataset to the Hugging Face Hub
+        preflight_private_upload(repository_id=dataset_id)
         dataset_out.push_to_hub(dataset_id, private=True)
 
 

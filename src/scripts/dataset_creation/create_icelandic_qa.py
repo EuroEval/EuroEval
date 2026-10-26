@@ -27,8 +27,12 @@ from datasets.dataset_dict import DatasetDict
 from datasets.load import load_dataset
 from datasets.splits import Split
 from dotenv import load_dotenv
-from huggingface_hub.hf_api import HfApi
 from openai import OpenAI
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 load_dotenv()
 
@@ -182,10 +186,8 @@ def main() -> None:
     # Create dataset ID
     dataset_id = "EuroEval/icelandic-qa"
 
-    # Remove the dataset from Hugging Face Hub if it already exists
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
-
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 

@@ -27,6 +27,7 @@ WMT24PP_EN_PL_CONFIG = TranslationDatasetConfig(
     languages=[POLISH],
     source_language=ENGLISH,
     target_language=POLISH,
+    revision="4474016823d9bf3fe67323b4737713566e403a13",
 )
 
 FLORES_EN_PL_CONFIG = TranslationDatasetConfig(
@@ -37,6 +38,7 @@ FLORES_EN_PL_CONFIG = TranslationDatasetConfig(
     languages=[POLISH],
     source_language=ENGLISH,
     target_language=POLISH,
+    revision="4393b0420b058b8bf389d6a7c9216b8606d1d832",
 )
 
 POLEMO2_CONFIG = DatasetConfig(
@@ -45,6 +47,7 @@ POLEMO2_CONFIG = DatasetConfig(
     source="EuroEval/polemo2-mini",
     task=SENT,
     languages=[POLISH],
+    revision="b565f5cc441387c6ab62e4c105a221e5c63ad899",
 )
 
 SCALA_PL_CONFIG = DatasetConfig(
@@ -53,6 +56,7 @@ SCALA_PL_CONFIG = DatasetConfig(
     source="EuroEval/scala-pl",
     task=LA,
     languages=[POLISH],
+    revision="af5e474cab598d98fea9df714145d9e2300e138f",
 )
 
 KPWR_NER_CONFIG = DatasetConfig(
@@ -61,6 +65,7 @@ KPWR_NER_CONFIG = DatasetConfig(
     source="EuroEval/kpwr-ner",
     task=NER,
     languages=[POLISH],
+    revision="ca4e108e54c157c56f441453a0a1260c9d4102bf",
 )
 
 POQUAD_CONFIG = DatasetConfig(
@@ -69,6 +74,7 @@ POQUAD_CONFIG = DatasetConfig(
     source="EuroEval/poquad-mini",
     task=RC,
     languages=[POLISH],
+    revision="98b97a28700e833197b307f19c1609633626cf1c",
 )
 
 PSC_CONFIG = DatasetConfig(
@@ -77,6 +83,7 @@ PSC_CONFIG = DatasetConfig(
     source="EuroEval/psc-mini",
     task=SUMM,
     languages=[POLISH],
+    revision="e9894e4eaa1a204f1c437659f0885aed47c6ae57",
 )
 
 LLMZSZL_CONFIG = DatasetConfig(
@@ -85,6 +92,7 @@ LLMZSZL_CONFIG = DatasetConfig(
     source="EuroEval/llmzszl-mini",
     task=KNOW,
     languages=[POLISH],
+    revision="31ee3d9cc8dff5bbd9449f99c3abc26625f38ffe",
 )
 
 WINOGRANDE_PL_CONFIG = DatasetConfig(
@@ -94,6 +102,7 @@ WINOGRANDE_PL_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[POLISH],
     labels=["a", "b"],
+    revision="552963d840649478e5024619d8772e4a21e8095e",
 )
 
 VALEU_PL_CONFIG = DatasetConfig(
@@ -106,6 +115,7 @@ VALEU_PL_CONFIG = DatasetConfig(
     val_split=None,
     bootstrap_samples=False,
     instruction_prompt="{text}",
+    revision="68a243f8cd235f8019a7545fe949afd35b8eaad4",
 )
 
 MULTI_IFEVAL_PL_CONFIG = DatasetConfig(
@@ -116,6 +126,7 @@ MULTI_IFEVAL_PL_CONFIG = DatasetConfig(
     languages=[POLISH],
     train_split=None,
     val_split=None,
+    revision="c88e11208b5d7f81edf43a04b5fdeaa5f3fbf0b1",
 )
 
 RAGTRUTH_PL_CONFIG = DatasetConfig(
@@ -125,6 +136,7 @@ RAGTRUTH_PL_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[POLISH],
     train_split=None,
+    revision="91549683f32a943d2854d9f3ea2526229513dfc6",
 )
 
 
@@ -137,6 +149,7 @@ MULTI_BFCL_PL_CONFIG = DatasetConfig(
     task=TOOL_CALLING,
     languages=[POLISH],
     train_split=None,
+    revision="d1de637188b935753934aea1e3bb8d83a6607db0",
 )
 
 
@@ -149,6 +162,7 @@ WMT24PP_PL_EN_CONFIG = TranslationDatasetConfig(
     source_language=POLISH,
     target_language=ENGLISH,
     unofficial=True,
+    revision="76999fe53ade9b3f18116aec6b8197dbb7a1984e",
 )
 
 FLORES_PL_EN_CONFIG = TranslationDatasetConfig(
@@ -160,6 +174,7 @@ FLORES_PL_EN_CONFIG = TranslationDatasetConfig(
     source_language=POLISH,
     target_language=ENGLISH,
     unofficial=True,
+    revision="f3f2579673d3dc0bf18812cfe3cd467090f7f5af",
 )
 
 MULTI_WIKI_QA_PL_CONFIG = DatasetConfig(
@@ -169,6 +184,7 @@ MULTI_WIKI_QA_PL_CONFIG = DatasetConfig(
     task=RC,
     languages=[POLISH],
     unofficial=True,
+    revision="583d3c50cd07ded53a7aaa28144f9ba620c96052",
 )
 
 GOLDENSWAG_PL_CONFIG = DatasetConfig(
@@ -178,6 +194,7 @@ GOLDENSWAG_PL_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[POLISH],
     unofficial=True,
+    revision="ab78e1080be5f1d6a35d6b122f1e74966cd0d5f5",
 )
 
 INCLUDE_PL_CONFIG = DatasetConfig(
@@ -187,6 +204,7 @@ INCLUDE_PL_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[POLISH],
     unofficial=True,
+    revision="dd80a4118bde526a5f76444d0bed9c0fbbcebb98",
 )
 
 EU_MMLU_PL_CONFIG = DatasetConfig(
@@ -196,6 +214,7 @@ EU_MMLU_PL_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[POLISH],
     unofficial=True,
+    revision="a261341ebe89bd80336afbfab335693a450e0358",
 )
 
 MKQA_PL_CONFIG = DatasetConfig(
@@ -205,4 +224,5 @@ MKQA_PL_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[POLISH],
     unofficial=True,
+    revision="07615940f80b1d4f80ef6f3f059ba70fb6576512",
 )

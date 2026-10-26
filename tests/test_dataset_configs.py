@@ -17,6 +17,35 @@ from euroeval.prompt_templates.tool_calling import TOOL_CALLING_TEMPLATES
 from euroeval.tasks import TOOL_CALLING, TRANSLATION
 from scripts.dataset_creation.create_multibfcl import LANGUAGE_SOURCES
 
+
+def test_builtin_hub_datasets_have_pinned_revisions() -> None:
+    """Ensure built-in Hub datasets use literal 40-character commit revisions."""
+    configs = get_all_dataset_configs(
+        custom_datasets_file=Path("/nonexistent/custom_datasets.py"),
+        dataset_ids=[],
+        api_key=None,
+        cache_dir=Path(".euroeval_cache"),
+        trust_remote_code=False,
+        run_with_cli=False,
+    )
+    hub_configs = [
+        config
+        for config in configs.values()
+        if isinstance(config.source, str) and config.source
+    ]
+    assert hub_configs
+    assert all(
+        re.fullmatch(r"[0-9a-f]{40}", config.revision) and config.revision != "main"
+        for config in hub_configs
+    )
+
+
+def test_user_dataset_config_defaults_to_main_revision() -> None:
+    """User-created configurations retain the conventional main revision default."""
+    config = DatasetConfig(task=TOOL_CALLING, languages=[BULGARIAN])
+    assert config.revision == "main"
+
+
 WMT24PP_LANGUAGE_CODES = (
     "bg",
     "ca",

@@ -5,6 +5,11 @@ import logging
 
 from datasets import DatasetDict, load_dataset
 
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
+
 logger = logging.getLogger(__name__)
 
 SOURCE_REPO = "syvai/multi-bfcl"
@@ -58,6 +63,7 @@ def main() -> None:
             len(dataset["val"]),
             len(dataset["test"]),
         )
+        preflight_private_upload(repository_id=repo_id)
         dataset.push_to_hub(repo_id=repo_id, private=True)
 
 

@@ -26,6 +26,7 @@ WMT24PP_EN_SR_CONFIG = TranslationDatasetConfig(
     languages=[SERBIAN],
     source_language=ENGLISH,
     target_language=SERBIAN,
+    revision="3331ac70b72bad889177f31b251d95946de39bc0",
 )
 
 FLORES_EN_SR_CONFIG = TranslationDatasetConfig(
@@ -36,6 +37,7 @@ FLORES_EN_SR_CONFIG = TranslationDatasetConfig(
     languages=[SERBIAN],
     source_language=ENGLISH,
     target_language=SERBIAN,
+    revision="dcd87545c761a9d3b4690ade138be215cbc657af",
 )
 
 MMS_SR_CONFIG = DatasetConfig(
@@ -44,6 +46,7 @@ MMS_SR_CONFIG = DatasetConfig(
     source="EuroEval/mms-sr-mini",
     task=SENT,
     languages=[SERBIAN],
+    revision="308d050ff87020499c142ecc541dc8fd4307fcb4",
 )
 
 SCALA_SR_CONFIG = DatasetConfig(
@@ -52,6 +55,7 @@ SCALA_SR_CONFIG = DatasetConfig(
     source="EuroEval/scala-sr",
     task=LA,
     languages=[SERBIAN],
+    revision="bdd7c94e9ce18dbb24fe220c288b7d6a2eb954f8",
 )
 
 UNER_SR_CONFIG = DatasetConfig(
@@ -60,6 +64,7 @@ UNER_SR_CONFIG = DatasetConfig(
     source="EuroEval/uner-sr-mini",
     task=NER,
     languages=[SERBIAN],
+    revision="cb568a992fdd700e6924fa1d2a5f20caf3231aad",
 )
 
 MULTI_WIKI_QA_SR_CONFIG = DatasetConfig(
@@ -68,6 +73,7 @@ MULTI_WIKI_QA_SR_CONFIG = DatasetConfig(
     source="EuroEval/multi-wiki-qa-sr-mini",
     task=RC,
     languages=[SERBIAN],
+    revision="3ba450d4948f14b1159f7768749321fae311493b",
 )
 
 LR_SUM_SR_CONFIG = DatasetConfig(
@@ -76,6 +82,7 @@ LR_SUM_SR_CONFIG = DatasetConfig(
     source="EuroEval/lr-sum-sr-mini",
     task=SUMM,
     languages=[SERBIAN],
+    revision="efea9947e2c621509a6a2e88049d4730806ac97c",
 )
 
 WINOGRANDE_SR_CONFIG = DatasetConfig(
@@ -85,6 +92,7 @@ WINOGRANDE_SR_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[SERBIAN],
     labels=["a", "b"],
+    revision="bd218bad5daeedbc3b99b18c55837db001c59cbb",
 )
 
 MULTI_IFEVAL_SR_CONFIG = DatasetConfig(
@@ -95,6 +103,7 @@ MULTI_IFEVAL_SR_CONFIG = DatasetConfig(
     languages=[SERBIAN],
     train_split=None,
     val_split=None,
+    revision="8e66239baaa04a7bb9b9d7476bdb1d130bdca293",
 )
 
 RAGTRUTH_SR_CONFIG = DatasetConfig(
@@ -104,6 +113,7 @@ RAGTRUTH_SR_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[SERBIAN],
     train_split=None,
+    revision="02573e0405c5397e12ec85f69da792354732087c",
 )
 
 
@@ -122,6 +132,7 @@ INCLUDE_SR_CONFIG = DatasetConfig(
         "Питање: {text}\n\nОдговорите на наведено питање користећи "
         "{labels_str}, и ништа друго."
     ),
+    revision="4439f16ef895f9e0f5988304f2ca9809f9bfa2f8",
 )
 
 
@@ -134,6 +145,7 @@ MULTI_BFCL_SR_CONFIG = DatasetConfig(
     task=TOOL_CALLING,
     languages=[SERBIAN],
     train_split=None,
+    revision="1ff81e62df3b13baa114121d863c9fd0eaf80eec",
 )
 
 
@@ -146,6 +158,7 @@ WMT24PP_SR_EN_CONFIG = TranslationDatasetConfig(
     source_language=SERBIAN,
     target_language=ENGLISH,
     unofficial=True,
+    revision="ccd09d7ab73265de30f7b23f62233fd26b3843c6",
 )
 
 FLORES_SR_EN_CONFIG = TranslationDatasetConfig(
@@ -157,6 +170,7 @@ FLORES_SR_EN_CONFIG = TranslationDatasetConfig(
     source_language=SERBIAN,
     target_language=ENGLISH,
     unofficial=True,
+    revision="b793115d939fe949c9e821ce2b375a9b2614f3f7",
 )
 
 MMLU_SR_CONFIG = DatasetConfig(
@@ -166,4 +180,5 @@ MMLU_SR_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[SERBIAN],
     unofficial=True,
+    revision="08ad59a342853e65146d6f32693cdbc63aef9471",
 )

@@ -23,6 +23,7 @@ FLORES_EN_BS_CONFIG = TranslationDatasetConfig(
     languages=[BOSNIAN],
     source_language=ENGLISH,
     target_language=BOSNIAN,
+    revision="f758c855df0e8051a437c871491e2e6ee8e004e0",
 )
 
 MMS_BS_CONFIG = DatasetConfig(
@@ -31,6 +32,7 @@ MMS_BS_CONFIG = DatasetConfig(
     source="EuroEval/mms-bs-mini",
     task=SENT,
     languages=[BOSNIAN],
+    revision="e6c181c64c7f51e69f2e7b1768a235a11eb35d5b",
 )
 
 WIKIANN_BS_CONFIG = DatasetConfig(
@@ -39,6 +41,7 @@ WIKIANN_BS_CONFIG = DatasetConfig(
     source="EuroEval/wikiann-bs-mini",
     task=NER,
     languages=[BOSNIAN],
+    revision="d7b87068fdaabe5945db97314610f15d674f53d3",
 )
 
 MULTI_WIKI_QA_BS_CONFIG = DatasetConfig(
@@ -47,6 +50,7 @@ MULTI_WIKI_QA_BS_CONFIG = DatasetConfig(
     source="EuroEval/multi-wiki-qa-bs-mini",
     task=RC,
     languages=[BOSNIAN],
+    revision="c24bc03a9d5a3a543469ec425f748bdc966b5da5",
 )
 
 LR_SUM_BS_CONFIG = DatasetConfig(
@@ -55,6 +59,7 @@ LR_SUM_BS_CONFIG = DatasetConfig(
     source="EuroEval/lr-sum-bs-mini",
     task=SUMM,
     languages=[BOSNIAN],
+    revision="4d58181f3b6b249b6943fb1044480a7a9c7703d2",
 )
 
 MULTI_IFEVAL_BS_CONFIG = DatasetConfig(
@@ -65,6 +70,7 @@ MULTI_IFEVAL_BS_CONFIG = DatasetConfig(
     languages=[BOSNIAN],
     train_split=None,
     val_split=None,
+    revision="835cedc296b844c2632c63753ce80c0bb6547518",
 )
 
 RAGTRUTH_BS_CONFIG = DatasetConfig(
@@ -74,6 +80,7 @@ RAGTRUTH_BS_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[BOSNIAN],
     train_split=None,
+    revision="86368bbbf54bf8530528758a0b6526ab4ef9a989",
 )
 
 
@@ -86,6 +93,7 @@ MULTI_BFCL_BS_CONFIG = DatasetConfig(
     task=TOOL_CALLING,
     languages=[BOSNIAN],
     train_split=None,
+    revision="bf46dea9bc614d9eb7cf8b3245c8267f35e6decd",
 )
 
 
@@ -98,4 +106,5 @@ FLORES_BS_EN_CONFIG = TranslationDatasetConfig(
     source_language=BOSNIAN,
     target_language=ENGLISH,
     unofficial=True,
+    revision="29159100ff5ee1d1eed6dbc3571996e97eb0bd23",
 )

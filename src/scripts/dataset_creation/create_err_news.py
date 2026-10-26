@@ -16,7 +16,11 @@ import zipfile
 import pandas as pd
 import requests
 from datasets import Dataset, DatasetDict, concatenate_datasets
-from huggingface_hub import HfApi
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 
 def main() -> None:
@@ -72,10 +76,8 @@ def main() -> None:
         {"train": new_train_ds, "val": new_val_ds, "test": new_test_ds}
     )
 
-    # Delete the existing dataset repository if it exists
-    HfApi().delete_repo(target_repo_id, repo_type="dataset", missing_ok=True)
-
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=target_repo_id)
     new_ds.push_to_hub(target_repo_id, private=True)
 
 

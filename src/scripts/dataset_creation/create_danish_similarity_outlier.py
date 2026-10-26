@@ -23,6 +23,11 @@ from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
 
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
+
 try:
     from constants import CHOICES_MAPPING
 except ModuleNotFoundError:
@@ -127,7 +132,7 @@ def main() -> None:
     )
 
     api = HfApi()
-    api.delete_repo(DATASET_ID, repo_type="dataset", missing_ok=True)
+    preflight_private_upload(repository_id=DATASET_ID)
     dataset.push_to_hub(DATASET_ID, private=True)
     api.upload_file(
         path_or_fileobj=io.BytesIO(DATASET_CARD.encode("utf-8")),

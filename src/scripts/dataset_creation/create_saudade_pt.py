@@ -12,6 +12,11 @@ import random
 from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, load_dataset
 
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
+
 SOURCE_ID = "amalia-llm/saudade-pt"
 TARGET_ID = "EuroEval/euroeval-amalia-saudade-pt-mini"
 TRAIN_SIZE = 32
@@ -55,6 +60,7 @@ def main() -> None:
             ),
         }
     )
+    preflight_private_upload(repository_id=TARGET_ID)
     output.push_to_hub(repo_id=TARGET_ID, private=True)
     print(f"Uploaded {len(rows):,} SAUDADE-PT samples to {TARGET_ID}.")
 

@@ -15,7 +15,11 @@ import logging
 import pandas as pd
 import requests
 from datasets import Dataset, DatasetDict
-from huggingface_hub import HfApi
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 logging.basicConfig(level=logging.INFO)
 
@@ -67,9 +71,7 @@ def main() -> None:
         }
     )
 
-    HfApi().delete_repo(
-        "EuroEval/ltzglue-la-mini", repo_type="dataset", missing_ok=True
-    )
+    preflight_private_upload(repository_id="EuroEval/ltzglue-la-mini")
     bin_dataset.push_to_hub("EuroEval/ltzglue-la-mini", private=True)
     logger.info("✓ Uploaded EuroEval/ltzglue-la-mini (binary)")
 
@@ -105,9 +107,7 @@ def main() -> None:
         }
     )
 
-    HfApi().delete_repo(
-        "EuroEval/ltzglue-la-multi-mini", repo_type="dataset", missing_ok=True
-    )
+    preflight_private_upload(repository_id="EuroEval/ltzglue-la-multi-mini")
     mul_dataset.push_to_hub("EuroEval/ltzglue-la-multi-mini", private=True)
     logger.info("✓ Uploaded EuroEval/ltzglue-la-multi-mini (multi-class)")
 

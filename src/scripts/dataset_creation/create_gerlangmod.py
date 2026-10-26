@@ -22,8 +22,12 @@ import io
 import pandas as pd
 import requests
 from datasets import Dataset, DatasetDict, Split
-from huggingface_hub import HfApi
 from tqdm.auto import tqdm
+
+if __package__:
+    from .dataset_utils import preflight_private_upload
+else:
+    from dataset_utils import preflight_private_upload
 
 _BASE_URL = (
     "https://raw.githubusercontent.com/noahmanu/gerlangmod/main/"
@@ -126,7 +130,7 @@ def main() -> None:
 
         # Push to the Hugging Face Hub
         dataset_id = _DATASET_IDS[lang]
-        HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
+        preflight_private_upload(repository_id=dataset_id)
         dataset.push_to_hub(dataset_id, private=True)
 
 
