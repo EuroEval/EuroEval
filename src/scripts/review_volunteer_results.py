@@ -22,6 +22,10 @@ logger = logging.getLogger(__name__)
 def main(argv: list[str] | None = None) -> int:
     """Run the maintainer review command.
 
+    Args:
+        argv: Optional command-line arguments; defaults to ``None``, which uses
+            ``sys.argv``.
+
     Returns:
         Process exit status.
 
@@ -84,6 +88,11 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _log_report(report: ReviewReport) -> None:
+    """Log the identity, records, score ranges, checks, and warnings in a review.
+
+    Args:
+        report: Validated volunteer submission report to display.
+    """
     logger.info("Submission: %s", report.submission_id)
     logger.info("Issue: %s", report.issue_number)
     logger.info("Verified contributor: %s", report.contributor)
@@ -116,6 +125,11 @@ def _log_report(report: ReviewReport) -> None:
 
 
 def _parser() -> argparse.ArgumentParser:
+    """Build the command-line parser for listing and reviewing submissions.
+
+    Returns:
+        Parser with list, show, approve, and reject subcommands.
+    """
     parser = argparse.ArgumentParser(
         description="Review durable volunteer results without consulting Redis."
     )
@@ -149,7 +163,11 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def _service() -> VolunteerReviewer:
-    """Return the configured reviewer service."""
+    """Return the reviewer service configured from the environment.
+
+    Returns:
+        A reviewer service backed by the configured durable submission store.
+    """
     return reviewer_from_environment()
 
 

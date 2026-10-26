@@ -1999,6 +1999,13 @@ def _mirror_split_agnostic_variant_coverage(
     variant_configs_raw: dict[tuple[str, str, str], _ObsConfig],
     split_agnostic_datasets: dict[str, dict[str, set[str]]],
 ) -> None:
+    """Propagate test coverage to corresponding validation-split variants.
+
+    Args:
+        variant_coverage_raw: Mutable variant-to-language-to-dataset coverage.
+        variant_configs_raw: Mutable per-variant evaluation settings.
+        split_agnostic_datasets: Coverage for datasets that do not distinguish splits.
+    """
     for variant_id in list(variant_coverage_raw):
         test_variant_id = strip_note_item(model_id=variant_id, note_item="val")
         if test_variant_id is None:
@@ -2027,6 +2034,14 @@ def _mirror_split_agnostic_variant_coverage(
 def _prune_val_variant_coverage(
     variant_coverage_raw: dict[str, dict[str, set[str]]],
 ) -> dict[str, dict[str, set[str]]]:
+    """Keep validation variants only where they add coverage beyond test variants.
+
+    Args:
+        variant_coverage_raw: Coverage indexed by variant, language, and dataset.
+
+    Returns:
+        Coverage with redundant validation-only entries removed.
+    """
     variant_coverage: dict[str, dict[str, set[str]]] = {}
     for variant_id, lang_datasets in variant_coverage_raw.items():
         non_val_equiv = strip_note_item(model_id=variant_id, note_item="val")
@@ -2045,6 +2060,14 @@ def _prune_val_variant_coverage(
 
 
 def _record_validation_split(record: dict[str, object]) -> tuple[bool, bool]:
+    """Read and normalize the validation-split setting from a result record.
+
+    Args:
+        record: Evaluation result record whose additional details may include the flag.
+
+    Returns:
+        A pair of (validation split enabled, whether a present value was invalid).
+    """
     eval_library = t.cast(dict[str, object], record.get("eval_library", {}))
     eval_additional = t.cast(
         dict[str, object], eval_library.get("additional_details", {})
@@ -2062,6 +2085,16 @@ def _record_validation_split(record: dict[str, object]) -> tuple[bool, bool]:
 def _record_variant_ids(
     model_info: dict[str, object], validation_split: bool, few_shot: bool
 ) -> list[str]:
+    """Build the leaderboard variant identifier, including split and shot labels.
+
+    Args:
+        model_info: Model metadata containing its name or identifier.
+        validation_split: Whether the evaluation used a validation split.
+        few_shot: Whether the evaluation used few-shot prompting.
+
+    Returns:
+        Variant model label including applicable note qualifiers.
+    """
     variant_model = strip_anchor(
         str(model_info.get("name") or model_info.get("id", ""))
     )
