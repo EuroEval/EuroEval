@@ -41,8 +41,15 @@ def cap_split(dataset: Dataset, maximum: int) -> Dataset:
 def upload_private(dataset: DatasetDict, repository_id: str) -> None:
     """Replace a Hub dataset and fail unless the resulting repository is private.
 
+    Args:
+        dataset:
+            Dataset to upload.
+        repository_id:
+            Hub dataset repository ID.
+
     Raises:
-        RuntimeError: If the resulting repository is public.
+        RuntimeError:
+            If the resulting repository is public.
     """
     preflight_private_upload(repository_id=repository_id)
     dataset.push_to_hub(repo_id=repository_id, private=True)
@@ -56,8 +63,13 @@ def preflight_private_upload(repository_id: str) -> None:
 
     A missing repository is allowed because ``push_to_hub`` creates it as private.
 
+    Args:
+        repository_id:
+            Hub dataset repository ID.
+
     Raises:
-        RuntimeError: If the existing repository is public.
+        RuntimeError:
+            If the existing repository is public.
     """
     api = HfApi()
     try:

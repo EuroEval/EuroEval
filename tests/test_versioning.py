@@ -10,7 +10,14 @@ from scripts import versioning
 def test_set_new_version_stages_builtin_dataset_configs(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Release commits include refreshed built-in dataset configuration pins."""
+    """Release commits include refreshed built-in dataset configuration pins.
+
+    Args:
+        tmp_path:
+            Temporary directory fixture.
+        monkeypatch:
+            Pytest monkeypatch fixture.
+    """
     (tmp_path / "CHANGELOG.md").write_text(
         "# Changelog\n\n[Unreleased]\n", encoding="utf-8"
     )

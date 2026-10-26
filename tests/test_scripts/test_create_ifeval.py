@@ -6,7 +6,12 @@ from src.scripts.dataset_creation import create_ifeval
 
 
 def test_cli_accepts_multiple_language_options(monkeypatch: pytest.MonkeyPatch) -> None:
-    """The CLI parser accepts repeated language options."""
+    """The CLI parser accepts repeated language options.
+
+    Args:
+        monkeypatch:
+            Pytest monkeypatch fixture.
+    """
     monkeypatch.setattr(
         "sys.argv", ["create_ifeval.py", "--language", "nb", "--language", "nn"]
     )
@@ -23,7 +28,12 @@ def test_main_rejects_unsupported_language() -> None:
 def test_main_selects_requested_languages_without_deleting_repositories(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Only selected languages are uploaded, privately, without repository deletion."""
+    """Only selected languages are uploaded, privately, without repository deletion.
+
+    Args:
+        monkeypatch:
+            Pytest monkeypatch fixture.
+    """
     loaded_sources: list[str] = []
     datasets: list[MockDataset] = []
 
@@ -74,6 +84,10 @@ class MockDataset:
     def map(self, function: object) -> "MockDataset":
         """Record a mapping operation and return this dataset.
 
+        Args:
+            function:
+                Mapping function (unused by this mock).
+
         Returns:
             This dataset.
         """
@@ -81,11 +95,22 @@ class MockDataset:
         return self
 
     def push_to_hub(self, *, repo_id: str, private: bool) -> None:
-        """Record Hub publication arguments."""
+        """Record Hub publication arguments.
+
+        Args:
+            repo_id:
+                Target Hub repository ID.
+            private:
+                Whether to create the repository privately.
+        """
         self.push_arguments = {"repo_id": repo_id, "private": private}
 
     def select_columns(self, columns: list[str]) -> "MockDataset":
         """Record the selected columns and return this dataset.
+
+        Args:
+            columns:
+                Column names to retain.
 
         Returns:
             This dataset.
