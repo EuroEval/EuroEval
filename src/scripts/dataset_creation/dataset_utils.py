@@ -2,6 +2,7 @@
 
 from datasets import Dataset, DatasetDict
 from huggingface_hub import HfApi
+from huggingface_hub.errors import RepositoryNotFoundError
 
 SEED = 4242
 MAX_TRAIN = 1024
@@ -41,11 +42,27 @@ def upload_private(dataset: DatasetDict, repository_id: str) -> None:
     """Replace a Hub dataset and fail unless the resulting repository is private.
 
     Raises:
-        RuntimeError:
-            If the resulting repository is public.
+        RuntimeError: If the resulting repository is public.
+    """
+    preflight_private_upload(repository_id=repository_id)
+    dataset.push_to_hub(repo_id=repository_id, private=True)
+    repository = HfApi().repo_info(repo_id=repository_id, repo_type="dataset")
+    if not repository.private:
+        raise RuntimeError(f"Dataset repository {repository_id} is not private")
+
+
+def preflight_private_upload(repository_id: str) -> None:
+    """Reject an existing public Hub dataset before uploading any bytes.
+
+    A missing repository is allowed because ``push_to_hub`` creates it as private.
+
+    Raises:
+        RuntimeError: If the existing repository is public.
     """
     api = HfApi()
-    dataset.push_to_hub(repo_id=repository_id, private=True)
-    repository = api.repo_info(repo_id=repository_id, repo_type="dataset")
+    try:
+        repository = api.repo_info(repo_id=repository_id, repo_type="dataset")
+    except RepositoryNotFoundError:
+        return
     if not repository.private:
         raise RuntimeError(f"Dataset repository {repository_id} is not private")
