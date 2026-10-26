@@ -346,7 +346,7 @@ def test_apply_requires_explicit_component_and_confirmation(
     """
     called = False
 
-    def fail_command(command: list[str], **kwargs: object) -> None:
+    def fail_command(command: list[str], **kwargs: object) -> operations.CommandResult:
         """Fail if the operation attempts an external command.
 
         Args:
@@ -1017,7 +1017,7 @@ def test_plan_does_not_run_commands_or_print_secret_values(
     secret = "do-not-print-this"
     called = False
 
-    def fail_command(command: list[str], **kwargs: object) -> None:
+    def fail_command(command: list[str], **kwargs: object) -> operations.CommandResult:
         """Fail if the operation attempts an external command.
 
         Args:
@@ -1280,7 +1280,7 @@ def test_reuse_vercel_kv_requires_apply_flag_and_confirmation(
     """
     called = False
 
-    def fail_command(command: list[str], **kwargs: object) -> None:
+    def fail_command(command: list[str], **kwargs: object) -> operations.CommandResult:
         """Fail if the operation attempts an external command.
 
         Args:
@@ -1597,7 +1597,7 @@ def test_vercel_identity_rejects_environment_drift(
     )
     called = False
 
-    def fail_command(command: list[str], **kwargs: object) -> None:
+    def fail_command(command: list[str], **kwargs: object) -> operations.CommandResult:
         """Fail if the operation attempts an external command.
 
         Args:
