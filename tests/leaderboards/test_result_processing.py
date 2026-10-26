@@ -479,7 +479,11 @@ def test_process_results_clears_cache_after_upload(
         cache_clear_called = True
 
     def fake_load_raw_results() -> list[dict[str, t.Any]]:
-        """Return no raw results for this test."""
+        """Return no raw results for this test.
+
+        Returns:
+            An empty list of raw results.
+        """
         return []
 
     # Attach cache_clear to mimic functools.cached_function

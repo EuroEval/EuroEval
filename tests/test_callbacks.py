@@ -19,7 +19,11 @@ class FakeEvalDataloader(DataLoader):
     dataset: Dataset = Dataset.from_dict({"value": [1, 2, 3]})
 
     def __len__(self) -> int:
-        """Return the length of the dataloader."""
+        """Return the length of the dataloader.
+
+        Returns:
+            The number of items in the dataset.
+        """
         return len(self.dataset)
 
 

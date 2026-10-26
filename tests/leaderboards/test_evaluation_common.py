@@ -265,7 +265,11 @@ def test_pty_drain_handles_exited_parent_with_open_grandchild(
         yield
 
     def _mock_resolve_hf_token() -> None:
-        """Return no token for this test's mocked environment."""
+        """Return no token for this test's mocked environment.
+
+        Returns:
+            None, indicating that the mocked environment has no token.
+        """
         return None
 
     # Patch before calling run_euroeval
