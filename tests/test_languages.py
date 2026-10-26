@@ -21,7 +21,11 @@ class TestGetAllLanguages:
 
     @pytest.fixture(scope="class")
     def languages(self) -> Generator[dict[str, Language], None, None]:
-        """Yields all languages."""
+        """Yield all registered languages.
+
+        Yields:
+            A mapping from preferred language codes to language objects.
+        """
         yield get_all_languages()
 
     def test_languages_are_a_dict_of_objects(

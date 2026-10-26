@@ -32,6 +32,8 @@ class TestCreateModelGradedFactMetric:
         """Test metric creation with custom response format."""
 
         class CustomResponse(BaseModel):
+            """Custom judge response schema used by the test."""
+
             correct: bool
             confidence: float
 
@@ -61,6 +63,8 @@ class TestCreateModelGradedFactMetric:
 
         # Verify the custom scoring function is used by testing the behavior
         class CorrectModel(BaseModel):
+            """Response schema containing a correctness judgment."""
+
             correct: bool
 
         correct_output = CorrectModel(correct=True)
@@ -111,6 +115,8 @@ class TestCreateModelGradedFactMetric:
         metric = create_model_graded_fact_metric()
 
         class CorrectModel(BaseModel):
+            """Response schema containing a correctness judgment."""
+
             correct: bool
 
         # Test with correct=True

@@ -29,7 +29,11 @@ class DummyBenchmarkConfig:
 
 @pytest.fixture
 def dummy_benchmark_config() -> t.Generator[DummyBenchmarkConfig, None, None]:
-    """Yield a dummy benchmark config (not used by ChrF metric)."""
+    """Yield a dummy benchmark config (not used by ChrF metric).
+
+    Yields:
+        A benchmark configuration for the metric tests.
+    """
     yield DummyBenchmarkConfig()
 
 
@@ -41,13 +45,21 @@ class DummyDatasetConfig:
 
     @property
     def main_language(self) -> Language:
-        """The main language for the dataset."""
+        """The dataset's main language.
+
+        Returns:
+            The first configured language.
+        """
         return self.languages[0]
 
 
 @pytest.fixture
 def dummy_dataset_config() -> t.Generator[DummyDatasetConfig, None, None]:
-    """Yield a dummy dataset config (not used by ChrF metric)."""
+    """Yield a dummy dataset config (not used by ChrF metric).
+
+    Yields:
+        A dataset configuration for the metric tests.
+    """
     # The ChrF metric doesn't actually use dataset_config or benchmark_config
     # We return None-like objects that won't cause issues
     yield DummyDatasetConfig()
@@ -183,7 +195,11 @@ class DummyTranslationDatasetConfig:
 
     @property
     def main_language(self) -> tuple[Language, Language]:
-        """The (source, target) language pair of the translation dataset."""
+        """The translation dataset's language pair.
+
+        Returns:
+            English as the source and the configured target language.
+        """
         return (ENGLISH, self._target)
 
 

@@ -135,7 +135,11 @@ class PreflightReviewer:
         raise AssertionError("preflight must not decide")
 
     def list_pending_submissions(self) -> list[tuple[str, int, str, str]]:
-        """Return one deliberately oddly quoted submission ID."""
+        """Return one deliberately oddly quoted submission ID.
+
+        Returns:
+            A single pending submission tuple with an unsafe-looking ID.
+        """
         return [("submission id'$(touch /tmp/nope)", 12, "alice", "da")]
 
 
@@ -316,7 +320,11 @@ class FakeDevProcess:
         raise AssertionError("The fake process should not need to be killed.")
 
     def poll(self) -> int | None:
-        """Return the configured process exit code."""
+        """Return the configured process exit code.
+
+        Returns:
+            The fake process exit code, or ``None`` while it is running.
+        """
         return self.return_code
 
     def send_signal(self, sig: signal.Signals) -> None:

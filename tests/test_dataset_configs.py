@@ -98,7 +98,11 @@ class TestGetAllDatasetConfigs:
 
     @pytest.fixture(scope="class")
     def dataset_configs(self) -> Generator[dict[str, DatasetConfig], None, None]:
-        """Yields all dataset configurations."""
+        """Yield all configured datasets.
+
+        Yields:
+            A mapping from dataset IDs to their configurations.
+        """
         yield get_all_dataset_configs(
             custom_datasets_file=Path("custom_datasets.py"),
             dataset_ids=[],
@@ -201,6 +205,9 @@ def _has_cyrillic(text: str) -> bool:
     Args:
         text:
             Text supplied to the test.
+
+    Returns:
+        Whether at least one character belongs to the Cyrillic block.
     """
     return any("Ѐ" <= ch <= "ӿ" for ch in text)
 

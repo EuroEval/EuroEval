@@ -167,6 +167,9 @@ class FakeTokeniser:
             text:
                 Text supplied to the test.
             add_special_tokens:
-                Add special tokens supplied to the test.
+                Whether to add special tokens to the encoded sequence.
+
+        Returns:
+            One sequential token ID per configured token.
         """
         return list(range(len(self.tokens)))
