@@ -21,11 +21,15 @@ def main() -> None:
             If upstream contains unexpected splits or invalid records.
     """
     rows: list[dict[str, str]] = []
+    rejected_pairs = 0
     for config_name in sorted(get_dataset_config_names(SOURCE_REPO)):
         source = load_dataset(SOURCE_REPO, config_name)
         if set(source) != {"train"}:
             raise ValueError(f"Unexpected split shape in {config_name}: {set(source)}")
         for record in source["train"]:
+            if record["sentence_good"] == record["sentence_bad"]:
+                rejected_pairs += 1
+                continue
             rows.append(
                 {
                     "sentence_good": record["sentence_good"],
@@ -38,6 +42,7 @@ def main() -> None:
             )
 
     dataset = process_dataset(rows=rows)
+    split_counts = {split: data.num_rows for split, data in dataset.items()}
     api = HfApi()
     api.create_repo(
         repo_id=TARGET_REPO, repo_type="dataset", exist_ok=True, private=False
@@ -58,7 +63,10 @@ pretty_name: BLiMP-NL-mini
 A capped Dutch grammatical acceptability dataset derived from the BLiMP-NL
 minimal-pair benchmark. Each source pair becomes two examples: the grammatical
 sentence is labelled `correct` and the ungrammatical sentence `incorrect`.
-Both members of a pair are kept in the same split.
+Both members of a pair are kept in the same split. Exact duplicate pairs are
+removed, and contradictory sentence labels are rejected. {rejected_pairs} source
+pairs with identical good and bad sentences were excluded. Split sizes are
+SPLIT_COUNTS.
 
 Source: [BLiMP-NL](https://huggingface.co/datasets/juletxara/blimp-nl),
 licensed under CC BY 4.0.
@@ -76,6 +84,10 @@ Please cite the original BLiMP-NL paper when using this dataset:
 
 This derived dataset is distributed under the upstream CC BY 4.0 licence.
 """
+    card = card.replace("{rejected_pairs}", str(rejected_pairs)).replace(
+        "SPLIT_COUNTS",
+        ", ".join(f"{split}: {count}" for split, count in split_counts.items()),
+    )
     with tempfile.TemporaryDirectory(prefix="blimp-nl-card-") as temporary_directory:
         card_path = Path(temporary_directory) / "README.md"
         card_path.write_text(card, encoding="utf-8")
@@ -104,9 +116,8 @@ def process_dataset(
         ValueError:
             If records are incomplete, identifiers collide, or splits are invalid.
     """
-    identifiers = [_pair_id(pair=pair, index=index) for index, pair in enumerate(rows)]
-    if len(set(identifiers)) != len(identifiers):
-        raise ValueError("BLiMP-NL pair identifiers are not unique")
+    unique_rows: list[dict[str, str]] = []
+    seen_pairs: set[tuple[str, str]] = set()
     for pair in rows:
         required = (
             "sentence_good",
@@ -116,9 +127,24 @@ def process_dataset(
         )
         if any(not pair.get(field, "").strip() for field in required):
             raise ValueError("BLiMP-NL records must contain all pair fields")
+        good = pair["sentence_good"]
+        bad = pair["sentence_bad"]
+        if good == bad:
+            raise ValueError("BLiMP-NL pairs cannot contain identical sentences")
+        pair_content = (good, bad)
+        if pair_content not in seen_pairs:
+            seen_pairs.add(pair_content)
+            unique_rows.append(pair)
+
+    _validate_sentence_labels(rows=unique_rows)
+    identifiers = [
+        _pair_id(pair=pair, index=index) for index, pair in enumerate(unique_rows)
+    ]
+    if len(set(identifiers)) != len(identifiers):
+        raise ValueError("BLiMP-NL pair identifiers are not unique")
 
     assignment = source_splits or _deterministic_pair_splits(
-        rows=rows, identifiers=identifiers
+        rows=unique_rows, identifiers=identifiers
     )
     if set(assignment) != set(identifiers) or any(
         split not in CAPS for split in assignment.values()
@@ -128,9 +154,10 @@ def process_dataset(
     pairs_by_split: dict[str, list[tuple[str, dict[str, str]]]] = {
         split: [] for split in CAPS
     }
-    for identifier, pair in zip(identifiers, rows, strict=True):
+    for identifier, pair in zip(identifiers, unique_rows, strict=True):
         pairs_by_split[assignment[identifier]].append((identifier, pair))
 
+    _validate_split_texts(pairs_by_split=pairs_by_split)
     datasets: dict[str, Dataset] = {}
     for split, pairs in pairs_by_split.items():
         selected = _stratified_sample(pairs=pairs, limit=PAIR_CAPS[split])
@@ -166,7 +193,32 @@ def _deterministic_pair_splits(
             result[identifier] = (
                 "train" if index % 10 < 8 else "val" if index % 10 == 8 else "test"
             )
+
+    identifiers_by_sentence: dict[str, list[str]] = {}
+    for identifier, row in zip(identifiers, rows, strict=True):
+        for sentence in (row["sentence_good"], row["sentence_bad"]):
+            identifiers_by_sentence.setdefault(sentence, []).append(identifier)
+    connected: dict[str, set[str]] = {
+        identifier: {identifier} for identifier in identifiers
+    }
+    for members in identifiers_by_sentence.values():
+        union = set().union(*(connected[identifier] for identifier in members))
+        for identifier in union:
+            connected[identifier] = union
+
+    components = {tuple(sorted(members)) for members in connected.values()}
+    for component in components:
+        component_hash = _stable_hash("|".join(component))
+        slot = int(component_hash[:8], 16) % 10
+        split = "train" if slot < 8 else "val" if slot == 8 else "test"
+        for identifier in component:
+            result[identifier] = split
     return result
+
+
+def _stable_hash(identifier: str) -> str:
+    """Return a stable ordering key for a pair identifier."""
+    return hashlib.sha256(identifier.encode()).hexdigest()
 
 
 def _pair_id(*, pair: dict[str, str], index: int) -> str:
@@ -209,9 +261,52 @@ def _stratified_sample(
     return selected
 
 
-def _stable_hash(identifier: str) -> str:
-    """Return a stable ordering key for a pair identifier."""
-    return hashlib.sha256(identifier.encode()).hexdigest()
+def _validate_sentence_labels(*, rows: list[dict[str, str]]) -> None:
+    """Reject source sentences assigned both acceptability labels.
+
+    Args:
+        rows:
+            Deduplicated source pair records.
+
+    Raises:
+        ValueError:
+            If any sentence occurs with contradictory labels.
+    """
+    labels_by_sentence: dict[str, str] = {}
+    for pair in rows:
+        for sentence, label in (
+            (pair["sentence_good"], "correct"),
+            (pair["sentence_bad"], "incorrect"),
+        ):
+            previous_label = labels_by_sentence.setdefault(sentence, label)
+            if previous_label != label:
+                raise ValueError(
+                    f"BLiMP-NL sentence has contradictory labels: {sentence!r}"
+                )
+
+
+def _validate_split_texts(
+    *, pairs_by_split: dict[str, list[tuple[str, dict[str, str]]]]
+) -> None:
+    """Reject any sentence text appearing in multiple assigned splits.
+
+    Args:
+        pairs_by_split:
+            Source pairs grouped by their assigned split.
+
+    Raises:
+        ValueError:
+            If sentence text occurs in more than one split.
+    """
+    split_by_sentence: dict[str, str] = {}
+    for split, pairs in pairs_by_split.items():
+        for _, pair in pairs:
+            for sentence in (pair["sentence_good"], pair["sentence_bad"]):
+                previous_split = split_by_sentence.setdefault(sentence, split)
+                if previous_split != split:
+                    raise ValueError(
+                        f"BLiMP-NL sentence occurs in multiple splits: {sentence!r}"
+                    )
 
 
 if __name__ == "__main__":

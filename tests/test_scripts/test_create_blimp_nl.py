@@ -1,6 +1,38 @@
 """Tests for the BLiMP-NL dataset creation script."""
 
+import pytest
+
 from src.scripts.dataset_creation.create_blimp_nl import process_dataset
+
+
+def test_contradictory_pair_sentences_are_rejected() -> None:
+    """A sentence cannot be both grammatical and ungrammatical."""
+    row = {
+        "sentence_good": "Dit is dezelfde zin.",
+        "sentence_bad": "Dit is dezelfde zin.",
+        "linguistic_phenomenon": "syntax",
+        "paradigm": "word_order",
+        "item_nr": "1",
+    }
+
+    with pytest.raises(ValueError, match="identical sentences"):
+        process_dataset(rows=[row])
+
+
+def test_exact_duplicate_pairs_across_configs_are_removed() -> None:
+    """Pair content, rather than source configuration, defines duplicates."""
+    row = {
+        "sentence_good": "Dit is goed.",
+        "sentence_bad": "Dit goed is.",
+        "linguistic_phenomenon": "syntax",
+        "paradigm": "word_order",
+        "item_nr": "1",
+    }
+    rows = [{**row, "config_name": "config-a"}, {**row, "config_name": "config-b"}]
+
+    result = process_dataset(rows=rows)
+
+    assert sum(dataset.num_rows for dataset in result.values()) == 2
 
 
 def test_explicit_split_assignment_keeps_pairs_in_their_requested_splits() -> None:
@@ -88,3 +120,27 @@ def test_pairs_are_converted_to_balanced_sentence_examples() -> None:
             {"text": "Dit goed is.", "label": "incorrect"},
         ]
     ]
+
+
+def test_sentence_text_cannot_overlap_across_splits() -> None:
+    """A shared sentence cannot leak between explicitly assigned splits."""
+    rows = [
+        {
+            "sentence_good": "Dit is gedeeld.",
+            "sentence_bad": "Dit is fout 1.",
+            "linguistic_phenomenon": "syntax",
+            "paradigm": "word_order",
+            "item_nr": "1",
+        },
+        {
+            "sentence_good": "Dit is gedeeld.",
+            "sentence_bad": "Dit is fout 2.",
+            "linguistic_phenomenon": "syntax",
+            "paradigm": "word_order",
+            "item_nr": "2",
+        },
+    ]
+    source_splits = {":syntax:word_order:1": "train", ":syntax:word_order:2": "test"}
+
+    with pytest.raises(ValueError, match="multiple splits"):
+        process_dataset(rows=rows, source_splits=source_splits)
