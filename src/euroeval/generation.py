@@ -520,8 +520,7 @@ def generate(
     # ran at all (e.g. `num_iterations` is zero) there are no errors to raise, and we
     # simply return the empty list of scores, as before.
     if not scores and iteration_errors:
-        error: InvalidBenchmark = iteration_errors[0]
-        raise error
+        raise iteration_errors[0]
     if iteration_errors:
         log(
             f"{len(iteration_errors):,} of {len(datasets):,} iterations failed and "

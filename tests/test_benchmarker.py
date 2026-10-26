@@ -1056,6 +1056,7 @@ def test_download_only_does_not_instantiate_model(
             _kwargs:
                 Keyword arguments passed to raw-data loading.
         """
+        pass
 
     monkeypatch.setattr("euroeval.benchmarker.load_raw_data", mock_load_raw_data)
 
@@ -1076,6 +1077,7 @@ def test_download_only_does_not_instantiate_model(
             _kwargs:
                 Keyword arguments passed to metric download.
         """
+        pass
 
     for metric in dataset_config.task.metrics:
         monkeypatch.setattr(metric, "download", mock_metric_download)
@@ -1412,6 +1414,7 @@ def test_encoder_uses_test_split_in_public_benchmark_flow(
         Returns:
             The value produced by the test helper.
         """
+        _ = model_config, benchmark_plan, benchmark_results
         observed.append(benchmark_config)
         return [], []
 
@@ -1491,6 +1494,7 @@ def test_fetch_model_configs_keeps_valid_models_when_extra_is_missing(
         Returns:
             The value produced by the test helper.
         """
+        _ = datasets, existing_results
         observed.append(model_config)
         return None, [], [], None
 
