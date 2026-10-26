@@ -48,7 +48,16 @@ class TestBPCGating:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """BPC scoring raises InvalidModel for LiteLLM backend."""
+        """BPC scoring raises InvalidModel for LiteLLM backend.
+
+        Args:
+            model_config:
+                The model configuration fixture.
+            dataset_config:
+                The dataset configuration fixture.
+            benchmark_config:
+                The benchmark configuration fixture.
+        """
         bpc_config = dataclasses.replace(benchmark_config, use_bits_per_character=True)
         with pytest.raises(InvalidModel, match="vLLM backend"):
             load_model(
@@ -67,7 +76,16 @@ class TestClassificationStructuredOutput:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """The response schema uses mapped labels as a scalar enum."""
+        """The response schema uses mapped labels as a scalar enum.
+
+        Args:
+            model_config:
+                The model configuration fixture.
+            dataset_config:
+                The dataset configuration fixture.
+            benchmark_config:
+                The benchmark configuration fixture.
+        """
         labels = ["positive", "negative"]
         label_mapping = {"positive": "agree", "negative": "disagree"}
         config = _classification_dataset_config(
@@ -125,7 +143,24 @@ class TestClassificationStructuredOutput:
         label_mapping: dict[str, str],
         few_shot: bool,
     ) -> None:
-        """Prepared messages embed JSON choices in the localised sentence."""
+        """Prepared messages embed JSON choices in the localised sentence.
+
+        Args:
+            model_config:
+                The model configuration fixture.
+            dataset_config:
+                The dataset configuration fixture.
+            benchmark_config:
+                The benchmark configuration fixture.
+            task_group:
+                The classification task group to configure.
+            labels:
+                The source labels used by the task.
+            label_mapping:
+                Mapping from source labels to prompted output labels.
+            few_shot:
+                Whether few-shot examples are enabled.
+        """
         num_few_shot_examples = 2
         config = _classification_dataset_config(
             dataset_config=dataset_config,
@@ -186,7 +221,16 @@ class TestClassificationStructuredOutput:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """Reasoning models receive JSON prompts without schema decoding."""
+        """Reasoning models receive JSON prompts without schema decoding.
+
+        Args:
+            model_config:
+                The model configuration fixture.
+            dataset_config:
+                The dataset configuration fixture.
+            benchmark_config:
+                The benchmark configuration fixture.
+        """
         labels = ["positive", "negative"]
         label_mapping = {"positive": "agree", "negative": "disagree"}
         config = _classification_dataset_config(
@@ -237,7 +281,16 @@ class TestClassificationStructuredOutput:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """The backend passes JSON formatting to variable-choice MCQ prompts."""
+        """The backend passes JSON formatting to variable-choice MCQ prompts.
+
+        Args:
+            model_config:
+                The model configuration fixture.
+            dataset_config:
+                The dataset configuration fixture.
+            benchmark_config:
+                The benchmark configuration fixture.
+        """
         config = _classification_dataset_config(
             dataset_config=dataset_config,
             task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
@@ -270,7 +323,16 @@ class TestClassificationStructuredOutput:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """Dynamic MCQ uses a scalar JSON schema without a fixed-label enum."""
+        """Dynamic MCQ uses a scalar JSON schema without a fixed-label enum.
+
+        Args:
+            model_config:
+                The model configuration fixture.
+            dataset_config:
+                The dataset configuration fixture.
+            benchmark_config:
+                The benchmark configuration fixture.
+        """
         config = _classification_dataset_config(
             dataset_config=dataset_config,
             task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
@@ -303,6 +365,14 @@ def _classification_dataset(
 ) -> DatasetDict:
     """Build a classification dataset with enough training examples.
 
+    Args:
+        task_group:
+            The classification task group to configure.
+        labels:
+            The source labels used by the task.
+        num_train_examples:
+            The number of training examples to create.
+
     Returns:
         A dataset with train and test splits for the requested task group.
     """
@@ -330,6 +400,18 @@ def _classification_dataset_config(
 ) -> DatasetConfig:
     """Create a classification config with an observable output contract.
 
+    Args:
+        dataset_config:
+            The dataset configuration fixture.
+        task_group:
+            The classification task group to configure.
+        labels:
+            The source labels used by the task.
+        label_mapping:
+            Mapping from source labels to prompted output labels.
+        num_few_shot_examples:
+            Number of training examples for few-shot prompting.
+
     Returns:
         A copied dataset configuration with the requested classification settings.
     """
@@ -354,6 +436,16 @@ def _new_litellm_model(
     generative_type: GenerativeType,
 ) -> LiteLLMModel:
     """Create a LiteLLM model without making an API request.
+
+    Args:
+        model_config:
+            The model configuration fixture.
+        dataset_config:
+            The dataset configuration fixture.
+        benchmark_config:
+            The benchmark configuration fixture.
+        generative_type:
+            Generation mode to configure for the model.
 
     Returns:
         An uninitialised LiteLLM model configured for prompt preparation.
@@ -380,6 +472,14 @@ class TestCreateModelOutput:
         benchmark_config: BenchmarkConfig,
     ) -> None:
         """Test that responses with no choices get empty score lists.
+
+        Args:
+            model_config:
+                The model configuration fixture.
+            dataset_config:
+                The dataset configuration fixture.
+            benchmark_config:
+                The benchmark configuration fixture.
 
         This is a regression test for a bug where evaluating on AngryTweets raised
         "Sequences and scores must have the same length. Got 1320 sequences and 1319
@@ -506,7 +606,7 @@ def _make_response(content: str = "positive") -> MagicMock:
     behaviour opt in by setting `reasoning_content` explicitly.
 
     Args:
-        content:
+        content (optional):
             The text content of the response message.
 
     Returns:
@@ -526,7 +626,14 @@ def _make_response(content: str = "positive") -> MagicMock:
 def test_api_context_length_override_takes_precedence(
     dataset_config: DatasetConfig, benchmark_config: BenchmarkConfig
 ) -> None:
-    """An explicit context-length override takes precedence over vendor metadata."""
+    """An explicit context-length override takes precedence over vendor metadata.
+
+    Args:
+            dataset_config:
+                The dataset configuration fixture.
+            benchmark_config:
+                The benchmark configuration fixture.
+    """
     benchmark_config = dataclasses.replace(benchmark_config, max_context_length=8_000)
     model_config = LiteLLMModel.get_model_config(
         model_id="openai/gpt-6-astra", benchmark_config=benchmark_config
@@ -587,7 +694,18 @@ def test_api_model_context_lengths(
     dataset_config: DatasetConfig,
     benchmark_config: BenchmarkConfig,
 ) -> None:
-    """Documented API IDs expose their context lengths through the model interface."""
+    """Documented API IDs expose their context lengths through the model interface.
+
+    Args:
+        model_id:
+            API model identifier to check.
+        expected:
+            Expected value for the parameterized case.
+        dataset_config:
+            The dataset configuration fixture.
+        benchmark_config:
+            The benchmark configuration fixture.
+    """
     benchmark_config = dataclasses.replace(benchmark_config, max_context_length=None)
     model_config = LiteLLMModel.get_model_config(
         model_id=model_id, benchmark_config=benchmark_config
@@ -605,7 +723,12 @@ def test_api_model_context_lengths(
 def test_deepseek_provider_prefix_is_preserved_for_custom_api(
     benchmark_config: BenchmarkConfig,
 ) -> None:
-    """Only the ``deepseek/`` provider prefix bypasses custom API rewriting."""
+    """Only the ``deepseek/`` provider prefix bypasses custom API rewriting.
+
+    Args:
+            benchmark_config:
+                The benchmark configuration fixture.
+    """
     benchmark_config = dataclasses.replace(
         benchmark_config, api_base="https://api.example.com/v1"
     )
@@ -662,14 +785,26 @@ def test_deepseek_provider_prefix_is_preserved_for_custom_api(
     ],
 )
 def test_get_api_model_release_date(model_id: str, expected: str | None) -> None:
-    """API aliases and dated model IDs resolve to their release dates."""
+    """API aliases and dated model IDs resolve to their release dates.
+
+    Args:
+        model_id:
+            API model identifier to check.
+        expected:
+            Expected value for the parameterized case.
+    """
     assert get_api_model_release_date(model_id) == expected
 
 
 def test_huggingface_model_id_is_preserved_for_custom_api(
     benchmark_config: BenchmarkConfig,
 ) -> None:
-    """Hugging Face model IDs remain valid for custom OpenAI-compatible APIs."""
+    """Hugging Face model IDs remain valid for custom OpenAI-compatible APIs.
+
+    Args:
+            benchmark_config:
+                The benchmark configuration fixture.
+    """
     benchmark_config = dataclasses.replace(
         benchmark_config, api_base="https://router.huggingface.co/featherless-ai/v1"
     )
@@ -683,7 +818,12 @@ def test_huggingface_model_id_is_preserved_for_custom_api(
 def test_litellm_model_config_includes_release_date(
     benchmark_config: BenchmarkConfig,
 ) -> None:
-    """API release metadata is propagated into the model configuration."""
+    """API release metadata is propagated into the model configuration.
+
+    Args:
+            benchmark_config:
+                The benchmark configuration fixture.
+    """
     config = LiteLLMModel.get_model_config(
         model_id="openai/gpt-4o-2024-08-06", benchmark_config=benchmark_config
     )
@@ -719,7 +859,16 @@ class TestDeepSeekParams:
     def test_deepseek_param_shapes(
         self, model_config: ModelConfig, param: str, expected: dict[str, t.Any]
     ) -> None:
-        """DeepSeek models get DeepSeek-API-specific thinking/reasoning shapes."""
+        """DeepSeek models get DeepSeek-API-specific thinking/reasoning shapes.
+
+        Args:
+            model_config:
+                The model configuration fixture.
+            param:
+                The model parameter setting to exercise.
+            expected:
+                Expected value for the parameterized case.
+        """
         model = object.__new__(LiteLLMModel)
         model.buffer = {"first_label_token_mapping": False}
         model.model_config = dataclasses.replace(
@@ -753,7 +902,20 @@ class TestDeepSeekParams:
         expected_thinking_type: str | None,
         expected_effort: str | None,
     ) -> None:
-        """Non-DeepSeek models keep the generic thinking/reasoning-effort shapes."""
+        """Non-DeepSeek models keep the generic thinking/reasoning-effort shapes.
+
+        Args:
+            model_config:
+                The model configuration fixture.
+            param:
+                The model parameter setting to exercise.
+            expected_key:
+                Name of the generation-kwargs key expected.
+            expected_thinking_type:
+                Expected thinking type, or None when not applicable.
+            expected_effort:
+                Expected reasoning-effort value, or None when not applicable.
+        """
         model = object.__new__(LiteLLMModel)
         model.buffer = {"first_label_token_mapping": False}
         model.model_config = dataclasses.replace(
@@ -772,7 +934,12 @@ class TestDeepSeekParams:
         assert "extra_body" not in result
 
     def test_prefix_required(self, model_config: ModelConfig) -> None:
-        """The `deepseek/` provider prefix is mandatory for DeepSeek behaviour."""
+        """The `deepseek/` provider prefix is mandatory for DeepSeek behaviour.
+
+        Args:
+            model_config:
+                The model configuration fixture.
+        """
         bare_model = object.__new__(LiteLLMModel)
         bare_model.buffer = {"first_label_token_mapping": False}
         bare_model.model_config = dataclasses.replace(
@@ -859,7 +1026,16 @@ class TestDuplicateErrorHandling:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """Two inputs failing with the same message store exactly one entry."""
+        """Two inputs failing with the same message store exactly one entry.
+
+        Args:
+            model_config:
+                The model configuration fixture.
+            dataset_config:
+                The dataset configuration fixture.
+            benchmark_config:
+                The benchmark configuration fixture.
+        """
         model = LiteLLMModel(
             model_config=dataclasses.replace(model_config, model_id="openai/gpt-4o"),
             dataset_config=dataset_config,
@@ -870,6 +1046,16 @@ class TestDuplicateErrorHandling:
         original_response_format = {"type": "json_schema", "json_schema": {}}
 
         async def fake_acompletion(**kwargs: object) -> MagicMock:
+            """Mock callback used by the surrounding test.
+
+            Args:
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Raises:
+                _make_response_format_unavailable_error:
+                    On the simulated response-format request.
+            """
             raise _make_response_format_unavailable_error()
 
         with (
@@ -914,6 +1100,17 @@ def _fake_get_generation_kwargs(
     def fake_get_generation_kwargs(
         self: LiteLLMModel, dataset_config: DatasetConfig
     ) -> dict[str, t.Any]:
+        """Mock callback used by the surrounding test.
+
+        Args:
+            self:
+                Mock model instance.
+            dataset_config:
+                Dataset configuration exercised by the test.
+
+        Returns:
+            Generation kwargs for the configured dataset.
+        """
         generation_kwargs: dict[str, t.Any] = {
             "max_completion_tokens": dataset_config.max_generated_tokens
         }
@@ -989,7 +1186,14 @@ class TestResponseFormatFallback:
     def test_handle_exception_falls_back_to_json_object(
         self, model_config: ModelConfig, dataset_config: DatasetConfig
     ) -> None:
-        """The DeepSeek json_schema-unavailable error falls back to `json_object`."""
+        """The DeepSeek json_schema-unavailable error falls back to `json_object`.
+
+        Args:
+            model_config:
+                The model configuration fixture.
+            dataset_config:
+                The dataset configuration fixture.
+        """
         model = object.__new__(LiteLLMModel)
         model.model_config = dataclasses.replace(
             model_config, model_id="deepseek/deepseek-flash"
@@ -1024,7 +1228,16 @@ class TestRetryAdjustments:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """A parameter fix learned during retries is replayed on later calls."""
+        """A parameter fix learned during retries is replayed on later calls.
+
+        Args:
+            model_config:
+                The model configuration fixture.
+            dataset_config:
+                The dataset configuration fixture.
+            benchmark_config:
+                The benchmark configuration fixture.
+        """
         model = LiteLLMModel(
             model_config=dataclasses.replace(model_config, model_id="openai/gpt-4o"),
             dataset_config=dataset_config,
@@ -1070,7 +1283,16 @@ class TestRetryAdjustments:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """Dataset-specific kwargs are refreshed, while the model-level fix persists."""
+        """Dataset-specific kwargs are refreshed, while the model-level fix persists.
+
+        Args:
+            model_config:
+                The model configuration fixture.
+            dataset_config:
+                The dataset configuration fixture.
+            benchmark_config:
+                The benchmark configuration fixture.
+        """
         model = LiteLLMModel(
             model_config=dataclasses.replace(model_config, model_id="openai/gpt-4o"),
             dataset_config=dataset_config,
@@ -1114,6 +1336,14 @@ class TestRetryAdjustments:
     ) -> None:
         """A learned `NO_LOGPROBS` adjustment is applied before the probe request.
 
+        Args:
+            model_config:
+                The model configuration fixture.
+            dataset_config:
+                The dataset configuration fixture.
+            benchmark_config:
+                The benchmark configuration fixture.
+
         This is a regression test for `get_generation_kwargs()` sending a probe
         request with parameters (like `logprobs`) that we already know this model
         rejects, only converging via `_handle_exception` retries. The fix applies
@@ -1131,6 +1361,15 @@ class TestRetryAdjustments:
         model._parameter_adjustments.add(ParameterAdjustment.NO_LOGPROBS)
 
         async def fake_acompletion(**kwargs: object) -> MagicMock:
+            """Mock callback used by the surrounding test.
+
+            Args:
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Returns:
+                A mock LiteLLM response.
+            """
             return _make_response()
 
         with patch(
@@ -1150,7 +1389,16 @@ class TestRetryAdjustments:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """With no persisted adjustments, `logprobs` is sent to the probe as usual."""
+        """With no persisted adjustments, `logprobs` is sent to the probe as usual.
+
+        Args:
+            model_config:
+                The model configuration fixture.
+            dataset_config:
+                The dataset configuration fixture.
+            benchmark_config:
+                The benchmark configuration fixture.
+        """
         model = LiteLLMModel(
             model_config=dataclasses.replace(model_config, model_id="openai/gpt-4o"),
             dataset_config=dataset_config,
@@ -1160,6 +1408,15 @@ class TestRetryAdjustments:
         model.buffer["first_label_token_mapping"] = True
 
         async def fake_acompletion(**kwargs: object) -> MagicMock:
+            """Mock callback used by the surrounding test.
+
+            Args:
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Returns:
+                A mock LiteLLM response.
+            """
             return _make_response()
 
         with patch(
@@ -1181,6 +1438,14 @@ class TestRetryAdjustments:
     ) -> None:
         """A persisted `USE_MAX_TOKENS` adjustment survives the reasoning probe.
 
+        Args:
+            model_config:
+                The model configuration fixture.
+            dataset_config:
+                The dataset configuration fixture.
+            benchmark_config:
+                The benchmark configuration fixture.
+
         This is a regression test for the reasoning-content detection block in
         `get_generation_kwargs()` unconditionally re-adding
         `max_completion_tokens` after the probe request, which would otherwise
@@ -1200,6 +1465,15 @@ class TestRetryAdjustments:
         response.choices[0].message.reasoning_content = "thinking"
 
         async def fake_acompletion(**kwargs: object) -> MagicMock:
+            """Mock callback used by the surrounding test.
+
+            Args:
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Returns:
+                The mock LiteLLM response with reasoning content.
+            """
             return response
 
         with patch(
@@ -1221,6 +1495,14 @@ class TestRetryAdjustments:
         benchmark_config: BenchmarkConfig,
     ) -> None:
         """Applying the logprobs adjustments twice must not change the result.
+
+        Args:
+            model_config:
+                The model configuration fixture.
+            dataset_config:
+                The dataset configuration fixture.
+            benchmark_config:
+                The benchmark configuration fixture.
 
         This is a regression test for `LOGPROBS_MUST_BE_BOOLEAN` being applied
         before `NO_TOP_LOGPROBS`, which left an integer `logprobs` value after
@@ -1259,7 +1541,16 @@ class TestRetryAdjustments:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """A learned logprobs rejection does not strip another dataset's schema."""
+        """A learned logprobs rejection does not strip another dataset's schema.
+
+        Args:
+            model_config:
+                The model configuration fixture.
+            dataset_config:
+                The dataset configuration fixture.
+            benchmark_config:
+                The benchmark configuration fixture.
+        """
         model = LiteLLMModel(
             model_config=dataclasses.replace(model_config, model_id="openai/gpt-4o"),
             dataset_config=dataset_config,
@@ -1268,6 +1559,16 @@ class TestRetryAdjustments:
         )
 
         async def fake_acompletion_logprobs_unsupported(**kwargs: object) -> MagicMock:
+            """Mock callback used by the surrounding test.
+
+            Args:
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Raises:
+                Exception:
+                    If the simulated operation fails.
+            """
             raise Exception("logprobs is not supported")
 
         with (
@@ -1294,6 +1595,17 @@ class TestRetryAdjustments:
         def fake_get_generation_kwargs_with_logprobs(
             self: LiteLLMModel, dataset_config: DatasetConfig
         ) -> dict[str, t.Any]:
+            """Mock callback used by the surrounding test.
+
+            Args:
+                self:
+                    Mock model instance.
+                dataset_config:
+                    Dataset configuration exercised by the test.
+
+            Returns:
+                Generation kwargs including the schema and logprobs settings.
+            """
             return {
                 "max_completion_tokens": dataset_config.max_generated_tokens,
                 "response_format": new_response_format,
@@ -1326,7 +1638,16 @@ class TestRetryAdjustments:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """A malformed-schema message is request-local and not persisted."""
+        """A malformed-schema message is request-local and not persisted.
+
+        Args:
+            model_config:
+                The model configuration fixture.
+            dataset_config:
+                The dataset configuration fixture.
+            benchmark_config:
+                The benchmark configuration fixture.
+        """
         model = LiteLLMModel(
             model_config=dataclasses.replace(model_config, model_id="openai/gpt-4o"),
             dataset_config=dataset_config,
@@ -1337,6 +1658,16 @@ class TestRetryAdjustments:
         original_response_format = {"type": "json_schema", "json_schema": {}}
 
         async def fake_acompletion_malformed_schema(**kwargs: object) -> MagicMock:
+            """Mock callback used by the surrounding test.
+
+            Args:
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Raises:
+                Exception:
+                    If the simulated operation fails.
+            """
             raise Exception("Property keys should match pattern")
 
         with (
@@ -1363,6 +1694,17 @@ class TestRetryAdjustments:
         def fake_get_generation_kwargs_new_schema(
             self: LiteLLMModel, dataset_config: DatasetConfig
         ) -> dict[str, t.Any]:
+            """Mock callback used by the surrounding test.
+
+            Args:
+                self:
+                    Mock model instance.
+                dataset_config:
+                    Dataset configuration exercised by the test.
+
+            Returns:
+                Generation kwargs including the new response schema.
+            """
             return {
                 "max_completion_tokens": dataset_config.max_generated_tokens,
                 "response_format": new_response_format,
@@ -1391,7 +1733,16 @@ class TestRetryAdjustments:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """A learned JSON-schema rejection leaves an unstructured dataset alone."""
+        """A learned JSON-schema rejection leaves an unstructured dataset alone.
+
+        Args:
+            model_config:
+                The model configuration fixture.
+            dataset_config:
+                The dataset configuration fixture.
+            benchmark_config:
+                The benchmark configuration fixture.
+        """
         model = LiteLLMModel(
             model_config=dataclasses.replace(model_config, model_id="openai/gpt-4o"),
             dataset_config=dataset_config,
@@ -1425,7 +1776,16 @@ class TestRetryAdjustments:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """`USE_MAX_TOKENS` moves the current dataset's limit, not an old one."""
+        """`USE_MAX_TOKENS` moves the current dataset's limit, not an old one.
+
+        Args:
+            model_config:
+                The model configuration fixture.
+            dataset_config:
+                The dataset configuration fixture.
+            benchmark_config:
+                The benchmark configuration fixture.
+        """
         model = LiteLLMModel(
             model_config=dataclasses.replace(model_config, model_id="openai/gpt-4o"),
             dataset_config=dataset_config,
@@ -1473,6 +1833,19 @@ def _patch_retry_adjustment_dependencies(
     calls: list[dict[str, t.Any]] = []
 
     async def fake_acompletion(**kwargs: object) -> MagicMock:
+        """Mock callback used by the surrounding test.
+
+        Args:
+            kwargs:
+                Kwargs supplied to the test.
+
+        Returns:
+            A mock LiteLLM response.
+
+        Raises:
+            _make_response_format_unavailable_error:
+                If the simulated operation fails.
+        """
         calls.append(kwargs)
         if not has_raised[0]:
             has_raised[0] = True
@@ -1503,7 +1876,16 @@ class TestServiceErrorHandling:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """A service-type error resolved with wait time 0 is not stored for replay."""
+        """A service-type error resolved with wait time 0 is not stored for replay.
+
+        Args:
+            model_config:
+                The model configuration fixture.
+            dataset_config:
+                The dataset configuration fixture.
+            benchmark_config:
+                The benchmark configuration fixture.
+        """
         benchmark_config = dataclasses.replace(
             benchmark_config, api_base="http://localhost:8000"
         )
@@ -1517,6 +1899,19 @@ class TestServiceErrorHandling:
         has_raised: list[bool] = [False]
 
         async def fake_acompletion(**kwargs: object) -> MagicMock:
+            """Mock callback used by the surrounding test.
+
+            Args:
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Returns:
+                A mock LiteLLM response after the simulated service error.
+
+            Raises:
+                BadRequestError:
+                    On the first simulated completion request.
+            """
             if not has_raised[0]:
                 has_raised[0] = True
                 raise BadRequestError(
@@ -1549,7 +1944,14 @@ class TestTransientParameterErrors:
     def test_logprobs_quota_message_is_not_persisted(
         self, model_config: ModelConfig, dataset_config: DatasetConfig
     ) -> None:
-        """The temporary logprobs quota message does not permanently disable them."""
+        """The temporary logprobs quota message does not permanently disable them.
+
+        Args:
+            model_config:
+                The model configuration fixture.
+            dataset_config:
+                The dataset configuration fixture.
+        """
         model = object.__new__(LiteLLMModel)
         model.model_config = dataclasses.replace(model_config, model_id="openai/gpt-4o")
         model.dataset_config = dataset_config
@@ -1573,7 +1975,14 @@ class TestTransientParameterErrors:
     def test_logprobs_unsupported_message_is_persisted(
         self, model_config: ModelConfig, dataset_config: DatasetConfig
     ) -> None:
-        """An explicit unsupported-logprobs message is persisted across datasets."""
+        """An explicit unsupported-logprobs message is persisted across datasets.
+
+        Args:
+            model_config:
+                The model configuration fixture.
+            dataset_config:
+                The dataset configuration fixture.
+        """
         model = object.__new__(LiteLLMModel)
         model.model_config = dataclasses.replace(model_config, model_id="openai/gpt-4o")
         model.dataset_config = dataset_config
@@ -1604,7 +2013,20 @@ class TestTransientParameterErrors:
         response_type: str,
         expected_response_type: str | None,
     ) -> None:
-        """Equivalent request-local errors do not persist adjustments."""
+        """Equivalent request-local errors do not persist adjustments.
+
+        Args:
+            model_config:
+                The model configuration fixture.
+            dataset_config:
+                The dataset configuration fixture.
+            error_message:
+                Provider error message to handle.
+            response_type:
+                Response-format type supplied with the request.
+            expected_response_type:
+                Expected response-format type, or None when the format is removed.
+        """
         model = object.__new__(LiteLLMModel)
         model.model_config = dataclasses.replace(model_config, model_id="openai/gpt-4o")
         model.dataset_config = dataset_config
@@ -1656,7 +2078,22 @@ class TestTransientParameterErrors:
         expected_adjustment: ParameterAdjustment,
         keeps_format: bool,
     ) -> None:
-        """Equivalent response-format errors persist their adjustment."""
+        """Equivalent response-format errors persist their adjustment.
+
+        Args:
+            model_config:
+                The model configuration fixture.
+            dataset_config:
+                The dataset configuration fixture.
+            error_message:
+                Provider error message to handle.
+            response_type:
+                Response-format type supplied with the request.
+            expected_adjustment:
+                Expected persisted parameter adjustment.
+            keeps_format:
+                Whether the fallback retains a response format.
+        """
         model = object.__new__(LiteLLMModel)
         model.model_config = dataclasses.replace(model_config, model_id="openai/gpt-4o")
         model.dataset_config = dataset_config

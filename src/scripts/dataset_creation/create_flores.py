@@ -144,6 +144,17 @@ def _build_dataset(
     """
 
     def rows(split: str, ids: list[int]) -> Dataset:
+        """Build aligned translation rows for one FLORES+ split.
+
+        Args:
+            split:
+                The source split name, either ``dev`` or ``devtest``.
+            ids:
+                Sentence identifiers to include in the split.
+
+        Returns:
+            A dataset containing the aligned source and target sentences.
+        """
         return Dataset.from_list(
             [{"text": source[split][i], "target_text": target[split][i]} for i in ids]
         )

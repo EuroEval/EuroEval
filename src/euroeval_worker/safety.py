@@ -66,7 +66,36 @@ class ModelMetadata:
         backend_compatible: bool = False,
         config: object | None = None,
     ) -> None:
-        """Initialise metadata used by :func:`check_model_safety`."""
+        """Initialise metadata used by :func:`check_model_safety`.
+
+        Args:
+            private:
+                Private.
+            gated:
+                Gated.
+            auto_map:
+                Auto map.
+            files:
+                Files.
+            safetensors:
+                Safetensors.
+            estimated_bytes:
+                Estimated bytes.
+            architectures (optional):
+                Architectures.
+            repository_bytes (optional):
+                Repository bytes.
+            pipeline_tag (optional):
+                Pipeline tag.
+            model_type (optional):
+                Model type.
+            is_encoder_decoder (optional):
+                Is encoder decoder.
+            backend_compatible (optional):
+                Backend compatible.
+            config (optional):
+                Config.
+        """
         self.private = private
         self.gated = gated
         self.auto_map = auto_map
@@ -95,12 +124,18 @@ class HuggingFaceMetadata:
     def fetch(self, model_id: str, revision: str) -> ModelMetadata:
         """Fetch metadata from the Hub and reject incomplete responses.
 
+        Args:
+                    model_id:
+                        Model id.
+                    revision:
+                        Revision.
+
         Returns:
-            Repository metadata.
+                    Repository metadata.
 
         Raises:
-            SafetyError:
-                If the Hub cannot provide complete metadata.
+                    SafetyError:
+                        If the Hub cannot provide complete metadata.
         """
         try:
             info = HfApi(token=False).model_info(
@@ -223,13 +258,21 @@ def derive_model_type(
 ) -> str | None:
     """Classify a model using EuroEval's Hub pipeline/backend contract.
 
-    A non-generative Hub pipeline is sent through the Transformers encoder path;
-    generative Hub pipelines are sent through vLLM. Architecture names are not
-    classification evidence because they are implementation details, not a
-    compatibility contract.
+    Non-generative Hub pipelines use the Transformers encoder path; generative
+    pipelines use vLLM. Architecture names are not classification evidence because
+    they are implementation details, not a compatibility contract.
+
+    Args:
+        pipeline_tag:
+            Hub pipeline tag; missing or blank tags are ambiguous.
+        is_encoder_decoder (optional):
+            Encoder-decoder flag. Defaults to ``None``; non-boolean values are treated
+            as ambiguous metadata.
 
     Returns:
-        The broad capability, or ``None`` for ambiguous metadata.
+        ``"generative"`` for recognised generative pipeline tags, ``"encoder"`` for
+        other non-blank tags unless the encoder-decoder flag conflicts, or ``None``
+        when metadata is missing, malformed, or contradictory.
     """
     if not isinstance(pipeline_tag, str) or not pipeline_tag.strip():
         return None
@@ -246,7 +289,15 @@ class SafetyError(RuntimeError):
 
 
 def _hub_false_or_bool(value: object) -> bool:
-    """Return whether a Hub access flag has a recognised representation."""
+    """Return whether a Hub access flag is a boolean or the string ``"false"``.
+
+    Args:
+        value:
+            Value returned for a Hub access flag.
+
+    Returns:
+        ``True`` for any boolean or the exact string ``"false"``; otherwise ``False``.
+    """
     return isinstance(value, bool) or value == "false"
 
 
@@ -261,8 +312,22 @@ def _installed_backend_supports(
 ) -> bool:
     """Check actual task loading against the installed backend APIs.
 
+    Args:
+            model_type:
+                Model type.
+            config:
+                Config.
+            architectures:
+                Architectures.
+            pipeline_tag (optional):
+                Pipeline tag.
+            is_encoder_decoder (optional):
+                Is encoder decoder.
+            task_groups (optional):
+                Task groups.
+
     Returns:
-        Whether the installed backend can load the model without remote code.
+            Whether the installed backend can load the model without remote code.
     """
     if model_type == "encoder":
         if pipeline_tag not in (None, *_ENCODER_PIPELINE_TAGS):
@@ -319,7 +384,16 @@ class _VllmInspectionConfig:
 
 
 def _encoder_task_mappings(task_groups: tuple[str, ...]) -> tuple[object, ...] | None:
-    """Return the exact Transformers task mappings required by a scope."""
+    """Return the Transformers task mappings required by the evaluation scope.
+
+    Args:
+        task_groups:
+            Task-group names whose encoder task mappings are required.
+
+    Returns:
+        An empty tuple for no task groups, the corresponding mapping tuple when every
+        group is supported, or ``None`` if any group has no registered mapping.
+    """
     if not task_groups:
         return ()
     mappings = tuple(_ENCODER_TASK_MAPPINGS.get(task) for task in task_groups)
@@ -346,12 +420,26 @@ def check_model_safety(
 ) -> SafetyReport:
     """Verify public, pinned, safetensors-only, non-code model metadata.
 
+    Args:
+            lease:
+                Lease.
+            gpus:
+                Gpus.
+            metadata (optional):
+                Metadata.
+            free_disk_bytes (optional):
+                Free disk bytes.
+            gpu_memory_utilisation (optional):
+                Gpu memory utilisation.
+            selected_gpu (optional):
+                Selected gpu.
+
     Returns:
-        Details of the successful fit check.
+            Details of the successful fit check.
 
     Raises:
-        SafetyError:
-            If the revision, repository, capability, or memory estimate is unsafe.
+            SafetyError:
+                If the revision, repository, capability, or memory estimate is unsafe.
     """
     if platform.machine() not in _SUPPORTED_HOST_ARCHITECTURES:
         raise SafetyError("unsupported worker architecture")
@@ -413,8 +501,14 @@ def check_model_safety(
 def _backend_compatible(info: ModelMetadata, task_groups: tuple[str, ...]) -> bool:
     """Check a fetched model against the leased tasks.
 
+    Args:
+            info:
+                Info.
+            task_groups:
+                Task groups.
+
     Returns:
-        Whether the installed backend can execute every leased task.
+            Whether the installed backend can execute every leased task.
     """
     if info.config is not None:
         return _installed_backend_supports(

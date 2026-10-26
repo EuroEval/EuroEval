@@ -47,8 +47,8 @@ def compute_ranks(
             The leaderboard configurations for each language.
         n_bootstraps:
             Number of bootstrap replicates for dataset-level CIs.
-        seed:
-            Random seed for reproducibility.
+        seed (optional):
+            Random seed for reproducibility. Defaults to None.
 
     Returns:
         The ranks of the models, per task category and per language.
@@ -261,10 +261,15 @@ def compute_dataset_ranks_bootstrap(
     stable across bootstrap replicates.
 
     Args:
-        model_results: Model results grouped by model and dataset.
-        configs: Per-language task -> dataset mappings.
-        n_bootstraps: Number of bootstrap replicates.
-        seed: Random seed for reproducibility.
+        model_results:
+            Results grouped by model ID and dataset. Each result contains raw iteration
+            scores, a mean score, and a standard deviation.
+        configs:
+            Per-language mappings from task names to dataset IDs.
+        n_bootstraps:
+            Number of bootstrap replicates for each model-dataset pair.
+        seed (optional):
+            Random seed for reproducibility. Defaults to None.
 
     Returns:
         model_id -> category -> dataset -> {"score", "ci_lower", "ci_upper"}.
@@ -382,10 +387,15 @@ def compute_ranks_bootstrap(
     approach that respects the nested structure and model correlations.
 
     Args:
-        model_results: The model results (same format as compute_ranks).
-        configs: Per-language task -> dataset mappings.
-        n_bootstraps: Number of bootstrap replicates.
-        seed: Random seed for reproducibility.
+        model_results:
+            Results grouped by model ID and dataset. Each result contains raw iteration
+            scores, a mean score, and a standard deviation.
+        configs:
+            Per-language mappings from task names to dataset IDs.
+        n_bootstraps:
+            Number of bootstrap replicates used to estimate confidence intervals.
+        seed (optional):
+            Random seed for reproducibility. Defaults to None.
 
     Returns:
         model_id -> category -> language -> {"score", "ci_lower", "ci_upper"}
@@ -421,8 +431,8 @@ def compute_standard_ranks_bootstrap(
             Per-language task -> dataset mappings.
         n_bootstraps:
             Number of bootstrap replicates.
-        seed:
-            Random seed for reproducibility.
+        seed (optional):
+            Random seed for reproducibility. Defaults to None.
         alpha (optional):
             Significance level for the paired bootstrap CI. Defaults to 0.05.
 
@@ -460,10 +470,12 @@ def compute_standard_ranks_from_bootstrap_scores(
     because it directly uses the paired difference distribution.
 
     Args:
-        bootstrap_scores: Pre-computed bootstrap distributions from
-            ``bootstrap_rank_scores``. Structure: model_id -> category ->
-            language -> np.ndarray of bootstrap scores.
-        alpha (optional): Significance level. Defaults to 0.05.
+        bootstrap_scores:
+            Pre-computed bootstrap distributions from ``bootstrap_rank_scores``.
+            Structure: model_id -> category -> language -> NumPy array of bootstrap
+            scores.
+        alpha (optional):
+            Significance level. Defaults to 0.05.
 
     Returns:
         model_id -> category -> int rank.

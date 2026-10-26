@@ -43,7 +43,8 @@ def main() -> None:
         """Process a split by filtering single labels and mapping them.
 
         Args:
-            df: The dataframe to process.
+            df:
+                The dataframe to process.
 
         Returns:
             The processed dataframe.
@@ -136,7 +137,7 @@ def _create_uniform_label_distribution(
 
     Args:
         df: The input dataframe with a 'label' column.
-        random_state: The random state for reproducibility.
+        random_state (optional): The random state for reproducibility. Defaults to 4242.
 
     Returns:
         A dataframe with a uniform label distribution.

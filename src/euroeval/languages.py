@@ -101,7 +101,11 @@ class Language:
         self.multiple_scripts = multiple_scripts
 
     def __hash__(self) -> int:
-        """Return a hash of the language."""
+        """Return a hash of the language.
+
+        Returns:
+            The hash of this language's code.
+        """
         return hash(self.code)
 
     @property
@@ -123,6 +127,12 @@ class Language:
 
     @and_separator.setter
     def and_separator(self, value: str | None) -> None:
+        """Set the localised conjunction.
+
+        Args:
+            value:
+                The localised word for 'and', or None if unavailable.
+        """
         self._and_separator = value
 
     @property
@@ -154,6 +164,12 @@ class Language:
 
     @or_separator.setter
     def or_separator(self, value: str | None) -> None:
+        """Set the localised disjunction.
+
+        Args:
+            value:
+                The localised word for 'or', or None if unavailable.
+        """
         self._or_separator = value
 
 

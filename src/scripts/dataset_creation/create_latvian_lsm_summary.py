@@ -31,7 +31,8 @@ def main() -> None:
         """Map the dataset to have the text and target_text columns.
 
         Args:
-            sample: A sample from the dataset.
+            sample:
+                A sample from the dataset.
 
         Returns:
             A sample with the text and target_text columns.

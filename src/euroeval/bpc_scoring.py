@@ -102,7 +102,7 @@ def compute_bpc_scores(
         answer_texts: Ground truth answer texts that were appended to prompts.
         answer_start_indices: Pre-computed token indices where answers start in prompts.
         tokeniser: Tokeniser for tokenising prompts and answers.
-        answer_char_counts:
+        answer_char_counts (optional):
             The number of characters to divide each answer's bits by. Defaults to the
             length of each answer text when omitted. For token classification (NER) this
             is the entity-text character count rather than the full serialised-answer

@@ -14,7 +14,14 @@ class TestCreateDataset:
     def test_creation_is_deterministic(
         self, rows: list[create_mkqa.MkqaRow], dataset: DatasetDict
     ) -> None:
-        """Creating the dataset twice gives the same samples."""
+        """Creating the dataset twice gives the same samples.
+
+        Args:
+            rows:
+                MKQA rows used to construct the dataset.
+            dataset:
+                Danish MKQA dataset fixture under test.
+        """
         again = create_mkqa.create_dataset(
             rows=rows, language="da", train_size=10, val_size=5, test_size=20
         )
@@ -75,7 +82,12 @@ class TestCreateDataset:
             assert len({option[3:] for option in options}) == 4
 
     def test_distractors_come_from_the_same_split(self, dataset: DatasetDict) -> None:
-        """The options of a sample are answers to questions in the same split."""
+        """The options of a sample are answers to questions in the same split.
+
+        Args:
+            dataset:
+                Danish MKQA dataset fixture under test.
+        """
         for split in dataset.values():
             answers = {
                 f"svar {sample['text'].split(chr(10))[0].split()[2].rstrip('?')}"
@@ -110,7 +122,12 @@ class TestCreateDataset:
         assert english_splits["0"] == english_splits["1"]
 
     def test_four_distinct_options(self, dataset: DatasetDict) -> None:
-        """Every sample has the options a to d, and they are all different."""
+        """Every sample has the options a to d, and they are all different.
+
+        Args:
+            dataset:
+                Danish MKQA dataset fixture under test.
+        """
         for split in dataset.values():
             for sample in split:
                 options = sample["text"].split("\n")[2:]
@@ -118,7 +135,12 @@ class TestCreateDataset:
                 assert len({option[3:] for option in options}) == 4
 
     def test_label_points_to_the_answer(self, dataset: DatasetDict) -> None:
-        """The label is the letter of the option holding the answer."""
+        """The label is the letter of the option holding the answer.
+
+        Args:
+            dataset:
+                Danish MKQA dataset fixture under test.
+        """
         for split in dataset.values():
             for sample in split:
                 question, header, *options = sample["text"].split("\n")
@@ -195,7 +217,14 @@ class TestCreateDataset:
     def test_same_questions_in_the_same_split_in_all_languages(
         self, rows: list[create_mkqa.MkqaRow], dataset: DatasetDict
     ) -> None:
-        """A question is in the same split in Danish and English."""
+        """A question is in the same split in Danish and English.
+
+        Args:
+            rows:
+                MKQA rows used to construct datasets in both languages.
+            dataset:
+                Danish MKQA dataset fixture under test.
+        """
         english = create_mkqa.create_dataset(
             rows=rows, language="en", train_size=10, val_size=5, test_size=20
         )
@@ -233,7 +262,12 @@ class TestCreateDataset:
         assert not any(int(number) % 5 == 0 for number in english_splits)
 
     def test_splits_and_columns(self, dataset: DatasetDict) -> None:
-        """The dataset has train, val and test splits with text and label."""
+        """The dataset has train, val and test splits with text and label.
+
+        Args:
+            dataset:
+                Danish MKQA dataset fixture under test.
+        """
         assert set(dataset.keys()) == {"train", "val", "test"}
         assert [dataset[split].num_rows for split in ("train", "val", "test")] == [
             10,
@@ -244,7 +278,12 @@ class TestCreateDataset:
             assert split.column_names == ["text", "label"]
 
     def test_splits_do_not_share_questions(self, dataset: DatasetDict) -> None:
-        """No question is in more than one split."""
+        """No question is in more than one split.
+
+        Args:
+            dataset:
+                Danish MKQA dataset fixture under test.
+        """
         questions = [
             sample["text"].split("\n")[0]
             for split in dataset.values()
@@ -253,7 +292,12 @@ class TestCreateDataset:
         assert len(questions) == len(set(questions))
 
     def test_unusable_answer_types_are_left_out(self, dataset: DatasetDict) -> None:
-        """Unanswerable, binary and long answers are not used."""
+        """Unanswerable, binary and long answers are not used.
+
+        Args:
+            dataset:
+                Danish MKQA dataset fixture under test.
+        """
         questions = [
             sample["text"].split("\n")[0]
             for split in dataset.values()
@@ -276,15 +320,15 @@ def _row(
     Args:
         index:
             The index of the row, which makes the question and answer unique.
-        answer_type:
-            The MKQA answer type of the answer.
-        answer_text:
+        answer_type (optional):
+            The MKQA answer type of the answer. Defaults to "entity".
+        answer_text (optional):
             The Danish answer, or None to use an answer that is unique to the row.
-        danish_question:
+        danish_question (optional):
             The Danish question, or None to use a question that is unique to the row.
-        english_question:
+        english_question (optional):
             The English question, or None to use a question that is unique to the row.
-        extra_danish_answers:
+        extra_danish_answers (optional):
             Further accepted Danish answers, after the first one.
 
     Returns:

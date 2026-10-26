@@ -32,7 +32,14 @@ def test_bundled_file_loads() -> None:
 
 @pytest.mark.parametrize("content", ["", "# Only a comment.\n", "[]\n"])
 def test_empty_file_gives_no_entries(tmp_path: Path, content: str) -> None:
-    """An empty, comment-only or empty-list file has no entries."""
+    """An empty, comment-only or empty-list file has no entries.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        content:
+            Content supplied to the test.
+    """
     assert load_invalid_results(path=_write(tmp_path=tmp_path, content=content)) == []
 
 
@@ -107,7 +114,14 @@ def test_entry_without_result_on_dataset_raises() -> None:
     "date", ["'13/01/2026'", "'20260113'", "'2026-W03-2'", "2026-01-13 10:00:00"]
 )
 def test_malformed_date_raises(tmp_path: Path, date: str) -> None:
-    """A date that is not exactly YYYY-MM-DD is rejected."""
+    """A date that is not exactly YYYY-MM-DD is rejected.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        date:
+            Date supplied to the test.
+    """
     content = VALID_ENTRY.replace("2026-01-13", date)
     path = _write(tmp_path=tmp_path, content=content)
 
@@ -116,7 +130,12 @@ def test_malformed_date_raises(tmp_path: Path, date: str) -> None:
 
 
 def test_missing_field_raises(tmp_path: Path) -> None:
-    """An entry without a reason is rejected."""
+    """An entry without a reason is rejected.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     content = VALID_ENTRY.replace("  reason: Trained on the test split.\n", "")
     path = _write(tmp_path=tmp_path, content=content)
 
@@ -135,7 +154,12 @@ def test_no_entries_give_no_invalid_datasets() -> None:
 
 
 def test_single_entry_is_parsed(tmp_path: Path) -> None:
-    """A complete entry is loaded with every field."""
+    """A complete entry is loaded with every field.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     path = _write(tmp_path=tmp_path, content=VALID_ENTRY)
 
     assert load_invalid_results(path=path) == [
@@ -150,7 +174,12 @@ def test_single_entry_is_parsed(tmp_path: Path) -> None:
 
 
 def test_unknown_dataset_raises(tmp_path: Path) -> None:
-    """A dataset that EuroEval does not define is rejected."""
+    """A dataset that EuroEval does not define is rejected.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     content = VALID_ENTRY.replace(ANGRY_TWEETS_CONFIG.name, "no-such-dataset")
     path = _write(tmp_path=tmp_path, content=content)
 
@@ -159,7 +188,12 @@ def test_unknown_dataset_raises(tmp_path: Path) -> None:
 
 
 def test_unknown_field_raises(tmp_path: Path) -> None:
-    """An entry with a field outside the schema is rejected."""
+    """An entry with a field outside the schema is rejected.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     path = _write(tmp_path=tmp_path, content=VALID_ENTRY + "  score: 12.3\n")
 
     with pytest.raises(ValueError, match="unknown fields \\['score'\\]"):

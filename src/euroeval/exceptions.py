@@ -10,7 +10,7 @@ class HuggingFaceHubDown(Exception):
         """Initialise the exception.
 
         Args:
-            message:
+            message (optional):
                 The message to display.
         """
         self.message = message
@@ -26,7 +26,7 @@ class InvalidBenchmark(Exception):
         """Initialise the exception.
 
         Args:
-            message:
+            message (optional):
                 The message to display.
         """
         self.message = message
@@ -42,7 +42,7 @@ class InvalidModel(Exception):
         """Initialise the exception.
 
         Args:
-            message:
+            message (optional):
                 The message to display.
         """
         self.message = message
@@ -56,7 +56,7 @@ class InvalidTask(Exception):
         """Initialise the exception.
 
         Args:
-            message:
+            message (optional):
                 The message to display.
         """
         self.message = message
@@ -72,7 +72,7 @@ class NaNValueInModelOutput(Exception):
         """Initialise the exception.
 
         Args:
-            message:
+            message (optional):
                 The message to display.
         """
         self.message = message
@@ -196,7 +196,7 @@ class NoInternetConnection(Exception):
         """Initialise the exception.
 
         Args:
-            message:
+            message (optional):
                 The message to display.
         """
         self.message = message

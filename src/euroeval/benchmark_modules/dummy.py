@@ -75,8 +75,8 @@ class DummyModel(BenchmarkModule):
                 The dataset configuration.
             benchmark_config:
                 The benchmark configuration.
-            log_metadata:
-                Whether to log the model metadata.
+            log_metadata (optional):
+                Whether to log the model metadata. Defaults to True.
         """
         raise_if_wrong_params(
             model_config=model_config, allowed_params=self.allowed_params
@@ -102,6 +102,9 @@ class DummyModel(BenchmarkModule):
 
         Returns:
             The data collator.
+
+        Raises:
+            NotImplementedError: This property is not implemented for dummy models.
         """
         raise NotImplementedError(
             "The `data_collator` property has not been implemented for dummy models."
@@ -330,6 +333,9 @@ class DummyModel(BenchmarkModule):
 
         Returns:
             The Trainer class.
+
+        Raises:
+            NotImplementedError: This property is not implemented for dummy models.
         """
         raise NotImplementedError(
             "The `trainer_class` property has not been implemented for dummy models."

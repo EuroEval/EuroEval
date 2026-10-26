@@ -300,8 +300,8 @@ def corrupt(
             The list of tokens to corrupt.
         pos_tags:
             The list of POS tags for the tokens.
-        num_corruptions:
-            The number of corruptions to perform. Defaults to 1.
+        num_corruptions (optional):
+            Number of corruptions to perform. Defaults to ``1``.
 
     Returns:
         The list of (corrupted_string, corruption_type)

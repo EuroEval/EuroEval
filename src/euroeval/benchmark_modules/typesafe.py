@@ -57,6 +57,16 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
     ) -> None:
         """Initialise the hosted classifier without loading local model weights.
 
+        Args:
+            model_config:
+                The hosted model configuration.
+            dataset_config:
+                The dataset and label configuration.
+            benchmark_config:
+                The evaluation settings and credentials.
+            log_metadata (optional):
+                Whether to log model metadata. Defaults to True.
+
         Raises:
             NeedsAdditionalArgument:
                 If TYPESAFE_API_KEY is not set.
@@ -93,12 +103,24 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
 
     @property
     def data_collator(self) -> c.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
-        """Raise because the hosted model does not support finetuning."""
+        """The unavailable finetuning data collator.
+
+        Returns:
+            The data collator, if supported.
+
+        Raises:
+            NotImplementedError:
+                Typesafe System One does not support finetuning.
+        """
         raise NotImplementedError("Typesafe System One does not support finetuning.")
 
     @property
     def extract_labels_from_generation(self) -> ExtractLabelsFunction:
-        """The standard EuroEval classification-label extractor."""
+        """The standard EuroEval classification-label extractor.
+
+        Returns:
+            The classifier output-label extractor.
+        """
         return _extract_labels_from_generation_helper(
             dataset_config=self.dataset_config,
             model_config=self.model_config,
@@ -107,6 +129,10 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
 
     def generate(self, inputs: dict) -> GenerativeModelOutput:
         """Evaluate each input and expose returned probabilities as log scores.
+
+        Args:
+            inputs:
+                A batch of input text values.
 
         Returns:
             Predicted labels and log-probability scores.
@@ -162,6 +188,12 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
         self, state: str, criteria: dict[str, str | None]
     ) -> dict[str, float]:
         """Send one typed choice question to the System One endpoint.
+
+        Args:
+            state:
+                The text state to classify.
+            criteria:
+                Candidate labels and optional descriptions.
 
         Returns:
             A probability for every candidate label.
@@ -293,7 +325,11 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
 
     @property
     def generative_type(self) -> GenerativeType | None:
-        """None, because System One is a typed classifier, not a generator."""
+        """None, because System One is a typed classifier, not a generator.
+
+        Returns:
+            None, since this model does not generate text.
+        """
         return None
 
     @classmethod
@@ -301,6 +337,12 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
         cls, model_id: str, benchmark_config: BenchmarkConfig
     ) -> ModelConfig:
         """Create configuration for the exact hosted model identifier.
+
+        Args:
+            model_id:
+                The Typesafe model identifier.
+            benchmark_config:
+                The evaluation configuration, including cache location.
 
         Returns:
             The dedicated Typesafe model configuration.
@@ -339,6 +381,12 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
     def model_exists(cls, model_id: str, benchmark_config: BenchmarkConfig) -> bool:
         """Recognise the documented model ID without making a billable request.
 
+        Args:
+            model_id:
+                The model identifier to check.
+            benchmark_config:
+                The evaluation configuration.
+
         Returns:
             Whether the ID selects Jev System One.
         """
@@ -346,21 +394,41 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
 
     @cached_property
     def model_max_length(self) -> int:
-        """The unknown context limit; Typesafe publishes no verified value."""
+        """The unknown context limit.
+
+        Returns:
+            -1 because Typesafe publishes no verified context limit.
+        """
         return -1
 
     @cached_property
     def num_params(self) -> int:
-        """The unknown parameter count; Typesafe publishes no verified value."""
+        """The unknown parameter count.
+
+        Returns:
+            -1 because Typesafe publishes no verified parameter count.
+        """
         return -1
 
     @property
     def trainer_class(self) -> t.Type["Trainer"]:
-        """Raise because the hosted model does not support finetuning."""
+        """The unavailable finetuning trainer class.
+
+        Returns:
+            The trainer class, if supported.
+
+        Raises:
+            NotImplementedError:
+                Typesafe System One does not support finetuning.
+        """
         raise NotImplementedError("Typesafe System One does not support finetuning.")
 
     def update_dataset_config(self, dataset_config: DatasetConfig) -> t.Self:
         """Update task-specific instructions when moving to another dataset.
+
+        Args:
+            dataset_config:
+                The new dataset configuration.
 
         Returns:
             This model instance.
@@ -372,5 +440,9 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
 
     @cached_property
     def vocab_size(self) -> int:
-        """The unknown vocabulary size; Typesafe publishes no verified value."""
+        """The unknown vocabulary size.
+
+        Returns:
+            -1 because Typesafe publishes no verified vocabulary size.
+        """
         return -1

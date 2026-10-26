@@ -49,7 +49,14 @@ class TestEeeUtils:
     def test_append_to_results(
         self, benchmark_result: BenchmarkResult, results_path: Path
     ) -> None:
-        """Test that `BenchmarkResult.append_to_results` writes valid EEE format."""
+        """Test that `BenchmarkResult.append_to_results` writes valid EEE format.
+
+        Args:
+            benchmark_result:
+                Benchmark result supplied to the test.
+            results_path:
+                Results path supplied to the test.
+        """
         results_path.unlink(missing_ok=True)
         results_path.touch(exist_ok=True)
 
@@ -108,7 +115,12 @@ class TestEeeUtils:
     def test_older_eee_records_without_provenance_remain_readable(
         self, benchmark_result: BenchmarkResult
     ) -> None:
-        """Old EEE data without provenance continues to load and round-trip."""
+        """Old EEE data without provenance continues to load and round-trip.
+
+        Args:
+            benchmark_result:
+                Benchmark result supplied to the test.
+        """
         eee_dict = benchmark_result.to_eee_dict()
         model_info = eee_dict["model_info"]
         assert isinstance(model_info, dict)
@@ -125,7 +137,12 @@ class TestEeeUtils:
         assert restored.validation_split is benchmark_result.validation_split
 
     def test_round_trip_with_scores(self, results_path: Path) -> None:
-        """Test EEE round-trip fidelity with realistic metric scores and raw results."""
+        """Test EEE round-trip fidelity with realistic metric scores and raw results.
+
+        Args:
+            results_path:
+                Results path supplied to the test.
+        """
         results_path.unlink(missing_ok=True)
         results_path.touch(exist_ok=True)
 
@@ -221,7 +238,12 @@ class TestEeeUtils:
         results_path.unlink(missing_ok=True)
 
     def test_speed_metric_config(self, results_path: Path) -> None:
-        """Test that speed metrics don't get a hardcoded 0-100 range in EEE output."""
+        """Test that speed metrics don't get a hardcoded 0-100 range in EEE output.
+
+        Args:
+            results_path:
+                Results path supplied to the test.
+        """
         results_path.unlink(missing_ok=True)
         results_path.touch(exist_ok=True)
 

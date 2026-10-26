@@ -374,8 +374,8 @@ class LiteLLMModel(BenchmarkModule):
                 The dataset configuration.
             benchmark_config:
                 The benchmark configuration.
-            log_metadata:
-                Whether to log the model metadata.
+            log_metadata (optional):
+                Whether to log the model metadata. Defaults to True.
             generation_kwargs:
                 The generation kwargs to pass to the model. If None, default values will
                 be used.
@@ -429,6 +429,10 @@ class LiteLLMModel(BenchmarkModule):
         Base models receive raw completion prompts. Chat-only models receive a neutral
         continuation request; their evidence remains separately identified by backend
         and generative type.
+
+        Args:
+            prompts:
+                Prompts to continue for the canary corpus.
 
         Returns:
             One raw bounded continuation per prompt.
@@ -823,6 +827,16 @@ class LiteLLMModel(BenchmarkModule):
         generated_tokens: c.Sequence[str] | None = None,
     ) -> c.Sequence[c.Sequence[tuple[str, float]]]:
         """Remove JSON syntax tokens from classification logprobs.
+
+        Args:
+            logprobs_list:
+                Candidate token log probabilities for the generated response.
+            value:
+                The extracted classification label value.
+            classification_label_tokens:
+                Tokens corresponding to the valid classification labels, if available.
+            generated_tokens (optional):
+                Generated tokens used to locate the label. Defaults to None.
 
         Returns:
             Logprob entries beginning with the label value.
@@ -1601,7 +1615,7 @@ class LiteLLMModel(BenchmarkModule):
         Args:
             generation_kwargs:
                 The generation kwargs to pass to the model.
-            include_logprobs:
+            include_logprobs (optional):
                 Whether to add dataset label log probability arguments. Defaults to
                 True.
 
@@ -1667,6 +1681,10 @@ class LiteLLMModel(BenchmarkModule):
 
         Returns:
             The data collator.
+
+        Raises:
+            NotImplementedError:
+                LiteLLM models do not support finetuning data collators.
         """
         raise NotImplementedError(
             "The `data_collator` property has not been implemented for LiteLLM models."
@@ -2461,6 +2479,10 @@ class LiteLLMModel(BenchmarkModule):
 
         Returns:
             The Trainer class.
+
+        Raises:
+            NotImplementedError:
+                LiteLLM models do not support finetuning trainers.
         """
         raise NotImplementedError(
             "The `trainer_class` property has not been implemented for LiteLLM models."

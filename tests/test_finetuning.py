@@ -36,7 +36,26 @@ class TestFinetune:
         dataset_config: DatasetConfig,
         metric: HuggingFaceMetric,
     ) -> None:
-        """Test InvalidBenchmark when batch size reduction fails."""
+        """Test InvalidBenchmark when batch size reduction fails.
+
+        Args:
+            mock_clear_memory:
+                Mock clear memory supplied to the test.
+            mock_get_pbar:
+                Mock get pbar supplied to the test.
+            mock_get_training_args:
+                Mock get training args supplied to the test.
+            mock_load_model:
+                Mock load model supplied to the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            model_config:
+                Model configuration exercised by the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            metric:
+                Metric supplied to the test.
+        """
         mock_dataset = {
             "train": MagicMock(),
             "val": MagicMock(),
@@ -81,7 +100,24 @@ class TestFinetune:
         model_config: ModelConfig,
         dataset_config: DatasetConfig,
     ) -> None:
-        """Test batch size reduction when CUDA OOM occurs."""
+        """Test batch size reduction when CUDA OOM occurs.
+
+        Args:
+            mock_clear_memory:
+                Mock clear memory supplied to the test.
+            mock_get_pbar:
+                Mock get pbar supplied to the test.
+            mock_get_training_args:
+                Mock get training args supplied to the test.
+            mock_load_model:
+                Mock load model supplied to the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            model_config:
+                Model configuration exercised by the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+        """
         mock_dataset = {
             "train": MagicMock(),
             "val": MagicMock(),
@@ -130,7 +166,24 @@ class TestFinetune:
         dataset_config: DatasetConfig,
         metric: HuggingFaceMetric,
     ) -> None:
-        """Test NaNValueInModelOutput exception handling."""
+        """Test NaNValueInModelOutput exception handling.
+
+        Args:
+            mock_get_pbar:
+                Mock get pbar supplied to the test.
+            mock_get_training_args:
+                Mock get training args supplied to the test.
+            mock_load_model:
+                Mock load model supplied to the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            model_config:
+                Model configuration exercised by the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            metric:
+                Metric supplied to the test.
+        """
         mock_dataset = {
             "train": MagicMock(),
             "val": MagicMock(),
@@ -166,7 +219,14 @@ class TestGetTrainingArgs:
     def test_batch_size_default_value(
         self, benchmark_config: BenchmarkConfig, model_config: ModelConfig
     ) -> None:
-        """Test that the default value for the batch size is correct."""
+        """Test that the default value for the batch size is correct.
+
+        Args:
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            model_config:
+                Model configuration exercised by the test.
+        """
         args = get_training_args(
             benchmark_config=benchmark_config,
             model_config=model_config,
@@ -185,7 +245,16 @@ class TestGetTrainingArgs:
         model_config: ModelConfig,
         batch_size: int,
     ) -> None:
-        """Test that both training and eval batch sizes are set."""
+        """Test that both training and eval batch sizes are set.
+
+        Args:
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            model_config:
+                Model configuration exercised by the test.
+            batch_size:
+                Batch size supplied to the test.
+        """
         args = get_training_args(
             benchmark_config=benchmark_config,
             model_config=model_config,
@@ -207,7 +276,18 @@ class TestGetTrainingArgs:
         progress_bar: bool,
         expected_disable_tqdm: bool,
     ) -> None:
-        """Test that the disable tqdm option is correct."""
+        """Test that the disable tqdm option is correct.
+
+        Args:
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            model_config:
+                Model configuration exercised by the test.
+            progress_bar:
+                Progress bar supplied to the test.
+            expected_disable_tqdm:
+                Expected disable tqdm for this case.
+        """
         old_progress_bar = benchmark_config.progress_bar
         benchmark_config.progress_bar = progress_bar
         args = get_training_args(
@@ -236,7 +316,20 @@ class TestGetTrainingArgs:
         expected_fp16: bool,
         expected_bf16: bool,
     ) -> None:
-        """Test that the fp16 and bf16 arguments have been correctly set."""
+        """Test that the fp16 and bf16 arguments have been correctly set.
+
+        Args:
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            model_config:
+                Model configuration exercised by the test.
+            datatype:
+                Datatype supplied to the test.
+            expected_fp16:
+                Expected fp16 for this case.
+            expected_bf16:
+                Expected bf16 for this case.
+        """
         args = get_training_args(
             benchmark_config=benchmark_config,
             model_config=model_config,
@@ -258,7 +351,18 @@ class TestGetTrainingArgs:
         batch_size: int,
         expected_gradient_accumulation_steps: int,
     ) -> None:
-        """Test that the gradient accumulation is correct."""
+        """Test that the gradient accumulation is correct.
+
+        Args:
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            model_config:
+                Model configuration exercised by the test.
+            batch_size:
+                Batch size supplied to the test.
+            expected_gradient_accumulation_steps:
+                Expected gradient accumulation steps for this case.
+        """
         args = get_training_args(
             benchmark_config=benchmark_config,
             model_config=model_config,
@@ -279,7 +383,18 @@ class TestGetTrainingArgs:
         verbose: bool,
         expected_logging_strategy: IntervalStrategy,
     ) -> None:
-        """Test that the logging strategy is correct."""
+        """Test that the logging strategy is correct.
+
+        Args:
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            model_config:
+                Model configuration exercised by the test.
+            verbose:
+                Verbose supplied to the test.
+            expected_logging_strategy:
+                Expected logging strategy for this case.
+        """
         old_verbose = benchmark_config.verbose
         benchmark_config.verbose = verbose
         args = get_training_args(
@@ -295,7 +410,14 @@ class TestGetTrainingArgs:
     def test_return_type(
         self, benchmark_config: BenchmarkConfig, model_config: ModelConfig
     ) -> None:
-        """Test that the return type is correct."""
+        """Test that the return type is correct.
+
+        Args:
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            model_config:
+                Model configuration exercised by the test.
+        """
         args = get_training_args(
             benchmark_config=benchmark_config,
             model_config=model_config,
@@ -316,7 +438,18 @@ class TestGetTrainingArgs:
         device_name: str,
         expected_use_cpu: bool,
     ) -> None:
-        """Test that the use_cpu argument is correct."""
+        """Test that the use_cpu argument is correct.
+
+        Args:
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+            model_config:
+                Model configuration exercised by the test.
+            device_name:
+                Device name supplied to the test.
+            expected_use_cpu:
+                Expected use cpu for this case.
+        """
         old_device = benchmark_config.device
         benchmark_config.device = torch.device(device_name)
         args = get_training_args(

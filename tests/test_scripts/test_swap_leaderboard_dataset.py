@@ -19,7 +19,12 @@ class TestConfigBlockSpan:
     """Tests for _config_block_span helper."""
 
     def test_finds_config_block(self, tmp_path: Path) -> None:
-        """Should find the start and end of a DatasetConfig block."""
+        """Should find the start and end of a DatasetConfig block.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         config_content = '''"""Dataset configs."""
 
 from euroeval.data_models import DatasetConfig
@@ -56,7 +61,14 @@ class TestDryRun:
     def test_dry_run_does_not_modify_files(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Dry run should validate inputs and print plan without modifying anything."""
+        """Dry run should validate inputs and print plan without modifying anything.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         # Mock subprocess calls to avoid git operations
         monkeypatch.setattr(
             target=swap_leaderboard_dataset,
@@ -127,7 +139,14 @@ class TestExecuteJobsLogging:
     def test_live_output_written_during_execution(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Should write subprocess output to log file as it arrives."""
+        """Should write subprocess output to log file as it arrives.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         Job = swap_leaderboard_dataset.Job
         write_order: list[str] = []
 
@@ -139,6 +158,17 @@ class TestExecuteJobsLogging:
         def mock_run_euroeval(
             log_file: Path | None = None, **kwargs
         ) -> tuple[int, str]:
+            """Mock run euroeval for this test.
+
+            Args:
+                log_file (optional):
+                    Log file supplied to the test. Defaults to None.
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             output_lines = ["line 1", "line 2", "line 3"]
             output = "\n".join(output_lines)
             # Simulate live output: write each line as it arrives
@@ -198,7 +228,14 @@ class TestExecuteJobsLogging:
     def test_log_file_contains_job_metadata(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Should log each job's model, languages, split, shot, and source."""
+        """Should log each job's model, languages, split, shot, and source.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         Job = swap_leaderboard_dataset.Job
 
         monkeypatch.setattr(
@@ -254,7 +291,14 @@ class TestExecuteJobsLogging:
     def test_log_file_contains_job_results(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Should append job results with exit code and output to log file."""
+        """Should append job results with exit code and output to log file.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         Job = swap_leaderboard_dataset.Job
 
         # Mock REPO_ROOT to use tmp_path
@@ -267,6 +311,17 @@ class TestExecuteJobsLogging:
         def mock_run_euroeval(
             log_file: Path | None = None, **kwargs
         ) -> tuple[int, str]:
+            """Mock run euroeval for this test.
+
+            Args:
+                log_file (optional):
+                    Log file supplied to the test. Defaults to None.
+                kwargs:
+                    Kwargs supplied to the test.
+
+            Returns:
+                The value returned by the test helper.
+            """
             output = "error output from evaluation\nstack trace here"
             # Simulate live output to log file
             if log_file is not None:
@@ -316,7 +371,16 @@ class TestExecuteJobsLogging:
         monkeypatch: pytest.MonkeyPatch,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """Should create and announce the evaluation log before progress starts."""
+        """Should create and announce the evaluation log before progress starts.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            caplog:
+                Fixture for capturing log records during the test.
+        """
         Job = swap_leaderboard_dataset.Job
 
         monkeypatch.setattr(
@@ -369,7 +433,14 @@ class TestExecuteJobsResultDetection:
     def test_exit_zero_with_result_counts_as_evaluated(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """A job that exits 0 and has a matching result record is evaluated."""
+        """A job that exits 0 and has a matching result record is evaluated.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         Job = swap_leaderboard_dataset.Job
         benchmark_results = tmp_path / "euroeval_benchmark_results.jsonl"
         record = {
@@ -411,7 +482,14 @@ class TestExecuteJobsResultDetection:
     def test_exit_zero_without_result_counts_as_failed(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """A job that exits 0 but writes no result record must be marked failed."""
+        """A job that exits 0 but writes no result record must be marked failed.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         Job = swap_leaderboard_dataset.Job
         monkeypatch.setattr(
             target=swap_leaderboard_dataset, name="REPO_ROOT", value=tmp_path
@@ -450,7 +528,14 @@ class TestLoadCorpusAndBuildEvalJobs:
     def test_build_eval_jobs_add_only_does_not_rank_collapsed_union(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Add-only must not rank a model only completed by variant union."""
+        """Add-only must not rank a model only completed by variant union.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         Corpus = swap_leaderboard_dataset._Corpus
         ObsConfig = swap_leaderboard_dataset._ObsConfig
 
@@ -507,7 +592,14 @@ class TestLoadCorpusAndBuildEvalJobs:
     def test_build_eval_jobs_add_only_falls_back_to_defaults(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """In add-only mode, fall back to defaults with no official-dataset results."""
+        """In add-only mode, fall back to defaults with no official-dataset results.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         Corpus = swap_leaderboard_dataset._Corpus
 
         # Create a corpus where the model has no official-dataset results
@@ -545,7 +637,14 @@ class TestLoadCorpusAndBuildEvalJobs:
     def test_build_eval_jobs_add_only_mirrors_official_dataset_config(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """In add-only mode, mirror config from official dataset."""
+        """In add-only mode, mirror config from official dataset.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         Corpus = swap_leaderboard_dataset._Corpus
         ObsConfig = swap_leaderboard_dataset._ObsConfig
 
@@ -590,7 +689,14 @@ class TestLoadCorpusAndBuildEvalJobs:
     def test_build_eval_jobs_add_only_multiple_variants_schedule_both(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Multiple ranked variants for same plain model schedule distinct jobs."""
+        """Multiple ranked variants for same plain model schedule distinct jobs.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         Corpus = swap_leaderboard_dataset._Corpus
         ObsConfig = swap_leaderboard_dataset._ObsConfig
 
@@ -659,7 +765,14 @@ class TestLoadCorpusAndBuildEvalJobs:
     def test_build_eval_jobs_add_only_ranked_via_non_default_variant(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Model ranked via non-default official variant, no new-dataset result."""
+        """Model ranked via non-default official variant, no new-dataset result.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         Corpus = swap_leaderboard_dataset._Corpus
         ObsConfig = swap_leaderboard_dataset._ObsConfig
 
@@ -703,7 +816,14 @@ class TestLoadCorpusAndBuildEvalJobs:
     def test_build_eval_jobs_add_only_uses_variant_row_config(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Add-only mode derives config from variant row."""
+        """Add-only mode derives config from variant row.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         Corpus = swap_leaderboard_dataset._Corpus
         ObsConfig = swap_leaderboard_dataset._ObsConfig
 
@@ -771,7 +891,14 @@ class TestLoadCorpusAndBuildEvalJobs:
     def test_build_eval_jobs_add_only_wrong_variant_must_not_skip(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """New dataset has only wrong variant -> must not skip, must create job."""
+        """New dataset has only wrong variant -> must not skip, must create job.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         Corpus = swap_leaderboard_dataset._Corpus
         ObsConfig = swap_leaderboard_dataset._ObsConfig
 
@@ -836,6 +963,12 @@ class TestLoadCorpusAndBuildEvalJobs:
         a superset of all_models', for all_models too). A job must still
         get scheduled for it, since a model only needs to satisfy one
         affected category, not all of them at once.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
         """
         Corpus = swap_leaderboard_dataset._Corpus
         ObsConfig = swap_leaderboard_dataset._ObsConfig
@@ -887,7 +1020,14 @@ class TestLoadCorpusAndBuildEvalJobs:
     def test_build_eval_jobs_generative_only_skips_encoders(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Generative-only mode drops non-generative variant configs."""
+        """Generative-only mode drops non-generative variant configs.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         Corpus = swap_leaderboard_dataset._Corpus
         ObsConfig = swap_leaderboard_dataset._ObsConfig
 
@@ -946,7 +1086,14 @@ class TestLoadCorpusAndBuildEvalJobs:
     def test_build_eval_jobs_runs_when_observation_missing(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Should create jobs for (model, language) pairs without existing results."""
+        """Should create jobs for (model, language) pairs without existing results.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         Corpus = swap_leaderboard_dataset._Corpus
         ObsConfig = swap_leaderboard_dataset._ObsConfig
 
@@ -985,7 +1132,14 @@ class TestLoadCorpusAndBuildEvalJobs:
     def test_build_eval_jobs_skip_ignores_non_leaderboard_variant(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Existing-result skip ignores variants not shown on leaderboard."""
+        """Existing-result skip ignores variants not shown on leaderboard.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         Corpus = swap_leaderboard_dataset._Corpus
         ObsConfig = swap_leaderboard_dataset._ObsConfig
 
@@ -1041,7 +1195,14 @@ class TestLoadCorpusAndBuildEvalJobs:
     def test_build_eval_jobs_skip_is_variant_aware(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Existing-result skip compares config values, not just key existence."""
+        """Existing-result skip compares config values, not just key existence.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         Corpus = swap_leaderboard_dataset._Corpus
         ObsConfig = swap_leaderboard_dataset._ObsConfig
 
@@ -1093,7 +1254,14 @@ class TestLoadCorpusAndBuildEvalJobs:
     def test_build_eval_jobs_skips_existing_observations(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Skip when new-dataset config matches desired config."""
+        """Skip when new-dataset config matches desired config.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         Corpus = swap_leaderboard_dataset._Corpus
         ObsConfig = swap_leaderboard_dataset._ObsConfig
 
@@ -1145,7 +1313,14 @@ class TestLoadCorpusAndBuildEvalJobs:
     def test_load_corpus_falls_back_to_model_info_id(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Should fall back to model_info.id when name is missing."""
+        """Should fall back to model_info.id when name is missing.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         # Setup: create results directory with a record that only has model_info.id
         results_dir = tmp_path / "results"
         results_dir.mkdir()
@@ -1184,7 +1359,14 @@ class TestLoadCorpusAndBuildEvalJobs:
     def test_load_corpus_handles_missing_benchmark_results(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Load successfully when euroeval_benchmark_results.jsonl is missing."""
+        """Load successfully when euroeval_benchmark_results.jsonl is missing.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         # Setup: create results directory with a file (so load_corpus succeeds)
         results_dir = tmp_path / "results"
         results_dir.mkdir()
@@ -1220,7 +1402,14 @@ class TestLoadCorpusAndBuildEvalJobs:
     def test_load_corpus_id_only_variants_do_not_rank_collapsed_union(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """ID-only records must still build usable variant coverage."""
+        """ID-only records must still build usable variant coverage.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         results_dir = tmp_path / "results"
         model_dir = results_dir / "test-model"
         model_dir.mkdir(parents=True)
@@ -1299,7 +1488,14 @@ class TestLoadCorpusAndBuildEvalJobs:
     def test_load_corpus_includes_euroeval_benchmark_results(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Should load records from euroeval_benchmark_results.jsonl at repo root."""
+        """Should load records from euroeval_benchmark_results.jsonl at repo root.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         # Setup: create euroeval_benchmark_results.jsonl with a test record
         benchmark_results = tmp_path / "euroeval_benchmark_results.jsonl"
         test_record = {
@@ -1334,7 +1530,14 @@ class TestLoadCorpusAndBuildEvalJobs:
     def test_load_corpus_split_agnostic_completes_val_variant(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Split-agnostic datasets should count on matching val rows."""
+        """Split-agnostic datasets should count on matching val rows.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         results_dir = tmp_path / "results"
         model_dir = results_dir / "test-model"
         model_dir.mkdir(parents=True)
@@ -1458,7 +1661,16 @@ class TestSyncResults:
         monkeypatch: pytest.MonkeyPatch,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """Should handle empty bucket gracefully."""
+        """Should handle empty bucket gracefully.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            caplog:
+                Fixture for capturing log records during the test.
+        """
         monkeypatch.setattr(
             target=swap_leaderboard_dataset,
             name="RESULTS_DIR",
@@ -1513,7 +1725,16 @@ class TestSyncResults:
         monkeypatch: pytest.MonkeyPatch,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """Should log correct total and new record counts."""
+        """Should log correct total and new record counts.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            caplog:
+                Fixture for capturing log records during the test.
+        """
         results_dir = tmp_path / "results"
         results_dir.mkdir()
         new_results_path = tmp_path / "new_results.jsonl"
@@ -1640,7 +1861,12 @@ class TestValidation:
     def test_validate_branch_accepts_non_default(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Should accept non-default branch names."""
+        """Should accept non-default branch names.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         monkeypatch.setattr(
             target=swap_leaderboard_dataset, name="default_branch", value=lambda: "main"
         )
@@ -1651,7 +1877,12 @@ class TestValidation:
     def test_validate_branch_rejects_default_branch(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Should reject the default branch name."""
+        """Should reject the default branch name.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         monkeypatch.setattr(
             target=swap_leaderboard_dataset, name="default_branch", value=lambda: "main"
         )

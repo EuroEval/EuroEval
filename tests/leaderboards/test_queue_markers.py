@@ -12,6 +12,8 @@ from leaderboards import queue_markers
 
 
 class _Issue(TypedDict):
+    """Minimal issue fields used by queue-marker tests."""
+
     state: str
     body: str
     assignees: list[dict[str, str]]
@@ -46,7 +48,12 @@ def test_community_marker_parser_rejects_malformed_and_unknown_versions() -> Non
 def test_expired_coordinator_marker_is_recoverable(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Expired broker ownership does not strand the local queue."""
+    """Expired broker ownership does not strand the local queue.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     body = (
         '<!-- euroeval-volunteer-worker:v1 {"protocol_version":"volunteer-worker/v1",'
         '"coordinator":"coordinator","submission":"active","leases":['
@@ -78,7 +85,12 @@ def test_rejected_marker_is_auditable_but_does_not_block_local_queue() -> None:
 def test_release_does_not_touch_community_owned_issue(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A community lease protects both its marker and the assignment."""
+    """A community lease protects both its marker and the assignment.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     body = queue_markers.append_community_marker(
         body="\n<!-- vm-id: local-vm -->", owner="community", submission="submitted"
     )
@@ -106,7 +118,12 @@ def test_release_does_not_touch_community_owned_issue(
 def test_release_finishes_marker_cleanup_after_assignment_is_gone(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """An interrupted unassignment can resume by only clearing its marker."""
+    """An interrupted unassignment can resume by only clearing its marker.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     body = "request\n<!-- vm-id: local-vm -->"
     issue = _issue(body=body, assignees=[{"login": "replacement"}])
     monkeypatch.setattr(queue_markers, "fetch_issue_body", lambda number: body)
@@ -123,13 +140,29 @@ def test_release_finishes_marker_cleanup_after_assignment_is_gone(
 
 
 def _issue(*, body: str, assignees: list[dict[str, str]]) -> _Issue:
+    """Issue for this test.
+
+    Args:
+        body:
+            Body supplied to the test.
+        assignees:
+            Assignees supplied to the test.
+
+    Returns:
+        The value returned by the test helper.
+    """
     return {"state": "open", "body": body, "assignees": assignees}
 
 
 def test_release_preserves_replacement_assignee(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Release removes only the proven local owner."""
+    """Release removes only the proven local owner.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     body = "request\n<!-- vm-id: local-vm -->"
     issue = _issue(body=body, assignees=[{"login": "runner"}, {"login": "replacement"}])
     monkeypatch.setattr(queue_markers, "fetch_issue_body", lambda number: body)
@@ -140,6 +173,14 @@ def test_release_preserves_replacement_assignee(
     unassigned: list[str] = []
 
     def unassign(number: int, assignee: str) -> None:
+        """Unassign for this test.
+
+        Args:
+            number:
+                Number supplied to the test.
+            assignee:
+                Assignee supplied to the test.
+        """
         unassigned.append(assignee)
         issue["assignees"] = [
             item for item in issue["assignees"] if item["login"] != assignee
@@ -159,7 +200,12 @@ def test_release_preserves_replacement_assignee(
 def test_release_requires_one_matching_vm_marker(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Duplicate or mismatched VM markers cannot authorise cleanup."""
+    """Duplicate or mismatched VM markers cannot authorise cleanup.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     issue = _issue(
         body="request\n<!-- vm-id: other -->\n<!-- vm-id: local-vm -->",
         assignees=[{"login": "runner"}],
@@ -182,7 +228,12 @@ def test_release_requires_one_matching_vm_marker(
 def test_release_unassigns_only_the_local_login(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A stable local assignment may be conditionally removed."""
+    """A stable local assignment may be conditionally removed.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     body = "request\n<!-- vm-id: local-vm -->"
     monkeypatch.setattr(queue_markers, "fetch_issue_body", lambda number: body)
     issue = _issue(body=body, assignees=[{"login": "runner"}])
@@ -193,6 +244,14 @@ def test_release_unassigns_only_the_local_login(
     unassigned: list[str] = []
 
     def unassign(number: int, assignee: str) -> None:
+        """Unassign for this test.
+
+        Args:
+            number:
+                Number supplied to the test.
+            assignee:
+                Assignee supplied to the test.
+        """
         unassigned.append(assignee)
         issue["assignees"] = []
 
@@ -209,7 +268,12 @@ def test_release_unassigns_only_the_local_login(
 def test_signed_marker_trust_requires_the_real_secret(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Signed markers are accepted only with valid issue-bound HMAC evidence."""
+    """Signed markers are accepted only with valid issue-bound HMAC evidence.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     unsigned = queue_markers.append_community_marker(
         body="request", owner="coordinator", submission="accepted"
     )
@@ -225,7 +289,19 @@ def test_signed_marker_trust_requires_the_real_secret(
 
 
 def _signed_marker(body: str, issue_number: int, secret: str) -> str:
-    """Return a marker body with the production issue-bound HMAC."""
+    """Return a marker body with the production issue-bound HMAC.
+
+    Args:
+        body:
+            Body supplied to the test.
+        issue_number:
+            Issue number supplied to the test.
+        secret:
+            Secret supplied to the test.
+
+    Returns:
+        Marker body containing the generated signature.
+    """
     assert queue_markers.parse_community_marker(body) is not None
     payload = json.loads(body.split("v1 ", 1)[1].rsplit(" -->", 1)[0])
     encoded = json.dumps(
@@ -307,7 +383,12 @@ def test_unsigned_accepted_marker_is_not_a_terminal_submission() -> None:
 def test_vm_marker_manipulators_leave_active_community_marker_alone(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Claim and cleanup paths must both honour a broker lease."""
+    """Claim and cleanup paths must both honour a broker lease.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     body = queue_markers.append_community_marker(
         body="request", owner="coordinator", submission="active"
     )

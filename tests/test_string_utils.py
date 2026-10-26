@@ -36,7 +36,14 @@ from euroeval.string_utils import (
     ],
 )
 def test_clean_label_token_issue_examples(token: str, expected: str) -> None:
-    """Clean the exact label tokens reported in issue 2180."""
+    """Clean the exact label tokens reported in issue 2180.
+
+    Args:
+        token:
+            Token supplied to the test.
+        expected:
+            Expected value for this test case.
+    """
     assert clean_label_token(token) == expected
 
 
@@ -86,7 +93,14 @@ def test_extract_json_dict_from_string_non_string_keys_returns_none() -> None:
 def test_extract_json_dict_from_string_with_prefix_suffix(
     s: str, expected: dict
 ) -> None:
-    """Test JSON extraction from string with surrounding text."""
+    """Test JSON extraction from string with surrounding text.
+
+    Args:
+        s:
+            S supplied to the test.
+        expected:
+            Expected value for this test case.
+    """
     assert extract_json_dict_from_string(s=s) == expected
 
 
@@ -119,7 +133,16 @@ def test_extract_multiple_choice_labels_no_match_raises_error() -> None:
 def test_extract_multiple_choice_labels_with_labels(
     prompt: str, candidate_labels: list[str], expected: list[str]
 ) -> None:
-    """Test label extraction with provided candidate labels."""
+    """Test label extraction with provided candidate labels.
+
+    Args:
+        prompt:
+            Prompt supplied to the test.
+        candidate_labels:
+            Candidate labels supplied to the test.
+        expected:
+            Expected value for this test case.
+    """
     assert (
         extract_multiple_choice_labels(prompt=prompt, candidate_labels=candidate_labels)
         == expected
@@ -157,7 +180,12 @@ def test_find_label_logprob_start_uses_emitted_json_value() -> None:
     ids=["short_text", "long_text", "single_char_text", "empty_text"],
 )
 def test_scramble_and_unscramble_roundtrip(text: str) -> None:
-    """Test that scrambling and unscrambling restores original string."""
+    """Test that scrambling and unscrambling restores original string.
+
+    Args:
+        text:
+            Text supplied to the test.
+    """
     scrambled = scramble(text=text)
     unscrambled = unscramble(scrambled_text=scrambled)
     assert unscrambled == text
@@ -177,7 +205,12 @@ def test_scramble_deterministic_with_seed() -> None:
     ids=["short_text", "long_text", "single_char_text", "empty_text"],
 )
 def test_scrambling(text: str) -> None:
-    """Test that a text can be scrambled and unscrambled."""
+    """Test that a text can be scrambled and unscrambled.
+
+    Args:
+        text:
+            Text supplied to the test.
+    """
     scrambled = scramble(text=text)
     unscrambled = unscramble(scrambled_text=scrambled)
     assert unscrambled == text
@@ -216,7 +249,14 @@ def test_scrambling(text: str) -> None:
     ],
 )
 def test_split_model_id(model_id: str, expected: ModelIdComponents) -> None:
-    """Test that a model ID can be split into its components correctly."""
+    """Test that a model ID can be split into its components correctly.
+
+    Args:
+        model_id:
+            Model identifier used by the test.
+        expected:
+            Expected value for this test case.
+    """
     assert split_model_id(model_id=model_id) == expected
 
 

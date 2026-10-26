@@ -441,7 +441,11 @@ def generate(
 
     Returns:
         A list of dictionaries containing the test scores.
-    """
+
+    Raises:
+        InvalidBenchmark:
+            If every attempted iteration fails.
+    """  # noqa: DOC502
     # Set up the name of the model output cache. If we are testing then we save the
     # model outputs to a different cache and ensure that that cache is deleted before
     # the next test, to ensure that the tests are independent of each other

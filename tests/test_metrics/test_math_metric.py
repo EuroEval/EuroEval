@@ -28,7 +28,12 @@ class TestBailOut:
         ],
     )
     def test_structure_beyond_the_rewrite_is_unknown(self, text: str) -> None:
-        """Untranslatable input is reported as unknown instead of guessed."""
+        """Untranslatable input is reported as unknown instead of guessed.
+
+        Args:
+            text:
+                Text supplied to the test.
+        """
         assert _symbolically_equivalent(text, "1") is None
 
     def test_unknown_falls_back_to_text(self) -> None:
@@ -53,7 +58,14 @@ class TestIdentities:
     def test_a_rearranged_expression_matches(
         self, prediction: str, reference: str
     ) -> None:
-        """Order carries no meaning in a sum or a product."""
+        """Order carries no meaning in a sum or a product.
+
+        Args:
+            prediction:
+                Prediction supplied to the test.
+            reference:
+                Reference supplied to the test.
+        """
         assert _answer_matches(prediction, reference)
 
 
@@ -98,7 +110,12 @@ class TestLimits:
         ],
     )
     def test_pathological_input_is_refused_quickly(self, text: str) -> None:
-        """Pathological candidates are unknown, and unknown within milliseconds."""
+        """Pathological candidates are unknown, and unknown within milliseconds.
+
+        Args:
+            text:
+                Text supplied to the test.
+        """
         start = time.perf_counter()
         assert _symbolically_equivalent(text, "1") is None
         assert time.perf_counter() - start < 1.0
@@ -183,7 +200,14 @@ class TestSymbolicEquivalence:
         ],
     )
     def test_expressions_equal_their_values(self, left: str, right: str) -> None:
-        """An expression is compared as the value it denotes."""
+        """An expression is compared as the value it denotes.
+
+        Args:
+            left:
+                Left supplied to the test.
+            right:
+                Right supplied to the test.
+        """
         assert _symbolically_equivalent(left, right)
         assert _answer_matches(r"\boxed{" + left + "}", right)
 
@@ -200,7 +224,14 @@ class TestSymbolicEquivalence:
         ],
     )
     def test_nearby_values_stay_different(self, left: str, right: str) -> None:
-        """Exact values are never approximated, however close they look."""
+        """Exact values are never approximated, however close they look.
+
+        Args:
+            left:
+                Left supplied to the test.
+            right:
+                Right supplied to the test.
+        """
         assert not _symbolically_equivalent(left, right)
 
 
@@ -234,7 +265,14 @@ class TestWords:
     def test_a_single_word_is_a_name_and_names_are_case_sensitive(
         self, prediction: str, reference: str
     ) -> None:
-        """One word reaches SymPy as a name, where capitalisation counts."""
+        """One word reaches SymPy as a name, where capitalisation counts.
+
+        Args:
+            prediction:
+                Prediction supplied to the test.
+            reference:
+                Reference supplied to the test.
+        """
         assert not _answer_matches(prediction, reference)
 
     @pytest.mark.parametrize(
@@ -242,7 +280,14 @@ class TestWords:
         [("Ja er svaret", "ja er svaret"), ("Svaret er 42", "42")],
     )
     def test_prose_is_compared_as_text(self, prediction: str, reference: str) -> None:
-        """Several words are not a product of names, so they are compared as text."""
+        """Several words are not a product of names, so they are compared as text.
+
+        Args:
+            prediction:
+                Prediction supplied to the test.
+            reference:
+                Reference supplied to the test.
+        """
         assert _answer_matches(prediction, reference)
 
 
@@ -259,7 +304,16 @@ class TestWords:
 def test_a_named_equation_scores_the_value_it_names(
     prediction: str, reference: str, expected: bool
 ) -> None:
-    """An answer boxed as `x = 5` is the number 5, as Inspect AI also reads it."""
+    """An answer boxed as `x = 5` is the number 5, as Inspect AI also reads it.
+
+    Args:
+        prediction:
+            Prediction supplied to the test.
+        reference:
+            Reference supplied to the test.
+        expected:
+            Expected value for this test case.
+    """
     assert _answer_matches(prediction, reference) is expected
 
 
@@ -302,6 +356,12 @@ def test_metric_mean_and_empty_input() -> None:
 def _score(predictions: list[str], references: list[str]) -> float | None:
     """Call the metric with unused interface arguments set to None.
 
+    Args:
+        predictions:
+            Predictions supplied to the test.
+        references:
+            References supplied to the test.
+
     Returns:
         The metric score.
     """
@@ -316,5 +376,10 @@ def _score(predictions: list[str], references: list[str]) -> float | None:
 
 @pytest.mark.parametrize("prediction", ["x=" * 400 + "5", "1e999999999%"])
 def test_metric_scores_adversarial_predictions(prediction: str) -> None:
-    """Adversarial decimal and assignment inputs still produce a score."""
+    """Adversarial decimal and assignment inputs still produce a score.
+
+    Args:
+        prediction:
+            Prediction supplied to the test.
+    """
     assert isinstance(_score([prediction], ["5"]), float)

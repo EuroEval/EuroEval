@@ -194,7 +194,7 @@ def finetune_single_iteration(
             The dataset configuration.
         benchmark_config:
             The benchmark configuration.
-        dtype_override:
+        dtype_override (optional):
             An explicit data type to load the model weights in, taking precedence over
             the hardware-derived default. Only used when a new model is loaded (i.e.
             ``model`` is None), to force a full fp32 reload on the NaN-retry.
@@ -234,6 +234,14 @@ def finetune_single_iteration(
     if not benchmark_config.verbose:
 
         def no_logging(logs: dict[str, float], start_time: float | None = None) -> None:
+            """Suppress trainer logging when verbose output is disabled.
+
+            Args:
+                logs:
+                    The trainer log values, ignored by this function.
+                start_time (optional):
+                    The logging start time, if provided.
+            """
             return
 
         trainer.log = no_logging  # ty: ignore[invalid-assignment]
@@ -298,9 +306,9 @@ def get_training_args(
             unique random seed for the current iteration.
         dtype:
             The data type to use for the model weights.
-        batch_size:
+        batch_size (optional):
             The batch size to use for the current iteration, or None if the batch size
-            in the benchmark config should be used.
+            in the benchmark config should be used. Defaults to None.
 
     Returns:
         The training arguments for the current iteration.

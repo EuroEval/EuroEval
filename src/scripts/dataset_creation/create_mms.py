@@ -109,8 +109,10 @@ def create_uniform_distribution(
 
     Args:
         df: The input dataframe.
-        column: The name of the column to create a uniform label distribution for
-        random_state: The random state for reproducibility.
+        column (optional):
+            Column to balance. Defaults to ``label``.
+        random_state (optional):
+            Random state for reproducibility. Defaults to ``4242``.
 
     Returns:
         A dataframe with a uniform label distribution.

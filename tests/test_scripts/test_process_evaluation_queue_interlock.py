@@ -18,7 +18,12 @@ from src.scripts import process_evaluation_queue
 def test_claim_fails_closed_without_coordinator_mutex(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A shared queue cannot silently fall back to an uncoordinated claim."""
+    """A shared queue cannot silently fall back to an uncoordinated claim.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.delenv("VOLUNTEER_COORDINATOR_URL", raising=False)
     monkeypatch.delenv("WORKER_COORDINATOR_SECRET", raising=False)
     monkeypatch.delenv("VOLUNTEER_COORDINATOR_STANDALONE", raising=False)
@@ -31,7 +36,12 @@ def test_claim_fails_closed_without_coordinator_mutex(
 def test_claim_fails_closed_without_marker_secret(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A coordinator host must verify signed broker markers locally."""
+    """A coordinator host must verify signed broker markers locally.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setenv("VOLUNTEER_COORDINATOR_URL", "https://broker.test")
     monkeypatch.setenv("WORKER_COORDINATOR_SECRET", "coordinator-secret")
     monkeypatch.delenv("VOLUNTEER_MARKER_SECRET", raising=False)
@@ -44,7 +54,12 @@ def test_claim_fails_closed_without_marker_secret(
 def test_claim_recheck_excludes_issue_that_gains_community_marker(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A broker lease added after listing prevents a stale claim."""
+    """A broker lease added after listing prevents a stale claim.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     body = append_community_marker(
         body="request", owner="community", submission="submitted"
     )
@@ -60,7 +75,12 @@ def test_claim_recheck_excludes_issue_that_gains_community_marker(
 def test_claim_recheck_rejects_public_lease_added_after_candidate_snapshot(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The claim-time fetch fences a broker lease racing candidate discovery."""
+    """The claim-time fetch fences a broker lease racing candidate discovery.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setenv("VOLUNTEER_MARKER_SECRET", "test-marker-secret")
     current = _issue(5, _signed_public_marker(issue_number=5, language="el"))
     current["state"] = "open"
@@ -71,6 +91,12 @@ def test_claim_recheck_rejects_public_lease_added_after_candidate_snapshot(
 
 def _issue(number: int, body: str = "") -> dict[str, object]:
     """Build the minimal issue object used by candidate selection.
+
+    Args:
+        number:
+            Number supplied to the test.
+        body (optional):
+            Body supplied to the test. Defaults to ''.
 
     Returns:
         A minimal GitHub issue dictionary.
@@ -88,6 +114,14 @@ def _signed_public_marker(
     *, issue_number: int, language: str, status: str = "active"
 ) -> str:
     """Build valid issue-bound public marker evidence for queue tests.
+
+    Args:
+        issue_number:
+            Issue number supplied to the test.
+        language:
+            Language supplied to the test.
+        status (optional):
+            Status supplied to the test. Defaults to 'active'.
 
     Returns:
         A serialized issue-bound marker.
@@ -149,7 +183,16 @@ def _signed_public_marker(
 def test_claim_recheck_respects_github_assignee(
     monkeypatch: pytest.MonkeyPatch, assignees: list[dict[str, str]], expected: bool
 ) -> None:
-    """Claim rechecks accept only an unassigned or solely local issue."""
+    """Claim rechecks accept only an unassigned or solely local issue.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        assignees:
+            Assignees supplied to the test.
+        expected:
+            Expected value for this test case.
+    """
     monkeypatch.setattr(
         process_evaluation_queue,
         "gh_request",
@@ -165,7 +208,12 @@ def test_claim_recheck_respects_github_assignee(
 def test_coordinator_lock_is_renewed_and_released(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A held local lock renews its token and fences its release."""
+    """A held local lock renews its token and fences its release.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setenv("VOLUNTEER_COORDINATOR_URL", "https://broker.test")
     monkeypatch.setenv("WORKER_COORDINATOR_SECRET", "secret")
     monkeypatch.setenv("VOLUNTEER_MARKER_SECRET", "marker-secret")
@@ -180,6 +228,23 @@ def test_coordinator_lock_is_renewed_and_released(
         token: str | None = None,
         operation: str = "release",
     ) -> str:
+        """Request for this test.
+
+        Args:
+            url:
+                Url supplied to the test.
+            number:
+                Number supplied to the test.
+            secret:
+                Secret supplied to the test.
+            token (optional):
+                Token supplied to the test. Defaults to None.
+            operation (optional):
+                Operation supplied to the test. Defaults to 'release'.
+
+        Returns:
+            The value returned by the test helper.
+        """
         del number, secret
         calls.append((operation, token))
         return token or "lock-token"
@@ -197,7 +262,14 @@ def test_coordinator_lock_is_renewed_and_released(
 def test_local_claim_rechecks_cross_issue_public_work(
     monkeypatch: pytest.MonkeyPatch, status: str
 ) -> None:
-    """A new public reservation on another issue fences a stale local candidate."""
+    """A new public reservation on another issue fences a stale local candidate.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        status:
+            Status supplied to the test.
+    """
     monkeypatch.setenv("VOLUNTEER_MARKER_SECRET", "test-marker-secret")
     issue = _issue(1)
     other = _issue(
@@ -252,7 +324,12 @@ def test_local_queue_code_has_no_coordinator_login_setting() -> None:
 def test_local_work_is_fenced_after_manual_reassignment(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A replacement assignee prevents publishing results from old local work."""
+    """A replacement assignee prevents publishing results from old local work.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     issue = {
         "state": "open",
         "body": "<!-- vm-id: local-vm -->",
@@ -282,7 +359,12 @@ def test_local_work_is_fenced_after_manual_reassignment(
 def test_public_lease_language_blocks_local_candidate_collision(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A signed public lease protects its language across unassigned issues."""
+    """A signed public lease protects its language across unassigned issues.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     monkeypatch.setenv("VOLUNTEER_MARKER_SECRET", "test-marker-secret")
     issues = [
         _issue(1, _signed_public_marker(issue_number=1, language="el")),
@@ -326,7 +408,12 @@ def test_public_lease_language_blocks_local_candidate_collision(
 def test_queue_candidates_exclude_active_community_marker(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Candidate filtering does not trust an issue with a broker lease."""
+    """Candidate filtering does not trust an issue with a broker lease.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     marker_body = append_community_marker(
         body="request", owner="community", submission="active"
     ).replace("} -->", ',"signature":"signed"} -->')
@@ -356,11 +443,27 @@ def test_queue_candidates_exclude_active_community_marker(
 def test_queue_candidates_paginate_past_first_hundred(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """An issue on page two is considered when page one is full."""
+    """An issue on page two is considered when page one is full.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     pages = {1: [_issue(number) for number in range(1, 101)], 2: [_issue(101)]}
     requested_pages: list[int] = []
 
     def fake_request(path: str, *, params: dict[str, str]) -> list[dict[str, object]]:
+        """Fake request for this test.
+
+        Args:
+            path:
+                Path supplied to the test.
+            params:
+                Params supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         requested_pages.append(int(params["page"]))
         return pages[int(params["page"])]
 
@@ -388,7 +491,12 @@ def test_queue_candidates_paginate_past_first_hundred(
 def test_queue_candidates_respect_assignee_authority(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Only unassigned issues enter a fresh local queue claim."""
+    """Only unassigned issues enter a fresh local queue claim.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     issues = [_issue(1), _issue(2), _issue(3)]
     issues[1]["assignees"] = [{"login": "runner"}]
     issues[2]["assignees"] = [{"login": "manual-owner"}]
@@ -417,7 +525,12 @@ def test_queue_candidates_respect_assignee_authority(
 def test_reclaim_keeps_accepted_marker_before_results_ready(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """An accepted broker decision protects an assigned issue before labelling."""
+    """An accepted broker decision protects an assigned issue before labelling.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     secret = "marker-secret"
     marker = {
         "protocol_version": "volunteer-worker/v1",
@@ -467,6 +580,19 @@ def test_reclaim_keeps_accepted_marker_before_results_ready(
     )
 
     def release(*, number: int, vm_id: str, assignee: str) -> bool:
+        """Release for this test.
+
+        Args:
+            number:
+                Number supplied to the test.
+            vm_id:
+                Vm id supplied to the test.
+            assignee:
+                Assignee supplied to the test.
+
+        Returns:
+            The value returned by the test helper.
+        """
         del vm_id, assignee
         released.append(number)
         return True
@@ -483,7 +609,12 @@ def test_reclaim_keeps_accepted_marker_before_results_ready(
 def test_unsigned_public_marker_fails_closed_for_unassigned_issue(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Unsigned public ownership cannot authorize an unassigned queue candidate."""
+    """Unsigned public ownership cannot authorize an unassigned queue candidate.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     payload = {
         "protocol_version": "volunteer-worker/v1",
         "coordinator": "community",

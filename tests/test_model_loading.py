@@ -19,6 +19,10 @@ def test_load_dummy_model(benchmark_config: BenchmarkConfig) -> None:
 
     Unlike the other model types, this needs no GPU or HF_TOKEN, since it never
     downloads or runs any real model.
+
+    Args:
+        benchmark_config:
+            Benchmark configuration exercised by the test.
     """
     model_config = get_model_config(model_id="dummy", benchmark_config=benchmark_config)
     model = load_model(
@@ -42,7 +46,14 @@ def test_load_dummy_model(benchmark_config: BenchmarkConfig) -> None:
 def test_load_generative_model(
     generative_model_id: str, benchmark_config: BenchmarkConfig
 ) -> None:
-    """Test loading a generative model."""
+    """Test loading a generative model.
+
+    Args:
+        generative_model_id:
+            Generative model id supplied to the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+    """
     model_config = get_model_config(
         model_id=generative_model_id, benchmark_config=benchmark_config
     )
@@ -69,7 +80,14 @@ def test_load_generative_model(
 def test_load_non_generative_model(
     encoder_model_id: str, benchmark_config: BenchmarkConfig
 ) -> None:
-    """Test loading a non-generative model."""
+    """Test loading a non-generative model.
+
+    Args:
+        encoder_model_id:
+            Encoder model id supplied to the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+    """
     model_config = get_model_config(
         model_id=encoder_model_id, benchmark_config=benchmark_config
     )
@@ -96,7 +114,14 @@ def test_load_non_generative_model(
 def test_load_non_generative_model_with_generative_data(
     encoder_model_id: str, benchmark_config: BenchmarkConfig
 ) -> None:
-    """Test loading a non-generative model with generative data."""
+    """Test loading a non-generative model with generative data.
+
+    Args:
+        encoder_model_id:
+            Encoder model id supplied to the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+    """
     model_config = get_model_config(
         model_id=encoder_model_id, benchmark_config=benchmark_config
     )

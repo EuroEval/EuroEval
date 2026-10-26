@@ -279,7 +279,11 @@ class IssueDiff:
 
     @property
     def is_empty(self) -> bool:
-        """Whether the diff has no entries."""
+        """Whether the diff has no entries.
+
+        Returns:
+            ``True`` when no models were added, removed, or changed.
+        """
         return not (self.added or self.removed or self.flag_changes)
 
 
@@ -295,6 +299,9 @@ _MODELS_MARKER = "models:"
 
 def _format_languages(model: CoreModel) -> str:
     """Render the aggregate coverage for the issue table.
+
+    Args:
+        model: Core model whose language coverage is being formatted.
 
     Returns:
         The aggregate language label.
@@ -384,10 +391,10 @@ def _gh_request(
     Args:
         path:
             Path component, e.g. ``/repos/owner/repo/issues/1186``.
-        method:
-            HTTP method.
-        payload:
-            JSON-serializable body for write methods.
+        method (optional):
+            HTTP method; defaults to ``"GET"``.
+        payload (optional):
+            Optional JSON-serializable body for write methods; defaults to ``None``.
         token:
             GitHub token with `issues: write`.
 

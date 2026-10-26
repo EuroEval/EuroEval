@@ -56,10 +56,12 @@ def load_ud_pos(
             The URL of the validation data.
         test_url:
             The URL of the test data.
-        doc_process_fn:
-            A function to apply to each document before parsing it.
-        filter_source:
-            If not `None`, only include entries with this source in the dataset.
+        doc_process_fn (optional):
+            Function applied to each document before parsing. Defaults to the identity
+            function.
+        filter_source (optional):
+            If provided, only include entries containing this source. Defaults to
+            ``None``.
 
     Returns:
         The dataframes, stored in the keys `train`, `val` and `test`.
@@ -619,10 +621,12 @@ def _load_split(
 
     Args:
         lines: The lines of the file to process.
-        filter_source:
-            If not `None`, only include entries with this source in the dataset.
-        doc_process_fn:
-            A function to apply to each document before parsing it.
+        filter_source (optional):
+            If provided, only include entries containing this source. Defaults to
+            ``None``.
+        doc_process_fn (optional):
+            Function applied to each document before parsing. Defaults to the identity
+            function.
 
     Returns:
         The dataframe for the given split.
@@ -765,6 +769,15 @@ def load_svdt_pos() -> dict[str, pd.DataFrame]:
 
     # Define document processing function
     def process_document(doc: str) -> str:
+        """Normalise common abbreviations in a Swedish document.
+
+        Args:
+            doc:
+                Document text to normalise.
+
+        Returns:
+            Text with spaced abbreviation fragments replaced by standard forms.
+        """
         doc = (
             doc.replace(" s k", " s.k.")
             .replace("S k", "S.k.")

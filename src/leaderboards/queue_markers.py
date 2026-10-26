@@ -26,6 +26,17 @@ logger = logging.getLogger(__name__)
 
 
 def _matching_vm_marker(body: str, vm_id: str) -> bool:
+    """Check whether the body contains exactly this VM's marker.
+
+    Args:
+        body:
+            Issue body to inspect.
+        vm_id:
+            Expected VM identifier.
+
+    Returns:
+        Whether exactly one marker exists and matches ``vm_id``.
+    """
     matches = list(VM_MARKER_RE.finditer(body))
     return len(matches) == 1 and matches[0].group(1) == vm_id
 
@@ -48,6 +59,14 @@ _COMMUNITY_MARKER_CANDIDATE_RE = re.compile(r"<!--[ \t]*euroeval-volunteer-worke
 def append_community_marker(body: str, owner: str, submission: str) -> str:
     """Append a canonical marker for fixture and integration callers.
 
+    Args:
+        body:
+            Existing issue body.
+        owner:
+            Marker owner, either ``community`` or ``coordinator``.
+        submission:
+            Submission state supported by the marker protocol.
+
     Returns:
         The updated issue body.
 
@@ -69,7 +88,14 @@ def append_community_marker(body: str, owner: str, submission: str) -> str:
 
 
 def clear_vm_marker(number: int, vm_id: str) -> None:
-    """Remove this VM's marker while preserving active broker ownership."""
+    """Remove this VM's marker while preserving active broker ownership.
+
+    Args:
+        number:
+            GitHub issue number.
+        vm_id:
+            Identifier of the VM whose marker may be removed.
+    """
     body = fetch_issue_body(number=number)
     if (
         _COMMUNITY_MARKER_CANDIDATE_RE.search(body)
@@ -87,7 +113,17 @@ def clear_vm_marker(number: int, vm_id: str) -> None:
 
 @dataclasses.dataclass(frozen=True)
 class CommunityMarker:
-    """The broker's canonical ownership marker."""
+    """Represent the broker's canonical ownership marker.
+
+    Attributes:
+        protocol_version: Marker protocol version.
+        owner: Coordinator or community owning the marker.
+        submission: Overall submission state.
+        leases: Validated worker lease records.
+        submissions: Validated result submission records.
+        completed_languages: Languages marked complete.
+        signature: Optional issue-bound marker signature.
+    """
 
     protocol_version: int
     owner: str
@@ -99,6 +135,17 @@ class CommunityMarker:
 
 
 def _trusted_issue_marker(number: int, body: str) -> CommunityMarker | None:
+    """Return a marker trusted for the given issue, if one is present.
+
+    Args:
+        number:
+            GitHub issue number used to validate a signature.
+        body:
+            Issue body containing the candidate marker.
+
+    Returns:
+        A trusted marker, or ``None`` if absent, invalid, or untrusted.
+    """
     marker = parse_community_marker(body)
     if marker is None:
         return None
@@ -120,6 +167,17 @@ def parse_community_marker(
     require_signature: bool = False,
 ) -> CommunityMarker | None:
     """Parse exactly one canonical marker, failing closed on drift.
+
+    Args:
+        body:
+            Issue body to parse.
+        issue_number (optional):
+            Issue number for signature validation.
+        secret (optional):
+            Secret used to verify the marker signature.
+        require_signature (optional):
+            Whether a valid signature is mandatory.
+            Defaults to ``False``.
 
     Returns:
         The marker, or ``None`` when it is absent or invalid.
@@ -304,6 +362,15 @@ def parse_community_marker(
 
 
 def _expiry_active(value: str) -> bool:
+    """Check whether an ISO-formatted expiry timestamp is in the future.
+
+    Args:
+        value:
+            Expiry timestamp, including an optional UTC ``Z`` suffix.
+
+    Returns:
+        Whether the timestamp is valid and later than the current UTC time.
+    """
     try:
         return dt.datetime.fromisoformat(
             value.replace("Z", "+00:00")
@@ -313,7 +380,15 @@ def _expiry_active(value: str) -> bool:
 
 
 def issue_has_active_queue_ownership(body: str) -> bool:
-    """Return whether a valid, unexpired coordinator marker protects an issue."""
+    """Return whether a valid, unexpired coordinator marker protects an issue.
+
+    Args:
+        body:
+            Issue body to inspect.
+
+    Returns:
+        Whether active queue ownership is recorded.
+    """
     marker = parse_community_marker(body)
     return (
         marker is not None
@@ -330,7 +405,15 @@ def issue_has_active_queue_ownership(body: str) -> bool:
 
 
 def issue_has_community_marker(body: str) -> bool:
-    """Return whether an issue contains any broker marker candidate."""
+    """Return whether an issue contains any broker marker candidate.
+
+    Args:
+        body:
+            Issue body to inspect.
+
+    Returns:
+        Whether the marker prefix occurs in the body.
+    """
     return bool(_COMMUNITY_MARKER_CANDIDATE_RE.search(body))
 
 
@@ -342,6 +425,17 @@ def issue_has_terminal_queue_submission(
     Rejected markers remain auditable even when their signature cannot be
     verified. Accepted markers can protect local queue ownership only when
     their issue-bound signature is verified.
+
+    Args:
+        body:
+            Issue body to inspect.
+        issue_number (optional):
+            Issue number required to verify accepted
+            marker signatures.
+
+    Returns:
+        Whether the marker records a rejected submission or a trusted accepted
+        submission.
     """
     marker = parse_community_marker(body)
     if marker is None:
@@ -359,8 +453,10 @@ def public_marker_protected_languages(body: str, *, issue_number: int) -> set[st
     """Return languages protected by trusted public leases or submissions.
 
     Args:
-        body: The issue body containing the broker marker.
-        issue_number: GitHub issue number bound into the marker signature.
+        body:
+            Issue body containing the broker marker.
+        issue_number:
+            GitHub issue number bound into the marker signature.
 
     Returns:
         Languages with active public leases or submitted/accepted public results.
@@ -385,6 +481,14 @@ def public_marker_protected_languages(body: str, *, issue_number: int) -> set[st
 
 def release_issue_if_owned(number: int, vm_id: str, assignee: str) -> bool:
     """Release the proven local owner before clearing its VM marker.
+
+    Args:
+        number:
+            GitHub issue number.
+        vm_id:
+            Identifier of the VM whose marker must be cleared.
+        assignee:
+            GitHub login of the local worker to unassign.
 
     Returns:
         Whether the owner was unassigned (or already absent) and the marker was
@@ -466,6 +570,12 @@ def release_issue_if_owned(number: int, vm_id: str, assignee: str) -> bool:
 def set_vm_marker(number: int, vm_id: str) -> bool:
     """Stamp an issue unless a valid broker lease owns it.
 
+    Args:
+        number:
+            GitHub issue number.
+        vm_id:
+            Identifier to write in the local VM marker.
+
     Returns:
         Whether the marker was written.
     """
@@ -490,19 +600,47 @@ def set_vm_marker(number: int, vm_id: str) -> bool:
 
 
 def remove_community_marker(body: str) -> str:
-    """Return ``body`` without its recognised canonical marker."""
+    """Return ``body`` without its recognised canonical marker.
+
+    Args:
+        body:
+            Issue body from which to remove the marker.
+
+    Returns:
+        The body with a valid canonical marker removed, if present.
+    """
     if parse_community_marker(body) is None:
         return body
     return COMMUNITY_MARKER_RE.sub("", body, count=1).rstrip() + "\n"
 
 
 def trusted_community_marker(number: int, body: str) -> CommunityMarker | None:
-    """Return an issue-bound marker only when its signature is trusted."""
+    """Return an issue-bound marker only when its signature is trusted.
+
+    Args:
+        number:
+            GitHub issue number bound into a signed marker.
+        body:
+            Issue body containing the marker.
+
+    Returns:
+        The trusted marker, or ``None`` if it is absent or untrusted.
+    """
     return _trusted_issue_marker(number=number, body=body)
 
 
 def vm_marker_matches(number: int, vm_id: str) -> bool:
-    """Return whether the local VM marker is still safe to touch."""
+    """Return whether the local VM marker is still safe to touch.
+
+    Args:
+        number:
+            GitHub issue number.
+        vm_id:
+            Expected VM identifier.
+
+    Returns:
+        Whether the marker matches and no active queue ownership exists.
+    """
     body = fetch_issue_body(number=number)
     if issue_has_active_queue_ownership(body):
         return False

@@ -111,20 +111,20 @@ def _make_eee_record(
     """Helper to create a valid EEE-format record for testing.
 
     Args:
-        model_id:
-            Model identifier.
-        dataset:
-            Dataset name.
-        validation_split:
-            Validation split flag.
-        few_shot:
-            Few-shot flag.
-        version:
-            EuroEval version.
-        timestamp:
-            Retrieved timestamp as string integer.
-        score:
-            Test score.
+        model_id (optional):
+            Model identifier. Defaults to "test/model".
+        dataset (optional):
+            Dataset name. Defaults to "dataset1".
+        validation_split (optional):
+            Validation split flag. Defaults to False.
+        few_shot (optional):
+            Few-shot flag. Defaults to False.
+        version (optional):
+            EuroEval version. Defaults to "1.0.0".
+        timestamp (optional):
+            Retrieved timestamp as string integer. Defaults to "100".
+        score (optional):
+            Test score. Defaults to 0.5.
 
     Returns:
         A valid EEE-format record dict.
@@ -162,7 +162,14 @@ class TestLoadRawResults:
     def test_canary_conflicts_are_not_hidden_by_storage_deduplication(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Private scoring receives every candidate for an auxiliary identity."""
+        """Private scoring receives every candidate for an auxiliary identity.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         monkeypatch.setattr(
             "leaderboards.result_loading.download_missing_bucket_files", lambda: 0
         )
@@ -188,7 +195,14 @@ class TestLoadRawResults:
     def test_dedups_duplicate_identities(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Should deduplicate records with same identity, keeping newest."""
+        """Should deduplicate records with same identity, keeping newest.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         monkeypatch.setattr(
             "leaderboards.result_loading.download_missing_bucket_files", lambda: 0
         )
@@ -225,7 +239,14 @@ class TestLoadRawResults:
     def test_leaderboard_filter_hides_auxiliary_and_selected_models(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Retain source files while hiding them from leaderboard consumers."""
+        """Retain source files while hiding them from leaderboard consumers.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         monkeypatch.setattr(
             "leaderboards.result_loading.download_missing_bucket_files", lambda: 0
         )
@@ -254,7 +275,14 @@ class TestLoadRawResults:
     def test_loads_from_tree_structure(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Should load records from the tree structure."""
+        """Should load records from the tree structure.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         # Mock download_missing_bucket_files to do nothing
         monkeypatch.setattr(
             "leaderboards.result_loading.download_missing_bucket_files", lambda: 0
@@ -279,7 +307,14 @@ class TestLoadRawResults:
     def test_loads_staging_jsonl_file(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Should also load records from NEW_RESULTS_PATH staging file."""
+        """Should also load records from NEW_RESULTS_PATH staging file.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         monkeypatch.setattr(
             "leaderboards.result_loading.download_missing_bucket_files", lambda: 0
         )
@@ -319,7 +354,14 @@ class TestLoadRawResults:
     def test_raises_on_no_results_after_sync(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        """Should raise FileNotFoundError if sync produces no files."""
+        """Should raise FileNotFoundError if sync produces no files.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
         monkeypatch.setattr(
             "leaderboards.result_loading.download_missing_bucket_files", lambda: 0
         )

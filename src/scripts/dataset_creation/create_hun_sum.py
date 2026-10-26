@@ -59,7 +59,8 @@ def main() -> None:
         """Map the dataset to have the text and target_text columns.
 
         Args:
-            sample: A sample from the dataset.
+            sample:
+                A sample from the dataset.
 
         Returns:
             A sample with the text and target_text columns.
@@ -233,7 +234,12 @@ def _text_summary_alignment(row: pd.Series) -> bool:
 
 
 def save_cache(cache: dict) -> None:
-    """Save cache to CACHE_FILE."""
+    """Save the summary validation cache to ``CACHE_FILE``.
+
+    Args:
+        cache:
+            The summary-to-validation-result mapping to persist.
+    """
     with open(CACHE_FILE, "w") as cache_file:
         json.dump(cache, cache_file, indent=4)
 

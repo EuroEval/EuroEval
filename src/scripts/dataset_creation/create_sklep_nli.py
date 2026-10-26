@@ -37,6 +37,10 @@ def main() -> None:
 def process_dataset(raw_dataset: DatasetDict) -> DatasetDict:
     """Convert SKLEP NLI pairs to EuroEval's text and label schema.
 
+    Args:
+        raw_dataset:
+            Source dataset dictionary with train, validation, and test splits.
+
     Returns:
         The processed dataset with independently capped splits.
     """
@@ -57,6 +61,10 @@ def process_dataset(raw_dataset: DatasetDict) -> DatasetDict:
 
 def _process_split(source: Dataset) -> Dataset:
     """Convert one NLI source split.
+
+    Args:
+        source:
+            Source split containing premise, hypothesis, and label columns.
 
     Returns:
         The processed split.

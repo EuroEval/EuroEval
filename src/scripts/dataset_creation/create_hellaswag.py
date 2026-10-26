@@ -67,7 +67,15 @@ def main() -> None:
         ]
 
         def is_repetitive(text: str) -> bool:
-            """Return True if the text is repetitive."""
+            """Check whether any token occurs too many times.
+
+            Args:
+                text:
+                    The text to check.
+
+            Returns:
+                Whether the most frequent token exceeds the repetition limit.
+            """
             max_repetitions = max(Counter(text.split()).values())
             return max_repetitions > MAX_REPETITIONS
 

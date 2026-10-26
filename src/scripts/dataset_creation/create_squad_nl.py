@@ -80,6 +80,15 @@ def main() -> None:
 
     # Extract information on which examples contain an answer
     def has_answer(example: dict) -> bool:
+        """Check whether an example contains an answer.
+
+        Args:
+            example (dict):
+                Example containing answer start offsets.
+
+        Returns:
+            Whether the example has a valid answer offset.
+        """
         return len(example["answer_start"]) > 0 and example["answer_start"][0] >= 0
 
     train_has_answer: pd.Series = train_df.answers.map(has_answer)

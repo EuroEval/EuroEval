@@ -18,9 +18,17 @@ class BucketStore:
     def __init__(self, api: BucketApi, token: str, staging_bucket: str) -> None:
         """Initialise and verify the private staging bucket.
 
+        Args:
+                    api:
+                        Api.
+                    token:
+                        Token.
+                    staging_bucket:
+                        Staging bucket.
+
         Raises:
-            PublicStagingError:
-                If the staging bucket is public.
+                    PublicStagingError:
+                        If the staging bucket is public.
         """
         self.api = api
         self.token = token
@@ -32,8 +40,12 @@ class BucketStore:
     def list_decisions(self, submission_id: str) -> list[str]:
         """List all legacy and content-addressed decision objects.
 
+        Args:
+                    submission_id:
+                        Submission id.
+
         Returns:
-            Sorted decision object paths.
+                    Sorted decision object paths.
         """
         prefix = f"{_DECISION_PREFIX}/{submission_id}"
         entries = self.api.list_bucket_tree(
@@ -69,8 +81,14 @@ class BucketStore:
     def read_optional(self, bucket: str, path: str) -> bytes | None:
         """Read an object when present.
 
+        Args:
+                    bucket:
+                        Bucket.
+                    path:
+                        Path.
+
         Returns:
-            Exact object bytes, or ``None`` when absent.
+                    Exact object bytes, or ``None`` when absent.
         """
         entries = list(self.api.get_bucket_paths_info(bucket, [path], token=self.token))
         if not entries:
@@ -80,12 +98,18 @@ class BucketStore:
     def read(self, bucket: str, path: str) -> bytes:
         """Download one exact bucket object.
 
+        Args:
+                    bucket:
+                        Bucket.
+                    path:
+                        Path.
+
         Returns:
-            Exact object bytes.
+                    Exact object bytes.
 
         Raises:
-            ReviewError:
-                If the object cannot be found.
+                    ReviewError:
+                        If the object cannot be found.
         """
         with tempfile.TemporaryDirectory(prefix="euroeval-review-") as directory:
             target = Path(directory) / "object"
@@ -97,7 +121,16 @@ class BucketStore:
             return target.read_bytes()
 
     def write_verified(self, bucket: str, path: str, content: bytes) -> None:
-        """Upload bytes and verify destination metadata and content."""
+        """Upload bytes and verify destination metadata and content.
+
+        Args:
+            bucket:
+                Bucket.
+            path:
+                Path.
+            content:
+                Content.
+        """
         self.api.batch_bucket_files(
             bucket_id=bucket, add=[(content, path)], token=self.token
         )
@@ -106,9 +139,17 @@ class BucketStore:
     def verify(self, bucket: str, path: str, content: bytes) -> None:
         """Verify an existing object's metadata, content, and digest.
 
+        Args:
+                    bucket:
+                        Bucket.
+                    path:
+                        Path.
+                    content:
+                        Content.
+
         Raises:
-            ReviewError:
-                If the object does not match the expected bytes.
+                    ReviewError:
+                        If the object does not match the expected bytes.
         """
         entries = list(self.api.get_bucket_paths_info(bucket, [path], token=self.token))
         if len(entries) != 1:
@@ -122,4 +163,12 @@ class BucketStore:
 
 
 def _digest(content: bytes) -> str:
+    """Return the lowercase hexadecimal SHA-256 digest of bytes.
+
+    Args:
+        content: Bytes to hash.
+
+    Returns:
+        A 64-character lowercase hexadecimal SHA-256 digest.
+    """
     return hashlib.sha256(content).hexdigest()

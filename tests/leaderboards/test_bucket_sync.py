@@ -19,7 +19,14 @@ class TestMergeResults:
     def test_merge_results_dedups_by_identity(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test that merge_results deduplicates by canonical result identity."""
+        """Test that merge_results deduplicates by canonical result identity.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         results_dir = tmp_path / "results"
         results_dir.mkdir()
         results_file = tmp_path / "merged.jsonl"
@@ -68,7 +75,14 @@ class TestMergeResults:
     def test_merge_results_handles_empty_tree(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test that merge_results handles empty results directory."""
+        """Test that merge_results handles empty results directory.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         results_dir = tmp_path / "results"
         results_dir.mkdir()
         results_file = tmp_path / "merged.jsonl"
@@ -83,7 +97,14 @@ class TestMergeResults:
     def test_merge_results_preserves_existing_jsonl(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test that merge_results preserves existing JSONL records."""
+        """Test that merge_results preserves existing JSONL records.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         results_dir = tmp_path / "results"
         results_dir.mkdir()
         results_file = tmp_path / "merged.jsonl"
@@ -131,7 +152,14 @@ class TestMergeResults:
     def test_merge_results_reads_json_tree(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test that merge_results reads from the JSON tree structure."""
+        """Test that merge_results reads from the JSON tree structure.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         results_dir = tmp_path / "results"
         results_dir.mkdir()
         results_file = tmp_path / "merged.jsonl"
@@ -175,7 +203,14 @@ class TestMergeResults:
     def test_merge_results_skips_invalid_json(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test that merge_results skips files with invalid JSON."""
+        """Test that merge_results skips files with invalid JSON.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         results_dir = tmp_path / "results"
         results_dir.mkdir()
         results_file = tmp_path / "merged.jsonl"
@@ -210,7 +245,14 @@ class TestMergeResults:
     def test_merge_results_tree_overrides_jsonl(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test that tree records override JSONL records with same identity."""
+        """Test that tree records override JSONL records with same identity.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         results_dir = tmp_path / "results"
         results_dir.mkdir()
         results_file = tmp_path / "merged.jsonl"
@@ -260,7 +302,14 @@ class TestSyncBucket:
     def test_sync_bucket_calls_hf_api_with_token(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test that sync_bucket calls HfApi with the resolved token."""
+        """Test that sync_bucket calls HfApi with the resolved token.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         monkeypatch.setattr(bucket_sync, "RESULTS_DIR", tmp_path)
         monkeypatch.setattr(bucket_sync, "HF_RESULTS_BUCKET", "test/results")
 
@@ -286,6 +335,12 @@ class TestSyncBucket:
         In the new per-record JSON tree model, each logical result has a unique
         path, so sync should not remove local files. This test verifies the
         union semantics are preserved.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
         """
         # Create a temporary results directory
         results_dir = tmp_path / "results"
@@ -311,6 +366,20 @@ class TestSyncBucket:
             **kwargs,
         ) -> None:
             # Simulate sync removing the local file
+            """Mock sync for this test.
+
+            Args:
+                source:
+                    Source supplied to the test.
+                dest:
+                    Dest supplied to the test.
+                token (optional):
+                    Token supplied to the test. Defaults to None.
+                ignore_times (optional):
+                    Ignore times supplied to the test. Defaults to False.
+                kwargs:
+                    Kwargs supplied to the test.
+            """
             if local_file.exists():
                 local_file.unlink()
 
@@ -330,7 +399,14 @@ class TestSyncBucket:
     def test_sync_bucket_raises_on_sync_failure(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test that sync_bucket raises HfHubHTTPError on sync failure."""
+        """Test that sync_bucket raises HfHubHTTPError on sync failure.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         monkeypatch.setattr(bucket_sync, "RESULTS_DIR", tmp_path)
         monkeypatch.setattr(bucket_sync, "HF_RESULTS_BUCKET", "test/results")
 
@@ -348,7 +424,12 @@ class TestSyncBucket:
     def test_sync_bucket_raises_without_hf_token(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test that sync_bucket raises RuntimeError when HF_TOKEN is missing."""
+        """Test that sync_bucket raises RuntimeError when HF_TOKEN is missing.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         monkeypatch.setenv("HF_TOKEN", "")
         monkeypatch.delenv("HF_TOKEN", raising=False)
 
@@ -363,7 +444,14 @@ class TestUploadResultsToBucket:
     def test_sync_bucket_collision_raises(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test that distinct-identity path collision raises an error."""
+        """Test that distinct-identity path collision raises an error.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         results_dir = tmp_path / "results"
         results_dir.mkdir()
 
@@ -391,6 +479,20 @@ class TestUploadResultsToBucket:
         ) -> None:
             # Record with different identity but same sanitised path
             # "model_a" also sanitises to "model_a" (no change)
+            """Mock sync for this test.
+
+            Args:
+                source:
+                    Source supplied to the test.
+                dest:
+                    Dest supplied to the test.
+                token (optional):
+                    Token supplied to the test. Defaults to None.
+                ignore_times (optional):
+                    Ignore times supplied to the test. Defaults to False.
+                kwargs:
+                    Kwargs supplied to the test.
+            """
             bucket_record = {
                 "model_info": {"id": "model_a"},  # Different from "model/a"
                 "eval_library": {
@@ -412,7 +514,14 @@ class TestUploadResultsToBucket:
     def test_sync_bucket_locally_newer_wins(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test that locally-newer same-identity wins over older bucket."""
+        """Test that locally-newer same-identity wins over older bucket.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         results_dir = tmp_path / "results"
         results_dir.mkdir()
 
@@ -439,6 +548,20 @@ class TestUploadResultsToBucket:
             **kwargs,
         ) -> None:
             # Create an older bucket record
+            """Mock sync for this test.
+
+            Args:
+                source:
+                    Source supplied to the test.
+                dest:
+                    Dest supplied to the test.
+                token (optional):
+                    Token supplied to the test. Defaults to None.
+                ignore_times (optional):
+                    Ignore times supplied to the test. Defaults to False.
+                kwargs:
+                    Kwargs supplied to the test.
+            """
             older_record = {
                 "model_info": {"id": "test/model"},
                 "eval_library": {
@@ -463,7 +586,14 @@ class TestUploadResultsToBucket:
     def test_sync_bucket_restores_local_only_file(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test that sync_bucket restores a local-only file that was removed by sync."""
+        """Test that sync_bucket restores a local-only file that was removed by sync.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         results_dir = tmp_path / "results"
         results_dir.mkdir()
 
@@ -489,6 +619,20 @@ class TestUploadResultsToBucket:
             ignore_times: bool = False,
             **kwargs,
         ) -> None:
+            """Mock sync for this test.
+
+            Args:
+                source:
+                    Source supplied to the test.
+                dest:
+                    Dest supplied to the test.
+                token (optional):
+                    Token supplied to the test. Defaults to None.
+                ignore_times (optional):
+                    Ignore times supplied to the test. Defaults to False.
+                kwargs:
+                    Kwargs supplied to the test.
+            """
             if local_file.exists():
                 local_file.unlink()
 
@@ -507,7 +651,14 @@ class TestUploadResultsToBucket:
     def test_upload_results_removes_stale_jsonl(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test that upload_results_to_bucket removes stale root *.jsonl files."""
+        """Test that upload_results_to_bucket removes stale root *.jsonl files.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         results_dir = tmp_path / "results"
         results_file = tmp_path / "results.jsonl"
 
@@ -543,7 +694,14 @@ class TestUploadResultsToBucket:
     def test_upload_results_to_bucket_creates_tree_layout(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test that upload_results_to_bucket creates the JSON tree layout."""
+        """Test that upload_results_to_bucket creates the JSON tree layout.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         results_dir = tmp_path / "results"
         results_file = tmp_path / "results.jsonl"
 
@@ -573,7 +731,14 @@ class TestUploadResultsToBucket:
     def test_upload_results_to_bucket_drops_invalid_model(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test that upload_results_to_bucket drops records without valid model."""
+        """Test that upload_results_to_bucket drops records without valid model.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         results_dir = tmp_path / "results"
         results_file = tmp_path / "results.jsonl"
 
@@ -620,6 +785,12 @@ class TestUploadResultsToBucket:
 
         Verifies that on collision, NO filesystem mutation occurs - pre-existing
         files in RESULTS_DIR remain intact.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
         """
         results_dir = tmp_path / "results"
         results_file = tmp_path / "results.jsonl"
@@ -678,7 +849,14 @@ class TestUploadResultsToBucket:
     def test_upload_results_to_bucket_raises_on_sync_failure(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test that upload_results_to_bucket raises on sync failure."""
+        """Test that upload_results_to_bucket raises on sync failure.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         results_dir = tmp_path / "results"
         results_file = tmp_path / "results.jsonl"
 
@@ -713,7 +891,14 @@ class TestUploadResultsToBucket:
     def test_upload_results_to_bucket_raises_without_hf_token(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test that upload_results_to_bucket raises without HF_TOKEN."""
+        """Test that upload_results_to_bucket raises without HF_TOKEN.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+        """
         results_file = tmp_path / "results.jsonl"
         results_file.write_text("{}\n", encoding="utf-8")
 
@@ -730,7 +915,16 @@ class TestUploadResultsToBucket:
         monkeypatch: pytest.MonkeyPatch,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """Test that upload_results_to_bucket warns when results file doesn't exist."""
+        """Test that upload_results_to_bucket warns when results file doesn't exist.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            caplog:
+                Fixture for capturing log records during the test.
+        """
         results_file = tmp_path / "nonexistent.jsonl"
 
         # Mock token resolution to avoid RuntimeError when HF_TOKEN is not set

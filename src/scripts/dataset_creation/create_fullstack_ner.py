@@ -110,8 +110,8 @@ def clone_fullstack_repository(repo_name: str = "FullStack") -> Path:
     """Clone the FullStack repository if it doesn't already exist.
 
     Args:
-        repo_name:
-            Name of the directory to clone into.
+        repo_name (optional):
+            Name of the directory to clone into. Defaults to ``FullStack``.
 
     Returns:
         Path to the cloned repository.

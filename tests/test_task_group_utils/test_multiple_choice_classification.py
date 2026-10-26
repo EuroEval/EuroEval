@@ -29,7 +29,12 @@ class TestPrepareExamples:
     def test_dynamic_choice_count_from_first_document(
         self, mock_tokeniser: MagicMock
     ) -> None:
-        """When num_choices=0, count is inferred from first document."""
+        """When num_choices=0, count is inferred from first document.
+
+        Args:
+            mock_tokeniser:
+                Mock tokeniser supplied to the test.
+        """
         batch = {"text": ["What is 2+2?\nChoices:\na. 3\nb. 4\nc. 5"], "label": ["c"]}
 
         result = multiple_choice_classification.prepare_examples(
@@ -43,7 +48,12 @@ class TestPrepareExamples:
         assert result["label"] == [2]  # "c" -> index 2
 
     def test_empty_choices_raises(self, mock_tokeniser: MagicMock) -> None:
-        """A document with no choices raises `InvalidBenchmark`."""
+        """A document with no choices raises `InvalidBenchmark`.
+
+        Args:
+            mock_tokeniser:
+                Mock tokeniser supplied to the test.
+        """
         batch = {"text": ["Just a question, no choices."], "label": ["a"]}
 
         with pytest.raises(InvalidBenchmark, match="No choices found"):
@@ -56,7 +66,14 @@ class TestPrepareExamples:
     def test_invalid_gold_label_raises(
         self, mock_tokeniser: MagicMock, valid_batch: dict
     ) -> None:
-        """A gold label outside the valid range raises `InvalidBenchmark`."""
+        """A gold label outside the valid range raises `InvalidBenchmark`.
+
+        Args:
+            mock_tokeniser:
+                Mock tokeniser supplied to the test.
+            valid_batch:
+                Valid batch supplied to the test.
+        """
         # Second question has gold label "d" but only 2 choices (a, b)
         batch = {
             "text": [
@@ -76,7 +93,12 @@ class TestPrepareExamples:
             )
 
     def test_mixed_choice_counts_preserved(self, mock_tokeniser: MagicMock) -> None:
-        """Questions with two and three answers retain their true choice counts."""
+        """Questions with two and three answers retain their true choice counts.
+
+        Args:
+            mock_tokeniser:
+                Mock tokeniser supplied to the test.
+        """
         mock_tokeniser.return_value = {
             "input_ids": [[1], [2], [3], [4], [5]],
             "attention_mask": [[1], [1], [1], [1], [1]],
@@ -101,7 +123,14 @@ class TestPrepareExamples:
     def test_uppercase_gold_label_accepted(
         self, mock_tokeniser: MagicMock, valid_batch: dict
     ) -> None:
-        """Uppercase gold labels are normalised to lowercase."""
+        """Uppercase gold labels are normalised to lowercase.
+
+        Args:
+            mock_tokeniser:
+                Mock tokeniser supplied to the test.
+            valid_batch:
+                Valid batch supplied to the test.
+        """
         batch = {
             "text": ["What is 2+2?\nChoices:\na. 3\nb. 4"],
             "label": ["B"],  # Uppercase
@@ -118,7 +147,14 @@ class TestPrepareExamples:
     def test_valid_input_produces_nested_output(
         self, mock_tokeniser: MagicMock, valid_batch: dict
     ) -> None:
-        """Valid MC input produces correctly nested tokeniser output."""
+        """Valid MC input produces correctly nested tokeniser output.
+
+        Args:
+            mock_tokeniser:
+                Mock tokeniser supplied to the test.
+            valid_batch:
+                Valid batch supplied to the test.
+        """
         result = multiple_choice_classification.prepare_examples(
             examples=valid_batch,  # ty: ignore[invalid-argument-type]
             tokeniser=mock_tokeniser,

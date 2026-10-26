@@ -40,6 +40,15 @@ def main() -> None:
     test_raw = requests.get(test_url).json()
 
     def convert_to_df(raw: dict) -> pd.DataFrame:
+        """Convert the raw NorQuAD data to a DataFrame.
+
+        Args:
+            raw (dict):
+                Raw dataset data containing passages and questions.
+
+        Returns:
+            A DataFrame of contexts, questions and answers.
+        """
         records = [
             dict(
                 id=dct["paragraphs"][0]["qas"][0]["id"],

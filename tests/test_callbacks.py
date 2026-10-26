@@ -19,7 +19,11 @@ class FakeEvalDataloader(DataLoader):
     dataset: Dataset = Dataset.from_dict({"value": [1, 2, 3]})
 
     def __len__(self) -> int:
-        """Return the length of the dataloader."""
+        """Return the length of the dataloader.
+
+        Returns:
+            The number of items in the dataset.
+        """
         return len(self.dataset)
 
 
@@ -35,17 +39,29 @@ class TestNeverLeaveProgressCallback:
 
     @pytest.fixture(scope="class")
     def callback(self) -> Generator[NeverLeaveProgressCallback, None, None]:
-        """Yields a callback."""
+        """Yield a callback instance.
+
+        Yields:
+            A progress callback shared by the test class.
+        """
         yield NeverLeaveProgressCallback()
 
     @pytest.fixture(scope="class")
     def eval_dataloader(self) -> Generator[FakeEvalDataloader, None, None]:
-        """Yields an evaluation dataloader."""
+        """Yield an evaluation dataloader.
+
+        Yields:
+            A fake dataloader with a small dataset.
+        """
         yield FakeEvalDataloader()
 
     @pytest.fixture(scope="class")
     def state(self) -> Generator[FakeState, None, None]:
-        """Yields a state."""
+        """Yield a trainer state.
+
+        Yields:
+            A state marked as the local process zero.
+        """
         yield FakeState(is_local_process_zero=True)
 
     def test_on_prediction_step_initialises_not_leaving_pbar(
@@ -54,7 +70,16 @@ class TestNeverLeaveProgressCallback:
         state: FakeState,
         eval_dataloader: FakeEvalDataloader,
     ) -> None:
-        """Test that the `leave` attribute on the prediction progress bar is False."""
+        """Test that the `leave` attribute on the prediction progress bar is False.
+
+        Args:
+            callback:
+                Callback supplied to the test.
+            state:
+                State supplied to the test.
+            eval_dataloader:
+                Eval dataloader supplied to the test.
+        """
         assert callback.prediction_bar is None
         callback.on_prediction_step(
             args=TrainingArguments(),
@@ -68,7 +93,14 @@ class TestNeverLeaveProgressCallback:
     def test_on_train_begin_initialises_not_leaving_pbar(
         self, callback: NeverLeaveProgressCallback, state: FakeState
     ) -> None:
-        """Test that the `leave` attribute on the training progress bar is False."""
+        """Test that the `leave` attribute on the training progress bar is False.
+
+        Args:
+            callback:
+                Callback supplied to the test.
+            state:
+                State supplied to the test.
+        """
         assert callback.training_bar is None
         callback.on_train_begin(
             args=TrainingArguments(), state=state, control=TrainerControl()

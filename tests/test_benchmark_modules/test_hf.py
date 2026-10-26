@@ -40,7 +40,16 @@ class TestBPCGating:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """BPC scoring raises InvalidModel for HF encoder backend."""
+        """BPC scoring raises InvalidModel for HF encoder backend.
+
+        Args:
+            model_config:
+                Model configuration exercised by the test.
+            dataset_config:
+                Dataset configuration exercised by the test.
+            benchmark_config:
+                Benchmark configuration exercised by the test.
+        """
         bpc_config = dataclasses.replace(benchmark_config, use_bits_per_character=True)
         with pytest.raises(InvalidModel, match="vLLM backend"):
             load_model(
@@ -68,6 +77,16 @@ def test_encoder_model_exists_requires_root_config(
 
     Regression test: this is what keeps it from claiming a repo like Laya's, which
     only ships its config in a subfolder (e.g. `encoder/config.json`).
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        repo_files:
+            Repo files supplied to the test.
+        expected:
+            Expected value for this test case.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
     """
     monkeypatch.setattr(
         "euroeval.benchmark_modules.hf.internet_connection_available", lambda: True
@@ -102,6 +121,10 @@ def test_generative_model_exists_does_not_require_root_config(
     Regression test: a generative repo without one (e.g. GGUF-only, or using
     Mistral's `params.json` format) must still resolve, since the root-config
     requirement only applies to `HuggingFaceEncoderModel`.
+
+    Args:
+        benchmark_config:
+            Benchmark configuration exercised by the test.
     """
     from euroeval.benchmark_modules.vllm import VLLMModel  # noqa: PLC0415
 
@@ -146,7 +169,18 @@ def test_generative_model_exists_does_not_require_root_config(
 def test_get_dtype(
     test_device: str, dtype_is_set: bool, bf16_available: bool, expected: torch.dtype
 ) -> None:
-    """Test that the dtype is set correctly."""
+    """Test that the dtype is set correctly.
+
+    Args:
+        test_device:
+            Test device supplied to the test.
+        dtype_is_set:
+            Dtype is set supplied to the test.
+        bf16_available:
+            Bf16 available supplied to the test.
+        expected:
+            Expected value for this test case.
+    """
     assert (
         get_dtype(
             device=torch.device(test_device),
@@ -254,7 +288,12 @@ def test_get_model_release_date_returns_none_without_weights() -> None:
     ],
 )
 def test_get_model_release_date_supports_pytorch_weights(weight_file: str) -> None:
-    """PyTorch and adapter weight naming conventions count as model weights."""
+    """PyTorch and adapter weight naming conventions count as model weights.
+
+    Args:
+        weight_file:
+            Weight file supplied to the test.
+    """
     api = MagicMock()
     commit = MagicMock(
         commit_id="weights",
@@ -372,7 +411,18 @@ def test_safetensors_check(
     model_exists: bool,
     benchmark_config: BenchmarkConfig,
 ) -> None:
-    """Test the safetensors availability check functionality."""
+    """Test the safetensors availability check functionality.
+
+    Args:
+        repo_files:
+            Repo files supplied to the test.
+        requires_safetensors:
+            Requires safetensors supplied to the test.
+        model_exists:
+            Model exists supplied to the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+    """
     with (
         patch.object(HfApi, "list_repo_files") as mock_list_files,
         patch.object(HfApi, "list_repo_commits") as mock_list_commits,

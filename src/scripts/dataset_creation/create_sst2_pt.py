@@ -60,7 +60,8 @@ def cleanup(df: pd.DataFrame, n: int | None = None) -> pd.DataFrame:
 
     Args:
         df: DataFrame with 'sentence' and 'label' columns.
-        n: Optional number of samples to return.
+        n (optional):
+            Number of samples to return. Defaults to ``None``, which keeps all rows.
 
     Returns:
         Cleaned DataFrame with 'text' and 'label' columns.

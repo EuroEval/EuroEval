@@ -16,11 +16,31 @@ class AuthProtocol(t.Protocol):
     """Operations required for device-flow authentication."""
 
     def poll_auth(self, session_id: str) -> AuthPoll:
-        """Poll a device flow."""
+        """Poll a device flow.
+
+        Args:
+            session_id:
+                Identifier of the device-flow session to poll.
+
+        Returns:
+            The poll response, including approval status and any retry delay.
+
+        Raises:
+            BrokerError:
+                If the broker rejects the poll or cannot provide retry metadata.
+        """
         raise NotImplementedError
 
     def start_auth(self) -> AuthStart:
-        """Start a device flow."""
+        """Start a device flow.
+
+        Returns:
+            Session id, verification URL, user code, expiry, and polling interval.
+
+        Raises:
+            BrokerError:
+                If the broker cannot start a device flow.
+        """
         raise NotImplementedError
 
 
@@ -31,14 +51,22 @@ def authenticate(
 ) -> tuple[str, str]:
     """Load saved broker auth or complete and persist a device flow.
 
+    Args:
+            client:
+                Client.
+            state:
+                State.
+            sleep (optional):
+                Sleep.
+
     Returns:
-        The opaque credential and verified GitHub login.
+            The opaque credential and verified GitHub login.
 
     Raises:
-        TimeoutError:
-            If the user does not approve the device flow in time.
-        BrokerError:
-            If the broker returns an authentication error without retry metadata.
+            TimeoutError:
+                If the user does not approve the device flow in time.
+            BrokerError:
+                If the broker returns an authentication error without retry metadata.
     """
     saved = state.load_auth()
     if saved is not None:

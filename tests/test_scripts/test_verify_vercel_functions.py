@@ -9,7 +9,12 @@ import src.scripts.verify_vercel_functions as module
 
 
 def test_commonjs_node_package_metadata_fails(tmp_path: Path) -> None:
-    """CommonJS package metadata cannot support the emitted ESM bundle."""
+    """CommonJS package metadata cannot support the emitted ESM bundle.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     _write_output(tmp_path)
     package = tmp_path / "api/worker/result.func/package.json"
     package.write_text('{"type": "commonjs"}', encoding="utf-8")
@@ -21,7 +26,14 @@ def test_commonjs_node_package_metadata_fails(tmp_path: Path) -> None:
 
 
 def _write_output(root: Path, runtimes: dict[str, str] | None = None) -> None:
-    """Write a complete Build Output API functions tree."""
+    """Write a complete Build Output API functions tree.
+
+    Args:
+        root:
+            Root supplied to the test.
+        runtimes (optional):
+            Runtimes supplied to the test. Defaults to None.
+    """
     runtimes = runtimes or module.EXPECTED_RUNTIMES
     for route, runtime in runtimes.items():
         function_directory = root / f"{route}.func"
@@ -44,7 +56,12 @@ def _write_output(root: Path, runtimes: dict[str, str] | None = None) -> None:
 
 
 def test_concrete_node_runtime_passes(tmp_path: Path) -> None:
-    """Vercel's concrete Node runtime is accepted."""
+    """Vercel's concrete Node runtime is accepted.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     runtimes = dict(module.EXPECTED_RUNTIMES)
     runtimes["api/worker/finalise"] = "nodejs24.x"
     runtimes["api/worker/result"] = "nodejs24.x"
@@ -54,7 +71,12 @@ def test_concrete_node_runtime_passes(tmp_path: Path) -> None:
 
 
 def test_exact_allow_list_passes(tmp_path: Path) -> None:
-    """The expected route and runtime set is accepted."""
+    """The expected route and runtime set is accepted.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     _write_output(tmp_path)
 
     module.verify_vercel_functions(functions_directory=tmp_path)
@@ -64,7 +86,14 @@ def test_exact_allow_list_passes(tmp_path: Path) -> None:
     "route", ["api/worker/_lib", "api/worker/scope-policy.generated"]
 )
 def test_helper_or_generated_route_fails(tmp_path: Path, route: str) -> None:
-    """Private helpers and generated policy files cannot become functions."""
+    """Private helpers and generated policy files cannot become functions.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        route:
+            Route supplied to the test.
+    """
     _write_output(tmp_path)
     config = tmp_path / f"{route}.func" / ".vc-config.json"
     config.parent.mkdir(parents=True, exist_ok=True)
@@ -76,7 +105,14 @@ def test_helper_or_generated_route_fails(tmp_path: Path, route: str) -> None:
 
 @pytest.mark.parametrize("config_contents", ["not json", '{"runtime": 42}'])
 def test_malformed_config_fails(tmp_path: Path, config_contents: str) -> None:
-    """Malformed function metadata aborts verification."""
+    """Malformed function metadata aborts verification.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        config_contents:
+            Config contents supplied to the test.
+    """
     _write_output(tmp_path)
     config = tmp_path / "api/worker/result.func/.vc-config.json"
     config.write_text(config_contents, encoding="utf-8")
@@ -89,7 +125,14 @@ def test_malformed_config_fails(tmp_path: Path, config_contents: str) -> None:
 def test_malformed_node_package_metadata_fails(
     tmp_path: Path, package_contents: str
 ) -> None:
-    """Malformed Node package metadata aborts verification."""
+    """Malformed Node package metadata aborts verification.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        package_contents:
+            Package contents supplied to the test.
+    """
     _write_output(tmp_path)
     package = tmp_path / "api/worker/result.func/package.json"
     package.write_text(package_contents, encoding="utf-8")
@@ -101,7 +144,12 @@ def test_malformed_node_package_metadata_fails(
 
 
 def test_missing_config_fails(tmp_path: Path) -> None:
-    """A function directory without metadata is rejected."""
+    """A function directory without metadata is rejected.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     _write_output(tmp_path)
     (tmp_path / "api/worker/result.func/.vc-config.json").unlink()
 
@@ -110,7 +158,12 @@ def test_missing_config_fails(tmp_path: Path) -> None:
 
 
 def test_missing_node_package_metadata_fails(tmp_path: Path) -> None:
-    """A Node bundle without package metadata is rejected."""
+    """A Node bundle without package metadata is rejected.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     _write_output(tmp_path)
     (tmp_path / "api/worker/result.func/package.json").unlink()
 
@@ -119,7 +172,12 @@ def test_missing_node_package_metadata_fails(tmp_path: Path) -> None:
 
 
 def test_missing_route_fails(tmp_path: Path) -> None:
-    """A missing expected function aborts verification."""
+    """A missing expected function aborts verification.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     runtimes = {
         route: runtime
         for route, runtime in module.EXPECTED_RUNTIMES.items()
@@ -132,7 +190,12 @@ def test_missing_route_fails(tmp_path: Path) -> None:
 
 
 def test_node_entrypoint_accepts_callable_fetch_alias(tmp_path: Path) -> None:
-    """A callable aliased to fetch is a valid module export."""
+    """A callable aliased to fetch is a valid module export.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     _write_output(tmp_path)
     _write_node_entrypoint(
         tmp_path,
@@ -145,7 +208,16 @@ def test_node_entrypoint_accepts_callable_fetch_alias(tmp_path: Path) -> None:
 
 
 def _write_node_entrypoint(root: Path, route: str, source: str) -> None:
-    """Replace one generated Node entrypoint with source for a focused test."""
+    """Replace one generated Node entrypoint with source for a focused test.
+
+    Args:
+        root:
+            Root supplied to the test.
+        route:
+            Route supplied to the test.
+        source:
+            Source supplied to the test.
+    """
     entrypoint = ((root / f"{route}.func").joinpath(*route.split("/"))).with_suffix(
         ".js"
     )
@@ -153,7 +225,12 @@ def _write_node_entrypoint(root: Path, route: str, source: str) -> None:
 
 
 def test_node_entrypoint_accepts_callable_fetch_function(tmp_path: Path) -> None:
-    """A valid callable named fetch passes without invoking the handler."""
+    """A valid callable named fetch passes without invoking the handler.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     _write_output(tmp_path)
     _write_node_entrypoint(
         tmp_path,
@@ -166,7 +243,14 @@ def test_node_entrypoint_accepts_callable_fetch_function(tmp_path: Path) -> None
 
 @pytest.mark.parametrize("route", ["api/worker/finalise", "api/worker/result"])
 def test_node_entrypoint_defaults_are_rejected(tmp_path: Path, route: str) -> None:
-    """Node endpoints must not default-export handler functions."""
+    """Node endpoints must not default-export handler functions.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        route:
+            Route supplied to the test.
+    """
     _write_output(tmp_path)
     entrypoint = ((tmp_path / f"{route}.func").joinpath(*route.split("/"))).with_suffix(
         ".js"
@@ -183,7 +267,14 @@ def test_node_entrypoint_defaults_are_rejected(tmp_path: Path, route: str) -> No
 def test_node_entrypoint_does_not_inherit_parent_environment(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Import validation must not expose parent-process secrets to bundles."""
+    """Import validation must not expose parent-process secrets to bundles.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     _write_output(tmp_path)
     monkeypatch.setenv("EUROEVAL_TEST_SECRET", "not-for-the-bundle")
     _write_node_entrypoint(
@@ -200,7 +291,14 @@ def test_node_entrypoint_does_not_inherit_parent_environment(
 def test_node_entrypoint_exports_require_named_fetch(
     tmp_path: Path, route: str
 ) -> None:
-    """Node endpoints must export a callable named fetch entrypoint."""
+    """Node endpoints must export a callable named fetch entrypoint.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        route:
+            Route supplied to the test.
+    """
     _write_output(tmp_path)
     entrypoint = ((tmp_path / f"{route}.func").joinpath(*route.split("/"))).with_suffix(
         ".js"
@@ -214,7 +312,12 @@ def test_node_entrypoint_exports_require_named_fetch(
 def test_node_entrypoint_ignores_fake_exports_in_comments_and_strings(
     tmp_path: Path,
 ) -> None:
-    """Comments and strings must not affect the semantic export check."""
+    """Comments and strings must not affect the semantic export check.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     _write_output(tmp_path)
     _write_node_entrypoint(
         tmp_path,
@@ -229,7 +332,14 @@ def test_node_entrypoint_ignores_fake_exports_in_comments_and_strings(
 def test_node_entrypoint_import_timeout_is_bounded(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A module that never completes import must not hang verification."""
+    """A module that never completes import must not hang verification.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     _write_output(tmp_path)
     _write_node_entrypoint(
         tmp_path,
@@ -243,7 +353,12 @@ def test_node_entrypoint_import_timeout_is_bounded(
 
 
 def test_node_entrypoint_rejects_default_alongside_fetch(tmp_path: Path) -> None:
-    """A default export is invalid even when fetch is also callable."""
+    """A default export is invalid even when fetch is also callable.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     _write_output(tmp_path)
     _write_node_entrypoint(
         tmp_path,
@@ -257,7 +372,12 @@ def test_node_entrypoint_rejects_default_alongside_fetch(tmp_path: Path) -> None
 
 
 def test_node_entrypoint_rejects_non_callable_fetch(tmp_path: Path) -> None:
-    """A named fetch export must contain a function value."""
+    """A named fetch export must contain a function value.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     _write_output(tmp_path)
     _write_node_entrypoint(tmp_path, "api/worker/result", "export const fetch = 42;\n")
 
@@ -276,7 +396,14 @@ def test_node_entrypoint_rejects_non_callable_fetch(tmp_path: Path) -> None:
 def test_node_entrypoint_rejects_syntax_or_import_failure(
     tmp_path: Path, source: str
 ) -> None:
-    """Syntax and dependency failures must fail import validation."""
+    """Syntax and dependency failures must fail import validation.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        source:
+            Source supplied to the test.
+    """
     _write_output(tmp_path)
     _write_node_entrypoint(tmp_path, "api/worker/result", source)
 
@@ -287,7 +414,12 @@ def test_node_entrypoint_rejects_syntax_or_import_failure(
 
 
 def test_source_package_metadata_does_not_satisfy_bundle(tmp_path: Path) -> None:
-    """Source-tree metadata cannot mask missing bundle metadata."""
+    """Source-tree metadata cannot mask missing bundle metadata.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     functions_directory = tmp_path / "functions"
     (tmp_path / "package.json").write_text('{"type": "module"}', encoding="utf-8")
     _write_output(functions_directory)
@@ -298,7 +430,12 @@ def test_source_package_metadata_does_not_satisfy_bundle(tmp_path: Path) -> None
 
 
 def test_wrong_runtime_fails(tmp_path: Path) -> None:
-    """A route emitted for the wrong runtime aborts verification."""
+    """A route emitted for the wrong runtime aborts verification.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     runtimes = dict(module.EXPECTED_RUNTIMES)
     runtimes["api/worker/result"] = "edge"
     _write_output(tmp_path, runtimes)

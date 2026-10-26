@@ -16,7 +16,12 @@ from euroeval.metrics import (
 def test_accuracy_ambig_accepts_numpy_ints(
     make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
 ) -> None:
-    """Accept numpy integer predictions."""
+    """Accept numpy integer predictions.
+
+    Args:
+        make_dataset:
+            Make dataset supplied to the test.
+    """
     ds = make_dataset("ambig", [1, 2, 0], None, 3)
     preds = np.array([0, 0, 0], dtype=np.int64)
     assert accuracy_ambig_metric(
@@ -75,7 +80,12 @@ def make_dataset() -> Callable[[str, Sequence[int], int | None, int], Dataset]:
 def test_accuracy_ambig_all_unknown(
     make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
 ) -> None:
-    """Report perfect accuracy when all ambiguous predictions are unknown."""
+    """Report perfect accuracy when all ambiguous predictions are unknown.
+
+    Args:
+        make_dataset:
+            Make dataset supplied to the test.
+    """
     ds = make_dataset("ambig", [1, 2, 0], None, 4)
     preds = [0, 0, 0, 0]  # all correctly 'unknown'
     assert accuracy_ambig_metric(preds, [], ds, None, None) == pytest.approx(1.0)
@@ -84,7 +94,12 @@ def test_accuracy_ambig_all_unknown(
 def test_accuracy_ambig_mixed(
     make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
 ) -> None:
-    """Compute accuracy with a mix of correct unknown and wrong answers."""
+    """Compute accuracy with a mix of correct unknown and wrong answers.
+
+    Args:
+        make_dataset:
+            Make dataset supplied to the test.
+    """
     ds = make_dataset("ambig", [1, 2, 0], None, 4)
     preds = [0, 1, 0, 2]  # two correct 'unknown', two wrong
     assert accuracy_ambig_metric(preds, [], ds, None, None) == pytest.approx(0.5)
@@ -93,7 +108,12 @@ def test_accuracy_ambig_mixed(
 def test_bias_adjusted_accuracy_ambig_above_chance_low_bias(
     make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
 ) -> None:
-    """Return accuracy when ambiguous bias stays at zero."""
+    """Return accuracy when ambiguous bias stays at zero.
+
+    Args:
+        make_dataset:
+            Make dataset supplied to the test.
+    """
     ds = make_dataset("ambig", [1, 2, 0], None, 4)
     preds = [0, 0, 1, 2]  # acc = 0.5, bias = 0
     assert bias_adjusted_accuracy_ambig_metric(
@@ -104,7 +124,12 @@ def test_bias_adjusted_accuracy_ambig_above_chance_low_bias(
 def test_bias_adjusted_accuracy_ambig_penalizes_bias(
     make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
 ) -> None:
-    """Reduce bias-adjusted accuracy when ambiguous bias is high."""
+    """Reduce bias-adjusted accuracy when ambiguous bias is high.
+
+    Args:
+        make_dataset:
+            Make dataset supplied to the test.
+    """
     ds = make_dataset("ambig", [1, 2, 0], None, 4)
     # 2 correct unknown, 2 stereo picks => acc = 0.5, bias = 0.5
     preds = [0, 0, 1, 1]
@@ -118,7 +143,12 @@ def test_bias_adjusted_accuracy_ambig_penalizes_bias(
 def test_bias_adjusted_accuracy_ambig_zero_at_chance(
     make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
 ) -> None:
-    """Keep accuracy unchanged when bias is zero at chance."""
+    """Keep accuracy unchanged when bias is zero at chance.
+
+    Args:
+        make_dataset:
+            Make dataset supplied to the test.
+    """
     ds = make_dataset("ambig", [1, 2, 0], None, 3)
     preds = [
         0,
@@ -134,7 +164,12 @@ def test_bias_adjusted_accuracy_ambig_zero_at_chance(
 def test_biasa_all_unknowns(
     make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
 ) -> None:
-    """Return zero bias when only unknown predictions appear."""
+    """Return zero bias when only unknown predictions appear.
+
+    Args:
+        make_dataset:
+            Make dataset supplied to the test.
+    """
     ds = make_dataset("ambig", [1, 2, 0], None, 3)
     preds = [0, 0, 0]
     # references arg is ignored by the metric, so we can pass an empty list
@@ -144,7 +179,12 @@ def test_biasa_all_unknowns(
 def test_biasa_ignores_undetectable(
     make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
 ) -> None:
-    """Ignore predictions that are not present in label mappings."""
+    """Ignore predictions that are not present in label mappings.
+
+    Args:
+        make_dataset:
+            Make dataset supplied to the test.
+    """
     # one prediction not in label mapping => discarded,
     # but still counts toward n_ambiguous
     ds = make_dataset("ambig", [1, 2, 0], None, 3)
@@ -156,7 +196,12 @@ def test_biasa_ignores_undetectable(
 def test_biasa_stereo_and_counter(
     make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
 ) -> None:
-    """Compute bias from the difference between stereo and counter picks."""
+    """Compute bias from the difference between stereo and counter picks.
+
+    Args:
+        make_dataset:
+            Make dataset supplied to the test.
+    """
     ds = make_dataset("ambig", [1, 2, 0], None, 5)
     preds = [1, 1, 1, 2, 2]  # three stereotype picks, two counter
     assert bias_ambig_metric(preds, [], ds, None, None) == pytest.approx((3 - 2) / 5)

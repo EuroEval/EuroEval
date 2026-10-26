@@ -13,8 +13,12 @@ logger = logging.getLogger(__name__)
 def main(argv: list[str] | None = None) -> int:
     """Run the volunteer worker CLI.
 
+    Args:
+            argv (optional):
+                Argv.
+
     Returns:
-        Process exit status.
+            Process exit status.
     """
     parser = _parser()
     arguments = parser.parse_args(argv)
@@ -49,6 +53,12 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _parser() -> argparse.ArgumentParser:
+    """Build the argument parser for worker execution and GPU health checks.
+
+    Returns:
+        Parser configured with broker, state, run-mode, memory, health-check, and
+        version options.
+    """
     parser = argparse.ArgumentParser(description="Run a EuroEval volunteer GPU worker.")
     parser.add_argument("--server", default=DEFAULT_SERVER, help="Worker broker URL.")
     parser.add_argument(

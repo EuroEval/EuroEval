@@ -53,6 +53,15 @@ def test_analysis_rejects_bool_exposure_keys() -> None:
 
 
 def _arms(*, passing: bool) -> dict[int, list[dict[str, object]]]:
+    """Arms for this test.
+
+    Args:
+        passing:
+            Passing supplied to the test.
+
+    Returns:
+        The value returned by the test helper.
+    """
     arms: dict[int, list[dict[str, object]]] = {}
     for dose in EXPOSURE_LEVELS:
         rows: list[dict[str, object]] = []
@@ -162,7 +171,12 @@ def test_execution_rejects_one_row() -> None:
 
 
 def test_failed_generation_writes_no_partial_corpus(tmp_path: Path) -> None:
-    """A failed selection does not leave output directories or partial records."""
+    """A failed selection does not leave output directories or partial records.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     source = tmp_path / "source.jsonl"
     key = tmp_path / "key"
     _source(source)
@@ -184,11 +198,25 @@ def test_failed_generation_writes_no_partial_corpus(tmp_path: Path) -> None:
 
 
 def _key(path: Path, value: bytes = b"a" * 32) -> None:
+    """Key for this test.
+
+    Args:
+        path:
+            Path supplied to the test.
+        value (optional):
+            Value supplied to the test. Defaults to b'a' * 32.
+    """
     path.write_bytes(value)
     os.chmod(path, 0o600)
 
 
 def _source(path: Path) -> None:
+    """Source for this test.
+
+    Args:
+        path:
+            Path supplied to the test.
+    """
     path.write_text(
         "\n".join(
             json.dumps({"row_id": f"row-{index}", "text": "A clean source sentence."})
@@ -202,7 +230,14 @@ def _source(path: Path) -> None:
 def test_failed_output_publish_writes_no_partial_directories(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A key change during output creation leaves no published output."""
+    """A key change during output creation leaves no published output.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     source = tmp_path / "source.jsonl"
     key = tmp_path / "key"
     _source(source)
@@ -212,6 +247,14 @@ def test_failed_output_publish_writes_no_partial_directories(
     original_write = private_canary._atomic_write
 
     def change_key_after_write(*, path: Path, payload: bytes) -> None:
+        """Change key after write for this test.
+
+        Args:
+            path:
+                Path supplied to the test.
+            payload:
+                Payload supplied to the test.
+        """
         original_write(path=path, payload=payload)
         key.write_bytes(b"b" * 32)
 
@@ -236,6 +279,12 @@ class WordTokenizer:
     def encode(self, text: str, *, add_special_tokens: bool) -> list[int]:
         """Encode words and punctuation as stable token IDs.
 
+        Args:
+            text:
+                Text supplied to the test.
+            add_special_tokens:
+                Add special tokens supplied to the test.
+
         Returns:
             Stable integer token IDs.
         """
@@ -253,6 +302,12 @@ class AlwaysUnstableTriggerTokenizer(WordTokenizer):
     def encode(self, text: str, *, add_special_tokens: bool) -> list[int]:
         """Encode text with a deliberately broken trigger prefix.
 
+        Args:
+            text:
+                Text supplied to the test.
+            add_special_tokens:
+                Add special tokens supplied to the test.
+
         Returns:
             Token IDs with a broken prefix for trigger validation inputs.
         """
@@ -264,7 +319,12 @@ class AlwaysUnstableTriggerTokenizer(WordTokenizer):
 
 
 def test_generation_has_256_unique_prompt_units(tmp_path: Path) -> None:
-    """Large studies deterministically produce independent prompt units."""
+    """Large studies deterministically produce independent prompt units.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     source = tmp_path / "source.jsonl"
     source.write_text(
         "".join(
@@ -323,7 +383,12 @@ def test_generation_has_256_unique_prompt_units(tmp_path: Path) -> None:
 
 
 def test_generation_is_key_sensitive_private_and_leak_free(tmp_path: Path) -> None:
-    """Generation is deterministic, key-sensitive and restrictive on disk."""
+    """Generation is deterministic, key-sensitive and restrictive on disk.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     source = tmp_path / "source.jsonl"
     key = tmp_path / "key"
     _source(source)
@@ -377,7 +442,12 @@ def test_generation_is_key_sensitive_private_and_leak_free(tmp_path: Path) -> No
 
 
 def test_generation_rejects_one_source_row(tmp_path: Path) -> None:
-    """Generation rejects a source corpus that is short by one row."""
+    """Generation rejects a source corpus that is short by one row.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     source = tmp_path / "source.jsonl"
     source.write_text(
         json.dumps({"row_id": "only", "text": "A clean source sentence."}) + "\n",
@@ -396,7 +466,12 @@ def test_generation_rejects_one_source_row(tmp_path: Path) -> None:
 
 
 def test_generation_rejects_unstable_trigger(tmp_path: Path) -> None:
-    """Generation fails closed when one of the 32 triggers is unstable."""
+    """Generation fails closed when one of the 32 triggers is unstable.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     source = tmp_path / "source.jsonl"
     key = tmp_path / "key"
     _source(source)
@@ -433,6 +508,12 @@ class UnstableTriggerTokenizer(WordTokenizer):
     def encode(self, text: str, *, add_special_tokens: bool) -> list[int]:
         """Encode text with an unstable prefix for one trigger candidate.
 
+        Args:
+            text:
+                Text supplied to the test.
+            add_special_tokens:
+                Add special tokens supplied to the test.
+
         Returns:
             Token IDs with a deliberately broken trigger prefix when applicable.
         """
@@ -444,7 +525,12 @@ class UnstableTriggerTokenizer(WordTokenizer):
 
 
 def test_generation_skips_target_found_in_another_source(tmp_path: Path) -> None:
-    """Allocation checks a candidate against every source before accepting it."""
+    """Allocation checks a candidate against every source before accepting it.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     candidates = [
         f"{first} {second}"
         for first in private_canary.TARGET_FIRST
@@ -513,7 +599,12 @@ def test_grouped_learning_passes_with_group_level_analysis() -> None:
 
 
 def test_key_mode_is_strict(tmp_path: Path) -> None:
-    """Keys with permissive file modes are rejected."""
+    """Keys with permissive file modes are rejected.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     path = tmp_path / "key"
     path.write_bytes(b"a" * 32)
     os.chmod(path, 0o644)
@@ -534,7 +625,12 @@ def test_leading_space_belongs_to_target_continuation() -> None:
 
 
 def test_manifest_rejects_bool_exposure_levels(tmp_path: Path) -> None:
-    """Manifest booleans cannot masquerade as the zero and one exposure levels."""
+    """Manifest booleans cannot masquerade as the zero and one exposure levels.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     key_path = tmp_path / "key"
     _key(key_path)
     with pytest.raises(ValueError, match="invalid schedule"):
@@ -555,7 +651,12 @@ def test_manifest_rejects_bool_exposure_levels(tmp_path: Path) -> None:
 
 
 def test_manifest_rejects_reused_trigger(tmp_path: Path) -> None:
-    """A manifest must retain the complete trigger allocation."""
+    """A manifest must retain the complete trigger allocation.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     source = tmp_path / "source.jsonl"
     key = tmp_path / "key"
     _source(source)
@@ -615,6 +716,19 @@ def test_pinned_tokenizer_has_stable_canary_candidates() -> None:
 
 
 def _valid_target(*, tokenizer: object, prompt: str, target: str) -> bool:
+    """Valid target for this test.
+
+    Args:
+        tokenizer:
+            Tokenizer supplied to the test.
+        prompt:
+            Prompt supplied to the test.
+        target:
+            Target supplied to the test.
+
+    Returns:
+        The value returned by the test helper.
+    """
     try:
         private_canary._validated_target_ids(
             tokenizer=tokenizer, prompt=prompt, target=target
@@ -645,7 +759,12 @@ def test_record_type_is_private_data_shape() -> None:
 
 
 def test_resume_rejects_mismatched_fingerprint_before_mutation(tmp_path: Path) -> None:
-    """A changed run identity cannot relabel existing output."""
+    """A changed run identity cannot relabel existing output.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
     output = tmp_path / "results"
     output.mkdir()
     (output / "fingerprint.json").write_text(json.dumps({"sha256": "old"}))
@@ -781,6 +900,15 @@ def test_schedule_seed_is_reproducible_and_changes_order() -> None:
 
 
 def _seeded_schedule(seed: int) -> CanarySchedule:
+    """Seeded schedule for this test.
+
+    Args:
+        seed:
+            Seed supplied to the test.
+
+    Returns:
+        The value returned by the test helper.
+    """
     row_ids = [str(index) for index in range(CANARY_ROW_COUNT)]
     augmented_token_ids = {
         row_id: [index + 1, index + 2] for index, row_id in enumerate(row_ids)
@@ -819,7 +947,15 @@ class PredictingModel:
     """Toy causal model used to check all three scoring metrics."""
 
     def __call__(self, *, input_ids: torch.Tensor) -> SimpleNamespace:
-        """Return logits favouring the two-token target."""
+        """Return logits favouring the two-token target.
+
+        Args:
+            input_ids:
+                Input ids supplied to the test.
+
+        Returns:
+            A namespace containing model logits.
+        """
         batch, length = input_ids.shape
         logits = torch.zeros(batch, length, 8)
         logits[:, :, 1] = 2.0
@@ -831,7 +967,14 @@ class PredictingModel:
 def test_stale_resume_preflight_is_inert(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A stale static identity cannot invoke loaders or create the cache."""
+    """A stale static identity cannot invoke loaders or create the cache.
+
+    Args:
+        tmp_path:
+            Temporary directory for files created by the test.
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
     source = tmp_path / "source.jsonl"
     key = tmp_path / "key"
     _source(source)
@@ -893,6 +1036,18 @@ def test_stale_resume_preflight_is_inert(
     )
 
     def fail_loader(*args: object, **kwargs: object) -> object:
+        """Fail loader for this test.
+
+        Args:
+            args:
+                Args supplied to the test.
+            kwargs:
+                Kwargs supplied to the test.
+
+        Raises:
+            AssertionError:
+                If the simulated operation fails.
+        """
         raise AssertionError("loader called before stale resume was rejected")
 
     monkeypatch.setattr(canary_runner.AutoTokenizer, "from_pretrained", fail_loader)
@@ -924,7 +1079,10 @@ def test_training_sees_seeded_schedule_order() -> None:
     """Training consumes the common slot order selected by the seed."""
 
     class RecordingModel(torch.nn.Module):
+        """Record the sequence order observed during training."""
+
         def __init__(self) -> None:
+            """Initialize the model and record the observed input order."""
             super().__init__()
             self.parameter = torch.nn.Parameter(torch.ones(1))
             self.seen: list[int] = []
@@ -935,6 +1093,19 @@ def test_training_sees_seeded_schedule_order() -> None:
             attention_mask: torch.Tensor,
             labels: torch.Tensor,
         ) -> SimpleNamespace:
+            """Forward a batch and return scalar loss.
+
+            Args:
+                input_ids:
+                    Input ids supplied to the test.
+                attention_mask:
+                    Attention mask supplied to the test.
+                labels:
+                    Labels supplied to the test.
+
+            Returns:
+                A namespace containing the scalar loss.
+            """
             del attention_mask, labels
             self.seen.extend(int(value) for value in input_ids[:, 0])
             return SimpleNamespace(loss=self.parameter * input_ids.float().mean())

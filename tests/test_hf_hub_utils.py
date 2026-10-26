@@ -34,7 +34,14 @@ class TestRepoExists:
     def test_returns_repo_exists_status(
         self, repo_exists: bool, expected: bool
     ) -> None:
-        """Return the Hub API's status for available and missing repositories."""
+        """Return the Hub API's status for available and missing repositories.
+
+        Args:
+            repo_exists:
+                Repo exists supplied to the test.
+            expected:
+                Expected value for this test case.
+        """
         hf_api = MagicMock()
         hf_api.repo_exists.return_value = repo_exists
         dataset_id = "some/dataset-exists" if repo_exists else "some/dataset-missing"

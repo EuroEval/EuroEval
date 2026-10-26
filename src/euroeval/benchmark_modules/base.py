@@ -86,8 +86,8 @@ class BenchmarkModule(ABC):
                 The dataset configuration.
             benchmark_config:
                 The benchmark configuration.
-            log_metadata:
-                Whether to log the metadata of the model.
+            log_metadata (optional):
+                Whether to log the metadata of the model. Defaults to True.
         """
         self.model_config = model_config
         self.dataset_config = dataset_config
@@ -124,6 +124,10 @@ class BenchmarkModule(ABC):
 
         Returns:
             One continuation per prompt in input order.
+
+        Raises:
+            NotImplementedError:
+                If canary completion is not implemented by the module.
         """
         raise NotImplementedError(
             f"Canary completion has not been implemented for {self.__class__.__name__}."
@@ -135,6 +139,10 @@ class BenchmarkModule(ABC):
 
         Returns:
             The function used to compute the metrics.
+
+        Raises:
+            NotImplementedError:
+                If the task group is unsupported.
         """
         match self.dataset_config.task.task_group:
             case TaskGroup.SEQUENCE_CLASSIFICATION:
@@ -217,6 +225,10 @@ class BenchmarkModule(ABC):
 
         Returns:
             The generated model outputs.
+
+        Raises:
+            NotImplementedError:
+                If generation is not implemented by the module.
         """
         raise NotImplementedError(
             "The `generate` method has not been implemented for "
@@ -256,6 +268,10 @@ class BenchmarkModule(ABC):
 
         Returns:
             The PyTorch module.
+
+        Raises:
+            NotImplementedError:
+                If this module does not expose a PyTorch module.
         """
         if hasattr(self, "_model"):
             return self._model
@@ -269,6 +285,10 @@ class BenchmarkModule(ABC):
 
         Returns:
             The tokeniser.
+
+        Raises:
+            NotImplementedError:
+                If this module does not expose a tokeniser.
         """
         if hasattr(self, "_tokeniser"):
             return self._tokeniser
@@ -457,8 +477,8 @@ def _build_model_config_helper(
             The model type.
         adapter_base_model_id:
             The base model ID if this is an adapter model.
-        generation_config:
-            The generation configuration, or None if not applicable.
+        generation_config (optional):
+            The generation configuration, or None if not applicable. Defaults to None.
 
     Returns:
         The constructed ModelConfig.
@@ -604,8 +624,9 @@ def _prepare_dataset_helper(
             Whether to always populate the text field.
         tokeniser:
             The tokeniser to use, or None if not applicable.
-        classification_output_key:
-            Optional JSON key to request for label-based classification outputs.
+        classification_output_key (optional):
+            JSON key to request for label-based classification outputs. Defaults to
+            None.
 
     Returns:
         The prepared dataset.

@@ -19,7 +19,14 @@ class TestModelTypeCapabilities:
     def test_requires_canary_reference(
         self, model_type: ModelType, expected: bool
     ) -> None:
-        """Test that `requires_canary_reference` is correct for each model type."""
+        """Test that `requires_canary_reference` is correct for each model type.
+
+        Args:
+            model_type:
+                Model type supplied to the test.
+            expected:
+                Expected value for this test case.
+        """
         assert model_type.requires_canary_reference is expected
 
     @pytest.mark.parametrize(
@@ -42,7 +49,16 @@ class TestModelTypeCapabilities:
     def test_supports_task_group(
         self, model_type: ModelType, task_group: TaskGroup, expected: bool
     ) -> None:
-        """Test that `supports_task_group` is correct for each model type."""
+        """Test that `supports_task_group` is correct for each model type.
+
+        Args:
+            model_type:
+                Model type supplied to the test.
+            task_group:
+                Task group supplied to the test.
+            expected:
+                Expected value for this test case.
+        """
         assert model_type.supports_task_group(task_group) is expected
 
     @pytest.mark.parametrize(
@@ -56,5 +72,12 @@ class TestModelTypeCapabilities:
     def test_uses_generation_pipeline(
         self, model_type: ModelType, expected: bool
     ) -> None:
-        """Test that `uses_generation_pipeline` is correct for each model type."""
+        """Test that `uses_generation_pipeline` is correct for each model type.
+
+        Args:
+            model_type:
+                Model type supplied to the test.
+            expected:
+                Expected value for this test case.
+        """
         assert model_type.uses_generation_pipeline is expected

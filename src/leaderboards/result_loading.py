@@ -128,7 +128,15 @@ def _dedup_by_storage_identity(
 
 
 def _model_is_excluded(model_name: str) -> bool:
-    """Return whether a stored identity belongs to an excluded base model."""
+    """Return whether a stored identity belongs to an excluded base model.
+
+    Args:
+        model_name:
+            Stored model identity to check.
+
+    Returns:
+        Whether the identity matches an excluded base model.
+    """
     return any(
         model_name == model_id
         or model_name.startswith(f"{model_id}@")

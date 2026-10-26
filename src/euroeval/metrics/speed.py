@@ -37,7 +37,22 @@ class SpeedMetric(Metric):
         dataset_config: "DatasetConfig",
         benchmark_config: "BenchmarkConfig",
     ) -> float | None:
-        """Not used with the speed metric, but required for consistency."""
+        """Not used with the speed metric, but required for consistency.
+
+        Args:
+            predictions: Model predictions, unused by this metric.
+            references: Ground-truth references, unused by this metric.
+            dataset: Evaluation dataset, unused by this metric.
+            dataset_config: Dataset configuration, unused by this metric.
+            benchmark_config: Benchmark configuration, unused by this metric.
+
+        Returns:
+            This method does not return because the speed metric is populated
+            elsewhere.
+
+        Raises:
+            NotImplementedError: Always, because this method is not used for speed.
+        """
         raise NotImplementedError
 
 

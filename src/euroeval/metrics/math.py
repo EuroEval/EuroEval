@@ -90,11 +90,16 @@ class MathAccuracy(Metric):
         """Calculate the mean per-item mathematical exact-match score.
 
         Args:
-            predictions: Model answers whose first matching candidate wins.
-            references: Expected answers.
-            dataset: Unused benchmark dataset.
-            dataset_config: Unused dataset configuration.
-            benchmark_config: Unused benchmark configuration.
+            predictions:
+                Model answers whose first matching candidate wins.
+            references:
+                Expected answers.
+            dataset:
+                Unused benchmark dataset.
+            dataset_config:
+                Unused dataset configuration.
+            benchmark_config:
+                Unused benchmark configuration.
 
         Returns:
             The mean score, or None when there are no paired inputs.
@@ -110,8 +115,10 @@ def _answer_matches(prediction: str, reference: str) -> bool:
     """Compare the first candidate, falling back only from opaque prose.
 
     Args:
-        prediction: Model completion.
-        reference: Expected answer.
+    prediction:
+        Model completion to score.
+    reference:
+        Expected answer.
 
     Returns:
         Whether the winning candidate matches a reference candidate.
@@ -134,6 +141,10 @@ def _answer_matches(prediction: str, reference: str) -> bool:
 
 def _answer_candidates(text: str) -> list[str]:
     """Build the Inspect-style answer candidate ladder, without expression parsing.
+
+    Args:
+    text:
+        Text to process.
 
     Returns:
         Candidate answer strings in preference order.
@@ -158,7 +169,15 @@ def _answer_candidates(text: str) -> list[str]:
 
 
 def _append_candidate(candidates: list[str], candidate: str | None) -> None:
-    """Add a non-empty, normalised candidate once."""
+    """Add a non-empty, normalised candidate once.
+
+    Args:
+    candidates:
+        Candidate list to update.
+    candidate:
+        Candidate answer to append.
+
+    """
     if candidate:
         candidate = _strip_delimiters(candidate)
         if candidate and candidate not in candidates:
@@ -167,6 +186,10 @@ def _append_candidate(candidates: list[str], candidate: str | None) -> None:
 
 def _strip_delimiters(text: str) -> str:
     """Remove display, Markdown, TeX spacing, and punctuation wrappers.
+
+    Args:
+    text:
+        Text to process.
 
     Returns:
         The unwrapped text.
@@ -205,6 +228,10 @@ def _strip_delimiters(text: str) -> str:
 def _number_value(text: str) -> tuple[decimal.Decimal, bool] | None:
     """Parse a plain number and return its exact value and percent status.
 
+    Args:
+    text:
+        Text to process.
+
     Returns:
         An exact numeric value and percent flag, or None for non-numeric text.
     """
@@ -234,6 +261,10 @@ def _number_value(text: str) -> tuple[decimal.Decimal, bool] | None:
 def _normalize_text(text: str) -> str:
     """Apply the shared normalisation used for both predictions and references.
 
+    Args:
+    text:
+        Text to process.
+
     Returns:
         The case-folded normalised text.
     """
@@ -247,6 +278,10 @@ def _normalize_text(text: str) -> str:
 
 def _replace_unicode(text: str) -> str:
     """Replace mathematical Unicode symbols using Inspect AI's table.
+
+    Args:
+    text:
+        Text to process.
 
     Returns:
         Text with mathematical Unicode symbols replaced.
@@ -286,7 +321,15 @@ def _replace_unicode(text: str) -> str:
 
 
 def _boxed_candidates(text: str) -> list[str]:
-    """Return brace-balanced contents of boxes, in source order."""
+    """Return brace-balanced contents of boxes, in source order.
+
+    Args:
+    text:
+        Text to process.
+
+    Returns:
+    Box contents in source order.
+    """
     matches: list[str] = []
     position = 0
     while match := _BOX.search(text, position):
@@ -300,7 +343,17 @@ def _boxed_candidates(text: str) -> list[str]:
 
 
 def _balanced_content(text: str, opening: int) -> tuple[str, int] | None:
-    """Return content and end position for a balanced opening brace."""
+    """Return content and end position for a balanced opening brace.
+
+    Args:
+    text:
+        Text to process.
+    opening:
+        Index of the opening brace.
+
+    Returns:
+    The brace contents and index after the closing brace, or None.
+    """
     depth = 0
     for index in range(opening, len(text)):
         if text[index] == "{":
@@ -313,7 +366,15 @@ def _balanced_content(text: str, opening: int) -> tuple[str, int] | None:
 
 
 def _last_delimited_math(text: str) -> str | None:
-    """Return the delimited mathematical span ending furthest to the right."""
+    """Return the delimited mathematical span ending furthest to the right.
+
+    Args:
+    text:
+        Text to process.
+
+    Returns:
+    The rightmost delimited mathematical span, or None.
+    """
     spans: list[tuple[int, str]] = []
     for opening, closing in _DELIMITERS:
         end = text.rfind(closing)
@@ -331,6 +392,14 @@ def _equivalent(left: str, right: str) -> bool:
     ``_symbolically_equivalent``, which is where ``\frac{1}{2}`` meets ``0.5`` and
     ``x + y`` meets ``y + x``; a string it cannot translate, and an answer made of
     several words, is compared as text instead.
+
+
+
+    Args:
+    left:
+        Left-hand answer or value.
+    right:
+        Right-hand answer or value.
 
     Returns:
         Whether the values are equivalent.
@@ -360,6 +429,10 @@ def _equivalent(left: str, right: str) -> bool:
 def _percent_value(number: tuple[decimal.Decimal, bool]) -> decimal.Decimal | None:
     """Return the value a parsed number denotes, dividing a percentage by 100.
 
+    Args:
+    number:
+        Parsed numeric value and percentage flag.
+
     Returns:
         The exact value, with no rounding at any length of digits, or None when the
         decimal context cannot represent the result.
@@ -378,7 +451,15 @@ def _percent_value(number: tuple[decimal.Decimal, bool]) -> decimal.Decimal | No
 
 
 def _looks_like_prose(candidate: str) -> bool:
-    """Return whether a candidate is opaque prose rather than an expression."""
+    """Return whether a candidate is opaque prose rather than an expression.
+
+    Args:
+    candidate:
+        Candidate answer to append.
+
+    Returns:
+    Whether the candidate is opaque multi-word prose.
+    """
     if "\\" in candidate or any(char in candidate for char in "=+-*/^<>[]{}()"):
         return False
     return len(_WORD.findall(candidate)) >= 2
@@ -386,6 +467,10 @@ def _looks_like_prose(candidate: str) -> bool:
 
 def _reference_candidates(text: str) -> list[str]:
     """Extract the boxed reference followed by its complete text.
+
+    Args:
+    text:
+        Text to process.
 
     Returns:
         Candidate reference strings in preference order.
@@ -398,7 +483,15 @@ def _reference_candidates(text: str) -> list[str]:
 
 
 def _unique(values: list[str]) -> list[str]:
-    """Return values with duplicates removed while preserving order."""
+    """Return values with duplicates removed while preserving order.
+
+    Args:
+    values:
+        Values to deduplicate.
+
+    Returns:
+    Non-empty values with duplicates removed in their original order.
+    """
     return list(dict.fromkeys(value for value in values if value))
 
 
@@ -459,12 +552,24 @@ _PLAIN_IN_TEXT = re.compile(r"^[\d\s.,+\-*/=:%]+$")
 
 
 def _has_free_symbols(value: sympy.Expr) -> bool:
-    """Return whether a value names something rather than denoting a value."""
+    """Return whether a value names something rather than denoting a value.
+
+    Args:
+    value:
+        Value.
+
+    Returns:
+    Whether the value contains an unbound symbol.
+    """
     return bool(_unwrap(value).free_symbols)
 
 
 def _unwrap(expression: sympy.Expr) -> sympy.Expr:
     """Reduce `x = 5` to the value it names, whichever side carries it.
+
+    Args:
+    expression:
+        SymPy expression to inspect or process.
 
     Returns:
         The expression, or the value an equality names.
@@ -482,8 +587,10 @@ def _symbolically_equivalent(left: str, right: str) -> bool | None:
     """Compare two answers as mathematical values.
 
     Args:
-        left: Answer string, LaTeX or plain arithmetic.
-        right: Answer string, LaTeX or plain arithmetic.
+    left:
+        Left-hand answer or value.
+    right:
+        Right-hand answer or value.
 
     Returns:
         Whether the two denote the same value, or None when either string is outside
@@ -503,6 +610,12 @@ def _symbolically_equivalent(left: str, right: str) -> bool | None:
 
 def _expressions_equivalent(left: sympy.Expr, right: sympy.Expr) -> bool:
     """Compare two values the way Inspect AI's math scorer does.
+
+    Args:
+    left:
+        Left-hand answer or value.
+    right:
+        Right-hand answer or value.
 
     Returns:
         Whether the two denote the same value.
@@ -524,6 +637,12 @@ def _expressions_equivalent(left: sympy.Expr, right: sympy.Expr) -> bool:
 def _close_enough(left: sympy.Expr, right: sympy.Expr) -> bool:
     """Apply the floating-point tolerance, but never to two exact values.
 
+    Args:
+    left:
+        Left-hand answer or value.
+    right:
+        Right-hand answer or value.
+
     Returns:
         Whether the two values are close enough to count as the same one.
     """
@@ -543,17 +662,37 @@ def _close_enough(left: sympy.Expr, right: sympy.Expr) -> bool:
 
 
 def _is_exact(expression: sympy.Expr) -> bool:
-    """Return whether SymPy can compare the value without approximating it."""
+    """Return whether SymPy can compare the value without approximating it.
+
+    Args:
+    expression:
+        SymPy expression to inspect or process.
+
+    Returns:
+    Whether SymPy can compare the expression without approximation.
+    """
     return bool(expression.is_number) and bool(expression.is_algebraic)
 
 
 def _is_numeric(expression: sympy.Expr) -> bool:
-    """Return whether the expression is a number rather than a formula."""
+    """Return whether the expression is a number rather than a formula.
+
+    Args:
+    expression:
+        SymPy expression to inspect or process.
+
+    Returns:
+    Whether the expression is a number without free symbols.
+    """
     return isinstance(expression, sympy.Expr) and not expression.free_symbols
 
 
 def _parse(text: str) -> sympy.Expr | None:
     """Rewrite a candidate and build it as a SymPy expression.
+
+    Args:
+    text:
+        Text to process.
 
     Returns:
         The expression, or None if the candidate does not translate or is out of bounds.
@@ -582,11 +721,28 @@ def _parse(text: str) -> sympy.Expr | None:
 def _build(tree: ast.Expression) -> sympy.Expr:
     """Turn a parsed plain expression into SymPy values.
 
+    Args:
+    tree:
+        Parsed Python expression tree.
+
     Returns:
         The value the expression denotes.
     """
 
     def build(node: ast.AST) -> sympy.Expr:
+        """Build a syntax-tree node as a SymPy expression.
+
+        Args:
+            node:
+                Syntax-tree node to process.
+
+        Returns:
+            The value the node denotes.
+
+        Raises:
+            MathParseError:
+                If the node is unsupported or exceeds a processing limit.
+        """
         if isinstance(node, ast.Expression):
             return build(node.body)
         if isinstance(node, ast.Constant):
@@ -622,6 +778,12 @@ class MathParseError(ValueError):
 def _binary(node: ast.BinOp, build: t.Callable[[ast.AST], sympy.Expr]) -> sympy.Expr:
     """Apply an arithmetic operator to two built operands.
 
+    Args:
+    node:
+        Syntax-tree node to process.
+    build:
+        Callback that builds a syntax-tree node as a SymPy expression.
+
     Returns:
         The result of the operation.
 
@@ -652,6 +814,10 @@ def _binary(node: ast.BinOp, build: t.Callable[[ast.AST], sympy.Expr]) -> sympy.
 def _constant(node: ast.Constant) -> sympy.Expr:
     """Build a number, keeping integers exact and decimals as written.
 
+    Args:
+    node:
+        Syntax-tree node to process.
+
     Returns:
         The value of the literal.
 
@@ -667,6 +833,12 @@ def _constant(node: ast.Constant) -> sympy.Expr:
 
 def _structure(node: ast.AST, build: t.Callable[[ast.AST], sympy.Expr]) -> sympy.Expr:
     """Build a sequence or an equation, both of which are values but not expressions.
+
+    Args:
+    node:
+        Syntax-tree node to process.
+    build:
+        Callback that builds a syntax-tree node as a SymPy expression.
 
     Returns:
         The tuple or equality the node denotes.
@@ -716,6 +888,10 @@ _FUNCTIONS = {
 def _check(expression: sympy.Expr) -> None:
     """Refuse expressions whose size would make comparison unbounded.
 
+    Args:
+    expression:
+        SymPy expression to inspect or process.
+
     Raises:
         MathParseError: If the expression is too large, deep, or expensive.
     """
@@ -752,7 +928,15 @@ def _check(expression: sympy.Expr) -> None:
 
 
 def _bit_length(value: object) -> int:
-    """Return the bit length of an integer-valued SymPy object."""
+    """Return the bit length of an integer-valued SymPy object.
+
+    Args:
+    value:
+        Value.
+
+    Returns:
+    The bit length, or a conservative over-limit value if conversion fails.
+    """
     try:
         return abs(int(t.cast("int", value))).bit_length()
     except (TypeError, ValueError, OverflowError):
@@ -760,7 +944,15 @@ def _bit_length(value: object) -> int:
 
 
 def _is_expensive_power(node: sympy.Pow) -> bool:
-    """Return whether a power is an exponent tower or has a huge exponent."""
+    """Return whether a power is an exponent tower or has a huge exponent.
+
+    Args:
+    node:
+        Syntax-tree node to process.
+
+    Returns:
+    Whether the power has a tower or an excessively large exponent.
+    """
     exponent = node.exp
     if isinstance(exponent, sympy.Pow):
         return True
@@ -775,6 +967,12 @@ def _guard_power(exponent: ast.expr) -> None:
     exponent is therefore measured before it is built, including when it is written as
     `-1000000000` or `1000000000 - 1`.
 
+
+
+    Args:
+    exponent:
+        Syntax-tree expression for the exponent.
+
     Raises:
         MathParseError: If the exponent is a tower or too large to expand.
     """
@@ -787,6 +985,10 @@ def _guard_power(exponent: ast.expr) -> None:
 
 def _exponent_size(node: ast.expr) -> float | None:
     """Estimate how big a power's exponent is, without evaluating it.
+
+    Args:
+    node:
+        Syntax-tree node to process.
 
     Returns:
         An upper bound on the magnitude, or None when the exponent is symbolic or is
@@ -824,6 +1026,12 @@ def _exponent_size(node: ast.expr) -> float | None:
 
 def _to_plain(text: str, depth: int = 0) -> str | None:
     """Rewrite a LaTeX answer into an arithmetic expression Python can parse.
+
+    Args:
+    text:
+        Text to process.
+    depth (optional):
+        Current recursive rewrite depth. Defaults to 0.
 
     Returns:
         The plain expression, or None where the rewrite would change the meaning.
@@ -884,12 +1092,26 @@ def _to_plain(text: str, depth: int = 0) -> str | None:
 
 
 def _keeps_commas(plain: str) -> bool:
-    """Return whether commas in a plain expression are structure rather than digits."""
+    """Return whether commas in a plain expression are structure rather than digits.
+
+    Args:
+    plain:
+        Rewritten arithmetic expression.
+
+    Returns:
+    Whether commas represent structure rather than digit grouping.
+    """
     return bool(re.fullmatch(r"[(\[].*[)\]]|\{.*\}", plain.strip()))
 
 
 def _powers(text: str, depth: int) -> str | None:
     """Rewrite ``x^{...}`` and ``x^n`` as Python exponentiation.
+
+    Args:
+    text:
+        Text to process.
+    depth:
+        Current recursive rewrite depth.
 
     Returns:
         The expression with ``**`` powers, or None where an exponent is unreadable.
@@ -921,13 +1143,27 @@ def _powers(text: str, depth: int) -> str | None:
 
 
 def _balanced(text: str, opening: int) -> tuple[str | None, int]:
-    """Return the contents of a balanced brace group and the index after it."""
+    """Return the contents of a balanced brace group and the index after it.
+
+    Args:
+    text:
+        Text to process.
+    opening:
+        Index of the opening brace.
+
+    Returns:
+    The brace contents and index after the group, or None when unbalanced.
+    """
     found = _balanced_content(text, opening)
     return (None, len(text)) if found is None else found
 
 
 def _products(text: str) -> str:
     r"""Insert the multiplication that LaTeX leaves implicit, as in ``2\\pi``.
+
+    Args:
+    text:
+        Text to process.
 
     Returns:
         The expression with explicit products where a coefficient runs into a value.
@@ -938,6 +1174,12 @@ def _products(text: str) -> str:
 
 def _rewrite(text: str, depth: int) -> str | None:
     """Replace value-bearing LaTeX commands with arithmetic, recursively.
+
+    Args:
+    text:
+        Text to process.
+    depth:
+        Current recursive rewrite depth.
 
     Returns:
         The rewritten text, or None for a command with no arithmetic meaning.
@@ -1001,6 +1243,12 @@ def _rewrite(text: str, depth: int) -> str | None:
 def _argument(text: str, position: int) -> tuple[str | None, int]:
     """Read one LaTeX argument, either braced or a single token.
 
+    Args:
+    text:
+        Text to process.
+    position:
+        Starting index in the source text.
+
     Returns:
         The argument and the position after it, or None and where reading stopped.
     """
@@ -1021,6 +1269,12 @@ def _argument(text: str, position: int) -> tuple[str | None, int]:
 
 def _optional_argument(text: str, position: int) -> tuple[str | None, int]:
     """Read a bracketed argument, such as the degree of a root.
+
+    Args:
+    text:
+        Text to process.
+    position:
+        Starting index in the source text.
 
     Returns:
         The argument, None when absent, and the position after it.

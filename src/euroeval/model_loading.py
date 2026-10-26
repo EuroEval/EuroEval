@@ -102,7 +102,7 @@ def load_model(
             The dataset configuration.
         benchmark_config:
             The benchmark configuration.
-        dtype_override:
+        dtype_override (optional):
             An explicit data type to load the model weights in, taking precedence
             over the hardware-derived default. Only applies to encoder models loaded
             for finetuning; used by the NaN-retry to force a full fp32 reload.
