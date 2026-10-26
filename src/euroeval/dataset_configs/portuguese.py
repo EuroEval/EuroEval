@@ -301,3 +301,13 @@ EU_MMLU_PT_CONFIG = DatasetConfig(
     unofficial=True,
     revision="f09e7b8d7f907be600d9649705a9069d3ab9918c",
 )
+
+MKQA_PT_CONFIG = DatasetConfig(
+    name="mkqa-pt",
+    pretty_name="MKQA-pt",
+    source="EuroEval/mkqa-pt-mini",
+    task=KNOW,
+    languages=[PORTUGUESE],
+    unofficial=True,
+    revision="4e3b24977b8b719e8c72529f443b2a4ea3d23d94",
+)

@@ -1950,6 +1950,9 @@ class TestVLLMPromptTruncation:
         model._model.generate.return_value = [mock_vllm_output]
 
         def _make_sampling_params(**kwargs) -> MagicMock:
+            # Mirror the constructor kwargs onto the mock so the code under test reads
+            # back the real values (e.g. `prompt_logprobs=None` selects the generation
+            # path rather than the BPC scoring path).
             """Build sampling parameters that expose constructor values to the test.
 
             Mirroring the arguments lets ``generate`` distinguish normal generation

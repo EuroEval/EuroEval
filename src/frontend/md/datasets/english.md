@@ -983,6 +983,93 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset multiloko-en
 ```
 
+### Unofficial: MKQA-en
+
+This dataset is an English version of [MKQA](https://aclanthology.org/2021.tacl-1.82/)
+(Multilingual Knowledge Questions and Answers), which has 10,000 open-domain questions
+sampled from Google's Natural Questions, with the questions and short answers
+translated into 26 languages. MKQA has no contexts, so we turn it into a multiple choice
+knowledge task: each question gets four options, namely the correct answer and three
+answers to other questions with the same answer type (entity, date, number, number with
+unit or short phrase). For numbers with a unit, the distractors also have the same unit,
+and for dates the same format, such as a year or a full date, so that the format of an
+option does not give away the answer. Questions with yes/no, long or no answers, and
+questions with very short or long texts, are left out, which leaves about 6,600
+questions, before duplicates and questions without three comparable distractors are
+removed.
+
+The original dataset has no splits. Rows that have the same question in at least one
+language are grouped, and the groups are shuffled with a fixed seed and divided into
+splits, so a question is in the same split in all MKQA languages. Within a split, a
+question that occurs more than once is kept only once. We use a 1,024 / 256 / 2,048
+split for training, validation and testing, respectively (so 3,328 samples used in
+total). The options of a question come from the answers to the other questions in its
+own split.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "who said it is well with my soul\nChoices:\na. Asia\nb. Jennifer Warnes\nc. Horatio Spafford\nd. Pat Shurmur",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "who wrote the song mary did you know\nChoices:\na. Mark Lowry\nb. John Denver\nc. Baby\nd. Jimmer Fredette",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "who play brady black in days of our lives\nChoices:\na. Lúthien\nb. Rachel Hughes\nc. Kyle Lowder\nd. Sheryl Crow",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are multiple choice questions (with answers).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Question: {text}
+  Choices:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Answer: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Question: {text}
+  Choices:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Answer the above question by replying with 'a', 'b', 'c' or 'd', and nothing else.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset mkqa-en
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag

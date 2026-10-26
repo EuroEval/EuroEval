@@ -272,3 +272,13 @@ EU_MMLU_FR_CONFIG = DatasetConfig(
     unofficial=True,
     revision="1d846fb187b119d1e53b2a562041e94c11417e57",
 )
+
+MKQA_FR_CONFIG = DatasetConfig(
+    name="mkqa-fr",
+    pretty_name="MKQA-fr",
+    source="EuroEval/mkqa-fr-mini",
+    task=KNOW,
+    languages=[FRENCH],
+    unofficial=True,
+    revision="0b2d78c2774f0bcf7b0da5507c8117fb5e89e3ff",
+)

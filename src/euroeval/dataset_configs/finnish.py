@@ -231,3 +231,13 @@ IFEVAL_FI_CONFIG = DatasetConfig(
     unofficial=True,
     revision="2c5040aeb9854be607be86cfa90c01a51fb74b16",
 )
+
+MKQA_FI_CONFIG = DatasetConfig(
+    name="mkqa-fi",
+    pretty_name="MKQA-fi",
+    source="EuroEval/mkqa-fi-mini",
+    task=KNOW,
+    languages=[FINNISH],
+    unofficial=True,
+    revision="01bee4ae32233b9f39661c37569a508514e2e7c4",
+)

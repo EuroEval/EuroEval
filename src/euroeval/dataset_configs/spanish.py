@@ -257,3 +257,13 @@ MULTINRC_ES_CONFIG = DatasetConfig(
     unofficial=True,
     revision="c5590749d47cd69b7bdcd65de79a1b89a89b1a98",
 )
+
+MKQA_ES_CONFIG = DatasetConfig(
+    name="mkqa-es",
+    pretty_name="MKQA-es",
+    source="EuroEval/mkqa-es-mini",
+    task=KNOW,
+    languages=[SPANISH],
+    unofficial=True,
+    revision="a143be5d147e297fb1cf8c9cad424d87f517bb81",
+)

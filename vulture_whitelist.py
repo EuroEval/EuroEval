@@ -1,9 +1,3 @@
-"""Document names that are genuine Vulture false positives.
-
-The entries below are referenced through annotations or external interfaces and
-must remain available even when Vulture cannot detect their use.
-"""
-
 # Vulture whitelist — KNOWN FALSE POSITIVES ONLY.
 #
 # Vulture reports each name below as unused, but every one is genuinely needed.
@@ -30,6 +24,11 @@ must remain available even when Vulture cannot detect their use.
 # vulture cannot see, so it thinks the imports are unused. They ARE used (by
 # ty and at documentation-time) and removing them breaks type checking.
 # ---------------------------------------------------------------------------
+"""Document names that are genuine Vulture false positives.
+
+The entries below are referenced through annotations or external interfaces and
+must remain available even when Vulture cannot detect their use.
+"""
 PreTrainedTokenizer     # base.py, hf.py, generation_utils.py, *task_group_utils*
 ComputeMetricsFunction  # benchmark_modules/base.py
 ModelResponse           # benchmark_modules/litellm.py

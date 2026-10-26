@@ -365,3 +365,13 @@ EU_MMLU_NL_CONFIG = DatasetConfig(
     unofficial=True,
     revision="c89814371cf1bd601061331226891d7e34ebddd2",
 )
+
+MKQA_NL_CONFIG = DatasetConfig(
+    name="mkqa-nl",
+    pretty_name="MKQA-nl",
+    source="EuroEval/mkqa-nl-mini",
+    task=KNOW,
+    languages=[DUTCH],
+    unofficial=True,
+    revision="0464f7cbfe10e791e25a8e6253a07666fec26a86",
+)

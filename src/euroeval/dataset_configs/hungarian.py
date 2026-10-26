@@ -183,3 +183,13 @@ EU_MMLU_HU_CONFIG = DatasetConfig(
     unofficial=True,
     revision="2209e2ae9ac1add5efec7c000d0a95ada18c295c",
 )
+
+MKQA_HU_CONFIG = DatasetConfig(
+    name="mkqa-hu",
+    pretty_name="MKQA-hu",
+    source="EuroEval/mkqa-hu-mini",
+    task=KNOW,
+    languages=[HUNGARIAN],
+    unofficial=True,
+    revision="badee0feba67c04645ce16accc0c7defdb4b9efc",
+)
