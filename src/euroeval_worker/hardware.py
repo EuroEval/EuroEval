@@ -23,10 +23,10 @@ def _run(command: list[str]) -> str:
 
     Args:
         command:
-            Command.
+            Argument vector passed to the subprocess.
 
     Returns:
-        The resulting value.
+        Standard output from the completed command.
     """
     completed = subprocess.run(command, check=True, capture_output=True, text=True)
     return completed.stdout
@@ -71,12 +71,12 @@ def _match(text: str, pattern: str) -> str | None:
 
     Args:
         text:
-            Text.
+            Input text to search.
         pattern:
-            Pattern.
+            Regular expression searched in the input text.
 
     Returns:
-        The resulting value.
+        The first capture group, or ``None`` when the pattern does not match.
     """
     match = re.search(pattern, text)
     return match.group(1) if match else None
@@ -86,7 +86,7 @@ def _pytorch_version() -> str | None:
     """Pytorch version.
 
     Returns:
-        The resulting value.
+        Installed PyTorch version, or ``None`` when PyTorch is not installed.
     """
     try:
         return importlib.metadata.version("torch")
@@ -98,7 +98,7 @@ def _ram_bytes() -> int:
     """Ram bytes.
 
     Returns:
-        The resulting value.
+        Physical RAM in bytes, or ``0`` when system page information is unavailable.
     """
     if hasattr(os, "sysconf"):
         return int(os.sysconf("SC_PHYS_PAGES") * os.sysconf("SC_PAGE_SIZE"))
@@ -110,7 +110,7 @@ def discover_gpus(runner: c.Callable[[list[str]], str] | None = None) -> list[Gp
 
     Args:
             runner (optional):
-                Runner.
+                Callable used to execute nvidia-smi queries.
 
     Returns:
             Discovered GPUs.
@@ -162,11 +162,12 @@ def _discover_spark_memory(gpu: Gpu) -> Gpu:
                 Gpu.
 
     Returns:
-            The resulting value.
+            GPU report with verified memory, or zeros if verification fails.
 
     Raises:
-    ValueError: Raised when the operation cannot be completed.
-            An exception when the operation cannot be completed.
+    ValueError:
+            If the input does not have the required structure or value.
+            The input is malformed or cannot be converted to the required value.
     """
     script = (
         "import json, torch; "
@@ -215,7 +216,7 @@ def _host_available_bytes() -> int | None:
     """Host available bytes.
 
     Returns:
-        The resulting value.
+        Available host memory in bytes, or ``None`` when it cannot be read.
     """
     try:
         for line in Path("/proc/meminfo").read_text().splitlines():
@@ -231,10 +232,10 @@ def _needs_spark_memory_fallback(gpu: Gpu) -> bool:
 
     Args:
         gpu:
-            Gpu.
+            GPU whose unified-memory measurement is being verified.
 
     Returns:
-        The resulting value.
+        Whether this GB10 GPU has missing free or total memory data.
     """
     return "gb10" in gpu.name.lower() and (
         gpu.free_memory_bytes == 0 or gpu.total_memory_bytes == 0
@@ -246,10 +247,10 @@ def _parse_gpu_csv(output: str) -> list[Gpu]:
 
     Args:
         output:
-            Output.
+            Raw CSV text returned by nvidia-smi.
 
     Returns:
-        The resulting value.
+        GPU reports parsed from valid nvidia-smi CSV rows.
     """
     gpus: list[Gpu] = []
     for row_index, line in enumerate(output.splitlines()):
@@ -289,10 +290,10 @@ def _memory_value(value: str) -> int:
 
     Args:
         value:
-            Value.
+            Input value to validate or convert.
 
     Returns:
-        The resulting value.
+        Memory amount converted from MiB to bytes; N/A values become ``0``.
     """
     if value.strip().lower() in {"n/a", "na", "[n/a]"}:
         return 0

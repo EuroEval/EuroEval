@@ -37,13 +37,13 @@ class EEERecord:
 
         Args:
                     record_json (optional):
-                        Record json.
+                        Exact JSON text, or a JSON object to canonicalise.
                     digest (optional):
-                        Digest.
+                        Expected SHA-256 digest of the corpus content.
                     record (optional):
-                        Record.
+                        EEE result whose exact JSON and digest are copied.
                     sha256 (optional):
-                        Sha256.
+                        Legacy alias for the expected record digest.
 
         Raises:
                     TypeError:
@@ -67,7 +67,7 @@ class EEERecord:
         """Expose the digest under the legacy attribute name.
 
         Returns:
-            The resulting value.
+            SHA-256 digest stored for this record.
         """
         return self.digest
 
@@ -76,7 +76,7 @@ class EEERecord:
         """Decode the record for compatibility with local evaluator callers.
 
         Returns:
-                    The resulting value.
+                    Decoded EEE JSON object; ``ValueError`` if JSON is not an object.
 
         Raises:
                     ValueError:
@@ -93,11 +93,12 @@ def _validate_json_text(value: str) -> None:
 
     Args:
             value:
-                Value.
+                Input value being decoded, validated, or serialised.
 
     Raises:
-    ValueError: Raised when the operation cannot be completed.
-            An exception when the operation cannot be completed.
+    ValueError:
+            If the input does not have the required structure or value.
+            The input is malformed or cannot be converted to the required value.
     """
     try:
         parsed = json.loads(value, parse_constant=_reject_constant)
@@ -114,7 +115,7 @@ def canonical_json(value: JsonObject) -> str:
 
     Args:
             value:
-                Value.
+                Input value being decoded, validated, or serialised.
 
     Returns:
             The canonical JSON text.
@@ -161,11 +162,12 @@ def _reject_constant(value: str) -> None:
 
     Args:
             value:
-                Value.
+                Input value being decoded, validated, or serialised.
 
     Raises:
-    ValueError: Raised when the operation cannot be completed.
-            An exception when the operation cannot be completed.
+    ValueError:
+            If the input does not have the required structure or value.
+            The input is malformed or cannot be converted to the required value.
     """
     raise ValueError(f"non-finite JSON constant {value!r} is not allowed")
 
@@ -185,7 +187,7 @@ def auth_poll_from_dict(data: dict[str, object]) -> AuthPoll:
 
     Args:
             data:
-                Data.
+                Broker response mapping to decode.
 
     Returns:
             The typed poll response.
@@ -205,12 +207,12 @@ def _optional_positive_integer(data: dict[str, object], key: str) -> int | None:
 
     Args:
         data:
-            Data.
+            Broker response object or persisted JSON fields.
         key:
-            Key.
+            Tuple index or broker response field name, as applicable.
 
     Returns:
-        The resulting value.
+        Positive integer field value, clamped to at least one, or ``None`` when absent.
     """
     value = data.get(key)
     if value is None:
@@ -224,18 +226,19 @@ def _integer(data: dict[str, object], key: str, default: int | None = None) -> i
 
     Args:
             data:
-                Data.
+                Broker response mapping to decode.
             key:
-                Key.
+                Field name to retrieve from the response object.
             default (optional):
-                Default.
+                Fallback used when the response mapping omits the field.
 
     Returns:
-            The resulting value.
+            Integer converted from the named field or its default.
 
     Raises:
-    ValueError: Raised when the operation cannot be completed.
-            An exception when the operation cannot be completed.
+    ValueError:
+            If the input does not have the required structure or value.
+            The input is malformed or cannot be converted to the required value.
     """
     value = data.get(key, default)
     if isinstance(value, bool) or not isinstance(value, (int, float, str)):
@@ -248,12 +251,12 @@ def _optional_string(data: dict[str, object], key: str) -> str | None:
 
     Args:
         data:
-            Data.
+            Broker response object or persisted JSON fields.
         key:
-            Key.
+            Tuple index or broker response field name, as applicable.
 
     Returns:
-        The resulting value.
+        String value for the named field, or ``None`` when absent or not a string.
     """
     value = data.get(key)
     return value if isinstance(value, str) else None
@@ -264,7 +267,7 @@ def _protocol(data: dict[str, object]) -> None:
 
     Args:
             data:
-                Data.
+                Broker response mapping to decode.
 
     Raises:
             ValueError:
@@ -290,7 +293,7 @@ def auth_start_from_dict(data: dict[str, object]) -> AuthStart:
 
     Args:
             data:
-                Data.
+                Broker response mapping to decode.
 
     Returns:
             The typed device-flow response.
@@ -310,16 +313,17 @@ def _string(data: dict[str, object], key: str) -> str:
 
     Args:
             data:
-                Data.
+                Broker response mapping to decode.
             key:
-                Key.
+                Field name to retrieve from the response object.
 
     Returns:
-            The resulting value.
+            Non-empty string from the named broker response field.
 
     Raises:
-    ValueError: Raised when the operation cannot be completed.
-            An exception when the operation cannot be completed.
+    ValueError:
+            If the input does not have the required structure or value.
+            The input is malformed or cannot be converted to the required value.
     """
     value = data.get(key)
     if not isinstance(value, str) or not value:
@@ -343,14 +347,15 @@ def _canary_instruction(value: object) -> CanaryInstruction | None:
 
     Args:
             value:
-                Value.
+                Input value being decoded, validated, or serialised.
 
     Returns:
-            The resulting value.
+            Decoded canary instruction, or ``None`` when the field is absent.
 
     Raises:
-    ValueError: Raised when the operation cannot be completed.
-            An exception when the operation cannot be completed.
+    ValueError:
+            If the input does not have the required structure or value.
+            The input is malformed or cannot be converted to the required value.
     """
     if value is None:
         return None
@@ -655,7 +660,7 @@ def _model_evidence(value: object) -> ModelEvidence:
 
     Args:
             value:
-                Value.
+                Input value being decoded, validated, or serialised.
 
     Returns:
             The decoded immutable model evidence.
@@ -694,18 +699,19 @@ def _number(data: dict[str, object], key: str, default: float | None = None) -> 
 
     Args:
             data:
-                Data.
+                Broker response mapping to decode.
             key:
-                Key.
+                Field name to retrieve from the response object.
             default (optional):
-                Default.
+                Fallback used when the response mapping omits the field.
 
     Returns:
-            The resulting value.
+            Never returns; raises ``ValueError`` for a non-finite JSON constant.
 
     Raises:
-    ValueError: Raised when the operation cannot be completed.
-            An exception when the operation cannot be completed.
+    ValueError:
+            If the input does not have the required structure or value.
+            The input is malformed or cannot be converted to the required value.
     """
     value = data.get(key, default)
     if isinstance(value, bool) or not isinstance(value, (int, float)):
@@ -718,16 +724,17 @@ def _optional_integer(data: dict[str, object], key: str) -> int | None:
 
     Args:
             data:
-                Data.
+                Broker response mapping to decode.
             key:
-                Key.
+                Field name to retrieve from the response object.
 
     Returns:
-            The resulting value.
+            Value derived from the documented inputs.
 
     Raises:
-    ValueError: Raised when the operation cannot be completed.
-            An exception when the operation cannot be completed.
+    ValueError:
+            If the input does not have the required structure or value.
+            The input is malformed or cannot be converted to the required value.
     """
     value = data.get(key)
     if value is None:

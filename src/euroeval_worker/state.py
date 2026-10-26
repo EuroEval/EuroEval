@@ -125,14 +125,15 @@ def _canary_instruction(value: object) -> CanaryInstruction | None:
 
     Args:
             value:
-                Value.
+                Input value being decoded, validated, or serialised.
 
     Returns:
-            The resulting value.
+            Decoded canary instruction, or ``None`` when no instruction was persisted.
 
     Raises:
-    ValueError: Raised when the operation cannot be completed.
-            An exception when the operation cannot be completed.
+    ValueError:
+            If the input does not have the required structure or value.
+            The input is malformed or cannot be converted to the required value.
     """
     if value is None:
         return None
@@ -175,7 +176,7 @@ class PendingRecord:
 
         Args:
                     record:
-                        Record.
+                        EEE result whose exact JSON and digest are copied.
 
         Returns:
                     The durable pending representation.
@@ -186,7 +187,7 @@ class PendingRecord:
         """Return the exact result stored in this state entry.
 
         Returns:
-            The resulting value.
+            EEE record reconstructed from the exact stored JSON and digest.
         """
         return EEERecord(record_json=self.record_json, digest=self.digest)
 
@@ -239,7 +240,7 @@ class StateStore:
         """Return the saved opaque credential and verified login.
 
         Returns:
-                    The resulting value.
+                    Saved credential and login, or ``None`` when absent.
 
         Raises:
                     RuntimeError:
@@ -261,7 +262,7 @@ class StateStore:
         """Return the most recently reported submission identifier.
 
         Returns:
-                    The resulting value.
+                    Last submission identifier, or ``None`` when absent or invalid.
 
         Raises:
                     RuntimeError:
@@ -290,7 +291,7 @@ class StateStore:
 
         Args:
                     submission_id:
-                        Submission id.
+                        Identifier returned by the broker after submission.
 
         Raises:
                     RuntimeError:
@@ -364,11 +365,11 @@ class StateStore:
 
         Args:
             lease:
-                Lease.
+                Lease whose state is being persisted.
             records (optional):
-                Records.
+                Pending records retained for the active lease.
             github_login (optional):
-                Github login.
+                Verified account name associated with the broker credential.
             finalised_submission_id (optional):
                 Finalised submission id.
         """
@@ -392,9 +393,9 @@ class StateStore:
             path:
                 Path.
             value:
-                Value.
+                Input value being decoded, validated, or serialised.
             mode (optional):
-                Mode.
+                Permissions to apply to the state file.
         """
         self.directory.mkdir(parents=True, exist_ok=True)
         temporary = path.with_name(f".{path.name}.tmp")
@@ -420,7 +421,7 @@ class StateStore:
 
         Args:
                     lease:
-                        Lease.
+                        Broker-issued lease to persist or renew.
 
         Raises:
                     RuntimeError:
@@ -447,9 +448,9 @@ class StateStore:
 
         Args:
             credential:
-                Credential.
+                Opaque credential returned by broker device-flow authentication.
             github_login:
-                Github login.
+                Verified account name associated with the broker credential.
         """
         self._atomic_write(
             self.path,
@@ -462,9 +463,9 @@ class StateStore:
 
         Args:
                     digest:
-                        Digest.
+                        Expected SHA-256 digest of the corpus content.
                     content:
-                        Content.
+                        Exact lease-delivered corpus text to persist.
 
         Returns:
                     Path to the immutable local corpus.
@@ -497,7 +498,7 @@ class StateStore:
 
         Args:
                     records:
-                        Records.
+                        Pending result records to persist for the active lease.
 
         Raises:
                     RuntimeError:
@@ -548,14 +549,15 @@ def _pending_from_dict(value: object) -> PendingRecord:
 
     Args:
             value:
-                Value.
+                Input value being decoded, validated, or serialised.
 
     Returns:
-            The resulting value.
+            Validated pending record with its acknowledgement state.
 
     Raises:
-    ValueError: Raised when the operation cannot be completed.
-            An exception when the operation cannot be completed.
+    ValueError:
+            If the input does not have the required structure or value.
+            The input is malformed or cannot be converted to the required value.
     """
     if not isinstance(value, dict):
         raise ValueError("pending record is not an object")
