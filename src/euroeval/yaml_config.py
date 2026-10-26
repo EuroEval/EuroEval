@@ -29,6 +29,10 @@ _TASK_SELECTOR_PREFIX = "__task_"
 def _parse_task_selector_index(token: str) -> int | None:
     """Decode a task index from the reserved selector syntax.
 
+    Args:
+        token:
+            Selector component containing the reserved task-index encoding.
+
     Returns:
         The task index, or None when the token is not valid.
     """
@@ -235,7 +239,25 @@ def load_yaml_config(
 def _expanded_task_identity(
     repo_id: str, task_index: int, config: str, split: str | None, tasks: list[object]
 ) -> str:
-    """Return an injective, round-trippable identity for an expanded task entry."""
+    """Return an injective, round-trippable identity for an expanded task entry.
+
+    Args:
+        repo_id:
+            Hugging Face repository ID.
+        task_index:
+            Zero-based index of the task entry in the YAML file.
+        config:
+            Task configuration name, or an empty string when it has none.
+        split:
+            Task split name, or None when it has none.
+        tasks:
+            All task entries declared in the YAML file, used to detect duplicate
+            configuration and split pairs.
+
+    Returns:
+        A selector string that identifies this task entry and can be parsed back into
+        its repository, configuration, split, and task index.
+    """
     task_entries = [task for task in tasks if isinstance(task, dict)]
     duplicate_key = (config, split)
     duplicate_count = sum(
@@ -257,6 +279,10 @@ def _expanded_task_identity(
 
 def _task_selector_token(task_index: int) -> str:
     """Encode a task index in the reserved selector syntax.
+
+    Args:
+        task_index:
+            Zero-based index of the task entry.
 
     Returns:
         The encoded task index.
@@ -352,10 +378,10 @@ def load_dataset_config_from_yaml(
     Args:
         yaml_path:
             Path to the YAML config file.
-        fallback_language_codes:
+        fallback_language_codes (optional):
             ISO 639-1 language codes to use when the YAML file does not contain a
-            `languages` key. Typically supplied from HuggingFace Hub repo metadata
-            by `try_get_dataset_config_from_repo`.
+            `languages` key. Typically supplied from Hugging Face Hub repository
+            metadata. Defaults to None.
         task_index (optional):
             The Inspect AI task entry to load. Defaults to 0.
 
@@ -709,10 +735,10 @@ def select_inspect_ai_tasks(
             The parsed YAML data.
         subset_split:
             The requested split, if any.
-        subset_config:
+        subset_config (optional):
             The configuration of a directly named subset, if the full subset name was
             requested. Not usable on its own, as configurations are language names
-            named in the selector as `config::split`.
+            named in the selector as `config::split`. Defaults to None.
         dataset_id:
             The requested dataset ID, used for error messages.
 
