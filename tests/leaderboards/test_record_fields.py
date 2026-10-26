@@ -33,14 +33,15 @@ def _record(
     """Build a minimal EEE-style record.
 
     Args:
-        name:
-            The model name to store in ``model_info.name``.
-        dataset:
-            The dataset name to store in the record.
-        version:
-            The EuroEval version to store, or None to omit it.
-        generative:
+        name (optional):
+            The model name to store in ``model_info.name``. Defaults to "org/model".
+        dataset (optional):
+            The dataset name to store in the record. Defaults to "angry-tweets".
+        version (optional):
+            The EuroEval version to store, or None to omit it. Defaults to None.
+        generative (optional):
             Value for the ``generative`` flag, or None to omit it entirely.
+            Defaults to None.
 
     Returns:
         A minimal EEE-style record.

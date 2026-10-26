@@ -147,6 +147,12 @@ def _archive_offsite(backup_path: Path) -> bool:
 def _run_archive(backup_path: Path, cli: Path) -> subprocess.CompletedProcess[str]:
     """Run the Jottacloud archive command without invoking a shell.
 
+    Args:
+        backup_path:
+            Archive file to upload.
+        cli:
+            Path to the Jottacloud CLI executable.
+
     Returns:
         The completed archive command.
     """
@@ -263,7 +269,15 @@ def _jotta_cli() -> Path | None:
 
 
 def _is_jottad_connection_failure(result: subprocess.CompletedProcess[str]) -> bool:
-    """Return whether an archive failure explicitly reports unavailable jottad."""
+    """Return whether an archive failure explicitly reports unavailable jottad.
+
+    Args:
+        result:
+            Completed archive command to inspect.
+
+    Returns:
+        Whether its output reports a jottad connection failure.
+    """
     output = f"{result.stderr or ''}\n{result.stdout or ''}"
     return _JOTTAD_CONNECTION_FAILURE_RE.search(output) is not None
 
@@ -509,6 +523,15 @@ def _content_hash(paths: list[Path]) -> str:
     # Compute relative paths and sort by them for stable ordering
 
     def _rel_path(p: Path) -> str:
+        """Return a path relative to its results directory.
+
+        Args:
+            p:
+                Result file path.
+
+        Returns:
+            Path relative to the results directory.
+        """
         return str(p.relative_to(p.parent.parent))
 
     sorted_paths = sorted(paths, key=_rel_path)

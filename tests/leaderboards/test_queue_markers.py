@@ -12,6 +12,8 @@ from leaderboards import queue_markers
 
 
 class _Issue(TypedDict):
+    """Minimal issue fields used by queue-marker tests."""
+
     state: str
     body: str
     assignees: list[dict[str, str]]
@@ -296,6 +298,9 @@ def _signed_marker(body: str, issue_number: int, secret: str) -> str:
             Issue number supplied to the test.
         secret:
             Secret supplied to the test.
+
+    Returns:
+        Marker body containing the generated signature.
     """
     assert queue_markers.parse_community_marker(body) is not None
     payload = json.loads(body.split("v1 ", 1)[1].rsplit(" -->", 1)[0])

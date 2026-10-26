@@ -589,7 +589,18 @@ def _cleanup_pty_process(
     log_fh: t.IO[bytes] | None,
     log_file: Path | t.IO[bytes] | None,
 ) -> None:
-    """Clean up PTY file descriptor and kill process group."""
+    """Clean up PTY file descriptor and kill process group.
+
+    Args:
+        parent_fd:
+            Parent-side PTY file descriptor to close.
+        spawned_pgid:
+            Spawned process group to terminate, if any.
+        log_fh:
+            Open log file handle, if any.
+        log_file:
+            Log destination used to decide whether to close the handle.
+    """
     os.close(parent_fd)
     if spawned_pgid is not None:
         try:

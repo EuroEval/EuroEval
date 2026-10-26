@@ -283,6 +283,9 @@ def _pareto_categories_per_model(
         bootstrap_scores (optional):
             Precomputed scores, retained for focused callers that provide
             deterministic distributions. Defaults to None.
+
+    Returns:
+        Model identifiers mapped to their non-dominated categories.
     """
     if bootstrap_scores is None:
         bootstrap_scores = {}
@@ -405,7 +408,22 @@ def _complete_coverage_model_results(
     category: LeaderboardCategory,
     model_types: dict[str, ModelType] | None = None,
 ) -> dict[str, dict[str, list[tuple[list[float], float, float]]]]:
-    """Return category-eligible models with every required dataset."""
+    """Return category-eligible models with every required dataset.
+
+    Args:
+        model_results:
+            Results grouped by model and dataset.
+        configs:
+            Per-language leaderboard configurations.
+        category:
+            Leaderboard category whose dataset coverage is required.
+        model_types (optional):
+            Model types used to exclude zero-shot classifiers from understanding.
+            Defaults to None.
+
+    Returns:
+        Category-eligible models and their dataset results.
+    """
     required_datasets = _required_datasets(configs=configs, category=category)
     return {
         model_id: model_results[model_id]
@@ -422,7 +440,17 @@ def _complete_coverage_model_results(
 def _required_datasets(
     configs: dict[str, dict[str, list[str]]], category: LeaderboardCategory
 ) -> set[str]:
-    """Return all non-orthogonal datasets applicable to a category."""
+    """Return all non-orthogonal datasets applicable to a category.
+
+    Args:
+        configs:
+            Per-language leaderboard configurations.
+        category:
+            Leaderboard category to evaluate.
+
+    Returns:
+        Dataset names applicable to the category.
+    """
     return {
         dataset
         for config in configs.values()
@@ -440,6 +468,17 @@ def _is_significantly_worse(
 
     Rank scores are minimised. Thus a positive lower percentile of
     ``candidate - competitor`` means the candidate is significantly worse.
+
+    Args:
+        candidate:
+            Bootstrap distribution for the candidate model.
+        competitor:
+            Bootstrap distribution for the competing model.
+        alpha (optional):
+            Significance level. Defaults to 0.05.
+
+    Returns:
+        Whether the candidate is significantly worse.
     """
     candidate_array = np.asarray(candidate)
     competitor_array = np.asarray(competitor)

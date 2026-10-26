@@ -196,6 +196,15 @@ def generate_leaderboard(
                 # mean missing). Keep formatted scores like "60.17 ± 1.40" as-is.
 
                 def normalise_score(x: float | str) -> float | str:
+                    """Normalise missing-score placeholders for comparison.
+
+                    Args:
+                        x:
+                            Score value to normalise.
+
+                    Returns:
+                        NaN for missing values, otherwise the trimmed string.
+                    """
                     if pd.isna(x):
                         return float("nan")
                     s = str(x).strip()
@@ -229,6 +238,15 @@ def generate_leaderboard(
                         # A real score is any non-placeholder value
 
                         def is_not_placeholder(x: float | str) -> bool:
+                            """Return whether a score contains a real value.
+
+                            Args:
+                                x:
+                                    Score value to inspect.
+
+                            Returns:
+                                Whether the value is not a missing-score placeholder.
+                            """
                             if pd.isna(x):
                                 return False
                             return str(x).strip() not in {"-", "N/A", "?", ""}

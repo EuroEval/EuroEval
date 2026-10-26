@@ -207,13 +207,31 @@ def fetch_issue_body(number: int) -> str:
 
 
 def issue_is_solely_assigned_to(issue: dict[str, t.Any], login: str) -> bool:
-    """Return whether exactly ``login`` is assigned to an issue."""
+    """Return whether exactly ``login`` is assigned to an issue.
+
+    Args:
+        issue:
+            GitHub issue object.
+        login:
+            Login to compare against the issue's assignees.
+
+    Returns:
+        Whether the issue has exactly the specified assignee.
+    """
     assignees = issue_assignee_logins(issue)
     return len(assignees) == 1 and assignees[0].casefold() == login.casefold()
 
 
 def issue_assignee_logins(issue: dict[str, t.Any]) -> list[str]:
-    """Return well-formed assignee logins from a GitHub issue object."""
+    """Return well-formed assignee logins from a GitHub issue object.
+
+    Args:
+        issue:
+            GitHub issue object to inspect.
+
+    Returns:
+        Valid login strings from the issue's assignee list.
+    """
     assignees = issue.get("assignees")
     if not isinstance(assignees, list):
         return []

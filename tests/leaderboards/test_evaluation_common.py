@@ -257,11 +257,15 @@ def test_pty_drain_handles_exited_parent_with_open_grandchild(
 
         Args:
             disable (optional):
-                Disable supplied to the test. Defaults to True.
+                Whether terminal output is disabled. Defaults to True.
+
+        Yields:
+            None.
         """
         yield
 
     def _mock_resolve_hf_token() -> None:
+        """Return no token for this test's mocked environment."""
         return None
 
     # Patch before calling run_euroeval

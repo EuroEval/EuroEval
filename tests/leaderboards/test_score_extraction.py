@@ -123,14 +123,14 @@ class TestExtractModelMetadata:
         """Build a minimal EEE-style record.
 
         Args:
-            name:
-                The model name.
-            dataset:
-                The dataset name.
-            version:
-                The EuroEval version.
-            additional_details:
-                Additional details to include.
+            name (optional):
+                The model name. Defaults to "org/model".
+            dataset (optional):
+                The dataset name. Defaults to "angry-tweets".
+            version (optional):
+                The EuroEval version. Defaults to "17.6.0".
+            additional_details (optional):
+                Additional details to include. Defaults to None.
 
         Returns:
             A minimal EEE-style record.
