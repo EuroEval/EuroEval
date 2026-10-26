@@ -637,6 +637,7 @@ class DatasetConfig:
         name: str | None = None,
         pretty_name: str | None = None,
         source: str | dict[str, str] | None = None,
+        revision: str = "main",
         prompt_prefix: str | None = None,
         prompt_template: str | None = None,
         instruction_prompt: str | None = None,
@@ -677,6 +678,8 @@ class DatasetConfig:
                 dictionary with keys "train", "val" and "test" mapping to local CSV file
                 paths. Can be None if and only if the dataset config resides directly in
                 the Hugging Face dataset repo. Defaults to None.
+            revision:
+                Hugging Face dataset revision to load. Defaults to "main".
             prompt_prefix (optional):
                 The prefix to use in the few-shot prompt. Defaults to the template for
                 the task and language.
@@ -757,6 +760,7 @@ class DatasetConfig:
         self._name = name
         self._pretty_name = pretty_name
         self._source = source
+        self.revision = revision
         self.task = task
         self.languages = list(languages)
 

@@ -7,6 +7,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Dataset loading now supports pinned Hugging Face revisions, with built-in dataset
+  revisions refreshed and validated before version bumps.
+
 ## [v18.3.0] - 2026-10-08
 
 ### Added
