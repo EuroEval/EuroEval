@@ -228,6 +228,37 @@ def main(
 ) -> None:
     """Replace an official leaderboard dataset with one or more new ones.
 
+    Args:
+        old_dataset:
+            Dataset id being replaced, or None when adding datasets.
+        new_datasets:
+            Dataset ids to promote to official.
+        branch (optional):
+            Branch for the changes. Defaults to a generated branch name.
+        add_only:
+            Whether to add datasets without replacing one.
+        include_api:
+            Whether API models may be evaluated.
+        generative_only:
+            Whether to evaluate only generative leaderboard rows.
+        api_providers (optional):
+            Comma-separated API provider names to evaluate.
+        gpu_memory_utilization (optional):
+            GPU memory fraction used by the fit pre-check.
+        skip_eval:
+            Whether to skip evaluations.
+        allow_eval_failures:
+            Whether to proceed with the swap after evaluation failures.
+        pr:
+            Whether to commit, push, and open a pull request.
+        reviewer:
+            GitHub username to request as reviewer.
+        force:
+            Whether to re-run pairs that already have results.
+        dry_run:
+            Whether to report planned work without changing files or running
+            evaluations.
+
     Raises:
         ClickException:
             If --api-providers is set without --include-api, if --pr is set without
@@ -444,10 +475,10 @@ def _git(
     Args:
         args:
             The git subcommand and arguments.
-        check:
-            Whether to raise on a non-zero exit.
-        capture:
-            Whether to capture stdout/stderr.
+        check (optional):
+            Whether to raise on a non-zero exit. Defaults to True.
+        capture (optional):
+            Whether to capture stdout/stderr. Defaults to False.
 
     Returns:
         The completed process.
@@ -909,8 +940,8 @@ def open_pull_request(
             The branch to push.
         changed_paths:
             The files that were changed (staged explicitly).
-        reviewer:
-            GitHub username to request as reviewer.
+        reviewer (optional):
+            GitHub username to request as reviewer. Defaults to ``saattrupdan``.
     """
     for path in changed_paths:
         _git("add", str(path))
@@ -955,10 +986,10 @@ def _gh(
     Args:
         args:
             The gh subcommand and arguments.
-        check:
-            Whether to raise on a non-zero exit.
-        capture:
-            Whether to capture stdout/stderr.
+        check (optional):
+            Whether to raise on a non-zero exit. Defaults to True.
+        capture (optional):
+            Whether to capture stdout/stderr. Defaults to False.
 
     Returns:
         The completed process.
@@ -2206,6 +2237,16 @@ def sync_results_from_bucket(
     then merges the local per-record JSON tree into NEW_RESULTS_PATH (appending,
     not overwriting) so subsequent evaluations can detect and skip
     already-completed runs.
+
+    Args:
+        old_dataset:
+            Dataset id being replaced, or None when adding datasets.
+        new_datasets:
+            Dataset ids being promoted to official.
+        swapped_task:
+            Task name associated with the swap.
+        target_codes:
+            Language codes whose leaderboard results are needed.
     """
     dataset_ids = result_sync_dataset_ids(
         old_dataset=old_dataset,
@@ -2263,6 +2304,10 @@ def sync_results_from_bucket(
 
 def download_bucket_files_for_datasets(dataset_ids: set[str]) -> int:
     """Download missing bucket files whose filenames match dataset ids.
+
+    Args:
+        dataset_ids:
+            Dataset ids used to select result files from the bucket.
 
     Returns:
         Number of files downloaded.
@@ -2332,6 +2377,19 @@ def result_sync_dataset_ids(
     The swap planner needs all datasets that define whether a model is ranked on
     the affected leaderboard category, plus the incoming datasets so existing
     replacement results can be skipped.
+
+    Args:
+        old_dataset:
+            Dataset id being replaced, or None when adding datasets.
+        new_datasets:
+            Dataset ids being promoted to official.
+        swapped_task:
+            Task name associated with the swap.
+        target_codes:
+            Language codes whose leaderboard results are needed.
+
+    Returns:
+        Dataset ids whose result files are required for the swap.
     """
     affected = [
         category
