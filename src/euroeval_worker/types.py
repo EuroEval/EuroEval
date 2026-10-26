@@ -38,6 +38,16 @@ class EEERecord:
         Raises:
             TypeError:
                 If neither a JSON string nor an object is supplied.
+
+        Args:
+            record_json (optional):
+                Record json.
+            digest (optional):
+                Digest.
+            record (optional):
+                Record.
+            sha256 (optional):
+                Sha256.
         """
         if record_json is None:
             record_json = record
@@ -54,7 +64,11 @@ class EEERecord:
 
     @property
     def sha256(self) -> str:
-        """Expose the digest under the legacy attribute name."""
+        """Expose the digest under the legacy attribute name.
+
+        Returns:
+            The resulting value.
+        """
         return self.digest
 
     @property
@@ -64,6 +78,9 @@ class EEERecord:
         Raises:
             ValueError:
                 If the stored JSON does not contain an object.
+
+        Returns:
+            The resulting value.
         """
         value = json.loads(self.record_json)
         if not isinstance(value, dict):
@@ -72,6 +89,15 @@ class EEERecord:
 
 
 def _validate_json_text(value: str) -> None:
+    """Validate json text.
+
+    Args:
+        value:
+            Value.
+
+    Raises:
+        An exception when the operation cannot be completed.
+    """
     try:
         parsed = json.loads(value, parse_constant=_reject_constant)
     except (ValueError, json.JSONDecodeError) as error:
@@ -88,6 +114,9 @@ def canonical_json(value: JsonObject) -> str:
     Returns:
         The canonical JSON text.
 
+    Args:
+        value:
+            Value.
     """
     return json.dumps(
         value,
@@ -127,6 +156,15 @@ class HardwareReport:
 
 
 def _reject_constant(value: str) -> None:
+    """Reject constant.
+
+    Args:
+        value:
+            Value.
+
+    Raises:
+        An exception when the operation cannot be completed.
+    """
     raise ValueError(f"non-finite JSON constant {value!r} is not allowed")
 
 
@@ -145,6 +183,10 @@ def auth_poll_from_dict(data: dict[str, object]) -> AuthPoll:
 
     Returns:
         The typed poll response.
+
+    Args:
+        data:
+            Data.
     """
     _protocol(data)
     pending = data.get("status") == "pending" or bool(data.get("pending", False))
@@ -157,6 +199,17 @@ def auth_poll_from_dict(data: dict[str, object]) -> AuthPoll:
 
 
 def _optional_positive_integer(data: dict[str, object], key: str) -> int | None:
+    """Optional positive integer.
+
+    Args:
+        data:
+            Data.
+        key:
+            Key.
+
+    Returns:
+        The resulting value.
+    """
     value = data.get(key)
     if value is None:
         return None
@@ -165,6 +218,22 @@ def _optional_positive_integer(data: dict[str, object], key: str) -> int | None:
 
 
 def _integer(data: dict[str, object], key: str, default: int | None = None) -> int:
+    """Integer.
+
+    Args:
+        data:
+            Data.
+        key:
+            Key.
+        default (optional):
+            Default.
+
+    Returns:
+        The resulting value.
+
+    Raises:
+        An exception when the operation cannot be completed.
+    """
     value = data.get(key, default)
     if isinstance(value, bool) or not isinstance(value, (int, float, str)):
         raise ValueError(f"broker response field {key!r} must be an integer")
@@ -172,6 +241,17 @@ def _integer(data: dict[str, object], key: str, default: int | None = None) -> i
 
 
 def _optional_string(data: dict[str, object], key: str) -> str | None:
+    """Optional string.
+
+    Args:
+        data:
+            Data.
+        key:
+            Key.
+
+    Returns:
+        The resulting value.
+    """
     value = data.get(key)
     return value if isinstance(value, str) else None
 
@@ -182,6 +262,10 @@ def _protocol(data: dict[str, object]) -> None:
     Raises:
         ValueError:
             If the response protocol is unsupported.
+
+    Args:
+        data:
+            Data.
     """
     if data.get("protocol_version") != PROTOCOL_VERSION:
         raise ValueError("broker response has an unsupported protocol_version")
@@ -203,6 +287,10 @@ def auth_start_from_dict(data: dict[str, object]) -> AuthStart:
 
     Returns:
         The typed device-flow response.
+
+    Args:
+        data:
+            Data.
     """
     _protocol(data)
     return AuthStart(
@@ -215,6 +303,20 @@ def auth_start_from_dict(data: dict[str, object]) -> AuthStart:
 
 
 def _string(data: dict[str, object], key: str) -> str:
+    """String.
+
+    Args:
+        data:
+            Data.
+        key:
+            Key.
+
+    Returns:
+        The resulting value.
+
+    Raises:
+        An exception when the operation cannot be completed.
+    """
     value = data.get(key)
     if not isinstance(value, str) or not value:
         raise ValueError(f"broker response field {key!r} must be a non-empty string")
@@ -233,6 +335,18 @@ class CanaryInstruction:
 
 
 def _canary_instruction(value: object) -> CanaryInstruction | None:
+    """Canary instruction.
+
+    Args:
+        value:
+            Value.
+
+    Returns:
+        The resulting value.
+
+    Raises:
+        An exception when the operation cannot be completed.
+    """
     if value is None:
         return None
     if not isinstance(value, dict):
@@ -540,6 +654,10 @@ def _model_evidence(value: object) -> ModelEvidence:
     Raises:
         ValueError:
             If the evidence is missing or malformed.
+
+    Args:
+        value:
+            Value.
     """
     if not isinstance(value, dict):
         raise ValueError("broker response model_metadata is required")
@@ -567,6 +685,22 @@ def _model_evidence(value: object) -> ModelEvidence:
 
 
 def _number(data: dict[str, object], key: str, default: float | None = None) -> float:
+    """Number.
+
+    Args:
+        data:
+            Data.
+        key:
+            Key.
+        default (optional):
+            Default.
+
+    Returns:
+        The resulting value.
+
+    Raises:
+        An exception when the operation cannot be completed.
+    """
     value = data.get(key, default)
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ValueError(f"broker response field {key!r} must be a number")
@@ -574,6 +708,20 @@ def _number(data: dict[str, object], key: str, default: float | None = None) -> 
 
 
 def _optional_integer(data: dict[str, object], key: str) -> int | None:
+    """Optional integer.
+
+    Args:
+        data:
+            Data.
+        key:
+            Key.
+
+    Returns:
+        The resulting value.
+
+    Raises:
+        An exception when the operation cannot be completed.
+    """
     value = data.get(key)
     if value is None:
         return None

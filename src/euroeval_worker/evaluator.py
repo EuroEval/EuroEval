@@ -14,7 +14,11 @@ from .types import EEERecord, JsonValue, Lease, canonical_json
 
 
 def _canary_tasks() -> list[str]:
-    """Return official task names together with the canary task."""
+    """Return official task names together with the canary task.
+
+    Returns:
+        The resulting value.
+    """
     configs = get_all_dataset_configs(
         custom_datasets_file=Path(""),
         dataset_ids=[],
@@ -59,6 +63,13 @@ def _official_dataset_configs(language: str) -> list[DatasetConfig]:
     The public benchmark defaults now include the canary. A worker lease without a
     canary requirement must therefore pass an explicit ordinary dataset selection to
     retain the broker's opt-in semantics.
+
+    Args:
+        language:
+            Language.
+
+    Returns:
+        The resulting value.
     """
     configs = get_all_dataset_configs(
         custom_datasets_file=Path(""),
@@ -139,7 +150,7 @@ class EuroEvalEvaluator(Evaluator):
                 Broker-issued evaluation lease.
             output_path:
                 JSONL path to receive the isolated evaluation records.
-            gpu_memory_utilisation:
+            gpu_memory_utilisation (optional):
                 Effective fraction of total GPU memory to offer vLLM. Defaults to the
                 configured utilisation when omitted.
 

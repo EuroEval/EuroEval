@@ -16,11 +16,29 @@ class AuthProtocol(t.Protocol):
     """Operations required for device-flow authentication."""
 
     def poll_auth(self, session_id: str) -> AuthPoll:
-        """Poll a device flow."""
+        """Poll a device flow.
+
+        Args:
+            session_id:
+                Session id.
+
+        Returns:
+            The resulting value.
+
+        Raises:
+            An exception when the operation cannot be completed.
+        """
         raise NotImplementedError
 
     def start_auth(self) -> AuthStart:
-        """Start a device flow."""
+        """Start a device flow.
+
+        Returns:
+            The resulting value.
+
+        Raises:
+            An exception when the operation cannot be completed.
+        """
         raise NotImplementedError
 
 
@@ -39,6 +57,14 @@ def authenticate(
             If the user does not approve the device flow in time.
         BrokerError:
             If the broker returns an authentication error without retry metadata.
+
+    Args:
+        client:
+            Client.
+        state:
+            State.
+        sleep (optional):
+            Sleep.
     """
     saved = state.load_auth()
     if saved is not None:

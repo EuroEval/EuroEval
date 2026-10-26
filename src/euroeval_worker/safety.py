@@ -66,7 +66,36 @@ class ModelMetadata:
         backend_compatible: bool = False,
         config: object | None = None,
     ) -> None:
-        """Initialise metadata used by :func:`check_model_safety`."""
+        """Initialise metadata used by :func:`check_model_safety`.
+
+        Args:
+            private:
+                Private.
+            gated:
+                Gated.
+            auto_map:
+                Auto map.
+            files:
+                Files.
+            safetensors:
+                Safetensors.
+            estimated_bytes:
+                Estimated bytes.
+            architectures (optional):
+                Architectures.
+            repository_bytes (optional):
+                Repository bytes.
+            pipeline_tag (optional):
+                Pipeline tag.
+            model_type (optional):
+                Model type.
+            is_encoder_decoder (optional):
+                Is encoder decoder.
+            backend_compatible (optional):
+                Backend compatible.
+            config (optional):
+                Config.
+        """
         self.private = private
         self.gated = gated
         self.auto_map = auto_map
@@ -101,6 +130,12 @@ class HuggingFaceMetadata:
         Raises:
             SafetyError:
                 If the Hub cannot provide complete metadata.
+
+        Args:
+            model_id:
+                Model id.
+            revision:
+                Revision.
         """
         try:
             info = HfApi(token=False).model_info(
@@ -230,6 +265,12 @@ def derive_model_type(
 
     Returns:
         The broad capability, or ``None`` for ambiguous metadata.
+
+    Args:
+        pipeline_tag:
+            Pipeline tag.
+        is_encoder_decoder (optional):
+            Is encoder decoder.
     """
     if not isinstance(pipeline_tag, str) or not pipeline_tag.strip():
         return None
@@ -246,7 +287,15 @@ class SafetyError(RuntimeError):
 
 
 def _hub_false_or_bool(value: object) -> bool:
-    """Return whether a Hub access flag has a recognised representation."""
+    """Return whether a Hub access flag has a recognised representation.
+
+    Args:
+        value:
+            Value.
+
+    Returns:
+        The resulting value.
+    """
     return isinstance(value, bool) or value == "false"
 
 
@@ -263,6 +312,20 @@ def _installed_backend_supports(
 
     Returns:
         Whether the installed backend can load the model without remote code.
+
+    Args:
+        model_type:
+            Model type.
+        config:
+            Config.
+        architectures:
+            Architectures.
+        pipeline_tag (optional):
+            Pipeline tag.
+        is_encoder_decoder (optional):
+            Is encoder decoder.
+        task_groups (optional):
+            Task groups.
     """
     if model_type == "encoder":
         if pipeline_tag not in (None, *_ENCODER_PIPELINE_TAGS):
@@ -319,7 +382,15 @@ class _VllmInspectionConfig:
 
 
 def _encoder_task_mappings(task_groups: tuple[str, ...]) -> tuple[object, ...] | None:
-    """Return the exact Transformers task mappings required by a scope."""
+    """Return the exact Transformers task mappings required by a scope.
+
+    Args:
+        task_groups:
+            Task groups.
+
+    Returns:
+        The resulting value.
+    """
     if not task_groups:
         return ()
     mappings = tuple(_ENCODER_TASK_MAPPINGS.get(task) for task in task_groups)
@@ -352,6 +423,20 @@ def check_model_safety(
     Raises:
         SafetyError:
             If the revision, repository, capability, or memory estimate is unsafe.
+
+    Args:
+        lease:
+            Lease.
+        gpus:
+            Gpus.
+        metadata (optional):
+            Metadata.
+        free_disk_bytes (optional):
+            Free disk bytes.
+        gpu_memory_utilisation (optional):
+            Gpu memory utilisation.
+        selected_gpu (optional):
+            Selected gpu.
     """
     if platform.machine() not in _SUPPORTED_HOST_ARCHITECTURES:
         raise SafetyError("unsupported worker architecture")
@@ -415,6 +500,12 @@ def _backend_compatible(info: ModelMetadata, task_groups: tuple[str, ...]) -> bo
 
     Returns:
         Whether the installed backend can execute every leased task.
+
+    Args:
+        info:
+            Info.
+        task_groups:
+            Task groups.
     """
     if info.config is not None:
         return _installed_backend_supports(

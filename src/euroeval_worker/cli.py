@@ -15,6 +15,10 @@ def main(argv: list[str] | None = None) -> int:
 
     Returns:
         Process exit status.
+
+    Args:
+        argv (optional):
+            Argv.
     """
     parser = _parser()
     arguments = parser.parse_args(argv)
@@ -49,6 +53,11 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _parser() -> argparse.ArgumentParser:
+    """Parser.
+
+    Returns:
+        The resulting value.
+    """
     parser = argparse.ArgumentParser(description="Run a EuroEval volunteer GPU worker.")
     parser.add_argument("--server", default=DEFAULT_SERVER, help="Worker broker URL.")
     parser.add_argument(

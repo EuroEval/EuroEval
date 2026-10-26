@@ -41,7 +41,15 @@ _DECISION_ARTIFACT = "volunteer-review-decision/v1"
 
 
 def _has_collected_canary(records: list[dict[str, object]]) -> bool:
-    """Return whether staged auxiliary records claim scoreable observations."""
+    """Return whether staged auxiliary records claim scoreable observations.
+
+    Args:
+        records:
+            Records.
+
+    Returns:
+        The resulting value.
+    """
     for record in records:
         library = record.get("eval_library")
         details = (
@@ -60,7 +68,15 @@ def _has_collected_canary(records: list[dict[str, object]]) -> bool:
 
 
 def _is_canary_identity(identity: tuple[str, str, bool | None, bool | None]) -> bool:
-    """Return whether a validated identity carries private canary evidence."""
+    """Return whether a validated identity carries private canary evidence.
+
+    Args:
+        identity:
+            Identity.
+
+    Returns:
+        The resulting value.
+    """
     return identity[1] == "contamination-canary" or identity[1].startswith(
         "contamination-canary-"
     )
@@ -83,7 +99,26 @@ class VolunteerReviewer:
         now: t.Callable[[], dt.datetime] | None = None,
         scope_policy: JsonObject | None = None,
     ) -> None:
-        """Initialise the review service."""
+        """Initialise the review service.
+
+        Args:
+            store:
+                Store.
+            results_bucket (optional):
+                Results bucket.
+            promoter (optional):
+                Promoter.
+            reserver (optional):
+                Reserver.
+            renewer (optional):
+                Renewer.
+            binder (optional):
+                Binder.
+            now (optional):
+                Now.
+            scope_policy (optional):
+                Scope policy.
+        """
         self.store = store
         self.results_bucket = results_bucket
         self._broker_promoter = promoter is None
@@ -111,6 +146,16 @@ class VolunteerReviewer:
         Raises:
             ReviewError:
                 If durable decision state or broker fencing is inconsistent.
+
+        Args:
+            submission_id:
+                Submission id.
+            outcome:
+                Outcome.
+            reviewer:
+                Reviewer.
+            reasons (optional):
+                Reasons.
         """
         report = self.show(submission_id=submission_id)
         reasons = reasons or []
@@ -240,6 +285,17 @@ class VolunteerReviewer:
     def _promote_records(
         self, report: ReviewReport, renew: c.Callable[[], None] | None = None
     ) -> None:
+        """Promote records.
+
+        Args:
+            report:
+                Report.
+            renew (optional):
+                Renew.
+
+        Raises:
+            An exception when the operation cannot be completed.
+        """
         self._validate_canonical_records(report=report)
         for record in report.records:
             if _is_canary_identity(record.identity):
@@ -268,6 +324,15 @@ class VolunteerReviewer:
                 )
 
     def _validate_canonical_records(self, report: ReviewReport) -> None:
+        """Validate canonical records.
+
+        Args:
+            report:
+                Report.
+
+        Raises:
+            An exception when the operation cannot be completed.
+        """
         _raise_on_identity_collisions(record.identity for record in report.records)
         existing: dict[str, bytes | None] = {
             record.canonical_path: self.store.read_optional(
@@ -293,6 +358,21 @@ class VolunteerReviewer:
         token: str,
         decision_digest: str,
     ) -> None:
+        """Renew reservation.
+
+        Args:
+            report:
+                Report.
+            records:
+                Records.
+            token:
+                Token.
+            decision_digest:
+                Decision digest.
+
+        Raises:
+            An exception when the operation cannot be completed.
+        """
         if not self.renewer:
             return
         renewed = self.renewer(
@@ -315,6 +395,10 @@ class VolunteerReviewer:
         Raises:
             ReviewError:
                 If the manifest path and submission identity differ.
+
+        Args:
+            submission_id:
+                Submission id.
         """
         path = f"{_MANIFEST_PREFIX}/{submission_id}.json"
         manifest = _load_object(
@@ -346,7 +430,17 @@ class VolunteerReviewer:
         ]
 
     def _has_terminal_decision(self, submission_id: str, issue_number: int) -> bool:
-        """Return whether decision objects resolve to one terminal outcome."""
+        """Return whether decision objects resolve to one terminal outcome.
+
+        Args:
+            submission_id:
+                Submission id.
+            issue_number:
+                Issue number.
+
+        Returns:
+            The resulting value.
+        """
         try:
             report = self.show(submission_id=submission_id)
             decisions = _existing_decisions(
@@ -382,7 +476,11 @@ class VolunteerReviewer:
         return summaries
 
     def list_submissions(self) -> list[tuple[str, int, str, str]]:
-        """Return all durable manifest summaries, including historical ones."""
+        """Return all durable manifest summaries, including historical ones.
+
+        Returns:
+            The resulting value.
+        """
         return self._list_submission_summaries()
 
 
@@ -393,6 +491,26 @@ def _decision_bytes(
     reasons: list[str],
     decided_at: str,
 ) -> bytes:
+    """Decision bytes.
+
+    Args:
+        report:
+            Report.
+        outcome:
+            Outcome.
+        reviewer:
+            Reviewer.
+        reasons:
+            Reasons.
+        decided_at:
+            Decided at.
+
+    Returns:
+        The resulting value.
+
+    Raises:
+        An exception when the operation cannot be completed.
+    """
     if not reviewer.strip():
         raise ReviewError("A verified reviewer login is required")
     if not decided_at.strip():
@@ -424,7 +542,17 @@ def _decision_bytes(
 
 
 def _decision_path(submission_id: str, digest: str) -> str:
-    """Return the immutable content-addressed path for a decision."""
+    """Return the immutable content-addressed path for a decision.
+
+    Args:
+        submission_id:
+            Submission id.
+        digest:
+            Digest.
+
+    Returns:
+        The resulting value.
+    """
     return f"{_DECISION_PREFIX}/{submission_id}/{digest}.json"
 
 
@@ -439,6 +567,14 @@ def _existing_decisions(
     Raises:
         ReviewError:
             If an artifact is malformed, conflicting, or misplaced.
+
+    Args:
+        store:
+            Store.
+        report:
+            Report.
+        outcome:
+            Outcome.
     """
     decisions: list[tuple[str, bytes, str]] = []
     for path in store.list_decisions(report.submission_id):
@@ -461,6 +597,21 @@ def _existing_decisions(
 def _validate_existing_decision(
     content: bytes, decision: JsonObject, report: ReviewReport, outcome: str | None
 ) -> None:
+    """Validate existing decision.
+
+    Args:
+        content:
+            Content.
+        decision:
+            Decision.
+        report:
+            Report.
+        outcome:
+            Outcome.
+
+    Raises:
+        An exception when the operation cannot be completed.
+    """
     decision_outcome = decision.get("outcome")
     if decision_outcome not in {"accepted", "rejected"}:
         raise ReviewError("Existing decision artifact is malformed or inconsistent")
@@ -514,6 +665,17 @@ def _validate_existing_decision(
 def _local_reservation(
     reviewer: str, existing: bytes | None
 ) -> BrokerReservationResult:
+    """Local reservation.
+
+    Args:
+        reviewer:
+            Reviewer.
+        existing:
+            Existing.
+
+    Returns:
+        The resulting value.
+    """
     if existing is not None:
         decision = _load_object(
             content=existing, context="existing volunteer decision artifact"
@@ -550,6 +712,20 @@ def bind_with_broker(
     Raises:
         ReviewError:
             If the broker cannot bind the digest.
+
+    Args:
+        issue_number:
+            Issue number.
+        submission_id:
+            Submission id.
+        outcome:
+            Outcome.
+        reservation_token:
+            Reservation token.
+        decision_digest:
+            Decision digest.
+        records:
+            Records.
     """
     result = _request_reservation(
         issue_number=issue_number,
@@ -573,6 +749,30 @@ def _request_reservation(
     reviewer: str | None = None,
     decision_digest: str | None = None,
 ) -> str | BrokerReservationResult:
+    """Request reservation.
+
+    Args:
+        issue_number:
+            Issue number.
+        submission_id:
+            Submission id.
+        outcome:
+            Outcome.
+        records:
+            Records.
+        reservation_token (optional):
+            Reservation token.
+        reviewer (optional):
+            Reviewer.
+        decision_digest (optional):
+            Decision digest.
+
+    Returns:
+        The resulting value.
+
+    Raises:
+        An exception when the operation cannot be completed.
+    """
     secret = os.environ.get("VOLUNTEER_PROMOTION_SECRET")
     if not secret:
         raise ReviewError("VOLUNTEER_PROMOTION_SECRET is required")
@@ -642,6 +842,20 @@ def promote_with_broker(
     Raises:
         ReviewError:
             If the secret is absent or the broker does not confirm the transition.
+
+    Args:
+        issue_number:
+            Issue number.
+        submission_id:
+            Submission id.
+        outcome:
+            Outcome.
+        reservation_token:
+            Reservation token.
+        records:
+            Records.
+        decision_digest:
+            Decision digest.
     """
     secret = os.environ.get("VOLUNTEER_PROMOTION_SECRET")
     if not secret:
@@ -688,6 +902,20 @@ def renew_with_broker(
     Raises:
         ReviewError:
             If the broker returns decision metadata during renewal.
+
+    Args:
+        issue_number:
+            Issue number.
+        submission_id:
+            Submission id.
+        outcome:
+            Outcome.
+        reservation_token:
+            Reservation token.
+        records:
+            Records.
+        decision_digest (optional):
+            Decision digest.
     """
     reservation = _request_reservation(
         issue_number=issue_number,
@@ -718,6 +946,20 @@ def reserve_with_broker(
     Raises:
         ReviewError:
             If the broker omits the reservation or decision metadata.
+
+    Args:
+        issue_number:
+            Issue number.
+        submission_id:
+            Submission id.
+        outcome:
+            Outcome.
+        reviewer:
+            Reviewer.
+        records:
+            Records.
+        decision_digest (optional):
+            Decision digest.
     """
     reservation = _request_reservation(
         issue_number=issue_number,

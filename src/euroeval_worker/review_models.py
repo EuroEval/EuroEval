@@ -55,11 +55,33 @@ class BucketApi(t.Protocol):
     def batch_bucket_files(
         self, bucket_id: str, *, add: list[tuple[bytes, str]], token: str
     ) -> object:
-        """Upload selected bucket files."""
+        """Upload selected bucket files.
+
+        Args:
+            bucket_id:
+                Bucket id.
+            add:
+                Add.
+            token:
+                Token.
+
+        Returns:
+            The resulting value.
+        """
         ...
 
     def bucket_info(self, bucket_id: str, *, token: str) -> BucketInfo:
-        """Return bucket visibility metadata."""
+        """Return bucket visibility metadata.
+
+        Args:
+            bucket_id:
+                Bucket id.
+            token:
+                Token.
+
+        Returns:
+            The resulting value.
+        """
         ...
 
     def download_bucket_files(
@@ -70,19 +92,59 @@ class BucketApi(t.Protocol):
         raise_on_missing_files: bool,
         token: str,
     ) -> None:
-        """Download selected bucket files."""
+        """Download selected bucket files.
+
+        Args:
+            bucket_id:
+                Bucket id.
+            files:
+                Files.
+            raise_on_missing_files:
+                Raise on missing files.
+            token:
+                Token.
+        """
         ...
 
     def get_bucket_paths_info(
         self, bucket_id: str, paths: list[str], *, token: str
     ) -> c.Iterable[BucketEntry]:
-        """Return metadata for selected paths."""
+        """Return metadata for selected paths.
+
+        Args:
+            bucket_id:
+                Bucket id.
+            paths:
+                Paths.
+            token:
+                Token.
+
+        Returns:
+            The resulting value.
+        """
         ...
 
     def list_bucket_tree(
         self, bucket_id: str, prefix: str, *, recursive: bool, token: str
     ) -> c.Iterable[BucketEntry]:
-        """List files beneath a bucket prefix."""
+        """List files beneath a bucket prefix.
+
+        Args:
+            bucket_id:
+                Bucket id.
+            prefix:
+                Prefix.
+            recursive:
+                Recursive.
+            token:
+                Token.
+
+        Returns:
+            The resulting value.
+
+        Raises:
+            An exception when the operation cannot be completed.
+        """
         raise NotImplementedError(
             f"BucketApi implementations must handle recursive={recursive!r}"
         )

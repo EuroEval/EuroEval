@@ -222,6 +222,20 @@ def _expected_identities(value: object, model_id: str) -> tuple[ResultIdentity, 
 
 
 def _json_value(value: object, context: str) -> object:
+    """Json value.
+
+    Args:
+        value:
+            Value.
+        context:
+            Context.
+
+    Returns:
+        The resulting value.
+
+    Raises:
+        An exception when the operation cannot be completed.
+    """
     if not isinstance(value, str):
         return value
     try:
@@ -231,6 +245,20 @@ def _json_value(value: object, context: str) -> object:
 
 
 def _nullable_bool(value: object, context: str) -> bool | None:
+    """Nullable bool.
+
+    Args:
+        value:
+            Value.
+        context:
+            Context.
+
+    Returns:
+        The resulting value.
+
+    Raises:
+        An exception when the operation cannot be completed.
+    """
     if value is None or isinstance(value, bool):
         return value
     raise ReviewError(f"{context} must be boolean or null")
@@ -297,6 +325,18 @@ def _identity_suffix_sets(
 
 
 def _manifest_summary(manifest: JsonObject) -> tuple[str, int, str, str]:
+    """Manifest summary.
+
+    Args:
+        manifest:
+            Manifest.
+
+    Returns:
+        The resulting value.
+
+    Raises:
+        An exception when the operation cannot be completed.
+    """
     submission_id = _required_string(manifest, "submission_id")
     contributor = _required_string(manifest, "verified_contributor")
     language = _required_string(manifest, "language")
@@ -307,6 +347,20 @@ def _manifest_summary(manifest: JsonObject) -> tuple[str, int, str, str]:
 
 
 def _required_string(parent: JsonObject, key: str) -> str:
+    """Required string.
+
+    Args:
+        parent:
+            Parent.
+        key:
+            Key.
+
+    Returns:
+        The resulting value.
+
+    Raises:
+        An exception when the operation cannot be completed.
+    """
     value = parent.get(key)
     if not isinstance(value, str) or not value:
         raise ReviewError(f"{key} must be a non-empty string")
@@ -319,6 +373,10 @@ def _raise_on_identity_collisions(identities: c.Iterable[ResultIdentity]) -> Non
     Raises:
         ReviewError:
             If two identities map to the same canonical path.
+
+    Args:
+        identities:
+            Identities.
     """
     seen: list[ResultIdentity] = []
     for identity in identities:
@@ -331,6 +389,20 @@ def _raise_on_identity_collisions(identities: c.Iterable[ResultIdentity]) -> Non
 
 
 def _required_object(parent: JsonObject, key: str) -> JsonObject:
+    """Required object.
+
+    Args:
+        parent:
+            Parent.
+        key:
+            Key.
+
+    Returns:
+        The resulting value.
+
+    Raises:
+        An exception when the operation cannot be completed.
+    """
     value = parent.get(key)
     if not isinstance(value, dict):
         raise ReviewError(f"{key} must be an object")
@@ -338,6 +410,20 @@ def _required_object(parent: JsonObject, key: str) -> JsonObject:
 
 
 def _string_list(value: object, context: str) -> list[str]:
+    """String list.
+
+    Args:
+        value:
+            Value.
+        context:
+            Context.
+
+    Returns:
+        The resulting value.
+
+    Raises:
+        An exception when the operation cannot be completed.
+    """
     if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
         raise ReviewError(f"{context} must be a list of strings")
     return t.cast(list[str], value)
@@ -353,6 +439,32 @@ def _validate_result_entry(
     euroeval_version: str,
     model_type: str,
 ) -> ValidatedRecord:
+    """Validate result entry.
+
+    Args:
+        entry:
+            Entry.
+        store:
+            Store.
+        submission_id:
+            Submission id.
+        model_id:
+            Model id.
+        revision:
+            Revision.
+        language:
+            Language.
+        euroeval_version:
+            Euroeval version.
+        model_type:
+            Model type.
+
+    Returns:
+        The resulting value.
+
+    Raises:
+        An exception when the operation cannot be completed.
+    """
     if not isinstance(entry, dict):
         raise ReviewError("Manifest result entry must be an object")
     digest = _required_string(entry, "digest")
@@ -401,6 +513,18 @@ def _validate_result_entry(
 
 
 def _identity_from_manifest(value: object) -> ResultIdentity:
+    """Identity from manifest.
+
+    Args:
+        value:
+            Value.
+
+    Returns:
+        The resulting value.
+
+    Raises:
+        An exception when the operation cannot be completed.
+    """
     parsed = _json_value(value, "manifest result identity")
     if (
         not isinstance(parsed, list)
@@ -417,6 +541,20 @@ def _identity_from_manifest(value: object) -> ResultIdentity:
 
 
 def _load_object(content: bytes, context: str) -> JsonObject:
+    """Load object.
+
+    Args:
+        content:
+            Content.
+        context:
+            Context.
+
+    Returns:
+        The resulting value.
+
+    Raises:
+        An exception when the operation cannot be completed.
+    """
     try:
         value = json.loads(content.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
@@ -429,6 +567,20 @@ def _load_object(content: bytes, context: str) -> JsonObject:
 def _scores(
     record: JsonObject, path: str
 ) -> tuple[tuple[tuple[str, float], ...], list[str]]:
+    """Scores.
+
+    Args:
+        record:
+            Record.
+        path:
+            Path.
+
+    Returns:
+        The resulting value.
+
+    Raises:
+        An exception when the operation cannot be completed.
+    """
     raw = record.get("evaluation_results")
     if not isinstance(raw, list) or not raw:
         raise ReviewError(f"No evaluation results in {path}")
@@ -487,6 +639,15 @@ def _scores(
 
 
 def _finite(value: float) -> bool:
+    """Finite.
+
+    Args:
+        value:
+            Value.
+
+    Returns:
+        The resulting value.
+    """
     return value != float("inf") and value != float("-inf") and value == value
 
 
@@ -499,6 +660,27 @@ def _validate_record_contract(
     model_type: str,
     path: str,
 ) -> None:
+    """Validate record contract.
+
+    Args:
+        record:
+            Record.
+        model_id:
+            Model id.
+        revision:
+            Revision.
+        language:
+            Language.
+        euroeval_version:
+            Euroeval version.
+        model_type:
+            Model type.
+        path:
+            Path.
+
+    Raises:
+        An exception when the operation cannot be completed.
+    """
     model = _required_object(record, "model_info")
     aliases: list[str] = []
     for value in (model.get("id"), model.get("name"), model.get("aliases")):
@@ -556,6 +738,15 @@ def _validate_record_contract(
 
 
 def _contains_failure(value: object) -> bool:
+    """Contains failure.
+
+    Args:
+        value:
+            Value.
+
+    Returns:
+        The resulting value.
+    """
     if isinstance(value, list):
         return any(_contains_failure(item) for item in value)
     if not isinstance(value, dict):
@@ -569,6 +760,15 @@ def _contains_failure(value: object) -> bool:
 
 
 def _failure_value(value: object) -> bool:
+    """Failure value.
+
+    Args:
+        value:
+            Value.
+
+    Returns:
+        The resulting value.
+    """
     parsed = _json_value(value, "failure field")
     if parsed is None or parsed is False or parsed == 0 or parsed == "":
         return False
@@ -578,11 +778,31 @@ def _failure_value(value: object) -> bool:
 
 
 def _json_string_list(value: object, context: str) -> list[str]:
+    """Json string list.
+
+    Args:
+        value:
+            Value.
+        context:
+            Context.
+
+    Returns:
+        The resulting value.
+    """
     parsed = _json_value(value, context)
     return _string_list(parsed, context)
 
 
 def _normalise_version(value: str) -> str:
+    """Normalise version.
+
+    Args:
+        value:
+            Value.
+
+    Returns:
+        The resulting value.
+    """
     return _VERSION_SUFFIX_RE.sub("", value)
 
 
