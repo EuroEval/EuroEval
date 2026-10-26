@@ -93,11 +93,19 @@ class FakeCuda:
         self.set_device_calls: list[int] = []
 
     def current_device(self) -> int:
-        """Return the selected logical device."""
+        """Return the selected logical device.
+
+        Returns:
+            The current logical CUDA device index.
+        """
         return 0
 
     def device_count(self) -> int:
-        """Return the number of visible devices."""
+        """Return the number of visible devices.
+
+        Returns:
+            The number of visible logical CUDA devices.
+        """
         return 1
 
     def get_device_properties(self, device: int) -> types.SimpleNamespace:
@@ -105,7 +113,10 @@ class FakeCuda:
 
         Args:
             device:
-                Device supplied to the test.
+                Logical CUDA device whose properties are requested.
+
+        Returns:
+            Properties containing the fake device UUID.
         """
         assert device == 0
         return types.SimpleNamespace(uuid=self.uuid)
@@ -128,7 +139,11 @@ class FakeCuda:
         self.set_device_calls.append(device)
 
     def synchronize(self) -> None:
-        """Synchronise the fake CUDA stream."""
+        """Synchronise the fake CUDA stream.
+
+        Returns:
+            None.
+        """
         return None
 
 
@@ -140,7 +155,10 @@ class FakeTensor:
 
         Args:
             key:
-                Key supplied to the test.
+                Tuple selecting the scalar tensor element.
+
+        Returns:
+            This fake tensor, representing the selected view.
         """
         del key
         return self
@@ -150,13 +168,20 @@ class FakeTensor:
 
         Args:
             other:
-                Other supplied to the test.
+                Tensor operand in the fake matrix multiplication.
+
+        Returns:
+            This fake tensor as the deterministic multiplication result.
         """
         del other
         return self
 
     def item(self) -> float:
-        """Return the deterministic scalar result."""
+        """Return the deterministic scalar result.
+
+        Returns:
+            The scalar value produced by the fake tensor.
+        """
         return 2.0
 
 
@@ -215,6 +240,12 @@ def test_gpu_health_check_fails_without_gpu() -> None:
         return object()
 
     def discoverer() -> list[Gpu]:
+        """Simulate discovery failure because no GPU is available.
+
+        Raises:
+            NoGpuError:
+                Always, to simulate a machine without an NVIDIA GPU.
+        """
         raise NoGpuError("no NVIDIA GPU")
 
     with pytest.raises(NoGpuError, match="no NVIDIA GPU"):

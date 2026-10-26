@@ -114,6 +114,8 @@ def test_full_encoder_preflight_uses_the_leased_task_scope(
     )
 
     class Info:
+        """Fake repository metadata returned by the Hub API."""
+
         id = "org/model"
         private = False
         gated = False
@@ -124,6 +126,8 @@ def test_full_encoder_preflight_uses_the_leased_task_scope(
         ]
 
     class Api:
+        """Fake Hub API for model metadata requests."""
+
         def __init__(self, token: bool) -> None:
             """Init   for this test.
 
@@ -192,6 +196,8 @@ def test_heartbeat_persists_renewed_expiry(tmp_path: Path) -> None:
     state.save_active(LEASE, github_login="contributor")
 
     class Broker:
+        """Fake broker implementing the operation exercised by this test."""
+
         def heartbeat(self, credential: str, lease_id: str) -> str:
             """Heartbeat for this test.
 
@@ -222,6 +228,8 @@ def test_heartbeat_reauthenticates_once_and_retries() -> None:
     calls: list[str] = []
 
     class Broker:
+        """Fake broker implementing the operation exercised by this test."""
+
         def heartbeat(self, credential: str, lease_id: str) -> str:
             """Heartbeat for this test.
 
@@ -272,6 +280,8 @@ def test_huggingface_metadata_records_immutable_capability_evidence(
     )
 
     class Info:
+        """Fake repository metadata returned by the Hub API."""
+
         id = "org/model"
         private = False
         gated = False
@@ -282,6 +292,8 @@ def test_huggingface_metadata_records_immutable_capability_evidence(
         ]
 
     class Api:
+        """Fake Hub API for model metadata requests."""
+
         def __init__(self, token: bool) -> None:
             """Init   for this test.
 
@@ -308,6 +320,8 @@ def test_huggingface_metadata_records_immutable_capability_evidence(
     monkeypatch.setattr(safety, "hf_hub_download", lambda **kwargs: str(config_path))
 
     class Config:
+        """Minimal model configuration used by the safety preflight."""
+
         model_type = "novel"
 
     monkeypatch.setattr(
@@ -522,6 +536,8 @@ def test_result_and_finalise_reauthenticate_once(
     record = EEERecord({"id": "one"})
 
     class Broker:
+        """Fake broker implementing the operation exercised by this test."""
+
         def finalise(self, credential: str, lease_id: str) -> str:
             """Finalise for this test.
 
@@ -592,6 +608,8 @@ def test_result_retry_honours_backoff_and_terminal_statuses(
     attempts = 0
 
     class Transient:
+        """Broker fake that fails transiently before accepting uploads."""
+
         def submit_result(self, **kwargs: object) -> None:
             """Submit result for this test.
 
@@ -616,6 +634,8 @@ def test_result_retry_honours_backoff_and_terminal_statuses(
     for status in (409, 422):
 
         class Terminal:
+            """Broker fake that returns a non-retryable upload error."""
+
             def submit_result(self, **kwargs: object) -> None:
                 """Submit result for this test.
 
@@ -645,10 +665,14 @@ def test_vllm_inspection_rejects_pooling_only_architecture(
     """
 
     class Info:
+        """Fake repository metadata returned by the Hub API."""
+
         is_text_generation_model = False
         is_pooling_model = True
 
     class Registry:
+        """Minimal vLLM registry used by the architecture inspection test."""
+
         models = {"PoolingModel": object()}
 
         @staticmethod

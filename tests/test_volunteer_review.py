@@ -112,9 +112,12 @@ class FakeHfApi:
 
         Args:
             bucket:
-                Bucket supplied to the test.
+                Bucket identifier for the metadata request.
             token:
-                Token supplied to the test.
+                Authentication token for the request.
+
+        Returns:
+            Bucket metadata indicating that the bucket is private.
         """
         return SimpleNamespace(private=True)
 
@@ -156,11 +159,14 @@ class FakeHfApi:
 
         Args:
             bucket:
-                Bucket supplied to the test.
+                Bucket identifier containing the requested objects.
             paths:
-                Paths supplied to the test.
+                Object paths to look up.
             token:
-                Token supplied to the test.
+                Authentication token for the request.
+
+        Returns:
+            Metadata entries for requested paths present in the fake bucket.
         """
         return [
             self._entry(path, self.files[(bucket, path)])
@@ -1194,7 +1200,14 @@ def test_review_renewal_round_trip_includes_bound_digest(
     requests: list[dict[str, object]] = []
 
     class Response:
+        """Fake HTTP response used by the broker request test."""
+
         def __enter__(self) -> "Response":
+            """Enter the response context.
+
+            Returns:
+                This response object.
+            """
             return self
 
         def __exit__(self, *args: object) -> None:
@@ -1207,6 +1220,11 @@ def test_review_renewal_round_trip_includes_bound_digest(
             return None
 
         def read(self) -> bytes:
+            """Serialise the fake broker response.
+
+            Returns:
+                The response body encoded as JSON bytes.
+            """
             return json.dumps(
                 {
                     "protocol_version": "volunteer-worker/v1",
@@ -1274,6 +1292,8 @@ def test_terminal_response_loss_recovers_with_durable_digest(
     bound_digest: str | None = None
 
     class Response:
+        """Fake HTTP response used by the broker request test."""
+
         def __init__(self, body: dict[str, object]) -> None:
             """Init   for this test.
 
@@ -1284,18 +1304,31 @@ def test_terminal_response_loss_recovers_with_durable_digest(
             self.body = body
 
         def __enter__(self) -> "Response":
+            """Enter the response context.
+
+            Returns:
+                This response object.
+            """
             return self
 
         def __exit__(self, *args: object) -> None:
-            """Exit   for this test.
+            """Exit the response context without suppressing exceptions.
 
             Args:
                 args:
-                    Args supplied to the test.
+                    Positional context-manager exit arguments.
+
+            Returns:
+                None.
             """
             return None
 
         def read(self) -> bytes:
+            """Serialise the configured response body.
+
+            Returns:
+                The response body encoded as JSON bytes.
+            """
             return json.dumps(self.body).encode()
 
     def urlopen(request: urllib.request.Request, timeout: int) -> Response:
