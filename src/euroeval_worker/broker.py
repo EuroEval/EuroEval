@@ -29,11 +29,7 @@ Request = c.Callable[[str, str, dict[str, str], JsonObject | None], JsonObject]
 
 
 class BrokerClient:
-    """Small, dependency-free client for the volunteer-worker broker.
-
-    Raises:
-    BrokerError: Raised when the operation cannot be completed.
-    """
+    """Small, dependency-free client for the volunteer-worker broker."""
 
     def __init__(
         self,
@@ -59,13 +55,13 @@ class BrokerClient:
         """Claim one available lease, if any.
 
         Args:
-                    credential:
-                        Credential.
-                    hardware:
-                        Hardware.
+            credential:
+                Bearer credential for the worker.
+            hardware:
+                Hardware details to include with the claim request.
 
         Returns:
-                    A lease, or an empty claim when no work is available.
+            The claimed lease, or an empty claim when no work is available.
         """
         payload: JsonObject = {
             "protocol_version": PROTOCOL_VERSION,
@@ -80,22 +76,22 @@ class BrokerClient:
     def _post(
         self, path: str, payload: JsonObject, credential: str | None = None
     ) -> JsonObject:
-        """Post.
+        """Send a JSON POST request to the broker.
 
         Args:
-                    path:
-                        Path.
-                    payload:
-                        Payload.
-                    credential (optional):
-                        Credential.
+            path:
+                Broker endpoint path, relative to the configured server URL.
+            payload:
+                JSON-compatible request body.
+            credential (optional):
+                Bearer credential to add to the request headers.
 
         Returns:
-                    The resulting value.
+            The broker response as a JSON object.
 
         Raises:
-        BrokerError: Raised when the operation cannot be completed.
-                    An exception when the operation cannot be completed.
+            BrokerError:
+                If the request fails or the response uses an unsupported protocol.
         """
         headers = {"Content-Type": "application/json"}
         if credential is not None:
@@ -111,22 +107,22 @@ class BrokerClient:
         return result
 
     def fetch_canary_corpus(self, credential: str, lease: Lease) -> str:
-        """Fetch exact private corpus bytes through the lease-bound broker.
+        """Fetch the private corpus bytes required by a lease.
 
         Args:
-                    credential:
-                        Credential.
-                    lease:
-                        Lease.
+            credential:
+                Bearer credential for the worker.
+            lease:
+                Lease that identifies the required canary corpus.
 
         Returns:
-                    The immutable corpus JSONL text.
+            The corpus contents as JSONL text.
 
         Raises:
-                    ValueError:
-                        If the lease does not require the private canary corpus.
-                    BrokerError:
-                        If the broker returns an invalid corpus payload.
+            ValueError:
+                If the lease does not require the contamination canary corpus.
+            BrokerError:
+                If the request fails or the response lacks a string corpus payload.
         """
         instruction = lease.contamination_canary
         if instruction is None or instruction.status != "required":
@@ -150,17 +146,17 @@ class BrokerClient:
         """Mark all records for a lease as accepted and return its identifier.
 
         Args:
-                    credential:
-                        Credential.
-                    lease_id:
-                        Lease id.
+            credential:
+                Bearer credential for the worker.
+            lease_id:
+                Identifier of the lease to finalise.
 
         Returns:
-                    The broker submission identifier.
+            The broker submission identifier.
 
         Raises:
-                    BrokerError:
-                        If the response omits the submission identifier.
+            BrokerError:
+                If the request fails or the response omits a valid submission ID.
         """
         result = self._post(
             "finalise",
@@ -176,17 +172,18 @@ class BrokerClient:
         """Renew a lease and return the broker's renewed expiry timestamp.
 
         Args:
-                    credential:
-                        Credential.
-                    lease_id:
-                        Lease id.
+            credential:
+                Bearer credential for the worker.
+            lease_id:
+                Identifier of the lease to renew.
 
         Returns:
-                    The broker-issued ISO-8601 expiry timestamp.
+            The expiry timestamp returned by the broker.
 
         Raises:
-                    BrokerError:
-                        If the response is invalid or the lease cannot be renewed.
+            BrokerError:
+                If the request fails, the response changes the lease ID, or the
+                response omits a non-empty expiry timestamp.
         """
         result = self._post(
             "heartbeat",
@@ -204,11 +201,11 @@ class BrokerClient:
         """Poll a device authorisation flow.
 
         Args:
-                    session_id:
-                        Session id.
+            session_id:
+                Identifier of the device authorisation session.
 
         Returns:
-                    The current device-flow state.
+            The current device-flow state.
         """
         return auth_poll_from_dict(
             self._post(
@@ -222,11 +219,11 @@ class BrokerClient:
 
         Args:
             credential:
-                Credential.
+                Bearer credential for the worker.
             lease_id:
-                Lease id.
+                Identifier of the lease to release.
             reason:
-                Reason.
+                Explanation for releasing the lease.
         """
         self._post(
             "release",
@@ -242,7 +239,7 @@ class BrokerClient:
         """Start a device authorisation flow.
 
         Returns:
-            Device-flow details.
+            Details required to complete the device flow.
         """
         return auth_start_from_dict(
             self._post("auth/start", {"protocol_version": PROTOCOL_VERSION})
@@ -253,11 +250,11 @@ class BrokerClient:
 
         Args:
             credential:
-                Credential.
+                Bearer credential for the worker.
             lease:
-                Lease.
+                Lease associated with the result.
             result:
-                Result.
+                Exact evaluation record to submit.
         """
         payload: JsonObject = {
             "protocol_version": PROTOCOL_VERSION,
@@ -291,15 +288,15 @@ class BrokerError(RuntimeError):
 
         Args:
             message:
-                Message.
+                Human-readable description of the broker error.
             status (optional):
-                Status.
+                HTTP status code associated with the error.
             retry_after (optional):
-                Retry after.
+                Suggested retry delay in seconds.
             body (optional):
-                Body.
+                Broker response body, with credential-bearing fields redacted.
             code (optional):
-                Code.
+                Broker error code; otherwise read from the response body.
         """
         safe_body = _redact(body) if body is not None else None
         broker_message = safe_body.get("error") if safe_body else None
@@ -317,11 +314,12 @@ def _redact(value: object) -> JsonObject:
     """Copy a JSON object while removing credential-bearing response fields.
 
     Args:
-            value:
-                Value.
+        value:
+            Value to redact.
 
     Returns:
-            A response object without sensitive fields.
+        A copied object without sensitive fields, or an empty object if the value
+        is not a dictionary.
     """
     if not isinstance(value, dict):
         return {}
@@ -353,26 +351,26 @@ def _string_value(value: JsonObject | None, key: str) -> str | None:
 
     Args:
         value:
-            Value.
+            Broker response object, if available.
         key:
-            Key.
+            Name of the field to retrieve.
 
     Returns:
-        The resulting value.
+        The field's non-empty string value, or ``None`` otherwise.
     """
     item = value.get(key) if value is not None else None
     return item if isinstance(item, str) and item else None
 
 
 def _hardware_dict(hardware: HardwareReport) -> JsonObject:
-    """Hardware dict.
+    """Convert a hardware report to the broker request representation.
 
     Args:
         hardware:
-            Hardware.
+            Hardware report to serialise.
 
     Returns:
-        The resulting value.
+        JSON-compatible mapping of hardware details.
     """
     return {
         "architecture": hardware.architecture,
@@ -406,12 +404,12 @@ class BrokerProtocol(t.Protocol):
 
         Args:
             credential:
-                Credential.
+                Bearer credential for the worker.
             hardware:
-                Hardware.
+                Hardware details to include with the claim request.
 
         Returns:
-            The resulting value.
+            The claimed lease, or an empty claim when no work is available.
         """
         ...
 
@@ -420,12 +418,12 @@ class BrokerProtocol(t.Protocol):
 
         Args:
             credential:
-                Credential.
+                Bearer credential for the worker.
             lease_id:
-                Lease id.
+                Identifier of the lease to finalise.
 
         Returns:
-            The resulting value.
+            The broker submission identifier.
         """
         ...
 
@@ -434,24 +432,24 @@ class BrokerProtocol(t.Protocol):
 
         Args:
             credential:
-                Credential.
+                Bearer credential for the worker.
             lease_id:
-                Lease id.
+                Identifier of the lease to renew.
 
         Returns:
-            The resulting value.
+            The broker-issued expiry timestamp.
         """
         ...
 
     def poll_auth(self, session_id: str) -> AuthPoll:
-        """Poll a device flow.
+        """Poll a device authorisation flow.
 
         Args:
             session_id:
-                Session id.
+                Identifier of the device authorisation session.
 
         Returns:
-            The resulting value.
+            The current device-flow state.
         """
         ...
 
@@ -460,19 +458,19 @@ class BrokerProtocol(t.Protocol):
 
         Args:
             credential:
-                Credential.
+                Bearer credential for the worker.
             lease_id:
-                Lease id.
+                Identifier of the lease to release.
             reason:
-                Reason.
+                Explanation for releasing the lease.
         """
         ...
 
     def start_auth(self) -> AuthStart:
-        """Start a device flow.
+        """Start a device authorisation flow.
 
         Returns:
-            The resulting value.
+            Details required to complete the device flow.
         """
         ...
 
@@ -481,11 +479,11 @@ class BrokerProtocol(t.Protocol):
 
         Args:
             credential:
-                Credential.
+                Bearer credential for the worker.
             lease:
-                Lease.
+                Lease associated with the result.
             result:
-                Result.
+                Exact evaluation record to submit.
         """
         ...
 
@@ -493,24 +491,25 @@ class BrokerProtocol(t.Protocol):
 def _http_request(
     method: str, url: str, headers: dict[str, str], payload: JsonObject | None
 ) -> JsonObject:
-    """Http request.
+    """Send an HTTP request and decode the broker's JSON response.
 
     Args:
-            method:
-                Method.
-            url:
-                Url.
-            headers:
-                Headers.
-            payload:
-                Payload.
+        method:
+            HTTP method to use.
+        url:
+            Complete request URL.
+        headers:
+            HTTP headers to send.
+        payload:
+            JSON-compatible request body, or ``None`` for no body.
 
     Returns:
-            The resulting value.
+        The decoded broker response object.
 
     Raises:
-    BrokerError: Raised when the operation cannot be completed.
-            An exception when the operation cannot be completed.
+        BrokerError:
+            If the response is an HTTP error, cannot be decoded as JSON, or is
+            not a JSON object.
     """
     body = (
         None
@@ -540,11 +539,12 @@ def _error_body(error: urllib.error.HTTPError) -> JsonObject | None:
     """Decode an error response without exposing request headers or credentials.
 
     Args:
-            error:
-                Error.
+        error:
+            HTTP error whose response body should be decoded.
 
     Returns:
-            The JSON object returned by the broker, if it was one.
+        The redacted JSON response object, or ``None`` if it is not valid JSON
+        or is not an object.
     """
     try:
         value = json.loads(error.read())
@@ -557,11 +557,12 @@ def _retry_after(value: str | None) -> float | None:
     """Parse seconds or an HTTP date from a Retry-After header.
 
     Args:
-            value:
-                Value.
+        value:
+            Retry-After header value, if present.
 
     Returns:
-            The delay in seconds, or ``None`` for an invalid header.
+        The non-negative delay in seconds, or ``None`` for a missing or invalid
+        header.
     """
     if not value:
         return None
