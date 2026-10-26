@@ -222,20 +222,17 @@ def _expected_identities(value: object, model_id: str) -> tuple[ResultIdentity, 
 
 
 def _json_value(value: object, context: str) -> object:
-    """Json value.
+    """Decode a JSON string, leaving non-string values unchanged.
 
     Args:
-            value:
-                Value.
-            context:
-                Context.
+        value: Value to decode when it is a string.
+        context: Description used in invalid-JSON errors.
 
     Returns:
-            The resulting value.
+        The decoded JSON value, or ``value`` unchanged when it is not a string.
 
     Raises:
-    ReviewError: Raised when the operation cannot be completed.
-            An exception when the operation cannot be completed.
+        ReviewError: If a string is not valid JSON.
     """
     if not isinstance(value, str):
         return value
@@ -246,20 +243,17 @@ def _json_value(value: object, context: str) -> object:
 
 
 def _nullable_bool(value: object, context: str) -> bool | None:
-    """Nullable bool.
+    """Validate and return a boolean or null value.
 
     Args:
-            value:
-                Value.
-            context:
-                Context.
+        value: Value to validate.
+        context: Description used in the validation error.
 
     Returns:
-            The resulting value.
+        ``value`` when it is a boolean or ``None``.
 
     Raises:
-    ReviewError: Raised when the operation cannot be completed.
-            An exception when the operation cannot be completed.
+        ReviewError: If ``value`` is neither a boolean nor ``None``.
     """
     if value is None or isinstance(value, bool):
         return value
@@ -327,18 +321,17 @@ def _identity_suffix_sets(
 
 
 def _manifest_summary(manifest: JsonObject) -> tuple[str, int, str, str]:
-    """Manifest summary.
+    """Extract the submission summary fields from a manifest.
 
     Args:
-            manifest:
-                Manifest.
+        manifest: Manifest object to summarize.
 
     Returns:
-            The resulting value.
+        A tuple of submission ID, positive issue number, verified contributor,
+        and language.
 
     Raises:
-    ReviewError: Raised when the operation cannot be completed.
-            An exception when the operation cannot be completed.
+        ReviewError: If a required field is missing or malformed.
     """
     submission_id = _required_string(manifest, "submission_id")
     contributor = _required_string(manifest, "verified_contributor")
@@ -350,20 +343,17 @@ def _manifest_summary(manifest: JsonObject) -> tuple[str, int, str, str]:
 
 
 def _required_string(parent: JsonObject, key: str) -> str:
-    """Required string.
+    """Return a required non-empty string field.
 
     Args:
-            parent:
-                Parent.
-            key:
-                Key.
+        parent: Object containing the field.
+        key: Field name.
 
     Returns:
-            The resulting value.
+        The non-empty string stored at ``key``.
 
     Raises:
-    ReviewError: Raised when the operation cannot be completed.
-            An exception when the operation cannot be completed.
+        ReviewError: If the field is missing, empty, or not a string.
     """
     value = parent.get(key)
     if not isinstance(value, str) or not value:
@@ -376,7 +366,7 @@ def _raise_on_identity_collisions(identities: c.Iterable[ResultIdentity]) -> Non
 
     Args:
             identities:
-                Identities.
+                Canonical identities whose serialized paths must be unique.
 
     Raises:
             ReviewError:
@@ -393,20 +383,17 @@ def _raise_on_identity_collisions(identities: c.Iterable[ResultIdentity]) -> Non
 
 
 def _required_object(parent: JsonObject, key: str) -> JsonObject:
-    """Required object.
+    """Return a required dictionary field.
 
     Args:
-            parent:
-                Parent.
-            key:
-                Key.
+        parent: Object containing the field.
+        key: Field name.
 
     Returns:
-            The resulting value.
+        The dictionary stored at ``key``.
 
     Raises:
-    ReviewError: Raised when the operation cannot be completed.
-            An exception when the operation cannot be completed.
+        ReviewError: If the field is not a dictionary.
     """
     value = parent.get(key)
     if not isinstance(value, dict):
@@ -415,20 +402,17 @@ def _required_object(parent: JsonObject, key: str) -> JsonObject:
 
 
 def _string_list(value: object, context: str) -> list[str]:
-    """String list.
+    """Validate and return a list containing only strings.
 
     Args:
-            value:
-                Value.
-            context:
-                Context.
+        value: Value to validate.
+        context: Description used in the validation error.
 
     Returns:
-            The resulting value.
+        The input list, typed as a list of strings.
 
     Raises:
-    ReviewError: Raised when the operation cannot be completed.
-            An exception when the operation cannot be completed.
+        ReviewError: If ``value`` is not a list of strings.
     """
     if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
         raise ReviewError(f"{context} must be a list of strings")
@@ -445,32 +429,24 @@ def _validate_result_entry(
     euroeval_version: str,
     model_type: str,
 ) -> ValidatedRecord:
-    """Validate result entry.
+    """Verify one staged result entry and construct its validated record.
 
     Args:
-            entry:
-                Entry.
-            store:
-                Store.
-            submission_id:
-                Submission id.
-            model_id:
-                Model id.
-            revision:
-                Revision.
-            language:
-                Language.
-            euroeval_version:
-                Euroeval version.
-            model_type:
-                Model type.
+        entry: Manifest entry containing path, digest, identity, and warnings.
+        store: Bucket storage used to fetch staged bytes.
+        submission_id: Submission owning the staged result.
+        model_id: Expected model identifier.
+        revision: Expected immutable model revision.
+        language: Expected evaluation language.
+        euroeval_version: Expected EuroEval version.
+        model_type: Expected model category.
 
     Returns:
-            The resulting value.
+        Validated identity, paths, exact content, digest, scores, and warnings.
 
     Raises:
-    ReviewError: Raised when the operation cannot be completed.
-            An exception when the operation cannot be completed.
+        ReviewError: If the entry, staged bytes, EEE record, or expected metadata
+            is invalid or inconsistent.
     """
     if not isinstance(entry, dict):
         raise ReviewError("Manifest result entry must be an object")
@@ -520,18 +496,16 @@ def _validate_result_entry(
 
 
 def _identity_from_manifest(value: object) -> ResultIdentity:
-    """Identity from manifest.
+    """Parse and validate a canonical result identity from a manifest value.
 
     Args:
-            value:
-                Value.
+        value: JSON-encoded or already-decoded four-field identity.
 
     Returns:
-            The resulting value.
+        Identity tuple of model ID, dataset, validation-split flag, and few-shot flag.
 
     Raises:
-    ReviewError: Raised when the operation cannot be completed.
-            An exception when the operation cannot be completed.
+        ReviewError: If the value is not a valid four-field identity.
     """
     parsed = _json_value(value, "manifest result identity")
     if (
@@ -549,20 +523,17 @@ def _identity_from_manifest(value: object) -> ResultIdentity:
 
 
 def _load_object(content: bytes, context: str) -> JsonObject:
-    """Load object.
+    """Decode UTF-8 JSON bytes and require a JSON object.
 
     Args:
-            content:
-                Content.
-            context:
-                Context.
+        content: UTF-8 encoded JSON bytes.
+        context: Object description used in validation errors.
 
     Returns:
-            The resulting value.
+        The decoded JSON object.
 
     Raises:
-    ReviewError: Raised when the operation cannot be completed.
-            An exception when the operation cannot be completed.
+        ReviewError: If the bytes are invalid UTF-8/JSON or decode to a non-object.
     """
     try:
         value = json.loads(content.decode("utf-8"))
@@ -576,20 +547,17 @@ def _load_object(content: bytes, context: str) -> JsonObject:
 def _scores(
     record: JsonObject, path: str
 ) -> tuple[tuple[tuple[str, float], ...], list[str]]:
-    """Scores.
+    """Extract metric scores and report scores outside declared bounds.
 
     Args:
-            record:
-                Record.
-            path:
-                Path.
+        record: Validated EEE result object.
+        path: Staged path, used to identify validation errors.
 
     Returns:
-            The resulting value.
+        Metric-name/float-score pairs and warnings for declared-bound violations.
 
     Raises:
-    ReviewError: Raised when the operation cannot be completed.
-            An exception when the operation cannot be completed.
+        ReviewError: If results, score metadata, or source dataset are invalid.
     """
     raw = record.get("evaluation_results")
     if not isinstance(raw, list) or not raw:
@@ -649,14 +617,13 @@ def _scores(
 
 
 def _finite(value: float) -> bool:
-    """Finite.
+    """Return whether a float is finite (not NaN or either infinity).
 
     Args:
-        value:
-            Value.
+        value: Number to check.
 
     Returns:
-        The resulting value.
+        ``True`` unless ``value`` is NaN or positive/negative infinity.
     """
     return value != float("inf") and value != float("-inf") and value == value
 
@@ -670,27 +637,20 @@ def _validate_record_contract(
     model_type: str,
     path: str,
 ) -> None:
-    """Validate record contract.
+    """Check an EEE record against manifest model, language, version, and failure data.
 
     Args:
-            record:
-                Record.
-            model_id:
-                Model id.
-            revision:
-                Revision.
-            language:
-                Language.
-            euroeval_version:
-                Euroeval version.
-            model_type:
-                Model type.
-            path:
-                Path.
+        record: EEE record to validate.
+        model_id: Expected model identifier.
+        revision: Expected immutable model revision.
+        language: Expected evaluation language.
+        euroeval_version: Expected EuroEval version.
+        model_type: Expected encoder or generative model category.
+        path: Staged path included in validation errors.
 
     Raises:
-    ReviewError: Raised when the operation cannot be completed.
-            An exception when the operation cannot be completed.
+        ReviewError: If model metadata, canary evidence, language, or instance status
+            conflicts with the manifest contract.
     """
     model = _required_object(record, "model_info")
     aliases: list[str] = []
@@ -749,14 +709,13 @@ def _validate_record_contract(
 
 
 def _contains_failure(value: object) -> bool:
-    """Contains failure.
+    """Recursively detect non-zero failed-instance fields in nested data.
 
     Args:
-        value:
-            Value.
+        value: JSON-like value to inspect.
 
     Returns:
-        The resulting value.
+        ``True`` when a failed-instance field indicates failures; otherwise ``False``.
     """
     if isinstance(value, list):
         return any(_contains_failure(item) for item in value)
@@ -771,14 +730,14 @@ def _contains_failure(value: object) -> bool:
 
 
 def _failure_value(value: object) -> bool:
-    """Failure value.
+    """Interpret a failed-instance field as a failure indicator.
 
     Args:
-        value:
-            Value.
+        value: Raw or JSON-encoded failure value.
 
     Returns:
-        The resulting value.
+        ``False`` for null, false, zero, empty string, or empty list/object;
+        ``True`` otherwise.
     """
     parsed = _json_value(value, "failure field")
     if parsed is None or parsed is False or parsed == 0 or parsed == "":
@@ -789,30 +748,27 @@ def _failure_value(value: object) -> bool:
 
 
 def _json_string_list(value: object, context: str) -> list[str]:
-    """Json string list.
+    """Decode an optional JSON string and validate it as a list of strings.
 
     Args:
-        value:
-            Value.
-        context:
-            Context.
+        value: Encoded or already-decoded list value.
+        context: Description used in validation errors.
 
     Returns:
-        The resulting value.
+        The decoded list of strings.
     """
     parsed = _json_value(value, context)
     return _string_list(parsed, context)
 
 
 def _normalise_version(value: str) -> str:
-    """Normalise version.
+    """Remove a trailing development-release suffix from a version string.
 
     Args:
-        value:
-            Value.
+        value: Version string to normalize.
 
     Returns:
-        The resulting value.
+        The version with a terminal ``.dev`` plus digits suffix removed, if present.
     """
     return _VERSION_SUFFIX_RE.sub("", value)
 
