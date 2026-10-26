@@ -18,6 +18,8 @@ from pathlib import Path
 
 import datasets
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 
 def main() -> None:
     """Create the Dutch Copa dataset and upload it to the HF Hub."""
@@ -46,6 +48,7 @@ def main() -> None:
     # format the questions for the benchmark
     dataset = dataset.map(format_row, remove_columns=dataset["train"].column_names)
 
+    preflight_private_upload(repository_id=dataset_id_euroeval)
     dataset.push_to_hub(dataset_id_euroeval, private=True)
 
 

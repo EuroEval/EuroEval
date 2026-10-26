@@ -18,6 +18,8 @@ import pandas as pd
 from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, Split, concatenate_datasets, load_dataset
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 
 def main() -> None:
     """Create umimeto-qa knowledge dataset."""
@@ -71,6 +73,7 @@ def main() -> None:
     dataset_id = "EuroEval/umimeto-qa"
 
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 

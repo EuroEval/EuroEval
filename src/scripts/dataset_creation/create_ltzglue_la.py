@@ -16,6 +16,8 @@ import pandas as pd
 import requests
 from datasets import Dataset, DatasetDict
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 logging.basicConfig(level=logging.INFO)
 
 logger = logging.getLogger(__name__)
@@ -66,6 +68,7 @@ def main() -> None:
         }
     )
 
+    preflight_private_upload(repository_id="EuroEval/ltzglue-la-mini")
     bin_dataset.push_to_hub("EuroEval/ltzglue-la-mini", private=True)
     logger.info("✓ Uploaded EuroEval/ltzglue-la-mini (binary)")
 
@@ -101,6 +104,7 @@ def main() -> None:
         }
     )
 
+    preflight_private_upload(repository_id="EuroEval/ltzglue-la-multi-mini")
     mul_dataset.push_to_hub("EuroEval/ltzglue-la-multi-mini", private=True)
     logger.info("✓ Uploaded EuroEval/ltzglue-la-multi-mini (multi-class)")
 

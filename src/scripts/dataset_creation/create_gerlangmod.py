@@ -24,6 +24,8 @@ import requests
 from datasets import Dataset, DatasetDict, Split
 from tqdm.auto import tqdm
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 _BASE_URL = (
     "https://raw.githubusercontent.com/noahmanu/gerlangmod/main/"
     "Datasets/verb_error_datasets_v1_1/{lang}/{prefix}_{treebank}_{split}.tsv"
@@ -125,6 +127,7 @@ def main() -> None:
 
         # Push to the Hugging Face Hub
         dataset_id = _DATASET_IDS[lang]
+        preflight_private_upload(repository_id=dataset_id)
         dataset.push_to_hub(dataset_id, private=True)
 
 

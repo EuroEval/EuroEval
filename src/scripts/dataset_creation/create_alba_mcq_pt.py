@@ -13,6 +13,8 @@ import random
 from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, load_dataset
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 SOURCE_ID = "amalia-llm/alba_mcq"
 TARGET_ID = "EuroEval/euroeval-amalia-alba-mcq-pt"
 TRAIN_SIZE = 32
@@ -57,6 +59,7 @@ def main() -> None:
             "test": dataset.select(indices=range(TRAIN_SIZE, len(dataset))),
         }
     )
+    preflight_private_upload(repository_id=TARGET_ID)
     output.push_to_hub(repo_id=TARGET_ID, private=True)
     print(f"Uploaded {len(rows):,} ALBA-MCQ samples to {TARGET_ID}.")
 

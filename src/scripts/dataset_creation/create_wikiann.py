@@ -13,6 +13,8 @@
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 LANGUAGE_CODES = ["lt", "lv", "hr", "bs", "ca", "sq", "be"]
 
 
@@ -108,6 +110,7 @@ def main() -> None:
 
         # Push the dataset to the Hugging Face Hub
         dataset_id = f"EuroEval/wikiann-{language_code}-mini"
+        preflight_private_upload(repository_id=dataset_id)
         dataset.push_to_hub(dataset_id, private=True)
 
 

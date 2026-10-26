@@ -13,6 +13,8 @@
 import pandas as pd
 from datasets import Dataset, DatasetDict, load_dataset
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 
 def main() -> None:
     """Create the Slovene NER dataset from SSJ500k and upload it to the HF Hub."""
@@ -67,6 +69,7 @@ def main() -> None:
     dataset_id = "EuroEval/ssj500k-ner-mini"
 
     # Push to Hugging Face Hub
+    preflight_private_upload(repository_id=dataset_id)
     dataset_dict.push_to_hub(dataset_id, private=True)
 
 

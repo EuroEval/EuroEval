@@ -14,6 +14,8 @@
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 RANDOM_STATE = 4242
 TRAIN_SIZE, VAL_SIZE, TEST_SIZE = 1024, 256, 2048
 ORIGINAL_REPO_ID = "PORTULAN/extraglue"
@@ -50,6 +52,7 @@ def main() -> None:
     assert not set(dataset["val"]["text"]) & set(dataset["test"]["text"])
 
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=FINAL_REPO_ID)
     dataset.push_to_hub(FINAL_REPO_ID, private=True)
 
 

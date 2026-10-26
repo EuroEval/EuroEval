@@ -17,6 +17,8 @@ import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from sklearn.model_selection import train_test_split
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_cs_gec")
 
@@ -75,6 +77,7 @@ def main() -> None:
 
     # Upload to Hugging Face Hub
     dataset_id = "EuroEval/cs-gec-mini"
+    preflight_private_upload(repository_id=dataset_id)
     dataset_dict.push_to_hub(dataset_id, private=True)
 
 

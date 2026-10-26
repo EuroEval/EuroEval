@@ -13,6 +13,8 @@
 import pandas as pd
 from datasets import Dataset, DatasetDict, load_dataset
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 NER_CONVERSION_DICT = {
     1: "B-PER",
     2: "I-PER",
@@ -60,6 +62,7 @@ def main() -> None:
     dataset_id = "EuroEval/ronec-mini"
 
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=dataset_id)
     mini_dataset.push_to_hub(dataset_id, private=True)
 
 

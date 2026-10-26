@@ -12,6 +12,8 @@ import logging
 
 from datasets import Dataset, DatasetDict, load_dataset
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 logger = logging.getLogger(__name__)
 
 SOURCE_DATASET = "maaxap/BelarusianGLUE"
@@ -28,6 +30,7 @@ def main() -> None:
     dataset = process_dataset(raw_dataset=raw_dataset)
 
     logger.info("Uploading %s", TARGET_DATASET)
+    preflight_private_upload(repository_id=TARGET_DATASET)
     dataset.push_to_hub(TARGET_DATASET, private=True)
     logger.info("Uploaded %s", TARGET_DATASET)
 

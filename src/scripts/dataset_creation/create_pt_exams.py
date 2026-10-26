@@ -13,6 +13,8 @@ import random
 from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, load_dataset
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 SOURCE_ID = "amalia-llm/pt_exams"
 TARGET_ID = "EuroEval/euroeval-amalia-pt-exams"
 TRAIN_SIZE = 32
@@ -52,6 +54,7 @@ def main() -> None:
             "test": dataset.select(indices=range(TRAIN_SIZE + VAL_SIZE, len(dataset))),
         }
     )
+    preflight_private_upload(repository_id=TARGET_ID)
     output.push_to_hub(repo_id=TARGET_ID, private=True)
     print(f"Uploaded {len(rows):,} PT Exams samples to {TARGET_ID}.")
 

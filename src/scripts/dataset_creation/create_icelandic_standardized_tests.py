@@ -29,6 +29,8 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from pydantic import BaseModel, Field, create_model
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 load_dotenv()
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
@@ -421,6 +423,7 @@ def main() -> None:
         else:
             dataset_id = "EuroEval/icelandic-math-tests"
 
+        preflight_private_upload(repository_id=dataset_id)
         dataset_dict.push_to_hub(dataset_id, private=True)
         logger.info(f"Pushed {subject} dataset to {dataset_id}.")
 

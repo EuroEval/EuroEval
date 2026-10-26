@@ -23,6 +23,8 @@ from pydantic import BaseModel, Field
 from sklearn.model_selection import train_test_split
 from sklearn.utils import resample
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 load_dotenv()
 
 CACHE_FILE = "llm_sent_cache.json"
@@ -89,6 +91,7 @@ def main() -> None:
 
     # Push to HF Hub
     dataset_id = "EuroEval/ro-sent-mini"
+    preflight_private_upload(repository_id=dataset_id)
     mini_dataset.push_to_hub(dataset_id, private=True)
 
 

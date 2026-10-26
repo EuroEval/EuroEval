@@ -11,6 +11,8 @@
 from datasets import load_dataset
 from tqdm.auto import tqdm
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 SUBSET_LANGUAGES: list[str] = [
     "sq",
     "be",
@@ -75,6 +77,7 @@ def main() -> None:
         dataset = dataset.map(transform).select_columns(["text", "target_text"])
 
         target_repo = TARGET_REPO.format(language=subset_name.split("-")[0])
+        preflight_private_upload(repository_id=target_repo)
         dataset.push_to_hub(repo_id=target_repo, private=True)
 
 

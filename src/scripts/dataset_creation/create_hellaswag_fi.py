@@ -24,6 +24,8 @@ from constants import (
 )
 from datasets import Dataset, DatasetDict, Split, load_dataset
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -84,6 +86,7 @@ def main() -> None:
     dataset_id = "EuroEval/hellaswag-fi-mini"
 
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 

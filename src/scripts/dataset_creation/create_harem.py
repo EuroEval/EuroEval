@@ -18,6 +18,8 @@ from collections import Counter
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_harem")
 
@@ -159,6 +161,7 @@ def main() -> None:
 
     # Push the dataset to the Hugging Face Hub
     logger.info(f"\nUploading dataset to {dataset_id}...")
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
     logger.info("Dataset uploaded successfully!")
 

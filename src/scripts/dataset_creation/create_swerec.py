@@ -20,6 +20,8 @@ from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from sklearn.model_selection import train_test_split
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 
 def main() -> None:
     """Create the SweReC-mini sentiment dataset and upload it to the HF Hub."""
@@ -154,6 +156,7 @@ def main() -> None:
 
     # Push the dataset to the Hugging Face Hub
     dataset_id = "EuroEval/swerec-mini"
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 

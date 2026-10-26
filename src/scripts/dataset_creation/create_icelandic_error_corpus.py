@@ -15,6 +15,8 @@ import re
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 
 def main() -> None:
     """Create the Icelandic Error Corpus dataset  and upload it to the HF Hub."""
@@ -92,6 +94,7 @@ def main() -> None:
         (dataset_subset, dataset_subset_id),
     ]:
         # Push the dataset to the Hugging Face Hub
+        preflight_private_upload(repository_id=dataset_id_)
         dataset_.push_to_hub(dataset_id_, private=True)
 
 

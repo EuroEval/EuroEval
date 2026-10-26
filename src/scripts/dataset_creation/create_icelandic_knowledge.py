@@ -30,6 +30,8 @@ from openai.types.chat import ChatCompletionUserMessageParam
 from pydantic import BaseModel
 from tqdm.auto import tqdm
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 
 load_dotenv()
@@ -88,6 +90,7 @@ def main() -> None:
     dataset_id = "EuroEval/icelandic-knowledge"
 
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 

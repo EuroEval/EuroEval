@@ -18,6 +18,8 @@ import requests
 from datasets import Dataset, DatasetDict, Split
 from sklearn.model_selection import train_test_split
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_no_cola")
 
@@ -117,6 +119,7 @@ def main() -> None:
     dataset_id = "EuroEval/no-cola-mini"
 
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 

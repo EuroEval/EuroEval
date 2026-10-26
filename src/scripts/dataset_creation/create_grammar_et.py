@@ -11,6 +11,8 @@
 
 from datasets import Dataset, DatasetDict, concatenate_datasets, load_dataset
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 
 def main() -> None:
     """Create the Estonian Grammar dataset and upload to HF Hub."""
@@ -61,6 +63,7 @@ def main() -> None:
         new_ds[split] = concatenate_datasets([original_ds, corrected_ds])
     new_ds = new_ds.shuffle(seed=42)
 
+    preflight_private_upload(repository_id=target_repo_id)
     new_ds.push_to_hub(target_repo_id, private=True)
 
 

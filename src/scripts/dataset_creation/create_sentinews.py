@@ -14,6 +14,8 @@ import pandas as pd
 from datasets import Dataset, DatasetDict, load_dataset
 from sklearn.utils import resample
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 
 def main() -> None:
     """Create the Slovene SentiNews sentiment dataset and upload to HF Hub."""
@@ -64,6 +66,7 @@ def main() -> None:
 
     # Push the dataset to the Hugging Face Hub
     dataset_id = "EuroEval/sentinews-mini"
+    preflight_private_upload(repository_id=dataset_id)
     dataset_dict.push_to_hub(dataset_id, private=True)
 
 

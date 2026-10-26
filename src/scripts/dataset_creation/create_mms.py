@@ -14,6 +14,8 @@ import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from sklearn.utils import resample
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 LANGUAGES = ["sr", "hr", "bs", "sq"]
 
 
@@ -97,6 +99,7 @@ def main() -> None:
 
         # Push the dataset to the Hugging Face Hub
         dataset_id = f"EuroEval/mms-{language}-mini"
+        preflight_private_upload(repository_id=dataset_id)
         dataset_dict.push_to_hub(dataset_id, private=True)
 
 

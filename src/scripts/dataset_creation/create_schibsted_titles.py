@@ -14,6 +14,8 @@ import pandas as pd
 from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 from datasets import Dataset, DatasetDict, Split, load_dataset
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 TRAIN_SIZE = 64
 VAL_SIZE = 128
 RANDOM_STATE = 4242
@@ -105,6 +107,7 @@ def process_title_dataset(
         }
     )
 
+    preflight_private_upload(repository_id=euroeval_dataset_id)
     result.push_to_hub(euroeval_dataset_id, private=True)
 
 

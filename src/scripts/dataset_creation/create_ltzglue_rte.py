@@ -17,6 +17,8 @@ import pandas as pd
 import requests
 from datasets import Dataset, DatasetDict
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 logging.basicConfig(level=logging.INFO)
 
 logger = logging.getLogger(__name__)
@@ -66,6 +68,7 @@ def main() -> None:
     dataset_id = "EuroEval/ltzglue-rte-mini"
     logger.info(f"Uploading to {dataset_id}...")
 
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
     logger.info(f"✓ Uploaded {dataset_id}")
 

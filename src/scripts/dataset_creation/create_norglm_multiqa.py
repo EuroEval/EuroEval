@@ -27,6 +27,8 @@ from datasets import Dataset, DatasetDict, Split, load_dataset
 from dotenv import load_dotenv
 from openai import OpenAI
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 load_dotenv()
 
 
@@ -237,6 +239,7 @@ def main() -> None:
 
     # Push the dataset to the Hugging Face Hub
     dataset_id = "EuroEval/norglm-multi-qa"
+    preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
 
 

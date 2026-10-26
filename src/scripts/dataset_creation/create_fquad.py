@@ -24,6 +24,8 @@ from constants import (
 )
 from datasets import Dataset, DatasetDict, Split
 
+from src.scripts.dataset_creation.dataset_utils import preflight_private_upload
+
 
 @click.command(
     help="Create the FQuAD-mini NER dataset and upload it to the HF Hub. Note that you "
@@ -161,6 +163,7 @@ def main(data_dir: str) -> None:
     mini_dataset_id = "EuroEval/fquad-mini"
 
     # Push the dataset to the Hugging Face Hub
+    preflight_private_upload(repository_id=mini_dataset_id)
     dataset.push_to_hub(mini_dataset_id, private=True)
 
 
