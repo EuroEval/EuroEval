@@ -236,7 +236,12 @@ def _text_summary_alignment(row: pd.Series) -> bool:
 
 
 def save_cache(cache: dict) -> None:
-    """Save cache to CACHE_FILE."""
+    """Save the summary validation cache to ``CACHE_FILE``.
+
+    Args:
+        cache:
+            The summary-to-validation-result mapping to persist.
+    """
     with open(CACHE_FILE, "w") as cache_file:
         json.dump(cache, cache_file, indent=4)
 

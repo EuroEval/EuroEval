@@ -137,6 +137,14 @@ def main() -> None:
 def _download_tsv(lang: str, treebank: str, split: str) -> pd.DataFrame:
     """Download a single TSV file and return it as a DataFrame.
 
+    Args:
+        lang:
+            The language code used in the file URL.
+        treebank:
+            The treebank name used in the file URL.
+        split:
+            The dataset split name used in the file URL.
+
     Returns:
         DataFrame with raw GerLangMod columns.
     """
@@ -150,6 +158,10 @@ def _download_tsv(lang: str, treebank: str, split: str) -> pd.DataFrame:
 
 def _process_df(df: pd.DataFrame) -> pd.DataFrame:
     """Extract tokens and IOB2 labels from a raw GerLangMod DataFrame.
+
+    Args:
+        df:
+            The raw TSV data with token and label columns.
 
     Returns:
         DataFrame with 'tokens' (list of str) and 'labels' (list of str) columns.

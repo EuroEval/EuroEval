@@ -86,6 +86,15 @@ def _process_split(dataset: Dataset, limit: int) -> Dataset:
     dataset = dataset.select_columns(["word", "sentence1", "sentence2", "label"])
 
     def format_sample(sample: dict[str, str | int]) -> dict[str, str]:
+        """Format one BeWiC row as text and a EuroEval label.
+
+        Args:
+            sample:
+                A source row containing a target word, two sentences and a label.
+
+        Returns:
+            The formatted sample with ``text`` and ``label`` fields.
+        """
         return {
             "text": (
                 f"Слова: {str(sample['word']).strip()}\n"

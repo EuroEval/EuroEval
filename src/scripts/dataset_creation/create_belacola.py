@@ -68,6 +68,12 @@ def process_dataset(source_dataset: DatasetDict) -> DatasetDict:
 def _process_split(dataset: Dataset, limit: int) -> Dataset:
     """Select, rename and label one BelaCoLA split.
 
+    Args:
+        dataset:
+            The source split to process.
+        limit:
+            The maximum number of examples to retain.
+
     Returns:
         The processed split with ``text`` and ``label`` columns.
     """
