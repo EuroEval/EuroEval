@@ -75,7 +75,7 @@ def test_pair_level_split_is_deterministic_and_caps_examples() -> None:
     ]
 
     first = process_dataset(rows=rows)
-    second = process_dataset(rows=rows)
+    second = process_dataset(rows=list(reversed(rows)))
 
     assert {split: data.to_list() for split, data in first.items()} == {
         split: data.to_list() for split, data in second.items()

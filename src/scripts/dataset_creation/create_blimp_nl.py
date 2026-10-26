@@ -83,6 +83,16 @@ def process_dataset(
             seen_pairs.add(pair_content)
             unique_rows.append(pair)
 
+    unique_rows.sort(
+        key=lambda pair: (
+            pair.get("config_name", ""),
+            pair["linguistic_phenomenon"],
+            pair["paradigm"],
+            pair.get("item_nr", pair.get("item_id", "")),
+            pair["sentence_good"],
+            pair["sentence_bad"],
+        )
+    )
     _validate_sentence_labels(rows=unique_rows)
     identifiers = [
         _pair_id(pair=pair, index=index) for index, pair in enumerate(unique_rows)
@@ -128,19 +138,6 @@ def _deterministic_pair_splits(
     Returns:
         Mapping from pair identifiers to split names.
     """
-    strata: dict[tuple[str, str], list[str]] = {}
-    for identifier, row in zip(identifiers, rows, strict=True):
-        key = (row["linguistic_phenomenon"], row["paradigm"])
-        strata.setdefault(key, []).append(identifier)
-
-    result: dict[str, str] = {}
-    for members in strata.values():
-        ordered = sorted(members, key=_stable_hash)
-        for index, identifier in enumerate(ordered):
-            result[identifier] = (
-                "train" if index % 10 < 8 else "val" if index % 10 == 8 else "test"
-            )
-
     identifiers_by_sentence: dict[str, list[str]] = {}
     for identifier, row in zip(identifiers, rows, strict=True):
         for sentence in (row["sentence_good"], row["sentence_bad"]):
@@ -153,13 +150,22 @@ def _deterministic_pair_splits(
         for identifier in union:
             connected[identifier] = union
 
-    components = {tuple(sorted(members)) for members in connected.values()}
+    components = sorted(
+        {tuple(sorted(members)) for members in connected.values()},
+        key=lambda component: _stable_hash("|".join(component)),
+    )
+    # No source split exists: target a 70/10/20 distribution so the test
+    # partition comfortably supplies its 1,024-pair cap before sampling.
+    proportions = {"train": 0.7, "val": 0.1, "test": 0.2}
+    result: dict[str, str] = {}
+    counts = dict.fromkeys(proportions, 0)
     for component in components:
-        component_hash = _stable_hash("|".join(component))
-        slot = int(component_hash[:8], 16) % 10
-        split = "train" if slot < 8 else "val" if slot == 8 else "test"
-        for identifier in component:
-            result[identifier] = split
+        split = max(
+            proportions,
+            key=lambda name: proportions[name] * len(identifiers) - counts[name],
+        )
+        result.update(dict.fromkeys(component, split))
+        counts[split] += len(component)
     return result
 
 

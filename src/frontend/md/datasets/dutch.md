@@ -318,8 +318,8 @@ training split; it has no validation or test splits. We derive the
 [BLiMP-NL-mini dataset](https://huggingface.co/datasets/EuroEval/blimp-nl-mini) by
 converting each pair into two single-sentence examples: the grammatical sentence is
 labelled `correct` and the ungrammatical sentence `incorrect`. Pair members stay
-together in their assigned split. The resulting split contains 1,024 / 256 / 1,690
-examples for training, validation and testing, respectively (so 2,970 examples used in
+together in their assigned split. The resulting split contains 1,024 / 256 / 2,048
+examples for training, validation and testing, respectively (so 3,328 examples used in
 total). Sampling is deterministic and balanced across phenomena and paradigms.
 
 Here are a few examples from the training split:
