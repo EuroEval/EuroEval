@@ -518,7 +518,7 @@ def status_evidence(
         status:
             The non-collected evidence status.
         reason:
-            The reason value used by this operation.
+            Explanation for why canary completions were not collected.
 
     Returns:
         Validated evidence with no observations.

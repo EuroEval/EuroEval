@@ -264,7 +264,8 @@ def _add_structured_classification_output(
             prompt:
                 The classification prompt.
             label:
-                The label value used by this operation.
+                Few-shot answer label, or an empty string when the answer must be
+                recovered from the trailing prompt text.
 
         Returns:
             The prompt and JSON answer for the section.
