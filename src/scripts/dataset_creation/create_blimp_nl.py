@@ -54,7 +54,8 @@ def process_dataset(
     Args:
         rows:
             Source minimal-pair records.
-        source_splits (optional): Split assignment by pair identifier.
+        source_splits (optional):
+            Split assignment by pair identifier. Defaults to None.
 
     Returns:
         Capped, balanced dataset with ``text`` and ``label`` columns.
@@ -133,7 +134,13 @@ def process_dataset(
 def _deterministic_pair_splits(
     *, rows: list[dict[str, str]], identifiers: list[str]
 ) -> dict[str, str]:
-    """Assign pairs to reproducible splits within each phenomenon/paradigm.
+    """Assign pairs to reproducible splits without separating shared sentences.
+
+    Args:
+        rows:
+            Source pair records.
+        identifiers:
+            Stable identifiers corresponding to the source pairs.
 
     Returns:
         Mapping from pair identifiers to split names.
@@ -170,12 +177,29 @@ def _deterministic_pair_splits(
 
 
 def _stable_hash(identifier: str) -> str:
-    """Return a stable ordering key for a pair identifier."""
+    """Return a stable ordering key for a pair identifier.
+
+    Args:
+        identifier:
+            Identifier to hash.
+
+    Returns:
+        Hexadecimal SHA-256 digest of the identifier.
+    """
     return hashlib.sha256(identifier.encode()).hexdigest()
 
 
 def _pair_id(*, pair: dict[str, str], index: int) -> str:
     """Return a stable identifier for a source pair.
+
+    Args:
+        pair:
+            Source pair record and its linguistic metadata.
+        index:
+            Source row index used when reporting missing identifiers.
+
+    Returns:
+        Identifier combining the source config, phenomenon, paradigm and item number.
 
     Raises:
         ValueError:
@@ -194,6 +218,12 @@ def _stratified_sample(
     *, pairs: list[tuple[str, dict[str, str]]], limit: int
 ) -> list[tuple[str, dict[str, str]]]:
     """Select a deterministic, round-robin sample across linguistic strata.
+
+    Args:
+        pairs:
+            Pair identifiers and records assigned to this split.
+        limit:
+            Maximum number of pairs to select.
 
     Returns:
         Selected pair identifiers and records.
