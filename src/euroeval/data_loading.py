@@ -38,7 +38,7 @@ def load_data(
             The configuration for the dataset.
         benchmark_config:
             The configuration for the benchmark.
-        create_validation_split:
+        create_validation_split (optional):
             Whether to derive a validation split from training data when the dataset has
             no configured validation split. This is intended for non-generative
             fine-tuning only.
