@@ -1,8 +1,6 @@
 """Create a Dutch sentence-level acceptability dataset from BLiMP-NL."""
 
 import hashlib
-import tempfile
-from pathlib import Path
 
 from datasets import Dataset, DatasetDict, get_dataset_config_names, load_dataset
 from huggingface_hub import HfApi
@@ -21,14 +19,12 @@ def main() -> None:
             If upstream contains unexpected splits or invalid records.
     """
     rows: list[dict[str, str]] = []
-    rejected_pairs = 0
     for config_name in sorted(get_dataset_config_names(SOURCE_REPO)):
         source = load_dataset(SOURCE_REPO, config_name)
         if set(source) != {"train"}:
             raise ValueError(f"Unexpected split shape in {config_name}: {set(source)}")
         for record in source["train"]:
             if record["sentence_good"] == record["sentence_bad"]:
-                rejected_pairs += 1
                 continue
             rows.append(
                 {
@@ -42,61 +38,12 @@ def main() -> None:
             )
 
     dataset = process_dataset(rows=rows)
-    split_counts = {split: data.num_rows for split, data in dataset.items()}
     api = HfApi()
     api.create_repo(
         repo_id=TARGET_REPO, repo_type="dataset", exist_ok=True, private=False
     )
     api.update_repo_settings(repo_id=TARGET_REPO, repo_type="dataset", private=False)
     dataset.push_to_hub(TARGET_REPO, private=False)
-    card = """---
-language:
-- nl
-license: cc-by-4.0
-task_categories:
-- text-classification
-pretty_name: BLiMP-NL-mini
----
-
-# BLiMP-NL-mini
-
-A capped Dutch grammatical acceptability dataset derived from the BLiMP-NL
-minimal-pair benchmark. Each source pair becomes two examples: the grammatical
-sentence is labelled `correct` and the ungrammatical sentence `incorrect`.
-Both members of a pair are kept in the same split. Exact duplicate pairs are
-removed, and contradictory sentence labels are rejected. {rejected_pairs} source
-pairs with identical good and bad sentences were excluded. Split sizes are
-SPLIT_COUNTS.
-
-Source: [BLiMP-NL](https://huggingface.co/datasets/juletxara/blimp-nl),
-licensed under CC BY 4.0.
-
-Please cite the original BLiMP-NL paper when using this dataset:
-
-```bibtex
-@article{suijkerbuijk2023blimp,
-  title={BLiMP-NL: The Benchmark of Linguistic Minimal Pairs for Dutch},
-  author={Suijkerbuijk, M.J.P.F. and Prins, Zoë and de Heer Kloots, Marianne
-    and Zuidema, Willem and Frank, Stefan},
-  year={2023}
-}
-```
-
-This derived dataset is distributed under the upstream CC BY 4.0 licence.
-"""
-    card = card.replace("{rejected_pairs}", str(rejected_pairs)).replace(
-        "SPLIT_COUNTS",
-        ", ".join(f"{split}: {count}" for split, count in split_counts.items()),
-    )
-    with tempfile.TemporaryDirectory(prefix="blimp-nl-card-") as temporary_directory:
-        card_path = Path(temporary_directory) / "README.md"
-        card_path.write_text(card, encoding="utf-8")
-        api.upload_file(
-            path_or_fileobj=str(card_path),
-            path_in_repo="README.md",
-            repo_id=TARGET_REPO,
-            repo_type="dataset",
-        )
 
 
 def process_dataset(
