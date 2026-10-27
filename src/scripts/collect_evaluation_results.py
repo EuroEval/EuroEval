@@ -516,10 +516,6 @@ def _process_new_results(
         try:
             record = json.loads(line)
             if is_canary_record(record):
-                logger.info(
-                    "Keeping private contamination-canary evidence out of the public "
-                    "results bucket."
-                )
                 continue
             identity = _extract_identity_key(record)
             if not identity:
