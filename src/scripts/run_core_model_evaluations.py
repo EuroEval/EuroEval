@@ -322,7 +322,7 @@ def execute_jobs(jobs: list[Job]) -> None:
             model_id=job.model_id,
             languages=job.languages,
             datasets=[job.dataset],
-            evaluate_test_split=not job.is_api,
+            evaluate_test_split=False,
             zero_shot=job.is_api,
         )
         if returncode != 0:
