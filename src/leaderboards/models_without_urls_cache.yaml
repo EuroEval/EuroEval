@@ -5,6 +5,7 @@ alexandrainst/Meta-Llama-3.1-8B-laerebogen: true
 alexandrainst/Meta-Llama-3.1-8B-laerebogen-and-dialog-k2-da: true
 alexandrainst/Meta-Llama-3.1-8B-laerebogen-and-filtered-dialog-k2-da: true
 alexandrainst/Meta-Llama-3.1-8B-laerebogen-two-epochs: true
+danish-foundation-models/DFM-Mimir-v1.8: false
 danish-foundation-models/Meta-Llama-3.1-8B-laerebogen: true
 danish-foundation-models/encoder-medium-v1: false
 danish-foundation-models/munin-7b-core-it: false
