@@ -253,6 +253,16 @@ SCALA_NL_CONFIG = DatasetConfig(
     revision="f5b7b376fc2d5ae7254a34bb6b6e297c357841a4",
 )
 
+BLIMP_NL_CONFIG = DatasetConfig(
+    name="blimp-nl",
+    pretty_name="BLiMP-NL-mini",
+    source="EuroEval/blimp-nl-mini",
+    task=LA,
+    languages=[DUTCH],
+    unofficial=True,
+    revision="c9863f0b3bee195a8e6d3d9d1ee0085a7158aaf5",
+)
+
 DUTCH_COLA_FULL_CONFIG = DatasetConfig(
     name="dutch-cola-full",
     pretty_name="Dutch CoLA Full",
