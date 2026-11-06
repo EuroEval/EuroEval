@@ -3,6 +3,7 @@
 import json
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -93,6 +94,65 @@ def test_get_release_notes_rejects_duplicate_or_empty_sections(changelog: str) -
     """Require one nonempty matching changelog section."""
     with pytest.raises(RuntimeError):
         get_release_notes(version="18.4.0", changelog=changelog)
+
+
+@pytest.mark.parametrize("target", ["publish", "publish-euroeval", "publish-scandeval"])
+@pytest.mark.parametrize("version", ["18.4.0.dev", "18.4.0.dev0", "18.4.0.dev1"])
+def test_make_publish_rejects_development_metadata_before_mutations(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, target: str, version: str
+) -> None:
+    """Run the real version guard before any build or source mutations.
+
+    Args:
+        tmp_path:
+            Temporary project directory.
+        monkeypatch:
+            Isolated environment fixture.
+        target:
+            Publishing entry point to exercise.
+        version:
+            Development version that must never be uploaded.
+    """
+    source = Path(__file__).parents[1]
+    shutil.copy(source / "makefile", tmp_path / "makefile")
+    script = tmp_path / "src/scripts/versioning.py"
+    script.parent.mkdir(parents=True)
+    shutil.copy(source / "src/scripts/versioning.py", script)
+    package = tmp_path / "src/euroeval"
+    package.mkdir()
+    original = f'[project]\nname = "EuroEval"\nversion = "{version}"\n'
+    (tmp_path / "pyproject.toml").write_text(original, encoding="utf-8")
+    for directory in ("build", "dist"):
+        (tmp_path / directory).mkdir()
+        (tmp_path / directory / "sentinel").write_text("keep", encoding="utf-8")
+    fake_bin = tmp_path / ".local/bin"
+    fake_bin.mkdir(parents=True)
+    uv = fake_bin / "uv"
+    uv.write_text(
+        f"#!{sys.executable}\n"
+        "import os, sys\n"
+        "assert sys.argv[1:3] == ['run', 'src/scripts/versioning.py']\n"
+        "assert sys.argv[3] in ('--validate-publish', '--validate-stable')\n"
+        "os.execv(sys.executable, [sys.executable, *sys.argv[2:]])\n",
+        encoding="utf-8",
+    )
+    uv.chmod(0o755)
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("PATH", f"{fake_bin}:/usr/bin:/bin")
+    monkeypatch.setenv("EUROEVAL_PYPI_API_TOKEN", "fake")
+    monkeypatch.setenv("SCANDEVAL_PYPI_API_TOKEN", "fake")
+
+    result = subprocess.run(
+        ["make", "-j2", target], cwd=tmp_path, capture_output=True, text=True
+    )
+
+    assert result.returncode != 0
+    assert "Refusing to publish non-canonical stable version" in result.stderr
+    assert (tmp_path / "pyproject.toml").read_text(encoding="utf-8") == original
+    assert package.is_dir()
+    assert not (tmp_path / "src/scandeval").exists()
+    for directory in ("build", "dist"):
+        assert (tmp_path / directory / "sentinel").read_text(encoding="utf-8") == "keep"
 
 
 def test_publish_wrapper_orders_all_stages_and_stops_on_release_failure(
