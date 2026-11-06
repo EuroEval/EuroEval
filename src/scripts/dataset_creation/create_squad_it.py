@@ -17,15 +17,18 @@ from constants import (
     MIN_NUM_CHARS_IN_CONTEXT,
     MIN_NUM_CHARS_IN_QUESTION,
 )
-from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from datasets.load import load_dataset
-from datasets.splits import Split
 
 if __package__:
-    from .dataset_utils import preflight_private_upload
+    from .dataset_utils import filter_by_character_lengths, preflight_private_upload
 else:
-    from dataset_utils import preflight_private_upload
+    from dataset_utils import filter_by_character_lengths, preflight_private_upload
+
+if __package__:
+    from .dataset_processing import dataset_dict_from_frames
+else:
+    from dataset_processing import dataset_dict_from_frames
 
 
 def main() -> None:
@@ -42,30 +45,12 @@ def main() -> None:
     assert isinstance(train_df, pd.DataFrame)
     assert isinstance(test_df, pd.DataFrame)
 
-    # Only work with samples where the context is not very large or small
-    train_lengths = train_df.context.str.len()
-    test_lengths = test_df.context.str.len()
-    train_df = train_df[
-        train_lengths.between(MIN_NUM_CHARS_IN_CONTEXT, MAX_NUM_CHARS_IN_CONTEXT)
-    ]
-    test_df = test_df[
-        test_lengths.between(MIN_NUM_CHARS_IN_CONTEXT, MAX_NUM_CHARS_IN_CONTEXT)
-    ]
-
-    # Only work with samples where the question is not very large or small
-    train_question_lengths = train_df.question.str.len()
-    test_question_lengths = test_df.question.str.len()
-    train_df = train_df[
-        train_question_lengths.between(
-            MIN_NUM_CHARS_IN_QUESTION, MAX_NUM_CHARS_IN_QUESTION
-        )
-    ]
-    test_df = test_df[
-        test_question_lengths.between(
-            MIN_NUM_CHARS_IN_QUESTION, MAX_NUM_CHARS_IN_QUESTION
-        )
-    ]
-
+    length_bounds = {
+        "context": (MIN_NUM_CHARS_IN_CONTEXT, MAX_NUM_CHARS_IN_CONTEXT),
+        "question": (MIN_NUM_CHARS_IN_QUESTION, MAX_NUM_CHARS_IN_QUESTION),
+    }
+    train_df = filter_by_character_lengths(frame=train_df, bounds=length_bounds)
+    test_df = filter_by_character_lengths(frame=test_df, bounds=length_bounds)
     assert isinstance(train_df, pd.DataFrame)
     assert isinstance(test_df, pd.DataFrame)
 
@@ -103,12 +88,9 @@ def main() -> None:
     assert isinstance(test_df, pd.DataFrame)
 
     # Collect datasets in a dataset dictionary
-    dataset = DatasetDict(
-        {
-            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
-            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
-            "test": Dataset.from_pandas(test_df, split=Split.TEST),
-        }
+    dataset = dataset_dict_from_frames(
+        frames={"train": train_df, "val": val_df, "test": test_df},
+        columns=list(train_df.columns),
     )
 
     # Push the dataset to the Hugging Face Hub

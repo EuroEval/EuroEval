@@ -18,6 +18,11 @@ if __package__:
 else:
     from dataset_utils import preflight_private_upload
 
+if __package__:
+    from .dataset_processing import process_ner_frame
+else:
+    from dataset_processing import process_ner_frame
+
 
 def main() -> None:
     """Create the Ukrainian NER dataset and upload it to the HF Hub."""
@@ -37,17 +42,7 @@ def main() -> None:
     assert isinstance(val_df, pd.DataFrame)
     assert isinstance(test_df, pd.DataFrame)
 
-    # Add a `text` column by joining tokens
-    train_df["text"] = train_df["tokens"].map(lambda tokens: " ".join(tokens))
-    val_df["text"] = val_df["tokens"].map(lambda tokens: " ".join(tokens))
-    test_df["text"] = test_df["tokens"].map(lambda tokens: " ".join(tokens))
-
-    # Rename `ner_tags` to `labels`
-    train_df.rename(columns={"ner_tags": "labels"}, inplace=True)
-    val_df.rename(columns={"ner_tags": "labels"}, inplace=True)
-    test_df.rename(columns={"ner_tags": "labels"}, inplace=True)
-
-    ner_conversion_dict = {
+    ner_mapping = {
         0: "O",
         1: "B-PER",
         2: "I-PER",
@@ -58,16 +53,15 @@ def main() -> None:
         7: "B-MISC",
         8: "I-MISC",
     }
-
-    train_df["labels"] = train_df["labels"].map(
-        lambda ner_tags: [ner_conversion_dict[ner_tag] for ner_tag in ner_tags]
-    )
-    val_df["labels"] = val_df["labels"].map(
-        lambda ner_tags: [ner_conversion_dict[ner_tag] for ner_tag in ner_tags]
-    )
-    test_df["labels"] = test_df["labels"].map(
-        lambda ner_tags: [ner_conversion_dict[ner_tag] for ner_tag in ner_tags]
-    )
+    train_df = process_ner_frame(frame=train_df, label_mapping=ner_mapping)[
+        ["tokens", "labels"]
+    ]
+    val_df = process_ner_frame(frame=val_df, label_mapping=ner_mapping)[
+        ["tokens", "labels"]
+    ]
+    test_df = process_ner_frame(frame=test_df, label_mapping=ner_mapping)[
+        ["tokens", "labels"]
+    ]
 
     column_to_keep = ["tokens", "labels"]
     train_df = train_df[column_to_keep]

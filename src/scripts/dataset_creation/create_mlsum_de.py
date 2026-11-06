@@ -19,6 +19,11 @@ if __package__:
 else:
     from dataset_utils import preflight_private_upload
 
+if __package__:
+    from .dataset_processing import filter_by_character_lengths
+else:
+    from dataset_processing import filter_by_character_lengths
+
 
 def main() -> None:
     """Create the German MLSum-mini summarisation dataset and upload to HF Hub."""
@@ -40,14 +45,10 @@ def main() -> None:
     assert isinstance(test_df, pd.DataFrame)
 
     # Only work with samples where the text is not very large or small
-    train_lengths = train_df.text.str.len()
-    val_lengths = val_df.text.str.len()
-    test_lengths = test_df.text.str.len()
-    lower_bound = MIN_NUM_CHARS_IN_ARTICLE
-    upper_bound = MAX_NUM_CHARS_IN_ARTICLE
-    train_df = train_df[train_lengths.between(lower_bound, upper_bound)]
-    val_df = val_df[val_lengths.between(lower_bound, upper_bound)]
-    test_df = test_df[test_lengths.between(lower_bound, upper_bound)]
+    length_bounds = {"text": (MIN_NUM_CHARS_IN_ARTICLE, MAX_NUM_CHARS_IN_ARTICLE)}
+    train_df = filter_by_character_lengths(frame=train_df, bounds=length_bounds)
+    val_df = filter_by_character_lengths(frame=val_df, bounds=length_bounds)
+    test_df = filter_by_character_lengths(frame=test_df, bounds=length_bounds)
 
     # Create validation split
     val_size = 256

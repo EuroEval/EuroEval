@@ -16,9 +16,9 @@ both contexts.
 from datasets import Dataset, DatasetDict, load_dataset
 
 if __package__:
-    from .dataset_utils import preflight_private_upload
+    from .dataset_utils import upload_private
 else:
-    from dataset_utils import preflight_private_upload
+    from dataset_utils import upload_private
 
 SOURCE_REPOSITORY = "maaxap/BelarusianGLUE"
 SOURCE_CONFIG = "bewic"
@@ -37,8 +37,7 @@ def main() -> None:
 
     dataset = process_dataset(source_dataset=source_dataset)
 
-    preflight_private_upload(repository_id=TARGET_REPOSITORY)
-    dataset.push_to_hub(repo_id=TARGET_REPOSITORY, private=True)
+    upload_private(dataset=dataset, repository_id=TARGET_REPOSITORY)
 
 
 def process_dataset(source_dataset: DatasetDict) -> DatasetDict:
