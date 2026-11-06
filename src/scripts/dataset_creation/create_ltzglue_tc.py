@@ -15,14 +15,14 @@ import logging
 import pandas as pd
 
 if __package__:
-    from .dataset_utils import preflight_private_upload
+    from .dataset_utils import upload_private
 else:
-    from dataset_utils import preflight_private_upload
+    from dataset_utils import upload_private
 
 if __package__:
-    from .dataset_processing import cap_dataframe, dataset_dict_from_frames
+    from .dataset_processing import build_split_dataset
 else:
-    from dataset_processing import cap_dataframe, dataset_dict_from_frames
+    from dataset_processing import build_split_dataset
 
 if __package__:
     from .dataset_downloads import download_json_records
@@ -42,39 +42,19 @@ MAX_TEST = 2048
 
 def main() -> None:
     """Create the ltzGLUE-TC dataset."""
-    logger.info("Downloading ltzGLUE-TC data from GitHub...")
-    train_data = download_json_records(base_url=BASE_URL, split="train")
-    val_data = download_json_records(base_url=BASE_URL, split="dev")
-    test_data = download_json_records(base_url=BASE_URL, split="test")
-
-    logger.info(
-        f"Downloaded: {len(train_data)} train, {len(val_data)} val, "
-        f"{len(test_data)} test"
-    )
-
-    train_df = _load_split(train_data)
-    val_df = _load_split(val_data)
-    test_df = _load_split(test_data)
-
-    # Cap each split independently, preserving source split boundaries
-    train_df = cap_dataframe(frame=train_df, maximum=MAX_TRAIN)
-    val_df = cap_dataframe(frame=val_df, maximum=MAX_VAL)
-    test_df = cap_dataframe(frame=test_df, maximum=MAX_TEST)
-
-    logger.info(
-        f"Capped splits: {len(train_df)} train, {len(val_df)} val, {len(test_df)} test"
-    )
-
-    dataset = dataset_dict_from_frames(
-        frames={"train": train_df, "val": val_df, "test": test_df},
+    dataset = build_split_dataset(
+        load_split=lambda split: _load_split(
+            download_json_records(base_url=BASE_URL, split=split)
+        ),
+        source_splits={"train": "train", "val": "dev", "test": "test"},
+        limits={"train": MAX_TRAIN, "val": MAX_VAL, "test": MAX_TEST},
         columns=["text", "label"],
     )
 
     dataset_id = "EuroEval/ltzglue-tc-mini"
     logger.info(f"Uploading to {dataset_id}...")
 
-    preflight_private_upload(repository_id=dataset_id)
-    dataset.push_to_hub(dataset_id, private=True)
+    upload_private(dataset=dataset, repository_id=dataset_id)
     logger.info(f"✓ Uploaded {dataset_id}")
 
 

@@ -16,8 +16,7 @@ import sys
 
 import pandas as pd
 from constants import CHOICES_MAPPING
-from datasets import Dataset, DatasetDict, Split, load_dataset
-from sklearn.model_selection import train_test_split
+from datasets import load_dataset
 
 if __package__:
     from .dataset_utils import preflight_private_upload
@@ -25,9 +24,15 @@ else:
     from dataset_utils import preflight_private_upload
 
 if __package__:
-    from .dataset_processing import format_multiple_choice_record
+    from .dataset_processing import (
+        format_multiple_choice_record,
+        split_generated_dataset,
+    )
 else:
-    from dataset_processing import format_multiple_choice_record
+    from dataset_processing import (
+        format_multiple_choice_record,
+        split_generated_dataset,
+    )
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_faroese_metaphorical_explanations")
@@ -101,39 +106,11 @@ def main(source: str) -> None:
     new_df.reset_index(drop=True, inplace=True)
     logger.info(f"Built {len(new_df)} multiple-choice samples.")
 
-    # Compute split sizes following the ratio of the standard EuroEval splits
-    # (1,024 / 256 / 2,048 for train / val / test)
-    train_size = int(len(new_df) * 1_024 / 3_328)
-    val_size = int(len(new_df) * 256 / 3_328)
-    logger.info(
-        f"Splitting into {train_size} train / {val_size} val / "
-        f"{len(new_df) - train_size - val_size} test samples."
-    )
-
-    # Create the splits
-    train_df, remaining_df = train_test_split(
-        new_df, train_size=train_size, random_state=4242
-    )
-    val_df, test_df = train_test_split(
-        remaining_df, train_size=val_size, random_state=4242
-    )
-
-    # Reset the index
-    train_df = train_df.reset_index(drop=True)
-    val_df = val_df.reset_index(drop=True)
-    test_df = test_df.reset_index(drop=True)
-
-    # Collect datasets in a dataset dictionary
-    dataset_dict = DatasetDict(
-        {
-            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
-            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
-            "test": Dataset.from_pandas(test_df, split=Split.TEST),
-        }
-    )
-
-    # Create dataset ID
+    # Split generated examples proportionally, then enforce the standard caps.
+    dataset_dict, was_truncated = split_generated_dataset(frame=new_df)
     dataset_id = "EuroEval/faroese-metaphorical-explanations"
+    if was_truncated:
+        dataset_id += "-mini"
 
     # Push the dataset to the Hugging Face Hub
     preflight_private_upload(repository_id=dataset_id)

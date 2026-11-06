@@ -18,9 +18,17 @@ else:
     from dataset_utils import preflight_private_upload
 
 if __package__:
-    from .dataset_processing import dataset_dict_from_frames, process_ner_frame
+    from .dataset_processing import (
+        dataset_dict_from_frames,
+        process_ner_frame,
+        process_source_splits,
+    )
 else:
-    from dataset_processing import dataset_dict_from_frames, process_ner_frame
+    from dataset_processing import (
+        dataset_dict_from_frames,
+        process_ner_frame,
+        process_source_splits,
+    )
 
 
 def main() -> None:
@@ -55,10 +63,7 @@ def main() -> None:
         ),
     }
     limits = {"train": 1024, "val": 256, "test": 1024}
-    frames = {
-        split: frame.sample(n=limits[split], random_state=4242).reset_index(drop=True)
-        for split, frame in frames.items()
-    }
+    frames = process_source_splits(frames=frames, limits=limits)
     dataset = dataset_dict_from_frames(
         frames=frames, columns=["tokens", "text", "labels"]
     )

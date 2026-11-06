@@ -19,9 +19,9 @@ else:
     from dataset_utils import preflight_private_upload
 
 if __package__:
-    from .dataset_processing import process_ner_frame
+    from .dataset_processing import process_ner_frame, sample_dataframe
 else:
-    from dataset_processing import process_ner_frame
+    from dataset_processing import process_ner_frame, sample_dataframe
 
 
 def main() -> None:
@@ -73,23 +73,10 @@ def main() -> None:
     val_size = 256
     test_size = 2048
 
-    # Calculate the number of samples to transfer from train to test
-    current_test_size = len(test_df)
-    extra_samples_needed = test_size - current_test_size
-
-    # Sample additional from the train set
-    extra_test_samples = train_df.sample(n=extra_samples_needed, random_state=4242)
-
-    # Add these samples to the test set and remove them from the train set
-    test_df = pd.concat([test_df, extra_test_samples]).reset_index(drop=True)
-    train_df = train_df.drop(extra_test_samples.index.tolist()).reset_index(drop=True)
-
-    # Sample the desired sizes
-    train_df = train_df.sample(n=train_size, random_state=4242)
-    val_df = val_df.sample(n=val_size, random_state=4242)
-
-    # Confirm the test size
-    assert len(test_df) == test_size
+    # Cap source splits independently; a smaller test split stays smaller.
+    train_df = sample_dataframe(frame=train_df, maximum=train_size)
+    val_df = sample_dataframe(frame=val_df, maximum=val_size)
+    test_df = sample_dataframe(frame=test_df, maximum=test_size)
 
     # Reset the index
     train_df.reset_index(drop=True, inplace=True)
