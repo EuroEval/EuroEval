@@ -302,6 +302,95 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset scala-nl
 ```
 
+### Unofficial: BLiMP-NL
+
+This dataset was introduced in the paper
+[BLiMP-NL: A Corpus of Dutch Minimal Pairs and Acceptability Judgments for Language
+Model Evaluation](https://doi.org/10.1162/coli_a_00559) by Suijkerbuijk et al. The
+source data is available from the
+[Radboud Data Repository](https://data.ru.nl/collections/ru/cls/blimp-nl_dsc_550) and
+[Hugging Face](https://huggingface.co/datasets/juletxara/blimp-nl). It contains Dutch
+linguistic minimal pairs across 22 grammatical phenomena and 84 paradigms, and is
+licensed under CC BY 4.0.
+
+The original dataset contains 9,000 minimal pairs (18,000 sentences) in a single
+training split; it has no validation or test splits. We derive the
+[BLiMP-NL-mini dataset](https://huggingface.co/datasets/EuroEval/blimp-nl-mini) by
+converting each pair into two single-sentence examples: the grammatical sentence is
+labelled `correct` and the ungrammatical sentence `incorrect`. Pair members stay
+together in their assigned split. The resulting split contains 1,024 / 256 / 2,048
+examples for training, validation and testing, respectively (so 3,328 examples used in
+total). Sampling is deterministic and balanced across phenomena and paradigms.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "De visser vangt vast ergens anders grote vissen.",
+  "label": "correct"
+}
+```
+
+```json
+{
+  "text": "De visser vangt ergens vast anders grote vissen.",
+  "label": "incorrect"
+}
+```
+
+```json
+{
+  "text": "Zij begrijpt dat Michael de interesse in astronomie deelt.",
+  "label": "correct"
+}
+```
+
+```json
+{
+  "text": "Zij begrijpt dat Michael in astronomie de interesse deelt.",
+  "label": "incorrect"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+
+- Prefix prompt:
+
+  ```text
+  Hieronder staan zinnen en of ze grammaticaal correct zijn.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Zin: {text}
+  Grammaticaal correct: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Zin: {text}
+
+  Bepaal of de zin grammaticaal correct is of niet. Antwoord met 'ja' als de zin correct is en 'nee' als dat niet het geval is.
+  ```
+
+- Label mapping:
+  - `correct` ➡️ `ja`
+  - `incorrect` ➡️ `nee`
+
+Evaluation is sentence-level acceptability classification, not pairwise preference
+between the grammatical and ungrammatical members of a minimal pair.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset blimp-nl
+```
+
 ## Natural Language Inference
 
 ### Unofficial: The Dutch SICK-NL Entailment Dataset
