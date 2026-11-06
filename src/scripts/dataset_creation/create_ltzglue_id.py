@@ -15,14 +15,14 @@ import logging
 import pandas as pd
 
 if __package__:
-    from .dataset_utils import preflight_private_upload
+    from .dataset_utils import upload_private
 else:
-    from dataset_utils import preflight_private_upload
+    from dataset_utils import upload_private
 
 if __package__:
-    from .dataset_processing import cap_dataframe, dataset_dict_from_frames
+    from .dataset_processing import build_split_dataset
 else:
-    from dataset_processing import cap_dataframe, dataset_dict_from_frames
+    from dataset_processing import build_split_dataset
 
 if __package__:
     from .dataset_downloads import download_json_records
@@ -47,34 +47,19 @@ def main() -> None:
     (val to 256, test to 2048), exposing lb.valid as "val" and lb.test as "test".
     The published dataset ID ends with -mini to indicate capping.
     """
-    logger.info("Downloading ltzGLUE-ID data from GitHub...")
-    val_data = download_json_records(base_url=BASE_URL, split="lb.valid")
-    test_data = download_json_records(base_url=BASE_URL, split="lb.test")
-
-    logger.info(
-        f"Downloaded: {len(val_data)} val, {len(test_data)} test (no training data)"
-    )
-
-    val_df = _load_split(val_data)
-    test_df = _load_split(test_data)
-
-    # Cap each split independently, preserving source split boundaries
-    val_df = cap_dataframe(frame=val_df, maximum=MAX_VAL)
-    test_df = cap_dataframe(frame=test_df, maximum=MAX_TEST)
-
-    logger.info(
-        f"Capped splits: {len(val_df)} val, {len(test_df)} test (no training data)"
-    )
-
-    dataset = dataset_dict_from_frames(
-        frames={"val": val_df, "test": test_df}, columns=["text", "label"]
+    dataset = build_split_dataset(
+        load_split=lambda split: _load_split(
+            download_json_records(base_url=BASE_URL, split=split)
+        ),
+        source_splits={"val": "lb.valid", "test": "lb.test"},
+        limits={"val": MAX_VAL, "test": MAX_TEST},
+        columns=["text", "label"],
     )
 
     dataset_id = "EuroEval/ltzglue-id-mini"
     logger.info(f"Uploading to {dataset_id}...")
 
-    preflight_private_upload(repository_id=dataset_id)
-    dataset.push_to_hub(dataset_id, private=True)
+    upload_private(dataset=dataset, repository_id=dataset_id)
     logger.info(f"✓ Uploaded {dataset_id}")
 
 

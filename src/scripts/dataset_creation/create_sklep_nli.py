@@ -11,14 +11,20 @@
 from datasets import Dataset, DatasetDict, load_dataset
 
 try:
-    from dataset_utils import MAX_TEST, MAX_TRAIN, MAX_VAL, cap_split, upload_private
+    from dataset_utils import (
+        MAX_TEST,
+        MAX_TRAIN,
+        MAX_VAL,
+        cap_split,
+        create_and_upload_dataset,
+    )
 except ModuleNotFoundError:
     from src.scripts.dataset_creation.dataset_utils import (
         MAX_TEST,
         MAX_TRAIN,
         MAX_VAL,
         cap_split,
-        upload_private,
+        create_and_upload_dataset,
     )
 
 SOURCE_DATASET = "slovak-nlp/sklep"
@@ -28,10 +34,11 @@ LABELS = ("entailment", "neutral", "contradiction")
 
 def main() -> None:
     """Download, process, and privately upload the SKLEP NLI dataset."""
-    source = load_dataset(path=SOURCE_DATASET, name="nli")
-    assert isinstance(source, DatasetDict)
-    dataset = process_dataset(raw_dataset=source)
-    upload_private(dataset=dataset, repository_id=TARGET_DATASET)
+    create_and_upload_dataset(
+        load_source=lambda: load_dataset(path=SOURCE_DATASET, name="nli"),
+        process_source=lambda source: process_dataset(raw_dataset=source),
+        repository_id=TARGET_DATASET,
+    )
 
 
 def process_dataset(raw_dataset: DatasetDict) -> DatasetDict:

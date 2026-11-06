@@ -21,14 +21,22 @@ from datasets.dataset_dict import DatasetDict
 from datasets.load import load_dataset
 
 if __package__:
-    from .dataset_utils import filter_by_character_lengths, preflight_private_upload
+    from .dataset_utils import preflight_private_upload
 else:
-    from dataset_utils import filter_by_character_lengths, preflight_private_upload
+    from dataset_utils import preflight_private_upload
 
 if __package__:
-    from .dataset_processing import dataset_dict_from_frames
+    from .dataset_processing import (
+        dataset_dict_from_frames,
+        filter_by_character_lengths,
+        sample_dataframe,
+    )
 else:
-    from dataset_processing import dataset_dict_from_frames
+    from dataset_processing import (
+        dataset_dict_from_frames,
+        filter_by_character_lengths,
+        sample_dataframe,
+    )
 
 
 def main() -> None:
@@ -67,16 +75,16 @@ def main() -> None:
 
     # Create validation split
     val_size = 256
-    val_df = test_df.sample(n=val_size, random_state=4242)
+    val_df = sample_dataframe(frame=test_df, maximum=val_size)
 
     # Create train split
     train_size = 1024
-    train_df = train_df.sample(n=train_size, random_state=4242)
+    train_df = sample_dataframe(frame=train_df, maximum=train_size)
 
     # Create test split
     test_size = 2048
-    test_df = test_df.loc[~test_df.index.isin(val_df.index)].sample(
-        n=test_size, random_state=4242
+    test_df = sample_dataframe(
+        frame=test_df.loc[~test_df.index.isin(val_df.index)], maximum=test_size
     )
 
     train_df = train_df.reset_index(drop=True)

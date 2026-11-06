@@ -11,11 +11,11 @@
 from datasets import Dataset, DatasetDict, load_dataset
 
 try:
-    from dataset_utils import make_dataset_dict, upload_private
+    from dataset_utils import create_and_upload_dataset, make_dataset_dict
 except ModuleNotFoundError:
     from src.scripts.dataset_creation.dataset_utils import (
+        create_and_upload_dataset,
         make_dataset_dict,
-        upload_private,
     )
 
 SOURCE_DATASET = "slovak-nlp/sklep"
@@ -25,10 +25,13 @@ LABELS = ("negative", "positive")
 
 def main() -> None:
     """Download, process, and privately upload SKLEP Reviews3."""
-    source = load_dataset(path=SOURCE_DATASET, name="sentiment-analysis")
-    assert isinstance(source, DatasetDict)
-    dataset = process_dataset(raw_dataset=source)
-    upload_private(dataset=dataset, repository_id=TARGET_DATASET)
+    create_and_upload_dataset(
+        load_source=lambda: load_dataset(
+            path=SOURCE_DATASET, name="sentiment-analysis"
+        ),
+        process_source=lambda source: process_dataset(raw_dataset=source),
+        repository_id=TARGET_DATASET,
+    )
 
 
 def process_dataset(raw_dataset: DatasetDict) -> DatasetDict:

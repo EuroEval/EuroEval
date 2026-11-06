@@ -17,14 +17,14 @@ import pandas as pd
 import requests
 
 if __package__:
-    from .dataset_utils import preflight_private_upload
+    from .dataset_utils import upload_private
 else:
-    from dataset_utils import preflight_private_upload
+    from dataset_utils import upload_private
 
 if __package__:
-    from .dataset_processing import cap_dataframe, dataset_dict_from_frames
+    from .dataset_processing import build_split_dataset
 else:
-    from dataset_processing import cap_dataframe, dataset_dict_from_frames
+    from dataset_processing import build_split_dataset
 
 logging.basicConfig(level=logging.INFO)
 
@@ -39,41 +39,17 @@ MAX_TEST = 2048
 
 def main() -> None:
     """Create the ltzGLUE-RTE dataset and upload to HF Hub."""
-    logger.info("Downloading ltzGLUE-RTE data from GitHub...")
-    train_df = _download_split("train")
-    val_df = _download_split("dev")
-    test_df = _download_split("test")
-
-    logger.info(
-        f"Downloaded: {len(train_df)} train, {len(val_df)} val, {len(test_df)} test"
-    )
-
-    # Cap each split independently, preserving source split boundaries
-    train_df = cap_dataframe(frame=train_df, maximum=MAX_TRAIN)
-    val_df = cap_dataframe(frame=val_df, maximum=MAX_VAL)
-    test_df = cap_dataframe(frame=test_df, maximum=MAX_TEST)
-
-    logger.info(
-        f"Capped splits: {len(train_df)} train, {len(val_df)} val, {len(test_df)} test"
-    )
-
-    # Create 'text' column combining premise and hypothesis (required by EuroEval)
-    for df in [train_df, val_df, test_df]:
-        df["text"] = df.apply(
-            lambda row: f"Premise: {row['premise']}\nHypothesis: {row['hypothesis']}",
-            axis=1,
-        )
-
-    dataset = dataset_dict_from_frames(
-        frames={"train": train_df, "val": val_df, "test": test_df},
+    dataset = build_split_dataset(
+        load_split=_download_split,
+        source_splits={"train": "train", "val": "dev", "test": "test"},
+        limits={"train": MAX_TRAIN, "val": MAX_VAL, "test": MAX_TEST},
         columns=["text", "label"],
     )
 
     dataset_id = "EuroEval/ltzglue-rte-mini"
     logger.info(f"Uploading to {dataset_id}...")
 
-    preflight_private_upload(repository_id=dataset_id)
-    dataset.push_to_hub(dataset_id, private=True)
+    upload_private(dataset=dataset, repository_id=dataset_id)
     logger.info(f"✓ Uploaded {dataset_id}")
 
 

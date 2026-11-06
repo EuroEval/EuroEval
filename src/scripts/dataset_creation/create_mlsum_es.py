@@ -20,9 +20,9 @@ else:
     from dataset_utils import preflight_private_upload
 
 if __package__:
-    from .dataset_processing import filter_by_character_lengths
+    from .dataset_processing import filter_by_character_lengths, process_source_splits
 else:
-    from dataset_processing import filter_by_character_lengths
+    from dataset_processing import filter_by_character_lengths, process_source_splits
 
 
 def main() -> None:
@@ -47,21 +47,11 @@ def main() -> None:
     val_df = filter_by_character_lengths(frame=val_df, bounds=length_bounds)
     test_df = filter_by_character_lengths(frame=test_df, bounds=length_bounds)
 
-    # Create validation split
-    val_size = 256
-    val_df = val_df.sample(n=val_size, random_state=4242)
-
-    # Create test split
-    test_size = 2048
-    test_df = test_df.sample(n=test_size, random_state=4242)
-
-    # Create train split
-    train_size = 1024
-    train_df = train_df.sample(n=train_size, random_state=4242)
-
-    val_df = val_df.reset_index(drop=True)
-    test_df = test_df.reset_index(drop=True)
-    train_df = train_df.reset_index(drop=True)
+    frames = process_source_splits(
+        frames={"train": train_df, "val": val_df, "test": test_df},
+        limits={"train": 1024, "val": 256, "test": 2048},
+    )
+    train_df, val_df, test_df = frames["train"], frames["val"], frames["test"]
 
     assert isinstance(train_df, pd.DataFrame)
     assert isinstance(val_df, pd.DataFrame)

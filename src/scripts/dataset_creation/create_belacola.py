@@ -11,9 +11,9 @@
 from datasets import Dataset, DatasetDict, load_dataset
 
 if __package__:
-    from .dataset_utils import upload_private
+    from .dataset_utils import create_and_upload_dataset
 else:
-    from dataset_utils import upload_private
+    from dataset_utils import create_and_upload_dataset
 
 SOURCE_REPOSITORY = "maaxap/BelarusianGLUE"
 SOURCE_CONFIG = "belacola_in_domain"
@@ -25,14 +25,13 @@ LABEL_MAPPING = {0: "incorrect", 1: "correct"}
 
 def main() -> None:
     """Create the BelaCoLA dataset and upload it to the Hugging Face Hub."""
-    source_dataset = load_dataset(
-        path=SOURCE_REPOSITORY, name=SOURCE_CONFIG, token=True
+    create_and_upload_dataset(
+        load_source=lambda: load_dataset(
+            path=SOURCE_REPOSITORY, name=SOURCE_CONFIG, token=True
+        ),
+        process_source=lambda source: process_dataset(source_dataset=source),
+        repository_id=TARGET_REPOSITORY,
     )
-    assert isinstance(source_dataset, DatasetDict)
-
-    dataset = process_dataset(source_dataset=source_dataset)
-
-    upload_private(dataset=dataset, repository_id=TARGET_REPOSITORY)
 
 
 def process_dataset(source_dataset: DatasetDict) -> DatasetDict:
