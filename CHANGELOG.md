@@ -22,6 +22,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   and the Embed snippet includes the active filters. The model filter also accepts
   double-quoted phrases (e.g. `"gpt-6.1-sol (zero-shot, val)"`) to match a single
   result row exactly.
+- Leaderboards also accept `?highlight=` (outline matching rows, repeatable),
+  `?category=` (all, understanding, generative, chat), `?view=` (table, model-size,
+  release-date) and `?rows=` (rows per page, default 10) URL parameters.
 
 ## [v18.3.0] - 2026-10-08
 
