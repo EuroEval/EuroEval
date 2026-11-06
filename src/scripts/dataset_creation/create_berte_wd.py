@@ -13,9 +13,9 @@ import logging
 from datasets import Dataset, DatasetDict, load_dataset
 
 if __package__:
-    from .dataset_utils import preflight_private_upload
+    from .dataset_utils import create_and_upload_dataset
 else:
-    from dataset_utils import preflight_private_upload
+    from dataset_utils import create_and_upload_dataset
 
 logger = logging.getLogger(__name__)
 
@@ -29,12 +29,12 @@ MAX_TEST = 360
 
 def main() -> None:
     """Create the BeRTE-WD dataset and upload it to the Hugging Face Hub."""
-    raw_dataset = load_dataset(SOURCE_DATASET, SOURCE_CONFIG)
-    dataset = process_dataset(raw_dataset=raw_dataset)
-
     logger.info("Uploading %s", TARGET_DATASET)
-    preflight_private_upload(repository_id=TARGET_DATASET)
-    dataset.push_to_hub(TARGET_DATASET, private=True)
+    create_and_upload_dataset(
+        load_source=lambda: load_dataset(SOURCE_DATASET, SOURCE_CONFIG),
+        process_source=lambda source: process_dataset(raw_dataset=source),
+        repository_id=TARGET_DATASET,
+    )
     logger.info("Uploaded %s", TARGET_DATASET)
 
 

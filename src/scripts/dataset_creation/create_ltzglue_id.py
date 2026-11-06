@@ -13,13 +13,21 @@
 import logging
 
 import pandas as pd
-import requests
-from datasets import Dataset, DatasetDict
 
 if __package__:
-    from .dataset_utils import preflight_private_upload
+    from .dataset_utils import upload_private
 else:
-    from dataset_utils import preflight_private_upload
+    from dataset_utils import upload_private
+
+if __package__:
+    from .dataset_processing import build_split_dataset
+else:
+    from dataset_processing import build_split_dataset
+
+if __package__:
+    from .dataset_downloads import download_json_records
+else:
+    from dataset_downloads import download_json_records
 
 logging.basicConfig(level=logging.INFO)
 
@@ -39,72 +47,20 @@ def main() -> None:
     (val to 256, test to 2048), exposing lb.valid as "val" and lb.test as "test".
     The published dataset ID ends with -mini to indicate capping.
     """
-    logger.info("Downloading ltzGLUE-ID data from GitHub...")
-    val_data = _download_split("lb.valid")
-    test_data = _download_split("lb.test")
-
-    logger.info(
-        f"Downloaded: {len(val_data)} val, {len(test_data)} test (no training data)"
-    )
-
-    val_df = _load_split(val_data)
-    test_df = _load_split(test_data)
-
-    # Cap each split independently, preserving source split boundaries
-    val_df = _cap_split(val_df, MAX_VAL)
-    test_df = _cap_split(test_df, MAX_TEST)
-
-    logger.info(
-        f"Capped splits: {len(val_df)} val, {len(test_df)} test (no training data)"
-    )
-
-    dataset = DatasetDict(
-        {
-            "val": Dataset.from_pandas(val_df[["text", "label"]]),
-            "test": Dataset.from_pandas(test_df[["text", "label"]]),
-        }
+    dataset = build_split_dataset(
+        load_split=lambda split: _load_split(
+            download_json_records(base_url=BASE_URL, split=split)
+        ),
+        source_splits={"val": "lb.valid", "test": "lb.test"},
+        limits={"val": MAX_VAL, "test": MAX_TEST},
+        columns=["text", "label"],
     )
 
     dataset_id = "EuroEval/ltzglue-id-mini"
     logger.info(f"Uploading to {dataset_id}...")
 
-    preflight_private_upload(repository_id=dataset_id)
-    dataset.push_to_hub(dataset_id, private=True)
+    upload_private(dataset=dataset, repository_id=dataset_id)
     logger.info(f"✓ Uploaded {dataset_id}")
-
-
-def _cap_split(df: pd.DataFrame, max_size: int) -> pd.DataFrame:
-    """Cap a split to max_size rows using deterministic sampling.
-
-    Args:
-        df:
-            DataFrame to cap.
-        max_size:
-            Maximum number of rows to keep.
-
-    Returns:
-        Capped DataFrame. Rows are selected deterministically from the start
-        of the split to ensure reproducibility and preserve split membership.
-    """
-    if len(df) <= max_size:
-        return df
-    return df.iloc[:max_size].reset_index(drop=True)
-
-
-def _download_split(split: str) -> list[dict]:
-    """Download a single split from GitHub.
-
-    Args:
-        split:
-            Split name (lb.valid, lb.test).
-
-    Returns:
-        List of records from the JSON file.
-    """
-    url = f"{BASE_URL}/{split}.json"
-    response = requests.get(url, timeout=30)
-    response.raise_for_status()
-    return response.json()
 
 
 def _load_split(data: list[dict]) -> pd.DataFrame:

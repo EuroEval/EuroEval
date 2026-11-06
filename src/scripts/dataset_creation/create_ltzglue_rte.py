@@ -15,12 +15,16 @@ import logging
 
 import pandas as pd
 import requests
-from datasets import Dataset, DatasetDict
 
 if __package__:
-    from .dataset_utils import preflight_private_upload
+    from .dataset_utils import upload_private
 else:
-    from dataset_utils import preflight_private_upload
+    from dataset_utils import upload_private
+
+if __package__:
+    from .dataset_processing import build_split_dataset
+else:
+    from dataset_processing import build_split_dataset
 
 logging.basicConfig(level=logging.INFO)
 
@@ -35,63 +39,18 @@ MAX_TEST = 2048
 
 def main() -> None:
     """Create the ltzGLUE-RTE dataset and upload to HF Hub."""
-    logger.info("Downloading ltzGLUE-RTE data from GitHub...")
-    train_df = _download_split("train")
-    val_df = _download_split("dev")
-    test_df = _download_split("test")
-
-    logger.info(
-        f"Downloaded: {len(train_df)} train, {len(val_df)} val, {len(test_df)} test"
-    )
-
-    # Cap each split independently, preserving source split boundaries
-    train_df = _cap_split(train_df, MAX_TRAIN)
-    val_df = _cap_split(val_df, MAX_VAL)
-    test_df = _cap_split(test_df, MAX_TEST)
-
-    logger.info(
-        f"Capped splits: {len(train_df)} train, {len(val_df)} val, {len(test_df)} test"
-    )
-
-    # Create 'text' column combining premise and hypothesis (required by EuroEval)
-    for df in [train_df, val_df, test_df]:
-        df["text"] = df.apply(
-            lambda row: f"Premise: {row['premise']}\nHypothesis: {row['hypothesis']}",
-            axis=1,
-        )
-
-    dataset = DatasetDict(
-        {
-            "train": Dataset.from_pandas(train_df[["text", "label"]]),
-            "val": Dataset.from_pandas(val_df[["text", "label"]]),
-            "test": Dataset.from_pandas(test_df[["text", "label"]]),
-        }
+    dataset = build_split_dataset(
+        load_split=_download_split,
+        source_splits={"train": "train", "val": "dev", "test": "test"},
+        limits={"train": MAX_TRAIN, "val": MAX_VAL, "test": MAX_TEST},
+        columns=["text", "label"],
     )
 
     dataset_id = "EuroEval/ltzglue-rte-mini"
     logger.info(f"Uploading to {dataset_id}...")
 
-    preflight_private_upload(repository_id=dataset_id)
-    dataset.push_to_hub(dataset_id, private=True)
+    upload_private(dataset=dataset, repository_id=dataset_id)
     logger.info(f"✓ Uploaded {dataset_id}")
-
-
-def _cap_split(df: pd.DataFrame, max_size: int) -> pd.DataFrame:
-    """Cap a split to max_size rows using deterministic sampling.
-
-    Args:
-        df:
-            DataFrame to cap.
-        max_size:
-            Maximum number of rows to keep.
-
-    Returns:
-        Capped DataFrame. Rows are selected deterministically from the start
-        of the split to ensure reproducibility and preserve split membership.
-    """
-    if len(df) <= max_size:
-        return df
-    return df.iloc[:max_size].reset_index(drop=True)
 
 
 def _download_split(split: str) -> pd.DataFrame:

@@ -1,5 +1,7 @@
 """Shared helpers for capping dataset splits and uploading them to the Hub."""
 
+import collections.abc as c
+
 from datasets import Dataset, DatasetDict
 from huggingface_hub import HfApi
 from huggingface_hub.errors import RepositoryNotFoundError
@@ -10,46 +12,30 @@ MAX_VAL = 256
 MAX_TEST = 2048
 
 
-def make_dataset_dict(
-    train: Dataset, validation: Dataset, test: Dataset
-) -> DatasetDict:
-    """Cap source splits and expose validation under EuroEval's ``val`` name.
+def create_and_upload_dataset(
+    load_source: c.Callable[[], DatasetDict],
+    process_source: c.Callable[[DatasetDict], DatasetDict],
+    repository_id: str,
+) -> None:
+    """Load, transform and privately upload a dataset through one workflow.
 
     Args:
-        train:
-            Source training split.
-        validation:
-            Source validation split.
-        test:
-            Source test split.
+        load_source:
+            Callback that loads the dataset-specific source splits.
+        process_source:
+            Callback that transforms source splits into EuroEval format.
+        repository_id:
+            Target Hugging Face dataset repository.
 
-    Returns:
-        A dataset dictionary with independently capped splits.
+    Raises:
+        TypeError:
+            If the loader does not return a dataset dictionary.
     """
-    return DatasetDict(
-        {
-            "train": cap_split(dataset=train, maximum=MAX_TRAIN),
-            "val": cap_split(dataset=validation, maximum=MAX_VAL),
-            "test": cap_split(dataset=test, maximum=MAX_TEST),
-        }
-    )
-
-
-def cap_split(dataset: Dataset, maximum: int) -> Dataset:
-    """Sample at most ``maximum`` rows without crossing source split boundaries.
-
-    Args:
-        dataset:
-            Source dataset split to cap.
-        maximum:
-            Maximum number of rows to retain.
-
-    Returns:
-        The capped dataset.
-    """
-    if dataset.num_rows <= maximum:
-        return dataset
-    return dataset.shuffle(seed=SEED).select(range(maximum))
+    source = load_source()
+    if not isinstance(source, DatasetDict):
+        raise TypeError("Dataset loader must return a DatasetDict")
+    dataset = process_source(source)
+    upload_private(dataset=dataset, repository_id=repository_id)
 
 
 def upload_private(dataset: DatasetDict, repository_id: str) -> None:
@@ -92,3 +78,45 @@ def preflight_private_upload(repository_id: str) -> None:
         return
     if not repository.private:
         raise RuntimeError(f"Dataset repository {repository_id} is not private")
+
+
+def make_dataset_dict(
+    train: Dataset, validation: Dataset, test: Dataset
+) -> DatasetDict:
+    """Cap source splits and expose validation under EuroEval's ``val`` name.
+
+    Args:
+        train:
+            Source training split.
+        validation:
+            Source validation split.
+        test:
+            Source test split.
+
+    Returns:
+        A dataset dictionary with independently capped splits.
+    """
+    return DatasetDict(
+        {
+            "train": cap_split(dataset=train, maximum=MAX_TRAIN),
+            "val": cap_split(dataset=validation, maximum=MAX_VAL),
+            "test": cap_split(dataset=test, maximum=MAX_TEST),
+        }
+    )
+
+
+def cap_split(dataset: Dataset, maximum: int) -> Dataset:
+    """Sample at most ``maximum`` rows without crossing source split boundaries.
+
+    Args:
+        dataset:
+            Source dataset split to cap.
+        maximum:
+            Maximum number of rows to retain.
+
+    Returns:
+        The capped dataset.
+    """
+    if dataset.num_rows <= maximum:
+        return dataset
+    return dataset.shuffle(seed=SEED).select(range(maximum))

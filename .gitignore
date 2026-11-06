@@ -170,6 +170,7 @@ data/
 .pi/
 
 # Slopo code duplication detection
+.slopo-check-*/
 .slopo/*
 !.slopo/slopo.ignore.txt
 

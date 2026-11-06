@@ -16,9 +16,9 @@ both contexts.
 from datasets import Dataset, DatasetDict, load_dataset
 
 if __package__:
-    from .dataset_utils import preflight_private_upload
+    from .dataset_utils import create_and_upload_dataset
 else:
-    from dataset_utils import preflight_private_upload
+    from dataset_utils import create_and_upload_dataset
 
 SOURCE_REPOSITORY = "maaxap/BelarusianGLUE"
 SOURCE_CONFIG = "bewic"
@@ -30,15 +30,13 @@ LABEL_MAPPING = {0: "different_sense", 1: "same_sense"}
 
 def main() -> None:
     """Create the BeWiC dataset and upload it to the Hugging Face Hub."""
-    source_dataset = load_dataset(
-        path=SOURCE_REPOSITORY, name=SOURCE_CONFIG, token=True
+    create_and_upload_dataset(
+        load_source=lambda: load_dataset(
+            path=SOURCE_REPOSITORY, name=SOURCE_CONFIG, token=True
+        ),
+        process_source=lambda source: process_dataset(source_dataset=source),
+        repository_id=TARGET_REPOSITORY,
     )
-    assert isinstance(source_dataset, DatasetDict)
-
-    dataset = process_dataset(source_dataset=source_dataset)
-
-    preflight_private_upload(repository_id=TARGET_REPOSITORY)
-    dataset.push_to_hub(repo_id=TARGET_REPOSITORY, private=True)
 
 
 def process_dataset(source_dataset: DatasetDict) -> DatasetDict:

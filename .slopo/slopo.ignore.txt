@@ -65,6 +65,15 @@ c65bd343eeac  # scripts/dataset_creation/create_icelandic_knowledge.py, scripts/
 d32d3549fd4b  # scripts/dataset_creation/create_sklep_nli.py, scripts/dataset_creation/create_sklep_rte.py
 
 
+# ---------- Dataset workflow adapters: processing and upload logic is shared ----------
+# Only dataset-specific loaders, processors, split names and output schemas remain.
+
+54f648e768ca  # CoNLL mains configure prepare_ner_dataset and create_and_upload_dataset
+9091145736f0  # SQuAD/NorQuAD mains configure prepare_squad_dataset and create_and_upload_dataset
+db160e93f952  # BelaCoLA/BeWiC/BeRTE-WD mains pass dataset-specific loader and processor callbacks
+dfb7516dc775  # ltzGLUE mains configure build_split_dataset; loaders, splits and columns differ
+
+
 # ---------- Post-refactor wrappers: cannot merge without breaking class interfaces ----------
 
 01d1b47f0981  # euroeval/benchmark_modules/hf.py, euroeval/benchmark_modules/vllm.py
