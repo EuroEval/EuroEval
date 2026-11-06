@@ -26,6 +26,11 @@ if __package__:
 else:
     from dataset_utils import preflight_private_upload
 
+if __package__:
+    from .dataset_processing import format_multiple_choice_record
+else:
+    from dataset_processing import format_multiple_choice_record
+
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_faroese_semantic_relations")
 
@@ -71,16 +76,16 @@ def main(source: str) -> None:
         if not word or not antonym or len(distractors) != 5:
             num_skipped += 1
             continue
-        options = [antonym] + distractors
-        rng.shuffle(options)
-        text = (
-            f"Hvat er andheitið hjá orðinum '{word}'?\n"
-            f"{CHOICES_MAPPING['fo']}:\n"
-            + "\n".join(
-                f"{letter}. {option}" for letter, option in zip(LETTERS, options)
+        records.append(
+            format_multiple_choice_record(
+                prompt=f"Hvat er andheitið hjá orðinum '{word}'?",
+                correct_answer=antonym,
+                distractors=distractors,
+                letters=LETTERS,
+                choices_label=CHOICES_MAPPING["fo"],
+                rng=rng,
             )
         )
-        records.append({"text": text, "label": LETTERS[options.index(antonym)]})
 
     if num_skipped > 0:
         logger.warning(f"Skipped {num_skipped} malformed samples.")

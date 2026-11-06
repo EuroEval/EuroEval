@@ -15,12 +15,16 @@ import logging
 
 import pandas as pd
 import requests
-from datasets import Dataset, DatasetDict
 
 if __package__:
     from .dataset_utils import preflight_private_upload
 else:
     from dataset_utils import preflight_private_upload
+
+if __package__:
+    from .dataset_processing import cap_dataframe, dataset_dict_from_frames
+else:
+    from dataset_processing import cap_dataframe, dataset_dict_from_frames
 
 logging.basicConfig(level=logging.INFO)
 
@@ -45,9 +49,9 @@ def main() -> None:
     )
 
     # Cap each split independently, preserving source split boundaries
-    train_df = _cap_split(train_df, MAX_TRAIN)
-    val_df = _cap_split(val_df, MAX_VAL)
-    test_df = _cap_split(test_df, MAX_TEST)
+    train_df = cap_dataframe(frame=train_df, maximum=MAX_TRAIN)
+    val_df = cap_dataframe(frame=val_df, maximum=MAX_VAL)
+    test_df = cap_dataframe(frame=test_df, maximum=MAX_TEST)
 
     logger.info(
         f"Capped splits: {len(train_df)} train, {len(val_df)} val, {len(test_df)} test"
@@ -60,12 +64,9 @@ def main() -> None:
             axis=1,
         )
 
-    dataset = DatasetDict(
-        {
-            "train": Dataset.from_pandas(train_df[["text", "label"]]),
-            "val": Dataset.from_pandas(val_df[["text", "label"]]),
-            "test": Dataset.from_pandas(test_df[["text", "label"]]),
-        }
+    dataset = dataset_dict_from_frames(
+        frames={"train": train_df, "val": val_df, "test": test_df},
+        columns=["text", "label"],
     )
 
     dataset_id = "EuroEval/ltzglue-rte-mini"
@@ -74,24 +75,6 @@ def main() -> None:
     preflight_private_upload(repository_id=dataset_id)
     dataset.push_to_hub(dataset_id, private=True)
     logger.info(f"✓ Uploaded {dataset_id}")
-
-
-def _cap_split(df: pd.DataFrame, max_size: int) -> pd.DataFrame:
-    """Cap a split to max_size rows using deterministic sampling.
-
-    Args:
-        df:
-            DataFrame to cap.
-        max_size:
-            Maximum number of rows to keep.
-
-    Returns:
-        Capped DataFrame. Rows are selected deterministically from the start
-        of the split to ensure reproducibility and preserve split membership.
-    """
-    if len(df) <= max_size:
-        return df
-    return df.iloc[:max_size].reset_index(drop=True)
 
 
 def _download_split(split: str) -> pd.DataFrame:

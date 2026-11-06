@@ -10,13 +10,17 @@
 
 """Create the CoNLL-ES-mini NER dataset and upload it to the HF Hub."""
 
-import pandas as pd
-from datasets import Dataset, DatasetDict, Split, load_dataset
+from datasets import DatasetDict, load_dataset
 
 if __package__:
     from .dataset_utils import preflight_private_upload
 else:
     from dataset_utils import preflight_private_upload
+
+if __package__:
+    from .dataset_processing import dataset_dict_from_frames, process_ner_frame
+else:
+    from dataset_processing import dataset_dict_from_frames, process_ner_frame
 
 
 def main() -> None:
@@ -28,34 +32,7 @@ def main() -> None:
     dataset = load_dataset(path=repo_id, token=True, name="es")
     assert isinstance(dataset, DatasetDict)
 
-    # Convert the dataset to a dataframe
-    train_df = dataset["train"].to_pandas()
-    val_df = dataset["validation"].to_pandas()
-    test_df = dataset["test"].to_pandas()
-    assert isinstance(train_df, pd.DataFrame)
-    assert isinstance(val_df, pd.DataFrame)
-    assert isinstance(test_df, pd.DataFrame)
-
-    # Drop all columns except for `tokens` and `ner_tags`
-    columns_to_drop = [
-        col for col in train_df.columns if col not in ["tokens", "ner_tags"]
-    ]
-    train_df.drop(columns=columns_to_drop, inplace=True)
-    val_df.drop(columns=columns_to_drop, inplace=True)
-    test_df.drop(columns=columns_to_drop, inplace=True)
-
-    # Add a `text` column
-    train_df["text"] = train_df["tokens"].map(lambda tokens: " ".join(tokens))
-    val_df["text"] = val_df["tokens"].map(lambda tokens: " ".join(tokens))
-    test_df["text"] = test_df["tokens"].map(lambda tokens: " ".join(tokens))
-
-    # Rename `ner_tags` to `labels`
-    train_df.rename(columns={"ner_tags": "labels"}, inplace=True)
-    val_df.rename(columns={"ner_tags": "labels"}, inplace=True)
-    test_df.rename(columns={"ner_tags": "labels"}, inplace=True)
-
-    # Convert the NER tags from IDs to strings
-    ner_conversion_dict = {
+    ner_mapping = {
         0: "O",
         1: "B-PER",
         2: "I-PER",
@@ -66,40 +43,24 @@ def main() -> None:
         7: "B-MISC",
         8: "I-MISC",
     }
-    train_df["labels"] = train_df["labels"].map(
-        lambda ner_tags: [ner_conversion_dict[ner_tag] for ner_tag in ner_tags]
-    )
-    val_df["labels"] = val_df["labels"].map(
-        lambda ner_tags: [ner_conversion_dict[ner_tag] for ner_tag in ner_tags]
-    )
-    test_df["labels"] = test_df["labels"].map(
-        lambda ner_tags: [ner_conversion_dict[ner_tag] for ner_tag in ner_tags]
-    )
-
-    # Create validation split
-    val_size = 256
-    val_df = val_df.sample(n=val_size, random_state=4242)
-
-    # Create test split
-    test_size = 1024
-    test_df = test_df.sample(n=test_size, random_state=4242)
-
-    # Create train split
-    train_size = 1024
-    train_df = train_df.sample(n=train_size, random_state=4242)
-
-    # Reset the index
-    train_df = train_df.reset_index(drop=True)
-    val_df = val_df.reset_index(drop=True)
-    test_df = test_df.reset_index(drop=True)
-
-    # Collect datasets in a dataset dictionary
-    dataset = DatasetDict(
-        {
-            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
-            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
-            "test": Dataset.from_pandas(test_df, split=Split.TEST),
-        }
+    frames = {
+        "train": process_ner_frame(
+            frame=dataset["train"].to_pandas(), label_mapping=ner_mapping
+        ),
+        "val": process_ner_frame(
+            frame=dataset["validation"].to_pandas(), label_mapping=ner_mapping
+        ),
+        "test": process_ner_frame(
+            frame=dataset["test"].to_pandas(), label_mapping=ner_mapping
+        ),
+    }
+    limits = {"train": 1024, "val": 256, "test": 1024}
+    frames = {
+        split: frame.sample(n=limits[split], random_state=4242).reset_index(drop=True)
+        for split, frame in frames.items()
+    }
+    dataset = dataset_dict_from_frames(
+        frames=frames, columns=["tokens", "text", "labels"]
     )
 
     # Create dataset ID

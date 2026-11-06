@@ -24,6 +24,11 @@ if __package__:
 else:
     from dataset_utils import preflight_private_upload
 
+if __package__:
+    from .dataset_processing import format_multiple_choice_record
+else:
+    from dataset_processing import format_multiple_choice_record
+
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_faroese_metaphorical_explanations")
 
@@ -75,16 +80,16 @@ def main(source: str) -> None:
         if not example or not correct or len(distractors) != 3:
             num_skipped += 1
             continue
-        options = [correct] + distractors
-        rng.shuffle(options)
-        text = (
-            f"Hvat merkir orðafellið '{example}'?\n"
-            f"{CHOICES_MAPPING['fo']}:\n"
-            + "\n".join(
-                f"{letter}. {option}" for letter, option in zip(LETTERS, options)
+        records.append(
+            format_multiple_choice_record(
+                prompt=f"Hvat merkir orðafellið '{example}'?",
+                correct_answer=correct,
+                distractors=distractors,
+                letters=LETTERS,
+                choices_label=CHOICES_MAPPING["fo"],
+                rng=rng,
             )
         )
-        records.append({"text": text, "label": LETTERS[options.index(correct)]})
 
     if num_skipped > 0:
         logger.warning(f"Skipped {num_skipped} malformed samples.")
