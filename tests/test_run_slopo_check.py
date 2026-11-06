@@ -75,6 +75,47 @@ def test_malformed_analysis_fails(
     assert run_slopo_check(root=tmp_path) == 1
 
 
+def test_reuses_cache_and_retains_report(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Stable isolated paths enable incremental runs and preserve diagnostics."""
+    _write_configuration(tmp_path)
+    seen_configs: list[Path] = []
+
+    def run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        config_path = Path(command[4])
+        config = yaml.safe_load(config_path.read_text())
+        seen_configs.append(config_path)
+        Path(config["db_file"]).write_text("cache")
+        report = Path(config["report_dir"])
+        report.mkdir(exist_ok=True)
+        (report / "index.html").write_text("diagnostic")
+        summary = (
+            "Similarity ratio (including exact copies): "
+            "10.00% (1/10 units flagged as similar)"
+        )
+        return subprocess.CompletedProcess(
+            args=command,
+            returncode=0,
+            stdout=summary if command[-1] == "analyze" else "",
+            stderr="",
+        )
+
+    monkeypatch.setattr(subprocess, "run", run)
+
+    assert run_slopo_check(root=tmp_path) == 1
+    first_config = yaml.safe_load(seen_configs[0].read_text())
+    first_cache = Path(first_config["db_file"])
+    first_report = Path(first_config["report_dir"])
+    assert first_cache.read_text() == "cache"
+    assert (first_report / "index.html").read_text() == "diagnostic"
+    assert run_slopo_check(root=tmp_path) == 1
+    assert len(set(seen_configs)) == 1
+    assert first_cache.exists()
+    assert (first_report / "index.html").exists()
+    assert str(first_report) in capsys.readouterr().out
+
+
 @pytest.mark.parametrize("failed_stage", ["index", "embed", "analyze"])
 def test_stage_failures_stop_the_pipeline(
     tmp_path: Path,
@@ -136,3 +177,7 @@ def test_uses_isolated_database_and_report_paths(
         for config in configurations
     )
     assert shared_database.is_symlink()
+    assert all(not Path(str(config["db_file"])).exists() for config in configurations)
+    assert all(
+        not Path(str(config["report_dir"])).exists() for config in configurations
+    )

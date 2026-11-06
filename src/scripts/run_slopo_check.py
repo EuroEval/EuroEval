@@ -1,10 +1,10 @@
 """Run Slopo stages safely and reject failed or duplicate analyses."""
 
+import hashlib
 import os
 import re
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 import yaml
@@ -33,75 +33,105 @@ def run_slopo_check(root: Path | None = None) -> int:
 
     Returns:
         Zero for a successful duplicate-free analysis, otherwise one.
+
+    Raises:
+        OSError:
+            If an isolated cache path is a symlink or cannot be written.
     """
     repository = (root or Path.cwd()).resolve()
     config_path = repository / "slopo.conf.yaml"
-    ignore_path = repository / ".slopo" / "slopo.ignore.txt"
 
     try:
         config = yaml.safe_load(config_path.read_text())
         config["source_dir"] = str((repository / config["source_dir"]).resolve())
-        config["ignore_file"] = str(ignore_path.resolve())
-        with tempfile.TemporaryDirectory(prefix="euroeval-slopo-") as temporary:
-            work_dir = Path(temporary)
-            config["db_file"] = str(work_dir / "slopo.db")
-            config["report_dir"] = str(work_dir / "report")
-            isolated_config = work_dir / "slopo.conf.yaml"
-            isolated_config.write_text(yaml.safe_dump(config))
-            environment = os.environ.copy()
-            environment["LITELLM_DROP_PARAMS"] = "true"
-
-            for stage in ("index", "embed"):
-                if (
-                    _run_stage(
-                        stage=stage,
-                        config=isolated_config,
-                        repository=repository,
-                        environment=environment,
-                    )
-                    is None
-                ):
-                    return 1
-
-            analysis = _run_stage(
-                stage="analyze",
-                config=isolated_config,
-                repository=repository,
-                environment=environment,
+        if config.get("ignore_file"):
+            config["ignore_file"] = str((repository / config["ignore_file"]).resolve())
+        work_dir = _cache_directory(repository=repository)
+        if work_dir.is_symlink():
+            raise OSError(f"Refusing to use linked Slopo cache directory: {work_dir}")
+        work_dir.mkdir(parents=True, exist_ok=True)
+        isolated_config = work_dir / "slopo.conf.yaml"
+        if isolated_config.is_symlink():
+            raise OSError(
+                f"Refusing to overwrite linked Slopo config: {isolated_config}"
             )
-            if analysis is None:
-                return 1
-            match = ANALYSIS_PATTERN.search(analysis)
-            if match is None:
-                if _reports_no_similar_code(analysis):
-                    print("Slopo passed: no similar code units detected.")
-                    return 0
-                print(
-                    "Slopo analyze failed: missing or malformed summary",
-                    file=sys.stderr,
+        config["db_file"] = str(work_dir / "slopo.db")
+        config["report_dir"] = str(work_dir / "report")
+        for path in (work_dir / "slopo.db", work_dir / "report"):
+            if path.is_symlink():
+                raise OSError(f"Refusing to use linked Slopo cache path: {path}")
+        isolated_config.write_text(yaml.safe_dump(config))
+        environment = os.environ.copy()
+        environment["LITELLM_DROP_PARAMS"] = "true"
+
+        for stage in ("index", "embed"):
+            if (
+                _run_stage(
+                    stage=stage,
+                    config=isolated_config,
+                    repository=repository,
+                    environment=environment,
                 )
+                is None
+            ):
+                print(f"Slopo report: {config['report_dir']}")
                 return 1
-            if len(ANALYSIS_PATTERN.findall(analysis)) != 1:
-                print("Slopo analyze failed: ambiguous summary", file=sys.stderr)
-                return 1
-            duplicates = int(match.group(2))
-            total = int(match.group(3))
-            if duplicates > total:
-                print("Slopo analyze failed: invalid duplicate count", file=sys.stderr)
-                return 1
-            if duplicates:
-                print("Slopo failed: duplicate code detected", file=sys.stderr)
-                print(f"Duplicate units: {duplicates}/{total} ({match.group(1)})")
-                print("Review .slopo/slopo.ignore.txt for reviewed exceptions.")
-                return 1
+
+        analysis = _run_stage(
+            stage="analyze",
+            config=isolated_config,
+            repository=repository,
+            environment=environment,
+        )
+        print(f"Slopo report: {config['report_dir']}")
+        if analysis is None:
+            return 1
+        match = ANALYSIS_PATTERN.search(analysis)
+        if match is None:
+            if _reports_no_similar_code(analysis):
+                print("Slopo passed: no similar code units detected.")
+                return 0
+            print("Slopo analyze failed: missing or malformed summary", file=sys.stderr)
+            return 1
+        if len(ANALYSIS_PATTERN.findall(analysis)) != 1:
+            print("Slopo analyze failed: ambiguous summary", file=sys.stderr)
+            return 1
+        duplicates = int(match.group(2))
+        total = int(match.group(3))
+        if duplicates > total:
+            print("Slopo analyze failed: invalid duplicate count", file=sys.stderr)
+            return 1
+        if duplicates:
+            print("Slopo failed: duplicate code detected", file=sys.stderr)
+            print(f"Duplicate units: {duplicates}/{total} ({match.group(1)})")
             print(
-                f"Slopo passed: {duplicates}/{total} duplicate units "
-                f"({match.group(1)})."
+                "Review "
+                f"{config.get('ignore_file', 'Slopo ignore file')} "
+                "for reviewed exceptions."
             )
-            return 0
+            return 1
+        print(f"Slopo passed: {duplicates}/{total} duplicate units ({match.group(1)}).")
+        return 0
     except (OSError, KeyError, TypeError, yaml.YAMLError) as error:
         print(f"Slopo setup failed: {error}", file=sys.stderr)
         return 1
+
+
+def _cache_directory(*, repository: Path) -> Path:
+    """Return a stable cache directory isolated to this repository checkout.
+
+    Args:
+        repository: Resolved repository root.
+
+    Returns:
+        A worktree-local Slopo cache directory that does not traverse a linked
+        ``.slopo`` directory.
+    """
+    digest = hashlib.sha256(str(repository).encode()).hexdigest()[:12]
+    slopo_directory = repository / ".slopo"
+    if slopo_directory.is_symlink():
+        return repository / f".slopo-check-{digest}"
+    return slopo_directory / f"check-{digest}"
 
 
 def _reports_no_similar_code(output: str) -> bool:
