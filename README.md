@@ -305,6 +305,13 @@ A huge thank you to all the contributors who have helped make this project a suc
         alt="Contributor avatar for djstrong"
     />
 </a>
+<a href="https://github.com/SushantGautam">
+    <img
+        src="https://avatars.githubusercontent.com/u/16721983"
+        width=50
+        alt="Contributor avatar for SushantGautam"
+    />
+</a>
 
 ### Contribute to EuroEval
 
