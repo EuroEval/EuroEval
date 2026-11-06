@@ -9,6 +9,7 @@ import datetime as dt
 import json
 import re
 import subprocess
+import tempfile
 from pathlib import Path
 
 
@@ -177,26 +178,24 @@ def create_github_release(version: str) -> bool:
     Returns:
         Whether a new release was created.
 
-    Raises:
-        RuntimeError:
-            If release checks fail or existing content conflicts.
     """
     notes = preflight_release(version=version)
     tag = f"v{version}"
-    existing = subprocess.run(
-        ["gh", "release", "view", tag, "--json", "name,body"],
-        capture_output=True,
-        text=True,
-    )
-    if existing.returncode == 0:
+    existing = _get_existing_release(tag=tag)
+    if existing is not None:
+        _validate_existing_release(tag=tag, release=existing, notes=notes)
         return False
-    if re.search(r"\bHTTP 404\b", existing.stderr) is None:
-        raise RuntimeError(
-            f"Unable to check GitHub release {tag}: {existing.stderr.strip()}"
-        )
-    notes_path = Path(".release-notes.tmp")
+
+    with tempfile.NamedTemporaryFile(
+        mode="w",
+        encoding="utf-8",
+        prefix=".release-notes-",
+        suffix=".tmp",
+        delete=False,
+    ) as notes_file:
+        notes_file.write(notes)
+        notes_path = Path(notes_file.name)
     try:
-        notes_path.write_text(notes, encoding="utf-8")
         subprocess.run(
             [
                 "gh",
@@ -204,6 +203,8 @@ def create_github_release(version: str) -> bool:
                 "create",
                 tag,
                 "--verify-tag",
+                "--repo",
+                "EuroEval/EuroEval",
                 "--title",
                 tag,
                 "--notes-file",
@@ -214,6 +215,64 @@ def create_github_release(version: str) -> bool:
     finally:
         notes_path.unlink(missing_ok=True)
     return True
+
+
+def _get_existing_release(tag: str) -> dict[str, str] | None:
+    """Fetch a release, distinguishing GitHub's structured 404 from other errors.
+
+    Args:
+        tag:
+            Release tag to check.
+
+    Returns:
+        The release fields, or None when the release does not exist.
+
+    Raises:
+        RuntimeError:
+            If GitHub cannot be queried or returns malformed data.
+    """
+    result = subprocess.run(
+        ["gh", "api", f"repos/EuroEval/EuroEval/releases/tags/{tag}"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode == 0:
+        try:
+            release = json.loads(result.stdout)
+        except json.JSONDecodeError as error:
+            raise RuntimeError(f"Invalid GitHub release response for {tag}.") from error
+        if not isinstance(release, dict):
+            raise RuntimeError(f"Invalid GitHub release response for {tag}.")
+        return release
+
+    try:
+        error_body = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        error_body = None
+    if isinstance(error_body, dict) and str(error_body.get("status")) == "404":
+        return None
+    raise RuntimeError(f"Unable to check GitHub release {tag}: {result.stderr.strip()}")
+
+
+def _validate_existing_release(tag: str, release: dict[str, str], notes: str) -> None:
+    """Reject an existing release unless its title and notes match exactly.
+
+    Args:
+        tag:
+            Expected release title and tag.
+        release:
+            Release response from GitHub.
+        notes:
+            Expected changelog section body.
+
+    Raises:
+        RuntimeError:
+            If title or notes differ from the expected values.
+    """
+    if release.get("name") != tag or release.get("body") != notes:
+        raise RuntimeError(
+            f"GitHub release {tag} exists with conflicting title or notes."
+        )
 
 
 def preflight_release(version: str) -> str:
@@ -244,21 +303,9 @@ def preflight_release(version: str) -> str:
         raise RuntimeError(
             f"Unable to verify remote tag {tag}: {tag_check.stderr.strip()}"
         )
-    release = subprocess.run(
-        ["gh", "release", "view", tag, "--json", "name,body"],
-        capture_output=True,
-        text=True,
-    )
-    if release.returncode == 0:
-        current = json.loads(release.stdout)
-        if current.get("name") != tag or current.get("body") != notes:
-            raise RuntimeError(
-                f"GitHub release {tag} exists with conflicting title or notes."
-            )
-    elif re.search(r"\bHTTP 404\b", release.stderr) is None:
-        raise RuntimeError(
-            f"Unable to check GitHub release {tag}: {release.stderr.strip()}"
-        )
+    release = _get_existing_release(tag=tag)
+    if release is not None:
+        _validate_existing_release(tag=tag, release=release, notes=notes)
     return notes
 
 
@@ -382,6 +429,20 @@ if __name__ == "__main__":
         help="Bump the patch version by one.",
     )
     args = parser.parse_args()
+    selected_actions = sum(
+        bool(action)
+        for action in (
+            args.validate_publish,
+            args.validate_stable,
+            args.release_only,
+            args.add_dev,
+            args.major,
+            args.minor,
+            args.patch,
+        )
+    )
+    if selected_actions > 1:
+        parser.error("Select exactly one version action.")
 
     if args.validate_publish or args.validate_stable:
         if args.add_dev or args.major or args.minor or args.patch or args.release_only:
