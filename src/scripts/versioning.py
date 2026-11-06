@@ -6,6 +6,7 @@
 """Scripts related to updating of version."""
 
 import datetime as dt
+import json
 import re
 import subprocess
 from pathlib import Path
@@ -166,10 +167,194 @@ def bump_patch() -> None:
     set_new_version(major, minor, patch + 1)
 
 
+def create_github_release(version: str) -> bool:
+    """Create a release, or leave an identical existing release unchanged.
+
+    Args:
+        version:
+            Canonical stable version to release.
+
+    Returns:
+        Whether a new release was created.
+
+    Raises:
+        RuntimeError:
+            If release checks fail or existing content conflicts.
+    """
+    notes = preflight_release(version=version)
+    tag = f"v{version}"
+    existing = subprocess.run(
+        ["gh", "release", "view", tag, "--json", "name,body"],
+        capture_output=True,
+        text=True,
+    )
+    if existing.returncode == 0:
+        return False
+    if re.search(r"\bHTTP 404\b", existing.stderr) is None:
+        raise RuntimeError(
+            f"Unable to check GitHub release {tag}: {existing.stderr.strip()}"
+        )
+    notes_path = Path(".release-notes.tmp")
+    try:
+        notes_path.write_text(notes, encoding="utf-8")
+        subprocess.run(
+            [
+                "gh",
+                "release",
+                "create",
+                tag,
+                "--verify-tag",
+                "--title",
+                tag,
+                "--notes-file",
+                str(notes_path),
+            ],
+            check=True,
+        )
+    finally:
+        notes_path.unlink(missing_ok=True)
+    return True
+
+
+def preflight_release(version: str) -> str:
+    """Validate release notes, remote tag, and any existing GitHub release.
+
+    Args:
+        version:
+            Canonical stable version to release.
+
+    Returns:
+        Exact release notes body.
+
+    Raises:
+        RuntimeError:
+            If tag/release preflight fails or an existing release conflicts.
+    """
+    validate_stable_version(version=version)
+    notes = get_release_notes(version=version)
+    tag = f"v{version}"
+    tag_check = subprocess.run(
+        ["git", "ls-remote", "--exit-code", "origin", f"refs/tags/{tag}"],
+        capture_output=True,
+        text=True,
+    )
+    if tag_check.returncode == 2:
+        raise RuntimeError(f"Remote tag {tag} does not exist; refusing to create it.")
+    if tag_check.returncode != 0:
+        raise RuntimeError(
+            f"Unable to verify remote tag {tag}: {tag_check.stderr.strip()}"
+        )
+    release = subprocess.run(
+        ["gh", "release", "view", tag, "--json", "name,body"],
+        capture_output=True,
+        text=True,
+    )
+    if release.returncode == 0:
+        current = json.loads(release.stdout)
+        if current.get("name") != tag or current.get("body") != notes:
+            raise RuntimeError(
+                f"GitHub release {tag} exists with conflicting title or notes."
+            )
+    elif re.search(r"\bHTTP 404\b", release.stderr) is None:
+        raise RuntimeError(
+            f"Unable to check GitHub release {tag}: {release.stderr.strip()}"
+        )
+    return notes
+
+
+def get_release_notes(version: str, changelog: str | None = None) -> str:
+    """Return exactly one version's changelog section body.
+
+    Args:
+        version:
+            Canonical stable version to find.
+        changelog (optional):
+            Changelog text. Defaults to CHANGELOG.md.
+
+    Returns:
+        Section content with only surrounding blank lines removed.
+
+    Raises:
+        RuntimeError:
+            If the matching section is absent, duplicated, or empty.
+    """
+    validate_stable_version(version=version)
+    if changelog is None:
+        changelog = Path("CHANGELOG.md").read_text(encoding="utf-8")
+    heading = re.compile(rf"(?m)^## \[v?{re.escape(version)}\](?:\s+-.*)?$")
+    matches = list(heading.finditer(changelog))
+    if len(matches) != 1:
+        raise RuntimeError(
+            "Expected exactly one CHANGELOG.md section for "
+            f"{version}; found {len(matches)}."
+        )
+    start = matches[0].end()
+    next_heading = re.search(r"(?m)^## ", changelog[start:])
+    end = start + next_heading.start() if next_heading else len(changelog)
+    body = changelog[start:end].strip("\r\n")
+    if not body.strip():
+        raise RuntimeError(f"CHANGELOG.md section for {version} is empty.")
+    return body
+
+
+def validate_stable_version(version: str) -> str:
+    """Require a canonical stable MAJOR.MINOR.PATCH version.
+
+    Args:
+        version:
+            The version string to validate.
+
+    Returns:
+        The unchanged canonical version string.
+
+    Raises:
+        RuntimeError:
+            If the version is not a canonical stable release.
+    """
+    if re.fullmatch(r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)", version) is None:
+        raise RuntimeError(
+            f"Refusing to publish non-canonical stable version: {version!r}. "
+            "Expected MAJOR.MINOR.PATCH."
+        )
+    return version
+
+
+def publish_preflight() -> None:
+    """Validate project version and release prerequisites before package builds."""
+    version = validate_stable_version(version=get_project_version())
+    preflight_release(version=version)
+
+
+def get_project_version() -> str:
+    """Read the literal project version without normalising prerelease metadata.
+
+    Returns:
+        The version declared in pyproject.toml.
+
+    Raises:
+        RuntimeError:
+            If project version metadata is missing.
+    """
+    version_match = re.search(
+        r'(?m)^version = "([^"]+)"', Path("pyproject.toml").read_text(encoding="utf-8")
+    )
+    if version_match is None:
+        raise RuntimeError("No version found in pyproject.toml.")
+    return version_match.group(1)
+
+
+def validate_project_version() -> None:
+    """Validate the literal project version for an individual package upload."""
+    validate_stable_version(version=get_project_version())
+
+
 if __name__ == "__main__":
     from argparse import ArgumentParser
 
     parser = ArgumentParser()
+    parser.add_argument("--validate-publish", action="store_true")
+    parser.add_argument("--validate-stable", action="store_true")
+    parser.add_argument("--release-only", metavar="VERSION")
     parser.add_argument(
         "--add-dev",
         action="store_true",
@@ -198,7 +383,20 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    if args.add_dev:
+    if args.validate_publish or args.validate_stable:
+        if args.add_dev or args.major or args.minor or args.patch or args.release_only:
+            raise RuntimeError(
+                "Version validation cannot be combined with other actions."
+            )
+        if args.validate_publish and args.validate_stable:
+            raise RuntimeError("Select only one version validation action.")
+        if args.validate_publish:
+            publish_preflight()
+        else:
+            validate_project_version()
+    elif args.release_only:
+        create_github_release(version=args.release_only)
+    elif args.add_dev:
         if args.major + args.minor + args.patch:
             raise RuntimeError("--add-dev cannot be combined with a version bump.")
         add_dev_version()

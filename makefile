@@ -1,7 +1,8 @@
 # This ensures that we can call `make <target>` even if `<target>` exists as a file or
 # directory.
 .PHONY: help docs install install-frontend install-vercel leaderboards force-leaderboards \
-	volunteer-worker-plan volunteer-worker-check
+	volunteer-worker-plan volunteer-worker-check publish publish-euroeval publish-scandeval \
+	publish-major publish-minor publish-patch add-dev-version
 
 # Exports all variables defined in the makefile available to scripts
 .EXPORT_ALL_VARIABLES:
@@ -122,24 +123,29 @@ add-dev-version:
 	@uv run src/scripts/versioning.py --add-dev
 
 publish:
-	@set -a; [ ! -f .env ] || source .env; set +a; \
+	@set -e; set -a; [ ! -f .env ] || source .env; set +a; \
 	if [ -z "$${EUROEVAL_PYPI_API_TOKEN:-}" ] || [ -z "$${SCANDEVAL_PYPI_API_TOKEN:-}" ]; then \
-		echo "Both EUROEVAL_PYPI_API_TOKEN and SCANDEVAL_PYPI_API_TOKEN must be specified to publish."; \
-	else \
-		echo "Publishing to PyPI..."; \
-		$(MAKE) --quiet publish-euroeval \
-			&& $(MAKE) --quiet publish-scandeval \
-			&& $(MAKE) --quiet add-dev-version \
-			&& $(MAKE) --quiet frontend \
-			&& echo "Published!"; \
-	fi
+		echo "Both EUROEVAL_PYPI_API_TOKEN and SCANDEVAL_PYPI_API_TOKEN must be specified to publish." >&2; exit 1; \
+	fi; \
+	uv run src/scripts/versioning.py --validate-publish; \
+	echo "Publishing to PyPI..."; \
+	$(MAKE) --quiet publish-euroeval; \
+	$(MAKE) --quiet publish-scandeval; \
+	uv run src/scripts/versioning.py --release-only "$$(sed -n 's/^version = "\\([^"]*\\)"/\\1/p' pyproject.toml)"; \
+	$(MAKE) --quiet add-dev-version; \
+	$(MAKE) --quiet frontend; \
+	echo "Published!"
 
 publish-euroeval:
+	@test -n "${EUROEVAL_PYPI_API_TOKEN}" || { echo "EUROEVAL_PYPI_API_TOKEN must be specified to publish." >&2; exit 1; }
+	@uv run src/scripts/versioning.py --validate-stable
 	@rm -rf build/ dist/
 	@uv build
 	@uv publish --username "__token__" --password ${EUROEVAL_PYPI_API_TOKEN}
 
 publish-scandeval:
+	@test -n "${SCANDEVAL_PYPI_API_TOKEN}" || { echo "SCANDEVAL_PYPI_API_TOKEN must be specified to publish." >&2; exit 1; }
+	@uv run src/scripts/versioning.py --validate-stable
 	@if [ $$(uname) = "Darwin" ]; then \
 		sed -i '' 's/^name = "EuroEval"/name = "ScandEval"/' pyproject.toml; \
 	else \
@@ -156,11 +162,14 @@ publish-scandeval:
 	fi
 	@mv src/scandeval src/euroeval
 
-publish-major: install check bump-major publish  ## Publish a major version
+publish-major:  ## Publish a major version
+	@$(MAKE) install && $(MAKE) check && $(MAKE) bump-major && $(MAKE) publish
 
-publish-minor: install check bump-minor publish  ## Publish a minor version
+publish-minor:  ## Publish a minor version
+	@$(MAKE) install && $(MAKE) check && $(MAKE) bump-minor && $(MAKE) publish
 
-publish-patch: install check bump-patch publish  ## Publish a patch version
+publish-patch:  ## Publish a patch version
+	@$(MAKE) install && $(MAKE) check && $(MAKE) bump-patch && $(MAKE) publish
 
 loc: ## Count the number of lines of code in the project
 	@git ls-files | grep '\.py' | xargs wc -l | tail -n 1
