@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import LeaderboardTable from "@/components/LeaderboardTable.vue";
 import LeaderboardScatter from "@/components/LeaderboardScatter.vue";
 import {
@@ -98,15 +98,48 @@ const loadFor = async (stem: string) => {
   }
 };
 
+// URL sync for category and view: `?category=generative&view=model-size`.
+const urlRoute = useRoute();
+const urlRouter = useRouter();
+const VIEW_PARAM: Record<ViewId, string> = {
+  table: "table",
+  modelSize: "model-size",
+  releaseDate: "release-date",
+};
+const categoryFromQuery = (): CategoryId | null => {
+  const raw = urlRoute.query.category;
+  const v = (Array.isArray(raw) ? raw[0] : raw)?.toLowerCase().replace(/[\s-]+/g, "_");
+  const id = v === "all" ? "all_models" : v;
+  const tab = categoryTabs.find((t) => t.id === id);
+  return tab && isCategoryRanked(tab.id) ? tab.id : null;
+};
+const viewFromQuery = (): ViewId | null => {
+  const raw = urlRoute.query.view;
+  const v = Array.isArray(raw) ? raw[0] : raw;
+  const hit = (Object.keys(VIEW_PARAM) as ViewId[]).find((k) => VIEW_PARAM[k] === v);
+  return hit ?? null;
+};
+
 watch(
   () => props.stem,
   (s) => {
     // Reset the category on language switch, but keep the user's selected view.
-    activeCategory.value = firstRankedCategory();
+    activeCategory.value = categoryFromQuery() ?? firstRankedCategory();
     loadFor(s);
   },
   { immediate: true },
 );
+activeView.value = viewFromQuery() ?? activeView.value;
+
+watch([activeCategory, activeView], ([cat, view]) => {
+  const query = { ...urlRoute.query };
+  if (cat === firstRankedCategory()) delete query.category;
+  else query.category = cat;
+  if (view === "table") delete query.view;
+  else query.view = VIEW_PARAM[view];
+  if (query.category === urlRoute.query.category && query.view === urlRoute.query.view) return;
+  urlRouter.replace({ query, hash: urlRoute.hash });
+});
 
 const activeTable = computed<LBTable | null>(
   () => categoryState.value[activeCategory.value].table,
@@ -217,8 +250,10 @@ const embedUrl = computed(() => {
   // Carry the current table filters (e.g. `model=...`) into the embed.
   const params = new URLSearchParams({ embed: "1" });
   for (const [k, v] of Object.entries(route.query)) {
-    if (k === "embed" || typeof v !== "string" || !v) continue;
-    params.set(k, v);
+    if (k === "embed") continue;
+    for (const item of Array.isArray(v) ? v : [v]) {
+      if (typeof item === "string" && item) params.append(k, item);
+    }
   }
   return `${base}?${params.toString()}`;
 });
