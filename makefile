@@ -119,16 +119,7 @@ bump-patch: refresh-dataset-revisions
 	@echo "Bumped patch version!"
 
 add-dev-version:
-	@if [ $$(uname) = "Darwin" ]; then \
-		sed -i '' 's/^version = "\(.*\)"/version = "\1.dev"/' pyproject.toml; \
-	else \
-		sed -i 's/^version = "\(.*\)"/version = "\1.dev"/' pyproject.toml; \
-	fi
-	@uv lock
-	@git add pyproject.toml uv.lock
-	@git commit -m "chore: Add '.dev' suffix to the version number"
-	@git push
-	@echo "Added '.dev' suffix to the version number."
+	@uv run src/scripts/versioning.py --add-dev
 
 publish:
 	@set -a; [ ! -f .env ] || source .env; set +a; \

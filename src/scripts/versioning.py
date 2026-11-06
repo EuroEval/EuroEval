@@ -11,6 +11,65 @@ import subprocess
 from pathlib import Path
 
 
+def add_dev_version() -> bool:
+    """Add a development suffix and commit the updated version metadata.
+
+    A repeated invocation with an already-valid development version is a no-op. A
+    malformed repeated suffix is normalised so this command can repair interrupted
+    legacy runs without first asking uv to parse the invalid project metadata.
+
+    Returns:
+        Whether the version changed and release steps were run.
+
+    Raises:
+        RuntimeError:
+            If the version is missing or is not a supported release/development form.
+        subprocess.CalledProcessError:
+            If locking or a git command fails.
+    """
+    pyproject_path = Path("pyproject.toml")
+    pyproject = pyproject_path.read_text(encoding="utf-8")
+    version_match = re.search(r'(?m)^version = "([^"]+)"', pyproject)
+    if version_match is None:
+        raise RuntimeError("No version found in pyproject.toml.")
+
+    version = version_match.group(1)
+    version_parts = re.fullmatch(
+        r"(?P<release>\d+\.\d+\.\d+)(?P<suffix>(?:\.dev\d*)*)", version
+    )
+    if version_parts is None:
+        raise RuntimeError(f"Unsupported project version: {version}")
+
+    release = version_parts.group("release")
+    suffixes = re.findall(r"\.dev(\d*)", version_parts.group("suffix"))
+    if len(suffixes) > 1:
+        new_version = f"{release}.dev{suffixes[0]}"
+    elif suffixes:
+        return False
+    else:
+        new_version = f"{release}.dev"
+
+    updated = (
+        pyproject[: version_match.start(1)]
+        + new_version
+        + pyproject[version_match.end(1) :]
+    )
+    pyproject_path.write_text(data=updated, encoding="utf-8")
+    try:
+        subprocess.run(args=["uv", "lock"], check=True)
+    except subprocess.CalledProcessError:
+        pyproject_path.write_text(data=pyproject, encoding="utf-8")
+        raise
+
+    subprocess.run(args=["git", "add", "pyproject.toml", "uv.lock"], check=True)
+    subprocess.run(
+        args=["git", "commit", "-m", "chore: Add '.dev' suffix to the version number"],
+        check=True,
+    )
+    subprocess.run(args=["git", "push"], check=True)
+    return True
+
+
 def bump_major() -> None:
     """Add one to the major version."""
     major, _, _ = get_current_version()
@@ -112,6 +171,11 @@ if __name__ == "__main__":
 
     parser = ArgumentParser()
     parser.add_argument(
+        "--add-dev",
+        action="store_true",
+        help="Add a development suffix and commit the updated version metadata.",
+    )
+    parser.add_argument(
         "--major",
         const=True,
         nargs="?",
@@ -134,7 +198,11 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    if args.major + args.minor + args.patch != 1:
+    if args.add_dev:
+        if args.major + args.minor + args.patch:
+            raise RuntimeError("--add-dev cannot be combined with a version bump.")
+        add_dev_version()
+    elif args.major + args.minor + args.patch != 1:
         raise RuntimeError(
             "Exactly one of --major, --minor and --patch must be selected."
         )
