@@ -1227,11 +1227,11 @@ wheels = [
 
 [[package]]
 name = "euroeval"
-version = "18.3.0.dev0"
+version = "18.4.0"
 source = { editable = "." }
 dependencies = [
-    { name = "accelerate", version = "1.14.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.14' and platform_machine == 'x86_64') or (python_full_version != '3.13.*' and platform_machine != 'x86_64' and sys_platform != 'darwin') or (python_full_version >= '3.14' and sys_platform == 'darwin')" },
-    { name = "accelerate", version = "1.15.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.14' and platform_machine == 'x86_64') or (python_full_version == '3.13.*' and platform_machine != 'x86_64' and sys_platform != 'darwin') or (python_full_version < '3.14' and sys_platform == 'darwin')" },
+    { name = "accelerate", version = "1.14.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14' or (python_full_version < '3.13' and platform_machine != 'x86_64' and sys_platform != 'darwin')" },
+    { name = "accelerate", version = "1.15.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.13.*' or (python_full_version < '3.13' and platform_machine == 'x86_64') or (python_full_version < '3.13' and sys_platform == 'darwin')" },
     { name = "bert-score" },
     { name = "click" },
     { name = "cloudpickle" },
@@ -1252,8 +1252,8 @@ dependencies = [
     { name = "numpy" },
     { name = "ollama" },
     { name = "pandas" },
-    { name = "peft", version = "0.20.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.14' and platform_machine == 'x86_64') or (python_full_version != '3.13.*' and platform_machine != 'x86_64' and sys_platform != 'darwin') or (python_full_version >= '3.14' and sys_platform == 'darwin')" },
-    { name = "peft", version = "0.21.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.14' and platform_machine == 'x86_64') or (python_full_version == '3.13.*' and platform_machine != 'x86_64' and sys_platform != 'darwin') or (python_full_version < '3.14' and sys_platform == 'darwin')" },
+    { name = "peft", version = "0.20.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14' or (python_full_version < '3.13' and platform_machine != 'x86_64' and sys_platform != 'darwin')" },
+    { name = "peft", version = "0.21.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.13.*' or (python_full_version < '3.13' and platform_machine == 'x86_64') or (python_full_version < '3.13' and sys_platform == 'darwin')" },
     { name = "protobuf" },
     { name = "pydantic" },
     { name = "pyinfer" },
@@ -1880,8 +1880,8 @@ wheels = [
 [package.optional-dependencies]
 local = [
     { name = "numpy" },
-    { name = "peft", version = "0.20.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.14' and platform_machine == 'x86_64') or (python_full_version != '3.13.*' and platform_machine != 'x86_64' and sys_platform != 'darwin') or (python_full_version >= '3.14' and sys_platform == 'darwin')" },
-    { name = "peft", version = "0.21.2", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.14' and platform_machine == 'x86_64') or (python_full_version == '3.13.*' and platform_machine != 'x86_64' and sys_platform != 'darwin') or (python_full_version < '3.14' and sys_platform == 'darwin')" },
+    { name = "peft", version = "0.20.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14' or (python_full_version < '3.13' and platform_machine != 'x86_64' and sys_platform != 'darwin')" },
+    { name = "peft", version = "0.21.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.13.*' or (python_full_version < '3.13' and platform_machine == 'x86_64') or (python_full_version < '3.13' and sys_platform == 'darwin')" },
     { name = "safetensors" },
     { name = "torch" },
     { name = "transformers", extra = ["mistral-common"] },

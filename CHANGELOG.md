@@ -7,6 +7,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [v18.4.0] - 2026-11-06
+
 ### Added
 
 - Added the unofficial multiple choice knowledge datasets MKQA-da, MKQA-de, MKQA-en,
