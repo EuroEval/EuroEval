@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import LeaderboardTable from "@/components/LeaderboardTable.vue";
 import LeaderboardScatter from "@/components/LeaderboardScatter.vue";
 import {
@@ -97,14 +98,70 @@ const loadFor = async (stem: string) => {
   }
 };
 
+// URL sync for category and view: `?category=generative&view=model-size`.
+const urlRoute = useRoute();
+const urlRouter = useRouter();
+const VIEW_PARAM: Record<ViewId, string> = {
+  table: "table",
+  modelSize: "model-size",
+  releaseDate: "release-date",
+};
+const categoryFromQuery = (): CategoryId | null => {
+  const raw = urlRoute.query.category;
+  const v = (Array.isArray(raw) ? raw[0] : raw)?.toLowerCase().replace(/[\s-]+/g, "_");
+  const id = v === "all" ? "all_models" : v;
+  const tab = categoryTabs.find((t) => t.id === id);
+  return tab && isCategoryRanked(tab.id) ? tab.id : null;
+};
+const viewFromQuery = (): ViewId | null => {
+  const raw = urlRoute.query.view;
+  const v = Array.isArray(raw) ? raw[0] : raw;
+  const hit = (Object.keys(VIEW_PARAM) as ViewId[]).find((k) => VIEW_PARAM[k] === v);
+  return hit ?? null;
+};
+
 watch(
   () => props.stem,
   (s) => {
     // Reset the category on language switch, but keep the user's selected view.
-    activeCategory.value = firstRankedCategory();
+    activeCategory.value = categoryFromQuery() ?? firstRankedCategory();
     loadFor(s);
   },
   { immediate: true },
+);
+activeView.value = viewFromQuery() ?? activeView.value;
+
+// Write category/view to the URL (defaults are omitted). Only navigates when
+// the URL actually differs, so it cannot loop with the reader below.
+const syncCategoryViewToUrl = () => {
+  const query = { ...urlRoute.query };
+  if (activeCategory.value === firstRankedCategory()) delete query.category;
+  else query.category = activeCategory.value;
+  if (activeView.value === "table") delete query.view;
+  else query.view = VIEW_PARAM[activeView.value];
+  if (query.category === urlRoute.query.category && query.view === urlRoute.query.view) return;
+  urlRouter.replace({ query, hash: urlRoute.hash });
+};
+watch([activeCategory, activeView], syncCategoryViewToUrl);
+
+// Follow later URL changes (back/forward, links that drop the query). A
+// missing `category` resets to the default tab. A missing `view` resets to the
+// table on the same page; on a language switch the selected view is kept (as
+// before) and written back to the URL so the URL still describes the page.
+watch(
+  () => [urlRoute.path, urlRoute.query.category, urlRoute.query.view] as const,
+  ([path], [prevPath]) => {
+    const cat = categoryFromQuery() ?? firstRankedCategory();
+    if (activeCategory.value !== cat) activeCategory.value = cat;
+    const view = viewFromQuery();
+    if (view) {
+      if (activeView.value !== view) activeView.value = view;
+    } else if (path === prevPath) {
+      if (activeView.value !== "table") activeView.value = "table";
+    } else {
+      syncCategoryViewToUrl();
+    }
+  },
 );
 
 const activeTable = computed<LBTable | null>(
@@ -207,12 +264,21 @@ const downloading = ref(false);
 const embedOpen = ref(false);
 const embedCopied = ref(false);
 
+const route = useRoute();
 const embedUrl = computed(() => {
   const base =
     typeof window !== "undefined"
       ? `${window.location.origin}${window.location.pathname}`
       : `https://euroeval.com/leaderboards/${props.stem}`;
-  return `${base}?embed=1`;
+  // Carry the current table filters (e.g. `model=...`) into the embed.
+  const params = new URLSearchParams({ embed: "1" });
+  for (const [k, v] of Object.entries(route.query)) {
+    if (k === "embed") continue;
+    for (const item of Array.isArray(v) ? v : [v]) {
+      if (typeof item === "string" && item) params.append(k, item);
+    }
+  }
+  return `${base}?${params.toString()}`;
 });
 
 const embedSnippet = computed(

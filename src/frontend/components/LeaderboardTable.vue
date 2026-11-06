@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import {
   COLUMN_BUCKETS,
   CONTEXT_BUCKETS,
@@ -33,7 +34,64 @@ const vocabFilter = ref<string>("");
 const contextFilter = ref<string>("");
 const sortBy = ref<{ index: number; dir: "asc" | "desc" } | null>(null);
 const page = ref(1);
-const pageSize = 10;
+
+// URL <-> filter sync. Each filterable column is mirrored as a lowercase query
+// param named after the column key (e.g. `?model=gpt-4o%20llama`), so filtered
+// views can be shared and embedded (`?embed=1&model=...`).
+const route = useRoute();
+const router = useRouter();
+// Rows per page: `?rows=100` (1-1000). Defaults to 10.
+const DEFAULT_PAGE_SIZE = 10;
+const pageSize = computed(() => {
+  const raw = route.query.rows;
+  const n = Number.parseInt(String(Array.isArray(raw) ? raw[0] : raw ?? ""), 10);
+  return Number.isFinite(n) && n > 0 ? Math.min(n, 1000) : DEFAULT_PAGE_SIZE;
+});
+const SIZE_FILTERS = { parameters: paramFilter, vocabulary: vocabFilter, context: contextFilter };
+const filterParamKeys = () =>
+  props.table.columns
+    .filter(
+      (c) =>
+        c.key.toLowerCase() === "model" ||
+        (c.kind === "icon" && c.distinctValues) ||
+        c.key.toLowerCase() in SIZE_FILTERS,
+    )
+    .map((c) => c.key);
+
+// Make the filter state mirror the URL exactly: params that are missing clear
+// their filter, so reloading or sharing a URL always reproduces the same view.
+const applyFiltersFromQuery = () => {
+  let changed = false;
+  const nextCols: Record<string, FilterValue> = {};
+  for (const key of filterParamKeys()) {
+    const raw = route.query[key.toLowerCase()];
+    const value = (Array.isArray(raw) ? raw[0] : raw) ?? "";
+    const sizeRef = SIZE_FILTERS[key.toLowerCase() as keyof typeof SIZE_FILTERS];
+    if (sizeRef) {
+      if (sizeRef.value !== value) {
+        sizeRef.value = value;
+        changed = true;
+      }
+    } else {
+      if (value) nextCols[key] = value;
+      if ((colFilters.value[key] ?? "") !== value) changed = true;
+    }
+  }
+  if (changed) {
+    colFilters.value = nextCols;
+    page.value = 1;
+  }
+};
+
+const filtersAsQuery = () => {
+  const out: Record<string, string> = {};
+  for (const key of filterParamKeys()) {
+    const sizeRef = SIZE_FILTERS[key.toLowerCase() as keyof typeof SIZE_FILTERS];
+    const value = sizeRef ? sizeRef.value : colFilters.value[key];
+    if (value) out[key.toLowerCase()] = value;
+  }
+  return out;
+};
 
 // Default sort: rank score ascending if present, otherwise rank.
 watch(
@@ -55,8 +113,31 @@ watch(
       );
       sortBy.value = rankIdx >= 0 ? { index: rankIdx, dir: "asc" } : null;
     }
+    applyFiltersFromQuery();
   },
   { immediate: true },
+);
+
+// Follow later URL changes (back/forward, sidebar links that drop the query).
+// No sync loop: this only writes state when it differs from the URL, and the
+// writer below only navigates when the URL differs from the state.
+watch(() => route.query, applyFiltersFromQuery);
+
+watch(
+  [colFilters, paramFilter, vocabFilter, contextFilter],
+  () => {
+    const managed = new Set(filterParamKeys().map((k) => k.toLowerCase()));
+    const query: Record<string, string | null | (string | null)[]> = {};
+    for (const [k, v] of Object.entries(route.query)) {
+      if (!managed.has(k)) query[k] = v;
+    }
+    Object.assign(query, filtersAsQuery());
+    const same =
+      JSON.stringify(Object.entries(query).sort()) ===
+      JSON.stringify(Object.entries(route.query).sort());
+    if (!same) router.replace({ query, hash: route.hash });
+  },
+  { deep: true },
 );
 
 const passesColumnFilter = (cellText: string, filter: string, col: Column) => {
@@ -154,23 +235,49 @@ const sortedRows = computed<Row[]>(() => {
 });
 
 const pageCount = computed(() =>
-  Math.max(1, Math.ceil(sortedRows.value.length / pageSize)),
+  Math.max(1, Math.ceil(sortedRows.value.length / pageSize.value)),
 );
 
 watch(pageCount, (n) => {
   if (page.value > n) page.value = n;
 });
 
+// Row highlighting: `?highlight=<query>` (repeatable) marks matching model rows
+// without filtering the table. Uses the same matching as the model filter, so
+// quoted phrases target a single result row.
+const highlightQueries = computed<string[]>(() => {
+  const raw = route.query.highlight;
+  const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
+  return list.filter((q): q is string => typeof q === "string" && !!q.trim());
+});
+const modelColIdx = computed(() =>
+  props.table.columns.findIndex((c) => c.key.toLowerCase() === "model"),
+);
+const isHighlighted = (row: Row) => {
+  const idx = modelColIdx.value;
+  if (idx < 0 || !highlightQueries.value.length) return false;
+  const text = row.cells[idx]?.text ?? "";
+  return highlightQueries.value.some((q) => matchesQuery(text, q));
+};
+// Jump to the page containing the first highlighted row.
+const jumpToHighlight = () => {
+  if (!highlightQueries.value.length) return;
+  const i = sortedRows.value.findIndex(isHighlighted);
+  if (i >= 0) page.value = Math.floor(i / pageSize.value) + 1;
+};
+watch([() => props.table, highlightQueries], jumpToHighlight, { immediate: true });
+
 const pagedRows = computed<Row[]>(() => {
-  const start = (page.value - 1) * pageSize;
-  return sortedRows.value.slice(start, start + pageSize);
+  const start = (page.value - 1) * pageSize.value;
+  return sortedRows.value.slice(start, start + pageSize.value);
 });
 
 // How many filler rows to render after the data so each page has a constant
 // height — keeps the pager controls from jumping when the last page is short.
 const fillerRowCount = computed(() => {
   if (sortedRows.value.length === 0) return 0;
-  return Math.max(0, pageSize - pagedRows.value.length);
+  if (pageCount.value <= 1 && pageSize.value > DEFAULT_PAGE_SIZE) return 0;
+  return Math.max(0, pageSize.value - pagedRows.value.length);
 });
 
 // --- Display helpers ------------------------------------------------------
@@ -738,7 +845,7 @@ const reportBadEval = (modelId: string) => {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(row, ri) in pagedRows" :key="ri">
+          <tr v-for="(row, ri) in pagedRows" :key="ri" :class="{ 'lb-highlight': isHighlighted(row) }">
             <td
               v-for="(cell, ci) in row.cells"
               :key="ci"
@@ -823,6 +930,32 @@ const reportBadEval = (modelId: string) => {
 </template>
 
 <style scoped>
+tr.lb-highlight > td {
+  box-shadow:
+    inset 0 3px 0 var(--color-link),
+    inset 0 -3px 0 var(--color-link);
+  font-weight: 600;
+}
+
+tr.lb-highlight > td:first-child {
+  box-shadow:
+    inset 2px 0 0 var(--color-link),
+    inset 0 3px 0 var(--color-link),
+    inset 0 -3px 0 var(--color-link);
+}
+
+tr.lb-highlight > td:last-child {
+  box-shadow:
+    inset -2px 0 0 var(--color-link),
+    inset 0 3px 0 var(--color-link),
+    inset 0 -3px 0 var(--color-link);
+}
+
+tr.lb-highlight > td.kind-model,
+tr.lb-highlight > td.cell-rank {
+  background: color-mix(in srgb, var(--color-link) 28%, transparent);
+}
+
 .leaderboard {
   font-size: 0.85rem;
 }

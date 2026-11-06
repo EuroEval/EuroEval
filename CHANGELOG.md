@@ -17,6 +17,16 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   @avalyset ✨
 - Dataset loading now supports pinned Hugging Face revisions, with built-in dataset
   revisions refreshed and validated before version bumps.
+- Leaderboard views can now be shared and embedded via URL query parameters: table
+  filters (e.g. `?model=...&type=...&parameters=...`), `?highlight=` (outline matching
+  rows, repeatable), `?category=` (all, understanding, generative, chat), `?view=`
+  (table, model-size, release-date) and `?rows=` (rows per page, default 10). The
+  model filter also accepts double-quoted phrases (e.g.
+  `"gpt-6.1-sol (zero-shot, val)"`) to match a single result row exactly, and the
+  Embed snippet includes the active parameters. The page state always mirrors the
+  URL, so removing a parameter (or following a link without it) clears that filter
+  or tab, and updating filters keeps the scroll position. This was contributed by
+  @SushantGautam ✨
 
 ## [v18.3.0] - 2026-10-08
 
