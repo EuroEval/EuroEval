@@ -3,6 +3,7 @@
 import importlib
 import random
 from pathlib import Path
+from types import SimpleNamespace
 
 import pandas as pd
 import pytest
@@ -215,7 +216,10 @@ def test_squad_nl_entrypoint_keeps_validation_out_of_test(
     )
     captured: dict[str, DatasetDict] = {}
     monkeypatch.setattr(module, "load_dataset", lambda *args, **kwargs: source)
-    monkeypatch.setattr(module, "preflight_private_upload", lambda **kwargs: None)
+    monkeypatch.setattr(
+        "huggingface_hub.HfApi.repo_info",
+        lambda *args, **kwargs: SimpleNamespace(private=True),
+    )
     monkeypatch.setattr(
         DatasetDict,
         "push_to_hub",
