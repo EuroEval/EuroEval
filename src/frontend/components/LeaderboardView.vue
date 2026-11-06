@@ -131,15 +131,38 @@ watch(
 );
 activeView.value = viewFromQuery() ?? activeView.value;
 
-watch([activeCategory, activeView], ([cat, view]) => {
+// Write category/view to the URL (defaults are omitted). Only navigates when
+// the URL actually differs, so it cannot loop with the reader below.
+const syncCategoryViewToUrl = () => {
   const query = { ...urlRoute.query };
-  if (cat === firstRankedCategory()) delete query.category;
-  else query.category = cat;
-  if (view === "table") delete query.view;
-  else query.view = VIEW_PARAM[view];
+  if (activeCategory.value === firstRankedCategory()) delete query.category;
+  else query.category = activeCategory.value;
+  if (activeView.value === "table") delete query.view;
+  else query.view = VIEW_PARAM[activeView.value];
   if (query.category === urlRoute.query.category && query.view === urlRoute.query.view) return;
   urlRouter.replace({ query, hash: urlRoute.hash });
-});
+};
+watch([activeCategory, activeView], syncCategoryViewToUrl);
+
+// Follow later URL changes (back/forward, links that drop the query). A
+// missing `category` resets to the default tab. A missing `view` resets to the
+// table on the same page; on a language switch the selected view is kept (as
+// before) and written back to the URL so the URL still describes the page.
+watch(
+  () => [urlRoute.path, urlRoute.query.category, urlRoute.query.view] as const,
+  ([path], [prevPath]) => {
+    const cat = categoryFromQuery() ?? firstRankedCategory();
+    if (activeCategory.value !== cat) activeCategory.value = cat;
+    const view = viewFromQuery();
+    if (view) {
+      if (activeView.value !== view) activeView.value = view;
+    } else if (path === prevPath) {
+      if (activeView.value !== "table") activeView.value = "table";
+    } else {
+      syncCategoryViewToUrl();
+    }
+  },
+);
 
 const activeTable = computed<LBTable | null>(
   () => categoryState.value[activeCategory.value].table,

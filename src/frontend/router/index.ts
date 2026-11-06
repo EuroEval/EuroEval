@@ -12,11 +12,14 @@ const router = createRouter({
     { path: "/:section", name: "section", component: PageStub },
     { path: "/:section/:page", name: "section-page", component: PageStub },
   ],
-  scrollBehavior: (to) => {
+  scrollBehavior: (to, from) => {
     // If the target has a hash, let the markdown components scroll to it
-    // after they've expanded any <details> wrappers. Otherwise jump to the
-    // top of the page on every navigation.
+    // after they've expanded any <details> wrappers.
     if (to.hash) return false;
+    // Query-only updates on the same page (e.g. leaderboard filters synced to
+    // the URL) keep the current scroll position.
+    if (to.path === from.path) return false;
+    // Otherwise jump to the top of the page on every navigation.
     return { top: 0 };
   },
 });

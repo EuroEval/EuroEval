@@ -58,18 +58,29 @@ const filterParamKeys = () =>
     )
     .map((c) => c.key);
 
+// Make the filter state mirror the URL exactly: params that are missing clear
+// their filter, so reloading or sharing a URL always reproduces the same view.
 const applyFiltersFromQuery = () => {
-  let applied = false;
+  let changed = false;
+  const nextCols: Record<string, FilterValue> = {};
   for (const key of filterParamKeys()) {
     const raw = route.query[key.toLowerCase()];
-    const value = Array.isArray(raw) ? raw[0] : raw;
-    if (typeof value !== "string" || !value) continue;
+    const value = (Array.isArray(raw) ? raw[0] : raw) ?? "";
     const sizeRef = SIZE_FILTERS[key.toLowerCase() as keyof typeof SIZE_FILTERS];
-    if (sizeRef) sizeRef.value = value;
-    else colFilters.value = { ...colFilters.value, [key]: value };
-    applied = true;
+    if (sizeRef) {
+      if (sizeRef.value !== value) {
+        sizeRef.value = value;
+        changed = true;
+      }
+    } else {
+      if (value) nextCols[key] = value;
+      if ((colFilters.value[key] ?? "") !== value) changed = true;
+    }
   }
-  if (applied) page.value = 1;
+  if (changed) {
+    colFilters.value = nextCols;
+    page.value = 1;
+  }
 };
 
 const filtersAsQuery = () => {
@@ -106,6 +117,11 @@ watch(
   },
   { immediate: true },
 );
+
+// Follow later URL changes (back/forward, sidebar links that drop the query).
+// No sync loop: this only writes state when it differs from the URL, and the
+// writer below only navigates when the URL differs from the state.
+watch(() => route.query, applyFiltersFromQuery);
 
 watch(
   [colFilters, paramFilter, vocabFilter, contextFilter],
