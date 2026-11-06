@@ -1,3 +1,7 @@
+# Publishing mutates shared package metadata; serialise every make invocation so
+# package builds, release creation, and version changes cannot overlap.
+.NOTPARALLEL:
+
 # This ensures that we can call `make <target>` even if `<target>` exists as a file or
 # directory.
 .PHONY: help docs install install-frontend install-vercel leaderboards force-leaderboards \
@@ -131,7 +135,7 @@ publish:
 	echo "Publishing to PyPI..."; \
 	$(MAKE) --quiet publish-euroeval; \
 	$(MAKE) --quiet publish-scandeval; \
-	uv run src/scripts/versioning.py --release-only "$$(sed -n 's/^version = "\\([^"]*\\)"/\\1/p' pyproject.toml)"; \
+	uv run src/scripts/versioning.py --release-only "$$(uv run python -c 'from scripts.versioning import get_project_version; print(get_project_version())')"; \
 	$(MAKE) --quiet add-dev-version; \
 	$(MAKE) --quiet frontend; \
 	echo "Published!"
@@ -146,21 +150,19 @@ publish-euroeval:
 publish-scandeval:
 	@test -n "${SCANDEVAL_PYPI_API_TOKEN}" || { echo "SCANDEVAL_PYPI_API_TOKEN must be specified to publish." >&2; exit 1; }
 	@uv run src/scripts/versioning.py --validate-stable
-	@if [ $$(uname) = "Darwin" ]; then \
+	@set -e; backup=$$(mktemp); cp -p pyproject.toml "$$backup"; \
+	cleanup() { cp "$$backup" pyproject.toml; rm -f "$$backup"; \
+		if [ -d src/scandeval ] && [ ! -e src/euroeval ]; then mv src/scandeval src/euroeval; fi; }; \
+	trap cleanup EXIT; \
+	if [ "$$(uname)" = "Darwin" ]; then \
 		sed -i '' 's/^name = "EuroEval"/name = "ScandEval"/' pyproject.toml; \
 	else \
 		sed -i 's/^name = "EuroEval"/name = "ScandEval"/' pyproject.toml; \
-	fi
-	@mv src/euroeval src/scandeval
-	@rm -rf build/ dist/
-	@uv build
-	@uv publish --username "__token__" --password ${SCANDEVAL_PYPI_API_TOKEN}
-	@if [ $$(uname) = "Darwin" ]; then \
-		sed -i '' 's/^name = "ScandEval"/name = "EuroEval"/' pyproject.toml; \
-	else \
-		sed -i 's/^name = "ScandEval"/name = "EuroEval"/' pyproject.toml; \
-	fi
-	@mv src/scandeval src/euroeval
+	fi; \
+	mv src/euroeval src/scandeval; \
+	rm -rf build/ dist/; \
+	uv build; \
+	uv publish --username "__token__" --password ${SCANDEVAL_PYPI_API_TOKEN}
 
 publish-major:  ## Publish a major version
 	@$(MAKE) install && $(MAKE) check && $(MAKE) bump-major && $(MAKE) publish
