@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { useRoute } from "vue-router";
 import LeaderboardTable from "@/components/LeaderboardTable.vue";
 import LeaderboardScatter from "@/components/LeaderboardScatter.vue";
 import {
@@ -207,12 +208,19 @@ const downloading = ref(false);
 const embedOpen = ref(false);
 const embedCopied = ref(false);
 
+const route = useRoute();
 const embedUrl = computed(() => {
   const base =
     typeof window !== "undefined"
       ? `${window.location.origin}${window.location.pathname}`
       : `https://euroeval.com/leaderboards/${props.stem}`;
-  return `${base}?embed=1`;
+  // Carry the current table filters (e.g. `model=...`) into the embed.
+  const params = new URLSearchParams({ embed: "1" });
+  for (const [k, v] of Object.entries(route.query)) {
+    if (k === "embed" || typeof v !== "string" || !v) continue;
+    params.set(k, v);
+  }
+  return `${base}?${params.toString()}`;
 });
 
 const embedSnippet = computed(

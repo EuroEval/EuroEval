@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import {
   COLUMN_BUCKETS,
   CONTEXT_BUCKETS,
@@ -35,6 +36,46 @@ const sortBy = ref<{ index: number; dir: "asc" | "desc" } | null>(null);
 const page = ref(1);
 const pageSize = 10;
 
+// URL <-> filter sync. Each filterable column is mirrored as a lowercase query
+// param named after the column key (e.g. `?model=gpt-4o%20llama`), so filtered
+// views can be shared and embedded (`?embed=1&model=...`).
+const route = useRoute();
+const router = useRouter();
+const SIZE_FILTERS = { parameters: paramFilter, vocabulary: vocabFilter, context: contextFilter };
+const filterParamKeys = () =>
+  props.table.columns
+    .filter(
+      (c) =>
+        c.key.toLowerCase() === "model" ||
+        (c.kind === "icon" && c.distinctValues) ||
+        c.key.toLowerCase() in SIZE_FILTERS,
+    )
+    .map((c) => c.key);
+
+const applyFiltersFromQuery = () => {
+  let applied = false;
+  for (const key of filterParamKeys()) {
+    const raw = route.query[key.toLowerCase()];
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    if (typeof value !== "string" || !value) continue;
+    const sizeRef = SIZE_FILTERS[key.toLowerCase() as keyof typeof SIZE_FILTERS];
+    if (sizeRef) sizeRef.value = value;
+    else colFilters.value = { ...colFilters.value, [key]: value };
+    applied = true;
+  }
+  if (applied) page.value = 1;
+};
+
+const filtersAsQuery = () => {
+  const out: Record<string, string> = {};
+  for (const key of filterParamKeys()) {
+    const sizeRef = SIZE_FILTERS[key.toLowerCase() as keyof typeof SIZE_FILTERS];
+    const value = sizeRef ? sizeRef.value : colFilters.value[key];
+    if (value) out[key.toLowerCase()] = value;
+  }
+  return out;
+};
+
 // Default sort: rank score ascending if present, otherwise rank.
 watch(
   () => props.table,
@@ -55,8 +96,26 @@ watch(
       );
       sortBy.value = rankIdx >= 0 ? { index: rankIdx, dir: "asc" } : null;
     }
+    applyFiltersFromQuery();
   },
   { immediate: true },
+);
+
+watch(
+  [colFilters, paramFilter, vocabFilter, contextFilter],
+  () => {
+    const managed = new Set(filterParamKeys().map((k) => k.toLowerCase()));
+    const query: Record<string, string | null | (string | null)[]> = {};
+    for (const [k, v] of Object.entries(route.query)) {
+      if (!managed.has(k)) query[k] = v;
+    }
+    Object.assign(query, filtersAsQuery());
+    const same =
+      JSON.stringify(Object.entries(query).sort()) ===
+      JSON.stringify(Object.entries(route.query).sort());
+    if (!same) router.replace({ query, hash: route.hash });
+  },
+  { deep: true },
 );
 
 const passesColumnFilter = (cellText: string, filter: string, col: Column) => {
