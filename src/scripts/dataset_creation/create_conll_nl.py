@@ -10,70 +10,30 @@
 
 """Create the CoNLL-NL-mini NER dataset and upload it to the HF Hub."""
 
-from datasets import DatasetDict, load_dataset
+from datasets import load_dataset
 
 if __package__:
-    from .dataset_utils import preflight_private_upload
+    from .dataset_processing import CONLL_LABEL_MAPPING, prepare_ner_dataset
+    from .dataset_utils import create_and_upload_dataset
 else:
-    from dataset_utils import preflight_private_upload
-
-if __package__:
-    from .dataset_processing import (
-        dataset_dict_from_frames,
-        process_ner_frame,
-        process_source_splits,
-    )
-else:
-    from dataset_processing import (
-        dataset_dict_from_frames,
-        process_ner_frame,
-        process_source_splits,
-    )
+    from dataset_processing import CONLL_LABEL_MAPPING, prepare_ner_dataset
+    from dataset_utils import create_and_upload_dataset
 
 
 def main() -> None:
-    """Create the CoNLL-NL-mini NER dataset and uploads it to the HF Hub."""
-    # Define dataset ID
-    repo_id = "eriktks/conll2002"
-
-    # Download the dataset
-    dataset = load_dataset(path=repo_id, name="nl", token=True)
-    assert isinstance(dataset, DatasetDict)
-
-    ner_mapping = {
-        0: "O",
-        1: "B-PER",
-        2: "I-PER",
-        3: "B-ORG",
-        4: "I-ORG",
-        5: "B-LOC",
-        6: "I-LOC",
-        7: "B-MISC",
-        8: "I-MISC",
-    }
-    frames = {
-        "train": process_ner_frame(
-            frame=dataset["train"].to_pandas(), label_mapping=ner_mapping
+    """Create the conll-nl NER dataset from its original source splits."""
+    label_mapping = CONLL_LABEL_MAPPING
+    create_and_upload_dataset(
+        load_source=lambda: load_dataset(
+            path="eriktks/conll2002", token=True, name="nl"
         ),
-        "val": process_ner_frame(
-            frame=dataset["validation"].to_pandas(), label_mapping=ner_mapping
+        process_source=lambda source: prepare_ner_dataset(
+            source=source,
+            label_mapping=label_mapping,
+            limits={"train": 1024, "val": 256, "test": 1024},
         ),
-        "test": process_ner_frame(
-            frame=dataset["test"].to_pandas(), label_mapping=ner_mapping
-        ),
-    }
-    limits = {"train": 1024, "val": 256, "test": 1024}
-    frames = process_source_splits(frames=frames, limits=limits)
-    dataset = dataset_dict_from_frames(
-        frames=frames, columns=["tokens", "text", "labels"]
+        repository_id="EuroEval/conll-nl-mini",
     )
-
-    # Create dataset ID
-    dataset_id = "EuroEval/conll-nl-mini"
-
-    # Push the dataset to the Hugging Face Hub
-    preflight_private_upload(repository_id=dataset_id)
-    dataset.push_to_hub(dataset_id, private=True)
 
 
 if __name__ == "__main__":

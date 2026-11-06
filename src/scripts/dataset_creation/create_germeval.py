@@ -10,37 +10,19 @@
 
 """Create the GermEval-mini NER dataset and upload it to the HF Hub."""
 
-from datasets import DatasetDict, load_dataset
+from datasets import load_dataset
 
 if __package__:
-    from .dataset_utils import preflight_private_upload
+    from .dataset_processing import prepare_ner_dataset
+    from .dataset_utils import create_and_upload_dataset
 else:
-    from dataset_utils import preflight_private_upload
-
-if __package__:
-    from .dataset_processing import (
-        dataset_dict_from_frames,
-        process_ner_frame,
-        process_source_splits,
-    )
-else:
-    from dataset_processing import (
-        dataset_dict_from_frames,
-        process_ner_frame,
-        process_source_splits,
-    )
+    from dataset_processing import prepare_ner_dataset
+    from dataset_utils import create_and_upload_dataset
 
 
 def main() -> None:
-    """Create the GermEval-mini NER dataset and uploads it to the HF Hub."""
-    # Define dataset ID
-    repo_id = "germeval_14"
-
-    # Download the dataset
-    dataset = load_dataset(path=repo_id, token=True)
-    assert isinstance(dataset, DatasetDict)
-
-    ner_mapping = {
+    """Create the germeval NER dataset from its original source splits."""
+    label_mapping = {
         0: "O",  # Original: O
         1: "B-LOC",  # Original: B-LOC
         2: "I-LOC",  # Original: I-LOC
@@ -67,29 +49,15 @@ def main() -> None:
         23: "B-PER",  # Original: B-PERpart
         24: "I-PER",  # Original: I-PERpart
     }
-    frames = {
-        "train": process_ner_frame(
-            frame=dataset["train"].to_pandas(), label_mapping=ner_mapping
+    create_and_upload_dataset(
+        load_source=lambda: load_dataset(path="germeval_14", token=True),
+        process_source=lambda source: prepare_ner_dataset(
+            source=source,
+            label_mapping=label_mapping,
+            limits={"train": 1024, "val": 256, "test": 1024},
         ),
-        "val": process_ner_frame(
-            frame=dataset["validation"].to_pandas(), label_mapping=ner_mapping
-        ),
-        "test": process_ner_frame(
-            frame=dataset["test"].to_pandas(), label_mapping=ner_mapping
-        ),
-    }
-    limits = {"train": 1024, "val": 256, "test": 1024}
-    frames = process_source_splits(frames=frames, limits=limits)
-    dataset = dataset_dict_from_frames(
-        frames=frames, columns=["tokens", "text", "labels"]
+        repository_id="EuroEval/germeval-mini",
     )
-
-    # Create dataset ID
-    dataset_id = "EuroEval/germeval-mini"
-
-    # Push the dataset to the Hugging Face Hub
-    preflight_private_upload(repository_id=dataset_id)
-    dataset.push_to_hub(dataset_id, private=True)
 
 
 if __name__ == "__main__":

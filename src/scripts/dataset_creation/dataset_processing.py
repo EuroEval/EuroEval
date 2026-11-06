@@ -6,7 +6,25 @@ import random
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split
 
+if __package__:
+    from .constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
+else:
+    from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
+
 SEED = 4242
+SOURCE_SPLITS = {"train": "train", "val": "validation", "test": "test"}
+STANDARD_LIMITS = {"train": 1024, "val": 256, "test": 2048}
+CONLL_LABEL_MAPPING = {
+    0: "O",
+    1: "B-PER",
+    2: "I-PER",
+    3: "B-ORG",
+    4: "I-ORG",
+    5: "B-LOC",
+    6: "I-LOC",
+    7: "B-MISC",
+    8: "I-MISC",
+}
 
 
 def build_split_dataset(
@@ -79,7 +97,9 @@ def dataset_dict_from_frames(
     split_names = {"train": Split.TRAIN, "val": Split.VALIDATION, "test": Split.TEST}
     return DatasetDict(
         {
-            name: Dataset.from_pandas(frame[columns], split=split_names[name])
+            name: Dataset.from_pandas(
+                frame[columns].reset_index(drop=True), split=split_names[name]
+            )
             for name, frame in frames.items()
         }
     )
@@ -120,42 +140,33 @@ def format_multiple_choice_record(
     return {"text": text, "label": letters[options.index(correct_answer)]}
 
 
-def process_multilingual_tweet_sentiment(
-    source: DatasetDict,
-    source_label_mapping: dict[int, str],
-    minimum_text_length: int,
-    maximum_text_length: int,
-) -> DatasetDict:
-    """Deduplicate, filter and cap each multilingual tweet split independently.
-
-    Examples never move between source splits. Length filtering and deduplication
-    happen before deterministic capping.
+def prepare_mlsum_dataset(source: DatasetDict, target_column: str) -> DatasetDict:
+    """Normalise MLSum summaries, filter articles and cap original splits.
 
     Args:
         source:
-            Dataset with train, validation and test splits.
-        source_label_mapping:
-            Mapping from source label IDs to EuroEval labels.
-        minimum_text_length:
-            Inclusive minimum tweet length.
-        maximum_text_length:
-            Inclusive maximum tweet length.
+            Original MLSum source splits.
+        target_column:
+            Source column containing the reference summary.
 
     Returns:
-        DatasetDict with independently selected train, val and test rows.
+        Dataset with summaries named target_text and no auxiliary references.
     """
-    source_names = {"train": "train", "val": "validation", "test": "test"}
-    bounds = {"text": (minimum_text_length, maximum_text_length)}
     frames = {}
-    for output_split, source_split in source_names.items():
-        frame = source[source_split].to_pandas()
-        assert isinstance(frame, pd.DataFrame)
-        frame["label"] = frame["label"].map(source_label_mapping)
-        frame = frame.drop_duplicates().reset_index(drop=True)
-        frames[output_split] = filter_by_character_lengths(frame=frame, bounds=bounds)
-    limits = {"train": 1024, "val": 256, "test": 1024}
-    capped = process_source_splits(frames=frames, limits=limits)
-    return dataset_dict_from_frames(frames=capped, columns=["text", "label"])
+    for output, original in SOURCE_SPLITS.items():
+        # German references contain mixed types and must not enter Arrow conversion.
+        split = source[original]
+        if "references" in split.column_names:
+            split = split.remove_columns(column_names=["references"])
+        frame = split.to_pandas().rename(columns={target_column: "target_text"})
+        frames[output] = filter_by_character_lengths(
+            frame=frame,
+            bounds={"text": (MIN_NUM_CHARS_IN_ARTICLE, MAX_NUM_CHARS_IN_ARTICLE)},
+        )
+    capped = process_source_splits(frames=frames, limits=STANDARD_LIMITS)
+    return dataset_dict_from_frames(
+        frames=capped, columns=list(capped["train"].columns)
+    )
 
 
 def filter_by_character_lengths(
@@ -172,6 +183,8 @@ def filter_by_character_lengths(
     Returns:
         A filtered copy of the data frame.
     """
+    if frame.empty:
+        return frame.copy()
     mask = pd.Series(True, index=frame.index)
     for column, (minimum, maximum) in bounds.items():
         mask &= frame[column].str.len().between(minimum, maximum)
@@ -208,7 +221,9 @@ def process_source_splits(
     prepared = {}
     for split, frame in frames.items():
         transformed = transform(split, frame) if transform is not None else frame
-        prepared[split] = sample_dataframe(frame=transformed, maximum=limits[split])
+        prepared[split] = sample_dataframe(
+            frame=transformed, maximum=limits[split]
+        ).reset_index(drop=True)
     return prepared
 
 
@@ -222,11 +237,36 @@ def sample_dataframe(frame: pd.DataFrame, maximum: int) -> pd.DataFrame:
             Maximum rows to retain.
 
     Returns:
-        A sampled frame with a fresh consecutive index.
+        A sampled copy retaining source indices for safe partition exclusion.
     """
     if len(frame) <= maximum:
-        return frame.reset_index(drop=True)
-    return frame.sample(n=maximum, random_state=SEED).reset_index(drop=True)
+        return frame.copy()
+    return frame.sample(n=maximum, random_state=SEED)
+
+
+def prepare_ner_dataset(
+    source: DatasetDict, label_mapping: dict[int, str], limits: dict[str, int]
+) -> DatasetDict:
+    """Map NER tags, retain source partitions and cap each split independently.
+
+    Args:
+        source:
+            Original train, validation and test splits.
+        label_mapping:
+            Source tag IDs mapped to EuroEval IOB labels.
+        limits:
+            Maximum rows per output split.
+
+    Returns:
+        Capped NER dataset with tokens, joined text and mapped labels.
+    """
+    frames = {}
+    for output, original in SOURCE_SPLITS.items():
+        frame = source[original].to_pandas()
+        assert isinstance(frame, pd.DataFrame)
+        frames[output] = process_ner_frame(frame=frame, label_mapping=label_mapping)
+    capped = process_source_splits(frames=frames, limits=limits)
+    return dataset_dict_from_frames(frames=capped, columns=["tokens", "text", "labels"])
 
 
 def process_ner_frame(
@@ -252,6 +292,44 @@ def process_ner_frame(
     )
     columns = ["tokens", "text", "labels"] if include_tokens else ["text", "labels"]
     return result[columns]
+
+
+def process_multilingual_tweet_sentiment(
+    source: DatasetDict,
+    source_label_mapping: dict[int, str],
+    minimum_text_length: int,
+    maximum_text_length: int,
+) -> DatasetDict:
+    """Deduplicate, filter and cap each multilingual tweet split independently.
+
+    Examples never move between source splits. Length filtering and deduplication
+    happen before deterministic capping.
+
+    Args:
+        source:
+            Dataset with train, validation and test splits.
+        source_label_mapping:
+            Mapping from source label IDs to EuroEval labels.
+        minimum_text_length:
+            Inclusive minimum tweet length.
+        maximum_text_length:
+            Inclusive maximum tweet length.
+
+    Returns:
+        DatasetDict with independently selected train, val and test rows.
+    """
+    source_names = {"train": "train", "val": "validation", "test": "test"}
+    bounds = {"text": (minimum_text_length, maximum_text_length)}
+    frames = {}
+    for output_split, source_split in source_names.items():
+        frame = source[source_split].to_pandas()
+        assert isinstance(frame, pd.DataFrame)
+        frame["label"] = frame["label"].map(source_label_mapping)
+        frame = frame.drop_duplicates().reset_index(drop=True)
+        frames[output_split] = filter_by_character_lengths(frame=frame, bounds=bounds)
+    limits = {"train": 1024, "val": 256, "test": 1024}
+    capped = process_source_splits(frames=frames, limits=limits)
+    return dataset_dict_from_frames(frames=capped, columns=["text", "label"])
 
 
 def split_generated_dataset(frame: pd.DataFrame) -> tuple[DatasetDict, bool]:
