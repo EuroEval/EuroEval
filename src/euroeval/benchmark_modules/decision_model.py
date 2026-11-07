@@ -10,12 +10,7 @@ from pathlib import Path
 import requests
 from huggingface_hub import HfApi, hf_hub_download
 
-from ..data_models import (
-    BenchmarkConfig,
-    DatasetConfig,
-    GenerativeModelOutput,
-    ModelConfig,
-)
+from ..data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 from ..enums import (
     BatchingPreference,
     GenerativeType,
@@ -28,13 +23,12 @@ from ..model_cache import create_model_cache_dir
 from ..string_utils import split_model_id
 from ..utils import get_hf_token
 from .base import BenchmarkModule
-from .typed_choice_classification import classify_typed_choices
-from .zero_shot_classifier import ZeroShotClassifierModel
+from .typed_choice_classification import TypedChoiceClassificationModel
 
 _SUPPORTED_FORMATS = {("onejev-slot-v2", "flide")}
 
 
-class DecisionModel(ZeroShotClassifierModel):
+class DecisionModel(TypedChoiceClassificationModel):
     """Run Hub decision-models through the typed System One wire format."""
 
     fresh_model = False
@@ -85,40 +79,8 @@ class DecisionModel(ZeroShotClassifierModel):
         self._validate_labels()
         self.buffer["instructions"] = self._build_instructions()
 
-    @property
-    def data_collator(self) -> c.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
-        """The unsupported finetuning collator.
-
-        Raises:
-            NotImplementedError: Remote decision models cannot be finetuned here.
-        """
-        raise NotImplementedError("Remote decision models do not support finetuning.")
-
-    def generate(self, inputs: dict) -> GenerativeModelOutput:
-        """Classify batch inputs and expose direct choice probabilities as scores.
-
-        Args:
-            inputs: Batch containing the prepared text values.
-
-        Returns:
-            Predicted labels and log-probability scores.
-
-        """
-        return classify_typed_choices(
-            inputs=inputs,
-            labels=[
-                self.dataset_config.prompt_label_mapping[label]
-                for label in self.dataset_config.id2label.values()
-            ],
-            multiple_choice=self.dataset_config.task.task_group
-            == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
-            classify=lambda state, criteria: self._request_classification(
-                state=state, criteria=criteria
-            ),
-        )
-
-    def _request_classification(
-        self, *, state: str, criteria: dict[str, str | None]
+    def _classify_one(
+        self, state: str, criteria: dict[str, str | None]
     ) -> dict[str, float]:
         """Request and validate a typed choice distribution.
 
@@ -194,6 +156,15 @@ class DecisionModel(ZeroShotClassifierModel):
                 "Typed decision-model probabilities must sum to one."
             )
         return parsed
+
+    @property
+    def data_collator(self) -> c.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
+        """The unsupported finetuning collator.
+
+        Raises:
+            NotImplementedError: Remote decision models cannot be finetuned here.
+        """
+        raise NotImplementedError("Remote decision models do not support finetuning.")
 
     @property
     def generative_type(self) -> GenerativeType | None:
@@ -290,20 +261,6 @@ class DecisionModel(ZeroShotClassifierModel):
     def trainer_class(self) -> t.Type["Trainer"]:
         """Expose the unavailable remote trainer."""
         raise NotImplementedError("Remote decision models do not support finetuning.")
-
-    def update_dataset_config(self, dataset_config: DatasetConfig) -> t.Self:
-        """Update the active dataset instructions.
-
-        Args:
-            dataset_config: New dataset configuration.
-
-        Returns:
-            This adapter.
-        """
-        self.dataset_config = dataset_config
-        self._validate_labels()
-        self.buffer["instructions"] = self._build_instructions()
-        return self
 
     @cached_property
     def vocab_size(self) -> int:

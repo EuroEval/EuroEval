@@ -57,7 +57,7 @@ def test_local_system_one_request_returns_classification_scores(
     thread.start()
     try:
         config_file = NamedTemporaryFile(mode="w", delete=False)
-        json.dump({"format_id": "systemone-v1"}, config_file)
+        json.dump({"format_id": "onejev-slot-v2", "package": "flide"}, config_file)
         config_file.close()
         monkeypatch.setattr(
             "euroeval.benchmark_modules.decision_model.hf_hub_download",

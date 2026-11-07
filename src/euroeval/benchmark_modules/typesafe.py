@@ -10,12 +10,7 @@ from functools import cached_property
 
 import requests
 
-from ..data_models import (
-    BenchmarkConfig,
-    DatasetConfig,
-    GenerativeModelOutput,
-    ModelConfig,
-)
+from ..data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 from ..enums import (
     BatchingPreference,
     GenerativeType,
@@ -27,8 +22,7 @@ from ..exceptions import InvalidBenchmark, InvalidModel, NeedsAdditionalArgument
 from ..model_cache import create_model_cache_dir
 from ..string_utils import split_model_id
 from .base import BenchmarkModule
-from .typed_choice_classification import classify_typed_choices
-from .zero_shot_classifier import ZeroShotClassifierModel
+from .typed_choice_classification import TypedChoiceClassificationModel
 
 _SYSTEM_ONE_URL = "https://api.typesafe.ai/v1/systemone"
 _MODEL_ID_PATTERN = re.compile(r"typesafe/jev-(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")
@@ -40,7 +34,7 @@ if t.TYPE_CHECKING:
     from transformers.trainer import Trainer
 
 
-class TypesafeSystemOneModel(ZeroShotClassifierModel):
+class TypesafeSystemOneModel(TypedChoiceClassificationModel):
     """Hosted zero-shot classifier using Typesafe System One."""
 
     fresh_model = False
@@ -252,28 +246,6 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
         """
         raise NotImplementedError("Typesafe System One does not support finetuning.")
 
-    def generate(self, inputs: dict) -> GenerativeModelOutput:
-        """Evaluate each input and expose returned probabilities as log scores.
-
-        Args:
-            inputs:
-                A batch of input text values.
-
-        Returns:
-            Predicted labels and log-probability scores.
-
-        """
-        return classify_typed_choices(
-            inputs=inputs,
-            labels=[
-                self.dataset_config.prompt_label_mapping[label]
-                for label in self.dataset_config.id2label.values()
-            ],
-            multiple_choice=self.dataset_config.task.task_group
-            == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
-            classify=self._classify_one,
-        )
-
     @property
     def generative_type(self) -> GenerativeType | None:
         """None, because System One is a typed classifier, not a generator.
@@ -373,21 +345,6 @@ class TypesafeSystemOneModel(ZeroShotClassifierModel):
                 Typesafe System One does not support finetuning.
         """
         raise NotImplementedError("Typesafe System One does not support finetuning.")
-
-    def update_dataset_config(self, dataset_config: DatasetConfig) -> t.Self:
-        """Update task-specific instructions when moving to another dataset.
-
-        Args:
-            dataset_config:
-                The new dataset configuration.
-
-        Returns:
-            This model instance.
-        """
-        self.dataset_config = dataset_config
-        self._validate_labels()
-        self.buffer["instructions"] = self._build_instructions()
-        return self
 
     @cached_property
     def vocab_size(self) -> int:
