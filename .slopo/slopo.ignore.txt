@@ -141,3 +141,4 @@ cb672719781f  # euroeval/benchmark_modules/zero_shot_classifier.py, euroeval/ben
 312684fe6e5e  # euroeval/benchmark_modules/zero_shot_classifier.py, euroeval/benchmark_modules/typesafe.py, euroeval/benchmark_modules/kev.py, euroeval/benchmark_modules/dummy.py; backend-specific generation semantics
 6c1ab1274c0d  # euroeval/benchmark_modules/kev.py, euroeval/benchmark_modules/gliner.py, euroeval/benchmark_modules/zero_shot_classifier.py, euroeval/benchmark_modules/typesafe.py; backend-specific validation/config
 f6a57cfb9432  # euroeval/benchmark_modules/zero_shot_classifier.py, euroeval/benchmark_modules/typesafe.py; backend-specific config refresh
+fb8b5ae9a5ab  # zero_shot_classifier.py, typed_choice_classification.py; Laya recalculates label mapping, typed choice keeps fixed labels
