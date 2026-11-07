@@ -1,6 +1,7 @@
 """The different types of modules that can be benchmarked."""
 
 from .base import BenchmarkModule
+from .decision_model import DecisionModel
 from .dummy import DummyModel
 from .fresh import FreshEncoderModel
 from .gliner import GLiNERModel

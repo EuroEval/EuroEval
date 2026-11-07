@@ -350,6 +350,7 @@ class Benchmarker:
         max_context_length: int | None = None,
         vocabulary_size: int | None = None,
         num_parameters: int | None = None,
+        served_model: str | None = None,
     ) -> c.Sequence[BenchmarkResult]:
         """Benchmarks models on datasets.
 
@@ -414,6 +415,8 @@ class Benchmarker:
                 The per-call shot policy. True and False select one concrete mode;
                 ``ShotMode.AUTO`` explicitly selects automatic planning. ``None``
                 inherits the initialiser's setting and is not an AUTO override.
+            served_model (optional):
+                Expected served model ID for a typed decision endpoint.
             num_iterations (optional):
                 The number of times each model should be evaluated. This is only meant
                 to be used for power users, and scores will not be allowed on the
@@ -530,6 +533,7 @@ class Benchmarker:
             api_key=api_key,
             api_base=api_base,
             api_version=api_version,
+            served_model=served_model,
             trust_remote_code=trust_remote_code,
             clear_model_cache=clear_model_cache,
             evaluate_test_split=evaluate_test_split,
@@ -1358,6 +1362,7 @@ class Benchmarker:
                 api_version=_get_param(
                     "api_version", self.benchmark_config_default_params.api_version
                 ),
+                served_model=params.get("served_model"),
                 trust_remote_code=_get_param(
                     "trust_remote_code",
                     self.benchmark_config_default_params.trust_remote_code,

@@ -1260,6 +1260,7 @@ class BenchmarkConfig:
     vocabulary_size: int | None
     num_parameters: int | None
     use_bits_per_character: bool = False
+    served_model: str | None = None
 
     def __post_init__(self) -> None:
         """Post-initialisation checks."""
@@ -1321,6 +1322,7 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     vocabulary_size: int | None
     num_parameters: int | None
     use_bits_per_character: bool = False
+    served_model: str | None = None
 
 
 class TranslationDatasetConfig(DatasetConfig):

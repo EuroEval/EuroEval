@@ -162,6 +162,11 @@ from .languages import get_all_languages
     "model on an inference API.",
 )
 @click.option(
+    "--served-model",
+    default=None,
+    help="Expected model identity reported by a typed decision-model endpoint.",
+)
+@click.option(
     "--api-version",
     default=None,
     show_default=True,
@@ -273,6 +278,7 @@ def benchmark(
     few_shot: bool | None,
     num_iterations: int,
     api_base: str | None,
+    served_model: str | None,
     api_version: str | None,
     gpu_memory_utilization: float,
     attention_backend: str,
@@ -308,6 +314,7 @@ def benchmark(
         few_shot (optional): Whether to use few-shot evaluation.
         num_iterations: Number of evaluation iterations.
         api_base (optional): Inference API base URL.
+        served_model (optional): Expected identity reported by typed endpoint.
         api_version (optional): Inference API version.
         gpu_memory_utilization: Fraction of GPU memory available to vLLM.
         attention_backend (optional): vLLM attention backend.
@@ -374,7 +381,7 @@ def benchmark(
         num_parameters=num_parameters,
     )
     try:
-        benchmarker.benchmark(model=list(model))
+        benchmarker.benchmark(model=list(model), served_model=served_model)
     except NeedsExtraInstalled as error:
         raise click.ClickException(error.message) from error
 
