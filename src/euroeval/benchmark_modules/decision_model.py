@@ -26,10 +26,9 @@ from ..enums import (
 from ..exceptions import InvalidBenchmark, InvalidModel
 from ..model_cache import create_model_cache_dir
 from ..string_utils import split_model_id
-from ..task_group_utils.cloze import parse_bare_question_and_choices
-from ..types import ExtractLabelsFunction
 from ..utils import get_hf_token
-from .base import BenchmarkModule, _extract_labels_from_generation_helper
+from .base import BenchmarkModule
+from .typed_choice_classification import classify_typed_choices
 from .zero_shot_classifier import ZeroShotClassifierModel
 
 _SUPPORTED_FORMATS = {("onejev-slot-v2", "flide")}
@@ -95,19 +94,6 @@ class DecisionModel(ZeroShotClassifierModel):
         """
         raise NotImplementedError("Remote decision models do not support finetuning.")
 
-    @property
-    def extract_labels_from_generation(self) -> ExtractLabelsFunction:
-        """EuroEval's standard classification label extractor.
-
-        Returns:
-            The output label extractor.
-        """
-        return _extract_labels_from_generation_helper(
-            dataset_config=self.dataset_config,
-            model_config=self.model_config,
-            first_label_token_mapping=True,
-        )
-
     def generate(self, inputs: dict) -> GenerativeModelOutput:
         """Classify batch inputs and expose direct choice probabilities as scores.
 
@@ -117,40 +103,19 @@ class DecisionModel(ZeroShotClassifierModel):
         Returns:
             Predicted labels and log-probability scores.
 
-        Raises:
-            InvalidBenchmark: If inputs or typed response are malformed.
         """
-        if "text" not in inputs:
-            raise InvalidBenchmark("The inputs must contain a 'text' key.")
-        labels = [
-            self.dataset_config.prompt_label_mapping[label]
-            for label in self.dataset_config.id2label.values()
-        ]
-        scores: list[list[list[tuple[str, float]]]] = []
-        sequences: list[str] = []
-        for text in inputs["text"]:
-            criteria: dict[str, str | None] = {label: None for label in labels}
-            state = text
-            if (
-                self.dataset_config.task.task_group
-                == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
-            ):
-                question, options = parse_bare_question_and_choices(text=text)
-                if len(options) == len(labels) and len(set(options)) == len(options):
-                    state = question
-                    criteria = dict(zip(labels, options, strict=True))
-            probabilities = self._request_classification(state=state, criteria=criteria)
-            label_scores = sorted(
-                (
-                    (label, math.log(max(probabilities[label], 1e-12)))
-                    for label in labels
-                ),
-                key=lambda item: item[1],
-                reverse=True,
-            )
-            sequences.append(label_scores[0][0])
-            scores.append([label_scores])
-        return GenerativeModelOutput(sequences=sequences, scores=scores)
+        return classify_typed_choices(
+            inputs=inputs,
+            labels=[
+                self.dataset_config.prompt_label_mapping[label]
+                for label in self.dataset_config.id2label.values()
+            ],
+            multiple_choice=self.dataset_config.task.task_group
+            == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+            classify=lambda state, criteria: self._request_classification(
+                state=state, criteria=criteria
+            ),
+        )
 
     def _request_classification(
         self, *, state: str, criteria: dict[str, str | None]
