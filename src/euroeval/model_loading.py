@@ -4,6 +4,7 @@ import logging
 import typing as t
 
 from .benchmark_modules import (
+    DecisionModel,
     DummyModel,
     FreshEncoderModel,
     GLiNERModel,
@@ -134,6 +135,8 @@ def load_model(
             model_class = GLiNERModel
         case (ModelType.ZERO_SHOT_CLASSIFIER, InferenceBackend.TYPESAFE, False):
             model_class = TypesafeSystemOneModel
+        case (ModelType.ZERO_SHOT_CLASSIFIER, InferenceBackend.SYSTEM_ONE, False):
+            model_class = DecisionModel
         case (ModelType.ZERO_SHOT_CLASSIFIER, InferenceBackend.KEV, False):
             model_class = KevModel
         case (ModelType.ENCODER, InferenceBackend.TRANSFORMERS, True):

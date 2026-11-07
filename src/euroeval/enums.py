@@ -141,6 +141,7 @@ class InferenceBackend(AutoStrEnum):
     LAYA = auto()
     GLINER = auto()
     TYPESAFE = auto()
+    SYSTEM_ONE = auto()
     KEV = auto()
 
 
