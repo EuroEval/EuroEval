@@ -1,11 +1,72 @@
 """Shared typed-choice classification behaviour for remote adapters."""
 
+import abc
 import collections.abc as c
 import math
+import typing as t
 
-from ..data_models import GenerativeModelOutput
+from ..data_models import DatasetConfig, GenerativeModelOutput
+from ..enums import TaskGroup
 from ..exceptions import InvalidBenchmark
 from ..task_group_utils.cloze import parse_bare_question_and_choices
+from .zero_shot_classifier import ZeroShotClassifierModel
+
+
+class TypedChoiceClassificationModel(ZeroShotClassifierModel, abc.ABC):
+    """Share batch classification and dataset updates for typed-choice adapters."""
+
+    @abc.abstractmethod
+    def _classify_one(
+        self, state: str, criteria: dict[str, str | None]
+    ) -> dict[str, float]:
+        """Classify one state using the adapter's typed endpoint.
+
+        Args:
+            state:
+                The text state to classify.
+            criteria:
+                Candidate labels and optional descriptions.
+
+        Returns:
+            A probability for each candidate label.
+        """
+        raise NotImplementedError
+
+    def generate(self, inputs: dict) -> GenerativeModelOutput:
+        """Classify inputs and expose probabilities as log-score output.
+
+        Args:
+            inputs:
+                A batch containing the prepared text values.
+
+        Returns:
+            Predicted labels and log-probability scores.
+        """
+        return classify_typed_choices(
+            inputs=inputs,
+            labels=[
+                self.dataset_config.prompt_label_mapping[label]
+                for label in self.dataset_config.id2label.values()
+            ],
+            multiple_choice=self.dataset_config.task.task_group
+            == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+            classify=self._classify_one,
+        )
+
+    def update_dataset_config(self, dataset_config: DatasetConfig) -> t.Self:
+        """Update the active dataset and its classification instructions.
+
+        Args:
+            dataset_config:
+                The new dataset configuration.
+
+        Returns:
+            This model instance.
+        """
+        self.dataset_config = dataset_config
+        self._validate_labels()
+        self.buffer["instructions"] = self._build_instructions()
+        return self
 
 
 def classify_typed_choices(
