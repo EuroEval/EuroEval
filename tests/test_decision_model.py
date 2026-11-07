@@ -1,6 +1,7 @@
 """Tests for typed decision-model registration and metadata."""
 
 import json
+import os
 from dataclasses import replace
 from tempfile import NamedTemporaryFile
 from types import SimpleNamespace
@@ -19,6 +20,10 @@ def test_api_base_dummy_key_falls_back_to_hf_token(
 ) -> None:
     """CLI inference credentials must not mask the Hub token environment."""
     monkeypatch.setenv("HF_TOKEN", "hub-token")
+    monkeypatch.setattr(
+        "euroeval.benchmark_modules.decision_model.get_hf_token",
+        lambda *, api_key: api_key or os.environ["HF_TOKEN"],
+    )
     config_with_api_base = replace(
         benchmark_config, api_key=None, api_base="http://127.0.0.1:18000"
     )
@@ -46,8 +51,8 @@ def test_api_base_dummy_key_falls_back_to_hf_token(
     )
     get_model_config(model_id="syvai/claes-v1", benchmark_config=config_with_api_base)
 
-    assert model_info_tokens == [None, None]
-    assert download_tokens == [None]
+    assert model_info_tokens == ["hub-token", "hub-token"]
+    assert download_tokens == ["hub-token"]
 
     config_with_real_key = replace(config_with_api_base, api_key="real-key")
     assert DecisionModel.model_exists(
