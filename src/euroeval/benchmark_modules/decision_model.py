@@ -193,7 +193,7 @@ class DecisionModel(TypedChoiceClassificationModel):
                 repo_id=components.model_id,
                 filename="decision_config.json",
                 revision=components.revision,
-                token=get_hf_token(api_key=benchmark_config.api_key),
+                token=_get_hf_token(benchmark_config=benchmark_config),
                 cache_dir=benchmark_config.cache_dir,
             )
             metadata = json.loads(Path(config_path).read_text())
@@ -241,7 +241,7 @@ class DecisionModel(TypedChoiceClassificationModel):
             return (Path(components.model_id) / "decision_config.json").is_file()
         try:
             info = HfApi(
-                token=get_hf_token(api_key=benchmark_config.api_key)
+                token=_get_hf_token(benchmark_config=benchmark_config)
             ).model_info(repo_id=components.model_id, revision=components.revision)
         except Exception:  # noqa: BLE001 - missing and inaccessible repos are not matches
             return False
@@ -266,6 +266,22 @@ class DecisionModel(TypedChoiceClassificationModel):
     def vocab_size(self) -> int:
         """Unknown vocabulary size."""
         return -1
+
+
+def _get_hf_token(*, benchmark_config: BenchmarkConfig) -> str | None:
+    """Resolve Hub credentials without using the inference API placeholder.
+
+    Args:
+        benchmark_config:
+            Evaluation settings containing any configured API key.
+
+    Returns:
+        A real explicit key, the ``HF_TOKEN`` environment value, or None.
+    """
+    api_key = benchmark_config.api_key
+    if api_key == "dummy":
+        api_key = None
+    return get_hf_token(api_key=api_key)
 
 
 if t.TYPE_CHECKING:
