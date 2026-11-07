@@ -13,75 +13,72 @@ from euroeval.exceptions import InvalidModel
 from euroeval.model_config import get_model_config
 
 
-def test_tag_precedes_generic_generation_classification(
+def test_laya_is_not_claimed_as_a_decision_model(
     monkeypatch: pytest.MonkeyPatch, benchmark_config: BenchmarkConfig
 ) -> None:
-    """A decision tag claims the model before the generative fallback."""
+    """The decision tag keeps Laya on its existing classifier adapter."""
+    monkeypatch.setattr(
+        "euroeval.benchmark_modules.decision_model.HfApi.model_info",
+        lambda self, **kwargs: SimpleNamespace(tags=["zero-shot-classification"]),
+    )
+
+    assert not DecisionModel.model_exists(
+        model_id="convaiinnovations/laya", benchmark_config=benchmark_config
+    )
+
+
+@pytest.mark.parametrize(
+    "model_id",
+    ["org/arbitrary-model@abc123", "OmniJev/OneJev1.6-0.8B", "syvai/claes-v1"],
+)
+def test_tagged_models_resolve_supported_checkpoint_metadata(
+    model_id: str, monkeypatch: pytest.MonkeyPatch, benchmark_config: BenchmarkConfig
+) -> None:
+    """Recognise the actual format without relying on repository identity."""
     monkeypatch.setattr(
         "euroeval.benchmark_modules.decision_model.HfApi.model_info",
         lambda self, **kwargs: SimpleNamespace(tags=["decision-model"]),
     )
     monkeypatch.setattr(
         "euroeval.benchmark_modules.decision_model.hf_hub_download",
-        lambda **kwargs: _metadata_file(format_id="systemone-v1"),
+        lambda **kwargs: _metadata_file(format_id="onejev-slot-v2", package="flide"),
     )
 
-    config = get_model_config(model_id="org/typed", benchmark_config=benchmark_config)
+    config = get_model_config(model_id=model_id, benchmark_config=benchmark_config)
 
+    expected_id, _, *revision = model_id.partition("@")
+    assert config.model_id == expected_id
+    assert config.revision == (revision[0] or "main")
     assert config.model_type is ModelType.ZERO_SHOT_CLASSIFIER
+    assert config.inference_backend is InferenceBackend.SYSTEM_ONE
 
 
-def _metadata_file(*, format_id: str) -> str:
+def _metadata_file(*, format_id: str, package: str) -> str:
     """Create a temporary decision metadata document for the public seam.
 
     Args:
         format_id: Protocol identifier stored in the fixture document.
+        package: Package identifier stored in the fixture document.
 
     Returns:
         The temporary document path.
     """
     file = NamedTemporaryFile(mode="w", delete=False)
-    json.dump({"format_id": format_id}, file)
+    json.dump({"format_id": format_id, "package": package}, file)
     file.close()
     return file.name
 
 
-def test_tagged_arbitrary_id_resolves_as_decision_model(
+def test_unsupported_decision_metadata_fails_clearly(
     monkeypatch: pytest.MonkeyPatch, benchmark_config: BenchmarkConfig
 ) -> None:
-    """Select tagged arbitrary repositories and retain the requested revision."""
-    monkeypatch.setattr(
-        "euroeval.benchmark_modules.decision_model.HfApi.model_info",
-        lambda self, **kwargs: SimpleNamespace(tags=["decision-model"]),
-    )
-    assert DecisionModel.model_exists(
-        model_id="org/arbitrary-model@abc123", benchmark_config=benchmark_config
-    )
+    """Do not route unknown tagged protocols or packages to this adapter."""
     monkeypatch.setattr(
         "euroeval.benchmark_modules.decision_model.hf_hub_download",
-        lambda **kwargs: _metadata_file(format_id="systemone-v1"),
+        lambda **kwargs: _metadata_file(format_id="onejev-slot-v2", package="unknown"),
     )
 
-    config = DecisionModel.get_model_config(
-        model_id="org/arbitrary-model@abc123", benchmark_config=benchmark_config
-    )
-
-    assert config.model_id == "org/arbitrary-model"
-    assert config.revision == "abc123"
-    assert config.model_type is ModelType.ZERO_SHOT_CLASSIFIER
-    assert config.inference_backend is InferenceBackend.SYSTEM_ONE
-
-
-def test_unsupported_decision_format_fails_clearly(
-    monkeypatch: pytest.MonkeyPatch, benchmark_config: BenchmarkConfig
-) -> None:
-    """Do not route unknown tagged protocols to a generic generation backend."""
-    monkeypatch.setattr(
-        "euroeval.benchmark_modules.decision_model.hf_hub_download",
-        lambda **kwargs: _metadata_file(format_id="other-format"),
-    )
-
-    with pytest.raises(InvalidModel, match="Unsupported decision-model format"):
+    with pytest.raises(InvalidModel, match="Unsupported decision-model metadata"):
         DecisionModel.get_model_config(
             model_id="org/typed", benchmark_config=benchmark_config
         )

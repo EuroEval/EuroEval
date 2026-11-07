@@ -84,6 +84,7 @@ def build_benchmark_config(
         attention_backend=benchmark_config_params.attention_backend,
         generative_type=benchmark_config_params.generative_type,
         use_bits_per_character=benchmark_config_params.use_bits_per_character,
+        served_model=benchmark_config_params.served_model,
         debug=benchmark_config_params.debug,
         run_with_cli=benchmark_config_params.run_with_cli,
         requires_safetensors=benchmark_config_params.requires_safetensors,

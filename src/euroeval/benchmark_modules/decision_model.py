@@ -32,7 +32,7 @@ from ..utils import get_hf_token
 from .base import BenchmarkModule, _extract_labels_from_generation_helper
 from .zero_shot_classifier import ZeroShotClassifierModel
 
-_SUPPORTED_FORMATS = {"systemone-v1"}
+_SUPPORTED_FORMATS = {("onejev-slot-v2", "flide")}
 
 
 class DecisionModel(ZeroShotClassifierModel):
@@ -266,9 +266,11 @@ class DecisionModel(ZeroShotClassifierModel):
                 f"Could not read decision_config.json for {components.model_id!r}."
             ) from error
         format_id = metadata.get("format_id") if isinstance(metadata, dict) else None
-        if format_id not in _SUPPORTED_FORMATS:
+        package = metadata.get("package") if isinstance(metadata, dict) else None
+        if (format_id, package) not in _SUPPORTED_FORMATS:
             raise InvalidModel(
-                f"Unsupported decision-model format {format_id!r}; supported formats "
+                "Unsupported decision-model metadata "
+                f"(format_id={format_id!r}, package={package!r}); supported metadata "
                 f"are {sorted(_SUPPORTED_FORMATS)!r}."
             )
         return ModelConfig(
