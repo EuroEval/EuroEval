@@ -42,11 +42,11 @@ def main(argv: list[str] | None = None) -> int:
             return status
         if attempt == MAX_ATTEMPTS - 1:
             LOGGER.error(
-                "Vercel upload failure persisted after %s attempts.", MAX_ATTEMPTS
+                f"Vercel upload failure persisted after {MAX_ATTEMPTS} attempts."
             )
             return status
         delay = RETRY_DELAYS[attempt]
-        LOGGER.warning("Known Vercel upload failure; retrying in %s seconds.", delay)
+        LOGGER.warning(f"Known Vercel upload failure; retrying in {delay} seconds.")
         time.sleep(delay)
     return 1
 
@@ -116,8 +116,8 @@ def _indicates_created_deployment(line: str) -> bool:
             "queued",
             "building",
             "ready",
-            "deploying",
             "vercel.com/",
+            ".vercel.app",
         )
     )
 

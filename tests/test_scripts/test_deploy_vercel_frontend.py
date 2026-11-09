@@ -68,7 +68,7 @@ def test_known_upload_error_recovers_with_exact_deploy_flags(
     monkeypatch.setenv("STATUSES", "1,0")
     monkeypatch.setenv(
         "OUTPUT",
-        "Uploading [3 files]...\n"
+        "Deploying euroeval/frontend\nUploading [3 files]...\n"
         "Unexpected token 'I', \"Internal S\"... is not valid JSON",
     )
     delays = []
