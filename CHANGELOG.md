@@ -15,8 +15,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- Recover missing parameter counts, vocabulary sizes and model context lengths from
-  safe Hugging Face metadata while preserving recorded effective values.
+- Recover numeric metadata using configured Hub credentials and cache locations,
+  rejecting context sentinels and preserving finite integral recorded values.
 
 ## [v18.4.0] - 2026-11-06
 

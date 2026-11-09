@@ -49,7 +49,7 @@ class Cache:
     model_url: dict[str, str | None] = field(default_factory=dict)
     release_date: dict[str, str | None] = field(default_factory=dict)
     numeric_metadata: dict[str, dict[str, int]] = field(default_factory=dict)
-    numeric_metadata_checked: set[str] = field(default_factory=set)
+    numeric_metadata_attempts: dict[str, int] = field(default_factory=dict)
 
     @classmethod
     def from_results_dir(cls, results_dir: Path) -> "Cache":
