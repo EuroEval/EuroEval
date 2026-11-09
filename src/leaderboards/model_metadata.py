@@ -31,9 +31,10 @@ from euroeval.benchmark_modules.litellm import (
     get_api_model_release_date,
 )
 from euroeval.date_utils import normalise_release_date
+from euroeval.numeric_model_metadata import positive_integer, recover_numeric_metadata
 from euroeval.string_utils import split_model_id
 
-from .cache import Cache
+from .cache import Cache, _is_hf_url_for_model
 from .constants import (
     API_MODEL_PATTERNS,
     GENERATIVE_TYPE_KEYWORDS,
@@ -103,8 +104,43 @@ def add_missing_entries(
             model_id=plain_model_id(get_model_name(record=record)), cache=cache
         )
     model_additional["release_date"] = _get_release_date(record=record, cache=cache)
+    _add_numeric_metadata(record=record, additional=model_additional, cache=cache)
 
     return record
+
+
+def _add_numeric_metadata(record: dict, additional: dict, cache: Cache) -> None:
+    """Recover absent numeric fields for a confirmed public Hub repository.
+
+    Args:
+        record:
+            The result record being enriched.
+        additional:
+            Its model metadata details.
+        cache:
+            Per-run metadata cache shared across result records.
+    """
+    model_id = plain_model_id(get_model_name(record=record))
+    model_url = additional.get("model_url")
+    if (
+        additional.get("open") is not True
+        or not model_url
+        or not _is_hf_url_for_model(model_url, model_id)
+    ):
+        return
+    fields = ("num_model_parameters", "vocabulary_size", "max_sequence_length")
+    if not any(positive_integer(additional.get(field)) is None for field in fields):
+        return
+    if model_id not in cache.numeric_metadata_checked:
+        cache.numeric_metadata_checked.add(model_id)
+        values = recover_numeric_metadata(model_id=model_id)
+        if values:
+            cache.numeric_metadata[model_id] = values
+    for field in fields:
+        if positive_integer(additional.get(field)) is None:
+            recovered = cache.numeric_metadata.get(model_id, {}).get(field)
+            if recovered is not None:
+                additional[field] = recovered
 
 
 def _generate_model_url_with_cache(model_id: str, cache: Cache) -> str | None:

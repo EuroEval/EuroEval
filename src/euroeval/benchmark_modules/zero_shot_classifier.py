@@ -32,6 +32,7 @@ from ..enums import (
 )
 from ..exceptions import InvalidBenchmark, InvalidModel, NeedsExtraInstalled
 from ..model_cache import create_model_cache_dir
+from ..numeric_model_metadata import recover_numeric_metadata
 from ..safetensors_utils import get_num_params_from_safetensors_metadata
 from ..string_utils import split_model_id
 from ..task_group_utils.cloze import parse_bare_question_and_choices
@@ -572,7 +573,10 @@ class ZeroShotClassifierModel(BenchmarkModule):
         Returns:
             The vocabulary size of the model.
         """
-        return -1
+        model_id = self.model_config.model_id
+        if self.model_config.revision:
+            model_id = f"{model_id}@{self.model_config.revision}"
+        return recover_numeric_metadata(model_id=model_id).get("vocabulary_size", -1)
 
 
 @lru_cache(maxsize=None)
