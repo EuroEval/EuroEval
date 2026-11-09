@@ -33,9 +33,11 @@ def main(argv: list[str] | None = None) -> int:
     """
     del argv
     for attempt in range(MAX_ATTEMPTS):
-        error_output, status = _run_deploy()
+        error_output, status, upload_seen, deployment_created = _run_deploy()
         if status == 0:
             return 0
+        if deployment_created or not upload_seen:
+            return status
         if not _is_known_upload_failure(output=error_output):
             return status
         if attempt == MAX_ATTEMPTS - 1:
@@ -65,11 +67,12 @@ def _is_known_upload_failure(output: str) -> bool:
     )
 
 
-def _run_deploy() -> tuple[str, int]:
-    """Stream one Vercel deploy and retain only its bounded diagnostic tail.
+def _run_deploy() -> tuple[str, int, bool, bool]:
+    """Stream a Vercel deploy while retaining phase evidence and its bounded tail.
 
     Returns:
-        The final 1,024 characters of output and the CLI exit status.
+        The output tail, CLI exit status, whether upload began, and whether
+        deployment creation began.
     """
     process = subprocess.Popen(
         DEPLOY_COMMAND,
@@ -79,12 +82,44 @@ def _run_deploy() -> tuple[str, int]:
         bufsize=1,
     )
     output_tail = ""
+    upload_seen = False
+    deployment_created = False
     if process.stdout is not None:
         for line in process.stdout:
             sys.stdout.write(line)
             sys.stdout.flush()
             output_tail = (output_tail + line)[-1024:]
-    return output_tail, process.wait()
+            upload_seen = upload_seen or "Uploading [" in line
+            deployment_created = deployment_created or _indicates_created_deployment(
+                line=line
+            )
+    return output_tail, process.wait(), upload_seen, deployment_created
+
+
+def _indicates_created_deployment(line: str) -> bool:
+    """Identify streamed Vercel output that makes another deploy unsafe.
+
+    Args:
+        line:
+            One line emitted by the Vercel CLI.
+
+    Returns:
+        Whether the CLI indicates a deployment was created.
+    """
+    lowered_line = line.lower()
+    return any(
+        marker in lowered_line
+        for marker in (
+            "inspect:",
+            "preview:",
+            "production:",
+            "queued",
+            "building",
+            "ready",
+            "deploying",
+            "vercel.com/",
+        )
+    )
 
 
 if __name__ == "__main__":

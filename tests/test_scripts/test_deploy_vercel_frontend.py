@@ -9,24 +9,21 @@ import pytest
 from deploy_vercel_frontend import main
 
 
-def test_known_upload_error_recovers_with_exact_deploy_flags(
+def test_creation_marker_evicted_from_tail_still_prevents_retry(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Retry the known failure and preserve the production deploy arguments."""
+    """Remember creation evidence even after it leaves the diagnostic tail."""
     calls_path = _fake_vercel(tmp_path=tmp_path, monkeypatch=monkeypatch)
-    monkeypatch.setenv("STATUSES", "1,0")
+    monkeypatch.setenv("STATUSES", "1")
     monkeypatch.setenv(
-        "OUTPUT", "Unexpected token 'I', \"Internal S\"... is not valid JSON"
+        "OUTPUT",
+        "Uploading [3 files]...\nInspect: https://vercel.com/deployments/123\n"
+        + "x" * 1100
+        + "\nUnexpected token 'I', \"Internal S\"... is not valid JSON",
     )
-    delays = []
-    monkeypatch.setattr("deploy_vercel_frontend.time.sleep", delays.append)
 
-    assert main([]) == 0
-    assert json.loads(calls_path.read_text()) == [
-        ["deploy", "--prebuilt", "--prod", "--yes", "--non-interactive"],
-        ["deploy", "--prebuilt", "--prod", "--yes", "--non-interactive"],
-    ]
-    assert delays == [2]
+    assert main([]) == 1
+    assert len(json.loads(calls_path.read_text())) == 1
 
 
 def _fake_vercel(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
@@ -63,6 +60,74 @@ def _fake_vercel(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return tmp_path / "calls.json"
 
 
+def test_known_upload_error_recovers_with_exact_deploy_flags(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Retry the known failure and preserve the production deploy arguments."""
+    calls_path = _fake_vercel(tmp_path=tmp_path, monkeypatch=monkeypatch)
+    monkeypatch.setenv("STATUSES", "1,0")
+    monkeypatch.setenv(
+        "OUTPUT",
+        "Uploading [3 files]...\n"
+        "Unexpected token 'I', \"Internal S\"... is not valid JSON",
+    )
+    delays = []
+    monkeypatch.setattr("deploy_vercel_frontend.time.sleep", delays.append)
+
+    assert main([]) == 0
+    assert json.loads(calls_path.read_text()) == [
+        ["deploy", "--prebuilt", "--prod", "--yes", "--non-interactive"],
+        ["deploy", "--prebuilt", "--prod", "--yes", "--non-interactive"],
+    ]
+    assert delays == [2]
+
+
+def test_matching_error_after_creation_marker_is_not_retried(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Do not retry once Vercel reports that deployment creation has begun."""
+    calls_path = _fake_vercel(tmp_path=tmp_path, monkeypatch=monkeypatch)
+    monkeypatch.setenv("STATUSES", "1")
+    monkeypatch.setenv(
+        "OUTPUT",
+        "Uploading [3 files]...\nInspect: https://vercel.com/deployments/123\n"
+        "Unexpected token 'I', \"Internal S\"... is not valid JSON",
+    )
+
+    assert main([]) == 1
+    assert len(json.loads(calls_path.read_text())) == 1
+
+
+def test_matching_error_before_upload_is_not_retried(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Do not retry a matching parse error without upload-phase evidence."""
+    calls_path = _fake_vercel(tmp_path=tmp_path, monkeypatch=monkeypatch)
+    monkeypatch.setenv("STATUSES", "1")
+    monkeypatch.setenv(
+        "OUTPUT", "Unexpected token 'I', \"Internal S\"... is not valid JSON"
+    )
+
+    assert main([]) == 1
+    assert len(json.loads(calls_path.read_text())) == 1
+
+
+def test_matching_error_during_later_build_is_not_retried(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Do not retry a matching error reported during a later build phase."""
+    calls_path = _fake_vercel(tmp_path=tmp_path, monkeypatch=monkeypatch)
+    monkeypatch.setenv("STATUSES", "1")
+    monkeypatch.setenv(
+        "OUTPUT",
+        "Uploading [3 files]...\nBuilding...\n"
+        "Unexpected token 'I', \"Internal S\"... is not valid JSON",
+    )
+
+    assert main([]) == 1
+    assert len(json.loads(calls_path.read_text())) == 1
+
+
 def test_persistent_upload_failure_stops_after_three_attempts(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -70,7 +135,9 @@ def test_persistent_upload_failure_stops_after_three_attempts(
     calls_path = _fake_vercel(tmp_path=tmp_path, monkeypatch=monkeypatch)
     monkeypatch.setenv("STATUSES", "7")
     monkeypatch.setenv(
-        "OUTPUT", "Unexpected token 'I', \"Internal S\"... is not valid JSON"
+        "OUTPUT",
+        "Uploading [3 files]...\n"
+        "Unexpected token 'I', \"Internal S\"... is not valid JSON",
     )
     delays = []
     monkeypatch.setattr("deploy_vercel_frontend.time.sleep", delays.append)
@@ -87,7 +154,9 @@ def test_retry_does_not_run_build(
     calls_path = _fake_vercel(tmp_path=tmp_path, monkeypatch=monkeypatch)
     monkeypatch.setenv("STATUSES", "1,0")
     monkeypatch.setenv(
-        "OUTPUT", "Unexpected token 'I', \"Internal S\"... is not valid JSON"
+        "OUTPUT",
+        "Uploading [3 files]...\n"
+        "Unexpected token 'I', \"Internal S\"... is not valid JSON",
     )
     monkeypatch.setattr("deploy_vercel_frontend.time.sleep", lambda _: None)
 
