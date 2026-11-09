@@ -1217,7 +1217,7 @@ def test_add_missing_entries_recovers_numeric_metadata(tmp_path: Path) -> None:
             "name": "org/model",
             "additional_details": {
                 "num_model_parameters": "-1",
-                "max_sequence_length": "1024",
+                "max_sequence_length": 1024.0,
                 "vocabulary_size": "-1",
                 "open": True,
                 "model_url": "https://huggingface.co/org/model",
@@ -1261,7 +1261,7 @@ def test_add_missing_entries_recovers_numeric_metadata(tmp_path: Path) -> None:
     details = enriched["model_info"]["additional_details"]
     assert details["num_model_parameters"] == 321908998
     assert details["vocabulary_size"] == 256000
-    assert details["max_sequence_length"] == "1024"
+    assert details["max_sequence_length"] == 1024.0
     assert details["open"] is True
     assert details["model_url"] == "https://huggingface.co/org/model"
     assert details["generative_type"] == "base"
@@ -1300,6 +1300,62 @@ def test_add_missing_entries_repairs_malformed_release_date(
     _add_missing_entries_with_complete_metadata(record=record, cache=Cache())
 
     assert record["model_info"]["additional_details"]["release_date"] == "2024-02-03"
+
+
+def test_add_missing_entries_retries_only_unresolved_numeric_metadata() -> None:
+    """Retry one failed field lookup while retaining metadata already recovered."""
+    record = {
+        "model_info": {
+            "name": "org/model",
+            "additional_details": {
+                "open": True,
+                "model_url": "https://huggingface.co/org/model",
+                "generative_type": "base",
+                "merge": False,
+                "commercially_licensed": False,
+                "trained_from_scratch": False,
+                "release_date": "2025-01-01",
+                "max_sequence_length": 10**30,
+            },
+        },
+        "generative": True,
+        "eval_library": {
+            "additional_details": {"validation_split": False, "few_shot": True}
+        },
+    }
+    cache = Cache()
+    with (
+        patch(
+            "leaderboards.model_metadata._get_release_date", return_value="2025-01-01"
+        ),
+        patch(
+            "leaderboards.model_metadata.recover_numeric_metadata",
+            side_effect=[{"vocabulary_size": 32000}, {"num_model_parameters": 12345}],
+        ) as recover,
+    ):
+        add_missing_entries(
+            record=record,
+            trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
+            cache=cache,
+        )
+        add_missing_entries(
+            record=record,
+            trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
+            cache=cache,
+        )
+        add_missing_entries(
+            record=record,
+            trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
+            cache=cache,
+        )
+
+    details = record["model_info"]["additional_details"]
+    assert details["vocabulary_size"] == 32000
+    assert details["num_model_parameters"] == 12345
+    assert "max_sequence_length" not in details
+    recover.assert_called_with(model_id="org/model")
+    assert recover.call_count == 2
+    assert cache.numeric_metadata_attempts == {"org/model": 2}
 
 
 @patch("leaderboards.model_metadata.get_api_model_release_date")

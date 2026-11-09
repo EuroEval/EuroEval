@@ -264,7 +264,11 @@ class DecisionModel(TypedChoiceClassificationModel):
         model_id = self.model_config.model_id
         if self.model_config.revision:
             model_id = f"{model_id}@{self.model_config.revision}"
-        return recover_numeric_metadata(model_id=model_id)
+        return recover_numeric_metadata(
+            model_id=model_id,
+            token=_get_hf_token(benchmark_config=self.benchmark_config),
+            cache_dir=self.benchmark_config.cache_dir,
+        )
 
     @property
     def trainer_class(self) -> t.Type["Trainer"]:

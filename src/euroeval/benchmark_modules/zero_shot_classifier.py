@@ -576,7 +576,11 @@ class ZeroShotClassifierModel(BenchmarkModule):
         model_id = self.model_config.model_id
         if self.model_config.revision:
             model_id = f"{model_id}@{self.model_config.revision}"
-        return recover_numeric_metadata(model_id=model_id).get("vocabulary_size", -1)
+        return recover_numeric_metadata(
+            model_id=model_id,
+            token=get_hf_token(api_key=self.benchmark_config.api_key),
+            cache_dir=self.benchmark_config.cache_dir,
+        ).get("vocabulary_size", -1)
 
 
 @lru_cache(maxsize=None)

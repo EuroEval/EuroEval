@@ -2,6 +2,7 @@
 
 import json
 import os
+import typing as t
 from dataclasses import replace
 from tempfile import NamedTemporaryFile
 from types import SimpleNamespace
@@ -9,7 +10,8 @@ from types import SimpleNamespace
 import pytest
 
 from euroeval.benchmark_modules.decision_model import DecisionModel
-from euroeval.data_models import BenchmarkConfig
+from euroeval.benchmark_modules.zero_shot_classifier import ZeroShotClassifierModel
+from euroeval.data_models import BenchmarkConfig, ModelConfig
 from euroeval.enums import InferenceBackend, ModelType
 from euroeval.exceptions import InvalidModel
 from euroeval.model_config import get_model_config
@@ -92,6 +94,60 @@ def test_laya_is_not_claimed_as_a_decision_model(
     assert not DecisionModel.model_exists(
         model_id="convaiinnovations/laya", benchmark_config=benchmark_config
     )
+
+
+def test_laya_vocab_size_uses_configured_hub_credentials_and_cache(
+    monkeypatch: pytest.MonkeyPatch, benchmark_config: BenchmarkConfig
+) -> None:
+    """Recover Laya vocabulary metadata with the benchmark's Hub settings."""
+    model = object.__new__(ZeroShotClassifierModel)
+    model.model_config = t.cast(
+        ModelConfig, SimpleNamespace(model_id="org/gated", revision="rev")
+    )
+    model.benchmark_config = replace(
+        benchmark_config, api_key="hub-token", cache_dir="/benchmark-cache"
+    )
+    calls: list[dict[str, object]] = []
+    monkeypatch.setattr(
+        "euroeval.benchmark_modules.zero_shot_classifier.recover_numeric_metadata",
+        lambda **kwargs: calls.append(kwargs) or {"vocabulary_size": 32000},
+    )
+
+    assert model.vocab_size == 32000
+    assert calls == [
+        {
+            "model_id": "org/gated@rev",
+            "token": "hub-token",
+            "cache_dir": "/benchmark-cache",
+        }
+    ]
+
+
+def test_numeric_metadata_uses_configured_hub_credentials_and_cache(
+    monkeypatch: pytest.MonkeyPatch, benchmark_config: BenchmarkConfig
+) -> None:
+    """Recover gated model metadata with the benchmark's Hub settings."""
+    model = object.__new__(DecisionModel)
+    model.model_config = t.cast(
+        ModelConfig, SimpleNamespace(model_id="org/gated", revision="rev")
+    )
+    model.benchmark_config = replace(
+        benchmark_config, api_key="hub-token", cache_dir="/benchmark-cache"
+    )
+    calls: list[dict[str, object]] = []
+    monkeypatch.setattr(
+        "euroeval.benchmark_modules.decision_model.recover_numeric_metadata",
+        lambda **kwargs: calls.append(kwargs) or {},
+    )
+
+    assert model.numeric_metadata == {}
+    assert calls == [
+        {
+            "model_id": "org/gated@rev",
+            "token": "hub-token",
+            "cache_dir": "/benchmark-cache",
+        }
+    ]
 
 
 @pytest.mark.parametrize(

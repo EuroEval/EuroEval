@@ -31,7 +31,11 @@ from euroeval.benchmark_modules.litellm import (
     get_api_model_release_date,
 )
 from euroeval.date_utils import normalise_release_date
-from euroeval.numeric_model_metadata import positive_integer, recover_numeric_metadata
+from euroeval.numeric_model_metadata import (
+    positive_context_length,
+    positive_integer,
+    recover_numeric_metadata,
+)
 from euroeval.string_utils import split_model_id
 
 from .cache import Cache, _is_hf_url_for_model
@@ -129,15 +133,28 @@ def _add_numeric_metadata(record: dict, additional: dict, cache: Cache) -> None:
     ):
         return
     fields = ("num_model_parameters", "vocabulary_size", "max_sequence_length")
-    if not any(positive_integer(additional.get(field)) is None for field in fields):
+    validators = {
+        "num_model_parameters": positive_integer,
+        "vocabulary_size": positive_integer,
+        "max_sequence_length": positive_context_length,
+    }
+    if not any(validators[field](additional.get(field)) is None for field in fields):
         return
-    if model_id not in cache.numeric_metadata_checked:
-        cache.numeric_metadata_checked.add(model_id)
+    if (
+        "max_sequence_length" in additional
+        and positive_context_length(additional["max_sequence_length"]) is None
+    ):
+        additional.pop("max_sequence_length")
+    if cache.numeric_metadata_attempts.get(model_id, 0) < 2:
+        cache.numeric_metadata_attempts[model_id] = (
+            cache.numeric_metadata_attempts.get(model_id, 0) + 1
+        )
         values = recover_numeric_metadata(model_id=model_id)
-        if values:
-            cache.numeric_metadata[model_id] = values
+        for field, value in values.items():
+            if validators[field](value) is not None:
+                cache.numeric_metadata.setdefault(model_id, {})[field] = value
     for field in fields:
-        if positive_integer(additional.get(field)) is None:
+        if validators[field](additional.get(field)) is None:
             recovered = cache.numeric_metadata.get(model_id, {}).get(field)
             if recovered is not None:
                 additional[field] = recovered
