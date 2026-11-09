@@ -36,6 +36,28 @@ class TestLoadRecordsFromJsonlFiles:
         assert records[0]["model_info"]["id"] == "model_a"  # ty: ignore[not-subscriptable]
         assert records[1]["model_info"]["id"] == "model_b"  # ty: ignore[not-subscriptable]
 
+    @pytest.mark.parametrize(
+        "text", ["left}{right", "x\u0085y", "x\u2028y", "x\u2029y"]
+    )
+    def test_preserves_json_string_content(self, tmp_path: Path, text: str) -> None:
+        """Do not split Unicode string content before shared parsing.
+
+        Args:
+            tmp_path:
+                Temporary directory for the JSONL file.
+            text:
+                A valid JSON string containing a non-boundary separator.
+        """
+        records = [{"model_info": {"id": "synthetic"}, "text": text}, {"last": True}]
+        path = tmp_path / "records.jsonl"
+        path.write_text(
+            "\r\n".join(json.dumps(record, ensure_ascii=False) for record in records)
+            + "\r\n",
+            encoding="utf-8",
+        )
+
+        assert load_records_from_jsonl_files(paths=[path]) == records
+
 
 class TestLoadRecordsFromResultTree:
     """Tests for load_records_from_result_tree."""
