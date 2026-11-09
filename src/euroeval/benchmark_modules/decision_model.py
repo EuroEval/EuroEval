@@ -20,6 +20,7 @@ from ..enums import (
 )
 from ..exceptions import InvalidBenchmark, InvalidModel
 from ..model_cache import create_model_cache_dir
+from ..numeric_model_metadata import recover_numeric_metadata
 from ..string_utils import split_model_id
 from ..utils import get_hf_token
 from .base import BenchmarkModule
@@ -249,13 +250,21 @@ class DecisionModel(TypedChoiceClassificationModel):
 
     @cached_property
     def model_max_length(self) -> int:
-        """Unknown context length."""
-        return -1
+        """Configured model context length, or -1 when unavailable."""
+        return self.numeric_metadata.get("max_sequence_length", -1)
 
     @cached_property
     def num_params(self) -> int:
-        """Unknown parameter count."""
-        return -1
+        """Hub parameter count, or -1 when unavailable."""
+        return self.numeric_metadata.get("num_model_parameters", -1)
+
+    @cached_property
+    def numeric_metadata(self) -> dict[str, int]:
+        """Read numeric metadata without loading repository code."""
+        model_id = self.model_config.model_id
+        if self.model_config.revision:
+            model_id = f"{model_id}@{self.model_config.revision}"
+        return recover_numeric_metadata(model_id=model_id)
 
     @property
     def trainer_class(self) -> t.Type["Trainer"]:
@@ -264,8 +273,8 @@ class DecisionModel(TypedChoiceClassificationModel):
 
     @cached_property
     def vocab_size(self) -> int:
-        """Unknown vocabulary size."""
-        return -1
+        """Configured vocabulary size, or -1 when unavailable."""
+        return self.numeric_metadata.get("vocabulary_size", -1)
 
 
 def _get_hf_token(*, benchmark_config: BenchmarkConfig) -> str | None:

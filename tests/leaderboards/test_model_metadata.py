@@ -10,6 +10,7 @@ unnecessary Hugging Face API calls.
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
@@ -28,6 +29,7 @@ from leaderboards.model_metadata import (
     is_open,
     is_trained_from_scratch,
 )
+from leaderboards.score_extraction import extract_model_metadata
 
 
 class TestCachePriority:
@@ -1201,6 +1203,77 @@ def test_add_missing_entries_preserves_existing_release_date(
     _add_missing_entries_with_complete_metadata(record=record, cache=Cache())
 
     mock_release_date.assert_not_called()
+
+
+def test_add_missing_entries_recovers_numeric_metadata(tmp_path: Path) -> None:
+    """Enrich sentinel numeric metadata without replacing effective context.
+
+    Args:
+        tmp_path:
+            Temporary directory for the mocked safe model config.
+    """
+    record = {
+        "model_info": {
+            "name": "org/model",
+            "additional_details": {
+                "num_model_parameters": "-1",
+                "max_sequence_length": "1024",
+                "vocabulary_size": "-1",
+                "open": True,
+                "model_url": "https://huggingface.co/org/model",
+                "generative_type": "base",
+                "merge": False,
+                "commercially_licensed": False,
+                "trained_from_scratch": False,
+                "release_date": "2025-01-01",
+            },
+        },
+        "generative": True,
+        "eval_library": {
+            "additional_details": {"validation_split": False, "few_shot": True}
+        },
+    }
+    cache = Cache()
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        json.dumps({"vocab_size": 256000, "max_position_embeddings": 8192}),
+        encoding="utf-8",
+    )
+    hub = MagicMock()
+    hub.model_info.return_value.safetensors = {"total": 321908998}
+
+    with (
+        patch(
+            "leaderboards.model_metadata._get_release_date", return_value="2025-01-01"
+        ),
+        patch("euroeval.numeric_model_metadata.HfApi", return_value=hub),
+        patch(
+            "euroeval.numeric_model_metadata.hf_hub_download",
+            return_value=str(config_path),
+        ),
+    ):
+        enriched = add_missing_entries(
+            record=record,
+            trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
+            cache=cache,
+        )
+
+    details = enriched["model_info"]["additional_details"]
+    assert details["num_model_parameters"] == 321908998
+    assert details["vocabulary_size"] == 256000
+    assert details["max_sequence_length"] == "1024"
+    assert details["open"] is True
+    assert details["model_url"] == "https://huggingface.co/org/model"
+    assert details["generative_type"] == "base"
+    assert details["merge"] is False
+    assert details["commercially_licensed"] is False
+    assert details["trained_from_scratch"] is False
+    assert details["release_date"] == "2025-01-01"
+
+    extracted = extract_model_metadata(results=[enriched])["org/model"]
+    assert extracted["parameters"] == 321908998
+    assert extracted["vocabulary_size"] == 256000
+    assert extracted["context"] == 1024
 
 
 @patch("leaderboards.model_metadata.get_model_release_date")

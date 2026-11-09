@@ -48,6 +48,8 @@ class Cache:
     trained_from_scratch: dict[str, bool] = field(default_factory=dict)
     model_url: dict[str, str | None] = field(default_factory=dict)
     release_date: dict[str, str | None] = field(default_factory=dict)
+    numeric_metadata: dict[str, dict[str, int]] = field(default_factory=dict)
+    numeric_metadata_checked: set[str] = field(default_factory=set)
 
     @classmethod
     def from_results_dir(cls, results_dir: Path) -> "Cache":
