@@ -92,6 +92,11 @@ PROVIDERS: list[Provider] = [
         env_var="XAI_API_KEY",
         matches=lambda m: m.startswith(("xai/", "grok-")),
     ),
+    Provider(
+        name="mistral",
+        env_var="MISTRAL_API_KEY",
+        matches=lambda m: m.startswith("mistral/"),
+    ),
 ]
 PROVIDERS_BY_NAME: dict[str, Provider] = {p.name: p for p in PROVIDERS}
 

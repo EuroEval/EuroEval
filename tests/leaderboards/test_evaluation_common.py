@@ -10,10 +10,28 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+import yaml
 
 from leaderboards import evaluation_common
 from leaderboards.constants import LANGUAGE_GROUP_CODES
 from leaderboards.evaluation_common import _killed_by_signal_note
+
+
+def test_api_provider_routing_includes_mistral_without_claiming_hf_ids() -> None:
+    """Hosted Mistral IDs route to Mistral, but HF IDs remain open models."""
+    assert (
+        evaluation_common.provider_for_model_id(
+            model_id="mistral/mistral-large-4", providers=evaluation_common.PROVIDERS
+        )
+        == evaluation_common.PROVIDERS_BY_NAME["mistral"]
+    )
+    assert evaluation_common.PROVIDERS_BY_NAME["mistral"].env_var == "MISTRAL_API_KEY"
+    assert (
+        evaluation_common.provider_for_model_id(
+            model_id="mistralai/Mistral-Large-4", providers=evaluation_common.PROVIDERS
+        )
+        is None
+    )
 
 
 def test_build_euroeval_cmd_emits_repeated_tasks() -> None:
@@ -57,6 +75,25 @@ def test_build_euroeval_cmd_rejects_tasks_and_datasets() -> None:
             trust_remote_code=False,
             tasks=["classification"],
         )
+
+
+def test_core_api_model_roster_has_two_models_per_provider() -> None:
+    """The curated API roster contains exactly the requested provider models."""
+    config_path = Path(__file__).parents[2] / "src/leaderboards/core_models.yaml"
+    config = yaml.safe_load(config_path.read_text())
+
+    assert config["api_models"] == [
+        "openai/gpt-6-astra",
+        "openai/gpt-6-luna",
+        "claude-opus-5-5",
+        "claude-haiku-5-5",
+        "gemini/gemini-3.1-pro-preview",
+        "gemini/gemini-3.8-flash",
+        "xai/grok-4.7",
+        "xai/grok-4.3",
+        "mistral/mistral-large-4",
+        "mistral/mistral-small-2603",
+    ]
 
 
 @pytest.mark.parametrize(
