@@ -75,6 +75,20 @@ models:
     pareto_categories: [all_models]
     osai_rank: null
     api: false
+  - id: mistral/mistral-large-4
+    type: encoder
+    bucket: encoder
+    parameters: null
+    pareto_categories: []
+    osai_rank: null
+    api: true
+  - id: mistral/mistral-small-2603
+    type: encoder
+    bucket: encoder
+    parameters: null
+    pareto_categories: []
+    osai_rank: null
+    api: true
   - id: syvai/claes-preview
     type: zero_shot_classifier
     bucket: encoder
@@ -432,56 +446,56 @@ models:
     pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
-  - id: claude-haiku-4-5-20251001
+  - id: claude-haiku-5-5
     type: api
     bucket: api
     parameters: null
     pareto_categories: []
     osai_rank: null
     api: true
-  - id: claude-sonnet-4-6
+  - id: claude-opus-5-5
     type: api
     bucket: api
     parameters: null
     pareto_categories: []
     osai_rank: null
     api: true
-  - id: gemini/gemini-3-pro-preview
+  - id: gemini/gemini-3.1-pro-preview
     type: api
     bucket: api
     parameters: null
     pareto_categories: []
     osai_rank: null
     api: true
-  - id: gemini/gemini-3.5-flash
+  - id: gemini/gemini-3.8-flash
     type: api
     bucket: api
     parameters: null
     pareto_categories: []
     osai_rank: null
     api: true
-  - id: openai/gpt-5.4-2026-03-05#none
+  - id: openai/gpt-6-astra
     type: api
     bucket: api
     parameters: null
     pareto_categories: []
     osai_rank: null
     api: true
-  - id: openai/gpt-5.4-mini-2026-03-17#medium
+  - id: openai/gpt-6-luna
     type: api
     bucket: api
     parameters: null
     pareto_categories: []
     osai_rank: null
     api: true
-  - id: xai/grok-4
+  - id: xai/grok-4.3
     type: api
     bucket: api
     parameters: null
     pareto_categories: []
     osai_rank: null
     api: true
-  - id: xai/grok-4-fast-reasoning
+  - id: xai/grok-4.7
     type: api
     bucket: api
     parameters: null
