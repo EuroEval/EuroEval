@@ -10,7 +10,7 @@ issue_number: 1186
 # When the updater last ran. ISO-8601 date. The `generate_leaderboards`
 # script reads this and prompts the user to refresh the list if it's
 # older than 30 days.
-last_updated: 2026-09-10
+last_updated: 2026-11-09
 
 # Hardcoded list of API (litellm) model identifiers that should always be
 # in the core list. One small and one large from each major lab we want
@@ -65,66 +65,17 @@ models:
     pareto_categories: []
     osai_rank: 8
     api: false
-  - id: distilbert/distilbert-base-multilingual-cased
-    type: encoder
+  - id: convaiinnovations/laya-multilingual
+    type: zero_shot_classifier
     bucket: encoder
-    parameters: 135445755
+    parameters: 321908998
     pareto_categories: [all_models]
     osai_rank: null
     api: false
-  - id: fresh-electra-small
-    type: encoder
+  - id: syvai/claes-preview
+    type: zero_shot_classifier
     bucket: encoder
-    parameters: 13738755
-    pareto_categories: [all_models]
-    osai_rank: null
-    api: false
-  - id: Geotrend/distilbert-base-25lang-cased
-    type: encoder
-    bucket: encoder
-    parameters: 108867577
-    pareto_categories: [all_models]
-    osai_rank: null
-    api: false
-  - id: google-bert/bert-base-multilingual-cased
-    type: encoder
-    bucket: encoder
-    parameters: 178566653
-    pareto_categories: [all_models]
-    osai_rank: null
-    api: false
-  - id: intfloat/multilingual-e5-base
-    type: encoder
-    bucket: encoder
-    parameters: 278044162
-    pareto_categories: [all_models]
-    osai_rank: null
-    api: false
-  - id: intfloat/multilingual-e5-large
-    type: encoder
-    bucket: encoder
-    parameters: 559890946
-    pareto_categories: [all_models]
-    osai_rank: null
-    api: false
-  - id: jhu-clsp/mmBERT-base
-    type: encoder
-    bucket: encoder
-    parameters: 307531009
-    pareto_categories: [all_models]
-    osai_rank: null
-    api: false
-  - id: jhu-clsp/mmBERT-small
-    type: encoder
-    bucket: encoder
-    parameters: 140641921
-    pareto_categories: [all_models]
-    osai_rank: null
-    api: false
-  - id: microsoft/mdeberta-v3-base
-    type: encoder
-    bucket: encoder
-    parameters: 278810113
+    parameters: 321908998
     pareto_categories: [all_models]
     osai_rank: null
     api: false
@@ -133,13 +84,13 @@ models:
     bucket: encoder
     parameters: 2424375168
     pareto_categories: []
-    osai_rank: 3
+    osai_rank: 5
     api: false
-  - id: danish-foundation-models/DFM-Mimir
+  - id: danish-foundation-models/DFM-Mimir-v1.5
     type: instruction_tuned_decoder
     bucket: tiny
     parameters: 1786775040
-    pareto_categories: [all_models, generative]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: google/gemma-3-1b-pt
@@ -153,105 +104,84 @@ models:
     type: base_decoder
     bucket: tiny
     parameters: 268098176
-    pareto_categories: [all_models, generative]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: google/gemma-3-270m-it
     type: instruction_tuned_decoder
     bucket: tiny
     parameters: 268098176
-    pareto_categories: [all_models, generative]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: LiquidAI/LFM2-350M
     type: instruction_tuned_decoder
     bucket: tiny
     parameters: 354483968
-    pareto_categories: [all_models, generative]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: PleIAs/Monad
     type: base_decoder
     bucket: tiny
     parameters: 56656128
-    pareto_categories: [all_models, generative]
-    osai_rank: null
-    api: false
-  - id: PleIAs/Pleias-350m-Preview
-    type: base_decoder
-    bucket: tiny
-    parameters: 353424384
-    pareto_categories: [all_models]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: Qwen/Qwen3-0.6B#no-thinking
     type: instruction_tuned_decoder
     bucket: tiny
     parameters: 751632384
-    pareto_categories: [all_models, generative]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: Qwen/Qwen3.5-0.8B
     type: instruction_tuned_decoder
     bucket: tiny
     parameters: 873436192
-    pareto_categories: [all_models, generative]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: Qwen/Qwen3.5-0.8B-Base
-    type: instruction_tuned_decoder
+    type: base_decoder
     bucket: tiny
-    parameters: 873438784
-    pareto_categories: [all_models, generative]
+    parameters: 873436192
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: swiss-ai/Apertus-v1.1-0.5B
     type: base_decoder
     bucket: tiny
     parameters: 438349392
-    pareto_categories: [all_models, generative]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: swiss-ai/Apertus-v1.1-0.5B-Instruct
     type: instruction_tuned_decoder
     bucket: tiny
     parameters: 572567120
-    pareto_categories: [all_models, generative]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: swiss-ai/Apertus-v1.1-1.5B
     type: base_decoder
     bucket: tiny
     parameters: 1510019136
-    pareto_categories: [all_models, generative]
-    osai_rank: null
-    api: false
-  - id: tiiuae/Falcon-H1-Tiny-Multilingual-100M-Base
-    type: base_decoder
-    bucket: tiny
-    parameters: 107908288
-    pareto_categories: [all_models]
-    osai_rank: null
-    api: false
-  - id: tiiuae/Falcon-H1-Tiny-Multilingual-100M-Instruct
-    type: instruction_tuned_decoder
-    bucket: tiny
-    parameters: 107908288
-    pareto_categories: [all_models]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: google/gemma-4-E4B-it
     type: instruction_tuned_decoder
     bucket: small
     parameters: 7996157418
-    pareto_categories: [all_models, generative]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: HuggingFaceTB/SmolLM3-3B-Base
     type: base_decoder
     bucket: small
     parameters: 3075098624
-    pareto_categories: [all_models, generative]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: meta-llama/Llama-3.1-8B
@@ -265,49 +195,42 @@ models:
     type: instruction_tuned_decoder
     bucket: small
     parameters: 4022468096
-    pareto_categories: [all_models, generative]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: mistralai/Ministral-3-8B-Base-2512
-    type: instruction_tuned_decoder
+    type: base_decoder
     bucket: small
     parameters: 8918026240
-    pareto_categories: [all_models, generative]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: mistralai/Ministral-3-8B-Instruct-2512
     type: instruction_tuned_decoder
     bucket: small
     parameters: 7415529472
-    pareto_categories: [all_models, generative]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: mistralai/Ministral-3-8B-Reasoning-2512
     type: instruction_tuned_decoder
     bucket: small
     parameters: 8918026240
-    pareto_categories: [all_models, generative]
+    pareto_categories: [generative, understanding]
     osai_rank: null
     api: false
   - id: nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16
     type: reasoning_decoder
     bucket: small
     parameters: 3973556832
-    pareto_categories: [all_models, generative]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: nvidia/NVIDIA-Nemotron-3-Nano-4B-FP8
     type: reasoning_decoder
     bucket: small
-    parameters: 3973556968
-    pareto_categories: [all_models, generative]
-    osai_rank: null
-    api: false
-  - id: Qwen/Qwen3-1.7B#no-thinking
-    type: instruction_tuned_decoder
-    bucket: small
-    parameters: 2031739904
-    pareto_categories: [all_models, generative]
+    parameters: 2680100864
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: Qwen/Qwen3-4B#no-thinking
@@ -321,49 +244,63 @@ models:
     type: reasoning_decoder
     bucket: small
     parameters: 4022468096
-    pareto_categories: [all_models, generative]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: Qwen/Qwen3-8B#no-thinking
     type: instruction_tuned_decoder
     bucket: small
     parameters: 8190735360
-    pareto_categories: [all_models, generative]
+    pareto_categories: [generative]
     osai_rank: null
     api: false
   - id: Qwen/Qwen3.5-2B
     type: instruction_tuned_decoder
     bucket: small
     parameters: 2274067232
-    pareto_categories: [all_models, generative]
+    pareto_categories: [generative]
+    osai_rank: null
+    api: false
+  - id: Qwen/Qwen3.5-4B
+    type: reasoning_decoder
+    bucket: small
+    parameters: 4659861248
+    pareto_categories: [all_models]
     osai_rank: null
     api: false
   - id: Qwen/Qwen3.5-4B-Base
-    type: reasoning_decoder
+    type: base_decoder
     bucket: small
-    parameters: 4659865088
-    pareto_categories: [all_models, generative]
+    parameters: 4659861248
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: Qwen/Qwen3.5-9B
     type: reasoning_decoder
     bucket: small
-    parameters: 9653104368
-    pareto_categories: [generative]
+    parameters: 9653100528
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: Qwen/Qwen3.5-9B-Base
-    type: reasoning_decoder
+    type: base_decoder
     bucket: small
-    parameters: 9653104368
-    pareto_categories: [generative]
+    parameters: 9653100528
+    pareto_categories: [generative, understanding]
+    osai_rank: null
+    api: false
+  - id: speakleash/Bielik-Minitron-7B-v3.0-Instruct
+    type: instruction_tuned_decoder
+    bucket: small
+    parameters: 7477727232
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: swiss-ai/Apertus-v1.1-4B
     type: base_decoder
     bucket: small
     parameters: 3825362016
-    pareto_categories: [all_models, generative]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: yulan-team/YuLan-Mini-Instruct
@@ -371,7 +308,7 @@ models:
     bucket: small
     parameters: 2424375168
     pareto_categories: []
-    osai_rank: 4
+    osai_rank: 6
     api: false
   - id: allenai/Olmo-3-1125-32B
     type: base_decoder
@@ -391,77 +328,77 @@ models:
     type: base_decoder
     bucket: medium
     parameters: 12187325040
-    pareto_categories: [all_models, generative]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: google/gemma-3-27b-pt
     type: base_decoder
     bucket: medium
     parameters: 27432406640
-    pareto_categories: [all_models, generative]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: google/gemma-4-12B-it
     type: instruction_tuned_decoder
     bucket: medium
     parameters: 11959730224
-    pareto_categories: [all_models, generative]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: google/gemma-4-26B-A4B-it
     type: instruction_tuned_decoder
     bucket: medium
     parameters: 25805936206
-    pareto_categories: [all_models, generative]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: google/gemma-4-31B-it
     type: instruction_tuned_decoder
     bucket: medium
     parameters: 31273088876
-    pareto_categories: [all_models, generative]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: mistralai/Ministral-3-14B-Base-2512
-    type: instruction_tuned_decoder
+    type: base_decoder
     bucket: medium
     parameters: 13945031680
-    pareto_categories: [all_models, generative]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: mistralai/Mistral-Small-3.1-24B-Instruct-2503
     type: instruction_tuned_decoder
     bucket: medium
     parameters: 24011361280
-    pareto_categories: [generative]
+    pareto_categories: [all_models, generative]
     osai_rank: null
     api: false
   - id: mistralai/Mistral-Small-3.2-24B-Instruct-2506
     type: instruction_tuned_decoder
     bucket: medium
     parameters: 24011361280
-    pareto_categories: [all_models, generative]
-    osai_rank: null
-    api: false
-  - id: openai/gpt-oss-20b#medium
-    type: reasoning_decoder
-    bucket: medium
-    parameters: 10152345600
-    pareto_categories: [all_models]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: Qwen/Qwen3.6-27B-FP8
     type: reasoning_decoder
     bucket: medium
     parameters: 27782935472
-    pareto_categories: [all_models, generative]
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: Qwen/Qwen3.8-27B
     type: reasoning_decoder
     bucket: medium
     parameters: 27781427952
-    pareto_categories: [all_models, generative]
+    pareto_categories: [all_models, generative, understanding]
+    osai_rank: null
+    api: false
+  - id: speakleash/Bielik-11B-v3.0-Instruct
+    type: instruction_tuned_decoder
+    bucket: medium
+    parameters: 11168796672
+    pareto_categories: [all_models, generative, understanding]
     osai_rank: null
     api: false
   - id: swiss-ai/Apertus-70B-2509
@@ -469,14 +406,28 @@ models:
     bucket: large
     parameters: 70599864480
     pareto_categories: []
-    osai_rank: 5
+    osai_rank: 1
     api: false
   - id: swiss-ai/Apertus-70B-Instruct-2509
     type: instruction_tuned_decoder
     bucket: large
     parameters: 70599864480
     pareto_categories: []
-    osai_rank: 6
+    osai_rank: 2
+    api: false
+  - id: deepseek/deepseek-flash#no-thinking
+    type: instruction_tuned_decoder
+    bucket: xlarge
+    parameters: 552000000000
+    pareto_categories: [all_models, generative, understanding]
+    osai_rank: null
+    api: false
+  - id: zai-org/GLM-5.3-Flash
+    type: reasoning_decoder
+    bucket: xlarge
+    parameters: 321323031390
+    pareto_categories: [all_models, generative, understanding]
+    osai_rank: null
     api: false
   - id: claude-haiku-4-5-20251001
     type: api
