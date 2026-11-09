@@ -32,7 +32,7 @@ HF_TOKEN          Resolved via :func:`evaluation_common.resolve_hf_token`.
 
 Required env vars (API models, only with --include-api)
 -------------------------------------------------------
-OPENAI_API_KEY / ANTHROPIC_API_KEY / GEMINI_API_KEY / XAI_API_KEY
+OPENAI_API_KEY / ANTHROPIC_API_KEY / GEMINI_API_KEY / XAI_API_KEY / MISTRAL_API_KEY
 """
 
 from __future__ import annotations
@@ -156,7 +156,8 @@ DOC_UNOFFICIAL_PREFIX = "Unofficial: "
 @click.option(
     "--api-providers",
     default=None,
-    help="Comma-separated provider names to run (openai, anthropic, google, xai). "
+    help="Comma-separated provider names to run "
+    "(openai, anthropic, google, xai, mistral). "
     "Requires --include-api.",
 )
 @click.option(

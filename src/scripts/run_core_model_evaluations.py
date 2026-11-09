@@ -24,6 +24,7 @@ OPENAI_API_KEY     OpenAI models (``openai/...``).
 ANTHROPIC_API_KEY  Anthropic models (``claude-...``).
 GEMINI_API_KEY     Google models (``gemini/...``).
 XAI_API_KEY        xAI models (``xai/...``).
+MISTRAL_API_KEY    Mistral models (``mistral/...``).
 """
 
 from __future__ import annotations
@@ -72,7 +73,8 @@ logger = logging.getLogger("run_core_model_evaluations")
 @click.option(
     "--api-providers",
     default=None,
-    help="Comma-separated provider names to run (openai, anthropic, google, xai). "
+    help="Comma-separated provider names to run "
+    "(openai, anthropic, google, xai, mistral). "
     "Skips the interactive prompt. Requires --include-api.",
 )
 @click.option(
