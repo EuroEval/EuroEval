@@ -521,6 +521,62 @@ class TestExecuteJobsResultDetection:
         assert len(failed) == 1
         assert "oom-model" in failed[0]
 
+    @pytest.mark.parametrize(
+        "text", ["left}{right", "x\u0085y", "x\u2028y", "x\u2029y"]
+    )
+    def test_valid_quoted_content_counts_as_evaluated(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, text: str
+    ) -> None:
+        """Valid JSON string content must not hide a matching result.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            text:
+                Quoted string content that is not a physical record boundary.
+        """
+        Job = swap_leaderboard_dataset.Job
+        benchmark_results = tmp_path / "euroeval_benchmark_results.jsonl"
+        record = {
+            "model_info": {"name": "good-model", "additional_details": {"note": text}},
+            "eval_library": {
+                "additional_details": {"dataset": "dutch-cola", "languages": ["nl"]}
+            },
+        }
+        benchmark_results.write_text(
+            json.dumps(record, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset, name="REPO_ROOT", value=tmp_path
+        )
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="EUROEVAL_BENCHMARK_RESULTS_PATH",
+            value=benchmark_results,
+        )
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="run_euroeval",
+            value=lambda **kwargs: (0, "ok"),
+        )
+        jobs = [
+            Job(
+                model_id="good-model",
+                languages=("nl",),
+                is_api=False,
+                evaluate_test_split=True,
+                zero_shot=False,
+                datasets=("dutch-cola",),
+            )
+        ]
+        evaluated, failed = swap_leaderboard_dataset.execute_jobs(
+            jobs=jobs, datasets=("dutch-cola",), gpu_memory_utilization=None
+        )
+        assert failed == []
+        assert evaluated == ["good-model"]
+
 
 class TestLoadCorpusAndBuildEvalJobs:
     """Tests for load_corpus and build_eval_jobs functions."""
