@@ -72,6 +72,13 @@ def parse_jsonl_lines(
 def _split_jsonl_objects(line: str) -> list[str]:
     """Split glued objects without rewriting JSON string values.
 
+    Legacy result files can contain adjacent JSON objects without a newline,
+    such as `{"first": 1}{"second": 2}`. Recover that boundary, and legacy
+    unquoted line separators, without splitting quoted text such as
+    `{"note": "left}{right"}` or Unicode line separators inside strings.
+    This is not general recovery of malformed JSON; an unterminated quoted
+    string can hide later boundaries.
+
     Args:
         line:
             One physical JSONL line, possibly containing glued objects.
