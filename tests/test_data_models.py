@@ -268,6 +268,35 @@ class TestBenchmarkResult:
         assert BenchmarkResult.from_dict(config) == expected
 
     @pytest.mark.parametrize(
+        "model", ["synthetic}{model", "x\u0085y", "x\u2028y", "x\u2029y"]
+    )
+    def test_jsonl_writer_reader_preserves_model_name(
+        self, benchmark_result: BenchmarkResult, tmp_path: Path, model: str
+    ) -> None:
+        """Round-trip valid quoted content through the real JSONL writer and reader.
+
+        Args:
+            benchmark_result:
+                A synthetic benchmark result without model execution.
+            tmp_path:
+                Temporary directory for the result file.
+            model:
+                Model name whose quoted content is not a record boundary.
+        """
+        original = benchmark_result.model_copy(
+            update={"model": model, "results": {"raw": [], "total": {}}}
+        )
+        path = tmp_path / "results.jsonl"
+        original.append_to_results(results_path=path)
+
+        restored = BenchmarkResult.from_jsonl(results_path=path)
+
+        assert len(restored) == 1
+        assert restored[0].model == model
+        assert restored[0].dataset == original.dataset
+        assert restored[0].results == original.results
+
+    @pytest.mark.parametrize(
         ("release_date", "expected"),
         [("2024-02-03", "2024-02-03"), ("not-a-date", None), (None, None)],
     )

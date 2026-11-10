@@ -186,7 +186,7 @@ def read_jsonl_lines(path: Path) -> list[str]:
         return []
     return [
         line.rstrip("\n")
-        for line in path.read_text(encoding="utf-8").splitlines()
+        for line in path.read_text(encoding="utf-8").split("\n")
         if line.strip()
     ]
 

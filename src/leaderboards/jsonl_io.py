@@ -22,7 +22,7 @@ def load_records_from_jsonl_files(paths: list[Path]) -> list[dict[str, object]]:
     for path in paths:
         records.extend(
             parse_jsonl_lines(
-                lines=path.read_text(encoding="utf-8").splitlines(), source=str(path)
+                lines=path.read_text(encoding="utf-8").split("\n"), source=str(path)
             )
         )
     return records
