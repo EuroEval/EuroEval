@@ -144,6 +144,7 @@ class Benchmarker:
         max_context_length: int | None = None,
         vocabulary_size: int | None = None,
         num_parameters: int | None = None,
+        served_model: str | None = None,
     ) -> None:
         """Initialise the benchmarker.
 
@@ -246,6 +247,9 @@ class Benchmarker:
             num_parameters (optional):
                 Override for the number of parameters in the model. If None, the value
                 will be inferred automatically from the model. Defaults to None.
+            served_model (optional):
+                Expected identity reported by a typed inference endpoint. Defaults to
+                None.
 
         Raises:
             ValueError:
@@ -301,6 +305,7 @@ class Benchmarker:
             max_context_length=max_context_length,
             vocabulary_size=vocabulary_size,
             num_parameters=num_parameters,
+            served_model=served_model,
         )
 
         self.benchmark_config = build_benchmark_config(

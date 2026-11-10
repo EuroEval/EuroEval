@@ -15,6 +15,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Pass the expected served model identity through the public benchmarker configuration.
 - Recover numeric metadata using configured Hub credentials and cache locations,
   rejecting context sentinels and preserving finite integral recorded values.
 

@@ -1045,7 +1045,8 @@ def test_plan_does_not_run_commands_or_print_secret_values(
     assert "EU creation requires an eligible organisation plan" in output
     assert "US requires an explicit data-residency decision" in output
     assert "metadata cannot verify an existing bucket's region" in output
-    assert "euroeval_version=18.3.0" in output
+    assert "euroeval_version=" in output
+    assert operations.normalise_version(operations.source_versions()[0]) in output
 
 
 def test_redis_requires_exact_pong_and_never_prints_url(
