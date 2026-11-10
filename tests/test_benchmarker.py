@@ -1882,11 +1882,41 @@ def test_mixed_models_keep_non_encoder_split_setting(
     assert observed == {"encoder": True, "generative": False, "classifier": False}
 
 
-def test_served_model_reaches_benchmark_config_factory() -> None:
-    """The benchmark call's served identity reaches the endpoint configuration."""
-    configured_benchmarker = Benchmarker(served_model="claes-v1")
+def test_served_model_reaches_benchmark_config_factory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The benchmark call preserves and overrides constructor served identity.
 
-    assert configured_benchmarker.benchmark_config.served_model == "claes-v1"
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing model discovery with a deterministic stub.
+    """
+    configured_benchmarker = Benchmarker(served_model="claes-v1")
+    observed: list[str | None] = []
+
+    def capture_config(
+        model_ids: Sequence[str], benchmark_config: BenchmarkConfig
+    ) -> list[ModelConfig]:
+        """Capture the config supplied to model discovery.
+
+        Args:
+            model_ids:
+                The selected model identifiers.
+            benchmark_config:
+                The config produced by the public benchmark call.
+
+        Returns:
+            No model configs, preventing model or network access.
+        """
+        observed.append(benchmark_config.served_model)
+        return []
+
+    monkeypatch.setattr(configured_benchmarker, "_fetch_model_configs", capture_config)
+
+    configured_benchmarker.benchmark(model="dummy")
+    configured_benchmarker.benchmark(model="dummy", served_model="override-v1")
+
+    assert observed == ["claes-v1", "override-v1"]
 
 
 def test_zero_shot_canary_standalone_reuses_loaded_model_metadata(
