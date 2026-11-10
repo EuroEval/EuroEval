@@ -208,7 +208,9 @@ def test_publish_wrapper_orders_all_stages_and_stops_on_release_failure(
         i for i, line in enumerate(commands) if 'package name = "ScandEval"' in line
     )
     dev = next(i for i, line in enumerate(commands) if "--add-dev" in line)
-    frontend = next(i for i, line in enumerate(commands) if "vercel deploy" in line)
+    frontend = next(
+        i for i, line in enumerate(commands) if "deploy_vercel_frontend.py" in line
+    )
     assert euro < scandeval < release < dev < frontend
     assert "--release-only 18.4.0" in commands[release]
     assert (tmp_path / "src/euroeval").is_dir()
@@ -226,7 +228,7 @@ def test_publish_wrapper_orders_all_stages_and_stops_on_release_failure(
     assert failed.returncode != 0
     failure_commands = log.read_text(encoding="utf-8")
     assert "--add-dev" not in failure_commands
-    assert "vercel deploy" not in failure_commands
+    assert "deploy_vercel_frontend.py" not in failure_commands
 
     log.unlink()
     parallel_goals = subprocess.run(

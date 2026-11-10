@@ -1882,13 +1882,11 @@ def test_mixed_models_keep_non_encoder_split_setting(
     assert observed == {"encoder": True, "generative": False, "classifier": False}
 
 
-def test_served_model_reaches_benchmark_config_factory(
-    benchmarker: Benchmarker,
-) -> None:
+def test_served_model_reaches_benchmark_config_factory() -> None:
     """The benchmark call's served identity reaches the endpoint configuration."""
-    config = benchmarker._build_benchmark_config(served_model="claes-v1")
+    configured_benchmarker = Benchmarker(served_model="claes-v1")
 
-    assert config.served_model == "claes-v1"
+    assert configured_benchmarker.benchmark_config.served_model == "claes-v1"
 
 
 def test_zero_shot_canary_standalone_reuses_loaded_model_metadata(
