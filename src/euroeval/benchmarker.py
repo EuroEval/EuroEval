@@ -1367,7 +1367,9 @@ class Benchmarker:
                 api_version=_get_param(
                     "api_version", self.benchmark_config_default_params.api_version
                 ),
-                served_model=params.get("served_model"),
+                served_model=_get_param(
+                    "served_model", self.benchmark_config_default_params.served_model
+                ),
                 trust_remote_code=_get_param(
                     "trust_remote_code",
                     self.benchmark_config_default_params.trust_remote_code,
