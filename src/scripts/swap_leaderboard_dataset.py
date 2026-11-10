@@ -1463,7 +1463,7 @@ class _BenchmarkResultKeys:
         chunk = data[self._offset : end].decode("utf-8", errors="replace")
         self._offset = end
         for record in parse_jsonl_lines(
-            lines=chunk.splitlines(), source=str(path), strict=False
+            lines=chunk.split("\n"), source=str(path), strict=False
         ):
             model_info = t.cast(dict[str, object], record.get("model_info", {}))
             model = plain_model_id(
@@ -2299,7 +2299,7 @@ def sync_results_from_bucket(
     # First read existing lines to avoid duplicates
     existing_lines: set[str] = set()
     if NEW_RESULTS_PATH.exists():
-        existing_lines = set(NEW_RESULTS_PATH.read_text(encoding="utf-8").splitlines())
+        existing_lines = set(NEW_RESULTS_PATH.read_text(encoding="utf-8").split("\n"))
 
     # Use merge_results to consolidate tree into a temp location, then append
     # unique records to NEW_RESULTS_PATH
@@ -2313,7 +2313,7 @@ def sync_results_from_bucket(
         if record_count > 0:
             # Read merged records and append unique ones
             new_lines: list[str] = []
-            for line in tmp_path.read_text(encoding="utf-8").splitlines():
+            for line in tmp_path.read_text(encoding="utf-8").split("\n"):
                 if line and line not in existing_lines:
                     new_lines.append(line)
 

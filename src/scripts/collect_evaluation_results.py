@@ -338,7 +338,7 @@ def _load_manual_results() -> list[str]:
         return []
     manual_lines = [
         line
-        for line in NEW_RESULTS_PATH.read_text(encoding="utf-8").splitlines()
+        for line in NEW_RESULTS_PATH.read_text(encoding="utf-8").split("\n")
         if line.strip()
     ]
     if manual_lines:
@@ -507,7 +507,7 @@ def _process_new_results(
         logger.warning(f"Results file {new_results_path} does not exist.")
         return
 
-    new_lines = new_results_path.read_text(encoding="utf-8").splitlines()
+    new_lines = new_results_path.read_text(encoding="utf-8").split("\n")
     logger.info(f"Processing {len(new_lines):,} new result lines...")
 
     for line_number, line in enumerate(new_lines, start=1):

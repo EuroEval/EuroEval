@@ -16,6 +16,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - Pass the expected served model identity through the public benchmarker configuration.
+- Preserve quoted `}{` in the shared JSONL result parser and quoted Unicode line
+  separators in its readers, queue input, collector and result synchronization.
+  Recovery of concatenated JSON objects remains supported by the shared parser.
 - Recover numeric metadata using configured Hub credentials and cache locations,
   rejecting context sentinels and preserving finite integral recorded values.
 

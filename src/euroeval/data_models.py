@@ -208,7 +208,7 @@ class BenchmarkResult(pydantic.BaseModel):
         if not results_path.exists():
             return []
 
-        lines = results_path.read_text(encoding="utf-8").splitlines()
+        lines = results_path.read_text(encoding="utf-8").split("\n")
         records = parse_jsonl_lines(lines=lines, source=str(results_path), strict=False)
         return [cls.from_dict(record) for record in records]
 
