@@ -19,6 +19,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Preserve quoted `}{` in the shared JSONL result parser and quoted Unicode line
   separators in its readers, queue input, collector and result synchronization.
   Recovery of concatenated JSON objects remains supported by the shared parser.
+  This was contributed by @anishpentyala ✨
 - Recover numeric metadata using configured Hub credentials and cache locations,
   rejecting context sentinels and preserving finite integral recorded values.
 
