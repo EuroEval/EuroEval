@@ -5,6 +5,7 @@ import { validateRecord } from "../../../api/worker/_lib/eee.ts";
 import { fitsGpu, resolveModel, selectedGpu } from "../../../api/worker/_lib/model.ts";
 import { putLease, reclaimExpiredLease, releaseResultReservations, reserveResultIdentity } from "../../../api/worker/_lib/redis.ts";
 import { bindPromotionDecision, promotionIdentityKey, reservePromotionReservation } from "../../../api/worker/_lib/promotion.ts";
+import generatedScopePolicy from "../../../api/worker/_lib/scope-policy.generated.ts";
 
 test("resolves immutable Hub capability evidence without suffix heuristics", async () => {
   const originalFetch = globalThis.fetch;
@@ -191,12 +192,15 @@ test("promotion evidence binds safe canonical paths to digests", () => {
 });
 
 test("generated trusted scopes are exact-language and versioned", () => {
-  const scope = expectedScope("18.3.0", "encoder", "da");
+  const policy = generatedScopePolicy.policies.find((entry) => entry.model_type === "encoder" && entry.language === "da");
+  assert.ok(policy);
+  const version = policy.euroeval_version;
+  const scope = expectedScope(version, "encoder", "da");
   assert.equal(scope.language, "da");
-  assert.equal(scope.policy_version, "volunteer-scope/18.3.0");
+  assert.equal(scope.policy_version, `volunteer-scope/${version}`);
   assert.ok(scope.allowed_identity_suffix_sets.length > 0);
   assert.ok(scope.allowed_identity_suffix_sets[0].length > 0);
-  assert.throws(() => expectedScope("18.3.0.dev0", "encoder", "da"), /no trusted expected scope/);
+  assert.throws(() => expectedScope(`${version}.dev0`, "encoder", "da"), /no trusted expected scope/);
 });
 
 test("trusted policy preserves exact runtime alternatives", () => {
