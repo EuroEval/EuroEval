@@ -42,4 +42,5 @@ EuroEval is maintained by [Dan Saattrup Smart](https://www.saattrupdan.com/). It
 as a hobby project in 2021, and from 2022 to 2026 it was further developed at the
 [Alexandra Institute](https://alexandra.dk), funded by the EU Horizon project
 [TrustLLM](https://trustllm.eu/) and the [Danish Foundation Models
-project](https://www.foundationmodels.dk/).
+project](https://www.foundationmodels.dk/). Since 2026 it has been developed at
+[syv.ai](https://syv.ai/), an AI consultancy company in Copenhagen, Denmark.
