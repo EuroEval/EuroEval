@@ -10,7 +10,7 @@ export function authCredential(req: Request): string {
 export async function authenticate(req: Request): Promise<WorkerIdentity> {
   const credential = authCredential(req); const hash = await sha256(credential);
   const worker = await redisGet<{ contributor: string }>(`euroeval:worker:credential:${hash}`);
-  if (!worker?.contributor || worker.contributor.toLowerCase() === "saattrupdan") throw new BrokerError(401, "Worker credential is invalid or revoked.");
+  if (!worker?.contributor) throw new BrokerError(401, "Worker credential is invalid or revoked.");
   return { hash, contributor: worker.contributor };
 }
 export async function enforceRateLimit(key: string, limit: number, windowSeconds: number): Promise<void> {
