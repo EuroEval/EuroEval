@@ -83,7 +83,7 @@ def test_core_api_model_roster_has_two_models_per_provider() -> None:
     config = yaml.safe_load(config_path.read_text())
 
     assert config["api_models"] == [
-        "openai/gpt-6-astra",
+        "openai/gpt-6.1-sol",
         "openai/gpt-6-luna",
         "claude-opus-5-5",
         "claude-haiku-5-5",
