@@ -134,10 +134,8 @@ useHead(() => {
       <a href="https://www.saattrupdan.com/" target="_blank" rel="noopener">
         Dan Saattrup Smart
       </a>
-      at the
-      <a href="https://alexandra.dk/" target="_blank" rel="noopener">
-        Alexandra Institute
-      </a>
+      at
+      <a href="https://syv.ai" target="_blank" rel="noopener">syv.ai</a>
     </footer>
   </div>
 </template>
