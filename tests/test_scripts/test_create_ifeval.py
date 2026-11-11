@@ -54,7 +54,13 @@ def test_main_selects_requested_languages_without_deleting_repositories(
         datasets.append(dataset)
         return dataset
 
+    uploaded_repositories: list[str] = []
     monkeypatch.setattr(create_ifeval, "load_dataset", load_dataset)
+    monkeypatch.setattr(
+        create_ifeval,
+        "preflight_private_upload",
+        lambda *, repository_id: uploaded_repositories.append(repository_id),
+    )
     monkeypatch.setattr(
         create_ifeval, "DatasetDict", lambda splits: {"test": splits["test"]}
     )
@@ -67,6 +73,7 @@ def test_main_selects_requested_languages_without_deleting_repositories(
         ["text", "target_text"],
         ["text", "target_text"],
     ]
+    assert uploaded_repositories == ["EuroEval/ifeval-nb", "EuroEval/ifeval-nn"]
     assert [dataset.push_arguments for dataset in datasets] == [
         {"repo_id": "EuroEval/ifeval-nb", "private": True},
         {"repo_id": "EuroEval/ifeval-nn", "private": True},

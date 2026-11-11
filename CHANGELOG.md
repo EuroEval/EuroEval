@@ -17,6 +17,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Retry transient Hugging Face Hub failures when checking model availability, and
+  propagate exhausted rate limits and server errors instead of treating models as
+  missing.
 - Pass the expected served model identity through the public benchmarker configuration.
 - Preserve quoted `}{` in the shared JSONL result parser and quoted Unicode line
   separators in its readers, queue input, collector and result synchronization.
