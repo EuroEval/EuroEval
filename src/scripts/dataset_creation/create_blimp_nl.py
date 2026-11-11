@@ -107,7 +107,12 @@ def main() -> None:
             if len(selected) >= limit // 2:
                 break
         examples = [
-            {"text": pair[key], "label": label}
+            {
+                "text": pair[key],
+                "label": label,
+                "linguistic_phenomenon": pair["linguistic_phenomenon"],
+                "paradigm": pair["paradigm"],
+            }
             for pair in selected[: limit // 2]
             for key, label in (
                 ("sentence_good", "correct"),
