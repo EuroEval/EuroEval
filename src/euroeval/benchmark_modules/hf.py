@@ -1623,6 +1623,10 @@ def _fetch_model_info_from_hub(
 
     Returns:
         Model info object, or None if not found or access denied.
+
+    Raises:
+        HfHubHTTPError:
+            If a transient server or rate-limit error persists after retries.
     """
     num_attempts = 3
     errors: list[Exception] = list()
@@ -1647,7 +1651,23 @@ def _fetch_model_info_from_hub(
                     level=logging.DEBUG,
                 )
                 return None
-        except (RepositoryNotFoundError, HFValidationError, HfHubHTTPError):
+        except (RepositoryNotFoundError, HFValidationError):
+            return None
+        except HfHubHTTPError as e:
+            status_code = getattr(getattr(e, "response", None), "status_code", None)
+            if status_code == 429 or (
+                isinstance(status_code, int) and 500 <= status_code < 600
+            ):
+                if _ == num_attempts - 1:
+                    raise
+                wait_time = max(2**_, _retry_after_seconds(exc=e))
+                log(
+                    f"Could not access model info for {model_id!r}: {e}. "
+                    f"Retrying in {wait_time}s...",
+                    level=logging.WARNING,
+                )
+                sleep(wait_time)
+                continue
             return None
         except (OSError, RequestException) as e:
             if internet_connection_available():
@@ -1667,6 +1687,26 @@ def _fetch_model_info_from_hub(
             level=logging.DEBUG,
         )
         return None
+
+
+def _retry_after_seconds(exc: BaseException) -> int:
+    """The delay the Hub asked us to wait for, if it said one.
+
+    Args:
+        exc:
+            The exception raised by the failed request.
+
+    Returns:
+        The requested number of seconds, or 0 if the response did not say.
+    """
+    response = getattr(exc, "response", None)
+    headers = getattr(response, "headers", None)
+    if headers is None:
+        return 0
+    try:
+        return max(0, int(headers.get("Retry-After", 0)))
+    except (TypeError, ValueError):
+        return 0
 
 
 @cache_arguments("model_id")
@@ -1956,23 +1996,3 @@ def _query_hub[T](
             )
             sleep(wait_time)
             attempt += 1
-
-
-def _retry_after_seconds(exc: BaseException) -> int:
-    """The delay the Hub asked us to wait for, if it said one.
-
-    Args:
-        exc:
-            The exception raised by the failed request.
-
-    Returns:
-        The requested number of seconds, or 0 if the response did not say.
-    """
-    response = getattr(exc, "response", None)
-    headers = getattr(response, "headers", None)
-    if headers is None:
-        return 0
-    try:
-        return max(0, int(headers.get("Retry-After", 0)))
-    except (TypeError, ValueError):
-        return 0

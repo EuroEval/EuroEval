@@ -59,6 +59,34 @@ class TestBPCGating:
             )
 
 
+def test_encoder_model_exists_propagates_exhausted_rate_limit(
+    monkeypatch: pytest.MonkeyPatch, benchmark_config: BenchmarkConfig
+) -> None:
+    """An exhausted transient Hub failure remains actionable.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+    """
+    monkeypatch.setattr(
+        "euroeval.benchmark_modules.hf.internet_connection_available", lambda: True
+    )
+    monkeypatch.setattr("euroeval.benchmark_modules.hf.sleep", lambda _: None)
+    error = HfHubHTTPError("rate limited", response=MagicMock(status_code=429))
+    with (
+        patch.object(HfApi, "list_repo_commits") as mock_list_commits,
+        patch.object(HfApi, "model_info", side_effect=error) as mock_model_info,
+        pytest.raises(HfHubHTTPError, match="rate limited"),
+    ):
+        mock_list_commits.return_value = [MagicMock(commit_id="weights")]
+        HuggingFaceEncoderModel.model_exists(
+            model_id="rate-limit-exhausted-model", benchmark_config=benchmark_config
+        )
+    assert mock_model_info.call_count == 3
+
+
 @pytest.mark.parametrize(
     argnames=["repo_files", "expected"],
     argvalues=[
@@ -111,6 +139,95 @@ def test_encoder_model_exists_requires_root_config(
             model_id="some-model", benchmark_config=benchmark_config
         )
         assert result == expected
+
+
+@pytest.mark.parametrize(
+    argnames=["status_code", "retry_after", "expected_delay"],
+    argvalues=[(429, "17", 17), (503, None, 1)],
+    ids=["rate limit", "server error"],
+)
+def test_encoder_model_exists_retries_transient_hub_error(
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_config: BenchmarkConfig,
+    status_code: int,
+    retry_after: str | None,
+    expected_delay: int,
+) -> None:
+    """Transient Hub failures are retried before model recognition.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+        status_code:
+            HTTP status code returned by the Hub.
+        retry_after:
+            Optional Hub-requested delay.
+        expected_delay:
+            Delay expected before retrying.
+    """
+    monkeypatch.setattr(
+        "euroeval.benchmark_modules.hf.internet_connection_available", lambda: True
+    )
+    sleeps: list[int] = []
+    monkeypatch.setattr("euroeval.benchmark_modules.hf.sleep", sleeps.append)
+    response = MagicMock(
+        status_code=status_code,
+        headers={"Retry-After": retry_after} if retry_after else {},
+    )
+    rate_limit = HfHubHTTPError("rate limited", response=response)
+    with (
+        patch.object(HfApi, "list_repo_commits") as mock_list_commits,
+        patch.object(HfApi, "list_repo_files", return_value=["config.json"]),
+        patch.object(HfApi, "model_info") as mock_model_info,
+    ):
+        mock_list_commits.return_value = [MagicMock(commit_id="weights")]
+        mock_model_info.side_effect = [
+            rate_limit,
+            MagicMock(
+                pipeline_tag="fill-mask", siblings=[MagicMock(rfilename="config.json")]
+            ),
+        ]
+        assert (
+            HuggingFaceEncoderModel.model_exists(
+                model_id="rate-limit-success-model", benchmark_config=benchmark_config
+            )
+            is True
+        )
+        assert mock_model_info.call_count == 2
+    assert sleeps == [expected_delay]
+
+
+def test_encoder_model_exists_returns_false_for_missing_repository(
+    monkeypatch: pytest.MonkeyPatch, benchmark_config: BenchmarkConfig
+) -> None:
+    """A genuinely missing Hub repository is still recognised as absent.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        benchmark_config:
+            Benchmark configuration exercised by the test.
+    """
+    monkeypatch.setattr(
+        "euroeval.benchmark_modules.hf.internet_connection_available", lambda: True
+    )
+    with (
+        patch.object(HfApi, "list_repo_commits") as mock_list_commits,
+        patch.object(
+            HfApi,
+            "model_info",
+            side_effect=RepositoryNotFoundError("missing", response=MagicMock()),
+        ),
+    ):
+        mock_list_commits.return_value = [MagicMock(commit_id="weights")]
+        assert (
+            HuggingFaceEncoderModel.model_exists(
+                model_id="missing-model", benchmark_config=benchmark_config
+            )
+            is False
+        )
 
 
 def test_generative_model_exists_does_not_require_root_config(

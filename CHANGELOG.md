@@ -9,12 +9,17 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added BLiMP-NL-mini as an unofficial Dutch sentence-level acceptability dataset,
+  preserving linguistic phenomenon and paradigm metadata for analysis.
 - Added typed System One evaluation for Hugging Face repositories tagged
   `decision-model`, using checkpoint `decision_config.json` format metadata to select
   supported protocols and requiring an explicit `--api-base` endpoint.
 
 ### Fixed
 
+- Retry transient Hugging Face Hub failures when checking model availability, and
+  propagate exhausted rate limits and server errors instead of treating models as
+  missing.
 - Pass the expected served model identity through the public benchmarker configuration.
 - Preserve quoted `}{` in the shared JSONL result parser and quoted Unicode line
   separators in its readers, queue input, collector and result synchronization.
