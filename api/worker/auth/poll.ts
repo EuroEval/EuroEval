@@ -39,7 +39,7 @@ export default async function handler(req: Request): Promise<Response> {
     // Deliberately keep the token in this scope only. It is never returned or persisted.
     if (!userResponse.ok) { await redisDelete(key); throw new BrokerError(401, "GitHub could not identify this worker."); }
     const user = await userResponse.json() as { login?: string };
-    if (!user.login || user.login.toLowerCase() === "saattrupdan") { await redisDelete(key); throw new BrokerError(403, "The repository owner cannot register as a volunteer worker."); }
+    if (!user.login) { await redisDelete(key); throw new BrokerError(401, "GitHub could not identify this worker."); }
     const clientSecret = process.env.GITHUB_OAUTH_CLIENT_SECRET;
     if (!clientSecret) throw new ConfigurationError("GITHUB_OAUTH_CLIENT_SECRET is required to revoke the device grant before issuing a credential.");
     const revoked = await fetchWithRetry(`https://api.github.com/applications/${device.client_id}/grant`, {
