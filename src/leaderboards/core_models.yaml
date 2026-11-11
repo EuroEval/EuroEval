@@ -18,7 +18,7 @@ last_updated: 2026-11-09
 # new flagship models or retire old ones.
 api_models:
   # OpenAI
-  - openai/gpt-6-astra
+  - openai/gpt-6.1-sol
   - openai/gpt-6-luna
   # Anthropic
   - claude-opus-5-5
@@ -73,6 +73,20 @@ models:
     bucket: encoder
     parameters: 321908998
     pareto_categories: [all_models]
+    osai_rank: null
+    api: false
+  - id: fresh-electra-small
+    type: encoder
+    bucket: encoder
+    parameters: 14000000
+    pareto_categories: []
+    osai_rank: null
+    api: false
+  - id: fresh-xlm-roberta-base
+    type: encoder
+    bucket: encoder
+    parameters: 278043648
+    pareto_categories: []
     osai_rank: null
     api: false
   - id: mistral/mistral-large-4
@@ -474,7 +488,7 @@ models:
     pareto_categories: []
     osai_rank: null
     api: true
-  - id: openai/gpt-6-astra
+  - id: openai/gpt-6.1-sol
     type: api
     bucket: api
     parameters: null

@@ -179,7 +179,13 @@ def build_core_model_list(
     # OSAI / API-list may name models we haven't evaluated yet. Include
     # them as placeholders so the issue surfaces them as TODO
     # targets.
-    all_plain_ids = set(by_plain) | set(osai_rank_by_id) | api_set
+    fresh_baselines = {
+        "fresh-electra-small": 14_000_000,
+        "fresh-xlm-roberta-base": 278_043_648,
+    }
+    all_plain_ids = (
+        set(by_plain) | set(osai_rank_by_id) | api_set | set(fresh_baselines)
+    )
 
     # Drop entire serving-backend families we don't want in the core list.
     all_plain_ids = {
@@ -196,7 +202,9 @@ def build_core_model_list(
         )
         osai_rank = osai_rank_by_id.get(plain_id)
         is_api = plain_id in api_set
-        if not (pareto_categories or osai_rank or is_api):
+        if not (
+            pareto_categories or osai_rank or is_api or plain_id in fresh_baselines
+        ):
             continue
 
         # Pick the variant with the most params info / a known type. The
@@ -206,7 +214,9 @@ def build_core_model_list(
         model_type = model_types.get(rep) or _classify_model(plain_id, meta)
         parameters = meta.get("parameters", float("nan"))
         if not math.isfinite(parameters):
-            parameters = params_from_model_id(model_id=plain_id)
+            parameters = fresh_baselines.get(
+                plain_id, params_from_model_id(model_id=plain_id)
+            )
 
         # API models don't live on HuggingFace, so hitting the HF
         # safetensors endpoint for them just guarantees a 404.

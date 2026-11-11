@@ -181,9 +181,20 @@ def test_build_retains_osai_and_api_but_not_eu_source(
     models = build_core_model_list(api_model_ids=["openai/gpt-5"])
     by_id = {model.model_id: model for model in models}
 
-    assert set(by_id) == {"openai/gpt-5", "osai/model"}
+    assert set(by_id) == {
+        "openai/gpt-5",
+        "osai/model",
+        "fresh-electra-small",
+        "fresh-xlm-roberta-base",
+    }
     assert by_id["openai/gpt-5"].api
     assert by_id["osai/model"].osai_rank == 1
+    assert by_id["fresh-electra-small"].model_type == ModelType.ENCODER
+    assert by_id["fresh-electra-small"].parameters == 14_000_000
+    assert by_id["fresh-electra-small"].size_bucket == SizeBucket.ENCODER
+    assert by_id["fresh-xlm-roberta-base"].model_type == ModelType.ENCODER
+    assert by_id["fresh-xlm-roberta-base"].parameters == 278_043_648
+    assert by_id["fresh-xlm-roberta-base"].size_bucket == SizeBucket.ENCODER
 
 
 def test_core_model_schema_has_aggregate_pareto_categories() -> None:
