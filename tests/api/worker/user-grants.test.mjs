@@ -44,7 +44,11 @@ async function fixture(options = {}) {
     const url = String(input);
     const method = init.method || "GET";
     api.requests.push({ url, method, headers: init.headers || {}, body: init.body ? JSON.parse(init.body) : undefined });
-    if (url === redisUrl) return Response.json({ result: redisCommand(values, JSON.parse(init.body)) });
+    if (url === redisUrl) {
+      const command = JSON.parse(init.body);
+      if (options.failRemoveLock && command[0] === "EVAL" && command[1].includes("local old = redis.call('GET', KEYS[2])")) return Response.json({ result: 0 });
+      return Response.json({ result: redisCommand(values, command) });
+    }
     if (url === "https://github.com/login/device/code") return Response.json({ device_code: "device-code", user_code: "ABCD-EFGH", verification_uri: "https://github.com/login/device", interval: 5, expires_in: 600 });
     if (url === "https://api.github.com/app/installations/67890") return Response.json(options.installation || api.installation);
     if (url === "https://api.github.com/app/installations/67890/access_tokens" && method === "POST") return Response.json({ token: "temporary-install-token", permissions: options.tokenPermissions || { issues: "write", metadata: "read" } });
@@ -67,6 +71,8 @@ async function fixture(options = {}) {
     }
     if (url === "https://api.github.com/repos/EuroEval/EuroEval/issues/7/comments" && method === "POST") {
       api.postCount = (api.postCount || 0) + 1;
+      if (options.postStatus) return new Response(null, { status: options.postStatus });
+      if (options.postAmbiguous) throw new Error("connection reset after POST");
       api.comments.push({ body: JSON.parse(init.body).body, user: contributor });
       return Response.json(api.comments.at(-1));
     }
@@ -118,6 +124,10 @@ function redisCommand(values, command) {
     values.delete(keys[1]); values.delete(keys[2]);
     return 1;
   }
+  if (script.includes("KEYS[2]) else return 0 end")) {
+    if (values.get(keys[0]) !== argv[0]) return 0;
+    return values.delete(keys[1]) ? 1 : 0;
+  }
   if (script.includes("redis.call('EXPIRE'")) return values.get(keys[0]) === argv[0] ? 1 : 0;
   if (script.includes("redis.call('DEL'")) {
     if (values.get(keys[0]) !== argv[0]) return 0;
@@ -140,11 +150,12 @@ test("App device authorization requests offline access scoped to the exact repos
     assert.equal(response.status, 200);
     const deviceRequest = fx.api.requests.find((request) => request.url === "https://github.com/login/device/code");
     assert.equal(deviceRequest.body.scope, "offline_access");
-    assert.equal(deviceRequest.body.repository_id, 386992479);
+    assert.equal(deviceRequest.body.repository_id, undefined);
     const started = await response.json();
     const persisted = JSON.parse(fx.values.get(`euroeval:worker:device:${started.session_id}`));
     assert.equal(persisted.app_mode, true);
     assert.equal(persisted.client_id, "Iv1.test-client");
+    assert.equal(persisted.repository_id, 386992479);
   } finally { fx.close(); }
 });
 
@@ -313,6 +324,76 @@ test("comment scan only deduplicates the exact author and body and preserves pen
     await ensureVolunteerComment(identity, 7, async () => {});
     assert.equal(fx.api.postCount, 1);
   } finally { fx.close(); }
+});
+
+test("revocation invalidates credentials despite corrupt grant ciphertext or a lost removal fence", async () => {
+  for (const options of [{}, { failRemoveLock: true }]) {
+    const fx = await fixture(options);
+    try {
+      const identity = await fx.retain();
+      const grantKey = `euroeval:worker:user-grant:${identity.hash}`;
+      if (!options.failRemoveLock) fx.values.set(grantKey, "tampered ciphertext");
+      if (options.failRemoveLock) {
+        await assert.rejects(revokeUserGrant(identity), /ownership|retry/i);
+      } else await revokeUserGrant(identity);
+      assert.equal(fx.values.has(`euroeval:worker:credential:${identity.hash}`), false);
+      await assert.rejects(authenticate(new Request("https://worker.test", { headers: { authorization: "Bearer broker-credential" } })), (error) => error.status === 401);
+    } finally { fx.close(); }
+  }
+});
+
+test("comment retries clear only proven non-writes and retain ambiguous POST deduplication", async () => {
+  const fence = await fixture();
+  try {
+    const identity = await fence.retain();
+    const key = `euroeval:worker:user-grant:${identity.hash}:comment:7`;
+    let calls = 0;
+    await assert.rejects(ensureVolunteerComment(identity, 7, async () => {
+      calls++;
+      if (calls === 2) throw new Error("ownership changed before POST");
+    }), /ownership changed/);
+    assert.equal(fence.values.has(key), false);
+    await ensureVolunteerComment(identity, 7, async () => {});
+    assert.equal(fence.api.postCount, 1);
+  } finally { fence.close(); }
+
+  for (const status of [403, 429]) {
+    const fx = await fixture({ postStatus: status });
+    try {
+      const identity = await fx.retain();
+      const key = `euroeval:worker:user-grant:${identity.hash}:comment:7`;
+      await assert.rejects(ensureVolunteerComment(identity, 7, async () => {}), /Unable to post/);
+      assert.equal(fx.values.has(key), false);
+      fx.api.requests.length = 0;
+      // Replace the network adapter with a successful definitive retry.
+      const oldFetch = globalThis.fetch;
+      globalThis.fetch = async (input, init = {}) => {
+        if (String(input) === "https://api.github.com/repos/EuroEval/EuroEval/issues/7/comments" && init.method === "POST") {
+          fx.api.postCount++;
+          fx.api.comments.push({ body: JSON.parse(init.body).body, user: contributor });
+          return Response.json(fx.api.comments.at(-1));
+        }
+        return oldFetch(input, init);
+      };
+      await ensureVolunteerComment(identity, 7, async () => {});
+      assert.equal(fx.api.postCount, 2);
+      globalThis.fetch = oldFetch;
+    } finally { fx.close(); }
+  }
+
+  const ambiguous = await fixture({ postAmbiguous: true });
+  try {
+    const identity = await ambiguous.retain();
+    const key = `euroeval:worker:user-grant:${identity.hash}:comment:7`;
+    await assert.rejects(ensureVolunteerComment(identity, 7, async () => {}), /connection reset/);
+    assert.equal(ambiguous.values.get(key), "pending");
+    await ensureVolunteerComment(identity, 7, async () => {});
+    assert.equal(ambiguous.api.postCount, 1);
+    ambiguous.api.comments.push({ body: "I'd like to evaluate this.", user: contributor });
+    await ensureVolunteerComment(identity, 7, async () => {});
+    assert.equal(ambiguous.values.get(key), "done");
+    assert.equal(ambiguous.api.postCount, 1);
+  } finally { ambiguous.close(); }
 });
 
 test("revocation removes local credential and grant before remote revocation; legacy credentials reauthenticate only when App mode is off", async () => {

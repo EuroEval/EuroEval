@@ -93,6 +93,47 @@ test("device polling issues a credential to the repository maintainer", async ()
   }
 });
 
+test("App device polling exchanges the captured exact-repository binding", async () => {
+  const restoreEnvironment = setEnvironment({
+    UPSTASH_REDIS_REST_URL: redisUrl, UPSTASH_REDIS_REST_TOKEN: redisToken,
+    VOLUNTEER_GITHUB_APP_CLIENT_ID: "Iv1.app-client", VOLUNTEER_GITHUB_APP_CLIENT_SECRET: "secret",
+    VOLUNTEER_GITHUB_APP_ID: "12345", VOLUNTEER_GITHUB_APP_PRIVATE_KEY: "unused",
+    VOLUNTEER_GITHUB_APP_INSTALLATION_ID: "67890", VOLUNTEER_GITHUB_APP_REPOSITORY_ID: "386992479",
+    VOLUNTEER_GITHUB_APP_TOKEN_ENCRYPTION_KEY: Buffer.alloc(32).toString("base64"),
+  });
+  const originalFetch = globalThis.fetch;
+  const sessionId = "app-binding-session";
+  const deviceKey = `euroeval:worker:device:${sessionId}`;
+  const stored = new Map([[deviceKey, JSON.stringify({ device_code: "device-code", client_id: "Iv1.app-client",
+    interval: 5, app_mode: true, repository_id: 386992479 })]]);
+  let exchange;
+  globalThis.fetch = async (input, init = {}) => {
+    if (String(input) === redisUrl) {
+      const command = JSON.parse(init.body);
+      if (command[0] === "GET") return Response.json({ result: stored.get(command[1]) ?? null });
+      if (command[0] === "INCR" || command[0] === "EXPIRE") return Response.json({ result: 1 });
+      if (command[0] === "SET") { stored.set(command[1], command[2]); return Response.json({ result: "OK" }); }
+      if (command[0] === "EVAL") { stored.delete(command[3]); return Response.json({ result: 1 }); }
+      throw new Error(`Unexpected Redis command: ${command[0]}`);
+    }
+    if (String(input) === "https://github.com/login/oauth/access_token") {
+      exchange = JSON.parse(init.body);
+      return Response.json({ error: "authorization_pending" });
+    }
+    throw new Error(`Unexpected request: ${String(input)}`);
+  };
+  try {
+    const response = await poll(new Request("https://euroeval.test/api/worker/auth/poll", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ protocol_version: "volunteer-worker/v1", session_id: sessionId }),
+    }));
+    assert.equal(response.status, 202, await response.clone().text());
+    assert.equal(exchange.repository_id, 386992479);
+    assert.equal(exchange.client_id, "Iv1.app-client");
+    assert.equal(stored.has(deviceKey), true);
+  } finally { globalThis.fetch = originalFetch; restoreEnvironment(); }
+});
+
 test("device polling rejects an unidentifiable GitHub user", async () => {
   const restoreEnvironment = setEnvironment({
     GITHUB_OAUTH_CLIENT_SECRET: "client-secret",

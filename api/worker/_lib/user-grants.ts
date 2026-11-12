@@ -251,26 +251,31 @@ export async function revokeUserGrant(identity: UserGrant): Promise<void> {
     await redisDelete(`${GRANT_PREFIX}${identity.hash}`);
     return;
   }
-  const config = appConfig();
+  let config: AppConfig | undefined;
+  try { config = appConfig(); } catch { /* local revocation must survive configuration loss */ }
   let remoteToken: string | undefined;
   await withGrantLock(identity.hash, async (lock) => {
     const key = `${GRANT_PREFIX}${identity.hash}`;
     const encrypted = await redisGetRaw(key);
-    if (encrypted) {
-      const grant = await unseal(encrypted, config, identity.hash);
-      remoteToken = grant.access;
+    if (encrypted && config) {
+      try { remoteToken = (await unseal(encrypted, config, identity.hash)).access; }
+      catch { /* corrupted or undecryptable grants are still revoked locally */ }
     }
-    if (remoteToken) {
+    if (remoteToken && config) {
       const protectedPending = await seal({ version: 1, generation: randomToken(18), userId: 0, contributor: "", credentialHash: identity.hash,
         clientId: config.clientId, access: remoteToken, refresh: "", accessExpires: Date.now(), refreshExpires: Date.now() + 30 * 86400_000 }, config);
       await redisSet(`${GRANT_PREFIX}${identity.hash}:revocation`, protectedPending, 30 * 86400);
     }
-    await redis("EVAL", removeScript, "3", `${GRANT_PREFIX}${identity.hash}:lock`, key, `${CREDENTIAL_PREFIX}${identity.hash}`, lock, "");
+    await redisDelete(`${CREDENTIAL_PREFIX}${identity.hash}`);
+    const removed = Number(await redis("EVAL", removeScript, "3", `${GRANT_PREFIX}${identity.hash}:lock`, key, `${CREDENTIAL_PREFIX}${identity.hash}`, lock, ""));
+    if (removed !== 1) throw new BrokerError(503, "Credential revocation could not confirm ownership; retry revoke.");
   });
   const pendingKey = `${GRANT_PREFIX}${identity.hash}:revocation`;
   const stored = await redisGetRaw(pendingKey);
-  if (!stored) return;
-  const pending = await unseal(stored, config, identity.hash);
+  if (!stored || !config) return;
+  let pending: GrantRecord;
+  try { pending = await unseal(stored, config, identity.hash); }
+  catch { return; }
   const response = await request(`https://api.github.com/applications/${encodeURIComponent(config.clientId)}/token`, {
     method: "DELETE", headers: { authorization: basicAuth(config), "content-type": "application/json" }, body: JSON.stringify({ access_token: pending.access }),
   });
@@ -327,20 +332,39 @@ export async function ensureVolunteerComment(identity: UserGrant, issueNumber: n
         throw new BrokerError(401, "GitHub App authorization must be renewed.", "github_grant_invalid");
       }
       await redisSet(dedupKey, "pending", Math.max(60, Math.ceil((grant.refreshExpires - Date.now()) / 1000)));
-      await assertOwned();
-      if (await redisGetRaw(commentLockKey) !== commentLock ||
-          (JSON.parse((await redisGetRaw(`${GRANT_PREFIX}${identity.hash}`)) || "null") as StoredEnvelope | null)?.generation !== grant.generation ||
-          !(await redisGet(`${CREDENTIAL_PREFIX}${identity.hash}`))) {
-        throw new BrokerError(401, "GitHub App authorization must be renewed.", "github_grant_invalid");
+      let postStarted = false;
+      const clearPendingIfOwned = async (): Promise<void> => {
+        const clear = "if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[2]) else return 0 end";
+        await redis("EVAL", clear, "2", commentLockKey, dedupKey, commentLock).catch(() => undefined);
+      };
+      try {
+        await assertOwned();
+        if (await redisGetRaw(commentLockKey) !== commentLock ||
+            (JSON.parse((await redisGetRaw(`${GRANT_PREFIX}${identity.hash}`)) || "null") as StoredEnvelope | null)?.generation !== grant.generation ||
+            !(await redisGet(`${CREDENTIAL_PREFIX}${identity.hash}`))) {
+          throw new BrokerError(401, "GitHub App authorization must be renewed.", "github_grant_invalid");
+        }
+        await assertOwned();
+        if (await redisGetRaw(commentLockKey) !== commentLock) throw new BrokerError(409, "Volunteer comment ownership fence was lost.");
+        postStarted = true;
+        const posted = await request(`https://api.github.com/repos/${REPO}/issues/${issueNumber}/comments`, {
+          method: "POST", headers: { authorization: `Bearer ${grant.access}`, "content-type": "application/json" }, body: JSON.stringify({ body: COMMENT }),
+        });
+        if (posted.status === 401) {
+          await clearPendingIfOwned();
+          throw new BrokerError(401, "GitHub App authorization must be renewed.", "github_grant_invalid");
+        }
+        if (!posted.ok) {
+          await clearPendingIfOwned();
+          throw new BrokerError(502, "Unable to post volunteer issue comment.");
+        }
+        const result = await posted.json() as { user?: { id?: number; login?: string } };
+        if (result.user?.id !== grant.userId || result.user.login?.toLowerCase() !== grant.contributor.toLowerCase()) throw new BrokerError(502, "GitHub did not confirm the volunteer comment author.");
+        await redisSet(dedupKey, "done", Math.max(60, Math.ceil((grant.refreshExpires - Date.now()) / 1000)));
+      } catch (error) {
+        if (!postStarted) await clearPendingIfOwned();
+        throw error;
       }
-      const posted = await request(`https://api.github.com/repos/${REPO}/issues/${issueNumber}/comments`, {
-        method: "POST", headers: { authorization: `Bearer ${grant.access}`, "content-type": "application/json" }, body: JSON.stringify({ body: COMMENT }),
-      });
-      if (posted.status === 401) throw new BrokerError(401, "GitHub App authorization must be renewed.", "github_grant_invalid");
-      if (!posted.ok) throw new BrokerError(502, "Unable to post volunteer issue comment.");
-      const result = await posted.json() as { user?: { id?: number; login?: string } };
-      if (result.user?.id !== grant.userId || result.user.login?.toLowerCase() !== grant.contributor.toLowerCase()) throw new BrokerError(502, "GitHub did not confirm the volunteer comment author.");
-      await redisSet(dedupKey, "done", Math.max(60, Math.ceil((grant.refreshExpires - Date.now()) / 1000)));
     } finally {
       clearInterval(renewal);
       const release = "if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) else return 0 end";
