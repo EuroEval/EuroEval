@@ -82,7 +82,7 @@ frontend:  ## Build and deploy the frontend
 	@uv run python src/scripts/prepare_vercel_worktree.py && uv run python src/scripts/build_vercel_frontend.py && uv run python src/scripts/verify_vercel_functions.py && uv run python src/scripts/deploy_vercel_frontend.py
 
 sync-production-version:
-	@uv run python src/scripts/volunteer_worker_operations.py sync-production-version "$(version)"
+	@uv run python src/scripts/volunteer_worker_operations.py sync-production-version --version "$(version)"
 
 leaderboards:  ## Collect finished evaluation results and regenerate leaderboards
 	@uv run python src/scripts/collect_evaluation_results.py

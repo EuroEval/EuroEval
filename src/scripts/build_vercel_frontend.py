@@ -20,12 +20,41 @@ def main() -> int:
         Exit status from the Vercel build, or one when configuration is invalid.
     """
     environment_file = Path(".vercel/.env.production.local")
-    values = dotenv_values(environment_file)
-    version = os.environ.get("EUROEVAL_VERSION") or values.get("EUROEVAL_VERSION")
-    if not version:
+    try:
+        subprocess.run(
+            [
+                "vercel",
+                "env",
+                "pull",
+                str(environment_file),
+                "--environment=production",
+                "--yes",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        values = dotenv_values(environment_file)
+        production_version = values.get("EUROEVAL_VERSION")
+        requested_version = os.environ.get("EUROEVAL_VERSION")
+        if not production_version:
+            print(
+                "Vercel Production EUROEVAL_VERSION is missing; "
+                "frontend build stopped.",
+                file=sys.stderr,
+            )
+            return 1
+        if requested_version and requested_version != production_version:
+            print(
+                "EUROEVAL_VERSION override does not match Vercel Production; "
+                "frontend build stopped.",
+                file=sys.stderr,
+            )
+            return 1
+        version = requested_version or production_version
+    except (OSError, subprocess.CalledProcessError) as error:
         print(
-            "Vercel Production EUROEVAL_VERSION is missing; frontend build stopped.",
-            file=sys.stderr,
+            f"Vercel production configuration refresh failed: {error}", file=sys.stderr
         )
         return 1
 

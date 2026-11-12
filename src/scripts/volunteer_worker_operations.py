@@ -2102,7 +2102,7 @@ def sync_production_version(
             "--force",
             "--yes",
             "--type",
-            "plain",
+            "config",
         ],
         input_text=version + "\n",
         environment=environment,
@@ -2116,7 +2116,9 @@ def sync_production_version(
                 True,
             )
         ]
-    metadata = run_command(["vercel", "env", "ls", "production", "--format=json"])
+    metadata = run_command(
+        ["vercel", "env", "ls", "production", "--format=json"], environment=environment
+    )
     try:
         entries = _json_list(metadata.stdout) if metadata.returncode == 0 else []
         variable = next(
@@ -2125,9 +2127,37 @@ def sync_production_version(
             if item.get("key", item.get("name")) == "EUROEVAL_VERSION"
         )
         targets = variable.get("target", variable.get("targets"))
-        valid = targets and "production" in targets and variable.get("type") == "plain"
+        valid = bool(targets and "production" in targets)
     except (ValueError, StopIteration, TypeError):
         valid = False
+    if valid:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            environment_file = Path(temporary_directory) / "production.env"
+            pulled = run_command(
+                [
+                    "vercel",
+                    "env",
+                    "pull",
+                    str(environment_file),
+                    "--environment=production",
+                    "--yes",
+                ],
+                environment=environment,
+            )
+            try:
+                contents = (
+                    environment_file.read_text(encoding="utf-8")
+                    if pulled.returncode == 0
+                    else ""
+                )
+                actual = next(
+                    line.partition("=")[2].strip().strip("'\"")
+                    for line in contents.splitlines()
+                    if line.partition("=")[0].strip() == "EUROEVAL_VERSION"
+                )
+                valid = actual == version
+            except (OSError, StopIteration):
+                valid = False
     return [
         Diagnostic(
             "vercel",
