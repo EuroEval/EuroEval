@@ -17,7 +17,7 @@ export default async function handler(req: Request): Promise<Response> {
     const lease = await getLeaseById(body.lease_id);
     if (!lease || lease.released || lease.contributor.toLowerCase() !== identity.contributor.toLowerCase() || Date.parse(lease.expires_at) <= Date.now()) throw new BrokerError(409, "Lease is absent, expired, or belongs to another contributor.");
     const mutex = await acquireRenewableIssueMutex(lease.issue_number);
-    if (!mutex) throw new BrokerError(409, "Issue is busy; retry heartbeat.");
+    if (!mutex) throw new BrokerError(503, "Issue is busy; retry heartbeat.", "issue_busy");
     try {
       const issue = await fetchIssue(lease.issue_number);
       await requireLeaseOwnership(issue, lease);

@@ -803,6 +803,53 @@ test("finalise rejects unsupported HTTP methods", async () => {
   assert.deepEqual(await response.json(), { error: "Method not allowed" });
 });
 
+test("heartbeat reports issue mutex contention as retryable without hiding ownership conflicts", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  process.env.VOLUNTEER_MARKER_SECRET = "marker-secret";
+  process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
+  process.env.GITHUB_TOKEN = "github-token";
+  const signed = await signVolunteerMarker(issueNumber, {
+    protocol_version: "volunteer-worker/v1", coordinator: "coordinator", submission: "active",
+    leases: [{ lease_id: lease.lease_id, language: lease.language, worker: lease.worker,
+      contributor: lease.contributor, expires_at: lease.expires_at }],
+  });
+  const issue = { number: issueNumber, body: markerBody(signed), state: "open", assignees: [{ login: "alice" }] };
+  const values = new Map();
+  values.set(`euroeval:worker:credential:${await sha256("credential")}`, JSON.stringify({ contributor: "alice" }));
+  values.set(`euroeval:worker:lease-id:${lease.lease_id}`, JSON.stringify(lease));
+  values.set(`euroeval:worker:lease:${issueNumber}:da`, JSON.stringify(lease));
+  const broker = mockBroker(issue, values);
+  let mutexBusy = true;
+  globalThis.fetch = async (input, init = {}) => {
+    if (String(input) === "https://redis.test") {
+      const command = JSON.parse(init.body);
+      if (mutexBusy && command[0] === "SET" && command[1] === `euroeval:worker:mutex:${issueNumber}`) {
+        return Response.json({ result: null });
+      }
+    }
+    return broker(input, init);
+  };
+  const request = () => new Request("https://euroeval.test/api/worker/heartbeat", {
+    method: "POST", headers: { authorization: "Bearer credential", "content-type": "application/json" },
+    body: JSON.stringify({ protocol_version: "volunteer-worker/v1", lease_id: lease.lease_id }),
+  });
+  try {
+    const busy = await heartbeat(request());
+    assert.equal(busy.status, 503);
+    assert.equal((await busy.json()).code, "issue_busy");
+    mutexBusy = false;
+    issue.assignees = [{ login: "bob" }];
+    const ownershipConflict = await heartbeat(request());
+    assert.equal(ownershipConflict.status, 409);
+    assert.notEqual((await ownershipConflict.json()).code, "issue_busy");
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
+
 test("heartbeat renews a full TTL and preserves a valid marker signature", async () => {
   const originalFetch = globalThis.fetch;
   const originalEnv = { ...process.env };
