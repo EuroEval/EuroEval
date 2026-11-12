@@ -36,6 +36,12 @@ export async function redisGet<T>(key: string): Promise<T | null> {
   if (typeof value !== "string") return null;
   try { return JSON.parse(value) as T; } catch { return null; }
 }
+
+/** Read a Redis value without interpreting its contents as JSON. */
+export async function redisGetRaw(key: string): Promise<string | null> {
+  const value = await redis("GET", key);
+  return typeof value === "string" ? value : null;
+}
 export async function redisDelete(key: string): Promise<void> { await redis("DEL", key); }
 
 const LEASE_TTL_MAX = 6 * 60 * 60;

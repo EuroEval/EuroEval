@@ -1,4 +1,4 @@
-import { BrokerError, ConfigurationError, PROTOCOL_VERSION, authCredential, authenticate, json, method, redisGet, revokeUserGrant, sha256 } from "../_lib.js";
+import { BrokerError, ConfigurationError, PROTOCOL_VERSION, authCredential, authenticate, json, method, redisGet, redisGetRaw, revokeUserGrant, sha256 } from "../_lib.js";
 
 export const config = { runtime: "edge" };
 
@@ -11,7 +11,7 @@ export default async function handler(req: Request): Promise<Response> {
     if (worker?.contributor) {
       await revokeUserGrant(await authenticate(req, true));
     } else {
-      const pending = await redisGet<string>(`euroeval:worker:user-grant:${hash}:revocation`);
+      const pending = await redisGetRaw(`euroeval:worker:user-grant:${hash}:revocation`);
       if (!pending) throw new BrokerError(401, "Worker credential is invalid or revoked.");
       await revokeUserGrant({ hash, contributor: "" });
     }
