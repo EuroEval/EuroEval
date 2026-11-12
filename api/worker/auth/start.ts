@@ -18,7 +18,7 @@ export default async function handler(req: Request): Promise<Response> {
     const response = await fetchWithRetry("https://github.com/login/device/code", {
       method: "POST",
       headers: { accept: "application/json", "content-type": "application/json" },
-      body: JSON.stringify({ client_id: clientId, ...(appMode ? { scope: "offline_access" } : { scope: "read:user" }) }),
+      body: JSON.stringify({ client_id: clientId, ...(appMode ? { scope: "offline_access", repository_id: 386992479 } : { scope: "read:user" }) }),
     });
     if (!response.ok) throw new BrokerError(503, `GitHub device authorisation failed with HTTP ${response.status}.`);
     const data = await response.json() as { device_code?: string; user_code?: string; verification_uri?: string; verification_uri_complete?: string; interval?: number; expires_in?: number };

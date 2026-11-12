@@ -2,7 +2,7 @@ declare const process: { env: Record<string, string | undefined> };
 
 import {
   BrokerError, ConfigurationError, PROTOCOL_VERSION, env, enforceRateLimit, fetchWithRetry, json, method, randomToken, readJson,
-  redisDelete, redisGet, redisSet, sha256, requireProtocol, appGrantEnabled, retainUserGrant,
+  redis, redisDelete, redisGet, redisSet, sha256, requireProtocol, appGrantEnabled, retainUserGrant, revokeUserGrant, discardUserAccessToken,
 } from "../_lib.js";
 
 export const config = { runtime: "edge" };
@@ -11,6 +11,7 @@ type Device = { device_code: string; client_id: string; interval: number; app_mo
 
 export default async function handler(req: Request): Promise<Response> {
   const rejected = method(req); if (rejected) return rejected;
+  let completionLock: { key: string; token: string } | undefined;
   try {
     const body = await readJson(req, 8 * 1024);
     requireProtocol(body);
@@ -20,6 +21,10 @@ export default async function handler(req: Request): Promise<Response> {
     const device = await redisGet<Device>(key);
     if (!device) throw new BrokerError(400, "Device authorisation has expired or was already used.");
     if (device.next_poll_at && device.next_poll_at > Date.now()) throw new BrokerError(429, `Poll again in ${Math.ceil((device.next_poll_at - Date.now()) / 1000)} seconds.`);
+    const lockKey = `${key}:completion-lock`;
+    const lockToken = randomToken(18);
+    if (!(await redisSet(lockKey, lockToken, 30, true))) throw new BrokerError(429, "Authorization is being completed; retry shortly.");
+    completionLock = { key: lockKey, token: lockToken };
     const response = await fetchWithRetry("https://github.com/login/oauth/access_token", {
       method: "POST",
       headers: { accept: "application/json", "content-type": "application/json" },
@@ -33,7 +38,7 @@ export default async function handler(req: Request): Promise<Response> {
     }
     if (!response.ok || !data.access_token) {
       await redisDelete(key);
-      throw new BrokerError(401, data.error_description || "GitHub device authorisation was denied or expired.");
+      throw new BrokerError(401, "GitHub device authorisation was denied or expired.");
     }
     if (device.app_mode && !appGrantEnabled()) throw new ConfigurationError("GitHub App grant configuration changed during authorization.");
     const userResponse = await fetchWithRetry("https://api.github.com/user", { headers: { accept: "application/vnd.github+json", authorization: `Bearer ${data.access_token}`, "x-github-api-version": "2022-11-28" } });
@@ -48,15 +53,21 @@ export default async function handler(req: Request): Promise<Response> {
       const credential = randomToken(32);
       const hash = await sha256(credential);
       const ttl = 30 * 24 * 60 * 60;
-      await redisSet(`euroeval:worker:credential:${hash}`, JSON.stringify({ contributor: user.login, issued_at: new Date().toISOString(), grant_mode: "app" }), ttl);
+      const credentialKey = `euroeval:worker:credential:${hash}`;
+      if (!(await redisSet(credentialKey, JSON.stringify({ contributor: user.login, issued_at: new Date().toISOString(), grant_mode: "app" }), ttl, true))) {
+        throw new BrokerError(503, "Unable to issue worker credential safely.");
+      }
       try {
         await retainUserGrant(data.access_token, data.refresh_token, Date.now() + data.expires_in * 1000,
           Date.now() + data.refresh_token_expires_in * 1000, credential, user.login);
+        const complete = "if redis.call('EXISTS', KEYS[1]) == 0 or redis.call('EXISTS', KEYS[2]) == 0 then return 0 end; return redis.call('DEL', KEYS[1])";
+        const consumed = Number(await redis("EVAL", complete, "2", key, credentialKey));
+        if (consumed !== 1) throw new BrokerError(400, "Device authorisation has expired or was already used.");
       } catch (error) {
-        await redisDelete(`euroeval:worker:credential:${hash}`);
+        await revokeUserGrant({ hash, contributor: user.login }).catch(() => undefined);
+        await discardUserAccessToken(data.access_token).catch(() => undefined);
         throw error;
       }
-      await redisDelete(key);
       return json(200, { protocol_version: PROTOCOL_VERSION, status: "authorised", credential, github_login: user.login, expires_in: ttl });
     }
     const clientSecret = process.env.GITHUB_OAUTH_CLIENT_SECRET;
@@ -69,11 +80,24 @@ export default async function handler(req: Request): Promise<Response> {
     const credential = randomToken(32);
     const hash = await sha256(credential);
     const ttl = 30 * 24 * 60 * 60;
-    await redisSet(`euroeval:worker:credential:${hash}`, JSON.stringify({ contributor: user.login, issued_at: new Date().toISOString() }), ttl);
-    await redisDelete(key);
+    const credentialKey = `euroeval:worker:credential:${hash}`;
+    if (!(await redisSet(credentialKey, JSON.stringify({ contributor: user.login, issued_at: new Date().toISOString() }), ttl, true))) {
+      throw new BrokerError(503, "Unable to issue worker credential safely.");
+    }
+    const complete = "if redis.call('EXISTS', KEYS[1]) == 0 or redis.call('EXISTS', KEYS[2]) == 0 then return 0 end; return redis.call('DEL', KEYS[1])";
+    const consumed = Number(await redis("EVAL", complete, "2", key, credentialKey));
+    if (consumed !== 1) {
+      await redisDelete(credentialKey);
+      throw new BrokerError(400, "Device authorisation has expired or was already used.");
+    }
     return json(200, { protocol_version: PROTOCOL_VERSION, status: "authorised", credential, github_login: user.login, expires_in: ttl });
   } catch (error) {
     const status = error instanceof BrokerError ? error.status : error instanceof ConfigurationError ? 503 : 502;
-    return json(status, { error: error instanceof Error ? error.message : "Unable to poll authorisation." });
+    return json(status, { error: error instanceof BrokerError || error instanceof ConfigurationError ? error.message : "Unable to poll authorisation." });
+  } finally {
+    if (completionLock) {
+      const release = "if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) else return 0 end";
+      await redis("EVAL", release, "1", completionLock.key, completionLock.token).catch(() => undefined);
+    }
   }
 }

@@ -365,7 +365,22 @@ export default async function handler(req: Request): Promise<Response> {
           }
           const reconciled = await reconcilePublicAssignments(after, afterMarker, () => mutex.assertOwned());
           if (!hasIssueAssignee(reconciled.issue, identity.contributor)) {
-            await ensureVolunteerComment(identity, snapshot.number, () => mutex.assertOwned()).catch(() => undefined);
+            try {
+              await ensureVolunteerComment(identity, snapshot.number, async () => {
+                await mutex.assertOwned();
+                const live = await fetchIssue(snapshot.number);
+                const liveMarker = parseVolunteerMarker(live.body);
+                if (live.state !== "open" || !liveMarker || !(await verifyVolunteerMarker(snapshot.number, liveMarker)) ||
+                    !liveMarker.leases.some((item) => item.lease_id === lease.lease_id &&
+                      item.contributor.toLowerCase() === identity.contributor.toLowerCase() &&
+                      item.ownership_mode === "public" && Date.parse(item.expires_at) > Date.now())) {
+                  throw new BrokerError(409, "Volunteer lease is no longer eligible for a comment.");
+                }
+              });
+            } catch (error) {
+              if (error instanceof BrokerError && error.code === "github_grant_invalid") throw error;
+              // Public assignment remains the best-effort projection when the claimant is ineligible.
+            }
           }
         } catch (error) {
           // Never restore a stale body: another lease may have been added while
