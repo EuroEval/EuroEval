@@ -69,6 +69,18 @@ def test_metadata_and_upload_are_gated_after_verification() -> None:
     assert "if: success() && github.event_name != 'pull_request'" in contents[upload:]
 
 
+def test_same_commit_publications_are_serialised() -> None:
+    """Push and manual runs cannot race while verifying their shared SHA tag."""
+    contents = WORKFLOW.read_text(encoding="utf-8")
+    guard = contents.split("\nconcurrency:\n", maxsplit=1)[1].split(
+        "\njobs:", maxsplit=1
+    )[0]
+
+    assert "group: volunteer-worker-image-${{ github.sha }}" in guard
+    assert "cancel-in-progress: false" in guard
+    assert "github.event_name" not in guard
+
+
 def test_spark_arm64_is_a_distinct_candidate_and_not_promotable() -> None:
     """ARM64 must publish to an isolated candidate tag, never the amd64 channel."""
     contents = WORKFLOW.read_text(encoding="utf-8")
