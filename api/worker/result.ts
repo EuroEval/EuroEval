@@ -39,7 +39,7 @@ export async function fetch(req: Request): Promise<Response> {
     }
     const reservation: StoredIdentity = { digest, lease_id: lease.lease_id, status: "uploading", issue_number: lease.issue_number, language: lease.language, path, warnings: checked.warnings };
     const reservationMutex = await acquireRenewableIssueMutex(lease.issue_number);
-    if (!reservationMutex) throw new BrokerError(409, "Issue is busy; retry result submission.");
+    if (!reservationMutex) throw new BrokerError(503, "Issue is busy; retry result submission.", "issue_busy");
     let claim: Awaited<ReturnType<typeof reserveResultIdentity>>;
     try {
       await reservationMutex.assertOwned();
@@ -62,7 +62,7 @@ export async function fetch(req: Request): Promise<Response> {
         throw new BrokerError(409, "Lease is absent, expired, or belongs to another contributor.");
       }
       const completionMutex = await acquireRenewableIssueMutex(lease.issue_number);
-      if (!completionMutex) throw new BrokerError(409, "Issue is busy; retry result submission.");
+      if (!completionMutex) throw new BrokerError(503, "Issue is busy; retry result submission.", "issue_busy");
       try {
         await completionMutex.assertOwned();
         await requireLeaseOwnership(await fetchIssue(lease.issue_number), lease);

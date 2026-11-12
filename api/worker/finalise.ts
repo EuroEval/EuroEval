@@ -155,7 +155,7 @@ export async function fetch(req: Request): Promise<Response> {
       await redis("SET", statusKey, JSON.stringify(receipt), "EX", String(30 * 24 * 60 * 60));
     }
     if (Date.parse(lease.expires_at) <= Date.now()) throw new BrokerError(409, "Lease is absent, expired, or belongs to another worker.");
-    const mutex = await acquireRenewableIssueMutex(lease.issue_number); if (!mutex) throw new BrokerError(409, "Issue is busy; retry finalisation.");
+    const mutex = await acquireRenewableIssueMutex(lease.issue_number); if (!mutex) throw new BrokerError(503, "Issue is busy; retry finalisation.", "issue_busy");
     try {
       const issue = await fetchIssue(lease.issue_number);
       await requireLeaseOwnership(issue, lease);
