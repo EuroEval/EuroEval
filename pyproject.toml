@@ -54,6 +54,7 @@ dependencies = [
 [project.optional-dependencies]
 generative = [
     "timm>=1.0.19",
+    "transformers[mistral-common]>=5.14.0,<5.15.0",
     # vLLM setup for MacOS (versions specified below in sources)
     "vllm; platform_system == 'Darwin'",
     "vllm-metal; platform_system == 'Darwin'",
@@ -67,6 +68,7 @@ laya = [
 ]
 all = [
     "timm>=1.0.19",
+    "transformers[mistral-common]>=5.14.0,<5.15.0",
     # vLLM setup for MacOS (versions specified below in sources)
     "vllm; platform_system == 'Darwin'",
     "vllm-metal; platform_system == 'Darwin'",
@@ -142,7 +144,8 @@ kev = { git = "https://github.com/jaredpalmer/kev.git", rev = "5e42a7a03f2813485
 
 [tool.uv]
 override-dependencies = [
-  "transformers[mistral-common]>=5.14.0",
+  # vLLM 0.27.1 has an incompatible global head_dim guard in Transformers 5.15.
+  "transformers[mistral-common]>=5.14.0,<5.15.0",
   "python-dotenv>=1.2.2",
   "numpy>=2.5.1",
   # Kev's upper torch bound conflicts with the project-wide vLLM resolution.
