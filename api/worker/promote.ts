@@ -8,7 +8,7 @@ import {
   releaseResultReservations,
   removeIssueLabel, replaceVolunteerMarker, requireProtocol,
   savePromotionReservation, selectedLanguages, signVolunteerMarker, unassignIssue,
-  verifyVolunteerMarker,
+  verifyVolunteerMarker, reconcilePublicAssignments,
 } from "./_lib.js";
 import type {
   PromotionRecord, PromotionReservation, VolunteerLeaseMarker,
@@ -129,6 +129,7 @@ export default async function handler(req: Request): Promise<Response> {
           fenced.submissions?.find((item) => item.submission_id === submissionId)?.status !== outcome) {
         throw new BrokerError(409, "Promotion fence lost.");
       }
+      await reconcilePublicAssignments(fencedIssue, fenced, () => mutex.assertOwned());
       const reviewLabel = process.env.COMMUNITY_REVIEW_LABEL || "community-review-ready";
       const resultsLabel = process.env.RESULTS_READY_LABEL || "results-ready";
       if (plan.complete && !fencedIssue.labels?.some((item) => item.name === resultsLabel)) {

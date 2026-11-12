@@ -3,6 +3,7 @@ import {
   brokerErrorBody, deleteLease, enforceRateLimit, fetchIssue, getLeaseById, json, method,
   parseVolunteerMarker, patchIssue, readJson, replaceVolunteerMarker, VOLUNTEER_MARKER_RE,
   requireProtocol, signVolunteerMarker, unassignIssue, verifyVolunteerMarker,
+  reconcilePublicAssignments,
 } from "./_lib.js";
 import type { VolunteerLeaseMarker } from "./_lib.js";
 
@@ -21,9 +22,17 @@ function expectedAssignees(marker: VolunteerLeaseMarker): Set<string> {
 function assigneesMatch(
   assignees: Array<{ login: string }> | undefined,
   expected: Set<string>,
+  allowAdditional = false,
 ): boolean {
   const actual = new Set((assignees || []).map((item) => item.login.toLowerCase()));
-  return actual.size === expected.size && [...actual].every((login) => expected.has(login));
+  return [...expected].every((login) => actual.has(login)) &&
+    (allowAdditional || actual.size === expected.size);
+}
+
+function hasPublicOwnership(marker: VolunteerLeaseMarker): boolean {
+  return marker.leases.some((lease) => lease.ownership_mode === "public") ||
+    (marker.submissions || []).some((submission) => submission.ownership_mode === "public") ||
+    !!marker.public_assignees?.length;
 }
 
 export default async function handler(req: Request): Promise<Response> {
@@ -79,8 +88,8 @@ export default async function handler(req: Request): Promise<Response> {
           item.ownership_mode !== "public" && item.verified_contributor.toLowerCase() === contributor);
       const withoutContributor = new Set(markerExpected);
       if (!retained) withoutContributor.delete(contributor);
-      if (!assigneesMatch(current.assignees, markerExpected) &&
-          (retained || !assigneesMatch(current.assignees, withoutContributor))) {
+      if (!assigneesMatch(current.assignees, markerExpected, hasPublicOwnership(marker)) &&
+          (retained || !assigneesMatch(current.assignees, withoutContributor, hasPublicOwnership(marker)))) {
         throw new BrokerError(409, "GitHub release assignment changed; retry release.");
       }
 
@@ -115,10 +124,11 @@ export default async function handler(req: Request): Promise<Response> {
       }
       const remaining = marker.leases.filter((item) => item.lease_id !== lease.lease_id);
       const nextExpected = expectedAssignees({ ...marker, leases: remaining });
-      if (!assigneesMatch(current.assignees, nextExpected)) {
+      if (!assigneesMatch(current.assignees, nextExpected, hasPublicOwnership(marker))) {
         throw new BrokerError(409, "GitHub release assignment changed; retry release.");
       }
-      const nextMarker = remaining.length || marker.submissions?.length || marker.completed_languages?.length
+      const nextMarker = remaining.length || marker.submissions?.length || marker.completed_languages?.length ||
+          marker.public_assignees?.length
         ? { ...marker, submission: marker.submissions?.length ? "submitted" as const : "active" as const, leases: remaining }
         : null;
       await mutex.assertOwned();
@@ -138,9 +148,10 @@ export default async function handler(req: Request): Promise<Response> {
         throw new BrokerError(409, "GitHub release fence lost.");
       }
       const finalExpected = marker ? expectedAssignees(marker) : new Set<string>();
-      if (!assigneesMatch(current.assignees, finalExpected)) {
+      if (!assigneesMatch(current.assignees, finalExpected, marker ? hasPublicOwnership(marker) : false)) {
         throw new BrokerError(409, "GitHub release assignment changed; retry release.");
       }
+      if (marker) await reconcilePublicAssignments(current, marker, () => mutex.assertOwned());
       await deleteLease(lease);
     } finally { await mutex.release(); }
     return json(200, { protocol_version: PROTOCOL_VERSION, status: "released", lease_id: lease.lease_id });

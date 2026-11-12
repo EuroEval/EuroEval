@@ -175,7 +175,6 @@ const emit = defineEmits<{
                 <span>@{{ evaluator.login }}</span>
               </a>
             </div>
-            <span v-else-if="e.publicVolunteer" class="public-volunteer" title="Verified by the volunteer broker; this issue is intentionally unassigned.">Public volunteer</span>
             <span v-else class="muted">—</span>
           </td>
           <td class="time-col" style="text-align: center">
@@ -264,12 +263,6 @@ const emit = defineEmits<{
   align-items: center;
   gap: 0.25rem;
   white-space: nowrap;
-}
-
-.public-volunteer {
-  color: var(--color-text-muted, #555);
-  font-size: 0.85rem;
-  font-weight: 600;
 }
 
 .evaluator img {

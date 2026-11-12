@@ -98,7 +98,7 @@ test("public ownership markers are signed-contract data without assignee require
   const parsed = parseVolunteerMarker(renderVolunteerMarker(marker));
   assert.equal(parsed.leases[0].ownership_mode, "public");
   assert.equal(volunteerAssigneesMatch([], parsed), true);
-  assert.equal(volunteerAssigneesMatch([{ login: "unrelated" }], parsed), false);
+  assert.equal(volunteerAssigneesMatch([{ login: "unrelated" }], parsed), true);
 });
 
 test("assignee ownership is case-insensitive and excludes manual identities", () => {

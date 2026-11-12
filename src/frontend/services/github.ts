@@ -76,27 +76,40 @@ function currentAssignees(issue: RawIssue): RawAssignee[] {
   return issue.assignee ? [issue.assignee] : [];
 }
 
-export function evaluatorsFromIssue(issue: RawIssue): QueueEvaluator[] {
+export function mergeQueueEvaluators(
+  assigned: QueueEvaluator[],
+  trustedPublic: QueueEvaluator[],
+): QueueEvaluator[] {
   const evaluators: QueueEvaluator[] = [];
   const seen = new Set<string>();
-  for (const assignee of currentAssignees(issue)) {
-    const key = assignee.login.toLowerCase();
+  for (const evaluator of [...assigned, ...trustedPublic]) {
+    const key = evaluator.login.toLowerCase();
     if (seen.has(key)) {
       const existing = evaluators.find(
         (evaluator) => evaluator.login.toLowerCase() === key,
       );
-      if (existing && !existing.avatarUrl && assignee.avatar_url) {
-        existing.avatarUrl = assignee.avatar_url;
+      if (existing && !existing.avatarUrl && evaluator.avatarUrl) {
+        existing.avatarUrl = evaluator.avatarUrl;
       }
       continue;
     }
     seen.add(key);
     evaluators.push({
-      login: assignee.login,
-      avatarUrl: assignee.avatar_url || null,
+      login: evaluator.login,
+      avatarUrl: evaluator.avatarUrl,
     });
   }
   return evaluators;
+}
+
+export function evaluatorsFromIssue(issue: RawIssue): QueueEvaluator[] {
+  return mergeQueueEvaluators(
+    currentAssignees(issue).map((assignee) => ({
+      login: assignee.login,
+      avatarUrl: assignee.avatar_url || null,
+    })),
+    [],
+  );
 }
 
 const MODEL_ID_BODY_RE = /(?:^|\n)#{1,6}\s*Model ID\s*\n+([^\n]+)/i;
@@ -140,7 +153,10 @@ export function issueStatus(
   return "Waiting";
 }
 
-export function toQueueEntry(issue: RawIssue, publicIssueNumbers: ReadonlySet<number> = new Set()): QueueEntry | null {
+export function toQueueEntry(
+  issue: RawIssue,
+  publicEvaluators: ReadonlyMap<number, QueueEvaluator[]> = new Map(),
+): QueueEntry | null {
   const modelId = extractModelId(issue.title, issue.body);
   if (!modelId) return null;
   // The queue can't run GGUF models. We rely on the GGUF_LABEL applied by the
@@ -157,8 +173,11 @@ export function toQueueEntry(issue: RawIssue, publicIssueNumbers: ReadonlySet<nu
     modelId,
     languageGroups: extractLanguageGroups(issue.body),
     status: issueStatus(issue, failed, gated, resultsReady),
-    publicVolunteer: publicIssueNumbers.has(issue.number),
-    evaluators: evaluatorsFromIssue(issue),
+    publicVolunteer: (publicEvaluators.get(issue.number)?.length ?? 0) > 0,
+    evaluators: mergeQueueEvaluators(
+      evaluatorsFromIssue(issue),
+      publicEvaluators.get(issue.number) ?? [],
+    ),
     createdAt: issue.created_at,
   };
 }
@@ -184,10 +203,24 @@ export async function listOpenEvalIssues(
     raw.push(...chunk);
     if (chunk.length < 100) break;
   }
-  let publicIssueNumbers = new Set<number>();
+  const publicEvaluators = new Map<number, QueueEvaluator[]>();
   try {
     const projection = await fetch("/api/hall-of-fame?projection=queue", init);
-    if (projection.ok) publicIssueNumbers = new Set((await projection.json()) as number[]);
+    if (projection.ok) {
+      const entries = (await projection.json()) as Array<{
+        number: number;
+        evaluators: Array<{ login: string; avatar_url?: string }>;
+      }>;
+      for (const entry of entries) {
+        publicEvaluators.set(
+          entry.number,
+          entry.evaluators.map((evaluator) => ({
+            login: evaluator.login,
+            avatarUrl: evaluator.avatar_url || null,
+          })),
+        );
+      }
+    }
   } catch {
     // Queue loading remains available if the optional trusted projection is unavailable.
   }
@@ -199,7 +232,7 @@ export async function listOpenEvalIssues(
     Error: 4,
   };
   return raw
-    .map((issue) => toQueueEntry(issue, publicIssueNumbers))
+    .map((issue) => toQueueEntry(issue, publicEvaluators))
     .filter((e): e is QueueEntry => e !== null)
     .sort((a, b) => {
       if (a.status !== b.status) return order[a.status] - order[b.status];
