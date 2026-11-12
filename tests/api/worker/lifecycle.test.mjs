@@ -462,8 +462,8 @@ for (const lateCandidate of [false, true]) test(
   }
 });
 
-for (const contention of ["global", "issue-only", "issue-later"]) test(
-  `claim retries on ${contention} mutex contention${contention === "issue-later" ? " and claims a later candidate" : ""}`,
+for (const contention of ["global", "issue-only", "issue-later", "issue-later-arm64", "issue-later-aarch64", "issue-later-arm-fallback"]) test(
+  `claim retries on ${contention} mutex contention${contention.startsWith("issue-later") ? " and claims a later candidate" : ""}`,
   async () => {
   const originalFetch = globalThis.fetch;
   const originalEnv = { ...process.env };
@@ -478,6 +478,13 @@ for (const contention of ["global", "issue-only", "issue-later"]) test(
     }] }) });
   const language = "Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)";
   const issueNumbers = contention === "issue-only" ? [12] : [12, 13];
+  const architecture = contention.includes("arm") ? "arm64" :
+    contention.endsWith("aarch64") ? "aarch64" : "amd64";
+  const expectedImageDigest = architecture === "amd64" || contention.endsWith("fallback")
+    ? "sha256:image" : "sha256:arm-image";
+  if (architecture !== "amd64" && !contention.endsWith("fallback")) {
+    process.env.VOLUNTEER_WORKER_IMAGE_DIGEST_ARM64 = expectedImageDigest;
+  }
   const issues = issueNumbers.map((number) => ({ number, title: "[MODEL EVALUATION REQUEST] org/model",
     body: `### Model ID\n\norg/model\n\n- [x] ${language}\n`, state: "open", assignees: [] }));
   const credentialKey = `euroeval:worker:credential:${await sha256("credential")}`;
@@ -525,20 +532,22 @@ for (const contention of ["global", "issue-only", "issue-later"]) test(
     const makeRequest = () => new Request("https://euroeval.test/api/worker/claim", {
       method: "POST", headers: { authorization: "Bearer credential", "content-type": "application/json" },
       body: JSON.stringify({ protocol_version: "volunteer-worker/v1", worker_version: "1.0.0",
-        hardware: { architecture: "amd64", free_disk_bytes: 1_000_000,
+        hardware: { architecture, free_disk_bytes: 1_000_000,
           gpu_memory_utilisation: 0.8, selected_gpu_index: 0, selected_gpu_uuid: "gpu",
           gpus: [{ index: 0, name: "GPU", uuid: "gpu", free_memory_bytes: 1_000_000,
             total_memory_bytes: 1_000_000 }] } }),
     });
     const response = await claim(makeRequest());
-    if (contention !== "issue-later") {
+    if (!contention.startsWith("issue-later")) {
       assert.equal(response.status, 503, await response.clone().text());
       assert.deepEqual(await response.json(), { protocol_version: "volunteer-worker/v1",
         error: "Claim is busy; retry claim.", code: "claim_busy" });
       assert.deepEqual(mutations, []);
     } else {
       assert.equal(response.status, 200, await response.clone().text());
-      assert.equal((await response.json()).issue_number, 13);
+      const result = await response.json();
+      assert.equal(result.issue_number, 13);
+      assert.equal(result.image_digest, expectedImageDigest);
       assert.deepEqual(mutations, [13]);
     }
   } finally {

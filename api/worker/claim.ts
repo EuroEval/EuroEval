@@ -158,7 +158,13 @@ export default async function handler(req: Request): Promise<Response> {
     if (!validHardware(body.hardware)) throw new BrokerError(400, "hardware must contain well-formed GPUs and free disk.");
     if (typeof body.worker_version !== "string" || !body.worker_version.trim()) throw new BrokerError(400, "worker_version is required.");
     markerSecret();
-    const imageDigest = env("VOLUNTEER_WORKER_IMAGE_DIGEST");
+    const architecture = body.hardware.architecture;
+    let arm64ImageDigest: string | undefined;
+    if (architecture === "arm64" || architecture === "aarch64") {
+      try { arm64ImageDigest = env("VOLUNTEER_WORKER_IMAGE_DIGEST_ARM64"); }
+      catch (error) { if (!(error instanceof ConfigurationError)) throw error; }
+    }
+    const imageDigest = arm64ImageDigest || env("VOLUNTEER_WORKER_IMAGE_DIGEST");
     const euroevalVersion = env("EUROEVAL_VERSION").replace(/\.dev$/, ".dev0");
     validateScopePolicyVersion(euroevalVersion);
     const requiredWorkerVersion = env("VOLUNTEER_WORKER_VERSION");
