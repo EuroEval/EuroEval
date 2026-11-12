@@ -2,12 +2,12 @@ declare const process: { env: Record<string, string | undefined> };
 
 import {
   BrokerError, ConfigurationError, PROTOCOL_VERSION, env, enforceRateLimit, fetchWithRetry, json, method, randomToken, readJson,
-  redisDelete, redisGet, redisSet, sha256, requireProtocol,
+  redisDelete, redisGet, redisSet, sha256, requireProtocol, appGrantEnabled, retainUserGrant,
 } from "../_lib.js";
 
 export const config = { runtime: "edge" };
 
-type Device = { device_code: string; client_id: string; interval: number; next_poll_at?: number };
+type Device = { device_code: string; client_id: string; interval: number; app_mode?: boolean; next_poll_at?: number };
 
 export default async function handler(req: Request): Promise<Response> {
   const rejected = method(req); if (rejected) return rejected;
@@ -25,7 +25,7 @@ export default async function handler(req: Request): Promise<Response> {
       headers: { accept: "application/json", "content-type": "application/json" },
       body: JSON.stringify({ client_id: device.client_id || env("GITHUB_OAUTH_CLIENT_ID"), device_code: device.device_code, grant_type: "urn:ietf:params:oauth:grant-type:device_code" }),
     });
-    const data = await response.json() as { access_token?: string; error?: string; error_description?: string };
+    const data = await response.json() as { access_token?: string; refresh_token?: string; expires_in?: number; refresh_token_expires_in?: number; error?: string; error_description?: string };
     if (data.error === "authorization_pending" || data.error === "slow_down") {
       const interval = data.error === "slow_down" ? Math.max(5, device.interval + 5) : device.interval;
       await redisSet(key, JSON.stringify({ ...device, interval, next_poll_at: Date.now() + interval * 1000 }), 900);
@@ -35,11 +35,30 @@ export default async function handler(req: Request): Promise<Response> {
       await redisDelete(key);
       throw new BrokerError(401, data.error_description || "GitHub device authorisation was denied or expired.");
     }
+    if (device.app_mode && !appGrantEnabled()) throw new ConfigurationError("GitHub App grant configuration changed during authorization.");
     const userResponse = await fetchWithRetry("https://api.github.com/user", { headers: { accept: "application/vnd.github+json", authorization: `Bearer ${data.access_token}`, "x-github-api-version": "2022-11-28" } });
     // Deliberately keep the token in this scope only. It is never returned or persisted.
     if (!userResponse.ok) { await redisDelete(key); throw new BrokerError(401, "GitHub could not identify this worker."); }
     const user = await userResponse.json() as { login?: string };
     if (!user.login) { await redisDelete(key); throw new BrokerError(401, "GitHub could not identify this worker."); }
+    if (device.app_mode) {
+      if (!data.refresh_token || !data.expires_in || !data.refresh_token_expires_in) {
+        throw new BrokerError(401, "GitHub App authorization did not provide renewable tokens.");
+      }
+      const credential = randomToken(32);
+      const hash = await sha256(credential);
+      const ttl = 30 * 24 * 60 * 60;
+      await redisSet(`euroeval:worker:credential:${hash}`, JSON.stringify({ contributor: user.login, issued_at: new Date().toISOString(), grant_mode: "app" }), ttl);
+      try {
+        await retainUserGrant(data.access_token, data.refresh_token, Date.now() + data.expires_in * 1000,
+          Date.now() + data.refresh_token_expires_in * 1000, credential, user.login);
+      } catch (error) {
+        await redisDelete(`euroeval:worker:credential:${hash}`);
+        throw error;
+      }
+      await redisDelete(key);
+      return json(200, { protocol_version: PROTOCOL_VERSION, status: "authorised", credential, github_login: user.login, expires_in: ttl });
+    }
     const clientSecret = process.env.GITHUB_OAUTH_CLIENT_SECRET;
     if (!clientSecret) throw new ConfigurationError("GITHUB_OAUTH_CLIENT_SECRET is required to revoke the device grant before issuing a credential.");
     const revoked = await fetchWithRetry(`https://api.github.com/applications/${device.client_id}/grant`, {

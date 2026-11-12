@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import poll from "../../../api/worker/auth/poll.ts";
 import { authenticate } from "../../../api/worker/_lib/auth.ts";
+import { appGrantEnabled } from "../../../api/worker/_lib/user-grants.ts";
 
 const redisUrl = "https://redis.test";
 const redisToken = "redis-token";
@@ -16,6 +17,15 @@ function setEnvironment(values) {
     }
   };
 }
+
+test("GitHub App grant configuration fails closed when partially configured", () => {
+  const restoreEnvironment = setEnvironment({ VOLUNTEER_GITHUB_APP_CLIENT_ID: "app-client" });
+  try {
+    assert.throws(() => appGrantEnabled(), /configuration is incomplete/i);
+  } finally {
+    restoreEnvironment();
+  }
+});
 
 test("device polling issues a credential to the repository maintainer", async () => {
   const restoreEnvironment = setEnvironment({

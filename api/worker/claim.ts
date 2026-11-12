@@ -4,7 +4,7 @@ import {
   claimableLanguages, env, expectedScope, validateScopePolicyVersion,
   extractModelId, enforceRateLimit, fitsGpu, fetchIssue, json, languageGroup, leaseTtl, selectedGpu,
   listOpenIssues, method,
-  patchIssue, putLease, randomToken, readJson, deleteLease, unassignIssue,
+  patchIssue, putLease, randomToken, readJson, deleteLease, unassignIssue, hasIssueAssignee, ensureVolunteerComment,
   reconcilePublicAssignments,
   getLeaseForIssue, reclaimExpiredLease,
   modelMayFit, parseVolunteerMarker, resolveModel, selectedLanguages, volunteerAssigneesMatch,
@@ -363,7 +363,10 @@ export default async function handler(req: Request): Promise<Response> {
               !volunteerAssigneesMatch(after.assignees, afterMarker)) {
             throw new BrokerError(409, "GitHub ownership fence lost during claim.");
           }
-          await reconcilePublicAssignments(after, afterMarker, () => mutex.assertOwned());
+          const reconciled = await reconcilePublicAssignments(after, afterMarker, () => mutex.assertOwned());
+          if (!hasIssueAssignee(reconciled.issue, identity.contributor)) {
+            await ensureVolunteerComment(identity, snapshot.number, () => mutex.assertOwned()).catch(() => undefined);
+          }
         } catch (error) {
           // Never restore a stale body: another lease may have been added while
           // GitHub was unavailable. Remove only our reservation when still present.
