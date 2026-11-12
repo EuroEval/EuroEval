@@ -1642,23 +1642,27 @@ def test_sync_production_version_changes_only_the_selected_public_variable(
                 "--force",
                 "--yes",
                 "--type",
-                "plain",
+                "config",
             ]
             assert kwargs["input_text"] == "18.4.0.dev0\n"
             return operations.CommandResult(0)
         if command[:3] == ["vercel", "env", "ls"]:
             return operations.CommandResult(
-                0, '[{"key":"EUROEVAL_VERSION","target":["production"],"type":"plain"}]'
+                0,
+                '[{"key":"EUROEVAL_VERSION","target":["production"],'
+                '"type":"encrypted"}]',
             )
+        if command[:3] == ["vercel", "env", "pull"]:
+            Path(command[3]).write_text(
+                "EUROEVAL_VERSION=18.4.0.dev0\n", encoding="utf-8"
+            )
+            return operations.CommandResult(0)
         return operations.CommandResult(0)
 
     monkeypatch.setattr(operations, "run_command", fake_command)
-    diagnostics = operations.sync_production_version(
-        version="18.4.0.dev0", environment=environment
-    )
-    operations.print_diagnostics(diagnostics)
+    monkeypatch.setattr(operations.os, "environ", environment)
+    assert operations.main(["sync-production-version", "--version", "18.4.0.dev0"]) == 0
 
-    assert not any(item.failed for item in diagnostics)
     assert [
         command[3] for command, _ in commands if command[:3] == ["vercel", "env", "add"]
     ] == ["EUROEVAL_VERSION"]
