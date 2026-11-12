@@ -178,6 +178,7 @@ class Worker:
     """Authenticate, claim, evaluate, and submit one lease at a time."""
 
     _max_submission_attempts = 3
+    _max_claim_attempts = 5
     _max_retry_delay = 30.0
 
     def __init__(
@@ -298,7 +299,7 @@ class Worker:
     def _claim_with_reauthentication(
         self, credential: str, hardware: HardwareReport
     ) -> tuple[str, Claim]:
-        """Claim once, replacing one revoked cached credential at most once.
+        """Claim with bounded transient retries and one revoked-token refresh.
 
         Args:
                     credential:
@@ -311,22 +312,42 @@ class Worker:
 
         Raises:
                     BrokerError:
-                        If claiming fails after one authentication retry.
+                        If claiming fails after retries or authentication refresh.
         """
-        try:
-            return credential, self.client.claim(
-                credential=credential, hardware=hardware
+        auth_attempted = False
+        transient_attempts = 0
+        while True:
+            try:
+                return credential, self.client.claim(
+                    credential=credential, hardware=hardware
+                )
+            except BrokerError as error:
+                if error.status == 401 and not auth_attempted:
+                    self.state.clear_auth()
+                    credential, login = authenticate(
+                        client=self.client, state=self.state
+                    )
+                    self._login = login
+                    self._credential = credential
+                    auth_attempted = True
+                    continue
+                if not _transient(error):
+                    raise
+                retry_after = error.retry_after
+                retry_error: Exception = error
+            except (OSError, TimeoutError) as error:
+                retry_after = None
+                retry_error = error
+
+            if transient_attempts >= self._max_claim_attempts - 1:
+                raise retry_error
+            delay = _retry_delay(
+                attempt=transient_attempts,
+                retry_after=retry_after,
+                maximum=self._max_retry_delay,
             )
-        except BrokerError as error:
-            if error.status != 401:
-                raise
-            self.state.clear_auth()
-            new_credential, login = authenticate(client=self.client, state=self.state)
-            self._login = login
-            self._credential = new_credential
-            return new_credential, self.client.claim(
-                credential=new_credential, hardware=hardware
-            )
+            transient_attempts += 1
+            time.sleep(delay)
 
     def _discover_hardware(self) -> HardwareReport:
         """Discover hardware against the worker's writable state filesystem.

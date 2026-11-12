@@ -222,12 +222,135 @@ class Broker:
         raise self.error
 
 
+def test_claim_retries_transient_error_without_reauthentication(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A transient claim error is retried with the existing credential.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for worker state.
+    """
+    broker = ClaimRetryBroker(
+        errors=[BrokerError("temporary", status=503, retry_after=4)]
+    )
+    authentications: list[bool] = []
+    delays: list[float] = []
+    monkeypatch.setattr(
+        runtime,
+        "authenticate",
+        lambda client, state: (
+            authentications.append(True) or "credential",
+            "volunteer",
+        ),
+    )
+    monkeypatch.setattr(runtime.time, "sleep", delays.append)
+    worker = runtime.Worker(
+        client=broker, state=StateStore(tmp_path), hardware_factory=lambda: HARDWARE
+    )
+
+    worker.run(once=True)
+
+    assert broker.claims == 2
+    assert authentications == [True]
+    assert delays == [4]
+
+
+class ClaimRetryBroker(Broker):
+    """Broker double that fails a configured number of claims."""
+
+    def __init__(self, errors: list[BrokerError]) -> None:
+        """Initialise the claim sequence.
+
+        Args:
+            errors:
+                Errors to return before reporting no work.
+        """
+        super().__init__(error=BrokerError("unused"))
+        self.errors = errors
+
+    def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+        """Raise the next configured error, then return no work.
+
+        Args:
+            credential:
+                Credential supplied by the worker.
+            hardware:
+                Hardware report supplied by the worker.
+
+        Returns:
+            A no-work claim after configured errors are exhausted.
+        """
+        del credential, hardware
+        self.claims += 1
+        if self.errors:
+            raise self.errors.pop(0)
+        return Claim(lease=None)
+
+
+def test_claim_retry_exhaustion_is_bounded(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Claim retry exhaustion surfaces the final transient error.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for worker state.
+    """
+    broker = ClaimRetryBroker(
+        errors=[BrokerError("unavailable", status=503) for _ in range(5)]
+    )
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("credential", "volunteer")
+    )
+    delays: list[float] = []
+    monkeypatch.setattr(runtime.time, "sleep", delays.append)
+    worker = runtime.Worker(
+        client=broker, state=StateStore(tmp_path), hardware_factory=lambda: HARDWARE
+    )
+
+    with pytest.raises(BrokerError, match="unavailable"):
+        worker.run(once=True)
+
+    assert broker.claims == 5
+    assert delays == [1, 2, 4, 8]
+
+
 def test_operations_inventory_has_no_removed_login() -> None:
     """Maintainer automation does not require or probe a fixed GitHub login."""
     source = Path(operations.__file__).read_text(encoding="utf-8")
     assert "WORKER_COORDINATOR_LOGIN" not in source
     assert "WORKER_COORDINATOR_SECRET" in operations.REQUIRED_ENVIRONMENT
     assert "WORKER_COORDINATOR_LOGIN" not in operations.REQUIRED_ENVIRONMENT
+
+
+def test_permanent_claim_error_fails_without_retry(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A permanent claim rejection is not retried.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for worker state.
+    """
+    broker = ClaimRetryBroker(errors=[BrokerError("invalid", status=422)])
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("credential", "volunteer")
+    )
+    worker = runtime.Worker(
+        client=broker, state=StateStore(tmp_path), hardware_factory=lambda: HARDWARE
+    )
+
+    with pytest.raises(BrokerError, match="invalid"):
+        worker.run(once=True)
+
+    assert broker.claims == 1
 
 
 def test_structured_broker_error_preserves_code_message_and_redaction() -> None:
