@@ -126,6 +126,15 @@ def main(argv: list[str] | None = None) -> int:
     if arguments.reuse_vercel_kv and arguments.command != "apply":
         print("--reuse-vercel-kv requires apply; no changes were made.")
         return 2
+    if arguments.command == "sync-production-version":
+        if arguments.version is None:
+            print("sync-production-version requires --version.")
+            return 2
+        diagnostics = sync_production_version(
+            version=arguments.version, environment=environment
+        )
+        print_diagnostics(diagnostics)
+        return int(any(item.failed for item in diagnostics))
     if arguments.command == "plan":
         print_plan(environment=environment)
         return 0
@@ -1223,16 +1232,16 @@ def check_vercel(*, environment: dict[str, str]) -> list[Diagnostic]:
 
 
 def normalise_version(value: str) -> str:
-    """Treat the source-only trailing development marker as its release version.
+    """Return the canonical package version without collapsing development releases.
 
     Args:
         value:
             Source version string to normalise.
 
     Returns:
-        Normalised version, preserving any genuinely different development release.
+        Canonical PEP 440 version, including its development suffix when present.
     """
-    return re.sub(r"\.dev(?:0)?$", "", value)
+    return f"{value}0" if value.endswith(".dev") else value
 
 
 def source_versions() -> tuple[str, str]:
@@ -1872,7 +1881,11 @@ def parse_arguments(argv: list[str] | None) -> argparse.Namespace:
         Parsed arguments.
     """
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("plan", "check", "apply", "smoke"))
+    parser.add_argument(
+        "command",
+        choices=("plan", "check", "apply", "smoke", "sync-production-version"),
+    )
+    parser.add_argument("--version", help="Version for sync-production-version.")
     parser.add_argument(
         "--component",
         action="append",
@@ -2008,6 +2021,123 @@ def selected_components(
     if explicit:
         return requested
     return requested or {"tools", "policy", "github", "vercel", "hf", "redis", "ghcr"}
+
+
+def sync_production_version(
+    *, version: str, environment: dict[str, str]
+) -> list[Diagnostic]:
+    """Set only Vercel Production EUROEVAL_VERSION after validating both policies.
+
+    Args:
+        version:
+            Canonical stable or development version represented by both policies.
+        environment:
+            Environment values available to the Vercel CLI.
+
+    Returns:
+        Safe diagnostics for policy validation and the single Vercel variable update.
+    """
+    if not re.fullmatch(
+        r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:\.dev(?:0|[1-9]\d*))?",
+        version,
+    ):
+        return [
+            Diagnostic("vercel", "invalid config", "version is not canonical", True)
+        ]
+    policy_path = Path("api/worker/scope-policy.json")
+    typescript_path = Path("api/worker/_lib/scope-policy.generated.ts")
+    try:
+        policy = json.loads(policy_path.read_text(encoding="utf-8"))
+        recorded = {str(entry["euroeval_version"]) for entry in policy["policies"]}
+        recorded.add(str(policy["policy_version"]).removeprefix("volunteer-scope/"))
+        typescript = typescript_path.read_text(encoding="utf-8")
+        generated_document = typescript.split(
+            "const generatedScopePolicy = ", maxsplit=1
+        )[1].split(" as const satisfies ScopePolicy;", maxsplit=1)[0]
+        typescript_policy = json.loads(generated_document)
+        typescript_versions = {
+            str(entry["euroeval_version"]) for entry in typescript_policy["policies"]
+        }
+        typescript_versions.add(
+            str(typescript_policy["policy_version"]).removeprefix("volunteer-scope/")
+        )
+    except (OSError, KeyError, TypeError, IndexError, json.JSONDecodeError):
+        return [
+            Diagnostic(
+                "policy", "missing config", "generated policies are invalid", True
+            )
+        ]
+    if recorded != {version} or typescript_versions != {version}:
+        return [
+            Diagnostic(
+                "policy",
+                "drift",
+                "generated policies do not match requested version",
+                True,
+            )
+        ]
+    freshness = run_command(
+        [
+            "uv",
+            "run",
+            "python",
+            "src/scripts/generate_volunteer_scope_policy.py",
+            "--version",
+            version,
+            "--check",
+        ]
+    )
+    if freshness.returncode:
+        return [Diagnostic("policy", "drift", "generated policies are stale", True)]
+    identity, verified = _check_vercel_project(environment=environment)
+    if not verified:
+        return identity
+    updated = run_command(
+        [
+            "vercel",
+            "env",
+            "add",
+            "EUROEVAL_VERSION",
+            "production",
+            "--force",
+            "--yes",
+            "--type",
+            "plain",
+        ],
+        input_text=version + "\n",
+        environment=environment,
+    )
+    if updated.returncode:
+        return [
+            Diagnostic(
+                "vercel",
+                "service failure",
+                "Production EUROEVAL_VERSION update failed",
+                True,
+            )
+        ]
+    metadata = run_command(["vercel", "env", "ls", "production", "--format=json"])
+    try:
+        entries = _json_list(metadata.stdout) if metadata.returncode == 0 else []
+        variable = next(
+            item
+            for item in entries
+            if item.get("key", item.get("name")) == "EUROEVAL_VERSION"
+        )
+        targets = variable.get("target", variable.get("targets"))
+        valid = targets and "production" in targets and variable.get("type") == "plain"
+    except (ValueError, StopIteration, TypeError):
+        valid = False
+    return [
+        Diagnostic(
+            "vercel",
+            "ok" if valid else "drift",
+            "Production EUROEVAL_VERSION: updated"
+            if valid
+            else "Production EUROEVAL_VERSION metadata could not be verified",
+            not valid,
+        )
+    ]
 
 
 if __name__ == "__main__":

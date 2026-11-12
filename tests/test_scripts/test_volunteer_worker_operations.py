@@ -322,7 +322,7 @@ def test_apply_rejects_noncanonical_euroeval_version_before_mutation(
 
     monkeypatch.setattr(operations, "source_versions", lambda: ("18.3.0.dev", "1.0.0"))
     monkeypatch.setattr(operations, "apply_github", unexpected_apply)
-    for configured in ("18.3.0.dev", "18.3.0.dev0", "18.3.0.dev1", "18.4.0"):
+    for configured in ("18.3.0.dev", "18.3.0.dev1", "18.4.0"):
         assert (
             operations.apply(
                 environment={"EUROEVAL_VERSION": configured},
@@ -426,7 +426,7 @@ def test_apply_vercel_adds_atomically_and_validates_metadata(
             ]
             return operations.CommandResult(0, json.dumps(metadata))
         assert "env" in command and "add" in command
-        expected_value = values.get(command[3], "18.3.0")
+        expected_value = values.get(command[3], "18.3.0.dev0")
         assert kwargs["input_text"] == expected_value + "\n"
         assert "--force" in command and "--yes" in command and "--type" in command
         return operations.CommandResult(0)
@@ -481,7 +481,7 @@ def test_check_policy_rejects_noncanonical_version_and_exact_policy_mismatch(
     configured = operations.check_policy(
         environment={"EUROEVAL_VERSION": "18.3.0.dev0"}
     )
-    assert any(
+    assert not any(
         item.failed and "EUROEVAL_VERSION" in item.message for item in configured
     )
 
@@ -1077,11 +1077,11 @@ def test_redis_requires_exact_pong_and_never_prints_url(
     assert url not in capsys.readouterr().out
 
 
-def test_release_version_normalisation_only_removes_source_marker() -> None:
-    """Source and PyPI versions align without hiding a different dev release."""
+def test_release_version_normalisation_preserves_development_release() -> None:
+    """Source and canonical PEP 440 versions align without collapsing releases."""
     assert operations.normalise_version("18.3.0") == "18.3.0"
-    assert operations.normalise_version("18.3.0.dev") == "18.3.0"
-    assert operations.normalise_version("18.3.0.dev0") == "18.3.0"
+    assert operations.normalise_version("18.3.0.dev") == "18.3.0.dev0"
+    assert operations.normalise_version("18.3.0.dev0") == "18.3.0.dev0"
     assert operations.normalise_version("18.3.0.dev1") == "18.3.0.dev1"
     assert operations.normalise_version("18.4.0") != operations.normalise_version(
         "18.3.0.dev"
@@ -1572,6 +1572,97 @@ def test_smoke_accepts_protected_401_or_deployed_missing_config(
     )
 
     assert not any(diagnostic.failed for diagnostic in diagnostics)
+
+
+def test_sync_production_version_changes_only_the_selected_public_variable(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Production sync checks policy alignment and sends only the version value.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing external operations.
+        tmp_path:
+            Temporary directory for the linked Vercel project and policy artifacts.
+        capsys:
+            Pytest fixture for checking that diagnostics contain no secret values.
+    """
+    monkeypatch.chdir(tmp_path)
+    _vercel_link(tmp_path)
+    policy_dir = tmp_path / "api/worker"
+    policy_dir.mkdir(parents=True)
+    (policy_dir / "scope-policy.json").write_text(
+        json.dumps(
+            {
+                "policy_version": "volunteer-scope/18.4.0.dev0",
+                "policies": [{"euroeval_version": "18.4.0.dev0"}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    ts_path = policy_dir / "_lib/scope-policy.generated.ts"
+    ts_path.parent.mkdir()
+    ts_path.write_text(
+        "const generatedScopePolicy = "
+        '{"policy_version":"volunteer-scope/18.4.0.dev0",'
+        '"policies":[{"euroeval_version":"18.4.0.dev0"}]}'
+        " as const satisfies ScopePolicy;",
+        encoding="utf-8",
+    )
+    environment = {
+        "VERCEL_PROJECT_ID": "project-id",
+        "VERCEL_ORG_ID": "team-id",
+        "VERCEL_PROJECT_NAME": "euroeval",
+        "VERCEL_TOKEN": "never-print-this",
+    }
+    commands: list[tuple[list[str], dict[str, object]]] = []
+
+    def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        """Mock Vercel and policy checks while recording all requested mutations.
+
+        Args:
+            command:
+                Command arguments submitted to the operation.
+            kwargs:
+                Optional execution settings, including version stdin.
+
+        Returns:
+            A successful result for expected Vercel operations.
+        """
+        commands.append((command, kwargs))
+        if command[:3] == ["vercel", "project", "inspect"]:
+            return operations.CommandResult(0, '{"id":"project-id","name":"euroeval"}')
+        if command[:3] == ["vercel", "env", "add"]:
+            assert command == [
+                "vercel",
+                "env",
+                "add",
+                "EUROEVAL_VERSION",
+                "production",
+                "--force",
+                "--yes",
+                "--type",
+                "plain",
+            ]
+            assert kwargs["input_text"] == "18.4.0.dev0\n"
+            return operations.CommandResult(0)
+        if command[:3] == ["vercel", "env", "ls"]:
+            return operations.CommandResult(
+                0, '[{"key":"EUROEVAL_VERSION","target":["production"],"type":"plain"}]'
+            )
+        return operations.CommandResult(0)
+
+    monkeypatch.setattr(operations, "run_command", fake_command)
+    diagnostics = operations.sync_production_version(
+        version="18.4.0.dev0", environment=environment
+    )
+    operations.print_diagnostics(diagnostics)
+
+    assert not any(item.failed for item in diagnostics)
+    assert [
+        command[3] for command, _ in commands if command[:3] == ["vercel", "env", "add"]
+    ] == ["EUROEVAL_VERSION"]
+    assert "never-print-this" not in capsys.readouterr().out
 
 
 @pytest.mark.parametrize(

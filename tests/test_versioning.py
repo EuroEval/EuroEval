@@ -64,7 +64,22 @@ def test_add_dev_version_is_idempotent_and_recovers_duplicate_suffix(
     if changed:
         assert commands == [
             ["uv", "lock"],
-            ["git", "add", "pyproject.toml", "uv.lock"],
+            [
+                "uv",
+                "run",
+                "python",
+                "src/scripts/generate_volunteer_scope_policy.py",
+                "--version",
+                expected_version,
+            ],
+            [
+                "git",
+                "add",
+                "pyproject.toml",
+                "uv.lock",
+                "api/worker/scope-policy.json",
+                "api/worker/_lib/scope-policy.generated.ts",
+            ],
             ["git", "commit", "-m", "chore: Add '.dev' suffix to the version number"],
             ["git", "push"],
         ]
@@ -120,14 +135,54 @@ def test_add_dev_version_restores_metadata_when_lock_fails(
     ("failure_command", "expected_commands"),
     [
         (
-            ["git", "add", "pyproject.toml", "uv.lock"],
-            [["uv", "lock"], ["git", "add", "pyproject.toml", "uv.lock"]],
+            [
+                "git",
+                "add",
+                "pyproject.toml",
+                "uv.lock",
+                "api/worker/scope-policy.json",
+                "api/worker/_lib/scope-policy.generated.ts",
+            ],
+            [
+                ["uv", "lock"],
+                [
+                    "uv",
+                    "run",
+                    "python",
+                    "src/scripts/generate_volunteer_scope_policy.py",
+                    "--version",
+                    "1.2.3.dev",
+                ],
+                [
+                    "git",
+                    "add",
+                    "pyproject.toml",
+                    "uv.lock",
+                    "api/worker/scope-policy.json",
+                    "api/worker/_lib/scope-policy.generated.ts",
+                ],
+            ],
         ),
         (
             ["git", "commit", "-m", "chore: Add '.dev' suffix to the version number"],
             [
                 ["uv", "lock"],
-                ["git", "add", "pyproject.toml", "uv.lock"],
+                [
+                    "uv",
+                    "run",
+                    "python",
+                    "src/scripts/generate_volunteer_scope_policy.py",
+                    "--version",
+                    "1.2.3.dev",
+                ],
+                [
+                    "git",
+                    "add",
+                    "pyproject.toml",
+                    "uv.lock",
+                    "api/worker/scope-policy.json",
+                    "api/worker/_lib/scope-policy.generated.ts",
+                ],
                 [
                     "git",
                     "commit",
@@ -140,7 +195,22 @@ def test_add_dev_version_restores_metadata_when_lock_fails(
             ["git", "push"],
             [
                 ["uv", "lock"],
-                ["git", "add", "pyproject.toml", "uv.lock"],
+                [
+                    "uv",
+                    "run",
+                    "python",
+                    "src/scripts/generate_volunteer_scope_policy.py",
+                    "--version",
+                    "1.2.3.dev",
+                ],
+                [
+                    "git",
+                    "add",
+                    "pyproject.toml",
+                    "uv.lock",
+                    "api/worker/scope-policy.json",
+                    "api/worker/_lib/scope-policy.generated.ts",
+                ],
                 [
                     "git",
                     "commit",
@@ -200,6 +270,27 @@ def test_add_dev_version_stops_after_git_failure(
     assert commands == expected_commands
 
 
+def test_current_version_reads_project_metadata_without_matching_other_versions(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Version parsing reads [project] rather than an unrelated earlier value.
+
+    Args:
+        tmp_path:
+            Temporary directory fixture.
+        monkeypatch:
+            Pytest fixture for changing the working directory.
+    """
+    (tmp_path / "pyproject.toml").write_text(
+        '[tool.example]\nversion = "9.8.7"\n\n'
+        '[project]\nname = "EuroEval"\nversion = "1.2.3.dev0"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    assert versioning.get_current_version() == (1, 2, 3)
+
+
 def test_set_new_version_stages_builtin_dataset_configs(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -235,6 +326,20 @@ def test_set_new_version_stages_builtin_dataset_configs(
     versioning.set_new_version(major=1, minor=1, patch=0)
 
     assert ["git", "add", "src/euroeval/dataset_configs/"] in commands
+    assert [
+        "uv",
+        "run",
+        "python",
+        "src/scripts/generate_volunteer_scope_policy.py",
+        "--version",
+        "1.1.0",
+    ] in commands
+    assert [
+        "git",
+        "add",
+        "api/worker/scope-policy.json",
+        "api/worker/_lib/scope-policy.generated.ts",
+    ] in commands
     assert commands[-4:] == [
         ["git", "commit", "-m", "feat: v1.1.0"],
         ["git", "tag", "v1.1.0"],

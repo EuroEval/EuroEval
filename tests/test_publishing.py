@@ -173,6 +173,8 @@ def test_publish_wrapper_orders_all_stages_and_stops_on_release_failure(
         "#!/bin/sh\n"
         'case "$*" in *get_project_version*) echo 18.4.0; exit 0 ;; esac\n'
         'echo "uv $*" >> "$COMMAND_LOG"\n'
+        'case "$*" in *build_vercel_frontend*) '
+        '[ "$FAIL_FRONTEND" != yes ] || exit 1 ;; esac\n'
         'if [ "$1" = publish ]; then\n'
         '  echo "package $(grep name pyproject.toml)" >> "$COMMAND_LOG"\n'
         "fi\n"
@@ -182,7 +184,9 @@ def test_publish_wrapper_orders_all_stages_and_stops_on_release_failure(
     uv.chmod(0o755)
     vercel = fake_bin / "vercel"
     vercel.write_text(
-        '#!/bin/sh\necho "vercel $*" >> "$COMMAND_LOG"\n', encoding="utf-8"
+        '#!/bin/sh\necho "vercel $*" >> "$COMMAND_LOG"\n'
+        'case "$*" in *build*) [ "$FAIL_FRONTEND" != yes ] ;; esac\n',
+        encoding="utf-8",
     )
     vercel.chmod(0o755)
     monkeypatch.setenv("HOME", str(tmp_path))
@@ -199,6 +203,7 @@ def test_publish_wrapper_orders_all_stages_and_stops_on_release_failure(
         check=False,
     )
     assert result.returncode == 0, result.stderr
+    assert "Published!" in result.stdout
     commands = log.read_text(encoding="utf-8").splitlines()
     release = next(i for i, line in enumerate(commands) if "--release-only" in line)
     euro = next(
@@ -208,10 +213,13 @@ def test_publish_wrapper_orders_all_stages_and_stops_on_release_failure(
         i for i, line in enumerate(commands) if 'package name = "ScandEval"' in line
     )
     dev = next(i for i, line in enumerate(commands) if "--add-dev" in line)
+    sync = next(
+        i for i, line in enumerate(commands) if "sync-production-version" in line
+    )
     frontend = next(
         i for i, line in enumerate(commands) if "deploy_vercel_frontend.py" in line
     )
-    assert euro < scandeval < release < dev < frontend
+    assert euro < scandeval < release < sync < frontend < dev
     assert "--release-only 18.4.0" in commands[release]
     assert (tmp_path / "src/euroeval").is_dir()
     assert not (tmp_path / "src/scandeval").exists()
@@ -229,7 +237,24 @@ def test_publish_wrapper_orders_all_stages_and_stops_on_release_failure(
     failure_commands = log.read_text(encoding="utf-8")
     assert "--add-dev" not in failure_commands
     assert "deploy_vercel_frontend.py" not in failure_commands
+    assert "Published!" not in failed.stdout
 
+    log.unlink()
+    monkeypatch.delenv("FAIL_RELEASE")
+    monkeypatch.setenv("FAIL_FRONTEND", "yes")
+    failed_frontend = subprocess.run(
+        ["make", "-j2", "publish"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert failed_frontend.returncode != 0
+    failed_frontend_commands = log.read_text(encoding="utf-8")
+    assert "--add-dev" not in failed_frontend_commands
+    assert "Published!" not in failed_frontend.stdout
+
+    monkeypatch.delenv("FAIL_FRONTEND")
     log.unlink()
     parallel_goals = subprocess.run(
         ["make", "-j2", "publish-euroeval", "add-dev-version"],
