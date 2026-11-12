@@ -255,6 +255,7 @@ def _decision_paths(api: FakeHfApi) -> list[str]:
 
 def _reviewer(
     record_count: int = 1,
+    failed_instances: int = 0,
     reserver: (
         t.Callable[
             [int, str, str, str, list[dict[str, str]], str | None],
@@ -272,6 +273,8 @@ def _reviewer(
     Args:
         record_count (optional):
             Record count supplied to the test. Defaults to 1.
+        failed_instances (optional):
+            Failed samples per record supplied to the test. Defaults to 0.
         reserver (optional):
             Reserver supplied to the test. Defaults to None.
         renewer (optional):
@@ -284,6 +287,16 @@ def _reviewer(
     """
     api = FakeHfApi()
     records = [_record(dataset=f"dataset-{index}") for index in range(record_count)]
+    for record in records:
+        library = t.cast(dict[str, object], record["eval_library"])
+        details = t.cast(dict[str, object], library["additional_details"])
+        details["raw_results"] = json.dumps(
+            [{"failed_instances": [{} for _ in range(failed_instances)]}]
+        )
+        details["num_failed_instances"] = failed_instances
+        evaluation = t.cast(list[dict[str, object]], record["evaluation_results"])[0]
+        score_details = t.cast(dict[str, object], evaluation["score_details"])
+        score_details["details"] = {"num_failed_instances": str(failed_instances)}
     entries: list[dict[str, object]] = []
     suffixes: list[str] = []
     for index, record in enumerate(records):
@@ -331,7 +344,7 @@ def _reviewer(
         "automated_checks": {
             "result_count": record_count,
             "identities_unique": True,
-            "failed_instances": 0,
+            "failed_instances": record_count * failed_instances,
             "warnings": [],
         },
     }
@@ -773,6 +786,28 @@ def test_expired_reservation_cannot_change_durable_decision() -> None:
     assert reservations == ["accepted", "accepted"]
     assert len([key for key in api.files if key[0] == RESULTS]) == 2
     assert broker_calls == [(12, SUBMISSION, "accepted")]
+
+
+def test_failed_samples_are_reported_but_do_not_block_approval() -> None:
+    """Non-zero raw failures remain visible and do not block maintainer approval."""
+    api, reviewer, _ = _reviewer(failed_instances=2)
+
+    report = reviewer.show(SUBMISSION)
+    assert any("2 failed instances" in warning for warning in report.warnings)
+    reviewer.decide(SUBMISSION, "accepted", "maintainer")
+    assert _decision_paths(api)
+
+
+def test_failure_count_manifest_claim_must_match_staged_record() -> None:
+    """The manifest cannot understate failures in immutable result bytes."""
+    api, reviewer, _ = _reviewer(failed_instances=1)
+    manifest_path = f"volunteer/manifests/{SUBMISSION}.json"
+    manifest = json.loads(api.files[(STAGING, manifest_path)])
+    manifest["automated_checks"]["failed_instances"] = 0
+    _store_manifest(api=api, manifest=manifest)
+
+    with pytest.raises(ReviewError, match="failed_instances count is inconsistent"):
+        reviewer.show(SUBMISSION)
 
 
 @pytest.mark.parametrize(

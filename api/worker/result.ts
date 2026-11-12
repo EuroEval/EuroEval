@@ -33,7 +33,7 @@ export async function fetch(req: Request): Promise<Response> {
     const path = `volunteer/submissions/${lease.lease_id}/results/${digest}.json`;
     if (existing && existing.digest !== digest) throw new BrokerError(409, "This canonical record identity already has a different digest.");
     if (existing?.status === "uploaded") {
-      await redis("SADD", `euroeval:worker:results:${lease.lease_id}`, JSON.stringify({ digest, identity: checked.identity, path: existing.path || path, warnings: existing.warnings || checked.warnings }));
+      await redis("SADD", `euroeval:worker:results:${lease.lease_id}`, JSON.stringify({ digest, identity: checked.identity, path: existing.path || path, failed: checked.failed, warnings: existing.warnings || checked.warnings }));
       await redis("SADD", `euroeval:worker:reservations:${lease.lease_id}`, JSON.stringify({ digest, identity: checked.identity }));
       return json(200, { protocol_version: PROTOCOL_VERSION, status: "duplicate", digest, identity: checked.identity, path: existing.path || path, warnings: existing.warnings || checked.warnings });
     }
@@ -71,7 +71,7 @@ export async function fetch(req: Request): Promise<Response> {
         completed = true;
         await completionMutex.assertOwned();
         await requireLeaseOwnership(await fetchIssue(lease.issue_number), lease);
-        await redis("SADD", `euroeval:worker:results:${lease.lease_id}`, JSON.stringify({ digest, identity: checked.identity, path, warnings: checked.warnings }));
+        await redis("SADD", `euroeval:worker:results:${lease.lease_id}`, JSON.stringify({ digest, identity: checked.identity, path, failed: checked.failed, warnings: checked.warnings }));
         await redis("SADD", `euroeval:worker:reservations:${lease.lease_id}`, JSON.stringify({ digest, identity: checked.identity }));
         await redis("EXPIRE", `euroeval:worker:results:${lease.lease_id}`, String(30 * 24 * 60 * 60));
         await redis("EXPIRE", `euroeval:worker:reservations:${lease.lease_id}`, String(30 * 24 * 60 * 60));

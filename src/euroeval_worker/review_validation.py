@@ -11,6 +11,7 @@ from pathlib import Path
 
 from euroeval.canary_evidence import evidence_from_dict
 from leaderboards.eee_validation import validate_eee_record
+from leaderboards.record_fields import get_num_failed_instances
 from leaderboards.result_identity import (
     ResultIdentity,
     identity_from_eee_record,
@@ -144,11 +145,23 @@ def _validate_manifest(
         raise ReviewError("Manifest automated result_count is inconsistent")
     if automated.get("identities_unique") is not True:
         raise ReviewError("Manifest does not assert unique identities")
-    if automated.get("failed_instances") != 0:
-        raise ReviewError("Manifest reports failed instances")
+    failed_instances = sum(_failed_instance_count(record.content) for record in records)
+    claimed_failures = automated.get("failed_instances")
+    if claimed_failures is not None and (
+        isinstance(claimed_failures, bool)
+        or not isinstance(claimed_failures, int)
+        or claimed_failures != failed_instances
+    ):
+        raise ReviewError("Manifest failed_instances count is inconsistent")
+    failure_warning = (
+        {f"{failed_instances} failed instances (informational)"}
+        if failed_instances
+        else set()
+    )
     warnings = sorted(
         {warning for record in records for warning in record.warnings}
         | set(_string_list(automated.get("warnings"), "automated warnings"))
+        | failure_warning
     )
     provenance = {
         key: manifest[key]
@@ -179,7 +192,7 @@ def _validate_manifest(
             "exact UTF-8 SHA256 digests",
             "EEE schema and metadata",
             "canonical identities and expected scope",
-            "model, language, version, and failure consistency",
+            "model, language, and version consistency",
         ),
     )
 
@@ -258,6 +271,64 @@ def _nullable_bool(value: object, context: str) -> bool | None:
     if value is None or isinstance(value, bool):
         return value
     raise ReviewError(f"{context} must be boolean or null")
+
+
+def _failed_instance_count(content: bytes) -> int:
+    """Count failed samples once per raw evaluation iteration.
+
+    Args:
+        content:
+            Immutable validated EEE record bytes.
+
+    Returns:
+        The raw failed-sample count, or the first aggregate metric count for
+        legacy records that do not include per-iteration failure lists.
+
+    Raises:
+        ReviewError:
+            If the record has invalid bytes or inconsistent aggregate failure data.
+    """
+    record = _load_object(content=content, context="staged result")
+    library = t.cast(JsonObject, record["eval_library"])
+    details = t.cast(JsonObject, library["additional_details"])
+    raw = _json_value(details.get("raw_results"), "raw_results")
+    iterations = t.cast(list[object], raw)
+    has_lists = any(
+        isinstance(item, dict) and "failed_instances" in item for item in iterations
+    )
+    if has_lists:
+        count = sum(
+            len(item["failed_instances"])
+            for item in iterations
+            if isinstance(item, dict) and isinstance(item.get("failed_instances"), list)
+        )
+        aggregate = get_num_failed_instances(record=record)
+        if aggregate is not None and aggregate != count:
+            raise ReviewError("Record aggregate failed_instances count is inconsistent")
+        return count
+    return get_num_failed_instances(record=record) or 0
+
+
+def _load_object(content: bytes, context: str) -> JsonObject:
+    """Decode UTF-8 JSON bytes and require a JSON object.
+
+    Args:
+        content: UTF-8 encoded JSON bytes.
+        context: Object description used in validation errors.
+
+    Returns:
+        The decoded JSON object.
+
+    Raises:
+        ReviewError: If the bytes are invalid UTF-8/JSON or decode to a non-object.
+    """
+    try:
+        value = json.loads(content.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ReviewError(f"{context} is not valid UTF-8 JSON") from error
+    if not isinstance(value, dict):
+        raise ReviewError(f"{context} must contain a JSON object")
+    return value
 
 
 def _identity_suffix_sets(
@@ -522,28 +593,6 @@ def _identity_from_manifest(value: object) -> ResultIdentity:
     )
 
 
-def _load_object(content: bytes, context: str) -> JsonObject:
-    """Decode UTF-8 JSON bytes and require a JSON object.
-
-    Args:
-        content: UTF-8 encoded JSON bytes.
-        context: Object description used in validation errors.
-
-    Returns:
-        The decoded JSON object.
-
-    Raises:
-        ReviewError: If the bytes are invalid UTF-8/JSON or decode to a non-object.
-    """
-    try:
-        value = json.loads(content.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError) as error:
-        raise ReviewError(f"{context} is not valid UTF-8 JSON") from error
-    if not isinstance(value, dict):
-        raise ReviewError(f"{context} must contain a JSON object")
-    return value
-
-
 def _scores(
     record: JsonObject, path: str
 ) -> tuple[tuple[tuple[str, float], ...], list[str]]:
@@ -704,47 +753,6 @@ def _validate_record_contract(
     record_language = details.get("language", record.get("language"))
     if language not in languages or record_language not in {None, language}:
         raise ReviewError(f"Language mismatch in {path}")
-    if _contains_failure(record):
-        raise ReviewError(f"Failed instances found in {path}")
-
-
-def _contains_failure(value: object) -> bool:
-    """Recursively detect non-zero failed-instance fields in nested data.
-
-    Args:
-        value: JSON-like value to inspect.
-
-    Returns:
-        ``True`` when a failed-instance field indicates failures; otherwise ``False``.
-    """
-    if isinstance(value, list):
-        return any(_contains_failure(item) for item in value)
-    if not isinstance(value, dict):
-        return False
-    for key, item in value.items():
-        if key in {"num_failed_instances", "failed_instances"} and _failure_value(item):
-            return True
-        if _contains_failure(item):
-            return True
-    return False
-
-
-def _failure_value(value: object) -> bool:
-    """Interpret a failed-instance field as a failure indicator.
-
-    Args:
-        value: Raw or JSON-encoded failure value.
-
-    Returns:
-        ``False`` for null, false, zero, empty string, or empty list/object;
-        ``True`` otherwise.
-    """
-    parsed = _json_value(value, "failure field")
-    if parsed is None or parsed is False or parsed == 0 or parsed == "":
-        return False
-    if isinstance(parsed, list | dict):
-        return len(parsed) > 0
-    return True
 
 
 def _json_string_list(value: object, context: str) -> list[str]:

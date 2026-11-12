@@ -167,7 +167,19 @@ test("validates canonical model identity and score bounds", () => {
   assert.match(outOfRange.warnings[0], /outside declared metric bounds/);
   const negative = validateRecord({ ...record, evaluation_results: [{ ...record.evaluation_results[0], score_details: { score: -1 } }] }, { modelId: "org/model", revision: "deadbeef", language: "da" });
   assert.equal(negative.failed, 0);
-  assert.throws(() => validateRecord({ ...record, evaluation_results: [{ ...record.evaluation_results[0], score_details: { score: 85, details: { failed_instances: "[1]" } } }] }, { modelId: "org/model", revision: "deadbeef", language: "da" }));
+  const withFailures = {
+    ...record,
+    eval_library: { ...record.eval_library, additional_details: {
+      ...record.eval_library.additional_details,
+      raw_results: JSON.stringify([{ failed_instances: [{ sample_index: 4 }] }, { failed_instances: [] }]),
+      num_failed_instances: 1,
+    } },
+    evaluation_results: [{ ...record.evaluation_results[0], score_details: { score: 85, details: { num_failed_instances: "1" } } }],
+  };
+  const checked = validateRecord(withFailures, { modelId: "org/model", revision: "deadbeef", language: "da" });
+  assert.equal(checked.failed, 1);
+  assert.match(checked.warnings[0], /1 failed instances/);
+  assert.throws(() => validateRecord({ ...record, evaluation_results: [{ ...record.evaluation_results[0], score_details: { score: Number.NaN } }] }, { modelId: "org/model", revision: "deadbeef", language: "da" }), /finite/);
 });
 
 test("validates equivalent bare and zeroed development versions", () => {
