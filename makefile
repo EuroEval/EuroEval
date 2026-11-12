@@ -79,7 +79,10 @@ test:  ## Run tests
 	@uv run pytest && uv run readme-cov && rm .coverage*
 
 frontend:  ## Build and deploy the frontend
-	@uv run python src/scripts/prepare_vercel_worktree.py && vercel build --prod --yes && uv run python src/scripts/verify_vercel_functions.py && uv run python src/scripts/deploy_vercel_frontend.py
+	@uv run python src/scripts/prepare_vercel_worktree.py && uv run python src/scripts/build_vercel_frontend.py && uv run python src/scripts/verify_vercel_functions.py && uv run python src/scripts/deploy_vercel_frontend.py
+
+sync-production-version:
+	@uv run python src/scripts/volunteer_worker_operations.py sync-production-version "$(version)"
 
 leaderboards:  ## Collect finished evaluation results and regenerate leaderboards
 	@uv run python src/scripts/collect_evaluation_results.py
@@ -132,12 +135,14 @@ publish:
 		echo "Both EUROEVAL_PYPI_API_TOKEN and SCANDEVAL_PYPI_API_TOKEN must be specified to publish." >&2; exit 1; \
 	fi; \
 	uv run src/scripts/versioning.py --validate-publish; \
+	release_version=$$(uv run python -c 'from scripts.versioning import get_project_version; print(get_project_version())'); \
 	echo "Publishing to PyPI..."; \
 	$(MAKE) --quiet publish-euroeval; \
 	$(MAKE) --quiet publish-scandeval; \
-	uv run src/scripts/versioning.py --release-only "$$(uv run python -c 'from scripts.versioning import get_project_version; print(get_project_version())')"; \
+	uv run src/scripts/versioning.py --release-only "$$release_version"; \
+	$(MAKE) --quiet sync-production-version version="$$release_version"; \
+	EUROEVAL_VERSION="$$release_version" $(MAKE) --quiet frontend; \
 	$(MAKE) --quiet add-dev-version; \
-	$(MAKE) --quiet frontend; \
 	echo "Published!"
 
 publish-euroeval:

@@ -1,5 +1,5 @@
 # /// script
-# requires-python = ">=3.10,<4.0"
+# requires-python = ">=3.12,<4.0"
 # dependencies = []
 # ///
 
@@ -10,6 +10,7 @@ import json
 import re
 import subprocess
 import tempfile
+import tomllib
 from pathlib import Path
 
 
@@ -27,7 +28,9 @@ def add_dev_version() -> bool:
         RuntimeError:
             If the version is missing or is not a supported release/development form.
         subprocess.CalledProcessError:
-            If locking or a git command fails.
+            If locking, policy generation, or a git command fails.
+        OSError:
+            If a policy artifact cannot be generated or written.
     """
     pyproject_path = Path("pyproject.toml")
     pyproject = pyproject_path.read_text(encoding="utf-8")
@@ -59,17 +62,49 @@ def add_dev_version() -> bool:
     pyproject_path.write_text(data=updated, encoding="utf-8")
     try:
         subprocess.run(args=["uv", "lock"], check=True)
-    except subprocess.CalledProcessError:
+        regenerate_scope_policies(version=new_version)
+    except (subprocess.CalledProcessError, OSError):
         pyproject_path.write_text(data=pyproject, encoding="utf-8")
         raise
 
-    subprocess.run(args=["git", "add", "pyproject.toml", "uv.lock"], check=True)
+    subprocess.run(
+        args=[
+            "git",
+            "add",
+            "pyproject.toml",
+            "uv.lock",
+            "api/worker/scope-policy.json",
+            "api/worker/_lib/scope-policy.generated.ts",
+        ],
+        check=True,
+    )
     subprocess.run(
         args=["git", "commit", "-m", "chore: Add '.dev' suffix to the version number"],
         check=True,
     )
     subprocess.run(args=["git", "push"], check=True)
     return True
+
+
+def regenerate_scope_policies(*, version: str) -> None:
+    """Regenerate both tracked volunteer policy artifacts for a package version.
+
+    Args:
+        version:
+            Exact stable or PEP 440 development version to encode.
+
+    """
+    subprocess.run(
+        args=[
+            "uv",
+            "run",
+            "python",
+            "src/scripts/generate_volunteer_scope_policy.py",
+            "--version",
+            version,
+        ],
+        check=True,
+    )
 
 
 def bump_major() -> None:
@@ -88,16 +123,15 @@ def get_current_version() -> tuple[int, int, int]:
         RuntimeError:
             If no version can be found in the `pyproject.toml` file.
     """
-    version_candidates = re.search(
-        r'(?<=version = ")[^"]+(?=")',
-        Path("pyproject.toml").read_text(encoding="utf-8"),
-    )
-    if version_candidates is None:
-        raise RuntimeError("No version found in pyproject.toml.")
-
-    version_str = version_candidates.group(0).replace(".dev", "")
-    major, minor, patch = map(int, version_str.split("."))
-    return major, minor, patch
+    try:
+        project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+        version_str = str(project["project"]["version"])
+    except (KeyError, TypeError, tomllib.TOMLDecodeError) as error:
+        raise RuntimeError("No version found in pyproject.toml.") from error
+    match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)(?:\.dev\d*)?", version_str)
+    if match is None:
+        raise RuntimeError(f"Unsupported project version: {version_str}")
+    return (int(match.group(1)), int(match.group(2)), int(match.group(3)))
 
 
 def set_new_version(major: int, minor: int, patch: int) -> None:
@@ -135,10 +169,17 @@ def set_new_version(major: int, minor: int, patch: int) -> None:
     # Update the version in the `pyproject.toml` file
     pyproject_path = Path("pyproject.toml")
     pyproject = pyproject_path.read_text(encoding="utf-8")
-    pyproject = re.sub(
-        r'version = "[^"]+"', f'version = "{version}"', pyproject, count=1
+    version_match = re.search(r'(?m)^version = "[^"]+"$', pyproject)
+    if version_match is None:
+        raise RuntimeError("No version found in pyproject.toml.")
+    pyproject = (
+        pyproject[: version_match.start()]
+        + f'version = "{version}"'
+        + pyproject[version_match.end() :]
     )
     pyproject_path.write_text(data=pyproject, encoding="utf-8")
+
+    regenerate_scope_policies(version=version)
 
     # Install newest project. check=True so a failed step aborts before we tag
     # and push a release.
@@ -149,6 +190,15 @@ def set_new_version(major: int, minor: int, patch: int) -> None:
     subprocess.run(args=["git", "add", "CHANGELOG.md"], check=True)
     subprocess.run(args=["git", "add", "pyproject.toml"], check=True)
     subprocess.run(args=["git", "add", "uv.lock"], check=True)
+    subprocess.run(
+        args=[
+            "git",
+            "add",
+            "api/worker/scope-policy.json",
+            "api/worker/_lib/scope-policy.generated.ts",
+        ],
+        check=True,
+    )
     subprocess.run(args=["git", "add", "src/euroeval/dataset_configs/"], check=True)
     subprocess.run(args=["git", "commit", "-m", f"feat: v{version}"], check=True)
     subprocess.run(args=["git", "tag", f"v{version}"], check=True)
