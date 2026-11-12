@@ -45,7 +45,22 @@ test("device polling issues a credential to the repository maintainer", async ()
       if (command[0] === "GET") return Response.json({ result: stored.get(command[1]) ?? null });
       if (command[0] === "INCR") return Response.json({ result: 1 });
       if (command[0] === "DEL") { stored.delete(command[1]); return Response.json({ result: 1 }); }
-      if (command[0] === "SET") { stored.set(command[1], command[2]); return Response.json({ result: "OK" }); }
+      if (command[0] === "SET") {
+        if (command.includes("NX") && stored.has(command[1])) return Response.json({ result: null });
+        stored.set(command[1], command[2]);
+        return Response.json({ result: "OK" });
+      }
+      if (command[0] === "EVAL") {
+        const script = command[1];
+        if (script.includes("EXISTS")) {
+          if (stored.has(command[3]) && stored.has(command[4])) { stored.delete(command[3]); return Response.json({ result: 1 }); }
+          return Response.json({ result: 0 });
+        }
+        const key = command[3];
+        const token = command[4];
+        if (stored.get(key) === token) { stored.delete(key); return Response.json({ result: 1 }); }
+        return Response.json({ result: 0 });
+      }
       if (command[0] === "EXPIRE") return Response.json({ result: 1 });
       throw new Error(`Unexpected Redis command: ${command[0]}`);
     }
@@ -95,6 +110,20 @@ test("device polling rejects an unidentifiable GitHub user", async () => {
       if (command[0] === "GET") return Response.json({ result: stored.get(command[1]) ?? null });
       if (command[0] === "INCR") return Response.json({ result: 1 });
       if (command[0] === "DEL") { stored.delete(command[1]); return Response.json({ result: 1 }); }
+      if (command[0] === "SET") {
+        if (command.includes("NX") && stored.has(command[1])) return Response.json({ result: null });
+        stored.set(command[1], command[2]);
+        return Response.json({ result: "OK" });
+      }
+      if (command[0] === "EVAL") {
+        const script = command[1];
+        if (script.includes("EXISTS")) {
+          if (stored.has(command[3]) && stored.has(command[4])) { stored.delete(command[3]); return Response.json({ result: 1 }); }
+          return Response.json({ result: 0 });
+        }
+        if (stored.get(command[3]) === command[4]) { stored.delete(command[3]); return Response.json({ result: 1 }); }
+        return Response.json({ result: 0 });
+      }
       if (command[0] === "EXPIRE") return Response.json({ result: 1 });
       throw new Error(`Unexpected Redis command: ${command[0]}`);
     }

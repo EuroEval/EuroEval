@@ -1,5 +1,5 @@
 import { BrokerError, ConfigurationError, env, randomToken, sha256 } from "./protocol.js";
-import { redis, redisDelete, redisGet, redisSet } from "./redis.js";
+import { redis, redisDelete, redisGet, redisGetRaw, redisSet } from "./redis.js";
 
 /** A broker credential and the verified GitHub contributor that owns it. */
 export type UserGrant = { contributor: string; hash: string };
@@ -168,11 +168,11 @@ async function withGrantLock<T>(hash: string, operation: (token: string) => Prom
   }
 }
 
-const persistScript = "if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end; if not redis.call('EXISTS', KEYS[2]) then return -1 end; local old = redis.call('GET', KEYS[3]); if ARGV[2] ~= '' and old ~= ARGV[2] then return -2 end; redis.call('SET', KEYS[3], ARGV[3], 'EX', ARGV[4]); return 1";
+const persistScript = "if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end; if not redis.call('EXISTS', KEYS[2]) then return -1 end; local old = redis.call('GET', KEYS[3]); if ARGV[2] ~= '' and (not old or cjson.decode(old).generation ~= ARGV[2]) then return -2 end; redis.call('SET', KEYS[3], ARGV[3], 'EX', ARGV[4]); return 1";
 const removeScript = "if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end; local old = redis.call('GET', KEYS[2]); if ARGV[2] ~= '' and old ~= ARGV[2] then return -1 end; redis.call('DEL', KEYS[2], KEYS[3]); return 1";
 async function persistRecord(hash: string, encrypted: string, ttl: number, expectedGeneration = ""): Promise<void> {
   await withGrantLock(hash, async (lock) => {
-    const current = await redisGet<string>(`${GRANT_PREFIX}${hash}`);
+    const current = await redisGetRaw(`${GRANT_PREFIX}${hash}`);
     const generation = current ? (JSON.parse(current) as StoredEnvelope).generation : "";
     if (expectedGeneration && generation !== expectedGeneration) throw new BrokerError(401, "GitHub App authorization must be renewed.", "github_grant_invalid");
     const envelope = JSON.parse(encrypted) as StoredEnvelope;
@@ -216,7 +216,7 @@ export async function retainUserGrant(accessToken: string, refreshToken: string,
 
 async function liveGrant(identity: UserGrant, config: AppConfig): Promise<GrantRecord> {
   return withGrantLock(identity.hash, async (lockToken) => {
-    const encrypted = await redisGet<string>(`${GRANT_PREFIX}${identity.hash}`);
+    const encrypted = await redisGetRaw(`${GRANT_PREFIX}${identity.hash}`);
     if (!encrypted) throw new BrokerError(401, "GitHub App authorization must be renewed.", "github_grant_invalid");
     const grant = await unseal(encrypted, config, identity.hash);
     if (grant.contributor.toLowerCase() !== identity.contributor.toLowerCase() || grant.refreshExpires <= Date.now()) {
@@ -255,7 +255,7 @@ export async function revokeUserGrant(identity: UserGrant): Promise<void> {
   let remoteToken: string | undefined;
   await withGrantLock(identity.hash, async (lock) => {
     const key = `${GRANT_PREFIX}${identity.hash}`;
-    const encrypted = await redisGet<string>(key);
+    const encrypted = await redisGetRaw(key);
     if (encrypted) {
       const grant = await unseal(encrypted, config, identity.hash);
       remoteToken = grant.access;
@@ -268,7 +268,7 @@ export async function revokeUserGrant(identity: UserGrant): Promise<void> {
     await redis("EVAL", removeScript, "3", `${GRANT_PREFIX}${identity.hash}:lock`, key, `${CREDENTIAL_PREFIX}${identity.hash}`, lock, "");
   });
   const pendingKey = `${GRANT_PREFIX}${identity.hash}:revocation`;
-  const stored = await redisGet<string>(pendingKey);
+  const stored = await redisGetRaw(pendingKey);
   if (!stored) return;
   const pending = await unseal(stored, config, identity.hash);
   const response = await request(`https://api.github.com/applications/${encodeURIComponent(config.clientId)}/token`, {
@@ -295,7 +295,7 @@ export async function ensureVolunteerComment(identity: UserGrant, issueNumber: n
   const config = appConfig();
   const refreshed = await liveGrant(identity, config);
   await withGrantLock(identity.hash, async (grantLock) => {
-    const encrypted = await redisGet<string>(`${GRANT_PREFIX}${identity.hash}`);
+    const encrypted = await redisGetRaw(`${GRANT_PREFIX}${identity.hash}`);
     if (!encrypted) throw new BrokerError(401, "GitHub App authorization must be renewed.", "github_grant_invalid");
     const grant = await unseal(encrypted, config, identity.hash);
     if (grant.contributor.toLowerCase() !== identity.contributor.toLowerCase()) throw new BrokerError(401, "GitHub App authorization must be renewed.", "github_grant_invalid");
@@ -312,7 +312,7 @@ export async function ensureVolunteerComment(identity: UserGrant, issueNumber: n
     (renewal as unknown as { unref?: () => void }).unref?.();
     try {
       const dedupKey = `${GRANT_PREFIX}${identity.hash}:comment:${issueNumber}`;
-      const pending = await redisGet<string>(dedupKey);
+      const pending = await redisGetRaw(dedupKey);
       const scanned = await commentPages(issueNumber, grant.access);
       if (!scanned.complete) throw new BrokerError(502, "Issue comment history is too large to verify safely.");
       if (scanned.comments.some((comment) => comment.user?.id === grant.userId && comment.user.login?.toLowerCase() === grant.contributor.toLowerCase() && comment.body === COMMENT)) {
@@ -322,14 +322,14 @@ export async function ensureVolunteerComment(identity: UserGrant, issueNumber: n
       if (pending) return; // A prior POST may have succeeded despite losing its response; never blindly repeat it.
       await assertOwned();
       const stillCredential = await redisGet(`${CREDENTIAL_PREFIX}${identity.hash}`);
-      const latest = await redisGet<string>(`${GRANT_PREFIX}${identity.hash}`);
+      const latest = await redisGetRaw(`${GRANT_PREFIX}${identity.hash}`);
       if (!stillCredential || !latest || (JSON.parse(latest) as StoredEnvelope).generation !== grant.generation) {
         throw new BrokerError(401, "GitHub App authorization must be renewed.", "github_grant_invalid");
       }
       await redisSet(dedupKey, "pending", Math.max(60, Math.ceil((grant.refreshExpires - Date.now()) / 1000)));
       await assertOwned();
-      if (await redisGet<string>(commentLockKey) !== commentLock ||
-          (JSON.parse((await redisGet<string>(`${GRANT_PREFIX}${identity.hash}`)) || "null") as StoredEnvelope | null)?.generation !== grant.generation ||
+      if (await redisGetRaw(commentLockKey) !== commentLock ||
+          (JSON.parse((await redisGetRaw(`${GRANT_PREFIX}${identity.hash}`)) || "null") as StoredEnvelope | null)?.generation !== grant.generation ||
           !(await redisGet(`${CREDENTIAL_PREFIX}${identity.hash}`))) {
         throw new BrokerError(401, "GitHub App authorization must be renewed.", "github_grant_invalid");
       }
