@@ -49,13 +49,23 @@ ENV DEBIAN_FRONTEND=noninteractive \
     HF_DATASETS_CACHE=/cache/huggingface/datasets \
     TRANSFORMERS_CACHE=/cache/huggingface/transformers \
     XDG_CACHE_HOME=/cache/xdg \
+    XDG_CONFIG_HOME=/cache/config \
+    FLASHINFER_WORKSPACE_BASE=/cache/flashinfer \
+    VLLM_CACHE_ROOT=/cache/vllm/cache \
+    VLLM_CONFIG_ROOT=/cache/vllm/config \
+    VLLM_NO_USAGE_STATS=1 \
+    TRITON_CACHE_DIR=/cache/triton \
+    TORCHINDUCTOR_CACHE_DIR=/cache/torch/inductor \
+    TORCH_EXTENSIONS_DIR=/cache/torch/extensions \
+    CUDA_CACHE_PATH=/cache/nvidia \
     HOME=/home/worker \
     PATH=/opt/euroeval/.venv/bin:/usr/local/cuda/bin:$PATH
 
 RUN apt-get update && \
     apt-get install --no-install-recommends -y \
       ca-certificates \
-      python3.12 && \
+      python3.12 \
+      python3.12-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

@@ -135,3 +135,24 @@ def test_worker_runtime_includes_pinned_nvcc() -> None:
     amd64_job = workflow[: workflow.index("  spark-arm64-candidate:")]
     assert "platforms: linux/amd64" in amd64_job
     assert workflow.count('docker run --rm --entrypoint nvcc "$IMAGE" --version') == 2
+
+
+def test_worker_runtime_keeps_jit_caches_on_writable_volume() -> None:
+    """Inference compilation must not write into the read-only image or home."""
+    runtime = DOCKERFILE.read_text(encoding="utf-8").split("\nFROM ", maxsplit=2)[-1]
+    cache_variables = (
+        "XDG_CACHE_HOME",
+        "XDG_CONFIG_HOME",
+        "FLASHINFER_WORKSPACE_BASE",
+        "VLLM_CACHE_ROOT",
+        "VLLM_CONFIG_ROOT",
+        "TRITON_CACHE_DIR",
+        "TORCHINDUCTOR_CACHE_DIR",
+        "TORCH_EXTENSIONS_DIR",
+        "CUDA_CACHE_PATH",
+    )
+    for variable in cache_variables:
+        assert f"{variable}=/cache/" in runtime
+    assert "VLLM_NO_USAGE_STATS=1" in runtime
+    assert "python3.12-dev" in runtime
+    assert "USER worker" in runtime
