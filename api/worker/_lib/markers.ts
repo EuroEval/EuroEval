@@ -28,9 +28,16 @@ export function parseVolunteerMarker(body: string | null): VolunteerLeaseMarker 
     if (parsed.submissions !== undefined && (submissions === undefined || submissions.length !== parsed.submissions.length || new Set(submissions.map((item) => item.submission_id)).size !== submissions.length)) return null;
     const completed = Array.isArray(parsed.completed_languages) ? parsed.completed_languages.filter((item): item is string => typeof item === "string" && !!item) : undefined;
     if (parsed.completed_languages !== undefined && (completed === undefined || completed.length !== parsed.completed_languages.length)) return null;
+    const publicAssignees = Array.isArray(parsed.public_assignees)
+      ? parsed.public_assignees.filter((item): item is string => typeof item === "string" && !!item.trim())
+      : undefined;
+    if (parsed.public_assignees !== undefined && (publicAssignees === undefined ||
+        publicAssignees.length !== parsed.public_assignees.length ||
+        new Set(publicAssignees.map((item) => item.toLowerCase())).size !== publicAssignees.length)) return null;
     return { protocol_version: PROTOCOL_VERSION, coordinator: parsed.coordinator,
       submission: parsed.submission as VolunteerLeaseMarker["submission"], leases,
       ...(submissions === undefined ? {} : { submissions }), ...(completed === undefined ? {} : { completed_languages: completed }),
+      ...(publicAssignees === undefined ? {} : { public_assignees: publicAssignees }),
       ...(typeof parsed.signature === "string" ? { signature: parsed.signature } : {}) };
   } catch { return null; }
 }
@@ -87,7 +94,10 @@ export function volunteerAssigneesMatch(
       expected.add(submission.verified_contributor.toLowerCase());
     }
   }
-  if ([...actual].some((login) => !expected.has(login))) return false;
+  for (const login of marker.public_assignees || []) expected.add(login.toLowerCase());
+  const hasPublicOwnership = marker.leases.some((lease) => lease.ownership_mode === "public") ||
+    (marker.submissions || []).some((submission) => submission.ownership_mode === "public");
+  if (!hasPublicOwnership && [...actual].some((login) => !expected.has(login))) return false;
   return [...expected].every((login) => actual.has(login) || optional.has(login));
 }
 

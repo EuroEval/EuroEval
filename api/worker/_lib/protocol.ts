@@ -66,6 +66,8 @@ export interface VolunteerLeaseMarker {
   leases: Array<{ lease_id: string; language: string; worker: string; contributor: string; expires_at: string; ownership_mode?: "assignee" | "public" }>;
   submissions?: VolunteerSubmission[];
   completed_languages?: string[];
+  /** Contributors assigned by the broker for public queue visibility. */
+  public_assignees?: string[];
   signature?: string;
 }
 

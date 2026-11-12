@@ -5,6 +5,7 @@ import {
   extractModelId, enforceRateLimit, fitsGpu, fetchIssue, json, languageGroup, leaseTtl, selectedGpu,
   listOpenIssues, method,
   patchIssue, putLease, randomToken, readJson, deleteLease, unassignIssue,
+  reconcilePublicAssignments,
   getLeaseForIssue, reclaimExpiredLease,
   modelMayFit, parseVolunteerMarker, resolveModel, selectedLanguages, volunteerAssigneesMatch,
   requireProtocol, signVolunteerMarker, verifyVolunteerMarker, markerSecret, replaceVolunteerMarker,
@@ -104,6 +105,9 @@ async function recoverExpiredOwnership(
     currentMarker = parseVolunteerMarker(current.body);
     if (!currentMarker || !(await verifyVolunteerMarker(current.number, currentMarker))) return null;
     if (currentMarker.leases.some((lease) => lease.lease_id === expiredLease.lease_id)) return null;
+    const reconciled = await reconcilePublicAssignments(current, currentMarker, () => mutex.assertOwned());
+    current = reconciled.issue;
+    currentMarker = reconciled.marker;
 
     const redisAfterRecovery = await getLeaseForIssue(current.number, expiredLease.language);
     if (redisAfterRecovery && (redisAfterRecovery.lease_id !== expiredLease.lease_id ||
@@ -359,6 +363,7 @@ export default async function handler(req: Request): Promise<Response> {
               !volunteerAssigneesMatch(after.assignees, afterMarker)) {
             throw new BrokerError(409, "GitHub ownership fence lost during claim.");
           }
+          await reconcilePublicAssignments(after, afterMarker, () => mutex.assertOwned());
         } catch (error) {
           // Never restore a stale body: another lease may have been added while
           // GitHub was unavailable. Remove only our reservation when still present.

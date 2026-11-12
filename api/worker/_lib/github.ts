@@ -1,6 +1,6 @@
 import { BrokerError, REPO, REQUEST_LABEL, env, type Lease } from "./protocol.js";
-import { parseVolunteerMarker } from "./markers.js";
-import { verifyVolunteerMarker } from "./protocol.js";
+import { parseVolunteerMarker, replaceVolunteerMarker } from "./markers.js";
+import { signVolunteerMarker, verifyVolunteerMarker, type VolunteerLeaseMarker } from "./protocol.js";
 import { fetchWithRetry } from "./http.js";
 
 
@@ -67,6 +67,84 @@ export async function patchIssue(number: number, body: string, signal?: AbortSig
 }
 export async function assignIssue(number: number, login: string): Promise<void> {
   await github(`/repos/${REPO}/issues/${number}/assignees`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ assignees: [login] }) });
+}
+
+/** Reconcile best-effort public evaluator assignments without changing ownership. */
+export async function reconcilePublicAssignments(
+  issue: GithubIssue,
+  marker: VolunteerLeaseMarker,
+  assertOwned: () => Promise<void>,
+): Promise<{ issue: GithubIssue; marker: VolunteerLeaseMarker }> {
+  const desired = new Map<string, string>();
+  const now = Date.now();
+  for (const lease of marker.leases) {
+    if (lease.ownership_mode === "public" && Date.parse(lease.expires_at) > now) {
+      desired.set(lease.contributor.toLowerCase(), lease.contributor);
+    }
+  }
+  for (const submission of marker.submissions || []) {
+    if (submission.ownership_mode === "public" && submission.status === "submitted") {
+      desired.set(submission.verified_contributor.toLowerCase(), submission.verified_contributor);
+    }
+  }
+
+  const tracked = new Map((marker.public_assignees || []).map((login) => [login.toLowerCase(), login]));
+  let current = issue;
+  for (const [key, login] of desired) {
+    if (hasIssueAssignee(current, login)) continue;
+    try {
+      await assertOwned();
+      await assignIssue(issue.number, login);
+      const observed = await fetchIssue(issue.number);
+      if (hasIssueAssignee(observed, login)) {
+        tracked.set(key, login);
+        current = observed;
+      }
+    } catch {
+      // GitHub silently ignores logins that cannot be assigned; signed lease
+      // ownership remains authoritative and the queue projection still names them.
+    }
+  }
+  for (const [key, login] of tracked) {
+    if (desired.has(key)) continue;
+    if (!hasIssueAssignee(current, login)) {
+      tracked.delete(key);
+      continue;
+    }
+    try {
+      await assertOwned();
+      await unassignIssue(issue.number, login);
+      const observed = await fetchIssue(issue.number);
+      if (!hasIssueAssignee(observed, login)) tracked.delete(key);
+      current = observed;
+    } catch {
+      // Retain the signed provenance so a later heartbeat/claim can retry cleanup.
+    }
+  }
+
+  const next = [...tracked.values()];
+  const previous = marker.public_assignees || [];
+  if (next.length !== previous.length || next.some((login) => !previous.some(
+    (item) => item.toLowerCase() === login.toLowerCase(),
+  ))) {
+    await assertOwned();
+    const fresh = await fetchIssue(issue.number);
+    const freshMarker = parseVolunteerMarker(fresh.body);
+    if (!freshMarker || !(await verifyVolunteerMarker(issue.number, freshMarker))) {
+      return { issue: fresh, marker };
+    }
+    const signed = await signVolunteerMarker(issue.number, {
+      ...freshMarker,
+      public_assignees: next,
+    });
+    await patchIssue(issue.number, replaceVolunteerMarker(fresh.body || "", signed));
+    current = await fetchIssue(issue.number);
+    const patched = parseVolunteerMarker(current.body);
+    if (patched && await verifyVolunteerMarker(issue.number, patched)) {
+      return { issue: current, marker: patched };
+    }
+  }
+  return { issue: current, marker };
 }
 export async function unassignIssue(number: number, login: string): Promise<void> {
   await github(`/repos/${REPO}/issues/${number}/assignees`, { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ assignees: [login] }) });

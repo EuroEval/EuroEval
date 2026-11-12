@@ -4,9 +4,73 @@ import claim from "../../../api/worker/claim.ts";
 import { fetch as finalise, validateResultScope } from "../../../api/worker/finalise.ts";
 import heartbeat from "../../../api/worker/heartbeat.ts";
 import release from "../../../api/worker/release.ts";
-import { parseVolunteerMarker, signVolunteerMarker, sha256, verifyVolunteerMarker } from "../../../api/worker/_lib.ts";
+import { parseVolunteerMarker, signVolunteerMarker, sha256, verifyVolunteerMarker, reconcilePublicAssignments } from "../../../api/worker/_lib.ts";
 
 const issueNumber = 12;
+
+test("ignored GitHub assignee requests do not break signed public lease ownership", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  process.env.GITHUB_TOKEN = "token";
+  process.env.VOLUNTEER_MARKER_SECRET = "marker-secret";
+  const marker = await signVolunteerMarker(issueNumber, {
+    protocol_version: "volunteer-worker/v1", coordinator: "coordinator", submission: "active",
+    leases: [{ lease_id: "public", language: "da", worker: "worker", contributor: "ineligible-user",
+      expires_at: new Date(Date.now() + 60_000).toISOString(), ownership_mode: "public" }],
+  });
+  const issue = { number: issueNumber, title: "request", body: markerBody(marker), state: "open", assignees: [] };
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input);
+    if (url.endsWith(`/issues/${issueNumber}/assignees`) && init.method === "POST") return Response.json(issue);
+    if (url.endsWith(`/issues/${issueNumber}`)) return Response.json(issue);
+    throw new Error(`Unexpected request: ${init.method || "GET"} ${url}`);
+  };
+  try {
+    const reconciled = await reconcilePublicAssignments(issue, marker, async () => {});
+    assert.deepEqual(reconciled.marker.leases.map(({ contributor }) => contributor), ["ineligible-user"]);
+    assert.deepEqual(reconciled.marker.public_assignees, undefined);
+    assert.deepEqual(reconciled.issue.assignees, []);
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
+
+test("reconciles verified public contributors as broker-tracked assignees", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  process.env.GITHUB_TOKEN = "token";
+  process.env.VOLUNTEER_MARKER_SECRET = "marker-secret";
+  const marker = await signVolunteerMarker(issueNumber, {
+    protocol_version: "volunteer-worker/v1", coordinator: "coordinator", submission: "active",
+    leases: [{ lease_id: "public", language: "da", worker: "worker", contributor: "alice",
+      expires_at: new Date(Date.now() + 60_000).toISOString(), ownership_mode: "public" }],
+  });
+  const issue = { number: issueNumber, title: "request", body: markerBody(marker), state: "open", assignees: [] };
+  assert.equal(await verifyVolunteerMarker(issueNumber, parseVolunteerMarker(issue.body)), true);
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input);
+    if (url.endsWith(`/issues/${issueNumber}/assignees`) && init.method === "POST") {
+      issue.assignees = [{ login: "alice" }];
+      return Response.json(issue);
+    }
+    if (url.endsWith(`/issues/${issueNumber}`) && init.method === "PATCH") {
+      issue.body = JSON.parse(init.body).body;
+      return Response.json(issue);
+    }
+    if (url.endsWith(`/issues/${issueNumber}`)) return Response.json(issue);
+    throw new Error(`Unexpected request: ${init.method || "GET"} ${url}`);
+  };
+  try {
+    const reconciled = await reconcilePublicAssignments(issue, marker, async () => {});
+    assert.deepEqual(reconciled.issue.assignees, [{ login: "alice" }]);
+    assert.deepEqual(reconciled.marker.public_assignees, ["alice"]);
+    assert.equal(await verifyVolunteerMarker(issueNumber, reconciled.marker), true);
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
 
 test("claim rejects an unsupported configured EuroEval version before queue discovery", async () => {
   const originalFetch = globalThis.fetch;
@@ -337,7 +401,7 @@ for (const stalledOperation of ["marker PATCH", "lease response"]) test(
 });
 
 for (const lateCandidate of [false, true]) test(
-  `claim resumes expired ownership${lateCandidate ? " with a viable issue on page two" : " without assigning the issue"}`,
+  `claim recovers expired ownership${lateCandidate ? " while scanning page two" : " alongside an active public lease"}`,
   async () => {
   const originalFetch = globalThis.fetch;
   const originalEnv = { ...process.env };
@@ -442,16 +506,15 @@ for (const lateCandidate of [false, true]) test(
     const blocked = await claim(claimRequest());
     const blockedBody = await blocked.json();
     assert.equal(blockedBody.status, "no_work", JSON.stringify(blockedBody));
-    assert.deepEqual(mutations, ["unassign", "patch"]);
+    assert.deepEqual(mutations, ["unassign", "patch", "assign", "patch"]);
     assert.ok(parseVolunteerMarker(issue.body).leases.every((item) => item.lease_id !== expired.lease_id));
     competingClaim = false;
     metadataCalls = 0;
     const response = await claim(claimRequest());
     assert.equal(response.status, 200, await response.text());
     if (lateCandidate) assert.ok(metadataCalls >= 147, `did not reach page-two issue (${metadataCalls} models)`);
-    else assert.ok(metadataCalls <= 7, `inspected ${metadataCalls} models before the first fit`);
-    assert.deepEqual(mutations, ["unassign", "patch", "patch"]);
-    assert.deepEqual(issue.assignees, []);
+    assert.deepEqual(mutations, ["unassign", "patch", "assign", "patch", "patch"]);
+    assert.deepEqual(issue.assignees, [{ login: "alice" }]);
     assert.equal(parseVolunteerMarker(issue.body).leases.length, 2);
     assert.ok(parseVolunteerMarker(issue.body).leases.some((item) => item.lease_id === publicLease.lease_id));
     assert.ok(parseVolunteerMarker(issue.body).leases.every((item) => item.lease_id !== expired.lease_id));

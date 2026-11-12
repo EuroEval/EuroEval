@@ -45,12 +45,26 @@ async function trustedMarker(issue: RawIssue) {
   }
 }
 
-async function hasVerifiedPublicOwnership(issue: RawIssue): Promise<boolean> {
+export async function publicQueueEvaluators(issue: RawIssue): Promise<RawAssignee[]> {
   const marker = await trustedMarker(issue);
-  if (!marker) return false;
+  if (!marker) return [];
   const now = Date.now();
-  return marker.leases.some((lease) => lease.ownership_mode === "public" && Date.parse(lease.expires_at) > now) ||
-    (marker.submissions ?? []).some((submission) => submission.ownership_mode === "public" && submission.status === "submitted");
+  const logins = [
+    ...marker.leases
+      .filter((lease) => lease.ownership_mode === "public" && Date.parse(lease.expires_at) > now)
+      .map((lease) => lease.contributor),
+    ...(marker.submissions ?? [])
+      .filter((submission) => submission.ownership_mode === "public" && submission.status === "submitted")
+      .map((submission) => submission.verified_contributor),
+  ];
+  const seen = new Set<string>();
+  return logins.flatMap((login) => {
+    const trimmed = login.trim();
+    const key = trimmed.toLowerCase();
+    if (!trimmed || seen.has(key)) return [];
+    seen.add(key);
+    return [{ login: trimmed, avatar_url: `https://github.com/${encodeURIComponent(trimmed)}.png?size=64` }];
+  });
 }
 
 export async function verifiedPublicLogins(issue: RawIssue): Promise<string[]> {
@@ -79,13 +93,16 @@ export default async function handler(req: Request): Promise<Response> {
   const token = process.env.GITHUB_TOKEN; const headers: Record<string, string> = { accept: "application/vnd.github+json", "x-github-api-version": "2022-11-28" }; if (token) headers.authorization = `Bearer ${token}`;
   if (new URL(req.url).searchParams.get("projection") === "queue") {
     try {
-      const issueNumbers: number[] = [];
+      const queue: Array<{ number: number; evaluators: RawAssignee[] }> = [];
       for (let page = 1; page <= MAX_PAGES; page++) {
         const chunk = await fetchPage(page, headers, "open");
-        for (const issue of chunk) if (await hasVerifiedPublicOwnership(issue)) issueNumbers.push(issue.number);
+        for (const issue of chunk) {
+          const evaluators = await publicQueueEvaluators(issue);
+          if (evaluators.length) queue.push({ number: issue.number, evaluators });
+        }
         if (chunk.length < PER_PAGE) break;
       }
-      return json(200, issueNumbers);
+      return json(200, queue);
     } catch (error) {
       return json(502, { error: (error as Error).message });
     }
