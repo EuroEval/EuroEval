@@ -19,10 +19,21 @@ type Receipt = { status?: string; submission_id: string; lease: Lease; entries: 
 
 function resultEntries(value: unknown): ResultEntry[] {
   if (!Array.isArray(value)) return [];
-  return value.flatMap((item) => {
+  const entries = value.flatMap((item) => {
     if (typeof item !== "string") return [];
     try { const parsed = JSON.parse(item) as ResultEntry; return parsed.digest && parsed.identity && parsed.path ? [parsed] : []; } catch { return []; }
   });
+  const byIdentity = new Map<string, ResultEntry>();
+  for (const entry of entries) {
+    const previous = byIdentity.get(entry.identity);
+    if (previous && previous.digest !== entry.digest) {
+      throw new BrokerError(409, "Conflicting results exist for one canonical identity.");
+    }
+    if (!previous || previous.failed === undefined && entry.failed !== undefined) {
+      byIdentity.set(entry.identity, entry);
+    }
+  }
+  return [...byIdentity.values()];
 }
 
 function identityParts(identity: string): unknown[] | null {
