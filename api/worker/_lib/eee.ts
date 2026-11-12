@@ -41,32 +41,34 @@ export function validateRecord(record: unknown, expected: { modelId: string; rev
   let raw: unknown;
   try { raw = typeof details.raw_results === "string" ? JSON.parse(details.raw_results) : details.raw_results; } catch { throw new BrokerError(422, "additional_details.raw_results is not valid JSON."); }
   if (!Array.isArray(raw)) throw new BrokerError(422, "additional_details.raw_results is not valid JSON.");
-  const hasRawFailureLists = raw.some((item) =>
-    !!item && typeof item === "object" && !Array.isArray(item) &&
-    "failed_instances" in item,
-  );
-  const rawFailureCount = raw.reduce((total, item) => {
-    if (!item || typeof item !== "object" || Array.isArray(item)) return total;
-    const failures = (item as Record<string, unknown>).failed_instances;
-    return total + (Array.isArray(failures) ? failures.length : 0);
-  }, 0);
-  const firstMetricDetails = value.evaluation_results.find((item: unknown) =>
-    !!item && typeof item === "object" &&
-    (item as Record<string, any>).score_details?.details?.num_failed_instances !== undefined,
-  ) as Record<string, any> | undefined;
-  const reportedFailures = details.num_failed_instances ??
-    firstMetricDetails?.score_details?.details?.num_failed_instances;
-  const failed = hasRawFailureLists ? rawFailureCount :
-    typeof reportedFailures === "number" ? reportedFailures :
-      typeof reportedFailures === "string" && reportedFailures.trim() ? Number(reportedFailures) : 0;
-  if (!Number.isSafeInteger(failed) || failed < 0) throw new BrokerError(422, "failed instance count is invalid.");
-  if (hasRawFailureLists) {
-    const claims = [details.num_failed_instances, ...value.evaluation_results.map((item: Record<string, any>) =>
-      item?.score_details?.details?.num_failed_instances)].filter((item) => item !== undefined);
-    if (claims.some((item) => {
-      const count = typeof item === "number" ? item : typeof item === "string" ? Number(item) : NaN;
-      return !Number.isSafeInteger(count) || count !== failed;
-    })) throw new BrokerError(422, "failed instance count is inconsistent with raw results.");
+  const failureEntries = raw.flatMap((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item) ||
+      !("failed_instances" in item)) return [];
+    let failures: unknown = (item as Record<string, unknown>).failed_instances;
+    if (typeof failures === "string") {
+      try { failures = JSON.parse(failures); } catch { /* validate below */ }
+    }
+    const count = typeof failures === "number" ? failures :
+      Array.isArray(failures) ? failures.length : NaN;
+    if (!Number.isSafeInteger(count) || count < 0) {
+      throw new BrokerError(422, "failed instance count is invalid.");
+    }
+    return [count];
+  });
+  const hasRawFailures = failureEntries.length > 0;
+  const rawFailureCount = failureEntries.reduce((total, count) => total + count, 0);
+  const claims = [details.num_failed_instances, ...value.evaluation_results.map((item: Record<string, any>) =>
+    item?.score_details?.details?.num_failed_instances)].filter((item) => item !== undefined);
+  const normaliseCount = (item: unknown): number => {
+    const count = typeof item === "number" ? item : typeof item === "string" && item.trim() ? Number(item) : NaN;
+    if (!Number.isSafeInteger(count) || count < 0) throw new BrokerError(422, "failed instance count is invalid.");
+    return count;
+  };
+  const metricCount = claims.length ? normaliseCount(claims[0]) : undefined;
+  const failed = hasRawFailures ? rawFailureCount :
+    normaliseCount(details.num_failed_instances ?? metricCount ?? 0);
+  if (claims.some((item) => normaliseCount(item) !== failed)) {
+    throw new BrokerError(422, "failed instance count is inconsistent with raw results.");
   }
   const warnings: string[] = failed ? [`${failed} failed instances`] : [];
   const group = languageGroup(expected.language);

@@ -11,7 +11,6 @@ from pathlib import Path
 
 from euroeval.canary_evidence import evidence_from_dict
 from leaderboards.eee_validation import validate_eee_record
-from leaderboards.record_fields import get_num_failed_instances
 from leaderboards.result_identity import (
     ResultIdentity,
     identity_from_eee_record,
@@ -293,20 +292,51 @@ def _failed_instance_count(content: bytes) -> int:
     details = t.cast(JsonObject, library["additional_details"])
     raw = _json_value(details.get("raw_results"), "raw_results")
     iterations = t.cast(list[object], raw)
-    has_lists = any(
-        isinstance(item, dict) and "failed_instances" in item for item in iterations
-    )
-    if has_lists:
-        count = sum(
-            len(item["failed_instances"])
-            for item in iterations
-            if isinstance(item, dict) and isinstance(item.get("failed_instances"), list)
+    raw_counts: list[int] = []
+    for iteration in iterations:
+        if not isinstance(iteration, dict) or "failed_instances" not in iteration:
+            continue
+        failures = _json_value(iteration["failed_instances"], "failed_instances")
+        count = (
+            failures
+            if isinstance(failures, int) and not isinstance(failures, bool)
+            else (len(failures) if isinstance(failures, list) else None)
         )
-        aggregate = get_num_failed_instances(record=record)
-        if aggregate is not None and aggregate != count:
-            raise ReviewError("Record aggregate failed_instances count is inconsistent")
-        return count
-    return get_num_failed_instances(record=record) or 0
+        if count is None or count < 0:
+            raise ReviewError("Record failed_instances count is invalid")
+        raw_counts.append(count)
+    metric_claims = [
+        t.cast(JsonObject, t.cast(JsonObject, item).get("score_details", {})).get(
+            "details", {}
+        )
+        for item in t.cast(list[object], record.get("evaluation_results", []))
+        if isinstance(item, dict)
+    ]
+    claims = (
+        [details["num_failed_instances"]] if "num_failed_instances" in details else []
+    )
+    claims.extend(
+        value["num_failed_instances"]
+        for value in metric_claims
+        if isinstance(value, dict) and "num_failed_instances" in value
+    )
+    parsed_claims: list[int] = []
+    for claim in claims:
+        try:
+            parsed = int(float(claim))
+        except (TypeError, ValueError):
+            raise ReviewError(
+                "Record aggregate failed_instances count is invalid"
+            ) from None
+        if parsed < 0 or float(claim) != parsed:
+            raise ReviewError("Record aggregate failed_instances count is invalid")
+        parsed_claims.append(parsed)
+    count = (
+        sum(raw_counts) if raw_counts else (parsed_claims[0] if parsed_claims else 0)
+    )
+    if any(claim != count for claim in parsed_claims):
+        raise ReviewError("Record aggregate failed_instances count is inconsistent")
+    return count
 
 
 def _load_object(content: bytes, context: str) -> JsonObject:

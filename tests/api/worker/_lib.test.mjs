@@ -179,6 +179,31 @@ test("validates canonical model identity and score bounds", () => {
   const checked = validateRecord(withFailures, { modelId: "org/model", revision: "deadbeef", language: "da" });
   assert.equal(checked.failed, 1);
   assert.match(checked.warnings[0], /1 failed instances/);
+  for (const failedInstances of [2, "[{}, {}]"]) {
+    const alternative = {
+      ...record,
+      eval_library: { ...record.eval_library, additional_details: {
+        ...record.eval_library.additional_details,
+        raw_results: JSON.stringify([{ failed_instances: failedInstances }]),
+        num_failed_instances: 2,
+      } },
+      evaluation_results: [{ ...record.evaluation_results[0], score_details: {
+        score: 85, details: { num_failed_instances: "2" },
+      } }],
+    };
+    assert.equal(validateRecord(alternative, {
+      modelId: "org/model", revision: "deadbeef", language: "da",
+    }).failed, 2);
+  }
+  assert.throws(() => validateRecord({
+    ...withFailures,
+    evaluation_results: [
+      withFailures.evaluation_results[0],
+      { ...withFailures.evaluation_results[0], score_details: {
+        score: 84, details: { num_failed_instances: "2" },
+      } },
+    ],
+  }, { modelId: "org/model", revision: "deadbeef", language: "da" }), /inconsistent/);
   assert.throws(() => validateRecord({ ...record, evaluation_results: [{ ...record.evaluation_results[0], score_details: { score: Number.NaN } }] }, { modelId: "org/model", revision: "deadbeef", language: "da" }), /finite/);
 });
 
