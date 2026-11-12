@@ -1360,6 +1360,36 @@ def test_review_renewal_round_trip_includes_bound_digest(
     assert requests[0]["reservation_token"] == "reservation"
 
 
+def test_show_warns_on_missing_metadata_and_acceptance_requires_it() -> None:
+    """Inspection warns about unknown metadata while publication still refuses it."""
+    api, reviewer, broker_calls = _reviewer(failed_instances=2)
+    manifest = _manifest(api)
+    entry = t.cast(list[dict[str, object]], manifest["results"])[0]
+    old_path = t.cast(str, entry["path"])
+    record = json.loads(api.files[(STAGING, old_path)])
+    details = record["model_info"]["additional_details"]
+    for field in ("commercially_licensed", "open", "trained_from_scratch"):
+        details.pop(field)
+    record["eval_library"]["version"] = "18.1.0.dev"
+    manifest["euroeval_version"] = "18.1.0.dev0"
+    content = json.dumps(record, ensure_ascii=False).encode("utf-8")
+    digest = hashlib.sha256(content).hexdigest()
+    new_path = f"volunteer/submissions/{SUBMISSION}/results/{digest}.json"
+    api.files[(STAGING, new_path)] = content
+    entry["path"] = new_path
+    entry["digest"] = digest
+    _store_manifest(api=api, manifest=manifest)
+
+    report = reviewer.show(SUBMISSION)
+
+    assert "2 failed instances (informational)" in report.warnings
+    assert any("Missing precious metadata" in warning for warning in report.warnings)
+    with pytest.raises(ReviewError, match="precious metadata"):
+        reviewer.decide(SUBMISSION, "accepted", "maintainer")
+    assert not [key for key in api.files if key[0] == RESULTS]
+    assert broker_calls == []
+
+
 def test_terminal_response_loss_recovers_with_durable_digest(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
