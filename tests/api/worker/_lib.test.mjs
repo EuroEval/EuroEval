@@ -170,6 +170,23 @@ test("validates canonical model identity and score bounds", () => {
   assert.throws(() => validateRecord({ ...record, evaluation_results: [{ ...record.evaluation_results[0], score_details: { score: 85, details: { failed_instances: "[1]" } } }] }, { modelId: "org/model", revision: "deadbeef", language: "da" }));
 });
 
+test("validates equivalent bare and zeroed development versions", () => {
+  const record = {
+    schema_version: "0.2.1",
+    model_info: { id: "org/model", revision: "deadbeef" },
+    eval_library: { name: "euroeval", version: "18.4.0.dev", additional_details: { dataset: "dataset", task: "task", language: "da", languages: '["da"]', raw_results: "[]", few_shot: false, validation_split: false, num_failed_instances: 0 } },
+    evaluation_results: [{ evaluation_name: "accuracy", source_data: { dataset_name: "dataset" }, metric_config: { lower_is_better: false }, score_details: { score: 85 } }],
+  };
+  const expected = { modelId: "org/model", revision: "deadbeef", language: "da", euroevalVersion: "18.4.0.dev0" };
+
+  assert.equal(validateRecord(record, expected).failed, 0);
+  assert.equal(validateRecord(record, { ...expected, euroevalVersion: "18.4.0" }).failed, 0);
+  assert.throws(
+    () => validateRecord({ ...record, eval_library: { ...record.eval_library, version: "18.4.1.dev" } }, expected),
+    /invalid eval_library name or version/,
+  );
+});
+
 test("promotion reservations outlive long uploads", () => {
   assert.ok(PROMOTION_RESERVATION_TTL >= 24 * 60 * 60);
 });
