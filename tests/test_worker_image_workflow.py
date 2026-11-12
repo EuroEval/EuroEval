@@ -1,9 +1,11 @@
 """Static safety checks for the worker image publication workflow."""
 
+import tomllib
 from pathlib import Path
 
-WORKFLOW = Path(__file__).parents[1] / ".github/workflows/worker-image.yaml"
-DOCKERFILE = Path(__file__).parents[1] / "Dockerfile.worker"
+ROOT = Path(__file__).parents[1]
+WORKFLOW = ROOT / ".github/workflows/worker-image.yaml"
+DOCKERFILE = ROOT / "Dockerfile.worker"
 
 
 def test_amd64_publication_remains_separate_from_spark_candidate() -> None:
@@ -100,6 +102,21 @@ def test_spark_arm64_is_a_distinct_candidate_and_not_promotable() -> None:
     assert "pending a physical DGX Spark canary" in spark_job
     assert "latest" not in spark_job
     assert "type=sha,format=long,prefix=sha-" not in spark_job
+
+
+def test_vllm_transformers_compatibility_is_locked() -> None:
+    """Keep vLLM 0.27.1 on the Transformers release with compatible head dimensions."""
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    lock = tomllib.loads((ROOT / "uv.lock").read_text(encoding="utf-8"))
+    constraint = "transformers[mistral-common]>=5.14.0,<5.15.0"
+
+    assert constraint in project["tool"]["uv"]["override-dependencies"]
+    assert constraint in project["project"]["optional-dependencies"]["generative"]
+    assert constraint in project["project"]["optional-dependencies"]["all"]
+    transformers = next(
+        package for package in lock["package"] if package["name"] == "transformers"
+    )
+    assert transformers["version"] == "5.14.1"
 
 
 def test_worker_runtime_includes_pinned_nvcc() -> None:
