@@ -41,26 +41,34 @@ export function validateRecord(record: unknown, expected: { modelId: string; rev
   let raw: unknown;
   try { raw = typeof details.raw_results === "string" ? JSON.parse(details.raw_results) : details.raw_results; } catch { throw new BrokerError(422, "additional_details.raw_results is not valid JSON."); }
   if (!Array.isArray(raw)) throw new BrokerError(422, "additional_details.raw_results is not valid JSON.");
-  const failedValue = (item: unknown): number => typeof item === "number" ? item : typeof item === "string" && item.trim() ? Number(item) : 0;
-  const failedIndicator = (item: unknown): boolean => {
-    if (Array.isArray(item)) return item.length !== 0;
-    if (item && typeof item === "object") return Object.keys(item).length !== 0;
-    if (typeof item === "string" && (item.trim().startsWith("[") || item.trim().startsWith("{"))) {
-      try {
-        const parsed = JSON.parse(item) as unknown;
-        return Array.isArray(parsed) || (parsed && typeof parsed === "object") ? Object.keys(parsed as object).length !== 0 : !!parsed;
-      } catch { return true; }
-    }
-    return !Number.isFinite(failedValue(item)) || failedValue(item) !== 0;
-  };
-  const containsFailure = (item: unknown): boolean => {
-    if (Array.isArray(item)) return item.some(containsFailure);
-    if (!item || typeof item !== "object") return false;
-    return Object.entries(item as Record<string, unknown>).some(([key, value]) =>
-      key === "num_failed_instances" || key === "failed_instances" ? failedIndicator(value) : containsFailure(value));
-  };
-  if (containsFailure(raw)) throw new BrokerError(422, "records with failed instances cannot be submitted.");
-  const warnings: string[] = [];
+  const hasRawFailureLists = raw.some((item) =>
+    !!item && typeof item === "object" && !Array.isArray(item) &&
+    "failed_instances" in item,
+  );
+  const rawFailureCount = raw.reduce((total, item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return total;
+    const failures = (item as Record<string, unknown>).failed_instances;
+    return total + (Array.isArray(failures) ? failures.length : 0);
+  }, 0);
+  const firstMetricDetails = value.evaluation_results.find((item: unknown) =>
+    !!item && typeof item === "object" &&
+    (item as Record<string, any>).score_details?.details?.num_failed_instances !== undefined,
+  ) as Record<string, any> | undefined;
+  const reportedFailures = details.num_failed_instances ??
+    firstMetricDetails?.score_details?.details?.num_failed_instances;
+  const failed = hasRawFailureLists ? rawFailureCount :
+    typeof reportedFailures === "number" ? reportedFailures :
+      typeof reportedFailures === "string" && reportedFailures.trim() ? Number(reportedFailures) : 0;
+  if (!Number.isSafeInteger(failed) || failed < 0) throw new BrokerError(422, "failed instance count is invalid.");
+  if (hasRawFailureLists) {
+    const claims = [details.num_failed_instances, ...value.evaluation_results.map((item: Record<string, any>) =>
+      item?.score_details?.details?.num_failed_instances)].filter((item) => item !== undefined);
+    if (claims.some((item) => {
+      const count = typeof item === "number" ? item : typeof item === "string" ? Number(item) : NaN;
+      return !Number.isSafeInteger(count) || count !== failed;
+    })) throw new BrokerError(422, "failed instance count is inconsistent with raw results.");
+  }
+  const warnings: string[] = failed ? [`${failed} failed instances`] : [];
   const group = languageGroup(expected.language);
   let languages: unknown;
   try { languages = typeof details.languages === "string" ? JSON.parse(details.languages) : details.languages; } catch { throw new BrokerError(422, "additional_details.languages is not valid JSON."); }
@@ -70,7 +78,6 @@ export function validateRecord(record: unknown, expected: { modelId: string; rev
   const normaliseBool = (item: unknown): boolean | null | undefined => item === null || item === undefined ? null : item === true || item === "true" ? true : item === false || item === "false" ? false : undefined;
   const split = normaliseBool(details.validation_split); const shot = normaliseBool(details.few_shot);
   if (split === undefined || shot === undefined) throw new BrokerError(422, "validation_split and few_shot must be boolean or null.");
-  for (const item of [value.num_failed_instances, value.failed_instances, details.num_failed_instances, details.failed_instances]) if (item !== undefined && failedIndicator(item)) throw new BrokerError(422, "records with failed instances cannot be submitted.");
   for (const result of value.evaluation_results) {
     if (!result || typeof result !== "object") throw new BrokerError(422, "evaluation_results contains an invalid item.");
     const evaluation = result as Record<string, any>; const scoreDetails = evaluation.score_details as Record<string, any>;
@@ -91,11 +98,9 @@ export function validateRecord(record: unknown, expected: { modelId: string; rev
     if (uncertainty && typeof uncertainty !== "object") throw new BrokerError(422, "evaluation uncertainty is invalid.");
     if (uncertainty && Object.values(uncertainty).some((item) => typeof item === "number" && !Number.isFinite(item))) throw new BrokerError(422, "evaluation uncertainty is invalid.");
     if (interval && (typeof interval.lower !== "number" || typeof interval.upper !== "number" || !Number.isFinite(interval.lower) || !Number.isFinite(interval.upper) || interval.lower > interval.upper || score < interval.lower || score > interval.upper)) throw new BrokerError(422, "evaluation uncertainty is invalid.");
-    const resultDetails = scoreDetails.details as Record<string, any> | undefined;
-    if (resultDetails && containsFailure(resultDetails)) throw new BrokerError(422, "records with failed instances cannot be submitted.");
   }
   if (!value.evaluation_results.length) throw new BrokerError(422, "record contains no results.");
-  return { identity: JSON.stringify([expected.modelId, details.dataset, split, shot]), failed: 0, warnings };
+  return { identity: JSON.stringify([expected.modelId, details.dataset, split, shot]), failed, warnings };
 }
 
 function parseCanaryEvidence(value: unknown): unknown {

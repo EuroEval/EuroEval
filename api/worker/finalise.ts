@@ -14,7 +14,7 @@ import type { Lease, LeaseScope, VolunteerLeaseMarker } from "./_lib.js";
 export const config = { runtime: "nodejs" };
 
 const FINAL_MARKER = "euroeval-volunteer-finalised:v1";
-type ResultEntry = { digest: string; identity: string; path: string; warnings?: string[] };
+type ResultEntry = { digest: string; identity: string; path: string; failed?: number; warnings?: string[] };
 type Receipt = { status?: string; submission_id: string; lease: Lease; entries: ResultEntry[]; manifest_path: string; manifest?: string; matched_identity_suffixes?: string[] };
 
 function resultEntries(value: unknown): ResultEntry[] {
@@ -122,6 +122,7 @@ export async function fetch(req: Request): Promise<Response> {
       const entries = resultEntries(raw);
       const matchedScope = validateResultScope(entries, lease);
       receipt.entries = entries; receipt.matched_identity_suffixes = matchedScope; receipt.status = "validating";
+      const failedInstances = entries.reduce((total, entry) => total + (entry.failed || 0), 0);
       await redis("SET", statusKey, JSON.stringify(receipt), "EX", String(30 * 24 * 60 * 60));
       const issue = await fetchIssue(lease.issue_number);
       await requireLeaseOwnership(issue, lease);
@@ -134,7 +135,7 @@ export async function fetch(req: Request): Promise<Response> {
         selected_gpu_index: lease.selected_gpu_index, selected_gpu_uuid: lease.selected_gpu_uuid,
         expected_scope: lease.expected_scope, matched_identity_suffixes: receipt.matched_identity_suffixes,
         contamination_canary: lease.contamination_canary || null, results: entries,
-        automated_checks: { result_count: entries.length, identities_unique: true, failed_instances: 0, warnings: [...new Set([...(lease.expected_scope.warnings || []), ...entries.flatMap((entry) => entry.warnings || [])])] },
+        automated_checks: { result_count: entries.length, identities_unique: true, failed_instances: failedInstances, warnings: [...new Set([...(lease.expected_scope.warnings || []), ...entries.flatMap((entry) => entry.warnings || [])])] },
         created_at: new Date().toISOString(), issue_state: issue.state,
       };
       receipt.manifest = JSON.stringify(manifest); await uploadStaging(receipt.manifest_path, receipt.manifest);
@@ -176,7 +177,7 @@ export async function fetch(req: Request): Promise<Response> {
       const comments = await issueComments(lease.issue_number);
       if (!comments.some((item) => item.body?.includes(`${FINAL_MARKER} ${receipt.submission_id}`))) {
         const maintainer = process.env.COMMUNITY_MAINTAINER_LOGIN || "saattrupdan";
-        const comment = `<!-- ${FINAL_MARKER} ${receipt.submission_id} -->\n@${maintainer} — community evaluation ready.\n\nContributor: **${contributorLabel(identity.contributor)}**  \nModel: **${lease.model_id}@${lease.model_revision}**  \nLanguage: **${lease.language}**  \nSubmission: **${receipt.submission_id}**  \nValidation: **${receipt.entries.length} identities; zero failed instances**`;
+        const comment = `<!-- ${FINAL_MARKER} ${receipt.submission_id} -->\n@${maintainer} — community evaluation ready.\n\nContributor: **${contributorLabel(identity.contributor)}**  \nModel: **${lease.model_id}@${lease.model_revision}**  \nLanguage: **${lease.language}**  \nSubmission: **${receipt.submission_id}**  \nValidation: **${receipt.entries.length} identities; ${receipt.entries.reduce((total, entry) => total + (entry.failed || 0), 0)} failed instances (informational)**`;
         await mutex.assertOwned();
         await commentIssue(lease.issue_number, comment);
         if (lease.ownership_mode !== "public") await requireAssignee(await fetchIssue(lease.issue_number), lease.contributor);
