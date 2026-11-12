@@ -7,7 +7,7 @@ import {
 
 export const config = { runtime: "edge" };
 
-type Device = { device_code: string; client_id: string; interval: number; app_mode?: boolean; next_poll_at?: number };
+type Device = { device_code: string; client_id: string; interval: number; app_mode?: boolean; repository_id?: number; next_poll_at?: number };
 
 export default async function handler(req: Request): Promise<Response> {
   const rejected = method(req); if (rejected) return rejected;
@@ -28,7 +28,7 @@ export default async function handler(req: Request): Promise<Response> {
     const response = await fetchWithRetry("https://github.com/login/oauth/access_token", {
       method: "POST",
       headers: { accept: "application/json", "content-type": "application/json" },
-      body: JSON.stringify({ client_id: device.client_id || env("GITHUB_OAUTH_CLIENT_ID"), device_code: device.device_code, grant_type: "urn:ietf:params:oauth:grant-type:device_code" }),
+      body: JSON.stringify({ client_id: device.client_id || env("GITHUB_OAUTH_CLIENT_ID"), device_code: device.device_code, grant_type: "urn:ietf:params:oauth:grant-type:device_code", ...(device.app_mode ? { repository_id: 386992479 } : {}) }),
     });
     const data = await response.json() as { access_token?: string; refresh_token?: string; expires_in?: number; refresh_token_expires_in?: number; error?: string; error_description?: string };
     if (data.error === "authorization_pending" || data.error === "slow_down") {
@@ -40,13 +40,22 @@ export default async function handler(req: Request): Promise<Response> {
       await redisDelete(key);
       throw new BrokerError(401, "GitHub device authorisation was denied or expired.");
     }
-    if (device.app_mode && !appGrantEnabled()) throw new ConfigurationError("GitHub App grant configuration changed during authorization.");
+    if (device.app_mode && (!appGrantEnabled() || device.client_id !== process.env.VOLUNTEER_GITHUB_APP_CLIENT_ID || device.repository_id !== 386992479)) throw new ConfigurationError("GitHub App grant configuration changed during authorization.");
     const userResponse = await fetchWithRetry("https://api.github.com/user", { headers: { accept: "application/vnd.github+json", authorization: `Bearer ${data.access_token}`, "x-github-api-version": "2022-11-28" } });
     // Deliberately keep the token in this scope only. It is never returned or persisted.
     if (!userResponse.ok) { await redisDelete(key); throw new BrokerError(401, "GitHub could not identify this worker."); }
     const user = await userResponse.json() as { login?: string };
     if (!user.login) { await redisDelete(key); throw new BrokerError(401, "GitHub could not identify this worker."); }
     if (device.app_mode) {
+      const repositoryResponse = await fetchWithRetry("https://api.github.com/repos/EuroEval/EuroEval", {
+        headers: { accept: "application/vnd.github+json", authorization: `Bearer ${data.access_token}`, "x-github-api-version": "2022-11-28" },
+      });
+      const repository = repositoryResponse.ok ? await repositoryResponse.json() as { id?: number; full_name?: string } : null;
+      if (!repository || repository.id !== 386992479 || repository.full_name?.toLowerCase() !== "euroeval/euroeval") {
+        await redisDelete(key);
+        await discardUserAccessToken(data.access_token).catch(() => undefined);
+        throw new BrokerError(403, "GitHub could not verify access to the configured repository.");
+      }
       if (!data.refresh_token || !data.expires_in || !data.refresh_token_expires_in) {
         throw new BrokerError(401, "GitHub App authorization did not provide renewable tokens.");
       }

@@ -344,6 +344,7 @@ export default async function handler(req: Request): Promise<Response> {
           leases: [...(current?.leases || []), { lease_id: lease.lease_id, language, worker: lease.worker, contributor: identity.contributor, expires_at: expiresAt, ownership_mode: "public" }],
           ...(current?.submissions ? { submissions: current.submissions } : {}),
           ...(current?.completed_languages ? { completed_languages: current.completed_languages } : {}),
+          ...(current?.public_assignees ? { public_assignees: current.public_assignees } : {}),
         };
         try {
           const signedMarker = await signVolunteerMarker(snapshot.number, nextMarker);
