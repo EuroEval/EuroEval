@@ -111,15 +111,7 @@ def build_policy(
         model type and language.
     """
     parsed_version = Version(euroeval_version)
-    if (
-        parsed_version.dev == 0
-        and parsed_version.pre is None
-        and parsed_version.post is None
-        and parsed_version.local is None
-    ):
-        version = ".".join(str(part) for part in parsed_version.release)
-    else:
-        version = str(parsed_version)
+    version = str(parsed_version)
     configs = _configs_by_name()
     entries: list[dict[str, object]] = []
     for model_type in model_types:

@@ -72,16 +72,16 @@ def test_checked_in_policy_matches_all_official_datasets() -> None:
 
 
 def test_development_policy_version_uses_pep440_normalisation() -> None:
-    """Policy versions normalise only the source-only development marker."""
+    """Policy versions retain PEP 440's canonical development release."""
     policy = build_policy(
-        euroeval_version="18.3.0.dev",
+        euroeval_version="18.4.0.dev",
         pairs={("multi-wiki-qa-da", "da")},
         model_types=("encoder",),
     )
 
-    assert policy["policy_version"] == "volunteer-scope/18.3.0"
+    assert policy["policy_version"] == "volunteer-scope/18.4.0.dev0"
     entries = t.cast(list[dict[str, object]], policy["policies"])
-    assert entries[0]["euroeval_version"] == "18.3.0"
+    assert entries[0]["euroeval_version"] == "18.4.0.dev0"
 
     different_development_release = build_policy(
         euroeval_version="18.3.0.dev1",

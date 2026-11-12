@@ -7,6 +7,48 @@ import release from "../../../api/worker/release.ts";
 import { parseVolunteerMarker, signVolunteerMarker, sha256, verifyVolunteerMarker } from "../../../api/worker/_lib.ts";
 
 const issueNumber = 12;
+
+test("claim rejects an unsupported configured EuroEval version before queue discovery", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  Object.assign(process.env, {
+    VOLUNTEER_MARKER_SECRET: "marker-secret", VOLUNTEER_WORKER_IMAGE_DIGEST: "sha256:image",
+    EUROEVAL_VERSION: "18.3.0", VOLUNTEER_WORKER_VERSION: "1.0.0",
+    UPSTASH_REDIS_REST_URL: "https://redis.test", UPSTASH_REDIS_REST_TOKEN: "redis-token",
+    GITHUB_TOKEN: "github-token", VOLUNTEER_SCOPE_POLICY_JSON: JSON.stringify({
+      policy_version: "test-policy", policies: [{ euroeval_version: "18.4.0", model_type: "encoder",
+        language: "da", language_group: "Danish", allowed_identity_suffix_sets: [["test"]],
+        task_groups: ["classification"], warnings: [] }],
+    }),
+  });
+  const credentialKey = `euroeval:worker:credential:${await sha256("credential")}`;
+  let queueDiscoveryCalls = 0;
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input);
+    if (url === "https://redis.test") {
+      const command = JSON.parse(init.body);
+      return Response.json({ result: command[1] === credentialKey
+        ? JSON.stringify({ contributor: "alice" }) : command[0] === "SET" ? "OK" : 1 });
+    }
+    if (url.includes("/issues?")) queueDiscoveryCalls++;
+    throw new Error(`Unexpected request: ${init.method || "GET"} ${url}`);
+  };
+  try {
+    const response = await claim(new Request("https://euroeval.test/api/worker/claim", {
+      method: "POST", headers: { authorization: "Bearer credential", "content-type": "application/json" },
+      body: JSON.stringify({ protocol_version: "volunteer-worker/v1", worker_version: "1.0.0",
+        hardware: { architecture: "amd64", free_disk_bytes: 1, gpu_memory_utilisation: 0.8, selected_gpu_index: 0,
+          selected_gpu_uuid: "gpu", gpus: [{ index: 0, name: "GPU", uuid: "gpu",
+            free_memory_bytes: 1, total_memory_bytes: 1 }] } }),
+    }));
+    assert.equal(response.status, 503);
+    assert.match((await response.json()).error, /configuration/i);
+    assert.equal(queueDiscoveryCalls, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
 const lease = {
   issue_number: issueNumber, language: "da", worker: "worker", contributor: "alice",
   model_id: "org/model", model_revision: "a".repeat(40), euroeval_version: "1.0.0",
@@ -70,7 +112,11 @@ for (const upstreamSlow of [false, true]) test(
   Object.assign(process.env, { VOLUNTEER_MARKER_SECRET: "marker-secret",
     VOLUNTEER_WORKER_IMAGE_DIGEST: "sha256:image", EUROEVAL_VERSION: "1.0.0",
     VOLUNTEER_WORKER_VERSION: "1.0.0", UPSTASH_REDIS_REST_URL: "https://redis.test",
-    UPSTASH_REDIS_REST_TOKEN: "redis-token", GITHUB_TOKEN: "github-token" });
+    UPSTASH_REDIS_REST_TOKEN: "redis-token", GITHUB_TOKEN: "github-token",
+    VOLUNTEER_SCOPE_POLICY_JSON: JSON.stringify({ policy_version: "test-policy", policies: [
+      { euroeval_version: "1.0.0", model_type: "encoder", language: "da", language_group: "Danish",
+        allowed_identity_suffix_sets: [["test"]], task_groups: ["classification"], warnings: [] },
+    ] }), });
   const credentialKey = `euroeval:worker:credential:${await sha256("credential")}`;
   const issues = Array.from({ length: 148 }, (_, index) => ({
     number: index + 1, title: `[MODEL EVALUATION REQUEST] org/model-${index}`,

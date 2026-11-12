@@ -213,6 +213,17 @@ function canonicalEuroevalVersion(version: string): string {
   return version.replace(/\.dev$/, ".dev0");
 }
 
+export function validateScopePolicyVersion(euroevalVersion: string): void {
+  euroevalVersion = canonicalEuroevalVersion(euroevalVersion);
+  const raw = process.env.VOLUNTEER_SCOPE_POLICY_JSON || JSON.stringify(generatedScopePolicy);
+  let policy: ScopePolicy;
+  try { policy = JSON.parse(raw) as ScopePolicy; } catch { throw new ConfigurationError("VOLUNTEER_SCOPE_POLICY_JSON is invalid JSON."); }
+  if (typeof policy.policy_version !== "string" || !policy.policy_version || !Array.isArray(policy.policies)) throw new ConfigurationError("VOLUNTEER_SCOPE_POLICY_JSON has an invalid schema.");
+  if (!policy.policies.some((item) => item.euroeval_version === euroevalVersion)) {
+    throw new ConfigurationError(`Configuration error: trusted scope policy has no entries for EuroEval ${euroevalVersion}.`);
+  }
+}
+
 export function expectedScope(euroevalVersion: string, modelType: ModelType, language: string): TrustedScope {
   euroevalVersion = canonicalEuroevalVersion(euroevalVersion);
   const group = languageGroup(language);

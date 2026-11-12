@@ -1,7 +1,7 @@
 import {
   BrokerError, ConfigurationError, GROUPS, PROTOCOL_VERSION, VM_MARKER_RE, VOLUNTEER_MARKER_RE,
   acquireRenewableIssueMutex, authenticate, brokerErrorBody,
-  claimableLanguages, env, expectedScope,
+  claimableLanguages, env, expectedScope, validateScopePolicyVersion,
   extractModelId, enforceRateLimit, fitsGpu, fetchIssue, json, languageGroup, leaseTtl, selectedGpu,
   listOpenIssues, method,
   patchIssue, putLease, randomToken, readJson, deleteLease, unassignIssue,
@@ -151,8 +151,7 @@ export default async function handler(req: Request): Promise<Response> {
   const requestStarted = Date.now();
   const deadline = requestStarted + 18_000;
   const responseDeadline = requestStarted + 23_000;
-  const controller = new AbortController();
-  const deadlineTimer = setTimeout(() => controller.abort(), 12_000);
+  const signal = AbortSignal.timeout(12_000);
   try {
     const identity = await authenticate(req); await enforceRateLimit(`euroeval:worker:limit:claim:${identity.hash}`, 120, 3600);
     const body = await readJson(req, 32 * 1024); requireProtocol(body);
@@ -161,10 +160,11 @@ export default async function handler(req: Request): Promise<Response> {
     markerSecret();
     const imageDigest = env("VOLUNTEER_WORKER_IMAGE_DIGEST");
     const euroevalVersion = env("EUROEVAL_VERSION").replace(/\.dev$/, ".dev0");
+    validateScopePolicyVersion(euroevalVersion);
     const requiredWorkerVersion = env("VOLUNTEER_WORKER_VERSION");
     if (body.worker_version !== requiredWorkerVersion) throw new BrokerError(422, "Unsupported worker version.");
     const requestedLanguage = typeof body.language === "string" ? body.language : null;
-    const issues = await listOpenIssues(controller.signal);
+    const issues = await listOpenIssues(signal);
     const selectedHardwareGpu = selectedGpu(body.hardware);
     const candidates = issues.flatMap((listed) => {
       const modelId = extractModelId(listed.title, listed.body);
@@ -184,7 +184,7 @@ export default async function handler(req: Request): Promise<Response> {
       if (Date.now() >= deadline) throw new BrokerError(503, "Claim deadline exceeded; retry claim.");
     };
     const checkDiscoveryDeadline = (): void => {
-      if (controller.signal.aborted || Date.now() >= deadline - 6_000) {
+      if (signal.aborted || Date.now() >= deadline - 6_000) {
         throw new BrokerError(503, "Model discovery deadline exceeded; retry claim.");
       }
     };
@@ -195,7 +195,7 @@ export default async function handler(req: Request): Promise<Response> {
       const batchModels = [...new Set(batch.map(({ modelId }) => modelId))]
         .filter((modelId) => !mayFit.has(modelId));
       const outcomes = await Promise.all(batchModels.map(async (modelId) => {
-        try { return [modelId, await modelMayFit(modelId, body.hardware as Record<string, unknown>, selectedHardwareGpu, controller.signal)] as const; }
+        try { return [modelId, await modelMayFit(modelId, body.hardware as Record<string, unknown>, selectedHardwareGpu, signal)] as const; }
         catch (error) {
           if (error instanceof BrokerError && error.status === 422) return [modelId, false] as const;
           return [modelId, null] as const;
@@ -210,7 +210,7 @@ export default async function handler(req: Request): Promise<Response> {
       checkDiscoveryDeadline();
       if (!mayFit.get(modelId)) continue;
       if (!resolved.has(modelId)) {
-        try { resolved.set(modelId, await resolveModel(modelId, controller.signal)); }
+        try { resolved.set(modelId, await resolveModel(modelId, signal)); }
         catch (error) {
           if (error instanceof BrokerError && error.status === 422) resolved.set(modelId, null);
           else throw new BrokerError(503, "Model discovery is temporarily unavailable; retry claim.");
@@ -224,7 +224,7 @@ export default async function handler(req: Request): Promise<Response> {
       if (!globalMutex) { claimMutexBusy = true; continue; }
       try {
         await globalMutex.assertOwned();
-        const freshIssues = await listOpenIssues(controller.signal);
+        const freshIssues = await listOpenIssues(signal);
         const blockedLanguages = new Set<string>();
         for (const candidate of freshIssues) {
           if (candidate.number === listed.number ||
@@ -399,11 +399,9 @@ export default async function handler(req: Request): Promise<Response> {
     if (incompleteDiscovery) throw new BrokerError(503, "Model discovery is temporarily unavailable; retry claim.");
     return json(200, { protocol_version: PROTOCOL_VERSION, status: "no_work" });
   } catch (error) {
-    const failure = controller.signal.aborted
+    const failure = signal.aborted
       ? new BrokerError(503, "Claim discovery deadline exceeded; retry claim.") : error;
     const status = failure instanceof BrokerError ? failure.status : failure instanceof ConfigurationError ? 503 : 502;
     return json(status, brokerErrorBody(failure, "Unable to claim an evaluation."));
-  } finally {
-    clearTimeout(deadlineTimer);
   }
 }
