@@ -13,6 +13,7 @@ import urllib.request
 from euroeval.canary_evidence import evidence_from_dict
 from leaderboards.constants import HF_RESULTS_BUCKET
 from leaderboards.contamination_canary import process_contamination_canaries
+from leaderboards.eee_validation import validate_eee_record
 
 from .review_models import (
     BrokerBinder,
@@ -348,6 +349,13 @@ class VolunteerReviewer:
         for record in report.records:
             if _is_canary_identity(record.identity):
                 continue
+            try:
+                validate_eee_record(
+                    record=t.cast(JsonObject, json.loads(record.content)),
+                    context=record.staged_path,
+                )
+            except (TypeError, ValueError) as error:
+                raise ReviewError(str(error)) from error
             current = existing[record.canonical_path]
             if current is not None and current != record.content:
                 raise ReviewError(

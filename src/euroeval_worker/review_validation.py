@@ -10,7 +10,7 @@ import typing as t
 from pathlib import Path
 
 from euroeval.canary_evidence import evidence_from_dict
-from leaderboards.eee_validation import validate_eee_record
+from leaderboards.eee_validation import is_eee_record
 from leaderboards.result_identity import (
     ResultIdentity,
     identity_from_eee_record,
@@ -22,7 +22,7 @@ from .review_models import JsonObject, ReviewError, ReviewReport, ValidatedRecor
 from .review_storage import BucketStore, _digest
 from .types import PROTOCOL_VERSION
 
-_VERSION_SUFFIX_RE = re.compile(r"\.dev\d+$")
+_VERSION_SUFFIX_RE = re.compile(r"\.dev\d*$")
 
 
 def _validate_manifest(
@@ -606,8 +606,9 @@ def _validate_result_entry(
     record = _load_object(content=content, context=path)
     if record.get("schema_version") not in {"0.2.1", "0.3.0"}:
         raise ReviewError(f"Unsupported EEE schema version in {path}")
+    if not is_eee_record(record=record):
+        raise ReviewError(f"{path} is not an EEE-format record.")
     try:
-        validate_eee_record(record=record, context=path)
         identity = identity_from_eee_record(record=record)
     except (TypeError, ValueError) as error:
         raise ReviewError(str(error)) from error
@@ -624,6 +625,27 @@ def _validate_result_entry(
         path=path,
     )
     scores, warnings = _scores(record=record, path=path)
+    model_info = t.cast(JsonObject, record.get("model_info", {}))
+    model_details = model_info.get("additional_details")
+    metadata = model_details if isinstance(model_details, dict) else {}
+    missing_metadata = [
+        field
+        for field in ("commercially_licensed", "open", "trained_from_scratch")
+        if field not in metadata
+    ]
+    invalid_metadata = [
+        field
+        for field in ("commercially_licensed", "open", "trained_from_scratch")
+        if field in metadata and not isinstance(metadata[field], bool)
+    ]
+    if missing_metadata:
+        warnings.append(
+            "Missing precious metadata field(s): " + ", ".join(missing_metadata)
+        )
+    if invalid_metadata:
+        warnings.append(
+            "Non-boolean precious metadata field(s): " + ", ".join(invalid_metadata)
+        )
     listed_warnings = _string_list(entry.get("warnings", []), f"warnings in {path}")
     return ValidatedRecord(
         identity=identity,
