@@ -619,13 +619,15 @@ for (const contention of ["global", "issue-only", "issue-later", "issue-later-ar
   }
 });
 
-async function finaliseSuccessfulScope(language, suffixes) {
+async function finaliseSuccessfulScope(language, suffixes, retryDigest, prevalidated = false) {
   const originalFetch = globalThis.fetch;
   const originalEnv = { ...process.env };
   process.env.VOLUNTEER_MARKER_SECRET = "marker-secret";
   process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
   process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
   process.env.GITHUB_TOKEN = "github-token";
+  process.env.HF_STAGING_BUCKET = "EuroEval/staging";
+  process.env.HF_TOKEN = "hf_test-token";
   const languageGroup = "Romance languages (Catalan, French, Italian, Portuguese, Romanian, Spanish)";
   const activeLease = { ...lease, language, model_type: "generative", expected_scope: {
     policy_version: "test-policy", language_group: languageGroup,
@@ -641,24 +643,62 @@ async function finaliseSuccessfulScope(language, suffixes) {
     state: "open", assignees: [{ login: "alice" }], labels: [] };
   const entries = suffixes.map((item, index) => ({ digest: `digest-${index}`,
     identity: JSON.stringify(["org/model", ...JSON.parse(item)]), path: `result-${index}.json` }));
-  const receipt = { status: "manifest_uploaded", submission_id: activeLease.lease_id,
-    lease: activeLease, entries, manifest_path: "volunteer/manifests/lease.json" };
+  if (retryDigest !== undefined) {
+    entries.push({ ...entries[0], failed: 0, digest: retryDigest });
+  }
+  const receipt = { status: retryDigest === undefined || prevalidated ? "manifest_uploaded" : "validating",
+    submission_id: activeLease.lease_id, lease: activeLease, entries,
+    manifest_path: "volunteer/manifests/lease.json" };
   const values = new Map();
   values.set(`euroeval:worker:credential:${await sha256("credential")}`, JSON.stringify({ contributor: "alice" }));
   values.set(`euroeval:worker:lease-id:${activeLease.lease_id}`, JSON.stringify(activeLease));
   values.set(`euroeval:worker:lease:${issueNumber}:${activeLease.language}`, JSON.stringify(activeLease));
   values.set(`euroeval:worker:finalisation:${activeLease.lease_id}`, JSON.stringify(receipt));
-  globalThis.fetch = mockBroker(issue, values);
+  if (retryDigest !== undefined && !prevalidated) {
+    values.set(`euroeval:worker:results:${activeLease.lease_id}`,
+      entries.map((entry) => JSON.stringify(entry)));
+  }
+  const broker = mockBroker(issue, values);
+  globalThis.fetch = async (input, init = {}) => {
+    if (String(input).includes("huggingface.co/api/buckets/")) {
+      return Response.json({ private: true });
+    }
+    if (String(input).includes("huggingface.co") || String(input).includes("/v1/")) {
+      return Response.json({});
+    }
+    return broker(input, init);
+  };
   try {
-    return await finalise(new Request("https://euroeval.test/api/worker/finalise", {
+    const response = await finalise(new Request("https://euroeval.test/api/worker/finalise", {
       method: "POST", headers: { authorization: "Bearer credential", "content-type": "application/json" },
       body: JSON.stringify({ protocol_version: "volunteer-worker/v1", lease_id: activeLease.lease_id }),
     }));
+    return retryDigest !== undefined && !prevalidated ? { response, values } : response;
   } finally {
     globalThis.fetch = originalFetch;
     process.env = originalEnv;
   }
 }
+
+test("finalise deduplicates legacy retries without losing zero failure counts", async () => {
+  const scope = [JSON.stringify(["multiloko-fr", null, true])];
+  const matching = await finaliseSuccessfulScope("fr", scope, "digest-0");
+  assert.equal(matching.response.status, 502);
+  const stored = JSON.parse(matching.values.get(
+    "euroeval:worker:finalisation:lease",
+  ));
+  assert.equal(stored.entries.length, 1);
+  assert.equal(stored.entries[0].failed, 0);
+
+  const response = await finaliseSuccessfulScope("fr", scope, "digest-0", true);
+  assert.equal(response.status, 200, await response.text());
+
+  const conflicting = await finaliseSuccessfulScope(
+    "fr", [JSON.stringify(["multiloko-fr", null, true])], "different-digest",
+  );
+  assert.equal(conflicting.response.status, 409);
+  assert.match((await conflicting.response.json()).error, /Conflicting results/);
+});
 
 test("finalise accepts a valid base alternative with a split-less dataset", async () => {
   const response = await finaliseSuccessfulScope("fr", [JSON.stringify(["multiloko-fr", null, true])]);

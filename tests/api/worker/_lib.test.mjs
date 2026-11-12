@@ -179,6 +179,39 @@ test("validates canonical model identity and score bounds", () => {
   const checked = validateRecord(withFailures, { modelId: "org/model", revision: "deadbeef", language: "da" });
   assert.equal(checked.failed, 1);
   assert.match(checked.warnings[0], /1 failed instances/);
+  const nestedRawOnly = {
+    ...record,
+    eval_library: { ...record.eval_library, additional_details: {
+      ...record.eval_library.additional_details,
+      raw_results: JSON.stringify([{ result: { metrics: {
+        first: { failed_instances: [{ sample_index: 1 }, { sample_index: 2 }] },
+        second: { failed_instances: [{ sample_index: 1 }, { sample_index: 2 }] },
+      } } }]),
+      num_failed_instances: undefined,
+    } },
+  };
+  delete nestedRawOnly.eval_library.additional_details.num_failed_instances;
+  assert.equal(validateRecord(nestedRawOnly, {
+    modelId: "org/model", revision: "deadbeef", language: "da",
+  }).failed, 2);
+  const aggregateAlternative = {
+    ...record,
+    num_failed_instances: 3,
+    failed_instances: [{}, {}, {}],
+    eval_library: { ...record.eval_library, additional_details: {
+      ...record.eval_library.additional_details,
+      raw_results: "[]",
+      failed_instances: [{}, {}, {}],
+      num_failed_instances: undefined,
+    } },
+    evaluation_results: [{ ...record.evaluation_results[0], score_details: {
+      score: 85, details: { num_failed_instances: "3" },
+    } }],
+  };
+  delete aggregateAlternative.eval_library.additional_details.num_failed_instances;
+  assert.equal(validateRecord(aggregateAlternative, {
+    modelId: "org/model", revision: "deadbeef", language: "da",
+  }).failed, 3);
   for (const failedInstances of [2, "[{}, {}]"]) {
     const alternative = {
       ...record,
