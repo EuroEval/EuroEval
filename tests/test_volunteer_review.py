@@ -1031,6 +1031,60 @@ def test_manifest_scope_mismatch_is_rejected() -> None:
         reviewer.show(SUBMISSION)
 
 
+def test_nested_and_alternative_failure_counts_are_reported() -> None:
+    """Nested raw counts and aggregate placements match broker validation."""
+    api, reviewer, _ = _reviewer(failed_instances=2)
+    manifest_path = f"volunteer/manifests/{SUBMISSION}.json"
+    manifest = json.loads(api.files[(STAGING, manifest_path)])
+    entry = manifest["results"][0]
+    record = json.loads(api.files[(STAGING, entry["path"])])
+    details = record["eval_library"]["additional_details"]
+    details["raw_results"] = json.dumps(
+        [
+            {
+                "result": {
+                    "metrics": {
+                        "first": {"failed_instances": [{}, {}]},
+                        "second": {"failed_instances": [{}, {}]},
+                    }
+                }
+            }
+        ]
+    )
+    details.pop("num_failed_instances")
+    record.pop("num_failed_instances", None)
+    content = json.dumps(record, ensure_ascii=False).encode("utf-8")
+    digest = hashlib.sha256(content).hexdigest()
+    path = f"volunteer/submissions/{SUBMISSION}/results/{digest}.json"
+    api.files[(STAGING, path)] = content
+    entry["path"] = path
+    entry["digest"] = digest
+    _store_manifest(api=api, manifest=manifest)
+    assert any(
+        "2 failed instances" in warning
+        for warning in reviewer.show(SUBMISSION).warnings
+    )
+
+    details["raw_results"] = "[]"
+    details["failed_instances"] = [{}, {}, {}]
+    record["num_failed_instances"] = 3
+    record["failed_instances"] = [{}, {}, {}]
+    evaluation = record["evaluation_results"][0]
+    evaluation["score_details"]["details"] = {"num_failed_instances": "3"}
+    content = json.dumps(record, ensure_ascii=False).encode("utf-8")
+    digest = hashlib.sha256(content).hexdigest()
+    path = f"volunteer/submissions/{SUBMISSION}/results/{digest}.json"
+    api.files[(STAGING, path)] = content
+    entry["path"] = path
+    entry["digest"] = digest
+    manifest["automated_checks"]["failed_instances"] = 3
+    _store_manifest(api=api, manifest=manifest)
+    assert any(
+        "3 failed instances" in warning
+        for warning in reviewer.show(SUBMISSION).warnings
+    )
+
+
 def test_opposite_concurrent_decisions_fail_closed_before_canonical_writes() -> None:
     """Content-addressed races leave both immutable outcomes unpromoted."""
     reservations = iter(("accepted-token", "rejected-token"))

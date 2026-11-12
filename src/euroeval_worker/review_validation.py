@@ -294,17 +294,9 @@ def _failed_instance_count(content: bytes) -> int:
     iterations = t.cast(list[object], raw)
     raw_counts: list[int] = []
     for iteration in iterations:
-        if not isinstance(iteration, dict) or "failed_instances" not in iteration:
-            continue
-        failures = _json_value(iteration["failed_instances"], "failed_instances")
-        count = (
-            failures
-            if isinstance(failures, int) and not isinstance(failures, bool)
-            else (len(failures) if isinstance(failures, list) else None)
-        )
-        if count is None or count < 0:
-            raise ReviewError("Record failed_instances count is invalid")
-        raw_counts.append(count)
+        iteration_counts = _nested_failure_counts(value=iteration)
+        if iteration_counts:
+            raw_counts.append(max(iteration_counts))
     metric_claims = [
         t.cast(JsonObject, t.cast(JsonObject, item).get("score_details", {})).get(
             "details", {}
@@ -312,9 +304,12 @@ def _failed_instance_count(content: bytes) -> int:
         for item in t.cast(list[object], record.get("evaluation_results", []))
         if isinstance(item, dict)
     ]
-    claims = (
-        [details["num_failed_instances"]] if "num_failed_instances" in details else []
-    )
+    claims = [
+        value[key]
+        for value in (record, details)
+        for key in ("num_failed_instances", "failed_instances")
+        if key in value
+    ]
     claims.extend(
         value["num_failed_instances"]
         for value in metric_claims
@@ -322,13 +317,23 @@ def _failed_instance_count(content: bytes) -> int:
     )
     parsed_claims: list[int] = []
     for claim in claims:
-        try:
-            parsed = int(float(claim))
-        except (TypeError, ValueError):
-            raise ReviewError(
-                "Record aggregate failed_instances count is invalid"
-            ) from None
-        if parsed < 0 or float(claim) != parsed:
+        if isinstance(claim, bool):
+            raise ReviewError("Record aggregate failed_instances count is invalid")
+        if isinstance(claim, list):
+            parsed = len(claim)
+        elif isinstance(claim, (int, float, str)):
+            try:
+                numeric_claim = float(claim)
+                parsed = int(numeric_claim)
+            except (TypeError, ValueError, OverflowError):
+                raise ReviewError(
+                    "Record aggregate failed_instances count is invalid"
+                ) from None
+            if numeric_claim != parsed:
+                raise ReviewError("Record aggregate failed_instances count is invalid")
+        else:
+            raise ReviewError("Record aggregate failed_instances count is invalid")
+        if parsed < 0:
             raise ReviewError("Record aggregate failed_instances count is invalid")
         parsed_claims.append(parsed)
     count = (
@@ -359,6 +364,41 @@ def _load_object(content: bytes, context: str) -> JsonObject:
     if not isinstance(value, dict):
         raise ReviewError(f"{context} must contain a JSON object")
     return value
+
+
+def _nested_failure_counts(value: object) -> list[int]:
+    """Collect raw failed-instance counts from nested iteration data.
+
+    Args:
+        value:
+            One raw evaluation iteration or a nested value within it.
+
+    Returns:
+        Counts represented by ``failed_instances`` fields.
+
+    Raises:
+        ReviewError:
+            If a raw failed-instance representation is malformed.
+    """
+    if isinstance(value, list):
+        return [count for item in value for count in _nested_failure_counts(item)]
+    if not isinstance(value, dict):
+        return []
+    counts: list[int] = []
+    for key, nested in value.items():
+        if key == "failed_instances":
+            failures = _json_value(nested, "failed_instances")
+            count = (
+                failures
+                if isinstance(failures, int) and not isinstance(failures, bool)
+                else (len(failures) if isinstance(failures, list) else None)
+            )
+            if count is None or count < 0:
+                raise ReviewError("Record failed_instances count is invalid")
+            counts.append(count)
+        else:
+            counts.extend(_nested_failure_counts(nested))
+    return counts
 
 
 def _identity_suffix_sets(

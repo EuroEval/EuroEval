@@ -41,26 +41,47 @@ export function validateRecord(record: unknown, expected: { modelId: string; rev
   let raw: unknown;
   try { raw = typeof details.raw_results === "string" ? JSON.parse(details.raw_results) : details.raw_results; } catch { throw new BrokerError(422, "additional_details.raw_results is not valid JSON."); }
   if (!Array.isArray(raw)) throw new BrokerError(422, "additional_details.raw_results is not valid JSON.");
-  const failureEntries = raw.flatMap((item) => {
-    if (!item || typeof item !== "object" || Array.isArray(item) ||
-      !("failed_instances" in item)) return [];
-    let failures: unknown = (item as Record<string, unknown>).failed_instances;
-    if (typeof failures === "string") {
-      try { failures = JSON.parse(failures); } catch { /* validate below */ }
-    }
-    const count = typeof failures === "number" ? failures :
-      Array.isArray(failures) ? failures.length : NaN;
-    if (!Number.isSafeInteger(count) || count < 0) {
-      throw new BrokerError(422, "failed instance count is invalid.");
-    }
-    return [count];
+  const failureEntries = raw.flatMap((iteration) => {
+    const iterationCounts: number[] = [];
+    const collectFailures = (item: unknown): void => {
+      if (!item || typeof item !== "object") return;
+      if (Array.isArray(item)) {
+        for (const nested of item) collectFailures(nested);
+        return;
+      }
+      for (const [key, nested] of Object.entries(item)) {
+        if (key === "failed_instances") {
+          let failures = nested;
+          if (typeof failures === "string") {
+            try { failures = JSON.parse(failures); } catch { /* validate below */ }
+          }
+          const count = typeof failures === "number" ? failures :
+            Array.isArray(failures) ? failures.length : NaN;
+          if (!Number.isSafeInteger(count) || count < 0) {
+            throw new BrokerError(422, "failed instance count is invalid.");
+          }
+          iterationCounts.push(count);
+        } else {
+          collectFailures(nested);
+        }
+      }
+    };
+    collectFailures(iteration);
+    return iterationCounts.length ? [Math.max(...iterationCounts)] : [];
   });
   const hasRawFailures = failureEntries.length > 0;
   const rawFailureCount = failureEntries.reduce((total, count) => total + count, 0);
-  const claims = [details.num_failed_instances, ...value.evaluation_results.map((item: Record<string, any>) =>
-    item?.score_details?.details?.num_failed_instances)].filter((item) => item !== undefined);
+  const claims = [
+    value.num_failed_instances,
+    value.failed_instances,
+    details.num_failed_instances,
+    details.failed_instances,
+    ...value.evaluation_results.map((item: Record<string, any>) =>
+      item?.score_details?.details?.num_failed_instances),
+  ].filter((item) => item !== undefined);
   const normaliseCount = (item: unknown): number => {
-    const count = typeof item === "number" ? item : typeof item === "string" && item.trim() ? Number(item) : NaN;
+    const count = typeof item === "number" ? item : Array.isArray(item) ? item.length :
+      typeof item === "string" && item.trim() ? Number(item) : NaN;
     if (!Number.isSafeInteger(count) || count < 0) throw new BrokerError(422, "failed instance count is invalid.");
     return count;
   };
