@@ -44,6 +44,7 @@ from dotenv import load_dotenv
 from huggingface_hub import BucketFile, HfApi
 from huggingface_hub.errors import HfHubHTTPError
 from review_volunteer_results import main as run_review_command
+from review_volunteer_results import show_and_render
 
 from euroeval_worker.review import PublicStagingError, reviewer_from_environment
 from leaderboards.backup import backup_results
@@ -742,36 +743,12 @@ def preflight_volunteer_review() -> bool:
     review_error = False
     for submission_id in submission_ids:
         try:
-            display_plan = getattr(reviewer, "show", None)
-            planned_report = (
-                display_plan(submission_id=submission_id)
-                if callable(display_plan)
-                else None
+            displayed_report = show_and_render(
+                submission_id=submission_id, reviewer=reviewer
             )
-            show_status = run_review_command(["show", submission_id])
         except Exception:
             logger.exception(
                 "Could not display submission %s; skipping it.", submission_id
-            )
-            review_error = True
-            continue
-        if show_status != 0:
-            logger.error("Could not display submission %s; skipping it.", submission_id)
-            review_error = True
-            continue
-        displayed_report = (
-            display_plan(submission_id=submission_id)
-            if planned_report is not None and callable(display_plan)
-            else None
-        )
-        if (
-            planned_report is not None
-            and displayed_report is not None
-            and displayed_report.plan_fingerprint != planned_report.plan_fingerprint
-        ):
-            logger.error(
-                "Canonical plan changed while displaying %s; skipping it.",
-                submission_id,
             )
             review_error = True
             continue
@@ -787,10 +764,7 @@ def preflight_volunteer_review() -> bool:
             continue
         try:
             command = ["--reviewer", reviewer_login, "approve", submission_id]
-            if displayed_report is not None:
-                command.extend(
-                    ["--plan-fingerprint", displayed_report.plan_fingerprint]
-                )
+            command.extend(["--plan-fingerprint", displayed_report.plan_fingerprint])
             command.extend(["--reason", "Reviewed during collector preflight"])
             status = run_review_command(command)
         except Exception:

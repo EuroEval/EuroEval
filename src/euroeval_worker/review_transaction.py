@@ -170,18 +170,32 @@ class VolunteerReviewer:
         report = self.show(submission_id=submission_id)
         reasons = reasons or []
         existing = _existing_decisions(store=self.store, report=report, outcome=outcome)
-        if outcome == "accepted" and any(
-            item.replacement for item in report.canonical_observations
-        ):
-            confirmed = report.plan_fingerprint == plan_fingerprint or any(
-                json.loads(content).get("canonical_plan_fingerprint")
-                == plan_fingerprint
-                for _, content, _ in existing
-            )
-            if not confirmed:
+        if outcome == "accepted":
+            if existing:
+                _validate_predecessor_archives(
+                    store=self.store,
+                    report=report,
+                    decision=_load_object(
+                        content=existing[0][1], context=existing[0][0]
+                    ),
+                    results_bucket=self.results_bucket,
+                )
+            if any(item.conflict for item in report.canonical_observations):
+                raise ReviewError("Canonical collision blocks acceptance")
+            if (
+                plan_fingerprint is not None
+                and plan_fingerprint != report.plan_fingerprint
+            ):
                 raise ReviewError(
                     "Canonical plan changed or was not confirmed; run show and retry"
                 )
+            if any(item.replacement for item in report.canonical_observations) and (
+                plan_fingerprint != report.plan_fingerprint
+            ):
+                raise ReviewError(
+                    "Canonical plan changed or was not confirmed; run show and retry"
+                )
+
         evidence = sorted(
             [
                 {
@@ -527,7 +541,6 @@ class VolunteerReviewer:
             Immutable destination observations for reviewer confirmation.
 
         Raises:
-            ReviewError: If a canonical collision cannot be safely replaced.
             ValueError: If staged identities collide.
         """
         observations: list[CanonicalObservation] = []
@@ -559,10 +572,11 @@ class VolunteerReviewer:
                         )
                     replace = True
                 except (TypeError, ValueError) as error:
-                    raise ReviewError(
-                        "Canonical result collision at "
-                        f"{record.canonical_path}: {error}"
-                    ) from error
+                    conflict = str(error)
+                else:
+                    conflict = None
+            else:
+                conflict = None
             observations.append(
                 CanonicalObservation(
                     identity=record.identity,
@@ -572,6 +586,7 @@ class VolunteerReviewer:
                     else None,
                     predecessor_content=current,
                     replacement=replace,
+                    conflict=conflict,
                 )
             )
         return tuple(observations)
@@ -792,6 +807,40 @@ def _validate_existing_decision(
     ]
     decision_reasons = decision.get("reasons")
     decision_warnings = decision.get("warnings")
+    plan_fingerprint = decision.get("canonical_plan_fingerprint")
+    predecessors = decision.get("predecessors")
+    if "canonical_plan_fingerprint" in decision and (
+        not isinstance(plan_fingerprint, str)
+        or len(plan_fingerprint) != 64
+        or any(char not in "0123456789abcdef" for char in plan_fingerprint)
+    ):
+        raise ReviewError("Existing decision artifact is malformed or inconsistent")
+    if predecessors is not None:
+        expected_paths = {record.canonical_path for record in report.records}
+        seen_paths: set[str] = set()
+        if not isinstance(predecessors, list):
+            raise ReviewError("Existing decision artifact is malformed or inconsistent")
+        for predecessor in predecessors:
+            if not isinstance(predecessor, dict):
+                raise ReviewError(
+                    "Existing decision artifact is malformed or inconsistent"
+                )
+            path = predecessor.get("canonical_path")
+            digest = predecessor.get("digest")
+            archive_path = predecessor.get("archive_path")
+            if (
+                not isinstance(path, str)
+                or path not in expected_paths
+                or path in seen_paths
+                or not isinstance(digest, str)
+                or len(digest) != 64
+                or any(char not in "0123456789abcdef" for char in digest)
+                or archive_path != _predecessor_path(report.submission_id, digest)
+            ):
+                raise ReviewError(
+                    "Existing decision artifact is malformed or inconsistent"
+                )
+            seen_paths.add(path)
     reviewer = decision.get("reviewer")
     decided_at = decision.get("decided_at")
     issue_number = decision.get("issue_number")
@@ -836,6 +885,24 @@ def _validate_existing_decision(
     )
     if content != expected_content:
         raise ReviewError("Existing decision artifact is malformed or inconsistent")
+
+
+def _predecessor_path(submission_id: str, digest: str | None) -> str:
+    """Return the private content-addressed path for preserved canonical bytes.
+
+    Args:
+        submission_id: Submission owning the replacement.
+        digest: SHA-256 digest of the predecessor.
+
+    Returns:
+        Private staging-bucket archive path.
+
+    Raises:
+        ReviewError: If the predecessor digest is missing.
+    """
+    if digest is None:
+        raise ReviewError("Replacement predecessor digest is missing")
+    return f"volunteer/predecessors/{submission_id}/{digest}.json"
 
 
 def _local_reservation(
@@ -889,7 +956,12 @@ def _plan_fingerprint(
             (record.canonical_path, record.digest) for record in report.records
         ),
         "destinations": sorted(
-            (item.canonical_path, item.predecessor_digest, item.replacement)
+            (
+                item.canonical_path,
+                item.predecessor_digest,
+                item.replacement,
+                item.conflict,
+            )
             for item in observations
         ),
     }
@@ -897,22 +969,53 @@ def _plan_fingerprint(
     return hashlib.sha256(encoded).hexdigest()
 
 
-def _predecessor_path(submission_id: str, digest: str | None) -> str:
-    """Return the private content-addressed path for preserved canonical bytes.
+def _validate_predecessor_archives(
+    store: BucketStore, report: ReviewReport, decision: JsonObject, results_bucket: str
+) -> None:
+    """Verify durable replacement evidence against private archives and destinations.
 
     Args:
-        submission_id: Submission owning the replacement.
-        digest: SHA-256 digest of the predecessor.
-
-    Returns:
-        Private staging-bucket archive path.
+        store: Durable staging and canonical object store.
+        report: Current validated submission evidence.
+        decision: Previously persisted decision object.
+        results_bucket: Canonical results bucket.
 
     Raises:
-        ReviewError: If the predecessor digest is missing.
+        ReviewError: If predecessor evidence or canonical state is inconsistent.
     """
-    if digest is None:
-        raise ReviewError("Replacement predecessor digest is missing")
-    return f"volunteer/predecessors/{submission_id}/{digest}.json"
+    predecessors = decision.get("predecessors", [])
+    if not isinstance(predecessors, list):
+        raise ReviewError("Persisted replacement plan is malformed")
+    records = {record.canonical_path: record for record in report.records}
+    seen: set[str] = set()
+    for item in predecessors:
+        if not isinstance(item, dict):
+            raise ReviewError("Persisted replacement plan is malformed")
+        path = item.get("canonical_path")
+        digest = item.get("digest")
+        archive_path = item.get("archive_path")
+        if (
+            not isinstance(path, str)
+            or path in seen
+            or path not in records
+            or not isinstance(digest, str)
+            or len(digest) != 64
+            or any(char not in "0123456789abcdef" for char in digest)
+            or archive_path != _predecessor_path(report.submission_id, digest)
+        ):
+            raise ReviewError("Persisted replacement plan is malformed")
+        seen.add(path)
+        archived = store.read_optional(store.staging_bucket, archive_path)
+        current = store.read_optional(results_bucket, path)
+        if archived is not None:
+            if _digest(archived) != digest:
+                raise ReviewError("Archived canonical predecessor is corrupted")
+            if current not in {archived, records[path].content}:
+                raise ReviewError("Canonical destination changed during promotion")
+        elif current is None or _digest(current) != digest:
+            raise ReviewError(
+                "Replacement archive is missing after canonical replacement"
+            )
 
 
 def bind_with_broker(
