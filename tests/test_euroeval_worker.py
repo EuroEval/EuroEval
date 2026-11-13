@@ -1609,10 +1609,20 @@ def test_required_canary_preserves_partial_ordinary_scope(
     """
     calls: list[dict[str, object]] = []
     initialisations: list[dict[str, object]] = []
-    actual_datasets = evaluator._official_dataset_configs("da")
-    assert len(actual_datasets) >= 2
-    covered, missing = actual_datasets[:2]
     danish = get_all_languages()["da"]
+    actual_datasets = prepare_dataset_configs(
+        task=None,
+        dataset=None,
+        languages=[danish],
+        custom_datasets_file=Path(""),
+        api_key=None,
+        cache_dir=tmp_path,
+        trust_remote_code=False,
+        run_with_cli=False,
+    )
+    ordinary_datasets = [config for config in actual_datasets if not config.unofficial]
+    assert len(ordinary_datasets) >= 2
+    covered, missing = ordinary_datasets[:2]
 
     class FakeBenchmarker:
         """Resolve captured calls through EuroEval's real dataset selector."""
@@ -1691,7 +1701,6 @@ def test_required_canary_preserves_partial_ordinary_scope(
         ),
     )
     monkeypatch.setattr(evaluator, "Benchmarker", FakeBenchmarker)
-    monkeypatch.setattr(evaluator, "_canary_tasks", lambda: ["contamination-detection"])
     monkeypatch.setattr(
         evaluator,
         "benchmark_result_to_eee_dict",
@@ -1716,7 +1725,6 @@ def test_required_canary_preserves_partial_ordinary_scope(
     assert ordinary_call["evaluate_test_split"] is False
     assert canary_call["dataset"] is None
     assert canary_call["task"] == ["contamination-detection"]
-    assert canary_call["dataset"] is None
     assert [json.loads(record.record_json)["evaluation_id"] for record in records] == [
         missing.name,
         "canary",
