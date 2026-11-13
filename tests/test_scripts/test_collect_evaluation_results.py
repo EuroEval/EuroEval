@@ -3,7 +3,7 @@
 import json
 import signal
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 import pytest
 
@@ -61,6 +61,86 @@ class FakeHfApi:
         pass
 
 
+def test_initial_yes_does_not_approve_without_item_confirmation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Overview consent alone cannot approve the pending submission."""
+    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
+    monkeypatch.setenv("HF_TOKEN", "secret-token")
+    monkeypatch.setenv("GITHUB_ACTOR", "maintainer")
+    monkeypatch.setattr(
+        collect_evaluation_results,
+        "reviewer_from_environment",
+        lambda: PreflightReviewer(["one"]),
+    )
+    monkeypatch.setattr(
+        collect_evaluation_results, "_stdin_is_interactive", lambda: True
+    )
+    answers = iter(["y", "n"])
+    monkeypatch.setattr("builtins.input", lambda _: next(answers))
+    command = Mock(return_value=0)
+    monkeypatch.setattr(collect_evaluation_results, "run_review_command", command)
+
+    assert collect_evaluation_results.preflight_volunteer_review() is True
+    assert command.call_args_list == [call(["show", "one"])]
+
+
+class PreflightReviewer:
+    """Read-only reviewer double for collection preflight tests."""
+
+    def __init__(self, submission_ids: list[str] | None = None) -> None:
+        """Initialise pending IDs for the test.
+
+        Args:
+            submission_ids (optional):
+                Pending IDs. Defaults to the original unsafe-looking ID.
+        """
+        self.submission_ids = submission_ids or ["submission id'$(touch /tmp/nope)"]
+
+    def decide(self, *args: object, **kwargs: object) -> None:
+        """Fail if preflight ever attempts a decision.
+
+        Args:
+            args:
+                Args supplied to the test.
+            kwargs:
+                Kwargs supplied to the test.
+
+        Raises:
+            AssertionError:
+                If preflight attempts to decide a submission.
+        """
+        raise AssertionError("preflight must not decide")
+
+    def list_pending_submissions(self) -> list[tuple[str, int, str, str]]:
+        """Return one deliberately oddly quoted submission ID.
+
+        Returns:
+            A single pending submission tuple with an unsafe-looking ID.
+        """
+        return [
+            (submission_id, 12, "alice", "da") for submission_id in self.submission_ids
+        ]
+
+
+def test_main_does_not_harvest_after_review_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Failed promotion preflight stops main before any collection operation."""
+    monkeypatch.setattr(
+        collect_evaluation_results, "check_required_env_vars", lambda: None
+    )
+    monkeypatch.setattr(
+        collect_evaluation_results, "preflight_volunteer_review", lambda: False
+    )
+    fetch = Mock(side_effect=AssertionError("harvest started"))
+    monkeypatch.setattr(collect_evaluation_results, "_fetch_issues", fetch)
+    callback = collect_evaluation_results.main.callback
+    assert callback is not None
+    callback(force=False)
+    fetch.assert_not_called()
+
+
 def test_main_pauses_before_harvesting(monkeypatch: pytest.MonkeyPatch) -> None:
     """A review pause occurs before the first GitHub operation.
 
@@ -83,6 +163,38 @@ def test_main_pauses_before_harvesting(monkeypatch: pytest.MonkeyPatch) -> None:
     callback = collect_evaluation_results.main.callback
     assert callback is not None
     assert callback(force=False) is None
+
+
+@pytest.mark.parametrize("failure", ["timeout", "oserror"])
+def test_missing_reviewer_login_stops_opted_in_review(
+    monkeypatch: pytest.MonkeyPatch, failure: str
+) -> None:
+    """A missing GitHub login cancels preflight without a decision command."""
+    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
+    monkeypatch.setenv("HF_TOKEN", "secret-token")
+    monkeypatch.delenv("GITHUB_ACTOR", raising=False)
+    monkeypatch.setattr(
+        collect_evaluation_results,
+        "reviewer_from_environment",
+        lambda: PreflightReviewer(["one"]),
+    )
+    monkeypatch.setattr(
+        collect_evaluation_results, "_stdin_is_interactive", lambda: True
+    )
+    monkeypatch.setattr("builtins.input", lambda _: "y")
+    error: Exception = (
+        collect_evaluation_results.subprocess.TimeoutExpired("gh", 10)
+        if failure == "timeout"
+        else OSError("gh unavailable")
+    )
+    gh = Mock(side_effect=error)
+    monkeypatch.setattr(collect_evaluation_results.subprocess, "run", gh)
+    command = Mock(side_effect=AssertionError("approval must not run"))
+    monkeypatch.setattr(collect_evaluation_results, "run_review_command", command)
+
+    assert collect_evaluation_results.preflight_volunteer_review() is False
+    assert gh.call_args.kwargs["timeout"] == 10
+    command.assert_not_called()
 
 
 @pytest.mark.parametrize("answer", ["", "n", "no"])
@@ -116,33 +228,6 @@ def test_preflight_default_or_no_continues_without_approval(
     assert "no volunteer submission was approved automatically" in caplog.text
 
 
-class PreflightReviewer:
-    """Read-only reviewer double for collection preflight tests."""
-
-    def decide(self, *args: object, **kwargs: object) -> None:
-        """Fail if preflight ever attempts a decision.
-
-        Args:
-            args:
-                Args supplied to the test.
-            kwargs:
-                Kwargs supplied to the test.
-
-        Raises:
-            AssertionError:
-                If preflight attempts to decide a submission.
-        """
-        raise AssertionError("preflight must not decide")
-
-    def list_pending_submissions(self) -> list[tuple[str, int, str, str]]:
-        """Return one deliberately oddly quoted submission ID.
-
-        Returns:
-            A single pending submission tuple with an unsafe-looking ID.
-        """
-        return [("submission id'$(touch /tmp/nope)", 12, "alice", "da")]
-
-
 def test_preflight_eof_shows_commands_and_continues(
     monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
@@ -170,6 +255,41 @@ def test_preflight_eof_shows_commands_and_continues(
     assert "cancelled" in caplog.text.lower()
 
 
+@pytest.mark.parametrize("interrupt", [EOFError, KeyboardInterrupt])
+@pytest.mark.parametrize("prompt_number", [1, 2, 3])
+def test_preflight_interrupt_stops_without_harvesting(
+    monkeypatch: pytest.MonkeyPatch, interrupt: type[BaseException], prompt_number: int
+) -> None:
+    """Interrupts at the overview or any item prompt stop collection."""
+    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
+    monkeypatch.setenv("HF_TOKEN", "secret-token")
+    monkeypatch.setenv("GITHUB_ACTOR", "maintainer")
+    monkeypatch.setattr(
+        collect_evaluation_results,
+        "reviewer_from_environment",
+        lambda: PreflightReviewer(["first", "second"]),
+    )
+    monkeypatch.setattr(
+        collect_evaluation_results, "_stdin_is_interactive", lambda: True
+    )
+    inputs = iter(range(prompt_number - 1))
+    count = 0
+
+    def answer(_: str) -> str:
+        nonlocal count
+        count += 1
+        if count == prompt_number:
+            raise interrupt
+        next(inputs)
+        return "y"
+
+    monkeypatch.setattr("builtins.input", answer)
+    command = Mock(return_value=0)
+    monkeypatch.setattr(collect_evaluation_results, "run_review_command", command)
+    assert collect_evaluation_results.preflight_volunteer_review() is False
+    assert command.call_count == (0 if prompt_number == 1 else 2 * prompt_number - 3)
+
+
 def test_preflight_missing_staging_configuration_is_non_blocking(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -182,6 +302,49 @@ def test_preflight_missing_staging_configuration_is_non_blocking(
     monkeypatch.delenv("HF_STAGING_BUCKET", raising=False)
     monkeypatch.delenv("HF_TOKEN", raising=False)
     assert collect_evaluation_results.preflight_volunteer_review() is True
+
+
+def test_preflight_mixed_decisions_review_in_order(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Review commands retain each ID and only explicit yes approves."""
+    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
+    monkeypatch.setenv("HF_TOKEN", "secret-token")
+    monkeypatch.setenv("GITHUB_ACTOR", "maintainer")
+    ids = ["submission-one", "submission-two", "submission-three"]
+    monkeypatch.setattr(
+        collect_evaluation_results,
+        "reviewer_from_environment",
+        lambda: PreflightReviewer(ids),
+    )
+    monkeypatch.setattr(
+        collect_evaluation_results, "_stdin_is_interactive", lambda: True
+    )
+    answers = iter(["y", "y", "n", ""])
+    prompts: list[str] = []
+    monkeypatch.setattr(
+        "builtins.input", lambda prompt: prompts.append(prompt) or next(answers)
+    )
+    command = Mock(return_value=0)
+    monkeypatch.setattr(collect_evaluation_results, "run_review_command", command)
+
+    assert collect_evaluation_results.preflight_volunteer_review() is True
+    assert command.call_args_list == [
+        call(["show", "submission-one"]),
+        call(
+            [
+                "--reviewer",
+                "maintainer",
+                "approve",
+                "submission-one",
+                "--reason",
+                "Reviewed during collector preflight",
+            ]
+        ),
+        call(["show", "submission-two"]),
+        call(["show", "submission-three"]),
+    ]
+    assert len(prompts) == 4
 
 
 def test_preflight_non_tty_and_api_failure_do_not_hang(
@@ -238,6 +401,80 @@ def test_preflight_public_staging_fails_closed(monkeypatch: pytest.MonkeyPatch) 
 
     with pytest.raises(PublicStagingError):
         collect_evaluation_results.preflight_volunteer_review()
+
+
+@pytest.mark.parametrize("failure", ["status", "exception"])
+@pytest.mark.parametrize("command_kind", ["show", "approve"])
+def test_preflight_review_error_halts_after_inspecting_remaining_ids(
+    monkeypatch: pytest.MonkeyPatch,
+    failure: str,
+    command_kind: str,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A failed command does not stop later review but blocks collection."""
+    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
+    monkeypatch.setenv("HF_TOKEN", "secret-token")
+    monkeypatch.setenv("GITHUB_ACTOR", "maintainer")
+    ids = ["first", "second", "third"]
+    monkeypatch.setattr(
+        collect_evaluation_results,
+        "reviewer_from_environment",
+        lambda: PreflightReviewer(ids),
+    )
+    monkeypatch.setattr(
+        collect_evaluation_results, "_stdin_is_interactive", lambda: True
+    )
+    prompt = Mock(return_value="y")
+    monkeypatch.setattr("builtins.input", prompt)
+    calls: list[list[str]] = []
+
+    def run(command: list[str]) -> int:
+        calls.append(command)
+        is_show = command[0] == "show"
+        is_approve = command[0] == "--reviewer"
+        failed = (is_show and command_kind == "show" and command[1] == "first") or (
+            is_approve and command_kind == "approve" and command[3] == "first"
+        )
+        if failed and failure == "exception":
+            raise RuntimeError("injected failure")
+        return 1 if failed else 0
+
+    monkeypatch.setattr(collect_evaluation_results, "run_review_command", run)
+    assert collect_evaluation_results.preflight_volunteer_review() is False
+    assert [call[1] for call in calls if call[0] == "show"] == ids
+    assert prompt.call_count == (3 if command_kind == "show" else 4)
+    assert "halting collection" in caplog.text
+
+
+def test_preflight_with_no_pending_reviews_continues_without_prompt(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An empty pending inventory proceeds without prompting or CLI calls."""
+    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
+    monkeypatch.setenv("HF_TOKEN", "secret-token")
+
+    class EmptyReviewer(PreflightReviewer):
+        """Reviewer with no pending submissions."""
+
+        def list_pending_submissions(self) -> list[tuple[str, int, str, str]]:
+            """Return an empty inventory.
+
+            Returns:
+                An empty pending-submission inventory.
+            """
+            return []
+
+    monkeypatch.setattr(
+        collect_evaluation_results, "reviewer_from_environment", EmptyReviewer
+    )
+    prompt = Mock(side_effect=AssertionError("should not prompt"))
+    command = Mock(side_effect=AssertionError("should not run a command"))
+    monkeypatch.setattr("builtins.input", prompt)
+    monkeypatch.setattr(collect_evaluation_results, "run_review_command", command)
+
+    assert collect_evaluation_results.preflight_volunteer_review() is True
+    prompt.assert_not_called()
+    command.assert_not_called()
 
 
 def test_preflight_yes_reviews_submission(
@@ -413,6 +650,61 @@ def test_preview_in_dev_server_starts_and_stops_fixed_port(
     assert process.wait_timeouts == [10]
     assert "http://localhost:5173" in capsys.readouterr().out
     assert "http://localhost:5173" in caplog.text
+
+
+def test_reviewer_login_actor_and_safe_gh_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Preflight uses its actor or bounded authenticated gh fallback."""
+    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
+    monkeypatch.setenv("HF_TOKEN", "secret-token")
+    monkeypatch.setenv("GITHUB_ACTOR", "actor")
+    monkeypatch.setattr(
+        collect_evaluation_results,
+        "reviewer_from_environment",
+        lambda: PreflightReviewer(["one"]),
+    )
+    monkeypatch.setattr(
+        collect_evaluation_results, "_stdin_is_interactive", lambda: True
+    )
+    answers = iter(["y", "y"])
+    monkeypatch.setattr("builtins.input", lambda _: next(answers))
+    command = Mock(return_value=0)
+    monkeypatch.setattr(collect_evaluation_results, "run_review_command", command)
+    subprocess_run = Mock(side_effect=AssertionError("gh must not run"))
+    monkeypatch.setattr(collect_evaluation_results.subprocess, "run", subprocess_run)
+
+    assert collect_evaluation_results.preflight_volunteer_review() is True
+    assert command.call_args_list[-1] == call(
+        [
+            "--reviewer",
+            "actor",
+            "approve",
+            "one",
+            "--reason",
+            "Reviewed during collector preflight",
+        ]
+    )
+    subprocess_run.assert_not_called()
+
+    monkeypatch.delenv("GITHUB_ACTOR")
+    answers = iter(["y", "y"])
+    subprocess_run.side_effect = None
+    subprocess_run.return_value = Mock(stdout="fallback-login\n")
+    command.reset_mock()
+    assert collect_evaluation_results.preflight_volunteer_review() is True
+    assert subprocess_run.call_args.args[0] == ["gh", "api", "user", "--jq", ".login"]
+    assert subprocess_run.call_args.kwargs["timeout"] == 10
+    assert command.call_args_list[-1] == call(
+        [
+            "--reviewer",
+            "fallback-login",
+            "approve",
+            "one",
+            "--reason",
+            "Reviewed during collector preflight",
+        ]
+    )
 
 
 def test_upload_results_to_hf_collision_leaves_results_dir_unmutated(
