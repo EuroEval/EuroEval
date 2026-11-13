@@ -57,6 +57,8 @@ export interface PromotionReservation {
   /** Legacy metadata retained only when reading pre-migration reservations. */
   decision_nonce?: string;
   status: "reserved" | "terminal";
+  publication_owner?: string;
+  publication_bucket?: string;
 }
 
 export interface VolunteerLeaseMarker {

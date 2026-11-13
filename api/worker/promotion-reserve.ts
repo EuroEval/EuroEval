@@ -23,6 +23,7 @@ import {
   verifyVolunteerMarker,
 } from "./_lib.js";
 import type { PromotionReservation } from "./_lib.js";
+import { canonicalPublicationBucket } from "./_lib/publication.js";
 
 export const config = { runtime: "edge" };
 
@@ -68,6 +69,13 @@ export default async function handler(req: Request): Promise<Response> {
         throw new BrokerError(409, "Submission has already completed a different terminal transition.");
       }
       const existing = await getPromotionReservation(issueNumber, submissionId);
+      const publicationBucket = body.publication_bucket;
+      const publicationOwner = body.publication_owner;
+      if (outcome === "accepted" && existing?.status !== "terminal" &&
+          (publicationBucket !== canonicalPublicationBucket() || typeof publicationOwner !== "string" ||
+           !/^[A-Za-z0-9_-]{24,256}$/.test(publicationOwner))) {
+        throw new BrokerError(400, "Accepted promotions require publication_owner and publication_bucket.");
+      }
       if (requestedDigest !== undefined && requestedToken === undefined &&
           existing?.status !== "terminal") {
         throw new BrokerError(409, "A decision digest requires a terminal reservation token.");
@@ -91,6 +99,9 @@ export default async function handler(req: Request): Promise<Response> {
         }
         const stable: PromotionReservation = {
           ...existing,
+          ...(outcome === "accepted" && existing.status !== "terminal" ? {
+            publication_bucket: publicationBucket as string, publication_owner: publicationOwner as string,
+          } : {}),
           decision_reviewer: existing.decision_reviewer ||
             (typeof requestedReviewer === "string" ? requestedReviewer.trim() : "legacy"),
           decision_created_at: existing.decision_created_at || new Date().toISOString(),
@@ -120,6 +131,9 @@ export default async function handler(req: Request): Promise<Response> {
         issue_number: issueNumber, submission_id: submissionId, outcome, records: requested,
         token: randomToken(), decision_reviewer: (requestedReviewer as string).trim(),
         decision_created_at: new Date().toISOString(), status: "reserved",
+        ...(outcome === "accepted" ? {
+          publication_bucket: publicationBucket as string, publication_owner: publicationOwner as string,
+        } : {}),
       };
       if (outcome === "accepted") {
         const result = await reservePromotionReservation(reservation);
