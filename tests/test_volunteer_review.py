@@ -1360,8 +1360,8 @@ def test_review_renewal_round_trip_includes_bound_digest(
     assert requests[0]["reservation_token"] == "reservation"
 
 
-def test_show_warns_on_missing_metadata_and_acceptance_requires_it() -> None:
-    """Inspection warns about unknown metadata while publication still refuses it."""
+def test_show_and_acceptance_allow_raw_records_without_metadata() -> None:
+    """Raw records retain exact bytes through promotion before enrichment."""
     api, reviewer, broker_calls = _reviewer(failed_instances=2)
     manifest = _manifest(api)
     entry = t.cast(list[dict[str, object]], manifest["results"])[0]
@@ -1384,10 +1384,13 @@ def test_show_warns_on_missing_metadata_and_acceptance_requires_it() -> None:
 
     assert "2 failed instances (informational)" in report.warnings
     assert any("Missing precious metadata" in warning for warning in report.warnings)
-    with pytest.raises(ReviewError, match="precious metadata"):
-        reviewer.decide(SUBMISSION, "accepted", "maintainer")
-    assert not [key for key in api.files if key[0] == RESULTS]
-    assert broker_calls == []
+    reviewer.decide(submission_id=SUBMISSION, outcome="accepted", reviewer="maintainer")
+    canonical = [
+        content for (bucket, _), content in api.files.items() if bucket == RESULTS
+    ]
+    assert canonical == [content]
+    assert hashlib.sha256(canonical[0]).hexdigest() == digest
+    assert broker_calls
 
 
 def test_terminal_response_loss_recovers_with_durable_digest(

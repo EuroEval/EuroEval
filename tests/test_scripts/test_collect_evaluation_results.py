@@ -166,9 +166,8 @@ def test_preflight_eof_shows_commands_and_continues(
     )
     monkeypatch.setattr("builtins.input", Mock(side_effect=EOFError))
 
-    assert collect_evaluation_results.preflight_volunteer_review() is True
-    assert "Could not read review prompt" in caplog.text
-    assert "review_volunteer_results.py list" in caplog.text
+    assert collect_evaluation_results.preflight_volunteer_review() is False
+    assert "cancelled" in caplog.text.lower()
 
 
 def test_preflight_missing_staging_configuration_is_non_blocking(
@@ -241,10 +240,10 @@ def test_preflight_public_staging_fails_closed(monkeypatch: pytest.MonkeyPatch) 
         collect_evaluation_results.preflight_volunteer_review()
 
 
-def test_preflight_yes_pauses_without_deciding_and_quotes_commands(
+def test_preflight_yes_reviews_submission(
     monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
-    """Yes prints safe commands and leaves all review writes untouched.
+    """Opt-in reviews and decides only after a separate approval response.
 
     Args:
         monkeypatch:
@@ -265,11 +264,15 @@ def test_preflight_yes_pauses_without_deciding_and_quotes_commands(
         collect_evaluation_results, "_stdin_is_interactive", lambda: True
     )
     monkeypatch.setattr("builtins.input", lambda prompt: "y")
+    command = Mock(return_value=0)
+    monkeypatch.setattr(collect_evaluation_results, "run_review_command", command)
 
-    assert collect_evaluation_results.preflight_volunteer_review() is False
-    assert "--reviewer 'maintainer; echo nope' approve" in caplog.text
-    assert "reject 'submission id'\"'\"'$(touch /tmp/nope)'" in caplog.text
-    assert "approved automatically" in caplog.text
+    assert collect_evaluation_results.preflight_volunteer_review() is True
+    assert command.call_count == 2
+    assert command.call_args_list[0].args[0] == [
+        "show",
+        "submission id'$(touch /tmp/nope)",
+    ]
 
 
 def test_preview_in_dev_server_handles_early_exit(
