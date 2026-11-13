@@ -131,6 +131,10 @@ class BucketStore:
             content:
                 Content.
         """
+        if bucket != self.staging_bucket:
+            raise ReviewError(
+                "Canonical writes require an explicit publication session"
+            )
         self.api.batch_bucket_files(
             bucket_id=bucket, add=[(content, path)], token=self.token
         )

@@ -14,7 +14,7 @@ import urllib.request
 from contextlib import contextmanager
 
 from euroeval.canary_evidence import evidence_from_dict
-from leaderboards.canonical_publication import CanonicalPublisher
+from leaderboards.canonical_publication import CanonicalPublisher, PublicationSession
 from leaderboards.constants import HF_RESULTS_BUCKET, REQUIRED_METADATA_FIELDS
 from leaderboards.contamination_canary import process_contamination_canaries
 from leaderboards.eee_validation import is_eee_record
@@ -22,7 +22,6 @@ from leaderboards.result_identity import dedup_newer_record, identity_from_eee_r
 
 from .review_models import (
     BrokerBinder,
-    BrokerPromoter,
     BrokerRenewer,
     BrokerReservation,
     BrokerReservationResult,
@@ -45,23 +44,6 @@ _DECISION_PREFIX = "volunteer/decisions"
 _MANIFEST_PREFIX = "volunteer/manifests"
 _LOCAL_DECISION_CREATED_AT = "1970-01-01T00:00:00Z"
 _DECISION_ARTIFACT = "volunteer-review-decision/v1"
-
-
-class _InMemoryPublicationSession:
-    """Explicit test adapter for guarded canonical writes."""
-
-    def __init__(self, store: BucketStore, bucket: str) -> None:
-        """Initialise the test session."""
-        self.store = store
-        self.bucket = bucket
-        self.owner = "in-memory-test-session"
-
-    def write_verified(self, path: str, content: bytes, expected: bytes | None) -> None:
-        """Write only when the test store still has the expected predecessor."""
-        current = self.store.read_optional(self.bucket, path)
-        if current != expected:
-            raise ReviewError(f"Canonical destination changed during promotion: {path}")
-        self.store.write_verified(bucket=self.bucket, path=path, content=content)
 
 
 def _has_collected_canary(records: list[dict[str, object]]) -> bool:
@@ -125,6 +107,7 @@ class VolunteerReviewer:
         now: t.Callable[[], dt.datetime] | None = None,
         scope_policy: JsonObject | None = None,
         publisher: CanonicalPublisher | None = None,
+        publisher_factory: c.Callable[[], CanonicalPublisher] | None = None,
     ) -> None:
         """Initialise the review service.
 
@@ -158,6 +141,7 @@ class VolunteerReviewer:
         self.now = now
         self.scope_policy = scope_policy or load_scope_policy()
         self.publisher = publisher
+        self.publisher_factory = publisher_factory
 
     def decide(
         self,
@@ -206,7 +190,7 @@ class VolunteerReviewer:
         reviewer: str,
         reasons: list[str] | None,
         plan_fingerprint: str | None,
-        publication: t.Any,
+        publication: PublicationSession | None,
     ) -> ReviewReport:
         """Persist one immutable decision and complete its broker transition.
 
@@ -301,25 +285,46 @@ class VolunteerReviewer:
                     )
             self._validate_canonical_records(report=report)
         known_digest = existing[0][2] if existing else None
-        reservation = (
-            self.reserver(
+        if self.reserver and self._broker_promoter:
+            extended_reserver = t.cast(
+                c.Callable[
+                    [
+                        int,
+                        str,
+                        str,
+                        str,
+                        list[dict[str, str]],
+                        str | None,
+                        str | None,
+                        str | None,
+                    ],
+                    BrokerReservationResult,
+                ],
+                self.reserver,
+            )
+            reservation = extended_reserver(
                 report.issue_number,
                 submission_id,
                 outcome,
                 reviewer,
                 evidence,
                 known_digest,
-                *(
-                    (publication.owner, publication.bucket)
-                    if self._broker_promoter and publication is not None
-                    else ()
-                ),
+                publication.owner if publication else None,
+                publication.bucket if publication else None,
             )
-            if self.reserver
-            else _local_reservation(
+        elif self.reserver:
+            reservation = self.reserver(
+                report.issue_number,
+                submission_id,
+                outcome,
+                reviewer,
+                evidence,
+                known_digest,
+            )
+        else:
+            reservation = _local_reservation(
                 reviewer=reviewer, existing=existing[0][1] if existing else None
             )
-        )
         decision_bytes = (
             existing[0][1]
             if existing
@@ -365,19 +370,42 @@ class VolunteerReviewer:
         decision_digest = _digest(decision_bytes)
         token = reservation.token
         if self.binder:
-            bound = self.binder(
-                report.issue_number,
-                submission_id,
-                outcome,
-                token,
-                decision_digest,
-                evidence,
-                *(
-                    (publication.owner, publication.bucket)
-                    if self._broker_promoter and publication is not None
-                    else ()
-                ),
-            )
+            if self._broker_promoter:
+                extended_binder = t.cast(
+                    c.Callable[
+                        [
+                            int,
+                            str,
+                            str,
+                            str,
+                            str,
+                            list[dict[str, str]],
+                            str | None,
+                            str | None,
+                        ],
+                        str,
+                    ],
+                    self.binder,
+                )
+                bound = extended_binder(
+                    report.issue_number,
+                    submission_id,
+                    outcome,
+                    token,
+                    decision_digest,
+                    evidence,
+                    publication.owner if publication else None,
+                    publication.bucket if publication else None,
+                )
+            else:
+                bound = self.binder(
+                    report.issue_number,
+                    submission_id,
+                    outcome,
+                    token,
+                    decision_digest,
+                    evidence,
+                )
             if bound != token:
                 raise ReviewError("Broker returned a different bound reservation token")
         current = _existing_decisions(store=self.store, report=report, outcome=outcome)
@@ -417,7 +445,22 @@ class VolunteerReviewer:
                 ),
             )
         if self._broker_promoter:
-            t.cast(BrokerPromoter, self.promoter)(
+            t.cast(
+                c.Callable[
+                    [
+                        int,
+                        str,
+                        str,
+                        str,
+                        list[dict[str, str]],
+                        str,
+                        str | None,
+                        str | None,
+                    ],
+                    None,
+                ],
+                self.promoter,
+            )(
                 report.issue_number,
                 submission_id,
                 outcome,
@@ -436,7 +479,7 @@ class VolunteerReviewer:
     def _promote_records(
         self,
         report: ReviewReport,
-        publication: t.Any = None,
+        publication: PublicationSession | None = None,
         renew: c.Callable[[], None] | None = None,
     ) -> None:
         """Promote records.
@@ -452,9 +495,7 @@ class VolunteerReviewer:
                     An exception when the operation cannot be completed.
         """
         if publication is None:
-            publication = _InMemoryPublicationSession(
-                store=self.store, bucket=self.results_bucket
-            )
+            raise ReviewError("Canonical publication session is required")
         self._validate_canonical_records(report=report)
         for observation in report.canonical_observations:
             if not observation.replacement:
@@ -583,7 +624,7 @@ class VolunteerReviewer:
         records: list[dict[str, str]],
         token: str,
         decision_digest: str,
-        publication: t.Any = None,
+        publication: PublicationSession | None = None,
     ) -> None:
         """Renew reservation.
 
@@ -603,19 +644,42 @@ class VolunteerReviewer:
         """
         if not self.renewer:
             return
-        renewed = self.renewer(
-            report.issue_number,
-            report.submission_id,
-            "accepted",
-            token,
-            records,
-            decision_digest,
-            *(
-                (publication.owner, publication.bucket)
-                if self._broker_promoter and publication is not None
-                else ()
-            ),
-        )
+        if self._broker_promoter:
+            extended_renewer = t.cast(
+                c.Callable[
+                    [
+                        int,
+                        str,
+                        str,
+                        str,
+                        list[dict[str, str]],
+                        str,
+                        str | None,
+                        str | None,
+                    ],
+                    str,
+                ],
+                self.renewer,
+            )
+            renewed = extended_renewer(
+                report.issue_number,
+                report.submission_id,
+                "accepted",
+                token,
+                records,
+                decision_digest,
+                publication.owner if publication else None,
+                publication.bucket if publication else None,
+            )
+        else:
+            renewed = self.renewer(
+                report.issue_number,
+                report.submission_id,
+                "accepted",
+                token,
+                records,
+                decision_digest,
+            )
         if renewed != token:
             raise ReviewError("Broker returned a different promotion reservation token")
 
@@ -709,15 +773,20 @@ class VolunteerReviewer:
         return tuple(observations)
 
     @contextmanager
-    def _publication_session(self) -> t.Iterator[t.Any]:
-        """Open the configured publisher session or the explicit test adapter."""
-        if self.publisher is not None:
-            with self.publisher.session() as session:
-                yield session
-            return
-        if self._broker_promoter:
+    def _publication_session(self) -> t.Iterator[PublicationSession]:
+        """Open the configured canonical publication session.
+
+        Raises:
+            ReviewError:
+                If canonical publication is not configured.
+        """
+        publisher = self.publisher
+        if publisher is None and self.publisher_factory is not None:
+            publisher = self.publisher_factory()
+        if publisher is None:
             raise ReviewError("Canonical publication lock configuration is required")
-        yield _InMemoryPublicationSession(store=self.store, bucket=self.results_bucket)
+        with publisher.session() as session:
+            yield session
 
     def list_pending_submissions(self) -> list[tuple[str, int, str, str]]:
         """Return durable manifests without one terminal decision artifact.
