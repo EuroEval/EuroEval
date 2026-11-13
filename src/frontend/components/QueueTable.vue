@@ -291,6 +291,11 @@ const emit = defineEmits<{
   color: #0d6efd;
 }
 
+.status.pending-review {
+  background: rgba(255, 193, 7, 0.2);
+  color: #805b00;
+}
+
 .status.waiting {
   background: rgba(108, 117, 125, 0.18);
   color: #57606a;

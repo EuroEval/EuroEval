@@ -3,6 +3,7 @@ export const LABEL = "model evaluation request";
 export const FAILED_LABEL = "evaluation-failed";
 export const GATED_LABEL = "gated";
 export const RESULTS_READY_LABEL = "results-ready";
+export const COMMUNITY_REVIEW_READY_LABEL = "community-review-ready";
 export const GGUF_LABEL = "gguf";
 export const TITLE_PREFIX = "[MODEL EVALUATION REQUEST]";
 
@@ -38,6 +39,7 @@ export interface RawIssue {
 
 export type QueueStatus =
   | "Awaiting publish"
+  | "Pending review"
   | "Evaluating"
   | "Waiting"
   | "Gated model"
@@ -145,8 +147,10 @@ export function issueStatus(
   failed: boolean,
   gated: boolean,
   resultsReady: boolean,
+  communityReviewReady: boolean,
 ): QueueStatus {
   if (resultsReady) return "Awaiting publish";
+  if (communityReviewReady) return "Pending review";
   if (currentAssignees(issue).length > 0) return "Evaluating";
   if (gated) return "Gated model";
   if (failed) return "Error";
@@ -166,13 +170,14 @@ export function toQueueEntry(
   if (hasLabel(issue, GGUF_LABEL)) return null;
   const failed = hasLabel(issue, FAILED_LABEL);
   const resultsReady = hasLabel(issue, RESULTS_READY_LABEL);
+  const communityReviewReady = hasLabel(issue, COMMUNITY_REVIEW_READY_LABEL);
   const gated = hasLabel(issue, GATED_LABEL);
   return {
     number: issue.number,
     url: issue.html_url,
     modelId,
     languageGroups: extractLanguageGroups(issue.body),
-    status: issueStatus(issue, failed, gated, resultsReady),
+    status: issueStatus(issue, failed, gated, resultsReady, communityReviewReady),
     publicVolunteer: (publicEvaluators.get(issue.number)?.length ?? 0) > 0,
     evaluators: mergeQueueEvaluators(
       evaluatorsFromIssue(issue),
@@ -226,10 +231,11 @@ export async function listOpenEvalIssues(
   }
   const order: Record<QueueStatus, number> = {
     "Awaiting publish": 0,
-    Evaluating: 1,
-    Waiting: 2,
-    "Gated model": 3,
-    Error: 4,
+    "Pending review": 1,
+    Evaluating: 2,
+    Waiting: 3,
+    "Gated model": 4,
+    Error: 5,
   };
   return raw
     .map((issue) => toQueueEntry(issue, publicEvaluators))
