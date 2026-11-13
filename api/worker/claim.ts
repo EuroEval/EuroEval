@@ -300,8 +300,9 @@ export default async function handler(req: Request): Promise<Response> {
         catch (error) { if (error instanceof BrokerError && error.status === 422) continue; throw error; }
         const coverage = await narrowCoverage(trusted, model.id, model.revision, euroevalVersion);
         if (!coverage.allowed_identity_suffix_sets.length) continue;
-        if (coverage.covered_identity_suffixes.length &&
-            !(Array.isArray(body.capabilities) && body.capabilities.includes("canonical_coverage_v1"))) {
+        const recordRevisionRequired = Array.isArray(body.capabilities) &&
+          body.capabilities.includes("canonical_coverage_v1");
+        if (coverage.covered_identity_suffixes.length && !recordRevisionRequired) {
           throw new BrokerError(426, "Worker update required for canonical coverage; update the worker image and retry.", "worker_update_required");
         }
         checkDeadline();
@@ -321,6 +322,7 @@ export default async function handler(req: Request): Promise<Response> {
           expires_at: expiresAt,
           lease_id: leaseId,
           ownership_mode: "public",
+          record_revision_required: recordRevisionRequired,
           model_type: model.model_type,
           model_metadata: model.model_metadata,
           contamination_canary: contaminationCanary,
