@@ -138,6 +138,17 @@ class BucketApi(t.Protocol):
         )
 
 
+@dataclasses.dataclass(frozen=True)
+class CanonicalObservation:
+    """Canonical destination observed while preparing a review plan."""
+
+    identity: ResultIdentity
+    canonical_path: str
+    predecessor_digest: str | None
+    predecessor_content: bytes | None
+    replacement: bool
+
+
 class ReviewError(RuntimeError):
     """Raised when staged evidence cannot be safely promoted."""
 
@@ -173,5 +184,7 @@ class ReviewReport:
     provenance: JsonObject
     expected_identities: tuple[ResultIdentity, ...]
     records: tuple[ValidatedRecord, ...]
+    canonical_observations: tuple[CanonicalObservation, ...]
+    plan_fingerprint: str
     warnings: tuple[str, ...]
     checks: tuple[str, ...]

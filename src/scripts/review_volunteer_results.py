@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import os
 from collections import defaultdict
@@ -74,6 +75,7 @@ def main(argv: list[str] | None = None) -> int:
             outcome=outcome,
             reviewer=reviewer,
             reasons=arguments.reason,
+            plan_fingerprint=arguments.plan_fingerprint,
         )
         logger.info(
             "%s submission %s for issue %s",
@@ -121,6 +123,40 @@ def _log_report(report: ReviewReport) -> None:
     for metric, scores in sorted(by_metric.items()):
         logger.info("Score range %s: %g to %g", metric, min(scores), max(scores))
     logger.info("Checks: %s", "; ".join(report.checks))
+    for observation in report.canonical_observations:
+        if observation.replacement:
+            staged = next(
+                record
+                for record in report.records
+                if record.canonical_path == observation.canonical_path
+            )
+            old = json.loads(observation.predecessor_content or b"{}")
+            library = old.get("eval_library", {})
+            old_version = (
+                library.get("version", "unknown")
+                if isinstance(library, dict)
+                else "unknown"
+            )
+            old_scores = {
+                item.get("evaluation_name", "unknown"): item.get(
+                    "score_details", {}
+                ).get("score")
+                for item in old.get("evaluation_results", [])
+                if isinstance(item, dict)
+                and isinstance(item.get("score_details"), dict)
+            }
+            logger.info(
+                "REPLACEMENT %s: previous sha256=%s version=%s scores=%s; staged "
+                "sha256=%s version=%s scores=%s; previous bytes will be archived",
+                observation.canonical_path,
+                observation.predecessor_digest,
+                old_version,
+                old_scores,
+                staged.digest,
+                report.euroeval_version,
+                dict(staged.scores),
+            )
+    logger.info("Approval plan fingerprint: %s", report.plan_fingerprint)
     logger.info("Warnings: %s", "; ".join(report.warnings) or "none")
 
 
@@ -153,6 +189,13 @@ def _parser() -> argparse.ArgumentParser:
             command, help=f"Revalidate and {command} a submission."
         )
         decision.add_argument("submission_id")
+        if command == "approve":
+            decision.add_argument(
+                "--plan-fingerprint",
+                help="Fingerprint displayed by show; required for acceptance.",
+            )
+        else:
+            decision.set_defaults(plan_fingerprint=None)
         decision.add_argument(
             "--reason",
             action="append",

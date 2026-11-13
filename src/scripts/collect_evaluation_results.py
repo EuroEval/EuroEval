@@ -742,6 +742,12 @@ def preflight_volunteer_review() -> bool:
     review_error = False
     for submission_id in submission_ids:
         try:
+            display_plan = getattr(reviewer, "show", None)
+            planned_report = (
+                display_plan(submission_id=submission_id)
+                if callable(display_plan)
+                else None
+            )
             show_status = run_review_command(["show", submission_id])
         except Exception:
             logger.exception(
@@ -751,6 +757,22 @@ def preflight_volunteer_review() -> bool:
             continue
         if show_status != 0:
             logger.error("Could not display submission %s; skipping it.", submission_id)
+            review_error = True
+            continue
+        displayed_report = (
+            display_plan(submission_id=submission_id)
+            if planned_report is not None and callable(display_plan)
+            else None
+        )
+        if (
+            planned_report is not None
+            and displayed_report is not None
+            and displayed_report.plan_fingerprint != planned_report.plan_fingerprint
+        ):
+            logger.error(
+                "Canonical plan changed while displaying %s; skipping it.",
+                submission_id,
+            )
             review_error = True
             continue
         try:
@@ -764,16 +786,13 @@ def preflight_volunteer_review() -> bool:
             logger.info("Skipped submission %s; it remains pending.", submission_id)
             continue
         try:
-            status = run_review_command(
-                [
-                    "--reviewer",
-                    reviewer_login,
-                    "approve",
-                    submission_id,
-                    "--reason",
-                    "Reviewed during collector preflight",
-                ]
-            )
+            command = ["--reviewer", reviewer_login, "approve", submission_id]
+            if displayed_report is not None:
+                command.extend(
+                    ["--plan-fingerprint", displayed_report.plan_fingerprint]
+                )
+            command.extend(["--reason", "Reviewed during collector preflight"])
+            status = run_review_command(command)
         except Exception:
             logger.exception("Approval failed for submission %s.", submission_id)
             review_error = True
