@@ -13,10 +13,11 @@ test("publication lock runs its Lua against Redis and survives contention and lo
     process.env.CANONICAL_PUBLICATION_SECRET = "maintainer-secret";
     const firstOwner = "a".repeat(32);
     const secondOwner = "b".repeat(32);
-    loseNextRedisResponse((command) => command[0] === "EVAL" && command[1].includes("local value=redis.call('GET',KEYS[1])"));
     assert.equal((await publicationLock(request("acquire", firstOwner))).status, 200);
     assert.equal((await publicationLock(request("acquire", firstOwner))).status, 200);
-    assert.equal((await publicationLock(request("assert", firstOwner))).status, 200);
+    for (let attempt = 0; attempt < 101; attempt += 1) {
+      assert.equal((await publicationLock(request("assert", firstOwner))).status, 200);
+    }
     assert.equal((await publicationLock(request("acquire", secondOwner))).status, 409);
     assert.equal((await publicationLock(request("assert", secondOwner))).status, 409);
     assert.equal((await publicationLock(request("release", secondOwner))).status, 409);
@@ -26,9 +27,16 @@ test("publication lock runs its Lua against Redis and survives contention and lo
     const ttl = await fetch("https://redis.test", { method: "POST", body: JSON.stringify(["TTL", redisKey]) }).then((response) => response.json());
     assert.equal(ttl.result, -1);
 
+    loseNextRedisResponse((command) => command[0] === "EVAL");
     assert.equal((await publicationLock(request("release", firstOwner))).status, 200);
     assert.equal((await publicationLock(request("release", firstOwner))).status, 200);
     assert.equal((await publicationLock(request("acquire", secondOwner))).status, 200);
+    const thirdOwner = "c".repeat(32);
+    for (let attempt = 0; attempt < 57; attempt += 1) {
+      assert.equal((await publicationLock(request("acquire", thirdOwner))).status, 409);
+    }
+    assert.equal((await publicationLock(request("acquire", thirdOwner))).status, 429);
+    assert.equal((await publicationLock(request("release", secondOwner))).status, 200);
     assert.equal((await publicationLock(request("acquire", firstOwner, "wrong"))).status, 401);
     assert.equal((await publicationLock(request("acquire", firstOwner, "maintainer-secret", "other/results"))).status, 400);
   });
