@@ -64,7 +64,7 @@ export function promotionPlan(
 }
 
 function sameRecords(a: PromotionRecord[], b: PromotionRecord[]): boolean {
-  return JSON.stringify(a) === JSON.stringify(b);
+  return JSON.stringify(parsePromotionRecords(a)) === JSON.stringify(parsePromotionRecords(b));
 }
 
 async function releaseSubmissionReservations(reservation: PromotionReservation): Promise<void> {

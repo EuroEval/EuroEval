@@ -94,7 +94,9 @@ export default async function handler(req: Request): Promise<Response> {
       }
       if (existing) {
         if (existing.outcome !== outcome) throw new BrokerError(409, "A different outcome is already reserved.");
-        if (JSON.stringify(existing.records) !== JSON.stringify(requested)) throw new BrokerError(409, "Reservation evidence differs.");
+        if (JSON.stringify(parsePromotionRecords(existing.records)) !== JSON.stringify(requested)) {
+          throw new BrokerError(409, "Reservation evidence differs.");
+        }
         if (requestedToken !== undefined && requestedToken !== existing.token) {
           throw new BrokerError(409, "Promotion reservation token differs.");
         }
