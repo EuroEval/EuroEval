@@ -7,7 +7,7 @@ import {
   validateCanaryEvidence,
 } from "./canary.js";
 
-export function validateRecord(record: unknown, expected: { modelId: string; revision: string; language: string; euroevalVersion?: string; modelType?: "encoder" | "generative" }): { identity: string; failed: number; warnings: string[] } {
+export function validateRecord(record: unknown, expected: { modelId: string; revision: string; language: string; euroevalVersion?: string; modelType?: "encoder" | "generative"; requireRevision?: boolean }): { identity: string; failed: number; warnings: string[] } {
   if (!record || typeof record !== "object" || Array.isArray(record)) throw new BrokerError(422, "record must be an EEE JSON object.");
   const value = record as Record<string, any>;
   const modelInfo = value.model_info as Record<string, any> | undefined;
@@ -16,7 +16,11 @@ export function validateRecord(record: unknown, expected: { modelId: string; rev
   const aliases = [modelInfo.id, modelInfo.name, modelInfo.aliases, (modelInfo.additional_details as Record<string, unknown> | undefined)?.aliases]
     .flatMap((item) => Array.isArray(item) ? item : [item]).filter((item): item is string => typeof item === "string");
   if (!aliases.some((item) => item === expected.modelId)) throw new BrokerError(422, `record model identity does not match ${expected.modelId}.`);
-  if (modelInfo.revision !== expected.revision) throw new BrokerError(422, "record model_info.revision is missing or does not match the lease.");
+  const missingRevision = modelInfo.revision === undefined;
+  if (missingRevision && expected.requireRevision !== false ||
+      !missingRevision && modelInfo.revision !== expected.revision) {
+    throw new BrokerError(422, "record model_info.revision is missing or does not match the lease.");
+  }
   if (library.name !== "euroeval" || typeof library.version !== "string" || !library.version || expected.euroevalVersion && library.version.replace(/\.dev\d*$/, "") !== expected.euroevalVersion.replace(/\.dev\d*$/, "")) throw new BrokerError(422, "record has an invalid eval_library name or version.");
   const details = library.additional_details as Record<string, any> | undefined;
   if (!details || typeof details.dataset !== "string" || !details.dataset || typeof details.task !== "string" || !details.task) throw new BrokerError(422, "record has no canonical dataset/task identity.");
@@ -92,6 +96,7 @@ export function validateRecord(record: unknown, expected: { modelId: string; rev
     throw new BrokerError(422, "failed instance count is inconsistent with raw results.");
   }
   const warnings: string[] = failed ? [`${failed} failed instances`] : [];
+  if (missingRevision) warnings.push("Legacy record is missing model_info.revision");
   const group = languageGroup(expected.language);
   let languages: unknown;
   try { languages = typeof details.languages === "string" ? JSON.parse(details.languages) : details.languages; } catch { throw new BrokerError(422, "additional_details.languages is not valid JSON."); }
