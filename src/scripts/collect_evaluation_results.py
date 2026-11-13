@@ -36,6 +36,7 @@ import socket
 import subprocess
 import sys
 import time
+import typing as t
 import urllib.error
 from pathlib import Path
 
@@ -48,6 +49,7 @@ from review_volunteer_results import show_and_render
 
 from euroeval_worker.review import PublicStagingError, reviewer_from_environment
 from leaderboards.backup import backup_results
+from leaderboards.canonical_publication import BucketApi, CanonicalPublisher
 from leaderboards.constants import (
     MODEL_REQUEST_LABEL,
     MODELS_PY_PATH,
@@ -426,6 +428,11 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
 
     # === VALIDATE PHASE: build path->identity map before any mutation ===
     _validate_paths(existing)
+    source_bytes: dict[ResultIdentity, bytes] = {}
+    for identity in existing:
+        source_path = RESULTS_DIR / identity_to_path(identity)
+        if source_path.is_file():
+            source_bytes[identity] = source_path.read_bytes()
 
     # === MUTATE PHASE: only after validation succeeds ===
     records_written, records_unchanged, written_paths = _write_changed_records(
@@ -437,16 +444,15 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
 
     if not records_written:
         logger.info(
-            f"All {records_unchanged:,} records already up to date; nothing to sync."
+            f"All {records_unchanged:,} local records unchanged; verifying publication."
         )
-        return True
 
     logger.info(
         f"Wrote {records_written:,} changed record file(s) "
         f"({records_unchanged:,} unchanged) to {RESULTS_DIR}, uploading to bucket..."
     )
 
-    return _upload_to_bucket(written_paths)
+    return _upload_to_bucket(written_paths, source_bytes=source_bytes)
 
 
 def _cleanup_stale_artefacts() -> None:
@@ -533,28 +539,44 @@ def _process_new_results(
             logger.warning(f"Skipping invalid JSON line: {line[:80]}...")
 
 
-def _upload_to_bucket(written_paths: list[Path]) -> bool:
+def _upload_to_bucket(
+    written_paths: list[Path], source_bytes: dict[ResultIdentity, bytes]
+) -> bool:
     """Upload changed files to HF bucket using batch operation.
 
     Args:
         written_paths:
-            List of paths to upload.
+            Paths changed locally before publication.
+        source_bytes:
+            Exact original bytes indexed by result identity.
 
     Returns:
         True if upload succeeded, False otherwise.
     """
-    api = HfApi()
-    add_list: list[tuple[str | Path | bytes, str]] = [
-        (str(path), str(path.relative_to(RESULTS_DIR)))
-        for path in written_paths
-        if path.is_file() and path.stat().st_size > 0
-    ]
     try:
-        api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, add=add_list)
-        logger.info(f"Uploaded {len(written_paths)} file(s) to {HF_RESULTS_BUCKET}.")
+        records: list[bytes] = []
+        sources = dict(source_bytes)
+        for path in RESULTS_DIR.glob("*/*.json"):
+            if not path.is_file():
+                continue
+            raw = path.read_bytes()
+            try:
+                record = json.loads(raw)
+                identity = identity_from_eee_record(record)
+            except (json.JSONDecodeError, ValueError, KeyError):
+                continue
+            records.append(raw)
+            sources.setdefault(identity, raw)
+        token = os.environ.get("HF_TOKEN", "")
+        publisher = CanonicalPublisher(
+            api=t.cast(BucketApi, HfApi()), token=token, bucket=HF_RESULTS_BUCKET
+        )
+        with publisher.session() as session:
+            session.publish(records=records, sources=sources)
+        logger.info(f"Published {len(records)} file(s) to {HF_RESULTS_BUCKET}.")
         return True
-    except HfHubHTTPError as e:
-        logger.error(f"Failed to upload to HF bucket: {e}")
+    except (HfHubHTTPError, RuntimeError, ValueError) as e:
+        logger.error(f"Failed to publish to HF bucket: {e}")
         return False
 
 

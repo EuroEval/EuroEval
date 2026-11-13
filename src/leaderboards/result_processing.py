@@ -19,6 +19,7 @@ from huggingface_hub import HfApi
 from tqdm.auto import tqdm
 
 from .cache import Cache
+from .canonical_publication import BucketApi, CanonicalPublisher
 from .constants import HF_RESULTS_BUCKET, RESULTS_DIR
 from .contamination_canary import process_contamination_canaries
 from .evaluation_common import resolve_hf_token
@@ -237,7 +238,18 @@ def _upload_per_model_files(
     hf_results_bucket = f"hf://buckets/{HF_RESULTS_BUCKET}"
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Track which files were written to upload only these files
+    source_bytes: dict[ResultIdentity, bytes] = {}
+    if upload_to_bucket:
+        for _, identity in records_by_path.values():
+            path = RESULTS_DIR / record_relative_path(
+                model_id=identity[0],
+                dataset=identity[1],
+                validation_split=identity[2],
+                few_shot=identity[3],
+            )
+            if path.is_file():
+                source_bytes[identity] = path.read_bytes()
+
     written_files: list[tuple[str | Path | bytes, str]] = []
 
     logger.info("Writing result files...")
@@ -249,14 +261,20 @@ def _upload_per_model_files(
             written_files.append(result)
 
     if upload_to_bucket:
-        api = HfApi()
-        # Upload only the written files to the bucket
-        api.batch_bucket_files(
-            bucket_id=HF_RESULTS_BUCKET, add=written_files, token=hf_token
+        publisher = CanonicalPublisher(
+            api=t.cast(BucketApi, HfApi()),
+            token=hf_token or "",
+            bucket=HF_RESULTS_BUCKET,
         )
-        logger.info(
-            f"Uploaded {len(written_files):,} result files to {hf_results_bucket}."
-        )
+        payloads = [
+            json.dumps(
+                record, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+            ).encode("utf-8")
+            for record, _ in records_by_path.values()
+        ]
+        with publisher.session() as session:
+            session.publish(records=payloads, sources=source_bytes)
+        logger.info(f"Published {len(payloads):,} result files to {hf_results_bucket}.")
     else:
         if local_only_label is not None:
             logger.info(

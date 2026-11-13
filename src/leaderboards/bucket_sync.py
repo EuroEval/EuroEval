@@ -8,6 +8,9 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+import tempfile
+import typing as t
 from pathlib import Path
 from typing import TypedDict
 
@@ -15,6 +18,7 @@ from dotenv import load_dotenv
 from huggingface_hub import BucketFile, HfApi, list_bucket_tree
 from huggingface_hub.errors import HfHubHTTPError
 
+from .canonical_publication import BucketApi, CanonicalPublisher
 from .constants import HF_RESULTS_BUCKET, RESULTS_DIR
 from .evaluation_common import resolve_hf_token
 from .result_identity import (
@@ -46,60 +50,6 @@ def _sort_key(record: dict) -> tuple[str, str]:
     model_id = model_info.get("id") or model_info.get("name", "")
     dataset = additional.get("dataset", "")
     return (model_id, dataset)
-
-
-def download_missing_bucket_files() -> int:
-    """Download bucket result files that are absent from the local directory.
-
-    Lists the bucket tree and downloads only the files whose relative path does
-    not already exist under ``RESULTS_DIR``. Existing local files are never
-    re-downloaded or deleted, so this is a safe union-style incremental fetch.
-    It deliberately avoids huggingface_hub's own ``sync_bucket``, whose size
-    comparison has historically re-fetched the entire bucket (a multi-hour
-    operation) even when the local copy was already up to date.
-
-    Because each logical result has a distinct storage path
-    (``<model>/<dataset>__<split>__<shot>.json``), presence-by-path is a
-    sufficient freshness test for newly added results.
-
-    Returns:
-        The number of files downloaded.
-
-    Raises:
-        RuntimeError:
-            If no Hugging Face token is available.
-    """
-    hf_token = resolve_hf_token()
-    if not hf_token:
-        raise RuntimeError(
-            "HF_TOKEN not set. Cannot sync results from Hugging Face bucket. "
-            "Run 'hf auth login' or set the HF_TOKEN environment variable."
-        )
-
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    api = HfApi()
-
-    logger.info(f"Listing bucket {HF_RESULTS_BUCKET} to find new files...")
-    to_download: list[tuple[str | BucketFile, str | Path]] = []
-    for entry in api.list_bucket_tree(
-        HF_RESULTS_BUCKET, recursive=True, token=hf_token
-    ):
-        if not isinstance(entry, BucketFile):
-            continue
-        local_path = RESULTS_DIR / entry.path
-        if not local_path.exists():
-            local_path.parent.mkdir(parents=True, exist_ok=True)
-            to_download.append((entry, local_path))
-
-    if not to_download:
-        logger.info("Local results already up to date with bucket.")
-        return 0
-
-    logger.info(f"Downloading {len(to_download):,} new file(s) from the bucket...")
-    api.download_bucket_files(
-        bucket_id=HF_RESULTS_BUCKET, files=to_download, token=hf_token
-    )
-    return len(to_download)
 
 
 def merge_results(results_file: Path) -> int:
@@ -200,16 +150,13 @@ def sync_bucket(ignore_sizes: bool = False, delete_empty: bool = True) -> None:
     """Sync HF results bucket into the local results directory.
 
     Before sync, reads all local record files into memory keyed by relative path.
-    After sync, reconciles to ensure no local-only or locally-newer record is lost:
-    - Local-only files (missing after sync) are restored.
-    - Files present in both are compared by identity; the newer record wins.
-    - Path collisions between distinct identities raise an error.
+    Canonical bucket content refreshes shared paths; local-only files are restored.
+    Path collisions between distinct identities raise an error.
 
     Args:
         ignore_sizes (optional):
-            When True, skip file size comparison during sync. Works around
-            huggingface_hub bug reporting wrong sizes, making sync compare by
-            mtime only. Defaults to False.
+            Retained for backwards compatibility; generation hashes determine
+            freshness. Defaults to False.
         delete_empty (optional):
             When True, scan both local directory and bucket for 0-byte JSON
             files and delete them. Defaults to True.
@@ -220,6 +167,7 @@ def sync_bucket(ignore_sizes: bool = False, delete_empty: bool = True) -> None:
         HfHubHTTPError:
             If the bucket sync operation fails.
     """
+    del ignore_sizes
     hf_token = resolve_hf_token()
     if not hf_token:
         raise RuntimeError(
@@ -251,13 +199,7 @@ def sync_bucket(ignore_sizes: bool = False, delete_empty: bool = True) -> None:
 
     logger.info(f"Syncing bucket {HF_RESULTS_BUCKET} -> {RESULTS_DIR}...")
     try:
-        HfApi().sync_bucket(
-            source=f"hf://buckets/{HF_RESULTS_BUCKET}/",
-            dest=str(RESULTS_DIR),
-            token=hf_token,
-            ignore_times=True,  # Compare by size only
-            ignore_sizes=ignore_sizes,  # When True, compare by mtime only
-        )
+        download_missing_bucket_files()
     except HfHubHTTPError as e:
         logger.error(f"Bucket sync failed: {e}")
         raise
@@ -287,16 +229,9 @@ def sync_bucket(ignore_sizes: bool = False, delete_empty: bool = True) -> None:
                 continue
 
             if local_identity == bucket_identity:
-                # Same identity - keep the newer record
-                winner = dedup_newer_record(
-                    record_a=local_record, record_b=bucket_record
-                )
-                if winner is local_record:
-                    logger.debug(f"Local record newer for {rel_path}, restoring")
-                    file_path.write_bytes(local_raw)
-                else:
-                    # Bucket record is newer, leave it as is
-                    pass
+                # Canonical bucket content wins for shared paths; local-only files
+                # were restored above and remain available for later publication.
+                continue
             else:
                 # Different identity at same path - collision!
                 raise_on_collision(local_identity, bucket_identity)
@@ -348,10 +283,101 @@ def _cleanup_empty_bucket_files(hf_token: str) -> None:
     if empty_files:
         logger.info(f"Found {len(empty_files)} empty file(s) in bucket, deleting...")
         try:
-            api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, delete=empty_files)
+            publisher = CanonicalPublisher(
+                api=t.cast(BucketApi, api), token=hf_token, bucket=HF_RESULTS_BUCKET
+            )
+            with publisher.session() as session:
+                session.delete_empty(paths=empty_files)
             logger.info(f"Deleted {len(empty_files)} empty file(s) from bucket.")
         except HfHubHTTPError as e:
             logger.error(f"Failed to delete empty bucket files: {e}")
+
+
+def download_missing_bucket_files() -> int:
+    """Download bucket result files that are absent from the local directory.
+
+    Lists the bucket tree and downloads only the files whose relative path does
+    not already exist under ``RESULTS_DIR``. Existing local files are never
+    re-downloaded or deleted, so this is a safe union-style incremental fetch.
+    It deliberately avoids huggingface_hub's own ``sync_bucket``, whose size
+    comparison has historically re-fetched the entire bucket (a multi-hour
+    operation) even when the local copy was already up to date.
+
+    Because each logical result has a distinct storage path
+    (``<model>/<dataset>__<split>__<shot>.json``), presence-by-path is a
+    sufficient freshness test for newly added results.
+
+    Returns:
+        The number of files downloaded.
+
+    Raises:
+        RuntimeError:
+            If no Hugging Face token is available.
+    """
+    hf_token = resolve_hf_token()
+    if not hf_token:
+        raise RuntimeError(
+            "HF_TOKEN not set. Cannot sync results from Hugging Face bucket. "
+            "Run 'hf auth login' or set the HF_TOKEN environment variable."
+        )
+
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    api = HfApi()
+    manifest_path = RESULTS_DIR.parent / ".results-bucket-manifest.json"
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        manifest = {}
+
+    logger.info(f"Listing bucket {HF_RESULTS_BUCKET} to find changed files...")
+    entries: list[BucketFile] = [
+        entry
+        for entry in api.list_bucket_tree(
+            HF_RESULTS_BUCKET, recursive=True, token=hf_token
+        )
+        if isinstance(entry, BucketFile)
+    ]
+    to_download: list[tuple[str | BucketFile, str | Path]] = []
+    next_manifest: dict[str, str] = {}
+    for entry in entries:
+        fingerprint = str(getattr(entry, "xet_hash", None) or "")
+        if not fingerprint:
+            fingerprint = str(getattr(entry, "blob_id", None) or "")
+        next_manifest[entry.path] = fingerprint
+        local_path = RESULTS_DIR / entry.path
+        if (
+            not local_path.is_file()
+            or not fingerprint
+            or manifest.get(entry.path) != fingerprint
+        ):
+            local_path.parent.mkdir(parents=True, exist_ok=True)
+            to_download.append((entry, local_path))
+
+    if to_download:
+        pending: list[tuple[str | BucketFile, str | Path]] = []
+        temporary_paths: list[Path] = []
+        try:
+            for entry, destination in to_download:
+                handle = tempfile.NamedTemporaryFile(
+                    dir=destination.parent, prefix=f".{destination.name}.", delete=False
+                )
+                temporary = Path(handle.name)
+                handle.close()
+                temporary_paths.append(temporary)
+                pending.append((entry, temporary))
+            api.download_bucket_files(
+                bucket_id=HF_RESULTS_BUCKET, files=pending, token=hf_token
+            )
+            for (entry, _), temporary in zip(to_download, temporary_paths):
+                os.replace(temporary, RESULTS_DIR / entry.path)
+        finally:
+            for temporary in temporary_paths:
+                temporary.unlink(missing_ok=True)
+
+    manifest_path.write_text(
+        json.dumps(next_manifest, sort_keys=True), encoding="utf-8"
+    )
+    return len(to_download)
 
 
 def upload_results_to_bucket(results_file: Path) -> None:
@@ -369,8 +395,6 @@ def upload_results_to_bucket(results_file: Path) -> None:
     Raises:
         RuntimeError:
             If no Hugging Face token is available.
-        HfHubHTTPError:
-            If the bucket sync operation fails.
     """
     hf_token = resolve_hf_token()
     if not hf_token:
@@ -434,8 +458,13 @@ def upload_results_to_bucket(results_file: Path) -> None:
             logger.info(f"Removing stale jsonl file {jsonl_file}")
             jsonl_file.unlink()
 
-    # Write all validated records from path_record_map (source of truth from JSONL)
-    # Type: list of (local_path, remote_path) tuples for batch upload
+    # Preserve exact pre-transform source observations for metadata tie handling.
+    source_bytes: dict[ResultIdentity, bytes] = {}
+    for rel_path, (identity, _) in path_record_map.items():
+        original = RESULTS_DIR / rel_path
+        if original.is_file():
+            source_bytes[identity] = original.read_bytes()
+
     written_files: list[tuple[str | Path | bytes, str]] = []
     for rel_path, (_, record) in path_record_map.items():
         # Use canonical JSON serialization
@@ -455,12 +484,16 @@ def upload_results_to_bucket(results_file: Path) -> None:
         len(written_files),
         RESULTS_DIR,
     )
-    try:
-        HfApi().batch_bucket_files(
-            bucket_id=HF_RESULTS_BUCKET, add=written_files, token=hf_token
-        )
-    except HfHubHTTPError as e:
-        logger.error(f"Bucket upload failed: {e}")
-        raise
-
-    logger.info(f"Uploaded {len(written_files)} results to bucket {HF_RESULTS_BUCKET}.")
+    records: list[bytes] = []
+    sources: dict[ResultIdentity, bytes] = {}
+    for _, (identity, record) in path_record_map.items():
+        raw = json.dumps(record, sort_keys=True, separators=(",", ":")).encode()
+        records.append(raw)
+        if identity in source_bytes:
+            sources[identity] = source_bytes[identity]
+    publisher = CanonicalPublisher(
+        api=t.cast(BucketApi, HfApi()), token=hf_token, bucket=HF_RESULTS_BUCKET
+    )
+    with publisher.session() as session:
+        session.publish(records=records, sources=sources)
+    logger.info(f"Published {len(records)} results to bucket {HF_RESULTS_BUCKET}.")
