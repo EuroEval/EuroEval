@@ -67,6 +67,7 @@ class FakeHfApi:
         self.uploaded_content: list[tuple[str, str, bytes]] = []
         self.fail_result_upload_number: int | None = None
         self.fail_decision_upload = False
+        self.fail_predecessor_upload = False
         self.result_uploads = 0
         self.decision_upload_barrier: threading.Barrier | None = None
 
@@ -88,6 +89,12 @@ class FakeHfApi:
                 When the configured interruption point is reached.
         """
         for content, path in add:
+            if (
+                bucket_id == STAGING
+                and path.startswith("volunteer/predecessors/")
+                and self.fail_predecessor_upload
+            ):
+                raise RuntimeError("injected archive interruption")
             if (
                 bucket_id == STAGING
                 and path.startswith(f"volunteer/decisions/{SUBMISSION}/")
@@ -452,6 +459,19 @@ def _store_manifest(api: FakeHfApi, manifest: dict[str, object]) -> None:
     ).encode("utf-8")
 
 
+def test_accepted_history_ignores_later_canonical_results() -> None:
+    """Advancing canonical results does not make an accepted submission pending."""
+    api, reviewer, _ = _reviewer()
+    reviewer.decide(submission_id=SUBMISSION, outcome="accepted", reviewer="maintainer")
+    record = reviewer.show(submission_id=SUBMISSION).records[0]
+    successor = json.loads(record.content)
+    successor["eval_library"]["version"] = "19.0.0"
+    api.files[(RESULTS, record.canonical_path)] = json.dumps(successor).encode()
+    assert reviewer.list_pending_submissions() == []
+    assert len(reviewer.list_submissions()) == 1
+    assert reviewer.show(submission_id=SUBMISSION).canonical_observations[0].conflict
+
+
 def test_approval_replaces_strictly_older_same_identity_and_archives_bytes() -> None:
     """A newer same-identity result replaces only after preserving its predecessor."""
     api, reviewer, _ = _reviewer()
@@ -484,6 +504,59 @@ def test_approval_replaces_strictly_older_same_identity_and_archives_bytes() -> 
         )
 
 
+def test_archive_failure_prevents_all_canonical_uploads() -> None:
+    """No destination is replaced when preserving its predecessor fails."""
+    api, reviewer, _ = _reviewer(record_count=2)
+    predecessors = _seed_older_results(api=api, reviewer=reviewer)
+    report = reviewer.show(submission_id=SUBMISSION)
+    api.fail_predecessor_upload = True
+    with pytest.raises(RuntimeError, match="archive interruption"):
+        reviewer.decide(
+            submission_id=SUBMISSION,
+            outcome="accepted",
+            reviewer="maintainer",
+            plan_fingerprint=report.plan_fingerprint,
+        )
+    assert api.result_uploads == 0
+    assert {
+        path: content
+        for (bucket, path), content in api.files.items()
+        if bucket == RESULTS
+    } == predecessors
+    api.fail_predecessor_upload = False
+    reviewer.decide(
+        submission_id=SUBMISSION,
+        outcome="accepted",
+        reviewer="maintainer",
+        plan_fingerprint=report.plan_fingerprint,
+    )
+    assert api.result_uploads == 2
+
+
+def _seed_older_results(
+    api: FakeHfApi, reviewer: VolunteerReviewer
+) -> dict[str, bytes]:
+    """Populate older canonical results for replacement tests.
+
+    Args:
+        api:
+            In-memory bucket adapter.
+        reviewer:
+            Public reviewer used to inspect staged records.
+
+    Returns:
+        Exact predecessor bytes indexed by canonical path.
+    """
+    predecessors: dict[str, bytes] = {}
+    for record in reviewer.show(submission_id=SUBMISSION).records:
+        predecessor = json.loads(record.content)
+        predecessor["eval_library"]["version"] = "17.0.0"
+        content = json.dumps(predecessor).encode()
+        api.files[(RESULTS, record.canonical_path)] = content
+        predecessors[record.canonical_path] = content
+    return predecessors
+
+
 def test_canonical_collision_prevents_decision_and_broker() -> None:
     """Different canonical bytes block all terminal side effects."""
     api, reviewer, broker_calls = _reviewer()
@@ -495,6 +568,18 @@ def test_canonical_collision_prevents_decision_and_broker() -> None:
 
     assert broker_calls == []
     assert not _decision_paths(api)
+
+
+def test_canonical_conflict_can_be_inspected_and_rejected() -> None:
+    """A conflicting destination blocks acceptance, not inspection or rejection."""
+    api, reviewer, _ = _reviewer()
+    record = reviewer.show(submission_id=SUBMISSION).records[0]
+    api.files[(RESULTS, record.canonical_path)] = b"invalid existing record"
+    report = reviewer.show(submission_id=SUBMISSION)
+    assert report.canonical_observations[0].conflict
+    reviewer.decide(submission_id=SUBMISSION, outcome="rejected", reviewer="maintainer")
+    assert api.files[(RESULTS, record.canonical_path)] == b"invalid existing record"
+    assert reviewer.list_pending_submissions() == []
 
 
 def test_collected_canary_must_be_privately_scoreable_before_approval(
@@ -764,6 +849,21 @@ def test_existing_decision_is_authoritative_after_reservation_expiry() -> None:
     assert broker_calls == [(12, SUBMISSION, "rejected"), (12, SUBMISSION, "rejected")]
 
 
+def test_existing_identical_canonical_result_is_idempotent() -> None:
+    """An identical destination requires no predecessor archive or replacement."""
+    api, reviewer, _ = _reviewer()
+    report = reviewer.show(submission_id=SUBMISSION)
+    record = report.records[0]
+    api.files[(RESULTS, record.canonical_path)] = record.content
+    reviewer.decide(submission_id=SUBMISSION, outcome="accepted", reviewer="maintainer")
+    decision = _decision_content(api=api)
+    reviewer.decide(submission_id=SUBMISSION, outcome="accepted", reviewer="maintainer")
+    assert _decision_content(api=api) == decision
+    assert not [
+        key for key in api.files if key[1].startswith("volunteer/predecessors/")
+    ]
+
+
 def test_expired_reservation_cannot_change_durable_decision() -> None:
     """An expired accepted decision still blocks a new rejected reservation."""
     reservations: list[str] = []
@@ -877,6 +977,42 @@ def test_invalid_terminal_decisions_remain_pending(
     assert [summary[0] for summary in reviewer.list_pending_submissions()] == [
         SUBMISSION
     ]
+
+
+def test_legacy_decision_cannot_adopt_a_new_replacement_plan() -> None:
+    """A legacy partial approval may resume insertion, not an unconfirmed overwrite."""
+    api, reviewer, _ = _reviewer(record_count=2)
+    report = reviewer.show(submission_id=SUBMISSION)
+    api.fail_result_upload_number = 2
+    with pytest.raises(RuntimeError, match="interruption"):
+        reviewer.decide(
+            submission_id=SUBMISSION, outcome="accepted", reviewer="maintainer"
+        )
+    path = _decision_paths(api=api)[0]
+    decision = json.loads(api.files.pop((STAGING, path)))
+    for field in ("canonical_plan", "canonical_plan_fingerprint", "predecessors"):
+        del decision[field]
+    content = (
+        json.dumps(decision, sort_keys=True, separators=(",", ":")) + "\n"
+    ).encode()
+    digest = hashlib.sha256(content).hexdigest()
+    api.files[(STAGING, f"volunteer/decisions/{SUBMISSION}/{digest}.json")] = content
+    pending = report.records[1]
+    old = json.loads(pending.content)
+    old["eval_library"]["version"] = "17.0.0"
+    unexpected = json.dumps(old).encode()
+    api.files[(RESULTS, pending.canonical_path)] = unexpected
+    uploads = list(api.uploads)
+    api.fail_result_upload_number = None
+    with pytest.raises(ReviewError, match="Legacy decision"):
+        reviewer.decide(
+            submission_id=SUBMISSION,
+            outcome="accepted",
+            reviewer="maintainer",
+            plan_fingerprint=reviewer.show(submission_id=SUBMISSION).plan_fingerprint,
+        )
+    assert api.files[(RESULTS, pending.canonical_path)] == unexpected
+    assert api.uploads == uploads
 
 
 @pytest.mark.parametrize("outcome", ["accepted", "rejected"])
@@ -1090,6 +1226,9 @@ def test_manifest_scope_alternative_excludes_required_canary() -> None:
 
     assert len(report.records) == 2
     assert report.expected_identities == (("org/model", "dataset-0", False, False),)
+    reviewer.decide(submission_id=SUBMISSION, outcome="accepted", reviewer="maintainer")
+    assert len([key for key in api.files if key[0] == RESULTS]) == 1
+    assert reviewer.list_pending_submissions() == []
 
 
 def test_manifest_scope_mismatch_is_rejected() -> None:
@@ -1266,6 +1405,125 @@ def test_partial_approve_resumes_and_is_idempotent() -> None:
     assert broker_calls == [(12, SUBMISSION, "accepted"), (12, SUBMISSION, "accepted")]
 
 
+@pytest.mark.parametrize("fresh_confirmation", [False, True])
+def test_partial_insertion_cannot_adopt_unconfirmed_predecessor(
+    fresh_confirmation: bool,
+) -> None:
+    """A retry cannot change an insertion into a replacement.
+
+    Args:
+        fresh_confirmation:
+            Whether to provide a newly displayed fingerprint.
+    """
+    api, reviewer, _ = _reviewer(record_count=2)
+    report = reviewer.show(submission_id=SUBMISSION)
+    api.fail_result_upload_number = 2
+    with pytest.raises(RuntimeError, match="interruption"):
+        reviewer.decide(
+            submission_id=SUBMISSION,
+            outcome="accepted",
+            reviewer="maintainer",
+            plan_fingerprint=report.plan_fingerprint,
+        )
+    pending = report.records[1]
+    old = json.loads(pending.content)
+    old["eval_library"]["version"] = "17.0.0"
+    unexpected = json.dumps(old).encode()
+    api.files[(RESULTS, pending.canonical_path)] = unexpected
+    fingerprint = (
+        reviewer.show(submission_id=SUBMISSION).plan_fingerprint
+        if fresh_confirmation
+        else report.plan_fingerprint
+    )
+    uploads = list(api.uploads)
+    api.fail_result_upload_number = None
+    with pytest.raises(ReviewError, match="changed"):
+        reviewer.decide(
+            submission_id=SUBMISSION,
+            outcome="accepted",
+            reviewer="maintainer",
+            plan_fingerprint=fingerprint,
+        )
+    assert api.files[(RESULTS, pending.canonical_path)] == unexpected
+    assert api.uploads == uploads
+
+
+def test_partial_replacement_resumes_original_plan() -> None:
+    """A partial replacement resumes without rewriting the original decision."""
+    api, reviewer, _ = _reviewer(record_count=2)
+    predecessors = _seed_older_results(api=api, reviewer=reviewer)
+    report = reviewer.show(submission_id=SUBMISSION)
+    api.fail_result_upload_number = 2
+    with pytest.raises(RuntimeError, match="interruption"):
+        reviewer.decide(
+            submission_id=SUBMISSION,
+            outcome="accepted",
+            reviewer="maintainer",
+            plan_fingerprint=report.plan_fingerprint,
+        )
+    decision = _decision_content(api=api)
+    api.fail_result_upload_number = None
+    reviewer.decide(
+        submission_id=SUBMISSION,
+        outcome="accepted",
+        reviewer="another-maintainer",
+        plan_fingerprint=report.plan_fingerprint,
+    )
+    assert _decision_content(api=api) == decision
+    for record in report.records:
+        old = predecessors[record.canonical_path]
+        digest = hashlib.sha256(old).hexdigest()
+        assert (
+            api.files[(STAGING, f"volunteer/predecessors/{SUBMISSION}/{digest}.json")]
+            == old
+        )
+        assert api.files[(RESULTS, record.canonical_path)] == record.content
+
+
+@pytest.mark.parametrize(
+    "mutation", ["fingerprint", "predecessors", "missing", "disposition"]
+)
+def test_persisted_plan_corruption_blocks_recovery(mutation: str) -> None:
+    """Decision validation binds the complete plan and preservation references.
+
+    Args:
+        mutation:
+            Persisted plan field to corrupt.
+    """
+    api, reviewer, _ = _reviewer()
+    _seed_older_results(api=api, reviewer=reviewer)
+    report = reviewer.show(submission_id=SUBMISSION)
+    reviewer.decide(
+        submission_id=SUBMISSION,
+        outcome="accepted",
+        reviewer="maintainer",
+        plan_fingerprint=report.plan_fingerprint,
+    )
+    old_path = _decision_paths(api=api)[0]
+    decision = json.loads(api.files.pop((STAGING, old_path)))
+    if mutation == "fingerprint":
+        decision["canonical_plan_fingerprint"] = "0" * 64
+    elif mutation == "predecessors":
+        decision["predecessors"] = []
+    elif mutation == "missing":
+        decision["canonical_plan"] = []
+    else:
+        decision["canonical_plan"][0]["disposition"] = "write"
+    content = (
+        json.dumps(decision, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        + "\n"
+    ).encode()
+    digest = hashlib.sha256(content).hexdigest()
+    api.files[(STAGING, f"volunteer/decisions/{SUBMISSION}/{digest}.json")] = content
+    uploads = list(api.uploads)
+    assert [entry[0] for entry in reviewer.list_pending_submissions()] == [SUBMISSION]
+    with pytest.raises(ReviewError):
+        reviewer.decide(
+            submission_id=SUBMISSION, outcome="accepted", reviewer="maintainer"
+        )
+    assert api.uploads == uploads
+
+
 def test_private_canary_record_is_not_promoted_to_public_results() -> None:
     """Completion-bearing evidence remains in private staging after approval."""
     api, reviewer, _ = _reviewer()
@@ -1315,6 +1573,41 @@ def test_reject_is_idempotent_and_opposite_decision_fails() -> None:
         reviewer.decide(SUBMISSION, "accepted", "maintainer")
 
 
+@pytest.mark.parametrize(
+    ("version", "timestamp", "replacement"),
+    [
+        ("17.0.0", 9999999999, True),
+        ("18.1.0.dev4", -1, True),
+        ("18.1.0.dev4", 0, False),
+        ("18.1.0.dev4", 1, False),
+        ("19.0.0", 0, False),
+    ],
+)
+def test_replacement_uses_strict_existing_result_order(
+    version: str, timestamp: int, replacement: bool
+) -> None:
+    """Only a strict win by version then timestamp can replace canonical bytes.
+
+    Args:
+        version:
+            Existing library version.
+        timestamp:
+            Existing retrieval timestamp.
+        replacement:
+            Whether the staged record strictly outranks the existing record.
+    """
+    api, reviewer, _ = _reviewer()
+    record = reviewer.show(submission_id=SUBMISSION).records[0]
+    old = json.loads(record.content)
+    old["eval_library"]["version"] = version
+    old["retrieved_timestamp"] = timestamp
+    api.files[(RESULTS, record.canonical_path)] = json.dumps(old).encode()
+    report = reviewer.show(submission_id=SUBMISSION)
+    assert report.canonical_observations[0].replacement is replacement
+    assert bool(report.canonical_observations[0].conflict) is not replacement
+    assert not api.uploads
+
+
 def test_resume_uses_the_first_bound_decision_metadata() -> None:
     """A retry by another reviewer preserves the first decision metadata."""
     bound = BrokerReservationResult(
@@ -1361,6 +1654,74 @@ def test_resume_uses_the_first_bound_decision_metadata() -> None:
 
     assert _decision_content(api) == decision
     assert reservation_reviewers == ["alice", "bob"]
+
+
+def test_retry_recovers_missing_archive_only_from_original_canonical_bytes() -> None:
+    """Recovery can preserve a missing archive while the exact predecessor remains."""
+    api, reviewer, _ = _reviewer()
+    predecessors = _seed_older_results(api=api, reviewer=reviewer)
+    report = reviewer.show(submission_id=SUBMISSION)
+    api.fail_result_upload_number = 1
+    with pytest.raises(RuntimeError, match="interruption"):
+        reviewer.decide(
+            submission_id=SUBMISSION,
+            outcome="accepted",
+            reviewer="maintainer",
+            plan_fingerprint=report.plan_fingerprint,
+        )
+    old = predecessors[report.records[0].canonical_path]
+    digest = hashlib.sha256(old).hexdigest()
+    key = (STAGING, f"volunteer/predecessors/{SUBMISSION}/{digest}.json")
+    del api.files[key]
+    api.fail_result_upload_number = None
+    reviewer.decide(
+        submission_id=SUBMISSION,
+        outcome="accepted",
+        reviewer="maintainer",
+        plan_fingerprint=report.plan_fingerprint,
+    )
+    assert api.files[key] == old
+    assert (
+        api.files[(RESULTS, report.records[0].canonical_path)]
+        == report.records[0].content
+    )
+
+
+@pytest.mark.parametrize("corrupt", [False, True])
+def test_retry_revalidates_completed_replacement_archives(corrupt: bool) -> None:
+    """Recovery verifies predecessor evidence even for completed destinations.
+
+    Args:
+        corrupt:
+            Whether to corrupt rather than remove the archive.
+    """
+    api, reviewer, _ = _reviewer(record_count=2)
+    predecessors = _seed_older_results(api=api, reviewer=reviewer)
+    report = reviewer.show(submission_id=SUBMISSION)
+    api.fail_result_upload_number = 2
+    with pytest.raises(RuntimeError, match="interruption"):
+        reviewer.decide(
+            submission_id=SUBMISSION,
+            outcome="accepted",
+            reviewer="maintainer",
+            plan_fingerprint=report.plan_fingerprint,
+        )
+    digest = hashlib.sha256(predecessors[report.records[0].canonical_path]).hexdigest()
+    key = (STAGING, f"volunteer/predecessors/{SUBMISSION}/{digest}.json")
+    if corrupt:
+        api.files[key] = b"corrupted"
+    else:
+        del api.files[key]
+    uploads = list(api.uploads)
+    api.fail_result_upload_number = None
+    with pytest.raises(ReviewError, match="archive|Archive"):
+        reviewer.decide(
+            submission_id=SUBMISSION,
+            outcome="accepted",
+            reviewer="maintainer",
+            plan_fingerprint=report.plan_fingerprint,
+        )
+    assert api.uploads == uploads
 
 
 def test_review_renewal_round_trip_includes_bound_digest(

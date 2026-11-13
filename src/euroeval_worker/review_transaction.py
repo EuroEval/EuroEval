@@ -272,7 +272,9 @@ class VolunteerReviewer:
                     }
                     for observation in report.canonical_observations
                     if observation.replacement
-                ],
+                ]
+                if outcome == "accepted"
+                else None,
                 canonical_plan=[
                     {
                         "canonical_path": observation.canonical_path,
@@ -288,7 +290,9 @@ class VolunteerReviewer:
                         else "write",
                     }
                     for observation in report.canonical_observations
-                ],
+                ]
+                if outcome == "accepted"
+                else None,
             )
         )
         decision_digest = _digest(decision_bytes)
@@ -838,7 +842,11 @@ def _validate_existing_decision(
     predecessors = decision.get("predecessors")
     canonical_plan = decision.get("canonical_plan")
     if canonical_plan is not None:
-        expected_by_path = {record.canonical_path: record for record in report.records}
+        expected_by_path = {
+            record.canonical_path: record
+            for record in report.records
+            if not _is_canary_identity(record.identity)
+        }
         if not isinstance(canonical_plan, list) or len(canonical_plan) != len(
             expected_by_path
         ):
@@ -846,6 +854,8 @@ def _validate_existing_decision(
                 "Existing decision artifact has an invalid canonical plan"
             )
         seen_plan: set[str] = set()
+        planned_observations: list[CanonicalObservation] = []
+        planned_predecessors: list[dict[str, str]] = []
         for item in canonical_plan:
             if not isinstance(item, dict):
                 raise ReviewError(
@@ -872,12 +882,45 @@ def _validate_existing_decision(
                     )
                 )
                 or (item.get("disposition") == "replace")
-                != (predecessor_digest is not None)
+                != (
+                    predecessor_digest is not None
+                    and predecessor_digest != record.digest
+                )
             ):
                 raise ReviewError(
                     "Existing decision artifact has an invalid canonical plan"
                 )
             seen_plan.add(path)
+            replacement = item["disposition"] == "replace"
+            planned_observations.append(
+                CanonicalObservation(
+                    identity=record.identity,
+                    canonical_path=path,
+                    predecessor_digest=predecessor_digest,
+                    predecessor_content=None,
+                    replacement=replacement,
+                )
+            )
+            if replacement:
+                planned_predecessors.append(
+                    {
+                        "canonical_path": path,
+                        "digest": predecessor_digest,
+                        "archive_path": _predecessor_path(
+                            report.submission_id, predecessor_digest
+                        ),
+                    }
+                )
+        if (
+            predecessors != planned_predecessors
+            or plan_fingerprint
+            != _plan_fingerprint(
+                report=report, observations=tuple(planned_observations)
+            )
+        ):
+            raise ReviewError(
+                "Existing decision artifact has an inconsistent canonical plan"
+            )
     if "canonical_plan_fingerprint" in decision and (
         not isinstance(plan_fingerprint, str)
         or len(plan_fingerprint) != 64
@@ -959,6 +1002,37 @@ def _validate_existing_decision(
         raise ReviewError("Existing decision artifact is malformed or inconsistent")
 
 
+def _plan_fingerprint(
+    report: ReviewReport, observations: tuple[CanonicalObservation, ...]
+) -> str:
+    """Bind the displayed approval plan to immutable staged evidence and observations.
+
+    Args:
+        report: Validated staged evidence.
+        observations: Destination observations displayed for confirmation.
+
+    Returns:
+        SHA-256 fingerprint of the approval plan.
+    """
+    payload = {
+        "submission_id": report.submission_id,
+        "records": sorted(
+            (record.canonical_path, record.digest) for record in report.records
+        ),
+        "destinations": sorted(
+            (
+                item.canonical_path,
+                item.predecessor_digest,
+                item.replacement,
+                item.conflict,
+            )
+            for item in observations
+        ),
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
 def _predecessor_path(submission_id: str, digest: str | None) -> str:
     """Return the private content-addressed path for preserved canonical bytes.
 
@@ -1010,37 +1084,6 @@ def _local_reservation(
     )
 
 
-def _plan_fingerprint(
-    report: ReviewReport, observations: tuple[CanonicalObservation, ...]
-) -> str:
-    """Bind the displayed approval plan to immutable staged evidence and observations.
-
-    Args:
-        report: Validated staged evidence.
-        observations: Destination observations displayed for confirmation.
-
-    Returns:
-        SHA-256 fingerprint of the approval plan.
-    """
-    payload = {
-        "submission_id": report.submission_id,
-        "records": sorted(
-            (record.canonical_path, record.digest) for record in report.records
-        ),
-        "destinations": sorted(
-            (
-                item.canonical_path,
-                item.predecessor_digest,
-                item.replacement,
-                item.conflict,
-            )
-            for item in observations
-        ),
-    }
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
-    return hashlib.sha256(encoded).hexdigest()
-
-
 def _restore_decision_plan(
     store: BucketStore, report: ReviewReport, decision: JsonObject, results_bucket: str
 ) -> ReviewReport:
@@ -1060,6 +1103,12 @@ def _restore_decision_plan(
     """
     plan = decision.get("canonical_plan")
     if not isinstance(plan, list):
+        if any(
+            item.replacement or item.conflict for item in report.canonical_observations
+        ):
+            raise ReviewError(
+                "Legacy decision cannot adopt a changed canonical destination"
+            )
         return report
     records = {record.canonical_path: record for record in report.records}
     observations: list[CanonicalObservation] = []
@@ -1069,8 +1118,9 @@ def _restore_decision_plan(
         path = item["canonical_path"]
         record = records[path]
         digest = item["predecessor_digest"]
+        replacement = item["disposition"] == "replace"
         archive_path = (
-            _predecessor_path(report.submission_id, digest) if digest else None
+            _predecessor_path(report.submission_id, digest) if replacement else None
         )
         archived = (
             store.read_optional(store.staging_bucket, archive_path)
@@ -1081,6 +1131,10 @@ def _restore_decision_plan(
         if digest is None:
             predecessor = None
             if current not in {None, record.content}:
+                raise ReviewError("Canonical destination changed during promotion")
+        elif not replacement:
+            predecessor = record.content
+            if current != predecessor:
                 raise ReviewError("Canonical destination changed during promotion")
         else:
             if archived is not None and _digest(archived) != digest:
@@ -1098,7 +1152,7 @@ def _restore_decision_plan(
                 canonical_path=path,
                 predecessor_digest=digest,
                 predecessor_content=predecessor,
-                replacement=digest is not None,
+                replacement=replacement,
             )
         )
     return dataclasses.replace(
