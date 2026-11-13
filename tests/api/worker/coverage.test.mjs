@@ -18,6 +18,17 @@ function result({ revision = "rev", version = "1.0.0", dataset = "dataset" } = {
   });
 }
 
+test("canonical coverage resolves bucket files through the Hugging Face bucket route", async () => {
+  let requested;
+  await narrowCoverage({ allowed_identity_suffix_sets: [[suffix]] }, "org/model", "rev", "1.0.0", async (input, options) => {
+    requested = { url: String(input), options };
+    return result();
+  });
+  assert.equal(requested.url,
+    "https://huggingface.co/buckets/EuroEval/results/resolve/org_model/dataset__val__fewshot.json");
+  assert.equal(requested.options.headers.Range, "bytes=0-1048575");
+});
+
 test("canonical coverage accepts exact revision and same or newer EuroEval versions", async () => {
   for (const version of ["1.0.0", "1.1.0", "1.0.1", "1.0.0.dev2"]) {
     const coverage = await narrowCoverage(scope, "org/model", "rev", "1.0.0.dev0", async () => result({ version }));
