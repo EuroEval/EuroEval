@@ -24,6 +24,8 @@ from euroeval_worker.review import (
     VolunteerReviewer,
 )
 from euroeval_worker.review_transaction import renew_with_broker
+from leaderboards.canonical_publication import BucketApi as CanonicalBucketApi
+from leaderboards.canonical_publication import CanonicalPublisher
 from leaderboards.eee_validation import validate_eee_record
 
 STAGING = "EuroEval/private-volunteer-staging"
@@ -72,7 +74,7 @@ class FakeHfApi:
         self.decision_upload_barrier: threading.Barrier | None = None
 
     def batch_bucket_files(
-        self, bucket_id: str, add: list[tuple[bytes, str]], token: str
+        self, bucket_id: str, add: list[tuple[bytes | Path, str]], token: str
     ) -> None:
         """Store exact object bytes, optionally injecting a partial failure.
 
@@ -88,7 +90,8 @@ class FakeHfApi:
             RuntimeError:
                 When the configured interruption point is reached.
         """
-        for content, path in add:
+        for uploaded, path in add:
+            content = uploaded.read_bytes() if isinstance(uploaded, Path) else uploaded
             if (
                 bucket_id == STAGING
                 and path.startswith("volunteer/predecessors/")
@@ -131,7 +134,7 @@ class FakeHfApi:
 
     def download_bucket_files(
         self,
-        bucket: str,
+        bucket_id: str,
         files: list[tuple[str, Path]],
         raise_on_missing_files: bool,
         token: str,
@@ -153,7 +156,7 @@ class FakeHfApi:
                 If a requested object is absent.
         """
         for remote, local in files:
-            content = self.files.get((bucket, remote))
+            content = self.files.get((bucket_id, remote))
             if content is None:
                 if raise_on_missing_files:
                     raise FileNotFoundError(remote)
@@ -391,8 +394,35 @@ def _reviewer(
         renewer=renewer,
         binder=binder,
         scope_policy=scope_policy,
+        publisher=CanonicalPublisher(
+            api=t.cast(CanonicalBucketApi, api),
+            token="token",
+            bucket=RESULTS,
+            lock=FakePublicationLock(),
+        ),
     )
     return api, reviewer, calls
+
+
+class FakePublicationLock:
+    """In-memory publication lock for canonical-publisher tests."""
+
+    bucket = RESULTS
+    endpoint = "memory://publication-lock"
+
+    def request(self, action: str, owner: str) -> str:
+        """Acknowledge lock operations.
+
+        Args:
+            action:
+                Requested lock operation.
+            owner:
+                Publication session owner.
+
+        Returns:
+            A successful lock status.
+        """
+        return "ok"
 
 
 def _record(dataset: str) -> dict[str, object]:
@@ -1538,9 +1568,11 @@ def test_private_canary_record_is_not_promoted_to_public_results() -> None:
         content=canary_content,
     )
 
-    reviewer._promote_records(  # noqa: SLF001 - focused promotion boundary test
-        dataclasses.replace(report, records=(ordinary, canary))
-    )
+    with reviewer.publisher.session() as publication:
+        reviewer._promote_records(  # noqa: SLF001 - focused promotion boundary test
+            dataclasses.replace(report, records=(ordinary, canary)),
+            publication=publication,
+        )
 
     assert (RESULTS, ordinary.canonical_path) in api.files
     assert (RESULTS, canary.canonical_path) not in api.files

@@ -7,6 +7,7 @@ import typing as t
 
 from huggingface_hub import HfApi
 
+from leaderboards.canonical_publication import BucketApi as CanonicalBucketApi
 from leaderboards.canonical_publication import CanonicalPublisher
 from leaderboards.constants import HF_RESULTS_BUCKET
 
@@ -81,7 +82,7 @@ def reviewer_from_environment() -> VolunteerReviewer:
             api=t.cast(BucketApi, api), token=token, staging_bucket=staging
         ),
         results_bucket=results_bucket,
-        publisher=CanonicalPublisher(
-            api=t.cast(t.Any, api), token=token, bucket=results_bucket
+        publisher_factory=lambda: CanonicalPublisher(
+            api=t.cast(CanonicalBucketApi, api), token=token, bucket=results_bucket
         ),
     )
