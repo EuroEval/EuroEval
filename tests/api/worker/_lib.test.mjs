@@ -4,7 +4,8 @@ import { assertAssignable, expectedScope, extractModelId, parsePromotionRecords,
 import { validateRecord } from "../../../api/worker/_lib/eee.ts";
 import { fitsGpu, resolveModel, selectedGpu } from "../../../api/worker/_lib/model.ts";
 import { putLease, reclaimExpiredLease, releaseResultReservations, reserveResultIdentity } from "../../../api/worker/_lib/redis.ts";
-import { bindPromotionDecision, promotionIdentityKey, reservePromotionReservation } from "../../../api/worker/_lib/promotion.ts";
+import { bindPromotionDecision, completePromotionReservation, promotionIdentityKey, reservePromotionReservation } from "../../../api/worker/_lib/promotion.ts";
+import { withRedisRestBridge } from "./redis-bridge.mjs";
 import generatedScopePolicy from "../../../api/worker/_lib/scope-policy.generated.ts";
 
 test("resolves immutable Hub capability evidence without suffix heuristics", async () => {
@@ -429,7 +430,7 @@ test("expired lease cleanup fences every reservation owner and digest", async ()
   }
 });
 
-test("promotion renewal refreshes each nonterminal path only", async () => {
+test("promotion reservation renewal is fenced by the global publication mutex", async () => {
   const originalFetch = globalThis.fetch;
   const originalEnv = { ...process.env };
   process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
@@ -446,15 +447,17 @@ test("promotion renewal refreshes each nonterminal path only", async () => {
   try {
     assert.equal(await reservePromotionReservation({ issue_number: 12, submission_id: "one", outcome: "accepted",
       records, token: "token", decision_reviewer: "alice",
-      decision_created_at: "2026-09-06T12:00:00Z", status: "reserved" }), "reserved");
+      decision_created_at: "2026-09-06T12:00:00Z", status: "reserved",
+      publication_bucket: "EuroEval/results", publication_owner: "owner" }), "reserved");
     const command = commands[0];
     assert.equal(command[0], "EVAL");
-    assert.equal(command[2], "3");
-    assert.match(command[1], /redis\.call\('EXPIRE',KEYS\[i\],ARGV\[4\]\)/);
-    assert.match(command[1], /item\.status ~= 'terminal'/);
+    assert.equal(command[2], "2");
+    assert.match(command[1], /redis\.call\('GET',KEYS\[2\]\) ~= ARGV\[3\]/);
+    assert.match(command[1], /redis\.call\('SET',KEYS\[1\],ARGV\[1\],'EX',ARGV\[4\]\)/);
     assert.equal(command[3], "euroeval:worker:promotion:12:one");
-    assert.equal(command[4], await promotionIdentityKey(records[0].canonical_path));
-    assert.equal(command[5], await promotionIdentityKey(records[1].canonical_path));
+    assert.equal(command[4], "euroeval:worker:canonical-publication:EuroEval/results");
+    assert.equal(command[6], "token");
+    assert.equal(command[7], "owner");
   } finally {
     globalThis.fetch = originalFetch;
     process.env = originalEnv;
@@ -612,4 +615,31 @@ test("claim lease retry fails closed for split or mismatched state", async () =>
     globalThis.fetch = originalFetch;
     process.env = originalEnv;
   }
+});
+
+
+test("promotion reservation Lua enforces publication ownership through terminal completion", async () => {
+  await withRedisRestBridge(async () => {
+    const publicationKey = "euroeval:worker:canonical-publication:EuroEval/results";
+    await fetch("https://redis.test", { method: "POST", body: JSON.stringify(["SET", publicationKey, "publication-owner"]) });
+    const record = { identity: JSON.stringify(["org/model", "dataset", false, true]),
+      canonical_path: "org_model/dataset__test__fewshot.json", digest: "a".repeat(64) };
+    const reservation = { issue_number: 12, submission_id: "first", outcome: "accepted",
+      records: [record], token: "reservation-token", decision_reviewer: "alice",
+      decision_created_at: "2026-09-06T12:00:00Z", status: "reserved",
+      publication_bucket: "EuroEval/results", publication_owner: "publication-owner" };
+    assert.equal(await reservePromotionReservation({ ...reservation, publication_owner: "wrong-owner" }), "busy");
+    assert.equal(await reservePromotionReservation(reservation), "reserved");
+    assert.equal(await bindPromotionDecision({ ...reservation, token: "wrong-token" }, "b".repeat(64)), "expired");
+    assert.equal(await bindPromotionDecision(reservation, "b".repeat(64)), "bound");
+    assert.equal(await bindPromotionDecision(reservation, "c".repeat(64)), "mismatch");
+    const bound = { ...reservation, decision_digest: "b".repeat(64) };
+    assert.equal(await completePromotionReservation({ ...bound, publication_owner: "wrong-owner" }), false);
+    assert.equal(await completePromotionReservation(bound), true);
+    assert.equal(await completePromotionReservation(bound), true);
+
+    const next = { ...reservation, submission_id: "second", token: "next-token",
+      records: [{ ...record, digest: "d".repeat(64) }] };
+    assert.equal(await reservePromotionReservation(next), "reserved");
+  });
 });
