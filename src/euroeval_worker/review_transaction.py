@@ -41,6 +41,7 @@ from .review_validation import (
 from .types import PROTOCOL_VERSION
 
 _DECISION_PREFIX = "volunteer/decisions"
+_COMPLETION_PREFIX = "volunteer/completions"
 _MANIFEST_PREFIX = "volunteer/manifests"
 _LOCAL_DECISION_CREATED_AT = "1970-01-01T00:00:00Z"
 _DECISION_ARTIFACT = "volunteer-review-decision/v1"
@@ -165,6 +166,24 @@ class VolunteerReviewer:
         existing = _existing_decisions(
             store=self.store, report=inspected, outcome="accepted"
         )
+        if existing and "canonical_plan" in _load_object(
+            content=existing[0][1], context=existing[0][0]
+        ):
+            decision_digest = existing[0][2]
+            if self._has_valid_completion_receipt(
+                submission_id=submission_id,
+                outcome="accepted",
+                decision_digest=decision_digest,
+            ):
+                _validate_predecessor_archives(
+                    store=self.store,
+                    report=inspected,
+                    decision=_load_object(
+                        content=existing[0][1], context=existing[0][0]
+                    ),
+                    results_bucket=self.results_bucket,
+                )
+                return inspected
         if (
             not existing
             and plan_fingerprint is not None
@@ -474,6 +493,11 @@ class VolunteerReviewer:
             t.cast(t.Callable[[int, str, str], None], self.promoter)(
                 report.issue_number, submission_id, outcome
             )
+        self._write_completion_receipt(
+            submission_id=submission_id,
+            outcome=outcome,
+            decision_digest=decision_digest,
+        )
         return report
 
     def _promote_records(
@@ -683,6 +707,36 @@ class VolunteerReviewer:
         if renewed != token:
             raise ReviewError("Broker returned a different promotion reservation token")
 
+    def _write_completion_receipt(
+        self, submission_id: str, outcome: str, decision_digest: str
+    ) -> None:
+        """Write and verify the private receipt for a completed decision.
+
+        Args:
+            submission_id: Submission whose decision completed.
+            outcome: Durable decision outcome.
+            decision_digest: Digest of the immutable decision bytes.
+
+        Raises:
+            ReviewError: If an existing receipt does not match exactly.
+        """
+        path = _completion_path(submission_id=submission_id, digest=decision_digest)
+        content = _completion_bytes(
+            submission_id=submission_id,
+            outcome=outcome,
+            decision_digest=decision_digest,
+        )
+        existing = self.store.read_optional(self.store.staging_bucket, path)
+        if existing is not None:
+            if existing != content:
+                raise ReviewError(
+                    "Completion receipt differs from the durable decision"
+                )
+            return
+        self.store.write_verified(
+            bucket=self.store.staging_bucket, path=path, content=content
+        )
+
     def show(self, submission_id: str) -> ReviewReport:
         """Independently load and validate a staged submission.
 
@@ -772,6 +826,30 @@ class VolunteerReviewer:
             )
         return tuple(observations)
 
+    def _has_valid_completion_receipt(
+        self,
+        submission_id: str,
+        outcome: t.Literal["accepted", "rejected"],
+        decision_digest: str,
+    ) -> bool:
+        """Return whether a decision has its exact private completion receipt.
+
+        Args:
+            submission_id: Submission owning the decision.
+            outcome: Durable decision outcome.
+            decision_digest: Digest of the immutable decision bytes.
+
+        Returns:
+            Whether the receipt exists and matches the expected bytes exactly.
+        """
+        path = _completion_path(submission_id=submission_id, digest=decision_digest)
+        existing = self.store.read_optional(self.store.staging_bucket, path)
+        return existing == _completion_bytes(
+            submission_id=submission_id,
+            outcome=outcome,
+            decision_digest=decision_digest,
+        )
+
     @contextmanager
     def _publication_session(self) -> t.Iterator[PublicationSession]:
         """Open the configured canonical publication session.
@@ -836,7 +914,16 @@ class VolunteerReviewer:
                 submission_id,
             )
             return False
-        return bool(decisions)
+        if not decisions:
+            return False
+        decision = _load_object(content=decisions[0][1], context=decisions[0][0])
+        if "canonical_plan" not in decision:
+            return True
+        return self._has_valid_completion_receipt(
+            submission_id=submission_id,
+            outcome=t.cast(t.Literal["accepted", "rejected"], decision["outcome"]),
+            decision_digest=decisions[0][2],
+        )
 
     def _list_submission_summaries(self) -> list[tuple[str, int, str, str]]:
         """Load summaries for every durable manifest.
@@ -860,6 +947,41 @@ class VolunteerReviewer:
             language)`` tuples.
         """
         return self._list_submission_summaries()
+
+
+def _completion_bytes(submission_id: str, outcome: str, decision_digest: str) -> bytes:
+    """Serialise one deterministic private completion receipt.
+
+    Args:
+        submission_id: Submission whose decision completed.
+        outcome: Durable decision outcome.
+        decision_digest: Digest of the immutable decision bytes.
+
+    Returns:
+        Compact, key-sorted UTF-8 JSON bytes ending in a newline.
+    """
+    receipt = {
+        "protocol": PROTOCOL_VERSION,
+        "submission": submission_id,
+        "outcome": outcome,
+        "decision_digest": decision_digest,
+    }
+    return (json.dumps(receipt, sort_keys=True, separators=(",", ":")) + "\n").encode(
+        "utf-8"
+    )
+
+
+def _completion_path(submission_id: str, digest: str) -> str:
+    """Return the content-addressed private receipt path.
+
+    Args:
+        submission_id: Submission owning the receipt.
+        digest: Digest of the immutable decision.
+
+    Returns:
+        ``volunteer/completions/<submission_id>/<digest>.json``.
+    """
+    return f"{_COMPLETION_PREFIX}/{submission_id}/{digest}.json"
 
 
 def _decision_bytes(
