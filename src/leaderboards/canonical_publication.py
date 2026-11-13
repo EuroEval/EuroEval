@@ -19,6 +19,8 @@ import urllib.request
 from contextlib import contextmanager
 from pathlib import Path
 
+from euroeval.numeric_model_metadata import positive_context_length, positive_integer
+
 from .contamination_canary import is_canary_record
 from .result_identity import (
     ResultIdentity,
@@ -108,8 +110,29 @@ def _metadata_only_transform(
     Returns:
         Whether all non-metadata fields are unchanged.
     """
+    if (
+        identity_from_eee_record(current) != identity_from_eee_record(candidate)
+        or current.get("retrieved_timestamp") != candidate.get("retrieved_timestamp")
+        or current.get("eval_library", {}).get("version")
+        != candidate.get("eval_library", {}).get("version")
+    ):
+        return False
+
     current_copy = copy.deepcopy(current)
     candidate_copy = copy.deepcopy(candidate)
+    current_details = _model_additional_details(record=current_copy)
+    candidate_details = _model_additional_details(record=candidate_copy)
+    for key, validator in (
+        ("num_model_parameters", positive_integer),
+        ("vocabulary_size", positive_integer),
+        ("max_sequence_length", positive_context_length),
+    ):
+        if (
+            validator(current_details.get(key)) is None
+            and validator(candidate_details.get(key)) is not None
+        ):
+            current_details.pop(key, None)
+            candidate_details.pop(key, None)
     for record in (current_copy, candidate_copy):
         record.pop("metadata", None)
         model_info = record.get("model_info")
@@ -129,6 +152,22 @@ def _metadata_only_transform(
                 if not additional:
                     model_info.pop("additional_details", None)
     return current_copy == candidate_copy
+
+
+def _model_additional_details(record: dict[str, object]) -> dict[str, object]:
+    """Return model additional details, creating no missing record structure.
+
+    Args:
+        record: A decoded result record.
+
+    Returns:
+        The model metadata details, or an empty mapping when absent.
+    """
+    model_info = record.get("model_info")
+    if not isinstance(model_info, dict):
+        return {}
+    details = model_info.get("additional_details")
+    return details if isinstance(details, dict) else {}
 
 
 def _receipt_path(owner: str) -> Path:

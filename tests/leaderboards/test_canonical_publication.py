@@ -8,14 +8,18 @@ import typing as t
 import urllib.error
 import urllib.request
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
+from leaderboards.cache import Cache
 from leaderboards.canonical_publication import (
     CanonicalPublisher,
     PublicationError,
     PublicationLock,
 )
+from leaderboards.constants import TRAINED_FROM_SCRATCH_PATTERNS
+from leaderboards.model_metadata import add_missing_entries
 from leaderboards.result_identity import identity_from_eee_record
 
 
@@ -200,6 +204,25 @@ def test_equal_rank_metadata_transform_requires_original_source(
     assert any(name.startswith("_history/") for name in api.objects)
 
 
+def test_equal_rank_numeric_enrichment_cannot_change_existing_value(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Do not treat a changed valid model value as missing-metadata enrichment."""
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    publisher, _, _ = _publisher(tmp_path)
+    original_record = json.loads(_record())
+    original_record["model_info"]["additional_details"] = {"num_model_parameters": 1000}
+    original = json.dumps(original_record).encode()
+    changed_record = json.loads(original)
+    changed_record["model_info"]["additional_details"]["num_model_parameters"] = 2000
+    changed = json.dumps(changed_record).encode()
+    identity = identity_from_eee_record(original_record)
+    with publisher.session() as session:
+        session.publish(records=[original])
+        with pytest.raises(PublicationError, match="Equal-ranked"):
+            session.publish(records=[changed], sources={identity: original})
+
+
 def test_failed_archive_retains_lock_before_canonical_overwrite(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -233,6 +256,31 @@ def test_interrupt_after_partial_mutation_retains_lock(
             session.write_verified(path="object", content=b"partial", expected=None)
     assert api.objects["object"] == b"partial"
     assert lock.owner is not None
+
+
+@pytest.mark.parametrize(
+    ("key", "value"),
+    [
+        ("num_model_parameters", True),
+        ("vocabulary_size", 0),
+        ("max_sequence_length", 2**63),
+    ],
+)
+def test_invalid_numeric_metadata_enrichment_is_rejected(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, key: str, value: object
+) -> None:
+    """Reject invalid numeric values in otherwise metadata-only changes."""
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    publisher, _, _ = _publisher(tmp_path)
+    original = _record()
+    enriched_record = json.loads(original)
+    enriched_record["model_info"]["additional_details"] = {key: value}
+    enriched = json.dumps(enriched_record).encode()
+    identity = identity_from_eee_record(json.loads(original))
+    with publisher.session() as session:
+        session.publish(records=[original])
+        with pytest.raises(PublicationError, match="Equal-ranked"):
+            session.publish(records=[enriched], sources={identity: original})
 
 
 def test_json_equal_formatting_change_is_a_noop(
@@ -299,6 +347,90 @@ def test_missing_lock_configuration_fails_closed() -> None:
     """Publisher construction cannot silently fall back to a local lock."""
     with pytest.raises(ValueError, match="required"):
         CanonicalPublisher(api=MemoryApi(), token="token", lock=None)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("evaluation_results", {"score": 0.9}),
+        ("raw_results", {"score": 0.9}),
+        ("rank", 1),
+        ("unapproved_metadata", {"note": "changed"}),
+    ],
+)
+def test_numeric_enrichment_does_not_authorise_other_changes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, field: str, value: object
+) -> None:
+    """Numeric enrichment cannot authorise evaluation or arbitrary changes."""
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    publisher, _, _ = _publisher(tmp_path)
+    original = _record()
+    candidate_record = json.loads(original)
+    candidate_record["model_info"]["additional_details"] = {
+        "num_model_parameters": 1000
+    }
+    candidate_record[field] = value
+    candidate = json.dumps(candidate_record).encode()
+    identity = identity_from_eee_record(json.loads(original))
+    with publisher.session() as session:
+        session.publish(records=[original])
+        with pytest.raises(PublicationError, match="Equal-ranked"):
+            session.publish(records=[candidate], sources={identity: original})
+
+
+def test_pipeline_numeric_enrichment_is_publishable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Publish numeric metadata produced by the model enrichment pipeline."""
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    publisher, api, _ = _publisher(tmp_path)
+    original = json.loads(_record())
+    original["model_info"]["name"] = "org/model"
+    original["model_info"]["additional_details"] = {
+        "open": True,
+        "model_url": "https://huggingface.co/org/model",
+        "generative_type": "base",
+        "merge": False,
+        "commercially_licensed": False,
+        "trained_from_scratch": False,
+        "generative": False,
+        "release_date": None,
+    }
+    original_bytes = json.dumps(original).encode()
+    with (
+        patch("leaderboards.model_metadata._get_release_date", return_value=None),
+        patch(
+            "leaderboards.model_metadata.recover_numeric_metadata",
+            return_value={
+                "num_model_parameters": 123456,
+                "vocabulary_size": 32000,
+                "max_sequence_length": 8192,
+            },
+        ),
+    ):
+        enriched = add_missing_entries(
+            record=original,
+            trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
+            cache=Cache(),
+        )
+
+    enriched_bytes = json.dumps(enriched).encode()
+    identity = identity_from_eee_record(original)
+    with publisher.session() as session:
+        session.publish(records=[original_bytes])
+        assert (
+            session.publish(
+                records=[enriched_bytes], sources={identity: original_bytes}
+            )
+            == 1
+        )
+    canonical = next(name for name in api.objects if name.endswith(".json"))
+    assert (
+        json.loads(api.objects[canonical])["model_info"]["additional_details"][
+            "num_model_parameters"
+        ]
+        == 123456
+    )
 
 
 def test_publish_archives_predecessor_and_skips_old(
