@@ -810,6 +810,8 @@ class VolunteerReviewer:
                         str | None,
                         str | None,
                         str | None,
+                        str | None,
+                        str | None,
                     ],
                     BrokerReservationResult,
                 ],
@@ -824,6 +826,8 @@ class VolunteerReviewer:
                 known_digest,
                 publication.owner if publication else None,
                 publication.bucket if publication else None,
+                _decision_metadata(existing=existing).get("reviewer"),
+                _decision_metadata(existing=existing).get("decided_at"),
             )
         if self.reserver:
             return self.reserver(
@@ -1252,6 +1256,27 @@ def _decision_bytes(
         json.dumps(decision, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
         + "\n"
     ).encode("utf-8")
+
+
+def _decision_metadata(existing: list[tuple[str, bytes, str]]) -> dict[str, str]:
+    """Recover reviewer metadata from an immutable decision artifact.
+
+    Args:
+        existing: Validated existing decision artifacts.
+
+    Returns:
+        Original reviewer and timestamp when both are available.
+    """
+    if not existing:
+        return {}
+    decision = _load_object(
+        content=existing[0][1], context="existing volunteer decision artifact"
+    )
+    reviewer = decision.get("reviewer")
+    created_at = decision.get("decided_at")
+    if isinstance(reviewer, str) and isinstance(created_at, str):
+        return {"reviewer": reviewer, "decided_at": created_at}
+    return {}
 
 
 def _decision_path(submission_id: str, digest: str) -> str:
@@ -1809,6 +1834,8 @@ def _request_reservation(
     decision_digest: str | None = None,
     publication_owner: str | None = None,
     publication_bucket: str | None = None,
+    decision_reviewer: str | None = None,
+    decision_created_at: str | None = None,
 ) -> str | BrokerReservationResult:
     """Request a reservation, renewal, or decision-digest binding from the broker.
 
@@ -1823,6 +1850,8 @@ def _request_reservation(
         decision_digest (optional): Decision artifact digest to bind or renew.
         publication_owner (optional): Owner of the active canonical publication session.
         publication_bucket (optional): Bucket containing the active publication session.
+        decision_reviewer (optional): Reviewer from the durable decision artifact.
+        decision_created_at (optional): Timestamp from the durable decision artifact.
 
     Returns:
         A reservation result for a new reservation, or the unchanged token string
@@ -1851,6 +1880,9 @@ def _request_reservation(
         request_body["reviewer"] = reviewer
     if decision_digest is not None:
         request_body["decision_digest"] = decision_digest
+    if decision_reviewer is not None and decision_created_at is not None:
+        request_body["decision_reviewer"] = decision_reviewer
+        request_body["decision_created_at"] = decision_created_at
     if outcome == "accepted":
         if not publication_owner or not publication_bucket:
             raise ReviewError(
@@ -2087,6 +2119,8 @@ def reserve_with_broker(
     decision_digest: str | None = None,
     publication_owner: str | None = None,
     publication_bucket: str | None = None,
+    decision_reviewer: str | None = None,
+    decision_created_at: str | None = None,
 ) -> BrokerReservationResult:
     """Reserve one immutable maintainer outcome at the broker.
 
@@ -2107,6 +2141,10 @@ def reserve_with_broker(
                 Owner of the active canonical publication session.
             publication_bucket (optional):
                 Bucket containing the active publication session.
+            decision_reviewer (optional):
+                Reviewer from the durable decision artifact.
+            decision_created_at (optional):
+                Timestamp from the durable decision artifact.
 
     Returns:
             The reservation token and server-bound decision metadata.
@@ -2124,6 +2162,8 @@ def reserve_with_broker(
         decision_digest=decision_digest,
         publication_owner=publication_owner,
         publication_bucket=publication_bucket,
+        decision_reviewer=decision_reviewer,
+        decision_created_at=decision_created_at,
     )
     if not isinstance(reservation, BrokerReservationResult):
         raise ReviewError("Broker returned an invalid promotion reservation")
