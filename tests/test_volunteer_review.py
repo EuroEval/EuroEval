@@ -384,6 +384,7 @@ def _reviewer(
             }
         ],
     }
+    publication_lock = FakePublicationLock()
     reviewer = VolunteerReviewer(
         store=store,
         results_bucket=RESULTS,
@@ -398,7 +399,7 @@ def _reviewer(
             api=t.cast(CanonicalBucketApi, api),
             token="token",
             bucket=RESULTS,
-            lock=FakePublicationLock(),
+            lock=publication_lock,
         ),
     )
     return api, reviewer, calls
@@ -409,6 +410,10 @@ class FakePublicationLock:
 
     bucket = RESULTS
     endpoint = "memory://publication-lock"
+
+    def __init__(self) -> None:
+        """Initialise the lock request log."""
+        self.requests: list[tuple[str, str]] = []
 
     def request(self, action: str, owner: str) -> str:
         """Acknowledge lock operations.
@@ -422,6 +427,7 @@ class FakePublicationLock:
         Returns:
             A successful lock status.
         """
+        self.requests.append((action, owner))
         return "ok"
 
 
@@ -642,6 +648,58 @@ def test_collected_canary_must_be_privately_scoreable_before_approval(
 
     with pytest.raises(ReviewError, match="could not be validated"):
         reviewer.decide(SUBMISSION, "accepted", "maintainer")
+
+
+def test_completed_acceptance_retry_ignores_later_canonical_results() -> None:
+    """A completed retry does not republish after canonical state advances."""
+    api, reviewer, broker_calls = _reviewer()
+    reviewer.decide(SUBMISSION, "accepted", "maintainer")
+    lock = t.cast(FakePublicationLock, reviewer.publisher.lock)
+    initial_uploads = list(api.uploads)
+    initial_lock_requests = list(lock.requests)
+
+    canonical_path = next(path for bucket, path in api.files if bucket == RESULTS)
+    advanced = json.loads(api.files[(RESULTS, canonical_path)])
+    advanced["eval_library"]["version"] = "19.0.0"
+    api.files[(RESULTS, canonical_path)] = json.dumps(advanced).encode()
+
+    reviewer.decide(SUBMISSION, "accepted", "another-reviewer")
+
+    assert api.uploads == initial_uploads
+    assert lock.requests == initial_lock_requests
+    assert broker_calls == [(12, SUBMISSION, "accepted")]
+
+
+@pytest.mark.parametrize("corrupt", [False, True])
+def test_completed_retry_rejects_missing_or_corrupt_predecessor_archive(
+    corrupt: bool,
+) -> None:
+    """A completed decision still requires intact predecessor evidence.
+
+    Args:
+        corrupt: Whether to corrupt rather than remove the archived bytes.
+    """
+    api, reviewer, _ = _reviewer(record_count=2)
+    predecessors = _seed_older_results(api=api, reviewer=reviewer)
+    report = reviewer.show(submission_id=SUBMISSION)
+    reviewer.decide(
+        submission_id=SUBMISSION,
+        outcome="accepted",
+        reviewer="maintainer",
+        plan_fingerprint=report.plan_fingerprint,
+    )
+    digest = hashlib.sha256(predecessors[report.records[0].canonical_path]).hexdigest()
+    archive = (STAGING, f"volunteer/predecessors/{SUBMISSION}/{digest}.json")
+    if corrupt:
+        api.files[archive] = b"corrupted"
+    else:
+        del api.files[archive]
+    uploads = list(api.uploads)
+
+    with pytest.raises(ReviewError, match="archive|Archive"):
+        reviewer.decide(SUBMISSION, "accepted", "another-reviewer")
+
+    assert api.uploads == uploads
 
 
 def test_concurrent_decisions_use_first_server_metadata() -> None:
@@ -1424,15 +1482,26 @@ def test_partial_approve_resumes_and_is_idempotent() -> None:
     with pytest.raises(RuntimeError, match="interruption"):
         reviewer.decide(SUBMISSION, "accepted", "maintainer")
     assert len([key for key in api.files if key[0] == RESULTS]) == 1
+    assert [item[0] for item in reviewer.list_pending_submissions()] == [SUBMISSION]
 
     api.fail_result_upload_number = None
     reviewer.decide(SUBMISSION, "accepted", "maintainer")
+    assert reviewer.list_pending_submissions() == []
     decision = _decision_content(api)
+    decision_digest = hashlib.sha256(decision).hexdigest()
+    receipt_path = f"volunteer/completions/{SUBMISSION}/{decision_digest}.json"
+    receipt = json.loads(api.files[(STAGING, receipt_path)])
+    assert receipt == {
+        "protocol": "volunteer-worker/v1",
+        "submission": SUBMISSION,
+        "outcome": "accepted",
+        "decision_digest": decision_digest,
+    }
     reviewer.decide(SUBMISSION, "accepted", "another-reviewer")
 
     assert _decision_content(api) == decision
     assert len([key for key in api.files if key[0] == RESULTS]) == 2
-    assert broker_calls == [(12, SUBMISSION, "accepted"), (12, SUBMISSION, "accepted")]
+    assert broker_calls == [(12, SUBMISSION, "accepted")]
 
 
 @pytest.mark.parametrize("fresh_confirmation", [False, True])
