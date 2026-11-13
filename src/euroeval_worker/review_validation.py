@@ -185,6 +185,8 @@ def _validate_manifest(
         provenance=provenance,
         expected_identities=expected,
         records=records,
+        canonical_observations=(),
+        plan_fingerprint="",
         warnings=tuple(warnings),
         checks=(
             "manifest protocol and schema",

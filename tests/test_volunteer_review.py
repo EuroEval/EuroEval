@@ -452,6 +452,28 @@ def _store_manifest(api: FakeHfApi, manifest: dict[str, object]) -> None:
     ).encode("utf-8")
 
 
+def test_approval_replaces_strictly_older_same_identity_and_archives_bytes() -> None:
+    """A newer same-identity result replaces only after preserving its predecessor."""
+    api, reviewer, _ = _reviewer()
+    report = reviewer.show(SUBMISSION)
+    staged = report.records[0]
+    predecessor_record = json.loads(staged.content)
+    predecessor_record["eval_library"]["version"] = "17.0.0"
+    predecessor = json.dumps(predecessor_record).encode()
+    api.files[(RESULTS, staged.canonical_path)] = predecessor
+
+    report = reviewer.show(SUBMISSION)
+    assert report.canonical_observations[0].replacement
+    reviewer.decide(
+        SUBMISSION, "accepted", "maintainer", plan_fingerprint=report.plan_fingerprint
+    )
+
+    digest = hashlib.sha256(predecessor).hexdigest()
+    archive = f"volunteer/predecessors/{SUBMISSION}/{digest}.json"
+    assert api.files[(STAGING, archive)] == predecessor
+    assert api.files[(RESULTS, staged.canonical_path)] == staged.content
+
+
 def test_canonical_collision_prevents_decision_and_broker() -> None:
     """Different canonical bytes block all terminal side effects."""
     api, reviewer, broker_calls = _reviewer()
@@ -1445,6 +1467,30 @@ def test_show_and_acceptance_allow_raw_records_without_metadata() -> None:
     assert canonical == [content]
     assert hashlib.sha256(canonical[0]).hexdigest() == digest
     assert broker_calls
+
+
+def test_stale_canonical_plan_cannot_be_approved() -> None:
+    """Canonical drift after inspection requires a fresh human confirmation."""
+    api, reviewer, broker_calls = _reviewer()
+    report = reviewer.show(SUBMISSION)
+    staged = report.records[0]
+    previous_record = json.loads(staged.content)
+    previous_record["eval_library"]["version"] = "17.0.0"
+    api.files[(RESULTS, staged.canonical_path)] = json.dumps(previous_record).encode()
+    stale_plan = reviewer.show(SUBMISSION)
+
+    changed_record = json.loads(api.files[(RESULTS, staged.canonical_path)])
+    changed_record["eval_library"]["version"] = "17.1.0"
+    api.files[(RESULTS, staged.canonical_path)] = json.dumps(changed_record).encode()
+
+    with pytest.raises(ReviewError, match="plan changed"):
+        reviewer.decide(
+            SUBMISSION,
+            "accepted",
+            "maintainer",
+            plan_fingerprint=stale_plan.plan_fingerprint,
+        )
+    assert broker_calls == []
 
 
 def test_terminal_response_loss_recovers_with_durable_digest(

@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import collections.abc as c
+import dataclasses
 import datetime as dt
+import hashlib
 import json
 import logging
 import os
@@ -14,6 +16,7 @@ from euroeval.canary_evidence import evidence_from_dict
 from leaderboards.constants import HF_RESULTS_BUCKET, REQUIRED_METADATA_FIELDS
 from leaderboards.contamination_canary import process_contamination_canaries
 from leaderboards.eee_validation import is_eee_record
+from leaderboards.result_identity import dedup_newer_record, identity_from_eee_record
 
 from .review_models import (
     BrokerBinder,
@@ -21,6 +24,7 @@ from .review_models import (
     BrokerRenewer,
     BrokerReservation,
     BrokerReservationResult,
+    CanonicalObservation,
     JsonObject,
     ReviewError,
     ReviewReport,
@@ -140,6 +144,7 @@ class VolunteerReviewer:
         outcome: t.Literal["accepted", "rejected"],
         reviewer: str,
         reasons: list[str] | None = None,
+        plan_fingerprint: str | None = None,
     ) -> ReviewReport:
         """Persist one immutable decision and complete its broker transition.
 
@@ -152,6 +157,8 @@ class VolunteerReviewer:
                         Reviewer.
                     reasons (optional):
                         Reasons.
+                    plan_fingerprint (optional):
+                        Fingerprint displayed to and confirmed by the reviewer.
 
         Returns:
                     The independently validated submission report.
@@ -163,6 +170,18 @@ class VolunteerReviewer:
         report = self.show(submission_id=submission_id)
         reasons = reasons or []
         existing = _existing_decisions(store=self.store, report=report, outcome=outcome)
+        if outcome == "accepted" and any(
+            item.replacement for item in report.canonical_observations
+        ):
+            confirmed = report.plan_fingerprint == plan_fingerprint or any(
+                json.loads(content).get("canonical_plan_fingerprint")
+                == plan_fingerprint
+                for _, content, _ in existing
+            )
+            if not confirmed:
+                raise ReviewError(
+                    "Canonical plan changed or was not confirmed; run show and retry"
+                )
         evidence = sorted(
             [
                 {
@@ -222,6 +241,17 @@ class VolunteerReviewer:
                 reviewer=reservation.decision_reviewer,
                 reasons=reasons,
                 decided_at=reservation.decision_created_at,
+                predecessors=[
+                    {
+                        "canonical_path": observation.canonical_path,
+                        "digest": observation.predecessor_digest,
+                        "archive_path": _predecessor_path(
+                            submission_id, observation.predecessor_digest
+                        ),
+                    }
+                    for observation in report.canonical_observations
+                    if observation.replacement
+                ],
             )
         )
         decision_digest = _digest(decision_bytes)
@@ -301,31 +331,57 @@ class VolunteerReviewer:
                     An exception when the operation cannot be completed.
         """
         self._validate_canonical_records(report=report)
+        for observation in report.canonical_observations:
+            if not observation.replacement:
+                continue
+            predecessor = observation.predecessor_content
+            digest = observation.predecessor_digest
+            if predecessor is None or digest is None:
+                raise ReviewError("Replacement plan has no predecessor bytes")
+            archive_path = _predecessor_path(report.submission_id, digest)
+            archived = self.store.read_optional(self.store.staging_bucket, archive_path)
+            if archived is None:
+                self.store.write_verified(
+                    bucket=self.store.staging_bucket,
+                    path=archive_path,
+                    content=predecessor,
+                )
+            else:
+                self.store.verify(
+                    bucket=self.store.staging_bucket,
+                    path=archive_path,
+                    content=predecessor,
+                )
+        self._validate_canonical_records(report=report)
         for record in report.records:
             if _is_canary_identity(record.identity):
                 continue
             if renew:
                 renew()
+            observation = next(
+                item
+                for item in report.canonical_observations
+                if item.canonical_path == record.canonical_path
+            )
             current = self.store.read_optional(
                 self.results_bucket, record.canonical_path
             )
-            if current is not None and current != record.content:
-                raise ReviewError(
-                    "Canonical result collision at "
-                    f"{record.canonical_path}: {_digest(current)} != {record.digest}"
+            if current == record.content:
+                self.store.verify(
+                    bucket=self.results_bucket,
+                    path=record.canonical_path,
+                    content=record.content,
                 )
-            if current is None:
+            elif current == observation.predecessor_content and (
+                current is None or observation.replacement
+            ):
                 self.store.write_verified(
                     bucket=self.results_bucket,
                     path=record.canonical_path,
                     content=record.content,
                 )
             else:
-                self.store.verify(
-                    bucket=self.results_bucket,
-                    path=record.canonical_path,
-                    content=record.content,
-                )
+                raise ReviewError("Canonical destination changed during promotion")
 
     def _validate_canonical_records(self, report: ReviewReport) -> None:
         """Validate canonical records.
@@ -379,7 +435,18 @@ class VolunteerReviewer:
             except (TypeError, ValueError) as error:
                 raise ReviewError(str(error)) from error
             current = existing[record.canonical_path]
-            if current is not None and current != record.content:
+            observation = next(
+                item
+                for item in report.canonical_observations
+                if item.canonical_path == record.canonical_path
+            )
+            if current != observation.predecessor_content:
+                raise ReviewError("Canonical plan changed after reviewer inspection")
+            if (
+                current is not None
+                and current != record.content
+                and not observation.replacement
+            ):
                 raise ReviewError(
                     "Canonical result collision at "
                     f"{record.canonical_path}: {_digest(current)} != {record.digest}"
@@ -441,9 +508,73 @@ class VolunteerReviewer:
         )
         if manifest.get("submission_id") != submission_id:
             raise ReviewError("Manifest submission_id does not match its durable path")
-        return _validate_manifest(
+        report = _validate_manifest(
             manifest=manifest, store=self.store, scope_policy=self.scope_policy
         )
+        observations = self._canonical_plan(report=report)
+        fingerprint = _plan_fingerprint(report=report, observations=observations)
+        return dataclasses.replace(
+            report, canonical_observations=observations, plan_fingerprint=fingerprint
+        )
+
+    def _canonical_plan(self, report: ReviewReport) -> tuple[CanonicalObservation, ...]:
+        """Inspect destinations and permit only strict newer same-identity records.
+
+        Args:
+            report: Validated staged result report.
+
+        Returns:
+            Immutable destination observations for reviewer confirmation.
+
+        Raises:
+            ReviewError: If a canonical collision cannot be safely replaced.
+            ValueError: If staged identities collide.
+        """
+        observations: list[CanonicalObservation] = []
+        _raise_on_identity_collisions(record.identity for record in report.records)
+        for record in report.records:
+            if _is_canary_identity(record.identity):
+                continue
+            current = self.store.read_optional(
+                self.results_bucket, record.canonical_path
+            )
+            replace = False
+            if current is not None and current != record.content:
+                try:
+                    old = json.loads(current)
+                    new = json.loads(record.content)
+                    if not isinstance(old, dict) or not is_eee_record(record=old):
+                        raise ValueError("existing canonical record is malformed")
+                    if identity_from_eee_record(old) != record.identity:
+                        raise ValueError(
+                            "existing canonical record has different identity"
+                        )
+                    if identity_from_eee_record(new) != record.identity:
+                        raise ValueError(
+                            "staged record identity does not match its path"
+                        )
+                    if dedup_newer_record(old, new) is not new:
+                        raise ValueError(
+                            "staged record does not strictly outrank canonical"
+                        )
+                    replace = True
+                except (TypeError, ValueError) as error:
+                    raise ReviewError(
+                        "Canonical result collision at "
+                        f"{record.canonical_path}: {error}"
+                    ) from error
+            observations.append(
+                CanonicalObservation(
+                    identity=record.identity,
+                    canonical_path=record.canonical_path,
+                    predecessor_digest=_digest(current)
+                    if current is not None
+                    else None,
+                    predecessor_content=current,
+                    replacement=replace,
+                )
+            )
+        return tuple(observations)
 
     def list_pending_submissions(self) -> list[tuple[str, int, str, str]]:
         """Return durable manifests without one terminal decision artifact.
@@ -525,6 +656,7 @@ def _decision_bytes(
     reviewer: str,
     reasons: list[str],
     decided_at: str,
+    predecessors: list[dict[str, str | None]] | None = None,
 ) -> bytes:
     """Serialize an immutable decision artifact as canonical UTF-8 JSON.
 
@@ -534,6 +666,7 @@ def _decision_bytes(
         reviewer: Verified reviewer login.
         reasons: Reviewer-supplied rationale strings.
         decided_at: Broker-bound decision timestamp.
+        predecessors (optional): Archived canonical predecessors for replacements.
 
     Returns:
         Compact, key-sorted UTF-8 JSON bytes ending in a newline.
@@ -565,6 +698,9 @@ def _decision_bytes(
             for record in report.records
         ],
     }
+    if predecessors is not None:
+        decision["canonical_plan_fingerprint"] = report.plan_fingerprint
+        decision["predecessors"] = predecessors
     return (
         json.dumps(decision, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
         + "\n"
@@ -680,12 +816,23 @@ def _validate_existing_decision(
         or any(not isinstance(reason, str) for reason in decision_reasons)
     ):
         raise ReviewError("Existing decision artifact is malformed or inconsistent")
+    decision_report = dataclasses.replace(
+        report,
+        plan_fingerprint=t.cast(
+            str, decision.get("canonical_plan_fingerprint", report.plan_fingerprint)
+        ),
+    )
     expected_content = _decision_bytes(
-        report=report,
+        report=decision_report,
         outcome=t.cast(str, decision_outcome),
         reviewer=reviewer,
         reasons=t.cast(list[str], decision_reasons),
         decided_at=decided_at,
+        predecessors=(
+            t.cast(list[dict[str, str | None]], decision["predecessors"])
+            if "predecessors" in decision
+            else None
+        ),
     )
     if content != expected_content:
         raise ReviewError("Existing decision artifact is malformed or inconsistent")
@@ -722,6 +869,50 @@ def _local_reservation(
         decision_reviewer=reviewer,
         decision_created_at=_LOCAL_DECISION_CREATED_AT,
     )
+
+
+def _plan_fingerprint(
+    report: ReviewReport, observations: tuple[CanonicalObservation, ...]
+) -> str:
+    """Bind the displayed approval plan to immutable staged evidence and observations.
+
+    Args:
+        report: Validated staged evidence.
+        observations: Destination observations displayed for confirmation.
+
+    Returns:
+        SHA-256 fingerprint of the approval plan.
+    """
+    payload = {
+        "submission_id": report.submission_id,
+        "records": sorted(
+            (record.canonical_path, record.digest) for record in report.records
+        ),
+        "destinations": sorted(
+            (item.canonical_path, item.predecessor_digest, item.replacement)
+            for item in observations
+        ),
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _predecessor_path(submission_id: str, digest: str | None) -> str:
+    """Return the private content-addressed path for preserved canonical bytes.
+
+    Args:
+        submission_id: Submission owning the replacement.
+        digest: SHA-256 digest of the predecessor.
+
+    Returns:
+        Private staging-bucket archive path.
+
+    Raises:
+        ReviewError: If the predecessor digest is missing.
+    """
+    if digest is None:
+        raise ReviewError("Replacement predecessor digest is missing")
+    return f"volunteer/predecessors/{submission_id}/{digest}.json"
 
 
 def bind_with_broker(
