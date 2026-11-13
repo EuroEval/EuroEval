@@ -6,6 +6,7 @@ results directory. Also provides backup functionality.
 
 from __future__ import annotations
 
+import importlib
 import json
 import logging
 import os
@@ -20,6 +21,7 @@ from huggingface_hub.errors import HfHubHTTPError
 
 from .canonical_publication import BucketApi, CanonicalPublisher
 from .constants import HF_RESULTS_BUCKET, RESULTS_DIR
+from .eee_validation import validate_eee_record
 from .evaluation_common import resolve_hf_token
 from .result_identity import (
     ResultIdentity,
@@ -294,25 +296,20 @@ def _cleanup_empty_bucket_files(hf_token: str) -> None:
 
 
 def download_missing_bucket_files() -> int:
-    """Download bucket result files that are absent from the local directory.
+    """Refresh changed, canonical result records from the Hugging Face bucket.
 
-    Lists the bucket tree and downloads only the files whose relative path does
-    not already exist under ``RESULTS_DIR``. Existing local files are never
-    re-downloaded or deleted, so this is a safe union-style incremental fetch.
-    It deliberately avoids huggingface_hub's own ``sync_bucket``, whose size
-    comparison has historically re-fetched the entire bucket (a multi-hour
-    operation) even when the local copy was already up to date.
-
-    Because each logical result has a distinct storage path
-    (``<model>/<dataset>__<split>__<shot>.json``), presence-by-path is a
-    sufficient freshness test for newly added results.
+    Only canonical per-record JSON files are considered. All downloaded files
+    are validated before any local file is replaced, and the generation
+    manifest is committed only after successful replacement.
 
     Returns:
-        The number of files downloaded.
+        The number of files downloaded and installed.
 
     Raises:
         RuntimeError:
             If no Hugging Face token is available.
+        ValueError:
+            If a downloaded result is invalid or does not match its bucket path.
     """
     hf_token = resolve_hf_token()
     if not hf_token:
@@ -326,6 +323,8 @@ def download_missing_bucket_files() -> int:
     manifest_path = RESULTS_DIR.parent / ".results-bucket-manifest.json"
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        if not isinstance(manifest, dict):
+            manifest = {}
     except (OSError, json.JSONDecodeError):
         manifest = {}
 
@@ -337,46 +336,100 @@ def download_missing_bucket_files() -> int:
         )
         if isinstance(entry, BucketFile)
     ]
-    to_download: list[tuple[str | BucketFile, str | Path]] = []
+    root = RESULTS_DIR.resolve()
+    to_download: list[tuple[BucketFile, Path]] = []
     next_manifest: dict[str, str] = {}
     for entry in entries:
+        relative_path = Path(entry.path)
+        if (
+            relative_path.is_absolute()
+            or relative_path.suffix != ".json"
+            or len(relative_path.parts) < 2
+            or relative_path.parts[0] == "_history"
+            or ".." in relative_path.parts
+            or len(relative_path.parts) != 2
+            or not relative_path.name.endswith(
+                (
+                    "__val__fewshot.json",
+                    "__val__zeroshot.json",
+                    "__val__none.json",
+                    "__test__fewshot.json",
+                    "__test__zeroshot.json",
+                    "__test__none.json",
+                    "__none__fewshot.json",
+                    "__none__zeroshot.json",
+                    "__none__none.json",
+                )
+            )
+        ):
+            continue
+        try:
+            local_path = RESULTS_DIR / relative_path
+            local_path.resolve().relative_to(root)
+        except ValueError:
+            continue
         fingerprint = str(getattr(entry, "xet_hash", None) or "")
         if not fingerprint:
             fingerprint = str(getattr(entry, "blob_id", None) or "")
+        if getattr(entry, "size", None) == 0:
+            continue
+        # Record identity is checked against this canonical path after download.
         next_manifest[entry.path] = fingerprint
-        local_path = RESULTS_DIR / entry.path
         if (
             not local_path.is_file()
             or not fingerprint
             or manifest.get(entry.path) != fingerprint
         ):
-            local_path.parent.mkdir(parents=True, exist_ok=True)
             to_download.append((entry, local_path))
 
-    if to_download:
-        pending: list[tuple[str | BucketFile, str | Path]] = []
-        temporary_paths: list[Path] = []
-        try:
-            for entry, destination in to_download:
-                handle = tempfile.NamedTemporaryFile(
-                    dir=destination.parent, prefix=f".{destination.name}.", delete=False
-                )
-                temporary = Path(handle.name)
-                handle.close()
-                temporary_paths.append(temporary)
-                pending.append((entry, temporary))
+    pending: list[tuple[str | BucketFile, str | Path]] = []
+    temporary_paths: list[Path] = []
+    changed = bool(to_download)
+    try:
+        for entry, destination in to_download:
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            handle = tempfile.NamedTemporaryFile(
+                dir=destination.parent, prefix=f".{destination.name}.", delete=False
+            )
+            temporary = Path(handle.name)
+            handle.close()
+            temporary_paths.append(temporary)
+            pending.append((entry, temporary))
+        if pending:
             api.download_bucket_files(
                 bucket_id=HF_RESULTS_BUCKET, files=pending, token=hf_token
             )
-            for (entry, _), temporary in zip(to_download, temporary_paths):
-                os.replace(temporary, RESULTS_DIR / entry.path)
-        finally:
-            for temporary in temporary_paths:
-                temporary.unlink(missing_ok=True)
 
-    manifest_path.write_text(
-        json.dumps(next_manifest, sort_keys=True), encoding="utf-8"
-    )
+        for (entry, destination), temporary in zip(to_download, temporary_paths):
+            if not temporary.is_file() or temporary.stat().st_size == 0:
+                raise ValueError(f"Bucket download missing or empty: {entry.path}")
+            record = json.loads(temporary.read_text(encoding="utf-8"))
+            if not isinstance(record, dict):
+                raise ValueError(f"Bucket result is not an object: {entry.path}")
+            validate_eee_record(record=record, context=entry.path)
+            identity = identity_from_eee_record(record)
+            canonical_path = identity_to_path(identity=identity).as_posix()
+            if canonical_path != Path(entry.path).as_posix():
+                raise ValueError(
+                    f"Bucket result identity does not match path: {entry.path}"
+                )
+
+        for (_, destination), temporary in zip(to_download, temporary_paths):
+            os.replace(temporary, destination)
+
+        manifest_tmp = manifest_path.with_name(f".{manifest_path.name}.tmp")
+        manifest_tmp.write_text(
+            json.dumps(next_manifest, sort_keys=True), encoding="utf-8"
+        )
+        os.replace(manifest_tmp, manifest_path)
+    finally:
+        for temporary in temporary_paths:
+            temporary.unlink(missing_ok=True)
+
+    if changed:
+        # Deferred to avoid the result_loading -> bucket_sync import cycle.
+        result_loading = importlib.import_module(".result_loading", __package__)
+        result_loading.load_raw_results.cache_clear()
     return len(to_download)
 
 
