@@ -106,6 +106,12 @@ export default async function handler(req: Request): Promise<Response> {
         reservation.decision_digest !== decisionDigest || !sameRecords(reservation.records, requestedRecords)) {
       throw new BrokerError(409, "Promotion reservation is absent, expired, or does not match.");
     }
+    if (outcome === "accepted" && reservation.status !== "terminal") {
+      if (body.publication_owner !== reservation.publication_owner ||
+          body.publication_bucket !== reservation.publication_bucket) {
+        throw new BrokerError(409, "Publication ownership evidence differs from the reservation.");
+      }
+    }
     const mutex = await acquireRenewableIssueMutex(issueNumber);
     if (!mutex) throw new BrokerError(409, "Issue is busy; retry promotion.");
     try {

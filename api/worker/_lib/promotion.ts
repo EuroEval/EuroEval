@@ -1,5 +1,6 @@
 import { BrokerError, sha256 } from "./protocol.js";
 import { redis, redisGet, redisSet } from "./redis.js";
+import { canonicalPublicationBucket, publicationKey } from "./publication.js";
 import type { PromotionRecord, PromotionReservation } from "./protocol.js";
 
 export const PROMOTION_RESERVATION_TTL = 48 * 60 * 60;
@@ -73,35 +74,20 @@ function canonicalPath(identity: [string, string, boolean | null, boolean | null
 export async function reservePromotionReservation(
   reservation: PromotionReservation,
 ): Promise<"reserved" | "busy" | "conflict"> {
-  const keys = [reservationReservationKey(reservation),
-    ...(await Promise.all(reservation.records.map((record) => promotionIdentityKey(record.canonical_path))))];
-  const script = `local current=redis.call('GET',KEYS[1]);
-    local reservation=cjson.decode(ARGV[1]); local records=cjson.decode(ARGV[3]);
+  const bucket = reservation.publication_bucket || canonicalPublicationBucket();
+  const owner = reservation.publication_owner || "";
+  const key = reservationReservationKey(reservation);
+  const script = `if redis.call('GET',KEYS[2]) ~= ARGV[3] then return 'busy' end;
+    local current=redis.call('GET',KEYS[1]); local reservation=cjson.decode(ARGV[1]);
     if current then local item=cjson.decode(current); if item.token ~= ARGV[2] then return 'busy' end;
-      if (item.decision_digest and not reservation.decision_digest) or
-          (not item.decision_digest and reservation.decision_digest) or
-          (item.decision_digest and item.decision_digest ~= reservation.decision_digest) then return 'conflict' end;
-      if #item.records ~= #reservation.records then return 'conflict' end;
-      for i=1,#item.records do
-        if item.records[i].identity ~= reservation.records[i].identity or
-            item.records[i].canonical_path ~= reservation.records[i].canonical_path or
-            item.records[i].digest ~= reservation.records[i].digest then return 'conflict' end
-      end;
+      if (item.decision_digest and not reservation.decision_digest) or (not item.decision_digest and reservation.decision_digest) or
+        (item.decision_digest and item.decision_digest ~= reservation.decision_digest) or #item.records ~= #reservation.records then return 'conflict' end;
+      for i=1,#item.records do if item.records[i].identity ~= reservation.records[i].identity or item.records[i].canonical_path ~= reservation.records[i].canonical_path or item.records[i].digest ~= reservation.records[i].digest then return 'conflict' end end;
       if item.status == 'terminal' then return 'reserved' end;
     end;
-    for i=2,#KEYS do local value=redis.call('GET',KEYS[i]); if value then
-      local item=cjson.decode(value); if item.digest ~= records[i-1].digest or item.identity ~= records[i-1].identity then return 'conflict' end;
-      if item.status ~= 'terminal' and item.token ~= ARGV[2] then return 'busy' end;
-    end end;
-    redis.call('SET',KEYS[1],ARGV[1],'EX',ARGV[4]);
-    for i=2,#KEYS do local value=redis.call('GET',KEYS[i]); if not value then
-      local record=records[i-1]; redis.call('SET',KEYS[i],cjson.encode({token=ARGV[2],digest=record.digest,status='reserved',issue_number=reservation.issue_number,submission_id=reservation.submission_id,identity=record.identity,canonical_path=record.canonical_path}),'EX',ARGV[4]);
-    else local item=cjson.decode(value); if item.status ~= 'terminal' then
-      redis.call('EXPIRE',KEYS[i],ARGV[4]);
-    end end end; return 'reserved'`;
-  const result = await redis("EVAL", script, String(keys.length), ...keys,
-    JSON.stringify(reservation), reservation.token, JSON.stringify(reservation.records),
-    String(PROMOTION_RESERVATION_TTL));
+    redis.call('SET',KEYS[1],ARGV[1],'EX',ARGV[4]); return 'reserved'`;
+  const result = await redis("EVAL", script, "2", key, publicationKey(bucket),
+    JSON.stringify(reservation), reservation.token, owner, String(PROMOTION_RESERVATION_TTL));
   return result as "reserved" | "busy" | "conflict";
 }
 
@@ -132,21 +118,17 @@ export async function bindPromotionDecision(
 }
 
 export async function completePromotionReservation(reservation: PromotionReservation): Promise<boolean> {
-  const keys = [reservationReservationKey(reservation),
-    ...(await Promise.all(reservation.records.map((record) => promotionIdentityKey(record.canonical_path))))];
-  const script = `local current=redis.call('GET',KEYS[1]); if not current then return 0 end;
+  const bucket = reservation.publication_bucket || canonicalPublicationBucket();
+  const owner = reservation.publication_owner || "";
+  const key = reservationReservationKey(reservation);
+  const script = `if redis.call('GET',KEYS[2]) ~= ARGV[5] then return 0 end;
+    local current=redis.call('GET',KEYS[1]); if not current then return 0 end;
     local currentReservation=cjson.decode(current); if currentReservation.token ~= ARGV[2] or currentReservation.decision_digest ~= ARGV[4] then return 0 end;
-    local records=cjson.decode(ARGV[3]);
-    for i=2,#KEYS do local value=redis.call('GET',KEYS[i]); if value then local item=cjson.decode(value);
-      if item.digest ~= records[i-1].digest or item.identity ~= records[i-1].identity or (item.status ~= 'terminal' and item.token ~= ARGV[2]) then return 0 end end end;
     if currentReservation.status == 'terminal' then return 1 end;
-    redis.call('SET',KEYS[1],ARGV[1]);
-    for i=2,#KEYS do local value=redis.call('GET',KEYS[i]); if not value then
-      local record=records[i-1]; redis.call('SET',KEYS[i],cjson.encode({token=ARGV[2],digest=record.digest,status='terminal',issue_number=currentReservation.issue_number,submission_id=currentReservation.submission_id,identity=record.identity,canonical_path=record.canonical_path}));
-    elseif cjson.decode(value).status ~= 'terminal' then local item=cjson.decode(value); item.status='terminal'; redis.call('SET',KEYS[i],cjson.encode(item)); end end; return 1`;
-  const result = await redis("EVAL", script, String(keys.length), ...keys,
+    redis.call('SET',KEYS[1],ARGV[1]); return 1`;
+  const result = await redis("EVAL", script, "2", key, publicationKey(bucket),
     JSON.stringify({ ...reservation, status: "terminal" }), reservation.token,
-    JSON.stringify(reservation.records), reservation.decision_digest || "");
+    JSON.stringify(reservation.records), reservation.decision_digest || "", owner);
   return result === 1 || result === "1";
 }
 
