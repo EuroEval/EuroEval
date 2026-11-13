@@ -170,6 +170,13 @@ class VolunteerReviewer:
         report = self.show(submission_id=submission_id)
         reasons = reasons or []
         existing = _existing_decisions(store=self.store, report=report, outcome=outcome)
+        if outcome == "accepted" and existing:
+            report = _restore_decision_plan(
+                store=self.store,
+                report=report,
+                decision=_load_object(content=existing[0][1], context=existing[0][0]),
+                results_bucket=self.results_bucket,
+            )
         if outcome == "accepted":
             if existing:
                 _validate_predecessor_archives(
@@ -265,6 +272,22 @@ class VolunteerReviewer:
                     }
                     for observation in report.canonical_observations
                     if observation.replacement
+                ],
+                canonical_plan=[
+                    {
+                        "canonical_path": observation.canonical_path,
+                        "identity": list(observation.identity),
+                        "staged_digest": next(
+                            record.digest
+                            for record in report.records
+                            if record.canonical_path == observation.canonical_path
+                        ),
+                        "predecessor_digest": observation.predecessor_digest,
+                        "disposition": "replace"
+                        if observation.replacement
+                        else "write",
+                    }
+                    for observation in report.canonical_observations
                 ],
             )
         )
@@ -454,7 +477,7 @@ class VolunteerReviewer:
                 for item in report.canonical_observations
                 if item.canonical_path == record.canonical_path
             )
-            if current != observation.predecessor_content:
+            if current not in {observation.predecessor_content, record.content}:
                 raise ReviewError("Canonical plan changed after reviewer inspection")
             if (
                 current is not None
@@ -672,6 +695,7 @@ def _decision_bytes(
     reasons: list[str],
     decided_at: str,
     predecessors: list[dict[str, str | None]] | None = None,
+    canonical_plan: list[dict[str, object]] | None = None,
 ) -> bytes:
     """Serialize an immutable decision artifact as canonical UTF-8 JSON.
 
@@ -682,6 +706,7 @@ def _decision_bytes(
         reasons: Reviewer-supplied rationale strings.
         decided_at: Broker-bound decision timestamp.
         predecessors (optional): Archived canonical predecessors for replacements.
+        canonical_plan (optional): Immutable destination expectations.
 
     Returns:
         Compact, key-sorted UTF-8 JSON bytes ending in a newline.
@@ -716,6 +741,8 @@ def _decision_bytes(
     if predecessors is not None:
         decision["canonical_plan_fingerprint"] = report.plan_fingerprint
         decision["predecessors"] = predecessors
+    if canonical_plan is not None:
+        decision["canonical_plan"] = canonical_plan
     return (
         json.dumps(decision, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
         + "\n"
@@ -809,6 +836,48 @@ def _validate_existing_decision(
     decision_warnings = decision.get("warnings")
     plan_fingerprint = decision.get("canonical_plan_fingerprint")
     predecessors = decision.get("predecessors")
+    canonical_plan = decision.get("canonical_plan")
+    if canonical_plan is not None:
+        expected_by_path = {record.canonical_path: record for record in report.records}
+        if not isinstance(canonical_plan, list) or len(canonical_plan) != len(
+            expected_by_path
+        ):
+            raise ReviewError(
+                "Existing decision artifact has an invalid canonical plan"
+            )
+        seen_plan: set[str] = set()
+        for item in canonical_plan:
+            if not isinstance(item, dict):
+                raise ReviewError(
+                    "Existing decision artifact has an invalid canonical plan"
+                )
+            path = item.get("canonical_path")
+            record = expected_by_path.get(path) if isinstance(path, str) else None
+            predecessor_digest = item.get("predecessor_digest")
+            if (
+                record is None
+                or path in seen_plan
+                or item.get("identity") != list(record.identity)
+                or item.get("staged_digest") != record.digest
+                or item.get("disposition") not in {"replace", "write"}
+                or (
+                    predecessor_digest is not None
+                    and (
+                        not isinstance(predecessor_digest, str)
+                        or len(predecessor_digest) != 64
+                        or any(
+                            char not in "0123456789abcdef"
+                            for char in predecessor_digest
+                        )
+                    )
+                )
+                or (item.get("disposition") == "replace")
+                != (predecessor_digest is not None)
+            ):
+                raise ReviewError(
+                    "Existing decision artifact has an invalid canonical plan"
+                )
+            seen_plan.add(path)
     if "canonical_plan_fingerprint" in decision and (
         not isinstance(plan_fingerprint, str)
         or len(plan_fingerprint) != 64
@@ -882,6 +951,9 @@ def _validate_existing_decision(
             if "predecessors" in decision
             else None
         ),
+        canonical_plan=t.cast(list[dict[str, object]], canonical_plan)
+        if canonical_plan is not None
+        else None,
     )
     if content != expected_content:
         raise ReviewError("Existing decision artifact is malformed or inconsistent")
@@ -967,6 +1039,75 @@ def _plan_fingerprint(
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
+
+
+def _restore_decision_plan(
+    store: BucketStore, report: ReviewReport, decision: JsonObject, results_bucket: str
+) -> ReviewReport:
+    """Restore immutable destination expectations from a durable decision.
+
+    Args:
+        store: Durable bucket store.
+        report: Current staged report.
+        decision: Validated durable decision.
+        results_bucket: Canonical results bucket.
+
+    Returns:
+        Report whose observations represent the original decision plan.
+
+    Raises:
+        ReviewError: If current canonical state violates the persisted plan.
+    """
+    plan = decision.get("canonical_plan")
+    if not isinstance(plan, list):
+        return report
+    records = {record.canonical_path: record for record in report.records}
+    observations: list[CanonicalObservation] = []
+    for item in plan:
+        if not isinstance(item, dict):
+            raise ReviewError("Persisted canonical plan is malformed")
+        path = item["canonical_path"]
+        record = records[path]
+        digest = item["predecessor_digest"]
+        archive_path = (
+            _predecessor_path(report.submission_id, digest) if digest else None
+        )
+        archived = (
+            store.read_optional(store.staging_bucket, archive_path)
+            if archive_path
+            else None
+        )
+        current = store.read_optional(results_bucket, path)
+        if digest is None:
+            predecessor = None
+            if current not in {None, record.content}:
+                raise ReviewError("Canonical destination changed during promotion")
+        else:
+            if archived is not None and _digest(archived) != digest:
+                raise ReviewError("Archived canonical predecessor is corrupted")
+            if archived is None and (current is None or _digest(current) != digest):
+                raise ReviewError(
+                    "Replacement archive is missing after canonical replacement"
+                )
+            predecessor = archived if archived is not None else current
+            if current not in {predecessor, record.content}:
+                raise ReviewError("Canonical destination changed during promotion")
+        observations.append(
+            CanonicalObservation(
+                identity=record.identity,
+                canonical_path=path,
+                predecessor_digest=digest,
+                predecessor_content=predecessor,
+                replacement=digest is not None,
+            )
+        )
+    return dataclasses.replace(
+        report,
+        canonical_observations=tuple(observations),
+        plan_fingerprint=t.cast(
+            str, decision.get("canonical_plan_fingerprint", report.plan_fingerprint)
+        ),
+    )
 
 
 def _validate_predecessor_archives(
