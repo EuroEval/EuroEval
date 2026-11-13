@@ -119,6 +119,8 @@ export interface Lease {
   lease_id: string;
   /** Missing means the historical GitHub-assignee ownership contract. */
   ownership_mode?: "assignee" | "public";
+  /** Only trusted workers advertising canonical coverage require record revisions. */
+  record_revision_required?: boolean;
   /** Internal tombstone used to make release retries idempotent. */
   released?: boolean;
   result_count?: number;

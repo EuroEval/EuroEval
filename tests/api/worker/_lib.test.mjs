@@ -164,6 +164,22 @@ test("validates canonical model identity and score bounds", () => {
     evaluation_results: [{ evaluation_name: "accuracy", source_data: { dataset_name: "dataset" }, metric_config: { lower_is_better: false, min_score: 0, max_score: 100 }, score_details: { score: 85 } }],
   };
   assert.equal(validateRecord(record, { modelId: "org/model", revision: "deadbeef", language: "da" }).failed, 0);
+  const legacyRecord = { ...record, model_info: { id: "org/model" } };
+  assert.throws(() => validateRecord(legacyRecord, {
+    modelId: "org/model", revision: "deadbeef", language: "da",
+  }), /revision is missing/);
+  const legacyChecked = validateRecord(legacyRecord, {
+    modelId: "org/model", revision: "deadbeef", language: "da", requireRevision: false,
+  });
+  assert.match(legacyChecked.warnings[0], /missing model_info.revision/);
+  for (const revision of [null, "wrong"]) {
+    assert.throws(() => validateRecord({ ...legacyRecord, model_info: { id: "org/model", revision } }, {
+      modelId: "org/model", revision: "deadbeef", language: "da", requireRevision: false,
+    }), /revision is missing or does not match/);
+  }
+  assert.throws(() => validateRecord(legacyRecord, {
+    modelId: "org/model", revision: "deadbeef", language: "da", requireRevision: true,
+  }), /revision is missing/);
   const outOfRange = validateRecord({ ...record, evaluation_results: [{ ...record.evaluation_results[0], score_details: { score: 101 } }] }, { modelId: "org/model", revision: "deadbeef", language: "da" });
   assert.match(outOfRange.warnings[0], /outside declared metric bounds/);
   const negative = validateRecord({ ...record, evaluation_results: [{ ...record.evaluation_results[0], score_details: { score: -1 } }] }, { modelId: "org/model", revision: "deadbeef", language: "da" });
