@@ -1019,79 +1019,6 @@ def test_evaluator_runs_only_missing_scope_identities(
     assert calls[0]["evaluate_test_split"] is False
 
 
-def test_evaluator_selects_official_tasks_for_required_canary(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """A required canary lease selects normal tasks and the canary task explicitly.
-
-    Args:
-        monkeypatch:
-            Pytest fixture for replacing dependencies during the test.
-        tmp_path:
-            Temporary directory for files created by the test.
-    """
-    calls: dict[str, object] = {}
-
-    class FakeBenchmarker:
-        """Capture the adapter's calls."""
-
-        def __init__(self, **kwargs: object) -> None:
-            """Init   for this test.
-
-            Args:
-                kwargs:
-                    Kwargs supplied to the test.
-            """
-            calls["init"] = kwargs
-
-        def benchmark(self, **kwargs: object) -> list[object]:
-            """Return one fake benchmark result.
-
-            Args:
-                kwargs:
-                    Benchmark options supplied by the evaluator.
-
-            Returns:
-                A list containing one placeholder benchmark result.
-            """
-            calls["benchmark"] = kwargs
-            return [object()]
-
-    monkeypatch.setattr(evaluator, "Benchmarker", FakeBenchmarker)
-    monkeypatch.setattr(
-        evaluator,
-        "_canary_tasks",
-        lambda: ["classification", "contamination-detection"],
-    )
-    monkeypatch.setattr(
-        evaluator,
-        "benchmark_result_to_eee_dict",
-        lambda result: {"evaluation_id": "one", "result": 1},
-    )
-    lease = dataclasses.replace(
-        LEASE,
-        contamination_canary=CanaryInstruction(
-            status="required",
-            protocol_version="private-completion-canary/v1",
-            corpus_revision="revision",
-            corpus_sha256="a" * 64,
-        ),
-    )
-
-    evaluator.EuroEvalEvaluator(tmp_path).evaluate(
-        lease=lease, output_path=tmp_path / "isolated.jsonl"
-    )
-
-    init_kwargs = calls["init"]
-    benchmark_kwargs = calls["benchmark"]
-    assert isinstance(init_kwargs, dict)
-    assert isinstance(benchmark_kwargs, dict)
-    assert init_kwargs["task"] == ["classification", "contamination-detection"]
-    assert init_kwargs["dataset"] is None
-    assert benchmark_kwargs["task"] == ["classification", "contamination-detection"]
-    assert benchmark_kwargs["dataset"] is None
-
-
 def test_evaluator_uses_validation_and_remote_code_flags(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -1663,6 +1590,109 @@ def test_partial_acknowledgements_survive_restart(
     worker.run(once=True)
     assert broker.submissions > submissions_before
     assert StateStore(tmp_path).load_active() is None
+
+
+def test_required_canary_preserves_partial_ordinary_scope(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Evaluate only missing ordinary identities alongside the required canary.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing evaluator dependencies.
+        tmp_path:
+            Temporary directory for isolated output.
+    """
+    calls: list[dict[str, object]] = []
+    covered = type("Dataset", (), {"name": "covered"})()
+    missing = type("Dataset", (), {"name": "missing"})()
+
+    class FakeBenchmarker:
+        """Capture ordinary and canary benchmark calls."""
+
+        def __init__(self, **kwargs: object) -> None:
+            """Accept benchmark configuration.
+
+            Args:
+                kwargs:
+                    Configured evaluator parameters.
+            """
+
+        def benchmark(self, **kwargs: object) -> list[object]:
+            """Record an invocation and identify the evaluated scope.
+
+            Args:
+                kwargs:
+                    Benchmark invocation parameters.
+
+            Returns:
+                Result markers for the invoked scope.
+            """
+            calls.append(kwargs)
+            dataset_configs = kwargs["dataset"]
+            if not isinstance(dataset_configs, list):
+                return ["canary"]
+            return [config.name for config in dataset_configs]
+
+    scope = ExpectedScope(
+        policy_version="test-policy",
+        language_group="da",
+        allowed_identity_suffix_sets=(('["missing",true,true]',),),
+        count=None,
+        warnings=(),
+        task_groups=("sequence_classification",),
+        original_identity_suffix_sets=(
+            ('["covered",true,true]', '["missing",true,true]'),
+        ),
+        covered_identity_suffixes=('["covered",true,true]',),
+    )
+    lease = dataclasses.replace(
+        LEASE,
+        expected_scope=scope,
+        contamination_canary=CanaryInstruction(
+            status="required",
+            protocol_version="private-completion-canary/v1",
+            corpus_revision="revision",
+            corpus_sha256="a" * 64,
+        ),
+    )
+    monkeypatch.setattr(evaluator, "Benchmarker", FakeBenchmarker)
+    monkeypatch.setattr(
+        evaluator, "_official_dataset_configs", lambda language: [covered, missing]
+    )
+    monkeypatch.setattr(
+        evaluator,
+        "_canary_tasks",
+        lambda: ["classification", "contamination-detection"],
+    )
+    monkeypatch.setattr(
+        evaluator,
+        "benchmark_result_to_eee_dict",
+        lambda result: {"evaluation_id": result, "result": 1},
+    )
+
+    output_path = tmp_path / "partial-canary.jsonl"
+    records = evaluator.EuroEvalEvaluator(tmp_path).evaluate(
+        lease=lease, output_path=output_path
+    )
+
+    assert len(calls) == 2
+    ordinary_call, canary_call = calls
+    ordinary_datasets = ordinary_call["dataset"]
+    assert isinstance(ordinary_datasets, list)
+    assert [config.name for config in ordinary_datasets] == ["missing"]
+    assert ordinary_call["few_shot"] is ShotMode.FEW_SHOT
+    assert ordinary_call["evaluate_test_split"] is False
+    assert canary_call["dataset"] is None
+    assert canary_call["task"] == ["classification", "contamination-detection"]
+    assert [json.loads(record.record_json)["evaluation_id"] for record in records] == [
+        "missing",
+        "canary",
+    ]
+    assert [
+        json.loads(line)["evaluation_id"]
+        for line in output_path.read_text(encoding="utf-8").splitlines()
+    ] == ["missing", "canary"]
 
 
 def test_restart_submits_durable_records_without_evaluation(
