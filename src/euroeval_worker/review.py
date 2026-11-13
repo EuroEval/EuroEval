@@ -7,6 +7,7 @@ import typing as t
 
 from huggingface_hub import HfApi
 
+from leaderboards.canonical_publication import CanonicalPublisher
 from leaderboards.constants import HF_RESULTS_BUCKET
 
 from .review_models import (
@@ -73,11 +74,14 @@ def reviewer_from_environment() -> VolunteerReviewer:
     token = os.environ.get("HF_TOKEN")
     if not staging or not token:
         raise ReviewError("HF_STAGING_BUCKET and HF_TOKEN are required")
+    api = HfApi(token=token)
+    results_bucket = os.environ.get("HF_RESULTS_BUCKET", HF_RESULTS_BUCKET)
     return VolunteerReviewer(
         store=BucketStore(
-            api=t.cast(BucketApi, HfApi(token=token)),
-            token=token,
-            staging_bucket=staging,
+            api=t.cast(BucketApi, api), token=token, staging_bucket=staging
         ),
-        results_bucket=os.environ.get("HF_RESULTS_BUCKET", HF_RESULTS_BUCKET),
+        results_bucket=results_bucket,
+        publisher=CanonicalPublisher(
+            api=t.cast(t.Any, api), token=token, bucket=results_bucket
+        ),
     )

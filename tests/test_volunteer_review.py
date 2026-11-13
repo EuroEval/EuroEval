@@ -1800,7 +1800,16 @@ def test_review_renewal_round_trip_includes_bound_digest(
     ]
 
     assert (
-        renew_with_broker(12, SUBMISSION, "accepted", "reservation", records, digest)
+        renew_with_broker(
+            12,
+            SUBMISSION,
+            "accepted",
+            "reservation",
+            records,
+            digest,
+            "publication-owner",
+            RESULTS,
+        )
         == "reservation"
     )
     assert requests[0]["decision_digest"] == digest
