@@ -24,6 +24,7 @@ from euroeval_worker.review import (
     VolunteerReviewer,
 )
 from euroeval_worker.review_transaction import renew_with_broker
+from leaderboards.eee_validation import validate_eee_record
 
 STAGING = "EuroEval/private-volunteer-staging"
 RESULTS = "EuroEval/results"
@@ -886,6 +887,59 @@ def test_malformed_json_decision_remains_pending() -> None:
     ]
 
 
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("open", "true"),
+        ("commercially_licensed", 0),
+        ("trained_from_scratch", None),
+        ("additional_details", None),
+        ("additional_details", ["not", "an", "object"]),
+    ],
+)
+def test_malformed_precious_metadata_blocks_acceptance_before_side_effects(
+    field: str, value: object
+) -> None:
+    """Malformed supplied metadata cannot reserve, decide, or promote."""
+    api, reviewer, broker_calls = _reviewer()
+    manifest = _manifest(api)
+    entry = t.cast(list[dict[str, object]], manifest["results"])[0]
+    original_path = t.cast(str, entry["path"])
+    record = json.loads(api.files[(STAGING, original_path)])
+    details = record["model_info"]["additional_details"]
+    if field == "additional_details":
+        record["model_info"][field] = value
+    else:
+        details[field] = value
+    content = json.dumps(record, ensure_ascii=False).encode("utf-8")
+    digest = hashlib.sha256(content).hexdigest()
+    path = f"volunteer/submissions/{SUBMISSION}/results/{digest}.json"
+    api.files[(STAGING, path)] = content
+    entry["path"] = path
+    entry["digest"] = digest
+    _store_manifest(api=api, manifest=manifest)
+
+    with pytest.raises(ReviewError):
+        reviewer.decide(SUBMISSION, "accepted", "maintainer")
+
+    assert not _decision_paths(api)
+    assert broker_calls == []
+    assert not [key for key in api.files if key[0] == RESULTS]
+
+
+def _manifest(api: FakeHfApi) -> dict[str, object]:
+    """Manifest for this test.
+
+    Args:
+        api:
+            Api supplied to the test.
+
+    Returns:
+        The value returned by the test helper.
+    """
+    return json.loads(api.files[(STAGING, f"volunteer/manifests/{SUBMISSION}.json")])
+
+
 @pytest.mark.parametrize("language_group", ["sv", 42, ["da"]])
 def test_manifest_forged_language_group_is_rejected(language_group: object) -> None:
     """A top-level language group must not contradict the trusted scope.
@@ -901,19 +955,6 @@ def test_manifest_forged_language_group_is_rejected(language_group: object) -> N
 
     with pytest.raises(ReviewError, match="language_group"):
         reviewer.show(SUBMISSION)
-
-
-def _manifest(api: FakeHfApi) -> dict[str, object]:
-    """Manifest for this test.
-
-    Args:
-        api:
-            Api supplied to the test.
-
-    Returns:
-        The value returned by the test helper.
-    """
-    return json.loads(api.files[(STAGING, f"volunteer/manifests/{SUBMISSION}.json")])
 
 
 def test_manifest_language_group_is_valid_in_real_flow() -> None:
@@ -1213,6 +1254,19 @@ def test_private_canary_record_is_not_promoted_to_public_results() -> None:
 
     assert (RESULTS, ordinary.canonical_path) in api.files
     assert (RESULTS, canary.canonical_path) not in api.files
+
+
+def test_processed_eee_validator_still_requires_all_precious_metadata() -> None:
+    """Downstream processed leaderboard validation remains strict."""
+    api, _, _ = _reviewer()
+    manifest = _manifest(api)
+    entry = t.cast(list[dict[str, object]], manifest["results"])[0]
+    path = t.cast(str, entry["path"])
+    record = json.loads(api.files[(STAGING, path)])
+    details = record["model_info"]["additional_details"]
+    details.pop("commercially_licensed")
+    with pytest.raises(ValueError, match="missing precious metadata"):
+        validate_eee_record(record=record)
 
 
 def test_reject_is_idempotent_and_opposite_decision_fails() -> None:

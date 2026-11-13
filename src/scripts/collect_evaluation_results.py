@@ -739,6 +739,7 @@ def preflight_volunteer_review() -> bool:
         logger.error("Cannot review submissions without a verified GitHub login.")
         return False
 
+    review_error = False
     for submission_id in submission_ids:
         try:
             show_status = run_review_command(["show", submission_id])
@@ -746,9 +747,11 @@ def preflight_volunteer_review() -> bool:
             logger.exception(
                 "Could not display submission %s; skipping it.", submission_id
             )
+            review_error = True
             continue
         if show_status != 0:
             logger.error("Could not display submission %s; skipping it.", submission_id)
+            review_error = True
             continue
         try:
             decision = (
@@ -773,12 +776,20 @@ def preflight_volunteer_review() -> bool:
             )
         except Exception:
             logger.exception("Approval failed for submission %s.", submission_id)
+            review_error = True
             continue
         if status:
             logger.error(
                 "Approval failed for submission %s; it was not reported as approved.",
                 submission_id,
             )
+            review_error = True
+    if review_error:
+        logger.error(
+            "Volunteer review had errors; halting collection. Check each decision "
+            "before retrying because a failed approval may have partially completed."
+        )
+        return False
     return True
 
 
