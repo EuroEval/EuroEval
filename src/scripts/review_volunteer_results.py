@@ -67,7 +67,7 @@ def main(argv: list[str] | None = None) -> int:
                 )
             return 0
         if arguments.command == "show":
-            _log_report(service.show(submission_id=arguments.submission_id))
+            show_and_render(submission_id=arguments.submission_id, reviewer=service)
             return 0
         outcome = "accepted" if arguments.command == "approve" else "rejected"
         report = service.decide(
@@ -87,6 +87,77 @@ def main(argv: list[str] | None = None) -> int:
     except ReviewError as error:
         logger.error("Review failed: %s", error)
         return 1
+
+
+def _parser() -> argparse.ArgumentParser:
+    """Build the command-line parser for listing and reviewing submissions.
+
+    Returns:
+        Parser with list, show, approve, and reject subcommands.
+    """
+    parser = argparse.ArgumentParser(
+        description="Review durable volunteer results without consulting Redis."
+    )
+    parser.add_argument(
+        "--reviewer",
+        help="Verified maintainer GitHub login (defaults to GITHUB_ACTOR).",
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    listing = subparsers.add_parser(
+        "list", help="List pending staged manifests (use --all for history)."
+    )
+    listing.add_argument(
+        "--all",
+        action="store_true",
+        help="Include submissions with terminal decisions.",
+    )
+    show = subparsers.add_parser("show", help="Revalidate and summarise a submission.")
+    show.add_argument("submission_id")
+    for command in ("approve", "reject"):
+        decision = subparsers.add_parser(
+            command, help=f"Revalidate and {command} a submission."
+        )
+        decision.add_argument("submission_id")
+        if command == "approve":
+            decision.add_argument(
+                "--plan-fingerprint",
+                help="Fingerprint displayed by show; required for acceptance.",
+            )
+        else:
+            decision.set_defaults(plan_fingerprint=None)
+        decision.add_argument(
+            "--reason",
+            action="append",
+            default=[],
+            help="Review reason; may be repeated.",
+        )
+    return parser
+
+
+def _service() -> VolunteerReviewer:
+    """Return the reviewer service configured from the environment.
+
+    Returns:
+        A reviewer service backed by the configured durable submission store.
+    """
+    return reviewer_from_environment()
+
+
+def show_and_render(
+    submission_id: str, reviewer: VolunteerReviewer | None = None
+) -> ReviewReport:
+    """Load, render, and return the exact report shown to a reviewer.
+
+    Args:
+        submission_id: Submission to display.
+        reviewer (optional): Reviewer adapter; defaults to environment configuration.
+
+    Returns:
+        The rendered report, including its confirmation fingerprint.
+    """
+    report = (reviewer or _service()).show(submission_id=submission_id)
+    _log_report(report)
+    return report
 
 
 def _log_report(report: ReviewReport) -> None:
@@ -157,61 +228,17 @@ def _log_report(report: ReviewReport) -> None:
                 dict(staged.scores),
             )
     logger.info("Approval plan fingerprint: %s", report.plan_fingerprint)
-    logger.info("Warnings: %s", "; ".join(report.warnings) or "none")
-
-
-def _parser() -> argparse.ArgumentParser:
-    """Build the command-line parser for listing and reviewing submissions.
-
-    Returns:
-        Parser with list, show, approve, and reject subcommands.
-    """
-    parser = argparse.ArgumentParser(
-        description="Review durable volunteer results without consulting Redis."
+    logger.warning(
+        "Canonical writes are NOT atomic across writers; run only one canonical writer."
     )
-    parser.add_argument(
-        "--reviewer",
-        help="Verified maintainer GitHub login (defaults to GITHUB_ACTOR).",
-    )
-    subparsers = parser.add_subparsers(dest="command", required=True)
-    listing = subparsers.add_parser(
-        "list", help="List pending staged manifests (use --all for history)."
-    )
-    listing.add_argument(
-        "--all",
-        action="store_true",
-        help="Include submissions with terminal decisions.",
-    )
-    show = subparsers.add_parser("show", help="Revalidate and summarise a submission.")
-    show.add_argument("submission_id")
-    for command in ("approve", "reject"):
-        decision = subparsers.add_parser(
-            command, help=f"Revalidate and {command} a submission."
-        )
-        decision.add_argument("submission_id")
-        if command == "approve":
-            decision.add_argument(
-                "--plan-fingerprint",
-                help="Fingerprint displayed by show; required for acceptance.",
+    for observation in report.canonical_observations:
+        if observation.conflict:
+            logger.error(
+                "APPROVAL BLOCKER %s: %s",
+                observation.canonical_path,
+                observation.conflict,
             )
-        else:
-            decision.set_defaults(plan_fingerprint=None)
-        decision.add_argument(
-            "--reason",
-            action="append",
-            default=[],
-            help="Review reason; may be repeated.",
-        )
-    return parser
-
-
-def _service() -> VolunteerReviewer:
-    """Return the reviewer service configured from the environment.
-
-    Returns:
-        A reviewer service backed by the configured durable submission store.
-    """
-    return reviewer_from_environment()
+    logger.info("Warnings: %s", "; ".join(report.warnings) or "none")
 
 
 if __name__ == "__main__":

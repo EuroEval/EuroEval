@@ -2,12 +2,14 @@
 
 import json
 import signal
+import typing as t
 from pathlib import Path
 from unittest.mock import Mock, call
 
 import pytest
 
-from euroeval_worker.review import PublicStagingError
+from euroeval_worker.review import PublicStagingError, VolunteerReviewer
+from euroeval_worker.review_models import ReviewReport
 from leaderboards import constants
 from src.scripts import collect_evaluation_results
 
@@ -82,7 +84,7 @@ def test_initial_yes_does_not_approve_without_item_confirmation(
     monkeypatch.setattr(collect_evaluation_results, "run_review_command", command)
 
     assert collect_evaluation_results.preflight_volunteer_review() is True
-    assert command.call_args_list == [call(["show", "one"])]
+    command.assert_not_called()
 
 
 class PreflightReviewer:
@@ -121,6 +123,32 @@ class PreflightReviewer:
         return [
             (submission_id, 12, "alice", "da") for submission_id in self.submission_ids
         ]
+
+    def show(self, submission_id: str) -> object:
+        """Return deterministic displayed evidence for the public show workflow.
+
+        Args:
+            submission_id: Submission to display.
+
+        Returns:
+            A report-shaped object with a stable approval fingerprint.
+        """
+        return ReviewReport(
+            submission_id=submission_id,
+            issue_number=12,
+            contributor="alice",
+            model_id="model",
+            model_revision="revision",
+            language="da",
+            euroeval_version="1.0",
+            provenance={},
+            expected_identities=(),
+            records=(),
+            canonical_observations=(),
+            plan_fingerprint=f"fingerprint-{submission_id}",
+            warnings=(),
+            checks=(),
+        )
 
 
 def test_main_does_not_harvest_after_review_error(
@@ -287,7 +315,7 @@ def test_preflight_interrupt_stops_without_harvesting(
     command = Mock(return_value=0)
     monkeypatch.setattr(collect_evaluation_results, "run_review_command", command)
     assert collect_evaluation_results.preflight_volunteer_review() is False
-    assert command.call_count == (0 if prompt_number == 1 else 2 * prompt_number - 3)
+    assert command.call_count == (1 if prompt_number == 3 else 0)
 
 
 def test_preflight_missing_staging_configuration_is_non_blocking(
@@ -330,19 +358,18 @@ def test_preflight_mixed_decisions_review_in_order(
 
     assert collect_evaluation_results.preflight_volunteer_review() is True
     assert command.call_args_list == [
-        call(["show", "submission-one"]),
         call(
             [
                 "--reviewer",
                 "maintainer",
                 "approve",
                 "submission-one",
+                "--plan-fingerprint",
+                "fingerprint-submission-one",
                 "--reason",
                 "Reviewed during collector preflight",
             ]
-        ),
-        call(["show", "submission-two"]),
-        call(["show", "submission-three"]),
+        )
     ]
     assert len(prompts) == 4
 
@@ -427,21 +454,30 @@ def test_preflight_review_error_halts_after_inspecting_remaining_ids(
     prompt = Mock(return_value="y")
     monkeypatch.setattr("builtins.input", prompt)
     calls: list[list[str]] = []
+    shown: list[str] = []
+    real_show_and_render = collect_evaluation_results.show_and_render
+
+    def display(*, submission_id: str, reviewer: PreflightReviewer) -> object:
+        shown.append(submission_id)
+        if command_kind == "show" and submission_id == "first":
+            if failure == "exception":
+                raise RuntimeError("injected display failure")
+            raise RuntimeError("injected display failure")
+        return real_show_and_render(
+            submission_id=submission_id, reviewer=t.cast(VolunteerReviewer, reviewer)
+        )
 
     def run(command: list[str]) -> int:
         calls.append(command)
-        is_show = command[0] == "show"
-        is_approve = command[0] == "--reviewer"
-        failed = (is_show and command_kind == "show" and command[1] == "first") or (
-            is_approve and command_kind == "approve" and command[3] == "first"
-        )
+        failed = command[0] == "--reviewer" and command[3] == "first"
         if failed and failure == "exception":
-            raise RuntimeError("injected failure")
+            raise RuntimeError("injected approval failure")
         return 1 if failed else 0
 
+    monkeypatch.setattr(collect_evaluation_results, "show_and_render", display)
     monkeypatch.setattr(collect_evaluation_results, "run_review_command", run)
     assert collect_evaluation_results.preflight_volunteer_review() is False
-    assert [call[1] for call in calls if call[0] == "show"] == ids
+    assert shown == ids
     assert prompt.call_count == (3 if command_kind == "show" else 4)
     assert "halting collection" in caplog.text
 
@@ -505,10 +541,16 @@ def test_preflight_yes_reviews_submission(
     monkeypatch.setattr(collect_evaluation_results, "run_review_command", command)
 
     assert collect_evaluation_results.preflight_volunteer_review() is True
-    assert command.call_count == 2
+    assert command.call_count == 1
     assert command.call_args_list[0].args[0] == [
-        "show",
+        "--reviewer",
+        "maintainer; echo nope",
+        "approve",
         "submission id'$(touch /tmp/nope)",
+        "--plan-fingerprint",
+        "fingerprint-submission id'$(touch /tmp/nope)",
+        "--reason",
+        "Reviewed during collector preflight",
     ]
 
 
@@ -681,6 +723,8 @@ def test_reviewer_login_actor_and_safe_gh_fallback(
             "actor",
             "approve",
             "one",
+            "--plan-fingerprint",
+            "fingerprint-one",
             "--reason",
             "Reviewed during collector preflight",
         ]
@@ -701,6 +745,8 @@ def test_reviewer_login_actor_and_safe_gh_fallback(
             "fallback-login",
             "approve",
             "one",
+            "--plan-fingerprint",
+            "fingerprint-one",
             "--reason",
             "Reviewed during collector preflight",
         ]

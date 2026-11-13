@@ -147,6 +147,7 @@ class CanonicalObservation:
     predecessor_digest: str | None
     predecessor_content: bytes | None
     replacement: bool
+    conflict: str | None = None
 
 
 class ReviewError(RuntimeError):

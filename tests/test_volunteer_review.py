@@ -473,6 +473,16 @@ def test_approval_replaces_strictly_older_same_identity_and_archives_bytes() -> 
     assert api.files[(STAGING, archive)] == predecessor
     assert api.files[(RESULTS, staged.canonical_path)] == staged.content
 
+    del api.files[(STAGING, archive)]
+    retry_report = reviewer.show(SUBMISSION)
+    with pytest.raises(ReviewError, match="archive is missing"):
+        reviewer.decide(
+            SUBMISSION,
+            "accepted",
+            "maintainer",
+            plan_fingerprint=retry_report.plan_fingerprint,
+        )
+
 
 def test_canonical_collision_prevents_decision_and_broker() -> None:
     """Different canonical bytes block all terminal side effects."""
