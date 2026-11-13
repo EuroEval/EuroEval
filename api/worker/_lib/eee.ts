@@ -16,7 +16,7 @@ export function validateRecord(record: unknown, expected: { modelId: string; rev
   const aliases = [modelInfo.id, modelInfo.name, modelInfo.aliases, (modelInfo.additional_details as Record<string, unknown> | undefined)?.aliases]
     .flatMap((item) => Array.isArray(item) ? item : [item]).filter((item): item is string => typeof item === "string");
   if (!aliases.some((item) => item === expected.modelId)) throw new BrokerError(422, `record model identity does not match ${expected.modelId}.`);
-  if (modelInfo.revision !== undefined && modelInfo.revision !== expected.revision) throw new BrokerError(422, "record model_info.revision does not match the lease.");
+  if (modelInfo.revision !== expected.revision) throw new BrokerError(422, "record model_info.revision is missing or does not match the lease.");
   if (library.name !== "euroeval" || typeof library.version !== "string" || !library.version || expected.euroevalVersion && library.version.replace(/\.dev\d*$/, "") !== expected.euroevalVersion.replace(/\.dev\d*$/, "")) throw new BrokerError(422, "record has an invalid eval_library name or version.");
   const details = library.additional_details as Record<string, any> | undefined;
   if (!details || typeof details.dataset !== "string" || !details.dataset || typeof details.task !== "string" || !details.task) throw new BrokerError(422, "record has no canonical dataset/task identity.");

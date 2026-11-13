@@ -1,7 +1,7 @@
 declare const process: { env: Record<string, string | undefined> };
 
 import {
-  BrokerError, ConfigurationError, PROTOCOL_VERSION, addIssueLabel, acquireRenewableIssueMutex,
+  BrokerError, ConfigurationError, expectedScope, PROTOCOL_VERSION, addIssueLabel, acquireRenewableIssueMutex,
   authenticate, brokerErrorBody, commentIssue, contributorLabel, deleteLease, enforceRateLimit, extractModelId,
   fetchIssue, getLeaseById, issueComments, json, method, patchIssue, parseVolunteerMarker,
   readJson, redis, redisGet, requireLeaseOwnership, requireAssignee, requireProtocol,
@@ -92,6 +92,25 @@ function isCanaryIdentity(identity: string): boolean {
 export function validateResultScope(entries: ResultEntry[], lease: Lease): string[] {
   const allowed = lease.expected_scope && allowedIdentitySuffixSets(lease.expected_scope);
   if (!allowed) throw new ConfigurationError("Lease has no trusted expected scope.");
+  const scope = lease.expected_scope;
+  if ("original_identity_suffix_sets" in scope && scope.original_identity_suffix_sets) {
+    const trusted = expectedScope(lease.euroeval_version, lease.model_type, lease.language);
+    const original = scope.original_identity_suffix_sets;
+    const sameAlternatives = (left: string[][], right: string[][]): boolean =>
+      left.length === right.length && left.every((items) => right.some((other) =>
+        items.length === other.length && items.every((item) => other.includes(item))));
+    const covered = scope.covered_identity_suffixes || [];
+    const known = new Set(original.flat());
+    const hasCompleteAlternative = original.some((alternative) =>
+      alternative.every((item) => covered.includes(item)));
+    const expectedNarrowed = hasCompleteAlternative ? [] : original.map((alternative) =>
+      alternative.filter((item) => !covered.includes(item))).filter((set) => set.length);
+    if (!sameAlternatives(original, trusted.allowed_identity_suffix_sets) ||
+        new Set(covered).size !== covered.length || covered.some((item) => !known.has(item)) ||
+        hasCompleteAlternative || !sameAlternatives(allowed, expectedNarrowed)) {
+      throw new ConfigurationError("Lease narrowed scope does not match trusted policy.");
+    }
+  }
   const ordinaryEntries = entries.filter((entry) => !isCanaryIdentity(entry.identity));
   const canaryEntries = entries.filter((entry) => isCanaryIdentity(entry.identity));
   const actual = ordinaryEntries.map((entry) => suffix(entry.identity));

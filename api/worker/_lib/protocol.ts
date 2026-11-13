@@ -90,6 +90,8 @@ export type LeaseScopeBase = {
   language_group: string;
   task_groups: string[];
   warnings: string[];
+  original_identity_suffix_sets?: string[][];
+  covered_identity_suffixes?: string[];
   count?: number;
 };
 export type LeaseScope = LeaseScopeBase & ({
