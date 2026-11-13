@@ -45,13 +45,16 @@ REQUIRED_ENVIRONMENT = (
     "HF_TOKEN",
     "WORKER_COORDINATOR_SECRET",
     "VOLUNTEER_PROMOTION_SECRET",
+    "CANONICAL_PUBLICATION_SECRET",
 )
 PUBLIC_CONFIG = {
     "EUROEVAL_VERSION",
     "VOLUNTEER_WORKER_VERSION",
     "VOLUNTEER_WORKER_IMAGE_DIGEST",
     "HF_STAGING_BUCKET",
+    "CANONICAL_PUBLICATION_URL",
 }
+OPTIONAL_PRODUCTION_CONFIG = ("CANONICAL_PUBLICATION_URL",)
 VERCEL_KV_SOURCE_VARIABLES = ("KV_REST_API_URL", "KV_REST_API_TOKEN")
 VERCEL_KV_OUTPUT_MARKER = "__EUROEVAL_VERCEL_KV_PAYLOAD__:"
 VERCEL_KV_ALIASES = {
@@ -85,6 +88,7 @@ LOCAL_SECRET_NAMES = (
     "VOLUNTEER_MARKER_SECRET",
     "WORKER_COORDINATOR_SECRET",
     "VOLUNTEER_PROMOTION_SECRET",
+    "CANONICAL_PUBLICATION_SECRET",
 )
 ROUTES = (
     "auth/start",
@@ -101,6 +105,7 @@ ROUTES = (
     "promotion-lock",
     "promotion-reserve",
     "promotion-status",
+    "publication-lock",
     "promote",
 )
 
@@ -1125,7 +1130,11 @@ def apply_vercel(*, environment: dict[str, str]) -> list[Diagnostic]:
             )
         ]
     diagnostics: list[Diagnostic] = []
-    for name in REQUIRED_ENVIRONMENT:
+    production_variables = (
+        *REQUIRED_ENVIRONMENT,
+        *(name for name in OPTIONAL_PRODUCTION_CONFIG if values.get(name)),
+    )
+    for name in production_variables:
         variable_type = "plain" if name in PUBLIC_CONFIG else "sensitive"
         added = run_command(
             [
@@ -1209,7 +1218,11 @@ def check_vercel(*, environment: dict[str, str]) -> list[Diagnostic]:
         return result
     metadata = _json_list(variables.stdout)
     by_name = {str(item.get("key", item.get("name", ""))): item for item in metadata}
-    for name in REQUIRED_ENVIRONMENT:
+    production_variables = (
+        *REQUIRED_ENVIRONMENT,
+        *(name for name in OPTIONAL_PRODUCTION_CONFIG if environment.get(name)),
+    )
+    for name in production_variables:
         item = by_name.get(name)
         target = item.get("target", item.get("targets")) if item else None
         variable_type = str(item.get("type", "")) if item else ""
