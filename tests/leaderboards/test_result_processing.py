@@ -640,17 +640,35 @@ def test_sync_bucket_passes_hf_token(
     """
     monkeypatch.setattr(bucket_sync, "RESULTS_DIR", tmp_path)
     mock_api = MemoryBucketApi()
-    mock_api.objects["org/model/dataset__test__zeroshot.json"] = b"{}"
+    raw_record = json.dumps(
+        {
+            "schema_version": "0.3.0",
+            "model_info": {"id": "org/model"},
+            "eval_library": {
+                "name": "euroeval",
+                "version": "18.4.0",
+                "additional_details": {
+                    "dataset": "dataset",
+                    "validation_split": False,
+                    "few_shot": False,
+                },
+            },
+            "evaluation_results": [],
+        }
+    ).encode()
+    mock_api.objects["org_model/dataset__test__zeroshot.json"] = raw_record
 
     with patch("leaderboards.bucket_sync.HfApi", return_value=mock_api):
         with patch(
             "leaderboards.bucket_sync.resolve_hf_token", return_value="test_token"
         ):
-            bucket_sync.sync_bucket()
+            bucket_sync.sync_bucket(delete_empty=False)
 
     assert mock_api.listed == [("EuroEval/results", True, "test_token")]
     assert mock_api.downloaded == [("EuroEval/results", "test_token")]
-    assert (tmp_path / "org/model/dataset__test__zeroshot.json").read_bytes() == b"{}"
+    assert (
+        tmp_path / "org_model/dataset__test__zeroshot.json"
+    ).read_bytes() == raw_record
 
 
 def test_sync_bucket_raises_without_hf_token(

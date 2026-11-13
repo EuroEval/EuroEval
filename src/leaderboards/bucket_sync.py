@@ -21,7 +21,7 @@ from huggingface_hub.errors import HfHubHTTPError
 
 from .canonical_publication import BucketApi, CanonicalPublisher
 from .constants import HF_RESULTS_BUCKET, RESULTS_DIR
-from .eee_validation import validate_eee_record
+from .eee_validation import is_eee_record
 from .evaluation_common import resolve_hf_token
 from .result_identity import (
     ResultIdentity,
@@ -406,7 +406,8 @@ def download_missing_bucket_files() -> int:
             record = json.loads(temporary.read_text(encoding="utf-8"))
             if not isinstance(record, dict):
                 raise ValueError(f"Bucket result is not an object: {entry.path}")
-            validate_eee_record(record=record, context=entry.path)
+            if not is_eee_record(record=record):
+                raise ValueError(f"Bucket result is not an EEE record: {entry.path}")
             identity = identity_from_eee_record(record)
             canonical_path = identity_to_path(identity=identity).as_posix()
             if canonical_path != Path(entry.path).as_posix():

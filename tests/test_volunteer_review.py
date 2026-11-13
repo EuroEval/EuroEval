@@ -1883,12 +1883,15 @@ def test_partial_replacement_resumes_original_plan() -> None:
             plan_fingerprint=report.plan_fingerprint,
         )
     decision = _decision_content(api=api)
+    retry_report = reviewer.show(submission_id=SUBMISSION)
+    assert retry_report.plan_fingerprint == report.plan_fingerprint
+    assert retry_report.canonical_observations == report.canonical_observations
     api.fail_result_upload_number = None
     reviewer.decide(
         submission_id=SUBMISSION,
         outcome="accepted",
         reviewer="another-maintainer",
-        plan_fingerprint=report.plan_fingerprint,
+        plan_fingerprint=retry_report.plan_fingerprint,
     )
     assert _decision_content(api=api) == decision
     for record in report.records:

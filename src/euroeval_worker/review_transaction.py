@@ -893,9 +893,34 @@ class VolunteerReviewer:
         )
         observations = self._canonical_plan(report=report)
         fingerprint = _plan_fingerprint(report=report, observations=observations)
-        return dataclasses.replace(
+        report = dataclasses.replace(
             report, canonical_observations=observations, plan_fingerprint=fingerprint
         )
+        try:
+            decisions = _existing_decisions(
+                store=self.store, report=report, outcome=None
+            )
+            if decisions:
+                decision = _load_object(
+                    content=decisions[0][1], context=decisions[0][0]
+                )
+                if decision.get(
+                    "outcome"
+                ) == "accepted" and not self._has_valid_completion_receipt(
+                    submission_id=submission_id,
+                    outcome="accepted",
+                    decision_digest=decisions[0][2],
+                ):
+                    return _restore_decision_plan(
+                        store=self.store,
+                        report=report,
+                        decision=decision,
+                        results_bucket=self.results_bucket,
+                    )
+        except ReviewError:
+            # Invalid historical state must remain inspectable, never executable.
+            return report
+        return report
 
     def _canonical_plan(self, report: ReviewReport) -> tuple[CanonicalObservation, ...]:
         """Inspect destinations and permit only strict newer same-identity records.
