@@ -11,8 +11,10 @@ import logging
 import os
 import typing as t
 import urllib.request
+from contextlib import contextmanager
 
 from euroeval.canary_evidence import evidence_from_dict
+from leaderboards.canonical_publication import CanonicalPublisher, PublicationSession
 from leaderboards.constants import HF_RESULTS_BUCKET, REQUIRED_METADATA_FIELDS
 from leaderboards.contamination_canary import process_contamination_canaries
 from leaderboards.eee_validation import is_eee_record
@@ -20,7 +22,6 @@ from leaderboards.result_identity import dedup_newer_record, identity_from_eee_r
 
 from .review_models import (
     BrokerBinder,
-    BrokerPromoter,
     BrokerRenewer,
     BrokerReservation,
     BrokerReservationResult,
@@ -40,9 +41,15 @@ from .review_validation import (
 from .types import PROTOCOL_VERSION
 
 _DECISION_PREFIX = "volunteer/decisions"
+_COMPLETION_PREFIX = "volunteer/completions"
 _MANIFEST_PREFIX = "volunteer/manifests"
 _LOCAL_DECISION_CREATED_AT = "1970-01-01T00:00:00Z"
 _DECISION_ARTIFACT = "volunteer-review-decision/v1"
+
+BrokerStatus = t.Literal["absent", "reserved", "terminal"]
+BrokerStatusChecker = c.Callable[
+    [int, str, str, list[dict[str, str]], str], BrokerStatus
+]
 
 
 def _has_collected_canary(records: list[dict[str, object]]) -> bool:
@@ -105,6 +112,9 @@ class VolunteerReviewer:
         binder: BrokerBinder | None = None,
         now: t.Callable[[], dt.datetime] | None = None,
         scope_policy: JsonObject | None = None,
+        publisher: CanonicalPublisher | None = None,
+        publisher_factory: c.Callable[[], CanonicalPublisher] | None = None,
+        status_checker: BrokerStatusChecker | None = None,
     ) -> None:
         """Initialise the review service.
 
@@ -121,10 +131,17 @@ class VolunteerReviewer:
                 Renewer.
             binder (optional):
                 Binder.
+            status_checker (optional):
+                Read-only broker status lookup. Defaults to the broker transport
+                only when using the production promoter.
             now (optional):
                 Now.
             scope_policy (optional):
                 Scope policy.
+            publisher (optional):
+                Canonical publisher used to open publication sessions.
+            publisher_factory (optional):
+                Factory for a canonical publisher when publication is deferred.
         """
         self.store = store
         self.results_bucket = results_bucket
@@ -135,8 +152,13 @@ class VolunteerReviewer:
         )
         self.renewer = renewer or (renew_with_broker if self._broker_promoter else None)
         self.binder = binder or (bind_with_broker if self._broker_promoter else None)
+        self.status_checker = status_checker or (
+            inspect_with_broker if self._broker_promoter else None
+        )
         self.now = now
         self.scope_policy = scope_policy or load_scope_policy()
+        self.publisher = publisher
+        self.publisher_factory = publisher_factory
 
     def decide(
         self,
@@ -145,6 +167,97 @@ class VolunteerReviewer:
         reviewer: str,
         reasons: list[str] | None = None,
         plan_fingerprint: str | None = None,
+    ) -> ReviewReport:
+        """Apply a confirmed decision, fencing accepted publication.
+
+        Args:
+            submission_id:
+                Submission being decided.
+            outcome:
+                Confirmed terminal outcome.
+            reviewer:
+                Reviewer applying the decision.
+            reasons (optional):
+                Reasons recorded with the decision.
+            plan_fingerprint (optional):
+                Confirmed canonical publication plan fingerprint.
+
+        Returns:
+            The review report for the decided submission.
+
+        Raises:
+            ReviewError:
+                If the decision or its publication cannot be completed safely.
+        """
+        inspected = self.show(submission_id=submission_id)
+        existing = _existing_decisions(
+            store=self.store, report=inspected, outcome=outcome
+        )
+        if existing:
+            decision = _load_object(content=existing[0][1], context=existing[0][0])
+            decision_digest = existing[0][2]
+            receipted = self._has_valid_completion_receipt(
+                submission_id=submission_id,
+                outcome=outcome,
+                decision_digest=decision_digest,
+            )
+            terminal = (
+                receipted
+                or self._inspect_decision(
+                    report=inspected, outcome=outcome, decision_digest=decision_digest
+                )
+                == "terminal"
+            )
+            if terminal:
+                _validate_predecessor_archives(
+                    store=self.store,
+                    report=inspected,
+                    decision=decision,
+                    results_bucket=self.results_bucket,
+                    completed=True,
+                )
+                if not receipted:
+                    self._write_completion_receipt(
+                        submission_id=submission_id,
+                        outcome=outcome,
+                        decision_digest=decision_digest,
+                    )
+                return inspected
+        if outcome == "rejected":
+            return self._decide(
+                submission_id=submission_id,
+                outcome=outcome,
+                reviewer=reviewer,
+                reasons=reasons,
+                plan_fingerprint=plan_fingerprint,
+                publication=None,
+            )
+        if (
+            not existing
+            and plan_fingerprint is not None
+            and plan_fingerprint != inspected.plan_fingerprint
+        ):
+            raise ReviewError(
+                "Canonical plan changed or was not confirmed; run show and retry"
+            )
+        with self._publication_session() as publication:
+            return self._decide(
+                submission_id=submission_id,
+                outcome=outcome,
+                reviewer=reviewer,
+                reasons=reasons,
+                plan_fingerprint=plan_fingerprint,
+                publication=publication,
+            )
+
+    def _decide(
+        self,
+        submission_id: str,
+        outcome: t.Literal["accepted", "rejected"],
+        reviewer: str,
+        reasons: list[str] | None,
+        plan_fingerprint: str | None,
+        publication: PublicationSession | None,
     ) -> ReviewReport:
         """Persist one immutable decision and complete its broker transition.
 
@@ -159,6 +272,8 @@ class VolunteerReviewer:
                         Reasons.
                     plan_fingerprint (optional):
                         Fingerprint displayed to and confirmed by the reviewer.
+                    publication (optional):
+                        Active canonical publication session.
 
         Returns:
                     The independently validated submission report.
@@ -203,17 +318,7 @@ class VolunteerReviewer:
                     "Canonical plan changed or was not confirmed; run show and retry"
                 )
 
-        evidence = sorted(
-            [
-                {
-                    "identity": json.dumps(record.identity, separators=(",", ":")),
-                    "canonical_path": record.canonical_path,
-                    "digest": record.digest,
-                }
-                for record in report.records
-            ],
-            key=lambda item: item["identity"],
-        )
+        evidence = _promotion_evidence(report=report)
         if outcome == "accepted":
             canary_records = [
                 json.loads(record.content)
@@ -239,19 +344,15 @@ class VolunteerReviewer:
                     )
             self._validate_canonical_records(report=report)
         known_digest = existing[0][2] if existing else None
-        reservation = (
-            self.reserver(
-                report.issue_number,
-                submission_id,
-                outcome,
-                reviewer,
-                evidence,
-                known_digest,
-            )
-            if self.reserver
-            else _local_reservation(
-                reviewer=reviewer, existing=existing[0][1] if existing else None
-            )
+        reservation = self._reserve_decision(
+            report=report,
+            submission_id=submission_id,
+            outcome=outcome,
+            reviewer=reviewer,
+            evidence=evidence,
+            known_digest=known_digest,
+            existing=existing,
+            publication=publication,
         )
         decision_bytes = (
             existing[0][1]
@@ -297,17 +398,15 @@ class VolunteerReviewer:
         )
         decision_digest = _digest(decision_bytes)
         token = reservation.token
-        if self.binder:
-            bound = self.binder(
-                report.issue_number,
-                submission_id,
-                outcome,
-                token,
-                decision_digest,
-                evidence,
-            )
-            if bound != token:
-                raise ReviewError("Broker returned a different bound reservation token")
+        self._bind_decision(
+            report=report,
+            submission_id=submission_id,
+            outcome=outcome,
+            token=token,
+            decision_digest=decision_digest,
+            evidence=evidence,
+            publication=publication,
+        )
         current = _existing_decisions(store=self.store, report=report, outcome=outcome)
         if current and any(content != decision_bytes for _, content, _ in current):
             raise ReviewError("Conflicting decision artifacts exist")
@@ -331,39 +430,142 @@ class VolunteerReviewer:
                 records=evidence,
                 token=token,
                 decision_digest=decision_digest,
+                publication=publication,
             )
             self._promote_records(
                 report=report,
+                publication=publication,
                 renew=lambda: self._renew_reservation(
                     report=report,
                     records=evidence,
                     token=token,
                     decision_digest=decision_digest,
+                    publication=publication,
                 ),
             )
         if self._broker_promoter:
-            t.cast(BrokerPromoter, self.promoter)(
+            t.cast(
+                c.Callable[
+                    [
+                        int,
+                        str,
+                        str,
+                        str,
+                        list[dict[str, str]],
+                        str,
+                        str | None,
+                        str | None,
+                    ],
+                    None,
+                ],
+                self.promoter,
+            )(
                 report.issue_number,
                 submission_id,
                 outcome,
                 token,
                 evidence,
                 decision_digest,
+                publication.owner if outcome == "accepted" else None,
+                publication.bucket if outcome == "accepted" else None,
             )
         else:
             t.cast(t.Callable[[int, str, str], None], self.promoter)(
                 report.issue_number, submission_id, outcome
             )
+        self._write_completion_receipt(
+            submission_id=submission_id,
+            outcome=outcome,
+            decision_digest=decision_digest,
+        )
         return report
 
+    def _bind_decision(
+        self,
+        report: ReviewReport,
+        submission_id: str,
+        outcome: t.Literal["accepted", "rejected"],
+        token: str,
+        decision_digest: str,
+        evidence: list[dict[str, str]],
+        publication: PublicationSession | None,
+    ) -> None:
+        """Bind the immutable decision digest to its reservation.
+
+        Args:
+            report:
+                Submission report being decided.
+            submission_id:
+                Submission identifier.
+            outcome:
+                Decision outcome.
+            token:
+                Reservation token to bind.
+            decision_digest:
+                Digest of the immutable decision bytes.
+            evidence:
+                Immutable promotion evidence for the submission.
+            publication:
+                Canonical publication session, when one is active.
+
+        Raises:
+            ReviewError:
+                If the broker returns a different reservation token.
+        """
+        if not self.binder:
+            return
+        if self._broker_promoter:
+            extended_binder = t.cast(
+                c.Callable[
+                    [
+                        int,
+                        str,
+                        str,
+                        str,
+                        str,
+                        list[dict[str, str]],
+                        str | None,
+                        str | None,
+                    ],
+                    str,
+                ],
+                self.binder,
+            )
+            bound = extended_binder(
+                report.issue_number,
+                submission_id,
+                outcome,
+                token,
+                decision_digest,
+                evidence,
+                publication.owner if publication else None,
+                publication.bucket if publication else None,
+            )
+        else:
+            bound = self.binder(
+                report.issue_number,
+                submission_id,
+                outcome,
+                token,
+                decision_digest,
+                evidence,
+            )
+        if bound != token:
+            raise ReviewError("Broker returned a different bound reservation token")
+
     def _promote_records(
-        self, report: ReviewReport, renew: c.Callable[[], None] | None = None
+        self,
+        report: ReviewReport,
+        publication: PublicationSession | None = None,
+        renew: c.Callable[[], None] | None = None,
     ) -> None:
         """Promote records.
 
         Args:
                     report:
                         Report.
+                    publication (optional):
+                        Active canonical publication session for verified writes.
                     renew (optional):
                         Renew.
 
@@ -371,6 +573,8 @@ class VolunteerReviewer:
         ReviewError: Raised when the operation cannot be completed.
                     An exception when the operation cannot be completed.
         """
+        if publication is None:
+            raise ReviewError("Canonical publication session is required")
         self._validate_canonical_records(report=report)
         for observation in report.canonical_observations:
             if not observation.replacement:
@@ -416,10 +620,10 @@ class VolunteerReviewer:
             elif current == observation.predecessor_content and (
                 current is None or observation.replacement
             ):
-                self.store.write_verified(
-                    bucket=self.results_bucket,
+                publication.write_verified(
                     path=record.canonical_path,
                     content=record.content,
+                    expected=observation.predecessor_content,
                 )
             else:
                 raise ReviewError("Canonical destination changed during promotion")
@@ -499,6 +703,7 @@ class VolunteerReviewer:
         records: list[dict[str, str]],
         token: str,
         decision_digest: str,
+        publication: PublicationSession | None = None,
     ) -> None:
         """Renew reservation.
 
@@ -511,6 +716,8 @@ class VolunteerReviewer:
                         Token.
                     decision_digest:
                         Decision digest.
+                    publication (optional):
+                        Active canonical publication session.
 
         Raises:
         ReviewError: Raised when the operation cannot be completed.
@@ -518,16 +725,152 @@ class VolunteerReviewer:
         """
         if not self.renewer:
             return
-        renewed = self.renewer(
-            report.issue_number,
-            report.submission_id,
-            "accepted",
-            token,
-            records,
-            decision_digest,
-        )
+        if self._broker_promoter:
+            extended_renewer = t.cast(
+                c.Callable[
+                    [
+                        int,
+                        str,
+                        str,
+                        str,
+                        list[dict[str, str]],
+                        str,
+                        str | None,
+                        str | None,
+                    ],
+                    str,
+                ],
+                self.renewer,
+            )
+            renewed = extended_renewer(
+                report.issue_number,
+                report.submission_id,
+                "accepted",
+                token,
+                records,
+                decision_digest,
+                publication.owner if publication else None,
+                publication.bucket if publication else None,
+            )
+        else:
+            renewed = self.renewer(
+                report.issue_number,
+                report.submission_id,
+                "accepted",
+                token,
+                records,
+                decision_digest,
+            )
         if renewed != token:
             raise ReviewError("Broker returned a different promotion reservation token")
+
+    def _reserve_decision(
+        self,
+        report: ReviewReport,
+        submission_id: str,
+        outcome: t.Literal["accepted", "rejected"],
+        reviewer: str,
+        evidence: list[dict[str, str]],
+        known_digest: str | None,
+        existing: list[tuple[str, bytes, str]],
+        publication: PublicationSession | None,
+    ) -> BrokerReservationResult:
+        """Reserve the decision through the broker or locally.
+
+        Args:
+            report:
+                Submission report being decided.
+            submission_id:
+                Submission identifier.
+            outcome:
+                Decision outcome.
+            reviewer:
+                Reviewer applying the decision.
+            evidence:
+                Immutable promotion evidence for the submission.
+            known_digest:
+                Digest of an existing immutable decision, if present.
+            existing:
+                Validated existing decision artifacts.
+            publication:
+                Canonical publication session, when one is active.
+
+        Returns:
+            Reservation metadata used to create the immutable decision.
+        """
+        if self.reserver and self._broker_promoter:
+            extended_reserver = t.cast(
+                c.Callable[
+                    [
+                        int,
+                        str,
+                        str,
+                        str,
+                        list[dict[str, str]],
+                        str | None,
+                        str | None,
+                        str | None,
+                        str | None,
+                        str | None,
+                    ],
+                    BrokerReservationResult,
+                ],
+                self.reserver,
+            )
+            return extended_reserver(
+                report.issue_number,
+                submission_id,
+                outcome,
+                reviewer,
+                evidence,
+                known_digest,
+                publication.owner if publication else None,
+                publication.bucket if publication else None,
+                _decision_metadata(existing=existing).get("reviewer"),
+                _decision_metadata(existing=existing).get("decided_at"),
+            )
+        if self.reserver:
+            return self.reserver(
+                report.issue_number,
+                submission_id,
+                outcome,
+                reviewer,
+                evidence,
+                known_digest,
+            )
+        return _local_reservation(
+            reviewer=reviewer, existing=existing[0][1] if existing else None
+        )
+
+    def _write_completion_receipt(
+        self, submission_id: str, outcome: str, decision_digest: str
+    ) -> None:
+        """Write and verify the private receipt for a completed decision.
+
+        Args:
+            submission_id: Submission whose decision completed.
+            outcome: Durable decision outcome.
+            decision_digest: Digest of the immutable decision bytes.
+
+        Raises:
+            ReviewError: If an existing receipt does not match exactly.
+        """
+        path = _completion_path(submission_id=submission_id, digest=decision_digest)
+        content = _completion_bytes(
+            submission_id=submission_id,
+            outcome=outcome,
+            decision_digest=decision_digest,
+        )
+        existing = self.store.read_optional(self.store.staging_bucket, path)
+        if existing is not None:
+            if existing != content:
+                raise ReviewError(
+                    "Completion receipt differs from the durable decision"
+                )
+            return
+        self.store.write_verified(
+            bucket=self.store.staging_bucket, path=path, content=content
+        )
 
     def show(self, submission_id: str) -> ReviewReport:
         """Independently load and validate a staged submission.
@@ -554,9 +897,34 @@ class VolunteerReviewer:
         )
         observations = self._canonical_plan(report=report)
         fingerprint = _plan_fingerprint(report=report, observations=observations)
-        return dataclasses.replace(
+        report = dataclasses.replace(
             report, canonical_observations=observations, plan_fingerprint=fingerprint
         )
+        try:
+            decisions = _existing_decisions(
+                store=self.store, report=report, outcome=None
+            )
+            if decisions:
+                decision = _load_object(
+                    content=decisions[0][1], context=decisions[0][0]
+                )
+                if decision.get(
+                    "outcome"
+                ) == "accepted" and not self._has_valid_completion_receipt(
+                    submission_id=submission_id,
+                    outcome="accepted",
+                    decision_digest=decisions[0][2],
+                ):
+                    return _restore_decision_plan(
+                        store=self.store,
+                        report=report,
+                        decision=decision,
+                        results_bucket=self.results_bucket,
+                    )
+        except ReviewError:
+            # Invalid historical state must remain inspectable, never executable.
+            return report
+        return report
 
     def _canonical_plan(self, report: ReviewReport) -> tuple[CanonicalObservation, ...]:
         """Inspect destinations and permit only strict newer same-identity records.
@@ -618,6 +986,72 @@ class VolunteerReviewer:
             )
         return tuple(observations)
 
+    def _has_valid_completion_receipt(
+        self,
+        submission_id: str,
+        outcome: t.Literal["accepted", "rejected"],
+        decision_digest: str,
+    ) -> bool:
+        """Return whether a decision has its exact private completion receipt.
+
+        Args:
+            submission_id: Submission owning the decision.
+            outcome: Durable decision outcome.
+            decision_digest: Digest of the immutable decision bytes.
+
+        Returns:
+            Whether the receipt exists and matches the expected bytes exactly.
+        """
+        path = _completion_path(submission_id=submission_id, digest=decision_digest)
+        existing = self.store.read_optional(self.store.staging_bucket, path)
+        return existing == _completion_bytes(
+            submission_id=submission_id,
+            outcome=outcome,
+            decision_digest=decision_digest,
+        )
+
+    def _inspect_decision(
+        self, report: ReviewReport, outcome: str, decision_digest: str
+    ) -> BrokerStatus:
+        """Inspect broker evidence without reserving or publishing anything.
+
+        Args:
+            report: Independently validated submission evidence.
+            outcome: Durable decision outcome.
+            decision_digest: Digest of the immutable decision bytes.
+
+        Returns:
+            Matching broker status, or absent for offline custom promoters.
+        """
+        if self.status_checker is None:
+            return "absent"
+        return self.status_checker(
+            report.issue_number,
+            report.submission_id,
+            outcome,
+            _promotion_evidence(report=report),
+            decision_digest,
+        )
+
+    @contextmanager
+    def _publication_session(self) -> t.Iterator[PublicationSession]:
+        """Open the configured canonical publication session.
+
+        Yields:
+            The configured canonical publication session.
+
+        Raises:
+            ReviewError:
+                If canonical publication is not configured.
+        """
+        publisher = self.publisher
+        if publisher is None and self.publisher_factory is not None:
+            publisher = self.publisher_factory()
+        if publisher is None:
+            raise ReviewError("Canonical publication lock configuration is required")
+        with publisher.session() as session:
+            yield session
+
     def list_pending_submissions(self) -> list[tuple[str, int, str, str]]:
         """Return durable manifests without one terminal decision artifact.
 
@@ -666,7 +1100,43 @@ class VolunteerReviewer:
                 submission_id,
             )
             return False
-        return bool(decisions)
+        if not decisions:
+            return False
+        decision = _load_object(content=decisions[0][1], context=decisions[0][0])
+        if "canonical_plan" not in decision and (
+            decision["outcome"] == "accepted" or self.status_checker is None
+        ):
+            return True
+        outcome = t.cast(t.Literal["accepted", "rejected"], decision["outcome"])
+        if self._has_valid_completion_receipt(
+            submission_id=submission_id,
+            outcome=outcome,
+            decision_digest=decisions[0][2],
+        ):
+            return True
+        try:
+            terminal = (
+                self._inspect_decision(
+                    report=report, outcome=outcome, decision_digest=decisions[0][2]
+                )
+                == "terminal"
+            )
+            if terminal:
+                _validate_predecessor_archives(
+                    store=self.store,
+                    report=report,
+                    decision=decision,
+                    results_bucket=self.results_bucket,
+                    completed=True,
+                )
+            return terminal
+        except (ReviewError, OSError) as error:
+            logger.warning(
+                "Submission %s remains pending: broker status validation failed: %s",
+                submission_id,
+                error,
+            )
+            return False
 
     def _list_submission_summaries(self) -> list[tuple[str, int, str, str]]:
         """Load summaries for every durable manifest.
@@ -690,6 +1160,41 @@ class VolunteerReviewer:
             language)`` tuples.
         """
         return self._list_submission_summaries()
+
+
+def _completion_bytes(submission_id: str, outcome: str, decision_digest: str) -> bytes:
+    """Serialise one deterministic private completion receipt.
+
+    Args:
+        submission_id: Submission whose decision completed.
+        outcome: Durable decision outcome.
+        decision_digest: Digest of the immutable decision bytes.
+
+    Returns:
+        Compact, key-sorted UTF-8 JSON bytes ending in a newline.
+    """
+    receipt = {
+        "protocol": PROTOCOL_VERSION,
+        "submission": submission_id,
+        "outcome": outcome,
+        "decision_digest": decision_digest,
+    }
+    return (json.dumps(receipt, sort_keys=True, separators=(",", ":")) + "\n").encode(
+        "utf-8"
+    )
+
+
+def _completion_path(submission_id: str, digest: str) -> str:
+    """Return the content-addressed private receipt path.
+
+    Args:
+        submission_id: Submission owning the receipt.
+        digest: Digest of the immutable decision.
+
+    Returns:
+        ``volunteer/completions/<submission_id>/<digest>.json``.
+    """
+    return f"{_COMPLETION_PREFIX}/{submission_id}/{digest}.json"
 
 
 def _decision_bytes(
@@ -751,6 +1256,27 @@ def _decision_bytes(
         json.dumps(decision, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
         + "\n"
     ).encode("utf-8")
+
+
+def _decision_metadata(existing: list[tuple[str, bytes, str]]) -> dict[str, str]:
+    """Recover reviewer metadata from an immutable decision artifact.
+
+    Args:
+        existing: Validated existing decision artifacts.
+
+    Returns:
+        Original reviewer and timestamp when both are available.
+    """
+    if not existing:
+        return {}
+    decision = _load_object(
+        content=existing[0][1], context="existing volunteer decision artifact"
+    )
+    reviewer = decision.get("reviewer")
+    created_at = decision.get("decided_at")
+    if isinstance(reviewer, str) and isinstance(created_at, str):
+        return {"reviewer": reviewer, "decided_at": created_at}
+    return {}
 
 
 def _decision_path(submission_id: str, digest: str) -> str:
@@ -1084,6 +1610,28 @@ def _local_reservation(
     )
 
 
+def _promotion_evidence(report: ReviewReport) -> list[dict[str, str]]:
+    """Serialise immutable submission evidence for broker comparisons.
+
+    Args:
+        report: Independently validated staged results.
+
+    Returns:
+        Identity-sorted canonical paths and digests, including private canaries.
+    """
+    return sorted(
+        [
+            {
+                "identity": json.dumps(record.identity, separators=(",", ":")),
+                "canonical_path": record.canonical_path,
+                "digest": record.digest,
+            }
+            for record in report.records
+        ],
+        key=lambda item: item["identity"],
+    )
+
+
 def _restore_decision_plan(
     store: BucketStore, report: ReviewReport, decision: JsonObject, results_bucket: str
 ) -> ReviewReport:
@@ -1165,7 +1713,11 @@ def _restore_decision_plan(
 
 
 def _validate_predecessor_archives(
-    store: BucketStore, report: ReviewReport, decision: JsonObject, results_bucket: str
+    store: BucketStore,
+    report: ReviewReport,
+    decision: JsonObject,
+    results_bucket: str,
+    completed: bool = False,
 ) -> None:
     """Verify durable replacement evidence against private archives and destinations.
 
@@ -1174,6 +1726,7 @@ def _validate_predecessor_archives(
         report: Current validated submission evidence.
         decision: Previously persisted decision object.
         results_bucket: Canonical results bucket.
+        completed (optional): Require archives independently of current destinations.
 
     Raises:
         ReviewError: If predecessor evidence or canonical state is inconsistent.
@@ -1201,6 +1754,12 @@ def _validate_predecessor_archives(
             raise ReviewError("Persisted replacement plan is malformed")
         seen.add(path)
         archived = store.read_optional(store.staging_bucket, archive_path)
+        if completed:
+            if archived is None:
+                raise ReviewError("Replacement archive is missing after completion")
+            if _digest(archived) != digest:
+                raise ReviewError("Archived canonical predecessor is corrupted")
+            continue
         current = store.read_optional(results_bucket, path)
         if archived is not None:
             if _digest(archived) != digest:
@@ -1220,6 +1779,8 @@ def bind_with_broker(
     reservation_token: str,
     decision_digest: str,
     records: list[dict[str, str]],
+    publication_owner: str | None = None,
+    publication_bucket: str | None = None,
 ) -> str:
     """Atomically bind a decision digest to an active broker reservation.
 
@@ -1236,6 +1797,10 @@ def bind_with_broker(
                 Decision digest.
             records:
                 Records.
+            publication_owner (optional):
+                Owner of the active canonical publication session.
+            publication_bucket (optional):
+                Bucket containing the active canonical publication session.
 
     Returns:
             The unchanged reservation token.
@@ -1251,6 +1816,8 @@ def bind_with_broker(
         records=records,
         reservation_token=reservation_token,
         decision_digest=decision_digest,
+        publication_owner=publication_owner,
+        publication_bucket=publication_bucket,
     )
     if not isinstance(result, str):
         raise ReviewError("Broker returned decision metadata during binding")
@@ -1265,6 +1832,10 @@ def _request_reservation(
     reservation_token: str | None = None,
     reviewer: str | None = None,
     decision_digest: str | None = None,
+    publication_owner: str | None = None,
+    publication_bucket: str | None = None,
+    decision_reviewer: str | None = None,
+    decision_created_at: str | None = None,
 ) -> str | BrokerReservationResult:
     """Request a reservation, renewal, or decision-digest binding from the broker.
 
@@ -1277,6 +1848,10 @@ def _request_reservation(
             Existing token for renewal or binding; omitted to reserve.
         reviewer (optional): Reviewer login included when creating a reservation.
         decision_digest (optional): Decision artifact digest to bind or renew.
+        publication_owner (optional): Owner of the active canonical publication session.
+        publication_bucket (optional): Bucket containing the active publication session.
+        decision_reviewer (optional): Reviewer from the durable decision artifact.
+        decision_created_at (optional): Timestamp from the durable decision artifact.
 
     Returns:
         A reservation result for a new reservation, or the unchanged token string
@@ -1305,6 +1880,16 @@ def _request_reservation(
         request_body["reviewer"] = reviewer
     if decision_digest is not None:
         request_body["decision_digest"] = decision_digest
+    if decision_reviewer is not None and decision_created_at is not None:
+        request_body["decision_reviewer"] = decision_reviewer
+        request_body["decision_created_at"] = decision_created_at
+    if outcome == "accepted":
+        if not publication_owner or not publication_bucket:
+            raise ReviewError(
+                "Accepted reservations require publication session ownership"
+            )
+        request_body["publication_owner"] = publication_owner
+        request_body["publication_bucket"] = publication_bucket
     payload = json.dumps(request_body).encode("utf-8")
     request = urllib.request.Request(
         endpoint,
@@ -1338,7 +1923,68 @@ def _request_reservation(
         decision_reviewer=decision_reviewer,
         decision_created_at=decision_created_at,
         decision_digest=response_digest if isinstance(response_digest, str) else None,
+        status=body.get("status", "reserved"),
     )
+
+
+def inspect_with_broker(
+    issue_number: int,
+    submission_id: str,
+    outcome: str,
+    records: list[dict[str, str]],
+    decision_digest: str,
+) -> BrokerStatus:
+    """Read matching broker promotion status without changing its reservation.
+
+    Args:
+        issue_number: Evaluation request owning the submission.
+        submission_id: Submission whose decision is inspected.
+        outcome: Durable decision outcome.
+        records: Immutable identity/path/digest evidence bound to the decision.
+        decision_digest: Digest of the immutable decision bytes.
+
+    Returns:
+        Absent, reserved, or terminal status for the supplied evidence.
+
+    Raises:
+        ReviewError: If credentials, transport, protocol, or evidence are invalid.
+    """
+    secret = os.environ.get("VOLUNTEER_PROMOTION_SECRET")
+    if not secret:
+        raise ReviewError("VOLUNTEER_PROMOTION_SECRET is required")
+    endpoint = os.environ.get(
+        "VOLUNTEER_BROKER_PROMOTION_STATUS_URL",
+        "https://euroeval.com/api/worker/promotion-status",
+    )
+    payload = json.dumps(
+        {
+            "protocol_version": PROTOCOL_VERSION,
+            "issue_number": issue_number,
+            "submission_id": submission_id,
+            "outcome": outcome,
+            "records": records,
+            "decision_digest": decision_digest,
+        }
+    ).encode("utf-8")
+    request = urllib.request.Request(
+        endpoint,
+        data=payload,
+        headers={"content-type": "application/json", "x-promotion-secret": secret},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            body: object = json.loads(response.read().decode("utf-8"))
+    except (OSError, ValueError) as error:
+        raise ReviewError("Broker promotion status lookup failed") from error
+    if not isinstance(body, dict) or body.get("protocol_version") != PROTOCOL_VERSION:
+        raise ReviewError("Broker promotion status protocol differs")
+    status = body.get("status")
+    if status not in ("absent", "reserved", "terminal"):
+        raise ReviewError("Broker returned an invalid promotion status")
+    if status != "absent" and body.get("decision_digest") != decision_digest:
+        raise ReviewError("Broker promotion status decision evidence differs")
+    return t.cast(BrokerStatus, status)
 
 
 def promote_with_broker(
@@ -1348,6 +1994,8 @@ def promote_with_broker(
     reservation_token: str,
     records: list[dict[str, str]],
     decision_digest: str,
+    publication_owner: str | None = None,
+    publication_bucket: str | None = None,
 ) -> None:
     """Call the authenticated broker promotion transition.
 
@@ -1361,9 +2009,13 @@ def promote_with_broker(
             reservation_token:
                 Reservation token.
             records:
-                Records.
+                Immutable canonical identity/path/digest evidence.
             decision_digest:
-                Decision digest.
+                Digest of the immutable decision artifact.
+            publication_owner (optional):
+                Owner of the active canonical publication session.
+            publication_bucket (optional):
+                Bucket containing the active canonical publication session.
 
     Raises:
             ReviewError:
@@ -1384,6 +2036,14 @@ def promote_with_broker(
             "reservation_token": reservation_token,
             "records": records,
             "decision_digest": decision_digest,
+            **(
+                {
+                    "publication_owner": publication_owner,
+                    "publication_bucket": publication_bucket,
+                }
+                if outcome == "accepted" and publication_owner and publication_bucket
+                else {}
+            ),
         }
     ).encode("utf-8")
     request = urllib.request.Request(
@@ -1405,6 +2065,8 @@ def renew_with_broker(
     reservation_token: str,
     records: list[dict[str, str]],
     decision_digest: str | None = None,
+    publication_owner: str | None = None,
+    publication_bucket: str | None = None,
 ) -> str:
     """Renew a pending broker reservation without changing its token.
 
@@ -1420,7 +2082,11 @@ def renew_with_broker(
             records:
                 Records.
             decision_digest (optional):
-                Decision digest.
+                Digest of the immutable decision artifact.
+            publication_owner (optional):
+                Owner of the active canonical publication session.
+            publication_bucket (optional):
+                Bucket containing the active publication session.
 
     Returns:
             The unchanged opaque reservation token.
@@ -1436,6 +2102,8 @@ def renew_with_broker(
         records=records,
         reservation_token=reservation_token,
         decision_digest=decision_digest,
+        publication_owner=publication_owner,
+        publication_bucket=publication_bucket,
     )
     if not isinstance(reservation, str):
         raise ReviewError("Broker returned decision metadata during renewal")
@@ -1449,6 +2117,10 @@ def reserve_with_broker(
     reviewer: str,
     records: list[dict[str, str]],
     decision_digest: str | None = None,
+    publication_owner: str | None = None,
+    publication_bucket: str | None = None,
+    decision_reviewer: str | None = None,
+    decision_created_at: str | None = None,
 ) -> BrokerReservationResult:
     """Reserve one immutable maintainer outcome at the broker.
 
@@ -1464,7 +2136,15 @@ def reserve_with_broker(
             records:
                 Records.
             decision_digest (optional):
-                Decision digest.
+                Digest of a previously stored immutable decision.
+            publication_owner (optional):
+                Owner of the active canonical publication session.
+            publication_bucket (optional):
+                Bucket containing the active publication session.
+            decision_reviewer (optional):
+                Reviewer from the durable decision artifact.
+            decision_created_at (optional):
+                Timestamp from the durable decision artifact.
 
     Returns:
             The reservation token and server-bound decision metadata.
@@ -1480,6 +2160,10 @@ def reserve_with_broker(
         records=records,
         reviewer=reviewer,
         decision_digest=decision_digest,
+        publication_owner=publication_owner,
+        publication_bucket=publication_bucket,
+        decision_reviewer=decision_reviewer,
+        decision_created_at=decision_created_at,
     )
     if not isinstance(reservation, BrokerReservationResult):
         raise ReviewError("Broker returned an invalid promotion reservation")

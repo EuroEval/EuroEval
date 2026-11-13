@@ -15,7 +15,9 @@ from src.scripts import collect_evaluation_results
 
 
 class FakeHfApi:
-    """Fake HfApi that mocks sync_bucket and batch_bucket_files calls."""
+    """In-memory adapter for canonical result-bucket operations."""
+
+    objects: dict[str, bytes] = {}
 
     def batch_bucket_files(
         self,
@@ -36,7 +38,35 @@ class FakeHfApi:
             kwargs:
                 Kwargs supplied to the test.
         """
-        pass
+        del bucket_id, kwargs
+        for local, name in add or []:
+            self.objects[name] = (
+                local if isinstance(local, bytes) else Path(local).read_bytes()
+            )
+        for name in delete or []:
+            self.objects.pop(name, None)
+
+    def download_bucket_files(
+        self,
+        bucket_id: str,
+        files: list[tuple[str, Path]],
+        *,
+        raise_on_missing_files: bool,
+        token: str,
+    ) -> None:
+        """Copy requested objects into their local destinations."""
+        del bucket_id, raise_on_missing_files, token
+        for name, destination in files:
+            if name in self.objects:
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_bytes(self.objects[name])
+
+    def list_bucket_tree(
+        self, bucket_id: str, prefix: str, recursive: bool, token: str
+    ) -> list[object]:
+        """Return no entries for test setups that do not seed a bucket."""
+        del bucket_id, prefix, recursive, token
+        return []
 
     def sync_bucket(
         self,
@@ -61,6 +91,12 @@ class FakeHfApi:
                 Kwargs supplied to the test.
         """
         pass
+
+
+@pytest.fixture(autouse=True)
+def clear_bucket_adapter() -> None:
+    """Keep each test's in-memory bucket isolated."""
+    FakeHfApi.objects.clear()
 
 
 def test_initial_yes_does_not_approve_without_item_confirmation(

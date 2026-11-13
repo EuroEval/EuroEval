@@ -7,10 +7,10 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-from huggingface_hub import HfApi
 from huggingface_hub.errors import HfHubHTTPError
 
 from leaderboards import bucket_sync
+from leaderboards.canonical_publication import CanonicalPublisher
 
 
 class TestMergeResults:
@@ -299,10 +299,10 @@ class TestMergeResults:
 class TestSyncBucket:
     """Tests for ``sync_bucket``."""
 
-    def test_sync_bucket_calls_hf_api_with_token(
+    def test_sync_bucket_calls_public_downloader(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test that sync_bucket calls HfApi with the resolved token.
+        """Test that sync_bucket uses the public refresh function.
 
         Args:
             tmp_path:
@@ -315,17 +315,13 @@ class TestSyncBucket:
 
         with (
             patch("leaderboards.bucket_sync.resolve_hf_token", return_value="token123"),
-            patch.object(HfApi, "sync_bucket", return_value=None) as mock_sync,
+            patch.object(
+                bucket_sync, "download_missing_bucket_files", return_value=0
+            ) as mock_download,
         ):
-            bucket_sync.sync_bucket()
+            bucket_sync.sync_bucket(delete_empty=False)
 
-        mock_sync.assert_called_once_with(
-            source="hf://buckets/test/results/",
-            dest=str(tmp_path),
-            token="token123",
-            ignore_times=True,
-            ignore_sizes=False,
-        )
+        mock_download.assert_called_once_with()
 
     def test_sync_bucket_preserves_local_only_files(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -357,39 +353,23 @@ class TestSyncBucket:
         local_file = model_dir / "test_ds__none__none.json"
         local_file.write_text(json.dumps(local_record), encoding="utf-8")
 
-        # Mock HfApi.sync_bucket to simulate bucket sync that removes the file
-        def mock_sync(
-            source: str,
-            dest: str,
-            token: str | None = None,
-            ignore_times: bool = False,
-            **kwargs,
-        ) -> None:
-            # Simulate sync removing the local file
-            """Mock sync for this test.
+        def mock_download() -> int:
+            """Simulate refresh removing the local file before reconciliation.
 
-            Args:
-                source:
-                    Source supplied to the test.
-                dest:
-                    Dest supplied to the test.
-                token (optional):
-                    Token supplied to the test. Defaults to None.
-                ignore_times (optional):
-                    Ignore times supplied to the test. Defaults to False.
-                kwargs:
-                    Kwargs supplied to the test.
+            Returns:
+                Zero downloaded files.
             """
-            if local_file.exists():
-                local_file.unlink()
+            local_file.unlink(missing_ok=True)
+            return 0
 
         monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
         monkeypatch.setattr(bucket_sync, "HF_RESULTS_BUCKET", "test/results")
 
         with patch("leaderboards.bucket_sync.resolve_hf_token", return_value="test"):
-            with patch.object(HfApi, "sync_bucket", side_effect=mock_sync):
-                # This should not raise, but should log a warning
-                bucket_sync.sync_bucket()
+            with patch.object(
+                bucket_sync, "download_missing_bucket_files", side_effect=mock_download
+            ):
+                bucket_sync.sync_bucket(delete_empty=False)
 
         # The file should be restored since we keep content in memory
         assert local_file.exists()
@@ -412,14 +392,14 @@ class TestSyncBucket:
 
         with patch("leaderboards.bucket_sync.resolve_hf_token", return_value="token"):
             with patch.object(
-                HfApi,
-                "sync_bucket",
+                bucket_sync,
+                "download_missing_bucket_files",
                 side_effect=HfHubHTTPError(
                     "Sync failed", response=MagicMock(status_code=500)
                 ),
             ):
                 with pytest.raises(HfHubHTTPError, match="Sync failed"):
-                    bucket_sync.sync_bucket()
+                    bucket_sync.sync_bucket(delete_empty=False)
 
     def test_sync_bucket_raises_without_hf_token(
         self, monkeypatch: pytest.MonkeyPatch
@@ -435,7 +415,7 @@ class TestSyncBucket:
 
         with patch("leaderboards.bucket_sync.resolve_hf_token", return_value=None):
             with pytest.raises(RuntimeError, match="HF_TOKEN not set"):
-                bucket_sync.sync_bucket()
+                bucket_sync.sync_bucket(delete_empty=False)
 
 
 class TestUploadResultsToBucket:
@@ -470,28 +450,11 @@ class TestUploadResultsToBucket:
         local_file.write_text(json.dumps(local_record), encoding="utf-8")
 
         # Mock sync that puts a record with different identity at same path
-        def mock_sync(
-            source: str,
-            dest: str,
-            token: str | None = None,
-            ignore_times: bool = False,
-            **kwargs,
-        ) -> None:
-            # Record with different identity but same sanitised path
-            # "model_a" also sanitises to "model_a" (no change)
-            """Mock sync for this test.
+        def mock_download() -> int:
+            """Stage the colliding bucket record for wrapper reconciliation.
 
-            Args:
-                source:
-                    Source supplied to the test.
-                dest:
-                    Dest supplied to the test.
-                token (optional):
-                    Token supplied to the test. Defaults to None.
-                ignore_times (optional):
-                    Ignore times supplied to the test. Defaults to False.
-                kwargs:
-                    Kwargs supplied to the test.
+            Returns:
+                Zero downloaded files.
             """
             bucket_record = {
                 "model_info": {"id": "model_a"},  # Different from "model/a"
@@ -502,14 +465,17 @@ class TestUploadResultsToBucket:
                 "retrieved_timestamp": "2024-01-01T00:00:00Z",
             }
             local_file.write_text(json.dumps(bucket_record), encoding="utf-8")
+            return 0
 
         monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
         monkeypatch.setattr(bucket_sync, "HF_RESULTS_BUCKET", "test/results")
 
         with patch("leaderboards.bucket_sync.resolve_hf_token", return_value="test"):
-            with patch.object(HfApi, "sync_bucket", side_effect=mock_sync):
+            with patch.object(
+                bucket_sync, "download_missing_bucket_files", side_effect=mock_download
+            ):
                 with pytest.raises(ValueError, match="Identity collision detected"):
-                    bucket_sync.sync_bucket()
+                    bucket_sync.sync_bucket(delete_empty=False)
 
     def test_sync_bucket_locally_newer_wins(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -539,45 +505,25 @@ class TestUploadResultsToBucket:
         local_file = model_dir / "test_ds__none__none.json"
         local_file.write_text(json.dumps(local_record), encoding="utf-8")
 
-        # Mock sync that puts an older bucket record
-        def mock_sync(
-            source: str,
-            dest: str,
-            token: str | None = None,
-            ignore_times: bool = False,
-            **kwargs,
-        ) -> None:
-            # Create an older bucket record
-            """Mock sync for this test.
+        # An unchanged refresh leaves the locally newer record untouched.
+        def mock_download() -> int:
+            """Simulate a refresh with no changed records.
 
-            Args:
-                source:
-                    Source supplied to the test.
-                dest:
-                    Dest supplied to the test.
-                token (optional):
-                    Token supplied to the test. Defaults to None.
-                ignore_times (optional):
-                    Ignore times supplied to the test. Defaults to False.
-                kwargs:
-                    Kwargs supplied to the test.
+            Returns:
+                Zero downloaded files.
             """
-            older_record = {
-                "model_info": {"id": "test/model"},
-                "eval_library": {
-                    "additional_details": {"dataset": "test_ds"},
-                    "version": "1.0.0",
-                },
-                "retrieved_timestamp": "2024-01-01T00:00:00Z",  # Older
-            }
-            local_file.write_text(json.dumps(older_record), encoding="utf-8")
+            return 0
 
+        # The refresh seam is isolated here; the assertion below guards the
+        # wrapper's local-newer reconciliation behaviour.
         monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
         monkeypatch.setattr(bucket_sync, "HF_RESULTS_BUCKET", "test/results")
 
         with patch("leaderboards.bucket_sync.resolve_hf_token", return_value="test"):
-            with patch.object(HfApi, "sync_bucket", side_effect=mock_sync):
-                bucket_sync.sync_bucket()
+            with patch.object(
+                bucket_sync, "download_missing_bucket_files", side_effect=mock_download
+            ):
+                bucket_sync.sync_bucket(delete_empty=False)
 
         # Local record should win (newer timestamp)
         final_record = json.loads(local_file.read_text(encoding="utf-8"))
@@ -612,36 +558,23 @@ class TestUploadResultsToBucket:
         local_file.write_text(json.dumps(local_record), encoding="utf-8")
 
         # Mock sync that removes the local file
-        def mock_sync(
-            source: str,
-            dest: str,
-            token: str | None = None,
-            ignore_times: bool = False,
-            **kwargs,
-        ) -> None:
-            """Mock sync for this test.
+        def mock_download() -> int:
+            """Simulate refresh removing the local-only file.
 
-            Args:
-                source:
-                    Source supplied to the test.
-                dest:
-                    Dest supplied to the test.
-                token (optional):
-                    Token supplied to the test. Defaults to None.
-                ignore_times (optional):
-                    Ignore times supplied to the test. Defaults to False.
-                kwargs:
-                    Kwargs supplied to the test.
+            Returns:
+                Zero downloaded files.
             """
-            if local_file.exists():
-                local_file.unlink()
+            local_file.unlink(missing_ok=True)
+            return 0
 
         monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
         monkeypatch.setattr(bucket_sync, "HF_RESULTS_BUCKET", "test/results")
 
         with patch("leaderboards.bucket_sync.resolve_hf_token", return_value="test"):
-            with patch.object(HfApi, "sync_bucket", side_effect=mock_sync):
-                bucket_sync.sync_bucket()
+            with patch.object(
+                bucket_sync, "download_missing_bucket_files", side_effect=mock_download
+            ):
+                bucket_sync.sync_bucket(delete_empty=False)
 
         # File should be restored
         assert local_file.exists()
@@ -681,9 +614,9 @@ class TestUploadResultsToBucket:
         monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
         monkeypatch.setattr(bucket_sync, "HF_RESULTS_BUCKET", "test/results")
 
+        _use_test_publisher(monkeypatch)
         with patch("leaderboards.bucket_sync.resolve_hf_token", return_value="token"):
-            with patch.object(HfApi, "batch_bucket_files", return_value=None):
-                bucket_sync.upload_results_to_bucket(results_file=results_file)
+            bucket_sync.upload_results_to_bucket(results_file=results_file)
 
         # Stale jsonl should be removed
         assert not stale_jsonl.exists()
@@ -718,9 +651,9 @@ class TestUploadResultsToBucket:
         monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
         monkeypatch.setattr(bucket_sync, "HF_RESULTS_BUCKET", "test/results")
 
+        _use_test_publisher(monkeypatch)
         with patch("leaderboards.bucket_sync.resolve_hf_token", return_value="token"):
-            with patch.object(HfApi, "batch_bucket_files", return_value=None):
-                bucket_sync.upload_results_to_bucket(results_file=results_file)
+            bucket_sync.upload_results_to_bucket(results_file=results_file)
 
         # Verify tree layout was created
         expected_path = results_dir / "test_model" / "test_ds__none__none.json"
@@ -767,9 +700,9 @@ class TestUploadResultsToBucket:
         monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
         monkeypatch.setattr(bucket_sync, "HF_RESULTS_BUCKET", "test/results")
 
+        _use_test_publisher(monkeypatch)
         with patch("leaderboards.bucket_sync.resolve_hf_token", return_value="token"):
-            with patch.object(HfApi, "batch_bucket_files", return_value=None):
-                bucket_sync.upload_results_to_bucket(results_file=results_file)
+            bucket_sync.upload_results_to_bucket(results_file=results_file)
 
         # Only valid record should be uploaded
         valid_path = results_dir / "valid_model" / "test_ds__none__none.json"
@@ -829,9 +762,8 @@ class TestUploadResultsToBucket:
         monkeypatch.setattr(bucket_sync, "HF_RESULTS_BUCKET", "test/results")
 
         with patch("leaderboards.bucket_sync.resolve_hf_token", return_value="token"):
-            with patch.object(HfApi, "sync_bucket", return_value=None):
-                with pytest.raises(ValueError, match="Identity collision detected"):
-                    bucket_sync.upload_results_to_bucket(results_file=results_file)
+            with pytest.raises(ValueError, match="Identity collision detected"):
+                bucket_sync.upload_results_to_bucket(results_file=results_file)
 
         # Verify no mutation occurred: pre-existing file should still be intact
         assert pre_existing_file.exists(), (
@@ -873,16 +805,15 @@ class TestUploadResultsToBucket:
         monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
         monkeypatch.setattr(bucket_sync, "HF_RESULTS_BUCKET", "test/results")
 
+        _use_test_publisher(
+            monkeypatch,
+            upload_error=HfHubHTTPError(
+                "Upload failed", response=MagicMock(status_code=500)
+            ),
+        )
         with patch("leaderboards.bucket_sync.resolve_hf_token", return_value="token"):
-            with patch.object(
-                HfApi,
-                "batch_bucket_files",
-                side_effect=HfHubHTTPError(
-                    "Upload failed", response=MagicMock(status_code=500)
-                ),
-            ):
-                with pytest.raises(HfHubHTTPError, match="Upload failed"):
-                    bucket_sync.upload_results_to_bucket(results_file=results_file)
+            with pytest.raises(HfHubHTTPError, match="Upload failed"):
+                bucket_sync.upload_results_to_bucket(results_file=results_file)
 
         # Tree should still be created, but sync fails
         expected_path = results_dir / "test_model" / "test_ds__none__none.json"
@@ -934,3 +865,92 @@ class TestUploadResultsToBucket:
             bucket_sync.upload_results_to_bucket(results_file=results_file)
 
         assert "does not exist" in caplog.text
+
+
+def _use_test_publisher(
+    monkeypatch: pytest.MonkeyPatch, upload_error: Exception | None = None
+) -> None:
+    """Replace publication's remote adapters with in-memory implementations.
+
+    Args:
+        monkeypatch: Fixture for replacing dependencies.
+        upload_error (optional): Optional error raised when publishing.
+    """
+
+    def publisher_factory(
+        *, api: object, token: str, bucket: str
+    ) -> CanonicalPublisher:
+        del api
+        return CanonicalPublisher(
+            api=_TestBucketApi(upload_error=upload_error),
+            token=token,
+            bucket=bucket,
+            lock=_TestPublicationLock(bucket=bucket),
+        )
+
+    monkeypatch.setattr(bucket_sync, "CanonicalPublisher", publisher_factory)
+
+
+class _TestBucketApi:
+    """In-memory adapter for canonical publication tests."""
+
+    def __init__(self, upload_error: Exception | None = None) -> None:
+        """Initialise test storage.
+
+        Args:
+            upload_error (optional): Error raised by object uploads.
+        """
+        self.objects: dict[str, bytes] = {}
+        self.upload_error = upload_error
+
+    def batch_bucket_files(
+        self,
+        bucket_id: str,
+        add: list[tuple[Path, str]] | None = None,
+        delete: list[str] | None = None,
+        token: str = "",
+    ) -> None:
+        """Apply in-memory object mutations."""
+        del bucket_id, token
+        if self.upload_error is not None:
+            raise self.upload_error
+        for local_path, remote_path in add or []:
+            self.objects[remote_path] = local_path.read_bytes()
+        for remote_path in delete or []:
+            self.objects.pop(remote_path, None)
+
+    def download_bucket_files(
+        self,
+        bucket_id: str,
+        files: list[tuple[str, Path]],
+        *,
+        raise_on_missing_files: bool,
+        token: str,
+    ) -> None:
+        """Download selected in-memory objects."""
+        del bucket_id, raise_on_missing_files, token
+        for remote_path, local_path in files:
+            if remote_path in self.objects:
+                local_path.write_bytes(self.objects[remote_path])
+
+
+class _TestPublicationLock:
+    """In-memory publication lock scoped to the patched bucket."""
+
+    def __init__(self, bucket: str) -> None:
+        """Initialise the lock adapter.
+
+        Args:
+            bucket: Bucket that the lock protects.
+        """
+        self.bucket = bucket
+        self.endpoint = "memory://publication-lock"
+
+    def request(self, action: str, owner: str) -> str:
+        """Acknowledge lock operations without remote access.
+
+        Returns:
+            The simulated lock status.
+        """
+        del owner
+        return "released" if action == "release" else "owned"

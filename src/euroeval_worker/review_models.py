@@ -32,6 +32,7 @@ class BrokerReservationResult:
     decision_reviewer: str
     decision_created_at: str
     decision_digest: str | None = None
+    status: t.Literal["reserved", "terminal"] = "reserved"
 
 
 class BucketEntry(t.Protocol):

@@ -23,6 +23,7 @@ import {
   verifyVolunteerMarker,
 } from "./_lib.js";
 import type { PromotionReservation } from "./_lib.js";
+import { canonicalPublicationBucket } from "./_lib/publication.js";
 
 export const config = { runtime: "edge" };
 
@@ -51,6 +52,17 @@ export default async function handler(req: Request): Promise<Response> {
         (typeof requestedReviewer !== "string" || !requestedReviewer.trim())) {
       throw new BrokerError(400, "reviewer must be a non-empty reviewer login.");
     }
+    const durableReviewer = body.decision_reviewer;
+    const durableCreatedAt = body.decision_created_at;
+    if ((durableReviewer !== undefined &&
+         (typeof durableReviewer !== "string" || !durableReviewer.trim())) ||
+        (durableCreatedAt !== undefined &&
+         (typeof durableCreatedAt !== "string" || !/^\d{4}-\d{2}-\d{2}T.*Z$/.test(durableCreatedAt)))) {
+      throw new BrokerError(400, "Original decision metadata is invalid.");
+    }
+    if ((durableReviewer === undefined) !== (durableCreatedAt === undefined)) {
+      throw new BrokerError(400, "Original decision metadata must be supplied together.");
+    }
     if (body.decision_nonce !== undefined) {
       throw new BrokerError(400, "decision_nonce is no longer accepted; use reviewer metadata.");
     }
@@ -68,17 +80,23 @@ export default async function handler(req: Request): Promise<Response> {
         throw new BrokerError(409, "Submission has already completed a different terminal transition.");
       }
       const existing = await getPromotionReservation(issueNumber, submissionId);
-      if (requestedDigest !== undefined && requestedToken === undefined &&
-          existing?.status !== "terminal") {
-        throw new BrokerError(409, "A decision digest requires a terminal reservation token.");
+      const publicationBucket = body.publication_bucket;
+      const publicationOwner = body.publication_owner;
+      if (outcome === "accepted" && existing?.status !== "terminal" &&
+          (publicationBucket !== canonicalPublicationBucket() || typeof publicationOwner !== "string" ||
+           !/^[A-Za-z0-9_-]{24,256}$/.test(publicationOwner))) {
+        throw new BrokerError(400, "Accepted promotions require publication_owner and publication_bucket.");
       }
       if (requestedToken === undefined && requestedReviewer === undefined &&
-          !(requestedDigest !== undefined && existing?.status === "terminal")) {
-        throw new BrokerError(400, "reviewer is required for a new promotion reservation.");
+          !(requestedDigest !== undefined && existing !== undefined) &&
+          !(requestedDigest !== undefined && durableReviewer !== undefined)) {
+        throw new BrokerError(400, "reviewer or original decision metadata is required.");
       }
       if (existing) {
         if (existing.outcome !== outcome) throw new BrokerError(409, "A different outcome is already reserved.");
-        if (JSON.stringify(existing.records) !== JSON.stringify(requested)) throw new BrokerError(409, "Reservation evidence differs.");
+        if (JSON.stringify(parsePromotionRecords(existing.records)) !== JSON.stringify(requested)) {
+          throw new BrokerError(409, "Reservation evidence differs.");
+        }
         if (requestedToken !== undefined && requestedToken !== existing.token) {
           throw new BrokerError(409, "Promotion reservation token differs.");
         }
@@ -91,6 +109,9 @@ export default async function handler(req: Request): Promise<Response> {
         }
         const stable: PromotionReservation = {
           ...existing,
+          ...(outcome === "accepted" && existing.status !== "terminal" ? {
+            publication_bucket: publicationBucket as string, publication_owner: publicationOwner as string,
+          } : {}),
           decision_reviewer: existing.decision_reviewer ||
             (typeof requestedReviewer === "string" ? requestedReviewer.trim() : "legacy"),
           decision_created_at: existing.decision_created_at || new Date().toISOString(),
@@ -116,10 +137,22 @@ export default async function handler(req: Request): Promise<Response> {
           decision_digest: requestedDigest || stable.decision_digest, expires_in: PROMOTION_RESERVATION_TTL });
       }
       if (requestedToken !== undefined) throw new BrokerError(409, "Promotion reservation is absent; retry.");
+      if (requestedDigest !== undefined &&
+          (durableReviewer === undefined || durableCreatedAt === undefined)) {
+        throw new BrokerError(409, "Original decision metadata is required to recover an expired reservation.");
+      }
       const reservation: PromotionReservation = {
         issue_number: issueNumber, submission_id: submissionId, outcome, records: requested,
-        token: randomToken(), decision_reviewer: (requestedReviewer as string).trim(),
-        decision_created_at: new Date().toISOString(), status: "reserved",
+        token: randomToken(),
+        decision_reviewer: typeof durableReviewer === "string"
+          ? durableReviewer.trim() : (requestedReviewer as string).trim(),
+        decision_created_at: typeof durableCreatedAt === "string"
+          ? durableCreatedAt : new Date().toISOString(),
+        ...(requestedDigest !== undefined ? { decision_digest: requestedDigest } : {}),
+        status: "reserved",
+        ...(outcome === "accepted" ? {
+          publication_bucket: publicationBucket as string, publication_owner: publicationOwner as string,
+        } : {}),
       };
       if (outcome === "accepted") {
         const result = await reservePromotionReservation(reservation);
@@ -130,6 +163,7 @@ export default async function handler(req: Request): Promise<Response> {
       }
       return json(201, { protocol_version: PROTOCOL_VERSION, status: "reserved", token: reservation.token,
         decision_reviewer: reservation.decision_reviewer, decision_created_at: reservation.decision_created_at,
+        ...(reservation.decision_digest ? { decision_digest: reservation.decision_digest } : {}),
         expires_in: PROMOTION_RESERVATION_TTL });
     } finally { await releaseIssueMutex(issueNumber, mutex); }
   } catch (error) {

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { claimableLanguages, signVolunteerMarker } from "../../../api/worker/_lib.ts";
 import promote, { promotionPlan } from "../../../api/worker/promote.ts";
 import reservePromotion from "../../../api/worker/promotion-reserve.ts";
+import { withRedisRestBridge } from "./redis-bridge.mjs";
 
 const submission = (id, language, contributor, count, status = "submitted") => ({
   submission_id: id,
@@ -244,6 +245,65 @@ test("promotion reservation returns stable review metadata on resume", async () 
     globalThis.fetch = originalFetch;
     process.env = originalEnv;
   }
+});
+
+test("decision recovery reuses active reservations and recreates expired ones", async () => {
+  await withRedisRestBridge(async () => {
+    const originalFetch = globalThis.fetch;
+    const originalEnv = { ...process.env };
+    process.env.VOLUNTEER_MARKER_SECRET = "marker-secret";
+    process.env.VOLUNTEER_PROMOTION_SECRET = "promotion-secret";
+    process.env.GITHUB_TOKEN = "github-token";
+    const records = [{ identity: JSON.stringify(["org/model", "dataset", false, true]),
+      canonical_path: "org_model/dataset__test__fewshot.json", digest: "a".repeat(64) }];
+    const digest = "d".repeat(64);
+    const reviewer = "alice";
+    const createdAt = "2026-09-06T12:00:00Z";
+    const issueMarker = await signVolunteerMarker(12, marker([submission("one", "el", reviewer, 4)]));
+    globalThis.fetch = async (input, init = {}) => {
+      if (String(input).endsWith("/issues/12")) return Response.json({ number: 12,
+        body: `<!-- euroeval-volunteer-worker:v1 ${JSON.stringify(issueMarker)} -->` });
+      return originalFetch(input, init);
+    };
+    const key = "euroeval:worker:promotion:12:one";
+    const body = (changes = {}) => ({ protocol_version: "volunteer-worker/v1", issue_number: 12,
+      submission_id: "one", outcome: "rejected", records, decision_digest: digest,
+      decision_reviewer: reviewer, decision_created_at: createdAt, ...changes });
+    const request = (data) => new Request("https://euroeval.com/api/worker/promotion-lock", {
+      method: "POST", headers: { "content-type": "application/json", "x-promotion-secret": "promotion-secret" },
+      body: JSON.stringify(data),
+    });
+    try {
+      const initial = await reservePromotion(request({ ...body(), reviewer }));
+      const initialBody = await initial.json();
+      assert.equal(initial.status, 201, JSON.stringify(initialBody));
+      const active = await reservePromotion(request(body()));
+      const activeBody = await active.json();
+      assert.equal(active.status, 200);
+      assert.equal(activeBody.token, initialBody.token);
+      assert.equal(activeBody.decision_reviewer, reviewer);
+      assert.equal(activeBody.decision_created_at, createdAt);
+      await fetch("https://redis.test", { method: "POST", body: JSON.stringify(["DEL", key]) });
+      const recovered = await reservePromotion(request(body()));
+      const recoveredBody = await recovered.json();
+      assert.equal(recovered.status, 201, JSON.stringify(recoveredBody));
+      assert.notEqual(recoveredBody.token, initialBody.token);
+      assert.equal(recoveredBody.decision_digest, digest);
+      assert.equal(recoveredBody.decision_reviewer, reviewer);
+      assert.equal(recoveredBody.decision_created_at, createdAt);
+      for (const changed of [
+        body({ decision_digest: "e".repeat(64) }),
+        body({ outcome: "accepted" }),
+        body({ records: [{ ...records[0], digest: "b".repeat(64) }] }),
+      ]) {
+        const rejected = await reservePromotion(request(changed));
+        assert.ok(rejected.status >= 400);
+      }
+    } finally {
+      globalThis.fetch = originalFetch;
+      process.env = originalEnv;
+    }
+  });
 });
 
 test("handler finishes GitHub labels, credit, ownership, and notification", async () => {

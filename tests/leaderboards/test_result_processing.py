@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, call, patch
 
 import pytest
+from huggingface_hub import BucketFile
 from huggingface_hub.errors import HfHubHTTPError
 
 from leaderboards import bucket_sync, result_processing
@@ -90,7 +91,7 @@ class TestUploadPerModelFilesPerRecordTree:
         """
         monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
 
-        mock_api = MagicMock()
+        mock_api = MemoryBucketApi()
         record: dict[str, t.Any] = {
             "model_info": {
                 "id": "org/model",
@@ -165,7 +166,7 @@ class TestUploadPerModelFilesPerRecordTree:
         """
         monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
 
-        mock_api = MagicMock()
+        mock_api = MemoryBucketApi()
 
         # Older record (version 1.0.0)
         older_record: dict[str, t.Any] = {
@@ -316,7 +317,7 @@ class TestUploadPerModelFilesPerRecordTree:
         """
         monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
 
-        mock_api = MagicMock()
+        mock_api = MemoryBucketApi()
         record: dict[str, t.Any] = {
             "model_info": {
                 "id": "org/Qwen3-0.6B",
@@ -359,6 +360,74 @@ class TestUploadPerModelFilesPerRecordTree:
         written_record = json.loads(content)
         assert written_record["model_info"]["id"] == "org/Qwen3-0.6B"
         assert "additional_details" in written_record["model_info"]
+
+
+class MemoryBucketApi:
+    """In-memory bucket adapter for publication and sync tests."""
+
+    def __init__(self) -> None:
+        """Initialise an empty bucket and call log."""
+        self.objects: dict[str, bytes] = {}
+        self.listed: list[tuple[str, bool, str]] = []
+        self.downloaded: list[tuple[str, str]] = []
+        self.uploaded: list[tuple[str, str]] = []
+        self.fail_upload: BaseException | None = None
+
+    def batch_bucket_files(
+        self,
+        bucket_id: str,
+        add: list[tuple[Path, str]] | None = None,
+        delete: list[str] | None = None,
+        token: str = "",
+    ) -> None:
+        """Apply writes and deletes to the in-memory bucket."""
+        if self.fail_upload is not None:
+            raise self.fail_upload
+        for local, name in add or []:
+            self.uploaded.append((bucket_id, token))
+            self.objects[name] = local.read_bytes()
+        for name in delete or []:
+            self.objects.pop(name, None)
+
+    def download_bucket_files(
+        self,
+        bucket_id: str,
+        files: list[tuple[str | BucketFile, str | Path]],
+        *,
+        raise_on_missing_files: bool = False,
+        token: str = "",
+    ) -> None:
+        """Write requested bucket objects to local destinations."""
+        del raise_on_missing_files
+        for name, destination in files:
+            path = name.path if isinstance(name, BucketFile) else name
+            self.downloaded.append((bucket_id, token))
+            if path not in self.objects:
+                continue
+            local = Path(destination)
+            local.parent.mkdir(parents=True, exist_ok=True)
+            local.write_bytes(self.objects[path])
+
+    def list_bucket_tree(
+        self, bucket_id: str, recursive: bool, token: str
+    ) -> list[BucketFile]:
+        """List bucket objects as Hugging Face bucket entries.
+
+        Args:
+            bucket_id: Bucket to list.
+            recursive: Whether to list nested objects.
+            token: Authentication token.
+
+        Returns:
+            Bucket entries for all stored objects.
+        """
+        self.listed.append((bucket_id, recursive, token))
+        return [
+            BucketFile(
+                type="file", path=path, size=len(content), xetHash=f"hash-{path}"
+            )
+            for path, content in self.objects.items()
+        ]
 
 
 def test_cache_freshness_load_before_cache_construction(
@@ -570,21 +639,36 @@ def test_sync_bucket_passes_hf_token(
             Temporary directory for files created by the test.
     """
     monkeypatch.setattr(bucket_sync, "RESULTS_DIR", tmp_path)
-    mock_api = MagicMock()
+    mock_api = MemoryBucketApi()
+    raw_record = json.dumps(
+        {
+            "schema_version": "0.3.0",
+            "model_info": {"id": "org/model"},
+            "eval_library": {
+                "name": "euroeval",
+                "version": "18.4.0",
+                "additional_details": {
+                    "dataset": "dataset",
+                    "validation_split": False,
+                    "few_shot": False,
+                },
+            },
+            "evaluation_results": [],
+        }
+    ).encode()
+    mock_api.objects["org_model/dataset__test__zeroshot.json"] = raw_record
 
     with patch("leaderboards.bucket_sync.HfApi", return_value=mock_api):
         with patch(
             "leaderboards.bucket_sync.resolve_hf_token", return_value="test_token"
         ):
-            bucket_sync.sync_bucket()
+            bucket_sync.sync_bucket(delete_empty=False)
 
-    mock_api.sync_bucket.assert_called_once_with(
-        source="hf://buckets/EuroEval/results/",
-        dest=str(tmp_path),
-        token="test_token",
-        ignore_times=True,
-        ignore_sizes=False,
-    )
+    assert mock_api.listed == [("EuroEval/results", True, "test_token")]
+    assert mock_api.downloaded == [("EuroEval/results", "test_token")]
+    assert (
+        tmp_path / "org_model/dataset__test__zeroshot.json"
+    ).read_bytes() == raw_record
 
 
 def test_sync_bucket_raises_without_hf_token(
@@ -618,7 +702,7 @@ def test_upload_per_model_files_passes_hf_token(
     """
     monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
 
-    mock_api = MagicMock()
+    mock_api = MemoryBucketApi()
     record: dict[str, t.Any] = {
         "model_info": {
             "id": "org/model",
@@ -647,10 +731,7 @@ def test_upload_per_model_files_passes_hf_token(
                 processed_records=[record], upload_to_bucket=True
             )
 
-    mock_api.batch_bucket_files.assert_called_once()
-    call_kwargs = mock_api.batch_bucket_files.call_args.kwargs
-    assert call_kwargs["bucket_id"] == "EuroEval/results"
-    assert call_kwargs["token"] == "test_token"
+    assert mock_api.uploaded == [("EuroEval/results", "test_token")]
 
 
 def test_upload_per_model_files_raises_on_sync_failure(
@@ -666,8 +747,8 @@ def test_upload_per_model_files_raises_on_sync_failure(
     """
     monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
 
-    mock_api = MagicMock()
-    mock_api.batch_bucket_files.side_effect = HfHubHTTPError(
+    mock_api = MemoryBucketApi()
+    mock_api.fail_upload = HfHubHTTPError(
         "Bucket sync failed", response=MagicMock(status_code=500)
     )
 
@@ -677,7 +758,15 @@ def test_upload_per_model_files_raises_on_sync_failure(
         ):
             with pytest.raises(HfHubHTTPError, match="Bucket sync failed"):
                 result_processing._upload_per_model_files(
-                    processed_records=[], upload_to_bucket=True
+                    processed_records=[
+                        {
+                            "model_info": {"id": "org/model"},
+                            "eval_library": {
+                                "additional_details": {"dataset": "dataset"}
+                            },
+                        }
+                    ],
+                    upload_to_bucket=True,
                 )
 
 
@@ -731,7 +820,7 @@ def test_upload_results_to_bucket_passes_hf_token(
     results_file.write_text(json.dumps(valid_record) + "\n", encoding="utf-8")
     monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
 
-    mock_api = MagicMock()
+    mock_api = MemoryBucketApi()
 
     with patch("leaderboards.bucket_sync.HfApi", return_value=mock_api):
         with patch(
@@ -739,10 +828,7 @@ def test_upload_results_to_bucket_passes_hf_token(
         ):
             bucket_sync.upload_results_to_bucket(results_file=results_file)
 
-    mock_api.batch_bucket_files.assert_called_once()
-    call_kwargs = mock_api.batch_bucket_files.call_args.kwargs
-    assert call_kwargs["bucket_id"] == "EuroEval/results"
-    assert call_kwargs["token"] == "test_token"
+    assert mock_api.uploaded == [("EuroEval/results", "test_token")]
 
 
 def test_upload_results_to_bucket_raises_on_sync_failure(
@@ -771,8 +857,8 @@ def test_upload_results_to_bucket_raises_on_sync_failure(
     results_file.write_text(json.dumps(valid_record) + "\n", encoding="utf-8")
     monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
 
-    mock_api = MagicMock()
-    mock_api.batch_bucket_files.side_effect = HfHubHTTPError(
+    mock_api = MemoryBucketApi()
+    mock_api.fail_upload = HfHubHTTPError(
         "Bucket sync failed", response=MagicMock(status_code=500)
     )
 

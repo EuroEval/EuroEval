@@ -12,6 +12,7 @@ import {
   reserveCanary,
 } from "./_lib.js";
 import type { Lease, VolunteerLeaseMarker } from "./_lib.js";
+import { narrowCoverage } from "./_lib/coverage.js";
 
 // Reserved only as a Redis mutex key; never used for a GitHub API request.
 const GLOBAL_CLAIM_MUTEX = Number.MAX_SAFE_INTEGER;
@@ -297,6 +298,12 @@ export default async function handler(req: Request): Promise<Response> {
         let trusted;
         try { trusted = expectedScope(euroevalVersion, model.model_type, language); }
         catch (error) { if (error instanceof BrokerError && error.status === 422) continue; throw error; }
+        const coverage = await narrowCoverage(trusted, model.id, model.revision, euroevalVersion);
+        if (!coverage.allowed_identity_suffix_sets.length) continue;
+        if (coverage.covered_identity_suffixes.length &&
+            !(Array.isArray(body.capabilities) && body.capabilities.includes("canonical_coverage_v1"))) {
+          throw new BrokerError(426, "Worker update required for canonical coverage; update the worker image and retry.", "worker_update_required");
+        }
         checkDeadline();
         const expiresAt = new Date(Date.now() + leaseTtl() * 1000).toISOString();
         const leaseId = randomToken(18);
@@ -320,7 +327,9 @@ export default async function handler(req: Request): Promise<Response> {
           expected_scope: {
             policy_version: trusted.policy_version,
             language_group: trusted.language_group,
-            allowed_identity_suffix_sets: trusted.allowed_identity_suffix_sets.map((set) => [...set]),
+            allowed_identity_suffix_sets: coverage.allowed_identity_suffix_sets,
+            original_identity_suffix_sets: coverage.original_identity_suffix_sets,
+            covered_identity_suffixes: coverage.covered_identity_suffixes,
             task_groups: [...trusted.task_groups],
             warnings: trusted.warnings || [],
           },
@@ -429,7 +438,7 @@ export default async function handler(req: Request): Promise<Response> {
     if (incompleteDiscovery) throw new BrokerError(503, "Model discovery is temporarily unavailable; retry claim.");
     return json(200, { protocol_version: PROTOCOL_VERSION, status: "no_work" });
   } catch (error) {
-    const failure = signal.aborted
+    const failure = signal.aborted && !(error instanceof BrokerError && error.status === 426)
       ? new BrokerError(503, "Claim discovery deadline exceeded; retry claim.") : error;
     const status = failure instanceof BrokerError ? failure.status : failure instanceof ConfigurationError ? 503 : 502;
     return json(status, brokerErrorBody(failure, "Unable to claim an evaluation."));

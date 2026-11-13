@@ -1,13 +1,21 @@
 """Tests for the volunteer worker's broker-facing orchestration."""
 
 import dataclasses
+import email.message
+import io
 import json
 import os
+import typing as t
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 import pytest
 
+from euroeval.benchmark_config_factory import prepare_dataset_configs
+from euroeval.data_models import DatasetConfig
 from euroeval.enums import ShotMode
+from euroeval.languages import get_all_languages
 from euroeval_worker import evaluator, hardware, runtime
 from euroeval_worker.auth import authenticate
 from euroeval_worker.broker import BrokerClient, BrokerError
@@ -339,6 +347,7 @@ def test_broker_protocol_payload_is_canonical() -> None:
     assert client.claim("credential", HARDWARE).lease is None
     assert calls[0][2]["protocol_version"] == "volunteer-worker/v1"
     assert calls[0][2]["worker_version"] == "worker-1"
+    assert calls[0][2]["capabilities"] == ["canonical_coverage_v1"]
     hardware_payload = calls[0][2]["hardware"]
     assert isinstance(hardware_payload, dict)
     assert set(hardware_payload) == {
@@ -942,77 +951,76 @@ class Broker:
             raise RuntimeError("temporary broker error")
 
 
-def test_evaluator_selects_official_tasks_for_required_canary(
+def test_evaluator_runs_only_missing_scope_identities(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """A required canary lease selects normal tasks and the canary task explicitly.
+    """Run only the remaining dataset, split and shot combination.
 
     Args:
         monkeypatch:
-            Pytest fixture for replacing dependencies during the test.
+            Fixture for replacing evaluator dependencies.
         tmp_path:
-            Temporary directory for files created by the test.
+            Temporary directory for isolated output.
     """
-    calls: dict[str, object] = {}
+    calls: list[dict[str, object]] = []
+    dataset = type("Dataset", (), {"name": "remaining"})()
 
     class FakeBenchmarker:
-        """Capture the adapter's calls."""
+        """Capture per-identity benchmark requests."""
 
         def __init__(self, **kwargs: object) -> None:
-            """Init   for this test.
+            """Accept benchmark configuration.
 
             Args:
                 kwargs:
-                    Kwargs supplied to the test.
+                    Configured evaluator parameters.
             """
-            calls["init"] = kwargs
 
         def benchmark(self, **kwargs: object) -> list[object]:
-            """Return one fake benchmark result.
+            """Record the scoped benchmark invocation.
 
             Args:
                 kwargs:
-                    Benchmark options supplied by the evaluator.
+                    Benchmark invocation parameters.
 
             Returns:
-                A list containing one placeholder benchmark result.
+                A single placeholder benchmark result.
             """
-            calls["benchmark"] = kwargs
+            calls.append(kwargs)
             return [object()]
 
+    scope = ExpectedScope(
+        policy_version="test-policy",
+        language_group="da",
+        allowed_identity_suffix_sets=(('["remaining",true,true]',),),
+        count=None,
+        warnings=(),
+        task_groups=("sequence_classification",),
+        original_identity_suffix_sets=(
+            ('["covered",true,true]', '["remaining",true,true]'),
+        ),
+        covered_identity_suffixes=('["covered",true,true]',),
+    )
+    lease = dataclasses.replace(LEASE, expected_scope=scope)
     monkeypatch.setattr(evaluator, "Benchmarker", FakeBenchmarker)
     monkeypatch.setattr(
-        evaluator,
-        "_canary_tasks",
-        lambda: ["classification", "contamination-detection"],
+        evaluator, "_official_dataset_configs", lambda language: [dataset]
     )
     monkeypatch.setattr(
         evaluator,
         "benchmark_result_to_eee_dict",
-        lambda result: {"evaluation_id": "one", "result": 1},
-    )
-    lease = dataclasses.replace(
-        LEASE,
-        contamination_canary=CanaryInstruction(
-            status="required",
-            protocol_version="private-completion-canary/v1",
-            corpus_revision="revision",
-            corpus_sha256="a" * 64,
-        ),
+        lambda result: {"evaluation_id": "remaining", "result": 1},
     )
 
-    evaluator.EuroEvalEvaluator(tmp_path).evaluate(
-        lease=lease, output_path=tmp_path / "isolated.jsonl"
+    records = evaluator.EuroEvalEvaluator(tmp_path).evaluate(
+        lease=lease, output_path=tmp_path / "narrowed.jsonl"
     )
 
-    init_kwargs = calls["init"]
-    benchmark_kwargs = calls["benchmark"]
-    assert isinstance(init_kwargs, dict)
-    assert isinstance(benchmark_kwargs, dict)
-    assert init_kwargs["task"] == ["classification", "contamination-detection"]
-    assert init_kwargs["dataset"] is None
-    assert benchmark_kwargs["task"] == ["classification", "contamination-detection"]
-    assert benchmark_kwargs["dataset"] is None
+    assert len(records) == 1
+    assert len(calls) == 1
+    assert calls[0]["dataset"] == [dataset]
+    assert calls[0]["few_shot"] is ShotMode.FEW_SHOT
+    assert calls[0]["evaluate_test_split"] is False
 
 
 def test_evaluator_uses_validation_and_remote_code_flags(
@@ -1588,6 +1596,145 @@ def test_partial_acknowledgements_survive_restart(
     assert StateStore(tmp_path).load_active() is None
 
 
+def test_required_canary_preserves_partial_ordinary_scope(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Evaluate only missing ordinary identities alongside the required canary.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing evaluator dependencies.
+        tmp_path:
+            Temporary directory for isolated output.
+    """
+    calls: list[dict[str, object]] = []
+    initialisations: list[dict[str, object]] = []
+    danish = get_all_languages()["da"]
+    actual_datasets = prepare_dataset_configs(
+        task=None,
+        dataset=None,
+        languages=[danish],
+        custom_datasets_file=Path(""),
+        api_key=None,
+        cache_dir=tmp_path,
+        trust_remote_code=False,
+        run_with_cli=False,
+    )
+    ordinary_datasets = [config for config in actual_datasets if not config.unofficial]
+    assert len(ordinary_datasets) >= 2
+    covered, missing = ordinary_datasets[:2]
+
+    class FakeBenchmarker:
+        """Resolve captured calls through EuroEval's real dataset selector."""
+
+        def __init__(self, **kwargs: object) -> None:
+            """Keep configured selector defaults for benchmark calls.
+
+            Args:
+                kwargs:
+                    Configured evaluator parameters.
+            """
+            self.defaults = kwargs
+            initialisations.append(kwargs)
+
+        def benchmark(self, **kwargs: object) -> list[object]:
+            """Resolve an invocation to real dataset configurations.
+
+            Args:
+                kwargs:
+                    Benchmark invocation parameters.
+
+            Returns:
+                Result markers for the resolved datasets.
+            """
+            calls.append(kwargs)
+            task = t.cast(
+                str | list[str] | None, kwargs.get("task", self.defaults.get("task"))
+            )
+            dataset = t.cast(
+                str | list[DatasetConfig] | None,
+                kwargs.get("dataset", self.defaults.get("dataset")),
+            )
+            resolved = prepare_dataset_configs(
+                task=task,
+                dataset=dataset,
+                languages=[danish],
+                custom_datasets_file=Path(""),
+                api_key=None,
+                cache_dir=tmp_path,
+                trust_remote_code=False,
+                run_with_cli=False,
+            )
+            if task == ["contamination-detection"]:
+                return ["canary"]
+            return [config.name for config in resolved]
+
+    scope = ExpectedScope(
+        policy_version="test-policy",
+        language_group="da",
+        allowed_identity_suffix_sets=(
+            (json.dumps([missing.name, True, True], separators=(",", ":")),),
+        ),
+        count=None,
+        warnings=(),
+        task_groups=("sequence_classification",),
+        original_identity_suffix_sets=(
+            tuple(
+                sorted(
+                    json.dumps([config.name, True, True], separators=(",", ":"))
+                    for config in (covered, missing)
+                )
+            ),
+        ),
+        covered_identity_suffixes=(
+            json.dumps([covered.name, True, True], separators=(",", ":")),
+        ),
+    )
+    lease = dataclasses.replace(
+        LEASE,
+        expected_scope=scope,
+        contamination_canary=CanaryInstruction(
+            status="required",
+            protocol_version="private-completion-canary/v1",
+            corpus_revision="revision",
+            corpus_sha256="a" * 64,
+        ),
+    )
+    monkeypatch.setattr(evaluator, "Benchmarker", FakeBenchmarker)
+    monkeypatch.setattr(
+        evaluator,
+        "benchmark_result_to_eee_dict",
+        lambda result: {"evaluation_id": result, "result": 1},
+    )
+
+    output_path = tmp_path / "partial-canary.jsonl"
+    records = evaluator.EuroEvalEvaluator(tmp_path).evaluate(
+        lease=lease, output_path=output_path
+    )
+
+    assert len(initialisations) == 1
+    assert initialisations[0]["task"] is None
+    assert initialisations[0]["dataset"] is None
+    assert len(calls) == 2
+    ordinary_call, canary_call = calls
+    ordinary_datasets = ordinary_call["dataset"]
+    assert isinstance(ordinary_datasets, list)
+    assert [config.name for config in ordinary_datasets] == [missing.name]
+    assert ordinary_call.get("task") is None
+    assert ordinary_call["few_shot"] is ShotMode.FEW_SHOT
+    assert ordinary_call["evaluate_test_split"] is False
+    assert canary_call["dataset"] is None
+    assert canary_call["task"] == ["contamination-detection"]
+    assert [json.loads(record.record_json)["evaluation_id"] for record in records] == [
+        missing.name,
+        "canary",
+    ]
+    assert [
+        json.loads(line)["evaluation_id"]
+        for line in output_path.read_text(encoding="utf-8").splitlines()
+    ] == [missing.name, "canary"]
+
+
 def test_restart_submits_durable_records_without_evaluation(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -1828,3 +1975,63 @@ def test_worker_retries_idempotently_and_finalises(
     assert broker.submissions == 2
     assert broker.finalised
     assert not broker.releases
+
+
+def test_worker_update_required_is_terminal(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """An explicit update rejection exits immediately rather than retrying claims.
+
+    Args:
+        monkeypatch:
+            Fixture replacing authentication and retry sleeps.
+        tmp_path:
+            Private worker state directory.
+    """
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    delays: list[float] = []
+    monkeypatch.setattr(runtime.time, "sleep", delays.append)
+    calls: list[str] = []
+
+    def reject_claim(request: urllib.request.Request, timeout: int) -> None:
+        """Reject the claim with the broker's terminal HTTP update response.
+
+        Args:
+            request:
+                Outgoing broker claim request.
+            timeout:
+                Network timeout configured by the broker client.
+
+        Raises:
+            urllib.error.HTTPError:
+                Always, to simulate the upgrade-required HTTP response.
+        """
+        calls.append(request.full_url)
+        response = {
+            "protocol_version": "volunteer-worker/v1",
+            "error": "Worker update required; update the worker image",
+            "code": "worker_update_required",
+        }
+        raise urllib.error.HTTPError(
+            url=request.full_url,
+            code=426,
+            msg="Upgrade Required",
+            hdrs=email.message.Message(),
+            fp=io.BytesIO(json.dumps(response).encode()),
+        )
+
+    monkeypatch.setattr(urllib.request, "urlopen", reject_claim)
+    worker = runtime.Worker(
+        client=BrokerClient("https://broker.test"),
+        state=StateStore(tmp_path),
+        hardware_factory=lambda: HARDWARE,
+    )
+    with pytest.raises(BrokerError, match="update the worker image") as caught:
+        worker.run(once=False)
+    assert caught.value.status == 426
+    assert caught.value.code == "worker_update_required"
+    assert calls == ["https://broker.test/claim"]
+    assert delays == []
+    assert StateStore(tmp_path).load_active() is None

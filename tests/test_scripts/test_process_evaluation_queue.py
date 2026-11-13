@@ -602,6 +602,12 @@ def test_sync_bucket_handles_separate_result_files(
     monkeypatch.setattr(
         target=bucket_sync, name="resolve_hf_token", value=lambda: "token"
     )
+    monkeypatch.setattr(
+        target=bucket_sync, name="download_missing_bucket_files", value=lambda: 0
+    )
+    monkeypatch.setattr(
+        target=bucket_sync, name="_cleanup_empty_bucket_files", value=lambda token: 0
+    )
 
     bucket_sync.sync_bucket()
 
@@ -666,6 +672,12 @@ def test_sync_bucket_prefers_synced_content_for_existing_result_key(
     monkeypatch.setattr(
         target=bucket_sync, name="resolve_hf_token", value=lambda: "token"
     )
+    monkeypatch.setattr(
+        target=bucket_sync, name="download_missing_bucket_files", value=lambda: 0
+    )
+    monkeypatch.setattr(
+        target=bucket_sync, name="_cleanup_empty_bucket_files", value=lambda token: 0
+    )
 
     bucket_sync.sync_bucket()
 
@@ -729,6 +741,12 @@ def test_sync_bucket_preserves_local_only_files(
     monkeypatch.setattr(
         target=bucket_sync, name="resolve_hf_token", value=lambda: "token"
     )
+    monkeypatch.setattr(
+        target=bucket_sync, name="download_missing_bucket_files", value=lambda: 0
+    )
+    monkeypatch.setattr(
+        target=bucket_sync, name="_cleanup_empty_bucket_files", value=lambda token: 0
+    )
 
     bucket_sync.sync_bucket()
 
@@ -750,12 +768,17 @@ def test_upload_results_keeps_canary_private(
             Pytest fixture for replacing dependencies during the test.
     """
     uploads: list[list[tuple[str | Path | bytes, str]]] = []
+    remote_files: dict[str, bytes] = {}
 
     class FakeApi:
         """Capture uploads made by the queue."""
 
         def batch_bucket_files(
-            self, *, bucket_id: str, add: list[tuple[str | Path | bytes, str]]
+            self,
+            *,
+            bucket_id: str,
+            add: list[tuple[str | Path | bytes, str]],
+            token: str = "",
         ) -> None:
             """Batch bucket files for this test.
 
@@ -764,9 +787,42 @@ def test_upload_results_keeps_canary_private(
                     Bucket id supplied to the test.
                 add:
                     Add supplied to the test.
+                token:
+                    Token supplied to the test.
             """
             assert bucket_id == process_evaluation_queue.HF_RESULTS_BUCKET
+            del token
             uploads.append(add)
+            for source, remote_path in add:
+                if isinstance(source, bytes):
+                    remote_files[remote_path] = source
+                else:
+                    remote_files[remote_path] = Path(source).read_bytes()
+
+        def download_bucket_files(
+            self,
+            bucket_id: str,
+            files: list[tuple[str, Path]],
+            *,
+            raise_on_missing_files: bool,
+            token: str,
+        ) -> None:
+            """Read uploaded objects into the requested local destinations.
+
+            Args:
+                bucket_id:
+                    Bucket id supplied to the test.
+                files:
+                    Remote paths and local destinations to download.
+                raise_on_missing_files:
+                    Whether missing objects should raise.
+                token:
+                    Token supplied to the test.
+            """
+            del bucket_id, raise_on_missing_files, token
+            for remote_path, destination in files:
+                if remote_path in remote_files:
+                    destination.write_bytes(remote_files[remote_path])
 
     def record(dataset: str) -> str:
         """Record for this test.

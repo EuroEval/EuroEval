@@ -130,7 +130,15 @@ class BucketStore:
                 Path.
             content:
                 Content.
+
+        Raises:
+            ReviewError:
+                If the bucket is not the staging bucket or verification fails.
         """
+        if bucket != self.staging_bucket:
+            raise ReviewError(
+                "Canonical writes require an explicit publication session"
+            )
         self.api.batch_bucket_files(
             bucket_id=bucket, add=[(content, path)], token=self.token
         )

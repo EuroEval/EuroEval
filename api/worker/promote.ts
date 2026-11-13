@@ -64,7 +64,7 @@ export function promotionPlan(
 }
 
 function sameRecords(a: PromotionRecord[], b: PromotionRecord[]): boolean {
-  return JSON.stringify(a) === JSON.stringify(b);
+  return JSON.stringify(parsePromotionRecords(a)) === JSON.stringify(parsePromotionRecords(b));
 }
 
 async function releaseSubmissionReservations(reservation: PromotionReservation): Promise<void> {
@@ -105,6 +105,12 @@ export default async function handler(req: Request): Promise<Response> {
     if (!reservation || reservation.token !== body.reservation_token || reservation.outcome !== outcome ||
         reservation.decision_digest !== decisionDigest || !sameRecords(reservation.records, requestedRecords)) {
       throw new BrokerError(409, "Promotion reservation is absent, expired, or does not match.");
+    }
+    if (outcome === "accepted" && reservation.status !== "terminal") {
+      if (body.publication_owner !== reservation.publication_owner ||
+          body.publication_bucket !== reservation.publication_bucket) {
+        throw new BrokerError(409, "Publication ownership evidence differs from the reservation.");
+      }
     }
     const mutex = await acquireRenewableIssueMutex(issueNumber);
     if (!mutex) throw new BrokerError(409, "Issue is busy; retry promotion.");

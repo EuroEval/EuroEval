@@ -10,6 +10,17 @@ import pytest
 
 import src.scripts.volunteer_worker_operations as operations
 
+
+def test_publication_routes_and_secret_are_registered() -> None:
+    """Canonical publication is configured and included in safe route probes."""
+    assert "promotion-status" in operations.ROUTES
+    assert "publication-lock" in operations.ROUTES
+    assert "CANONICAL_PUBLICATION_SECRET" in operations.REQUIRED_ENVIRONMENT
+    assert "CANONICAL_PUBLICATION_SECRET" in operations.LOCAL_SECRET_NAMES
+    assert "CANONICAL_PUBLICATION_URL" in operations.PUBLIC_CONFIG
+    assert "CANONICAL_PUBLICATION_URL" not in operations.REQUIRED_ENVIRONMENT
+
+
 REAL_MISSING_BUCKET_STDERR = (
     "Error: Bucket 'EuroEval/volunteer-results-staging' not found.\n"
     "If the bucket is private, make sure you are authenticated and your token has "
@@ -801,6 +812,7 @@ def test_local_secrets_are_idempotent_and_tighten_mode(
         "VOLUNTEER_MARKER_SECRET=marker\n"
         "WORKER_COORDINATOR_SECRET=coordinator\n"
         "VOLUNTEER_PROMOTION_SECRET=promotion\n"
+        "CANONICAL_PUBLICATION_SECRET=publication\n"
     )
     env_file.chmod(0o644)
     before = env_file.read_bytes()
@@ -863,7 +875,9 @@ def test_local_secrets_generate_three_independent_values(
         tmp_path:
             Temporary directory for isolated files and subprocess inputs.
     """
-    values = iter(("marker-value", "coordinator-value", "promotion-value"))
+    values = iter(
+        ("marker-value", "coordinator-value", "promotion-value", "publication-value")
+    )
     monkeypatch.setattr(operations.secrets, "token_urlsafe", lambda _: next(values))
     env_file = tmp_path / ".env"
 
@@ -874,6 +888,7 @@ def test_local_secrets_generate_three_independent_values(
         "VOLUNTEER_MARKER_SECRET=marker-value\n"
         "WORKER_COORDINATOR_SECRET=coordinator-value\n"
         "VOLUNTEER_PROMOTION_SECRET=promotion-value\n"
+        "CANONICAL_PUBLICATION_SECRET=publication-value\n"
     )
     assert os.stat(env_file).st_mode & 0o777 == 0o600
 
@@ -1047,6 +1062,59 @@ def test_plan_does_not_run_commands_or_print_secret_values(
     assert "metadata cannot verify an existing bucket's region" in output
     assert "euroeval_version=" in output
     assert operations.normalise_version(operations.source_versions()[0]) in output
+
+
+def test_publication_lock_smoke_uses_only_read_only_method_probes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Publication route sanity checks never acquire its production mutex.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing HTTP requests.
+    """
+    requests: list[tuple[str, str]] = []
+
+    def fake_request(
+        url: str,
+        *,
+        method: str = "GET",
+        headers: dict[str, str] | None = None,
+        body: bytes | None = None,
+    ) -> operations.HttpResult:
+        """Capture requests without performing any endpoint operation.
+
+        Args:
+            url:
+                Requested route URL.
+            method (optional):
+                HTTP method for the probe. Defaults to "GET".
+            headers (optional):
+                Request headers, if provided.
+            body (optional):
+                Request body, if provided.
+
+        Returns:
+            A harmless method-guard response.
+        """
+        del headers, body
+        requests.append((url.rsplit("/", maxsplit=1)[-1], method))
+        if method == "GET":
+            return operations.HttpResult(405, b'{"error":"Method not allowed"}')
+        if method == "OPTIONS":
+            return operations.HttpResult(204, b"")
+        return operations.HttpResult(401, b'{"error":"authentication failed"}')
+
+    monkeypatch.setattr(operations, "request_http", fake_request)
+    diagnostics = operations.smoke(
+        base_url="https://euroeval.com", routes=["publication-lock"], environment={}
+    )
+
+    assert [method for route, method in requests if route == "publication-lock"] == [
+        "GET",
+        "OPTIONS",
+    ]
+    assert not any(diagnostic.failed for diagnostic in diagnostics)
 
 
 def test_redis_requires_exact_pong_and_never_prints_url(
