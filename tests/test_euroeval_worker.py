@@ -1,8 +1,12 @@
 """Tests for the volunteer worker's broker-facing orchestration."""
 
 import dataclasses
+import email.message
+import io
 import json
 import os
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 import pytest
@@ -339,6 +343,7 @@ def test_broker_protocol_payload_is_canonical() -> None:
     assert client.claim("credential", HARDWARE).lease is None
     assert calls[0][2]["protocol_version"] == "volunteer-worker/v1"
     assert calls[0][2]["worker_version"] == "worker-1"
+    assert calls[0][2]["capabilities"] == ["canonical_coverage_v1"]
     hardware_payload = calls[0][2]["hardware"]
     assert isinstance(hardware_payload, dict)
     assert set(hardware_payload) == {
@@ -1900,3 +1905,63 @@ def test_worker_retries_idempotently_and_finalises(
     assert broker.submissions == 2
     assert broker.finalised
     assert not broker.releases
+
+
+def test_worker_update_required_is_terminal(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """An explicit update rejection exits immediately rather than retrying claims.
+
+    Args:
+        monkeypatch:
+            Fixture replacing authentication and retry sleeps.
+        tmp_path:
+            Private worker state directory.
+    """
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    delays: list[float] = []
+    monkeypatch.setattr(runtime.time, "sleep", delays.append)
+    calls: list[str] = []
+
+    def reject_claim(request: urllib.request.Request, timeout: int) -> None:
+        """Reject the claim with the broker's terminal HTTP update response.
+
+        Args:
+            request:
+                Outgoing broker claim request.
+            timeout:
+                Network timeout configured by the broker client.
+
+        Raises:
+            urllib.error.HTTPError:
+                Always, to simulate the upgrade-required HTTP response.
+        """
+        calls.append(request.full_url)
+        response = {
+            "protocol_version": "volunteer-worker/v1",
+            "error": "Worker update required; update the worker image",
+            "code": "worker_update_required",
+        }
+        raise urllib.error.HTTPError(
+            url=request.full_url,
+            code=426,
+            msg="Upgrade Required",
+            hdrs=email.message.Message(),
+            fp=io.BytesIO(json.dumps(response).encode()),
+        )
+
+    monkeypatch.setattr(urllib.request, "urlopen", reject_claim)
+    worker = runtime.Worker(
+        client=BrokerClient("https://broker.test"),
+        state=StateStore(tmp_path),
+        hardware_factory=lambda: HARDWARE,
+    )
+    with pytest.raises(BrokerError, match="update the worker image") as caught:
+        worker.run(once=False)
+    assert caught.value.status == 426
+    assert caught.value.code == "worker_update_required"
+    assert calls == ["https://broker.test/claim"]
+    assert delays == []
+    assert StateStore(tmp_path).load_active() is None

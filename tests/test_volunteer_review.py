@@ -146,7 +146,7 @@ class FakeHfApi:
         """Write requested objects to local paths.
 
         Args:
-            bucket:
+            bucket_id:
                 Bucket supplied to the test.
             files:
                 Files supplied to the test.
@@ -1437,10 +1437,154 @@ def test_manifest_missing_language_group_is_rejected() -> None:
         reviewer.show(SUBMISSION)
 
 
-def test_manifest_scope_alternative_excludes_required_canary() -> None:
-    """A private canary accompanies but does not alter the matched result scope."""
-    api, reviewer, _ = _reviewer()
+@pytest.mark.parametrize(
+    "failure",
+    [
+        "forged_original",
+        "missing_original",
+        "missing_covered",
+        "duplicate_covered",
+        "outside_policy",
+        "missing_partition",
+        "missing_record",
+        "wrong_revision",
+        "missing_revision",
+        "old_version",
+        "old_development_version",
+        "malformed_version",
+        "wrong_identity",
+        "wrong_library",
+        "malformed_record",
+        "malformed_details",
+        "malformed_covered",
+        "malformed_original",
+        "missing_canary",
+    ],
+)
+def test_manifest_partial_scope_fails_closed(failure: str) -> None:
+    """Untrusted scope omissions and unavailable coverage cannot pass review.
+
+    Args:
+        failure:
+            Forged proof or incompatible canonical evidence to inject.
+    """
+    api, reviewer, _ = _reviewer(record_count=2)
     manifest = _manifest(api=api)
+    _narrow_manifest(api=api, manifest=manifest)
+    scope = t.cast(dict[str, object], manifest["expected_scope"])
+    key = (RESULTS, "org_model/dataset-1__test__zeroshot.json")
+    record = json.loads(api.files[key])
+    if failure == "forged_original":
+        scope["original_identity_suffix_sets"] = scope["allowed_identity_suffix_sets"]
+    elif failure == "missing_original":
+        scope.pop("original_identity_suffix_sets")
+    elif failure == "missing_covered":
+        scope.pop("covered_identity_suffixes")
+    elif failure == "duplicate_covered":
+        scope["covered_identity_suffixes"] = ['["dataset-1",false,false]'] * 2
+    elif failure == "outside_policy":
+        scope["covered_identity_suffixes"] = ['["forged",false,false]']
+    elif failure == "missing_partition":
+        scope["covered_identity_suffixes"] = []
+    elif failure == "missing_canary":
+        manifest["contamination_canary"] = {"status": "required"}
+    elif failure == "wrong_revision":
+        record["model_info"]["revision"] = "e" * 40
+    elif failure == "missing_revision":
+        record["model_info"].pop("revision")
+    elif failure == "old_version":
+        record["eval_library"]["version"] = "18.0.9"
+    elif failure == "old_development_version":
+        manifest["euroeval_version"] = "18.1.0.dev5"
+        record["eval_library"]["version"] = "18.1.0.dev4"
+    elif failure == "malformed_version":
+        record["eval_library"]["version"] = "latest"
+    elif failure == "wrong_identity":
+        record["eval_library"]["additional_details"]["dataset"] = "forged"
+    elif failure == "wrong_library":
+        record["eval_library"]["name"] = "other"
+    elif failure == "malformed_record":
+        record["schema_version"] = "bad"
+    elif failure == "malformed_details":
+        record["eval_library"]["additional_details"] = None
+    elif failure == "malformed_covered":
+        scope["covered_identity_suffixes"] = "dataset-1"
+    elif failure == "malformed_original":
+        scope["original_identity_suffix_sets"] = []
+    api.files[key] = json.dumps(record).encode()
+    if failure == "missing_record":
+        del api.files[key]
+    _store_manifest(api=api, manifest=manifest)
+
+    with pytest.raises(ReviewError):
+        reviewer.show(submission_id=SUBMISSION)
+    assert api.uploads == []
+
+
+def _narrow_manifest(api: FakeHfApi, manifest: dict[str, object]) -> None:
+    """Replace one official result with independently readable canonical coverage.
+
+    Args:
+        api:
+            In-memory bucket adapter containing staged records.
+        manifest:
+            Two-result full-scope manifest to narrow in place.
+    """
+    scope = t.cast(dict[str, object], manifest["expected_scope"])
+    original = t.cast(list[list[str]], scope["allowed_identity_suffix_sets"])
+    scope["original_identity_suffix_sets"] = original
+    scope["allowed_identity_suffix_sets"] = [[original[0][0]]]
+    scope["covered_identity_suffixes"] = [original[0][1]]
+    manifest["matched_identity_suffixes"] = [original[0][0]]
+    entries = t.cast(list[dict[str, object]], manifest["results"])
+    covered = entries.pop()
+    record = json.loads(api.files[(STAGING, str(covered["path"]))])
+    # Coverage accepts raw canonical EEE, not staged volunteer-only metadata.
+    record["model_info"].pop("additional_details")
+    record["eval_library"]["additional_details"].pop("raw_results")
+    api.files[(RESULTS, "org_model/dataset-1__test__zeroshot.json")] = json.dumps(
+        record
+    ).encode()
+    automated = t.cast(dict[str, object], manifest["automated_checks"])
+    automated["result_count"] = len(entries)
+
+
+@pytest.mark.parametrize("version", ["18.1.0.dev0", "18.1.0.dev9", "18.2.0", "19.0.0"])
+def test_manifest_partial_scope_validates_canonical_coverage(version: str) -> None:
+    """Current compatible canonical evidence supports narrowed submissions.
+
+    Args:
+        version:
+            Same or newer canonical EuroEval version.
+    """
+    api, reviewer, _ = _reviewer(record_count=2)
+    manifest = _manifest(api=api)
+    _narrow_manifest(api=api, manifest=manifest)
+    key = (RESULTS, "org_model/dataset-1__test__zeroshot.json")
+    record = json.loads(api.files[key])
+    record["eval_library"]["version"] = version
+    api.files[key] = json.dumps(record).encode()
+    _store_manifest(api=api, manifest=manifest)
+
+    report = reviewer.show(submission_id=SUBMISSION)
+
+    assert report.expected_identities == (("org/model", "dataset-0", False, False),)
+    assert len(report.records) == 1
+    assert api.uploads == []
+
+
+@pytest.mark.parametrize("partial", [False, True])
+def test_manifest_scope_alternative_excludes_required_canary(partial: bool) -> None:
+    """A private canary accompanies but does not alter the matched result scope.
+
+    Args:
+        partial:
+            Whether canonical coverage has narrowed the ordinary scope.
+    """
+    api, reviewer, _ = _reviewer(record_count=2 if partial else 1)
+    manifest = _manifest(api=api)
+    if partial:
+        _narrow_manifest(api=api, manifest=manifest)
     canary_record = _record(dataset="contamination-canary-da")
     library = t.cast(dict[str, object], canary_record["eval_library"])
     details = t.cast(dict[str, object], library["additional_details"])
@@ -1493,7 +1637,7 @@ def test_manifest_scope_alternative_excludes_required_canary() -> None:
     assert len(report.records) == 2
     assert report.expected_identities == (("org/model", "dataset-0", False, False),)
     reviewer.decide(submission_id=SUBMISSION, outcome="accepted", reviewer="maintainer")
-    assert len([key for key in api.files if key[0] == RESULTS]) == 1
+    assert len([key for key in api.files if key[0] == RESULTS]) == (2 if partial else 1)
     assert reviewer.list_pending_submissions() == []
 
 

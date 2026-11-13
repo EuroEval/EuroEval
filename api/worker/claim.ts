@@ -300,6 +300,10 @@ export default async function handler(req: Request): Promise<Response> {
         catch (error) { if (error instanceof BrokerError && error.status === 422) continue; throw error; }
         const coverage = await narrowCoverage(trusted, model.id, model.revision, euroevalVersion);
         if (!coverage.allowed_identity_suffix_sets.length) continue;
+        if (coverage.covered_identity_suffixes.length &&
+            !(Array.isArray(body.capabilities) && body.capabilities.includes("canonical_coverage_v1"))) {
+          throw new BrokerError(426, "Worker update required for canonical coverage; update the worker image and retry.", "worker_update_required");
+        }
         checkDeadline();
         const expiresAt = new Date(Date.now() + leaseTtl() * 1000).toISOString();
         const leaseId = randomToken(18);
@@ -434,7 +438,7 @@ export default async function handler(req: Request): Promise<Response> {
     if (incompleteDiscovery) throw new BrokerError(503, "Model discovery is temporarily unavailable; retry claim.");
     return json(200, { protocol_version: PROTOCOL_VERSION, status: "no_work" });
   } catch (error) {
-    const failure = signal.aborted
+    const failure = signal.aborted && !(error instanceof BrokerError && error.status === 426)
       ? new BrokerError(503, "Claim discovery deadline exceeded; retry claim.") : error;
     const status = failure instanceof BrokerError ? failure.status : failure instanceof ConfigurationError ? 503 : 502;
     return json(status, brokerErrorBody(failure, "Unable to claim an evaluation."));
