@@ -10,6 +10,12 @@ import pytest
 
 import src.scripts.volunteer_worker_operations as operations
 
+
+def test_promotion_status_route_is_registered() -> None:
+    """Promotion status is included in safe worker route probes."""
+    assert "promotion-status" in operations.ROUTES
+
+
 REAL_MISSING_BUCKET_STDERR = (
     "Error: Bucket 'EuroEval/volunteer-results-staging' not found.\n"
     "If the bucket is private, make sure you are authenticated and your token has "

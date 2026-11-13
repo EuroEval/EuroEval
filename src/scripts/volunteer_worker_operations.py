@@ -100,6 +100,7 @@ ROUTES = (
     "coordinator-release",
     "promotion-lock",
     "promotion-reserve",
+    "promotion-status",
     "promote",
 )
 
