@@ -5,13 +5,17 @@ import email.message
 import io
 import json
 import os
+import typing as t
 import urllib.error
 import urllib.request
 from pathlib import Path
 
 import pytest
 
+from euroeval.benchmark_config_factory import prepare_dataset_configs
+from euroeval.data_models import DatasetConfig
 from euroeval.enums import ShotMode
+from euroeval.languages import get_all_languages
 from euroeval_worker import evaluator, hardware, runtime
 from euroeval_worker.auth import authenticate
 from euroeval_worker.broker import BrokerClient, BrokerError
@@ -1604,47 +1608,77 @@ def test_required_canary_preserves_partial_ordinary_scope(
             Temporary directory for isolated output.
     """
     calls: list[dict[str, object]] = []
-    covered = type("Dataset", (), {"name": "covered"})()
-    missing = type("Dataset", (), {"name": "missing"})()
+    initialisations: list[dict[str, object]] = []
+    actual_datasets = evaluator._official_dataset_configs("da")
+    assert len(actual_datasets) >= 2
+    covered, missing = actual_datasets[:2]
+    danish = get_all_languages()["da"]
 
     class FakeBenchmarker:
-        """Capture ordinary and canary benchmark calls."""
+        """Resolve captured calls through EuroEval's real dataset selector."""
 
         def __init__(self, **kwargs: object) -> None:
-            """Accept benchmark configuration.
+            """Keep configured selector defaults for benchmark calls.
 
             Args:
                 kwargs:
                     Configured evaluator parameters.
             """
+            self.defaults = kwargs
+            initialisations.append(kwargs)
 
         def benchmark(self, **kwargs: object) -> list[object]:
-            """Record an invocation and identify the evaluated scope.
+            """Resolve an invocation to real dataset configurations.
 
             Args:
                 kwargs:
                     Benchmark invocation parameters.
 
             Returns:
-                Result markers for the invoked scope.
+                Result markers for the resolved datasets.
             """
             calls.append(kwargs)
-            dataset_configs = kwargs["dataset"]
-            if not isinstance(dataset_configs, list):
+            task = t.cast(
+                str | list[str] | None, kwargs.get("task", self.defaults.get("task"))
+            )
+            dataset = t.cast(
+                str | list[DatasetConfig] | None,
+                kwargs.get("dataset", self.defaults.get("dataset")),
+            )
+            resolved = prepare_dataset_configs(
+                task=task,
+                dataset=dataset,
+                languages=[danish],
+                custom_datasets_file=Path(""),
+                api_key=None,
+                cache_dir=tmp_path,
+                trust_remote_code=False,
+                run_with_cli=False,
+            )
+            if task == ["contamination-detection"]:
                 return ["canary"]
-            return [config.name for config in dataset_configs]
+            return [config.name for config in resolved]
 
     scope = ExpectedScope(
         policy_version="test-policy",
         language_group="da",
-        allowed_identity_suffix_sets=(('["missing",true,true]',),),
+        allowed_identity_suffix_sets=(
+            (json.dumps([missing.name, True, True], separators=(",", ":")),),
+        ),
         count=None,
         warnings=(),
         task_groups=("sequence_classification",),
         original_identity_suffix_sets=(
-            ('["covered",true,true]', '["missing",true,true]'),
+            tuple(
+                sorted(
+                    json.dumps([config.name, True, True], separators=(",", ":"))
+                    for config in (covered, missing)
+                )
+            ),
         ),
-        covered_identity_suffixes=('["covered",true,true]',),
+        covered_identity_suffixes=(
+            json.dumps([covered.name, True, True], separators=(",", ":")),
+        ),
     )
     lease = dataclasses.replace(
         LEASE,
@@ -1657,14 +1691,7 @@ def test_required_canary_preserves_partial_ordinary_scope(
         ),
     )
     monkeypatch.setattr(evaluator, "Benchmarker", FakeBenchmarker)
-    monkeypatch.setattr(
-        evaluator, "_official_dataset_configs", lambda language: [covered, missing]
-    )
-    monkeypatch.setattr(
-        evaluator,
-        "_canary_tasks",
-        lambda: ["classification", "contamination-detection"],
-    )
+    monkeypatch.setattr(evaluator, "_canary_tasks", lambda: ["contamination-detection"])
     monkeypatch.setattr(
         evaluator,
         "benchmark_result_to_eee_dict",
@@ -1676,23 +1703,28 @@ def test_required_canary_preserves_partial_ordinary_scope(
         lease=lease, output_path=output_path
     )
 
+    assert len(initialisations) == 1
+    assert initialisations[0]["task"] is None
+    assert initialisations[0]["dataset"] is None
     assert len(calls) == 2
     ordinary_call, canary_call = calls
     ordinary_datasets = ordinary_call["dataset"]
     assert isinstance(ordinary_datasets, list)
-    assert [config.name for config in ordinary_datasets] == ["missing"]
+    assert [config.name for config in ordinary_datasets] == [missing.name]
+    assert ordinary_call.get("task") is None
     assert ordinary_call["few_shot"] is ShotMode.FEW_SHOT
     assert ordinary_call["evaluate_test_split"] is False
     assert canary_call["dataset"] is None
-    assert canary_call["task"] == ["classification", "contamination-detection"]
+    assert canary_call["task"] == ["contamination-detection"]
+    assert canary_call["dataset"] is None
     assert [json.loads(record.record_json)["evaluation_id"] for record in records] == [
-        "missing",
+        missing.name,
         "canary",
     ]
     assert [
         json.loads(line)["evaluation_id"]
         for line in output_path.read_text(encoding="utf-8").splitlines()
-    ] == ["missing", "canary"]
+    ] == [missing.name, "canary"]
 
 
 def test_restart_submits_durable_records_without_evaluation(
