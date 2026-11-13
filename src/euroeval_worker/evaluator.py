@@ -1,10 +1,11 @@
 """Adapter from broker leases to the existing EuroEval evaluator."""
 
+import json
 import typing as t
 from pathlib import Path
 
 from euroeval.benchmarker import Benchmarker
-from euroeval.data_models import DatasetConfig
+from euroeval.data_models import BenchmarkResult, DatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.eee_utils import benchmark_result_to_eee_dict
 from euroeval.enums import ShotMode
@@ -34,6 +35,85 @@ def _canary_tasks() -> list[str]:
     return list(tasks)
 
 
+def _evaluate_missing_scope(
+    benchmarker: Benchmarker,
+    lease: Lease,
+    datasets: list[DatasetConfig],
+    gpu_memory_utilisation: float,
+) -> list[BenchmarkResult]:
+    """Evaluate only dataset, split and shot identities remaining in the lease.
+
+    Args:
+        benchmarker:
+            Configured EuroEval benchmark runner.
+        lease:
+            Broker-issued lease carrying the narrowed identity scope.
+        datasets:
+            Official dataset configurations for the leased language.
+        gpu_memory_utilisation:
+            GPU memory fraction passed to each benchmark invocation.
+
+    Returns:
+        EuroEval results for the missing identities only.
+
+    Raises:
+        ValueError:
+            If the lease scope or official dataset configuration is malformed.
+    """
+    scope = lease.expected_scope
+    if scope is None:
+        raise ValueError("Broker lease has no expected evaluation scope")
+    alternatives = scope.allowed_identity_suffix_sets
+    if not alternatives:
+        return []
+    selected = min(alternatives, key=len)
+    suffixes = set(selected)
+    work: set[tuple[str, bool | None, bool | None]] = set()
+    for suffix in suffixes:
+        identity = json.loads(suffix)
+        if (
+            not isinstance(identity, list)
+            or len(identity) != 3
+            or not isinstance(identity[0], str)
+            or identity[1] not in (True, False, None)
+            or identity[2] not in (True, False, None)
+        ):
+            raise ValueError("Broker lease contains a malformed result identity")
+        work.add((identity[0], identity[1], identity[2]))
+    configs = {config.name: config for config in datasets}
+    results: list[BenchmarkResult] = []
+    for dataset_name, validation_split, few_shot in sorted(
+        work, key=lambda item: (item[0], str(item[1]), str(item[2]))
+    ):
+        config = configs.get(dataset_name)
+        if config is None:
+            raise ValueError(f"Missing official dataset configuration: {dataset_name}")
+        mode = (
+            ShotMode.FEW_SHOT
+            if few_shot is True
+            else ShotMode.ZERO_SHOT
+            if few_shot is False
+            else ShotMode.AUTO
+        )
+        results.extend(
+            benchmarker.benchmark(
+                model=f"{lease.model_id}@{lease.model_revision}",
+                dataset=[config],
+                language=lease.language,
+                progress_bar=False,
+                save_results=False,
+                trust_remote_code=False,
+                evaluate_test_split=validation_split is False,
+                requires_safetensors=True,
+                gpu_memory_utilization=gpu_memory_utilisation,
+                few_shot=mode,
+                force=True,
+                raise_errors=True,
+            )
+        )
+    return results
+
+
 def _normalise_record(
     record: dict[str, JsonValue], lease: Lease
 ) -> dict[str, JsonValue]:
@@ -52,6 +132,7 @@ def _normalise_record(
     if isinstance(model_info, dict):
         model_info = dict(model_info)
         model_info["id"] = lease.model_id
+        model_info["revision"] = lease.model_revision
         record = dict(record)
         record["model_info"] = model_info
     return record
@@ -186,21 +267,47 @@ class EuroEvalEvaluator(Evaluator):
             raise_errors=True,
             verbose=False,
         )
-        results = benchmarker.benchmark(
-            model=f"{lease.model_id}@{lease.model_revision}",
-            task=tasks,
-            dataset=datasets,
-            language=lease.language,
-            progress_bar=False,
-            save_results=False,
-            trust_remote_code=False,
-            evaluate_test_split=False,
-            requires_safetensors=True,
-            gpu_memory_utilization=gpu_memory_utilisation,
-            few_shot=ShotMode.AUTO,
-            force=True,
-            raise_errors=True,
-        )
+        if canary_required:
+            results = benchmarker.benchmark(
+                model=f"{lease.model_id}@{lease.model_revision}",
+                task=tasks,
+                dataset=datasets,
+                language=lease.language,
+                progress_bar=False,
+                save_results=False,
+                trust_remote_code=False,
+                evaluate_test_split=False,
+                requires_safetensors=True,
+                gpu_memory_utilization=gpu_memory_utilisation,
+                few_shot=ShotMode.AUTO,
+                force=True,
+                raise_errors=True,
+            )
+        elif (
+            lease.expected_scope and lease.expected_scope.original_identity_suffix_sets
+        ):
+            results = _evaluate_missing_scope(
+                benchmarker=benchmarker,
+                lease=lease,
+                datasets=datasets or [],
+                gpu_memory_utilisation=gpu_memory_utilisation,
+            )
+        else:
+            results = benchmarker.benchmark(
+                model=f"{lease.model_id}@{lease.model_revision}",
+                task=tasks,
+                dataset=datasets,
+                language=lease.language,
+                progress_bar=False,
+                save_results=False,
+                trust_remote_code=False,
+                evaluate_test_split=False,
+                requires_safetensors=True,
+                gpu_memory_utilization=gpu_memory_utilisation,
+                few_shot=ShotMode.AUTO,
+                force=True,
+                raise_errors=True,
+            )
         records = [
             _record(
                 _normalise_record(benchmark_result_to_eee_dict(result=result), lease)

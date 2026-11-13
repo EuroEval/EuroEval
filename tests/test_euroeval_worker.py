@@ -942,6 +942,78 @@ class Broker:
             raise RuntimeError("temporary broker error")
 
 
+def test_evaluator_runs_only_missing_scope_identities(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Run only the remaining dataset, split and shot combination.
+
+    Args:
+        monkeypatch:
+            Fixture for replacing evaluator dependencies.
+        tmp_path:
+            Temporary directory for isolated output.
+    """
+    calls: list[dict[str, object]] = []
+    dataset = type("Dataset", (), {"name": "remaining"})()
+
+    class FakeBenchmarker:
+        """Capture per-identity benchmark requests."""
+
+        def __init__(self, **kwargs: object) -> None:
+            """Accept benchmark configuration.
+
+            Args:
+                kwargs:
+                    Configured evaluator parameters.
+            """
+
+        def benchmark(self, **kwargs: object) -> list[object]:
+            """Record the scoped benchmark invocation.
+
+            Args:
+                kwargs:
+                    Benchmark invocation parameters.
+
+            Returns:
+                A single placeholder benchmark result.
+            """
+            calls.append(kwargs)
+            return [object()]
+
+    scope = ExpectedScope(
+        policy_version="test-policy",
+        language_group="da",
+        allowed_identity_suffix_sets=(('["remaining",true,true]',),),
+        count=None,
+        warnings=(),
+        task_groups=("sequence_classification",),
+        original_identity_suffix_sets=(
+            ('["covered",true,true]', '["remaining",true,true]'),
+        ),
+        covered_identity_suffixes=('["covered",true,true]',),
+    )
+    lease = dataclasses.replace(LEASE, expected_scope=scope)
+    monkeypatch.setattr(evaluator, "Benchmarker", FakeBenchmarker)
+    monkeypatch.setattr(
+        evaluator, "_official_dataset_configs", lambda language: [dataset]
+    )
+    monkeypatch.setattr(
+        evaluator,
+        "benchmark_result_to_eee_dict",
+        lambda result: {"evaluation_id": "remaining", "result": 1},
+    )
+
+    records = evaluator.EuroEvalEvaluator(tmp_path).evaluate(
+        lease=lease, output_path=tmp_path / "narrowed.jsonl"
+    )
+
+    assert len(records) == 1
+    assert len(calls) == 1
+    assert calls[0]["dataset"] == [dataset]
+    assert calls[0]["few_shot"] is ShotMode.FEW_SHOT
+    assert calls[0]["evaluate_test_split"] is False
+
+
 def test_evaluator_selects_official_tasks_for_required_canary(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

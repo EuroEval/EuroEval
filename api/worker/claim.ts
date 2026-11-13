@@ -12,6 +12,7 @@ import {
   reserveCanary,
 } from "./_lib.js";
 import type { Lease, VolunteerLeaseMarker } from "./_lib.js";
+import { narrowCoverage } from "./_lib/coverage.js";
 
 // Reserved only as a Redis mutex key; never used for a GitHub API request.
 const GLOBAL_CLAIM_MUTEX = Number.MAX_SAFE_INTEGER;
@@ -297,6 +298,8 @@ export default async function handler(req: Request): Promise<Response> {
         let trusted;
         try { trusted = expectedScope(euroevalVersion, model.model_type, language); }
         catch (error) { if (error instanceof BrokerError && error.status === 422) continue; throw error; }
+        const coverage = await narrowCoverage(trusted, model.id, model.revision, euroevalVersion);
+        if (!coverage.allowed_identity_suffix_sets.length) continue;
         checkDeadline();
         const expiresAt = new Date(Date.now() + leaseTtl() * 1000).toISOString();
         const leaseId = randomToken(18);
@@ -320,7 +323,9 @@ export default async function handler(req: Request): Promise<Response> {
           expected_scope: {
             policy_version: trusted.policy_version,
             language_group: trusted.language_group,
-            allowed_identity_suffix_sets: trusted.allowed_identity_suffix_sets.map((set) => [...set]),
+            allowed_identity_suffix_sets: coverage.allowed_identity_suffix_sets,
+            original_identity_suffix_sets: coverage.original_identity_suffix_sets,
+            covered_identity_suffixes: coverage.covered_identity_suffixes,
             task_groups: [...trusted.task_groups],
             warnings: trusted.warnings || [],
           },

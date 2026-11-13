@@ -412,6 +412,8 @@ class ExpectedScope:
     count: int | None
     warnings: tuple[str, ...]
     task_groups: tuple[str, ...]
+    original_identity_suffix_sets: tuple[tuple[str, ...], ...] = ()
+    covered_identity_suffixes: tuple[str, ...] = ()
 
 
 def _expected_scope(value: object) -> ExpectedScope:
@@ -446,6 +448,19 @@ def _expected_scope(value: object) -> ExpectedScope:
         else [value.get("identity_suffixes")]
     )
     allowed_sets = _identity_suffix_sets(value=raw_sets)
+    raw_original_sets = value.get("original_identity_suffix_sets")
+    if raw_original_sets is not None and not isinstance(
+        raw_original_sets, (list, tuple)
+    ):
+        raise ValueError("broker response original identities are malformed")
+    original_sets = (
+        _identity_suffix_sets(value=raw_original_sets) if raw_original_sets else ()
+    )
+    covered = value.get("covered_identity_suffixes", [])
+    if not isinstance(covered, (list, tuple)) or not all(
+        isinstance(item, str) and item for item in covered
+    ):
+        raise ValueError("broker response covered identities are malformed")
     count = value.get("count")
     if count is not None and (
         isinstance(count, bool) or not isinstance(count, int) or count <= 0
@@ -474,6 +489,8 @@ def _expected_scope(value: object) -> ExpectedScope:
         count=count,
         warnings=tuple(warnings),
         task_groups=tuple(task_groups),
+        original_identity_suffix_sets=original_sets,
+        covered_identity_suffixes=tuple(covered),
     )
 
 

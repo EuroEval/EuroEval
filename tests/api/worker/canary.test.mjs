@@ -58,7 +58,7 @@ test("canary evidence accepts only the plaintext-free bounded contract", () => {
 test("ordinary EEE validation accepts embedded string evidence", () => {
   const record = {
     schema_version: "0.2.1",
-    model_info: { id: "org/model", name: `org/model@${revision}` },
+    model_info: { id: "org/model", name: `org/model@${revision}`, revision },
     eval_library: {
       name: "euroeval",
       version: "18.1.0",
@@ -86,6 +86,11 @@ test("ordinary EEE validation accepts embedded string evidence", () => {
     euroevalVersion: "18.1.0",
   });
   assert.equal(JSON.parse(checked.identity)[1], "contamination-canary-da");
+  const withoutRevision = structuredClone(record);
+  delete withoutRevision.model_info.revision;
+  assert.throws(() => validateRecord(withoutRevision, {
+    modelId: "org/model", revision, language: "da", euroevalVersion: "18.1.0",
+  }), /revision is missing/);
   assert.throws(
     () => validateRecord(record, {
       modelId: "org/model",

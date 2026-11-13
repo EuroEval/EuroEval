@@ -340,6 +340,7 @@ for (const stalledOperation of ["marker PATCH", "lease response"]) test(
   const values = new Map([[credentialKey, JSON.stringify({ contributor: "alice" })]]);
   globalThis.fetch = async (input, init = {}) => {
     const url = String(input); const method = init.method || "GET";
+    if (url.includes("/buckets/EuroEval/results/resolve/")) return new Response(null, { status: 404 });
     if (url === "https://redis.test") {
       const command = JSON.parse(init.body);
       if (command[0] === "GET") return Response.json({ result: values.get(command[1]) || null });
@@ -455,6 +456,7 @@ for (const lateCandidate of [false, true]) test(
   const mutations = [];
   globalThis.fetch = async (input, init = {}) => {
     const url = String(input); const method = init.method || "GET";
+    if (url.includes("/buckets/EuroEval/results/resolve/")) return new Response(null, { status: 404 });
     if (url === "https://redis.test") {
       const command = JSON.parse(init.body);
       if (command[0] === "GET") return Response.json({ result: values.get(command[1]) || null });
@@ -555,6 +557,7 @@ for (const contention of ["global", "issue-only", "issue-later", "issue-later-ar
   const mutations = [];
   globalThis.fetch = async (input, init = {}) => {
     const url = String(input); const method = init.method || "GET";
+    if (url.includes("/buckets/EuroEval/results/resolve/")) return new Response(null, { status: 404 });
     if (url === "https://redis.test") {
       const command = JSON.parse(init.body);
       if (command[0] === "GET") return Response.json({ result: values.get(command[1]) || null });
