@@ -30,6 +30,7 @@ from huggingface_hub.errors import HfHubHTTPError
 import leaderboards.github_api as _github_api
 from euroeval import __version__
 from leaderboards.bucket_sync import merge_results, sync_bucket
+from leaderboards.canonical_publication import BucketApi, CanonicalPublisher
 from leaderboards.constants import (
     DEFAULT_GPU_MEMORY_UTILIZATION,
     FAILED_LABEL,
@@ -49,6 +50,7 @@ from leaderboards.evaluation_common import (
     extract_language_groups,
     gpu_total_memory_bytes,
     missing_official_dataset_language_pairs,
+    resolve_hf_token,
     run_euroeval,
 )
 from leaderboards.github_api import (
@@ -99,6 +101,7 @@ from leaderboards.queue_runtime import (
     lower_process_priority,
 )
 from leaderboards.result_identity import (
+    ResultIdentity,
     identity_from_eee_record,
     identity_to_path,
     sanitise_model_dir_name,
@@ -1358,13 +1361,14 @@ def _evaluate_pending_languages(
             f"#{number}: running {model_id!r} on {lang} ({i + 1}/{len(pending)})."
         )
         before = set(read_jsonl_lines(path=results_path))
-        returncode, output = run_euroeval(
-            model_id=model_id,
-            languages=[lang],
-            evaluate_test_split=False,
-            clear_model_cache=True,
-            gpu_memory_utilization=gpu_memory_utilization,
-        )
+        with _hide_worker_secrets_from_evaluator():
+            returncode, output = run_euroeval(
+                model_id=model_id,
+                languages=[lang],
+                evaluate_test_split=False,
+                clear_model_cache=True,
+                gpu_memory_utilization=gpu_memory_utilization,
+            )
         last_output = output
         gated_in_lang = GATED_OUTPUT_RE.search(output)
         num_errored = num_errored_benchmarks(output=output)
@@ -1418,6 +1422,29 @@ def _evaluate_pending_languages(
         total_skipped,
         last_output,
     )
+
+
+@contextmanager
+def _hide_worker_secrets_from_evaluator() -> t.Iterator[None]:
+    """Prevent worker ownership and publication credentials reaching evaluation.
+
+    Yields:
+        None while sensitive worker-only environment variables are absent.
+    """
+    secret_names = (
+        "CANONICAL_PUBLICATION_SECRET",
+        "CANONICAL_PUBLICATION_URL",
+        "HF_STAGING_TOKEN",
+        "HF_STAGING_BUCKET",
+        "QUEUE_LOCK_SECRET",
+        "QUEUE_LOCK_URL",
+        "QUEUE_LOCK_OWNER",
+    )
+    saved = {name: os.environ.pop(name) for name in secret_names if name in os.environ}
+    try:
+        yield
+    finally:
+        os.environ.update(saved)
 
 
 def _upload_if_owned(
@@ -1475,8 +1502,8 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     valid_records_seen = 0
-    records_written = 0
-    written_paths: list[Path] = []
+    public_records: dict[ResultIdentity, bytes] = {}
+    source_bytes: dict[ResultIdentity, bytes] = {}
     for line in lines:
         if not line.strip():
             continue
@@ -1486,29 +1513,16 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
             identity = identity_from_eee_record(record)
             record_path = RESULTS_DIR / identity_to_path(identity)
             record_path.parent.mkdir(parents=True, exist_ok=True)
-            # Use canonical JSON for consistent comparison
             new_content = json.dumps(record, sort_keys=True, separators=(",", ":"))
 
             # Count as seen before checking if unchanged
             valid_records_seen += 1
 
-            # Only write if file doesn't exist or content differs
-            if record_path.exists():
-                try:
-                    existing_content = record_path.read_text(encoding="utf-8").strip()
-                    existing_record = json.loads(existing_content)
-                    canonical_existing = json.dumps(
-                        existing_record, sort_keys=True, separators=(",", ":")
-                    )
-                    if canonical_existing == new_content:
-                        continue  # Skip unchanged files
-                except (json.JSONDecodeError, OSError):
-                    pass  # If we can't parse existing, overwrite it
-
+            if record_path.is_file():
+                source_bytes[identity] = record_path.read_bytes()
             record_path.write_text(new_content, encoding="utf-8")
-            records_written += 1
             if not private_canary:
-                written_paths.append(record_path)
+                public_records[identity] = new_content.encode("utf-8")
         except (json.JSONDecodeError, ValueError, KeyError) as e:
             logger.debug(f"Skipping invalid record: {e}")
 
@@ -1516,31 +1530,28 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
         logger.info("No valid records to process.")
         return True
 
-    if records_written == 0:
-        logger.info("All records unchanged.")
-        return True
-
-    if not written_paths:
+    if not public_records:
         logger.info("No public result records to upload.")
         return True
 
     try:
-        logger.info(f"Uploading {len(written_paths)} records to {HF_RESULTS_BUCKET}...")
-        # Skip any files that are empty (0 bytes)
-        api = HfApi()
-        add_list: list[tuple[str | Path | bytes, str]] = [
-            (str(path), str(path.relative_to(RESULTS_DIR)))
-            for path in written_paths
-            if path.is_file() and path.stat().st_size > 0
-        ]
-        api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, add=add_list)
         logger.info(
-            f"Uploaded {len(written_paths)} result records for {model_id!r} "
+            f"Publishing {len(public_records)} records to {HF_RESULTS_BUCKET}..."
+        )
+        publisher = CanonicalPublisher(
+            api=t.cast(BucketApi, HfApi()),
+            token=resolve_hf_token() or "",
+            bucket=HF_RESULTS_BUCKET,
+        )
+        with publisher.session() as session:
+            session.publish(records=list(public_records.values()), sources=source_bytes)
+        logger.info(
+            f"Published {len(public_records)} result records for {model_id!r} "
             "to HF bucket."
         )
         return True
-    except HfHubHTTPError as e:
-        logger.error(f"Failed to upload to HF bucket: {e}")
+    except (HfHubHTTPError, RuntimeError, ValueError) as e:
+        logger.error(f"Failed to publish to HF bucket: {e}")
         return False
 
 
