@@ -248,14 +248,12 @@ class EuroEvalEvaluator(Evaluator):
             and lease.contamination_canary.status == "required"
         )
         tasks = _canary_tasks() if canary_required else None
-        datasets = (
-            None if canary_required else _official_dataset_configs(lease.language)
-        )
+        datasets = _official_dataset_configs(lease.language)
         benchmarker = Benchmarker(
             progress_bar=False,
             save_results=False,
             task=tasks,
-            dataset=datasets,
+            dataset=None if canary_required else datasets,
             language=lease.language,
             cache_dir=str(self.cache_dir),
             trust_remote_code=False,
@@ -267,35 +265,20 @@ class EuroEvalEvaluator(Evaluator):
             raise_errors=True,
             verbose=False,
         )
-        if canary_required:
-            results = benchmarker.benchmark(
-                model=f"{lease.model_id}@{lease.model_revision}",
-                task=tasks,
-                dataset=datasets,
-                language=lease.language,
-                progress_bar=False,
-                save_results=False,
-                trust_remote_code=False,
-                evaluate_test_split=False,
-                requires_safetensors=True,
-                gpu_memory_utilization=gpu_memory_utilisation,
-                few_shot=ShotMode.AUTO,
-                force=True,
-                raise_errors=True,
-            )
-        elif (
-            lease.expected_scope and lease.expected_scope.original_identity_suffix_sets
-        ):
+        has_narrowed_scope = lease.expected_scope is not None and bool(
+            lease.expected_scope.original_identity_suffix_sets
+        )
+        if has_narrowed_scope:
             results = _evaluate_missing_scope(
                 benchmarker=benchmarker,
                 lease=lease,
-                datasets=datasets or [],
+                datasets=datasets,
                 gpu_memory_utilisation=gpu_memory_utilisation,
             )
         else:
             results = benchmarker.benchmark(
                 model=f"{lease.model_id}@{lease.model_revision}",
-                task=tasks,
+                task=None,
                 dataset=datasets,
                 language=lease.language,
                 progress_bar=False,
@@ -307,6 +290,24 @@ class EuroEvalEvaluator(Evaluator):
                 few_shot=ShotMode.AUTO,
                 force=True,
                 raise_errors=True,
+            )
+        if canary_required:
+            results.extend(
+                benchmarker.benchmark(
+                    model=f"{lease.model_id}@{lease.model_revision}",
+                    task=tasks,
+                    dataset=None,
+                    language=lease.language,
+                    progress_bar=False,
+                    save_results=False,
+                    trust_remote_code=False,
+                    evaluate_test_split=False,
+                    requires_safetensors=True,
+                    gpu_memory_utilization=gpu_memory_utilisation,
+                    few_shot=ShotMode.AUTO,
+                    force=True,
+                    raise_errors=True,
+                )
             )
         records = [
             _record(
