@@ -135,7 +135,8 @@ def main(force: bool = False) -> None:
         logger.info("Forcing leaderboard regeneration despite no new results.")
     else:
         _write_new_results(harvested=harvested, manual_lines=manual_lines)
-        _upload_results()
+        if not _upload_results():
+            sys.exit(1)
 
     if not regenerate_leaderboards(force=force):
         logger.error(
@@ -386,17 +387,23 @@ def _upload_model_list_to_space(models_file: Path) -> bool:
         return False
 
 
-def _upload_results() -> None:
-    """Upload results to Hugging Face bucket."""
+def _upload_results() -> bool:
+    """Upload results to Hugging Face bucket.
+
+    Returns:
+        Whether canonical publication succeeded.
+    """
     if upload_results_to_hf(new_results_path=NEW_RESULTS_PATH):
         logger.info("Results uploaded to Hugging Face bucket.")
-    else:
-        logger.error(
-            "Failed to upload results to Hugging Face bucket. "
-            "The new results are staged locally, but the bucket is now out "
-            "of sync. Please run upload_results_to_hf() manually or check "
-            "your Hugging Face credentials and re-run this script."
-        )
+        return True
+
+    logger.error(
+        "Failed to upload results to Hugging Face bucket. "
+        "The new results are staged locally, but the bucket is now out "
+        "of sync. Please run upload_results_to_hf() manually or check "
+        "your Hugging Face credentials and re-run this script."
+    )
+    return False
 
 
 def upload_results_to_hf(new_results_path: Path) -> bool:
