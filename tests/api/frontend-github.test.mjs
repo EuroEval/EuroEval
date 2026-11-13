@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mergeQueueEvaluators, toQueueEntry } from "../../src/frontend/services/github.ts";
+import {
+  listOpenEvalIssues,
+  mergeQueueEvaluators,
+  toQueueEntry,
+} from "../../src/frontend/services/github.ts";
 
 const issue = {
   number: 42,
@@ -24,6 +28,75 @@ test("queue entries merge assigned and trusted public evaluators case-insensitiv
   assert.equal(entry.publicVolunteer, true);
   assert.deepEqual(entry.evaluators.map(({ login }) => login), ["Alice", "saattrupdan"]);
   assert.equal(entry.evaluators[0].avatarUrl, "https://avatar/alice");
+});
+
+test("community review submissions are pending review with or without assignees", () => {
+  for (const assignee of [null, issue.assignee]) {
+    const entry = toQueueEntry({
+      ...issue,
+      assignee,
+      assignees: assignee ? [assignee] : [],
+      labels: ["community-review-ready"],
+    });
+    assert.equal(entry.status, "Pending review");
+  }
+});
+
+test("community review label accepts GitHub label objects", () => {
+  const entry = toQueueEntry({
+    ...issue,
+    labels: [{ name: "community-review-ready" }],
+  });
+  assert.equal(entry.status, "Pending review");
+});
+
+test("results ready takes precedence over pending review and evaluation", () => {
+  const entry = toQueueEntry({
+    ...issue,
+    labels: ["community-review-ready", "results-ready"],
+  });
+  assert.equal(entry.status, "Awaiting publish");
+});
+
+test("evaluation statuses and evaluator attribution are preserved", () => {
+  const evaluating = toQueueEntry(issue);
+  assert.equal(evaluating.status, "Evaluating");
+  assert.deepEqual(evaluating.evaluators.map(({ login }) => login), ["Alice"]);
+
+  const awaitingPublish = toQueueEntry({
+    ...issue,
+    labels: ["results-ready"],
+  });
+  assert.equal(awaitingPublish.status, "Awaiting publish");
+});
+
+test("queue sorts pending reviews after results ready and before evaluating", async () => {
+  const originalFetch = globalThis.fetch;
+  const queuedIssues = [
+    { ...issue, number: 1, labels: [], created_at: "2026-01-04T00:00:00Z" },
+    {
+      ...issue,
+      number: 2,
+      labels: ["community-review-ready"],
+      created_at: "2026-01-03T00:00:00Z",
+    },
+    {
+      ...issue,
+      number: 3,
+      labels: ["results-ready"],
+      created_at: "2026-01-02T00:00:00Z",
+    },
+  ];
+  globalThis.fetch = async (url) => ({
+    ok: true,
+    json: async () => url.startsWith("/api/issues") ? queuedIssues : [],
+  });
+  try {
+    const entries = await listOpenEvalIssues();
+    assert.deepEqual(entries.map(({ number }) => number), [3, 2, 1]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("queue evaluator merging retains manually assigned accounts", () => {
