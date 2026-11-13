@@ -161,6 +161,25 @@ def _record(*, version: str = "1.0.0", score: float = 0.5) -> bytes:
     ).encode()
 
 
+def test_equal_rank_metadata_transform_cannot_change_evaluation_score(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Exact source bytes do not authorise changing evaluation results."""
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    publisher, api, _ = _publisher(tmp_path)
+    original = _record()
+    changed_record = json.loads(original)
+    changed_record["score"] = 0.9
+    changed = json.dumps(changed_record).encode()
+    identity = identity_from_eee_record(json.loads(original))
+    with publisher.session() as session:
+        session.publish(records=[original])
+        with pytest.raises(PublicationError, match="Equal-ranked"):
+            session.publish(records=[changed], sources={identity: original})
+    canonical = next(name for name in api.objects if name.endswith(".json"))
+    assert api.objects[canonical] == original
+
+
 def test_equal_rank_metadata_transform_requires_original_source(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -170,6 +189,7 @@ def test_equal_rank_metadata_transform_requires_original_source(
     original = _record()
     transformed_record = json.loads(original)
     transformed_record["metadata"] = {"open": True}
+    transformed_record["model_info"]["additional_details"] = {"open": True}
     transformed = json.dumps(transformed_record).encode()
     identity = identity_from_eee_record(json.loads(original))
     with publisher.session() as session:
@@ -213,6 +233,22 @@ def test_interrupt_after_partial_mutation_retains_lock(
             session.write_verified(path="object", content=b"partial", expected=None)
     assert api.objects["object"] == b"partial"
     assert lock.owner is not None
+
+
+def test_json_equal_formatting_change_is_a_noop(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Formatting-only candidate changes do not rewrite canonical bytes."""
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    publisher, api, _ = _publisher(tmp_path)
+    original = _record()
+    formatted = json.dumps(json.loads(original), indent=2).encode()
+    with publisher.session() as session:
+        assert session.publish(records=[original]) == 1
+        assert session.publish(records=[formatted]) == 0
+    canonical = next(name for name in api.objects if name.endswith(".json"))
+    assert api.objects[canonical] == original
+    assert not any(name.startswith("_history/") for name in api.objects)
 
 
 def test_lock_retries_lost_acquire_response_with_same_owner(

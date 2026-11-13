@@ -7,6 +7,7 @@ session explicitly; lock ownership is never inherited by evaluation subprocesses
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import os
@@ -93,6 +94,41 @@ def _decode_record(content: bytes, path: str) -> dict[str, object]:
     if not isinstance(record, dict):
         raise PublicationError(f"Result at {path} must be a JSON object")
     return record
+
+
+def _metadata_only_transform(
+    current: dict[str, object], candidate: dict[str, object]
+) -> bool:
+    """Check that a result change is limited to model metadata.
+
+    Args:
+        current: Existing canonical result record.
+        candidate: Proposed replacement result record.
+
+    Returns:
+        Whether all non-metadata fields are unchanged.
+    """
+    current_copy = copy.deepcopy(current)
+    candidate_copy = copy.deepcopy(candidate)
+    for record in (current_copy, candidate_copy):
+        record.pop("metadata", None)
+        model_info = record.get("model_info")
+        if isinstance(model_info, dict):
+            additional = model_info.get("additional_details")
+            if isinstance(additional, dict):
+                for key in (
+                    "commercially_licensed",
+                    "open",
+                    "merge",
+                    "trained_from_scratch",
+                    "generative_type",
+                    "model_url",
+                    "release_date",
+                ):
+                    additional.pop(key, None)
+                if not additional:
+                    model_info.pop("additional_details", None)
+    return current_copy == candidate_copy
 
 
 def _receipt_path(owner: str) -> Path:
@@ -400,12 +436,18 @@ class PublicationSession:
             current_identity = identity_from_eee_record(current_record)
             if current_identity != identity:
                 raise PublicationError(f"Canonical path collision at {path}")
+            if record == current_record:
+                continue
             newer = dedup_newer_record(current_record, record)
             if newer is current_record:
                 equal_rank = dedup_newer_record(record, current_record) is record
-                if candidate == current or not equal_rank:
+                if not equal_rank:
                     continue
-                if sources is None or sources.get(identity) != current:
+                if (
+                    sources is None
+                    or sources.get(identity) != current
+                    or not _metadata_only_transform(current_record, record)
+                ):
                     raise PublicationError(f"Equal-ranked result conflict at {path}")
             writes.append((path, candidate, current))
 
