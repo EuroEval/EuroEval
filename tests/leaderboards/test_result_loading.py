@@ -150,14 +150,14 @@ class TestLoadRawResults:
 
     @pytest.fixture(autouse=True)
     def _clear_cache(self) -> c.Generator[None]:
-        """Clear the load_raw_results cache between tests.
+        """Reset raw-result filters and caches between tests.
 
         Yields:
             None
         """
-        load_raw_results.cache_clear()
+        reset_leaderboard_result_filter()
         yield
-        load_raw_results.cache_clear()
+        reset_leaderboard_result_filter()
 
     def test_canary_conflicts_are_not_hidden_by_storage_deduplication(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
