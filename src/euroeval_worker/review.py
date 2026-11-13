@@ -28,8 +28,11 @@ from .review_models import (
 )
 from .review_storage import BucketStore
 from .review_transaction import (
+    BrokerStatus,
+    BrokerStatusChecker,
     VolunteerReviewer,
     bind_with_broker,
+    inspect_with_broker,
     promote_with_broker,
     renew_with_broker,
     reserve_with_broker,
@@ -42,6 +45,8 @@ __all__ = [
     "BucketInfo",
     "BucketStore",
     "BrokerBinder",
+    "BrokerStatus",
+    "BrokerStatusChecker",
     "BrokerPromoter",
     "BrokerRenewer",
     "BrokerReservation",
@@ -54,6 +59,7 @@ __all__ = [
     "VolunteerReviewer",
     "load_scope_policy",
     "bind_with_broker",
+    "inspect_with_broker",
     "promote_with_broker",
     "renew_with_broker",
     "reserve_with_broker",
