@@ -43,6 +43,7 @@ import click
 from dotenv import load_dotenv
 from huggingface_hub import BucketFile, HfApi
 from huggingface_hub.errors import HfHubHTTPError
+from review_volunteer_results import main as run_review_command
 
 from euroeval_worker.review import PublicStagingError, reviewer_from_environment
 from leaderboards.backup import backup_results
@@ -726,20 +727,58 @@ def preflight_volunteer_review() -> bool:
             "Hugging Face staging. Review them before continuing with leaderboard "
             "generation? [y/N]: "
         )
-    except EOFError:
-        _log_review_commands(submission_ids=submission_ids)
-        logger.warning(
-            "Could not read review prompt; continuing without automatic approval."
-        )
-        return True
-    if answer.strip().lower() in {"y", "yes"}:
-        _log_review_commands(submission_ids=submission_ids)
-        logger.info(
-            "Review paused; no volunteer submission was approved automatically. "
-            "Rerun make leaderboards afterward."
-        )
+    except (EOFError, KeyboardInterrupt):
+        logger.warning("Review cancelled before collection; no decisions were made.")
         return False
-    logger.info("Continuing; no volunteer submission was approved automatically.")
+    if answer.strip().lower() not in {"y", "yes"}:
+        logger.info("Continuing; no volunteer submission was approved automatically.")
+        return True
+
+    reviewer_login = _reviewer_login()
+    if not reviewer_login:
+        logger.error("Cannot review submissions without a verified GitHub login.")
+        return False
+
+    for submission_id in submission_ids:
+        try:
+            show_status = run_review_command(["show", submission_id])
+        except Exception:
+            logger.exception(
+                "Could not display submission %s; skipping it.", submission_id
+            )
+            continue
+        if show_status != 0:
+            logger.error("Could not display submission %s; skipping it.", submission_id)
+            continue
+        try:
+            decision = (
+                input(f"Approve submission {submission_id}? [y/N]: ").strip().lower()
+            )
+        except (EOFError, KeyboardInterrupt):
+            logger.warning("Review cancelled; collection stopped before side effects.")
+            return False
+        if decision not in {"y", "yes"}:
+            logger.info("Skipped submission %s; it remains pending.", submission_id)
+            continue
+        try:
+            status = run_review_command(
+                [
+                    "--reviewer",
+                    reviewer_login,
+                    "approve",
+                    submission_id,
+                    "--reason",
+                    "Reviewed during collector preflight",
+                ]
+            )
+        except Exception:
+            logger.exception("Approval failed for submission %s.", submission_id)
+            continue
+        if status:
+            logger.error(
+                "Approval failed for submission %s; it was not reported as approved.",
+                submission_id,
+            )
     return True
 
 
@@ -795,6 +834,28 @@ def _log_review_commands(submission_ids: list[str]) -> None:
     logger.warning("Review commands (do not run until evidence is inspected):")
     for command in commands:
         logger.warning("%s", shlex.join(command))
+
+
+def _reviewer_login() -> str | None:
+    """Resolve the verified reviewer login without exposing credentials.
+
+    Returns:
+        The login or None when no authenticated login is available.
+    """
+    reviewer = os.environ.get("GITHUB_ACTOR", "").strip()
+    if reviewer:
+        return reviewer
+    try:
+        result = subprocess.run(
+            ["gh", "api", "user", "--jq", ".login"],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return result.stdout.strip() or None
 
 
 def _stdin_is_interactive() -> bool:

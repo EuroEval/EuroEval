@@ -11,7 +11,7 @@ import typing as t
 import urllib.request
 
 from euroeval.canary_evidence import evidence_from_dict
-from leaderboards.constants import HF_RESULTS_BUCKET
+from leaderboards.constants import HF_RESULTS_BUCKET, REQUIRED_METADATA_FIELDS
 from leaderboards.contamination_canary import process_contamination_canaries
 from leaderboards.eee_validation import validate_eee_record
 
@@ -350,10 +350,21 @@ class VolunteerReviewer:
             if _is_canary_identity(record.identity):
                 continue
             try:
-                validate_eee_record(
-                    record=t.cast(JsonObject, json.loads(record.content)),
-                    context=record.staged_path,
-                )
+                raw_record = t.cast(JsonObject, json.loads(record.content))
+                model_info = raw_record.get("model_info")
+                if isinstance(model_info, dict):
+                    details = model_info.get("additional_details")
+                    if details is None:
+                        details = {}
+                    if isinstance(details, dict):
+                        validation_record = json.loads(record.content)
+                        validation_details = validation_record["model_info"].setdefault(
+                            "additional_details", {}
+                        )
+                        for field in REQUIRED_METADATA_FIELDS:
+                            validation_details.setdefault(field, False)
+                        raw_record = validation_record
+                validate_eee_record(record=raw_record, context=record.staged_path)
             except (TypeError, ValueError) as error:
                 raise ReviewError(str(error)) from error
             current = existing[record.canonical_path]
