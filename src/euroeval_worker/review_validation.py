@@ -9,7 +9,10 @@ import re
 import typing as t
 from pathlib import Path
 
+from packaging.version import InvalidVersion, Version
+
 from euroeval.canary_evidence import evidence_from_dict
+from leaderboards.constants import HF_RESULTS_BUCKET
 from leaderboards.eee_validation import is_eee_record
 from leaderboards.result_identity import (
     ResultIdentity,
@@ -61,12 +64,10 @@ def _validate_manifest(
         _required_string(manifest, field)
     expected_scope = _required_object(manifest, "expected_scope")
     _required_string(expected_scope, "policy_version")
-    trusted_sets = _validate_scope_policy(
+    expected_sets = _validate_scope_policy(
         manifest=manifest, expected_scope=expected_scope, scope_policy=scope_policy
     )
-    expected_sets = _identity_suffix_sets(
-        value=expected_scope, context="Manifest expected scope", allow_legacy=True
-    )
+    _validate_covered_records(manifest=manifest, scope=expected_scope, store=store)
     raw_count = expected_scope.get("count")
     if raw_count is not None and (
         isinstance(raw_count, bool) or not isinstance(raw_count, int) or raw_count <= 0
@@ -107,7 +108,11 @@ def _validate_manifest(
     )
     actual_set = set(actual_suffixes)
     matched = next(
-        (alternative for alternative in trusted_sets if set(alternative) == actual_set),
+        (
+            alternative
+            for alternative in expected_sets
+            if set(alternative) == actual_set
+        ),
         None,
     )
     canary_instruction = manifest.get("contamination_canary")
@@ -125,10 +130,6 @@ def _validate_manifest(
     expected = _expected_identities(value=list(matched), model_id=model_id)
     if set(ordinary_actual) != set(expected):
         raise ReviewError("Manifest expected and actual canonical identities differ")
-    if {frozenset(item) for item in expected_sets} != {
-        frozenset(item) for item in trusted_sets
-    }:
-        raise ReviewError("Manifest expected scope alternatives differ from policy")
     if raw_count is not None and raw_count != len(matched):
         raise ReviewError("Manifest expected-scope count is inconsistent")
     raw_matched = manifest.get("matched_identity_suffixes")
@@ -562,6 +563,76 @@ def _string_list(value: object, context: str) -> list[str]:
     return t.cast(list[str], value)
 
 
+def _validate_covered_records(
+    manifest: JsonObject, scope: JsonObject, store: BucketStore
+) -> None:
+    """Independently verify current canonical evidence for every claimed omission.
+
+    Args:
+        manifest:
+            Submission metadata identifying the leased model, revision, and version.
+        scope:
+            Validated coverage partition, or a legacy full scope.
+        store:
+            Exact-file bucket adapter used to fetch canonical result bytes.
+
+    Raises:
+        ReviewError:
+            If claimed coverage is unavailable, malformed, or incompatible.
+    """
+    if "covered_identity_suffixes" not in scope:
+        return
+    covered = _string_list(scope["covered_identity_suffixes"], "Covered identities")
+    if not covered:
+        return
+    model = _required_object(manifest, "model")
+    model_id = _required_string(model, "id")
+    revision = _required_string(model, "revision")
+    leased_version = _required_string(manifest, "euroeval_version")
+    for identity in _expected_identities(value=covered, model_id=model_id):
+        path = identity_to_path(identity=identity).as_posix()
+        content = store.read_optional(
+            bucket=os.environ.get("HF_RESULTS_BUCKET", HF_RESULTS_BUCKET), path=path
+        )
+        if content is None:
+            raise ReviewError(f"Covered canonical record is unavailable: {path}")
+        record = _load_object(
+            content=content, context=f"Covered canonical record {path}"
+        )
+        if record.get("schema_version") not in {"0.2.1", "0.3.0"} or not is_eee_record(
+            record=record
+        ):
+            raise ReviewError(f"Covered canonical record is not valid EEE: {path}")
+        library = _required_object(record, "eval_library")
+        _required_object(library, "additional_details")
+        try:
+            actual = identity_from_eee_record(record=record)
+        except (TypeError, ValueError) as error:
+            raise ReviewError(
+                f"Covered canonical identity is invalid: {path}"
+            ) from error
+        canonical_model = _required_object(record, "model_info")
+        version = _required_string(library, "version")
+        if (
+            actual != identity
+            or canonical_model.get("revision") != revision
+            or library.get("name") != "euroeval"
+        ):
+            raise ReviewError(
+                f"Covered canonical identity or revision mismatch: {path}"
+            )
+        try:
+            compatible = Version(version=version) >= Version(version=leased_version)
+        except InvalidVersion as error:
+            raise ReviewError(
+                f"Covered canonical EuroEval version is malformed: {path}"
+            ) from error
+        if not compatible:
+            raise ReviewError(
+                f"Covered canonical EuroEval version is incompatible: {path}"
+            )
+
+
 def _validate_result_entry(
     entry: object,
     store: BucketStore,
@@ -889,7 +960,7 @@ def _validate_scope_policy(
             Maintainer-trusted scope policy.
 
     Returns:
-        The trusted complete identity-suffix alternatives.
+        The validated remaining identity-suffix alternatives.
 
     Raises:
         ReviewError:
@@ -927,7 +998,12 @@ def _validate_scope_policy(
     expected_sets = _identity_suffix_sets(
         value=expected_scope, context="Manifest expected scope", allow_legacy=True
     )
-    if {frozenset(item) for item in expected_sets} != {
+    if (
+        "original_identity_suffix_sets" in expected_scope
+        or "covered_identity_suffixes" in expected_scope
+    ):
+        _validate_coverage_partition(scope=expected_scope, trusted_sets=trusted_sets)
+    elif {frozenset(item) for item in expected_sets} != {
         frozenset(item) for item in trusted_sets
     }:
         raise ReviewError("Manifest scope differs from policy identity alternatives")
@@ -939,7 +1015,51 @@ def _validate_scope_policy(
         "count"
     ) != trusted.get("count"):
         raise ReviewError("Manifest scope differs from policy field count")
-    return trusted_sets
+    return expected_sets
+
+
+def _validate_coverage_partition(
+    scope: JsonObject, trusted_sets: tuple[tuple[str, ...], ...]
+) -> None:
+    """Require an exact partition of independently trusted official alternatives.
+
+    Args:
+        scope:
+            Manifest scope carrying original, covered, and remaining identities.
+        trusted_sets:
+            Complete alternatives from the maintainer-trusted policy.
+
+    Raises:
+        ReviewError:
+            If coverage proof fields are malformed or omit official work.
+    """
+    original = _identity_suffix_sets(
+        value={
+            "allowed_identity_suffix_sets": scope.get("original_identity_suffix_sets")
+        },
+        context="Original coverage scope",
+    )
+    if {frozenset(item) for item in original} != {
+        frozenset(item) for item in trusted_sets
+    }:
+        raise ReviewError("Original coverage scope differs from trusted policy")
+    if "identity_suffixes" in scope:
+        raise ReviewError("Coverage scope requires allowed identity alternatives")
+    covered = _string_list(scope.get("covered_identity_suffixes"), "Covered identities")
+    if covered:
+        _identity_suffix_sets(
+            value={"allowed_identity_suffix_sets": [covered]}, context="Covered scope"
+        )
+    covered_set = set(covered)
+    official = {suffix for alternative in trusted_sets for suffix in alternative}
+    if not covered_set <= official:
+        raise ReviewError("Covered scope contains identities outside trusted policy")
+    remaining = _identity_suffix_sets(value=scope, context="Remaining coverage scope")
+    missing = {
+        frozenset(set(alternative) - covered_set) for alternative in trusted_sets
+    }
+    if frozenset() in missing or {frozenset(item) for item in remaining} != missing:
+        raise ReviewError("Coverage scope is not an exact covered/missing partition")
 
 
 def load_scope_policy() -> JsonObject:

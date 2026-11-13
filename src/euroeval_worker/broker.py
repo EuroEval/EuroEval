@@ -66,6 +66,7 @@ class BrokerClient:
         payload: JsonObject = {
             "protocol_version": PROTOCOL_VERSION,
             "worker_version": self.worker_version,
+            "capabilities": ["canonical_coverage_v1"],
             "hardware": _hardware_dict(hardware),
         }
         result = self._post("claim", payload, credential=credential)
