@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import concurrent.futures
 import dataclasses
+import email.message
 import hashlib
 import json
 import threading
 import typing as t
+import urllib.error
 import urllib.request
 from pathlib import Path
 from types import SimpleNamespace
@@ -18,10 +20,12 @@ import euroeval_worker.review_transaction as review_transaction
 from euroeval.canary_evidence import status_evidence
 from euroeval_worker.review import (
     BrokerReservationResult,
+    BrokerStatus,
     BucketApi,
     BucketStore,
     ReviewError,
     VolunteerReviewer,
+    inspect_with_broker,
 )
 from euroeval_worker.review_transaction import renew_with_broker
 from leaderboards.canonical_publication import BucketApi as CanonicalBucketApi
@@ -508,6 +512,70 @@ def test_accepted_history_ignores_later_canonical_results() -> None:
     assert reviewer.show(submission_id=SUBMISSION).canonical_observations[0].conflict
 
 
+@pytest.mark.parametrize("status", ["absent", "reserved"])
+def test_active_partial_decision_stays_pending_and_resumes_original_plan(
+    status: BrokerStatus,
+) -> None:
+    """Read-only active status cannot complete or alter a partial replacement.
+
+    Args:
+        status: Broker status for a decision with interrupted publication.
+    """
+    api, reviewer, calls = _reviewer(record_count=2)
+    _seed_older_results(api=api, reviewer=reviewer)
+    inspected = reviewer.show(submission_id=SUBMISSION)
+    api.fail_result_upload_number = 2
+    with pytest.raises(RuntimeError, match="interruption"):
+        reviewer.decide(
+            submission_id=SUBMISSION,
+            outcome="accepted",
+            reviewer="alice",
+            plan_fingerprint=inspected.plan_fingerprint,
+        )
+    decision = _decision_content(api)
+    reviewer.status_checker = lambda issue, submission, outcome, records, digest: status
+    uploads = list(api.uploads)
+    assert [summary[0] for summary in reviewer.list_pending_submissions()] == [
+        SUBMISSION
+    ]
+    assert api.uploads == uploads
+    assert calls == []
+    api.fail_result_upload_number = None
+    reviewer.decide(
+        submission_id=SUBMISSION,
+        outcome="accepted",
+        reviewer="bob",
+        plan_fingerprint=inspected.plan_fingerprint,
+    )
+    assert _decision_content(api) == decision
+    assert reviewer.list_pending_submissions() == []
+    assert calls == [(12, SUBMISSION, "accepted")]
+
+
+def _seed_older_results(
+    api: FakeHfApi, reviewer: VolunteerReviewer
+) -> dict[str, bytes]:
+    """Populate older canonical results for replacement tests.
+
+    Args:
+        api:
+            In-memory bucket adapter.
+        reviewer:
+            Public reviewer used to inspect staged records.
+
+    Returns:
+        Exact predecessor bytes indexed by canonical path.
+    """
+    predecessors: dict[str, bytes] = {}
+    for record in reviewer.show(submission_id=SUBMISSION).records:
+        predecessor = json.loads(record.content)
+        predecessor["eval_library"]["version"] = "17.0.0"
+        content = json.dumps(predecessor).encode()
+        api.files[(RESULTS, record.canonical_path)] = content
+        predecessors[record.canonical_path] = content
+    return predecessors
+
+
 def test_approval_replaces_strictly_older_same_identity_and_archives_bytes() -> None:
     """A newer same-identity result replaces only after preserving its predecessor."""
     api, reviewer, _ = _reviewer()
@@ -567,30 +635,6 @@ def test_archive_failure_prevents_all_canonical_uploads() -> None:
         plan_fingerprint=report.plan_fingerprint,
     )
     assert api.result_uploads == 2
-
-
-def _seed_older_results(
-    api: FakeHfApi, reviewer: VolunteerReviewer
-) -> dict[str, bytes]:
-    """Populate older canonical results for replacement tests.
-
-    Args:
-        api:
-            In-memory bucket adapter.
-        reviewer:
-            Public reviewer used to inspect staged records.
-
-    Returns:
-        Exact predecessor bytes indexed by canonical path.
-    """
-    predecessors: dict[str, bytes] = {}
-    for record in reviewer.show(submission_id=SUBMISSION).records:
-        predecessor = json.loads(record.content)
-        predecessor["eval_library"]["version"] = "17.0.0"
-        content = json.dumps(predecessor).encode()
-        api.files[(RESULTS, record.canonical_path)] = content
-        predecessors[record.canonical_path] = content
-    return predecessors
 
 
 def test_canonical_collision_prevents_decision_and_broker() -> None:
@@ -929,6 +973,9 @@ def test_existing_decision_is_authoritative_after_reservation_expiry() -> None:
     api, reviewer, broker_calls = _reviewer(reserver=reserve)
     reviewer.decide(SUBMISSION, "rejected", "alice")
     decision = _decision_content(api)
+    # Resume an unreceipted decision rather than a completed local replay.
+    digest = hashlib.sha256(decision).hexdigest()
+    del api.files[(STAGING, f"volunteer/completions/{SUBMISSION}/{digest}.json")]
 
     reviewer.decide(SUBMISSION, "rejected", "bob")
 
@@ -1029,6 +1076,137 @@ def test_failure_count_manifest_claim_must_match_staged_record() -> None:
 
     with pytest.raises(ReviewError, match="failed_instances count is inconsistent"):
         reviewer.show(SUBMISSION)
+
+
+@pytest.mark.parametrize(
+    ("body", "expected"),
+    [
+        ({"protocol_version": "volunteer-worker/v1", "status": "absent"}, "absent"),
+        (
+            {
+                "protocol_version": "volunteer-worker/v1",
+                "status": "reserved",
+                "decision_digest": "d" * 64,
+            },
+            "reserved",
+        ),
+        (
+            {
+                "protocol_version": "volunteer-worker/v1",
+                "status": "terminal",
+                "decision_digest": "d" * 64,
+            },
+            "terminal",
+        ),
+        ({"status": "terminal", "decision_digest": "d" * 64}, None),
+        ({"protocol_version": "wrong", "status": "absent"}, None),
+        ({"protocol_version": "volunteer-worker/v1", "status": "accepted"}, None),
+        ({"protocol_version": "volunteer-worker/v1", "status": "terminal"}, None),
+        (
+            {
+                "protocol_version": "volunteer-worker/v1",
+                "status": "reserved",
+                "decision_digest": "e" * 64,
+            },
+            None,
+        ),
+        (
+            {
+                "protocol_version": "volunteer-worker/v1",
+                "status": "terminal",
+                "decision_digest": "e" * 64,
+            },
+            None,
+        ),
+        ([], None),
+    ],
+)
+def test_inspect_with_broker_validates_response_evidence(
+    monkeypatch: pytest.MonkeyPatch, body: object, expected: BrokerStatus | None
+) -> None:
+    """Validate the complete status envelope and bound digest over public transport.
+
+    Args:
+        monkeypatch: Fixture replacing broker credentials and HTTP transport.
+        body: Broker response JSON.
+        expected: Valid status, or None for a response that must fail closed.
+    """
+    records = [{"identity": "identity", "canonical_path": "path", "digest": "a" * 64}]
+
+    class Response:
+        """In-memory response for the read-only broker transport."""
+
+        def __enter__(self) -> Response:
+            """Enter the response context.
+
+            Returns:
+                This response.
+            """
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            """Leave the response context.
+
+            Args:
+                args: Context exit arguments.
+            """
+
+        def read(self) -> bytes:
+            """Encode the configured JSON response.
+
+            Returns:
+                UTF-8 JSON response bytes.
+            """
+            return json.dumps(body).encode()
+
+    def urlopen(request: urllib.request.Request, timeout: int) -> Response:
+        """Verify the authenticated read-only status request.
+
+        Args:
+            request: Outgoing broker request.
+            timeout: HTTP timeout in seconds.
+
+        Returns:
+            The configured response.
+        """
+        assert request.full_url == "https://broker/status"
+        assert request.method == "POST"
+        assert request.get_header("X-promotion-secret") == "secret"
+        assert timeout == 30
+        assert isinstance(request.data, bytes)
+        assert json.loads(request.data) == {
+            "protocol_version": "volunteer-worker/v1",
+            "issue_number": 12,
+            "submission_id": SUBMISSION,
+            "outcome": "accepted",
+            "records": records,
+            "decision_digest": "d" * 64,
+        }
+        return Response()
+
+    monkeypatch.setenv("VOLUNTEER_PROMOTION_SECRET", "secret")
+    monkeypatch.setenv("VOLUNTEER_BROKER_PROMOTION_STATUS_URL", "https://broker/status")
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+    if expected is None:
+        with pytest.raises(ReviewError, match="status"):
+            inspect_with_broker(
+                issue_number=12,
+                submission_id=SUBMISSION,
+                outcome="accepted",
+                records=records,
+                decision_digest="d" * 64,
+            )
+    else:
+        assert (
+            inspect_with_broker(
+                issue_number=12,
+                submission_id=SUBMISSION,
+                outcome="accepted",
+                records=records,
+                decision_digest="d" * 64,
+            )
+            == expected
+        )
 
 
 @pytest.mark.parametrize(
@@ -1669,7 +1847,7 @@ def test_reject_is_idempotent_and_opposite_decision_fails() -> None:
 
     assert _decision_content(api) == decision
     assert not [key for key in api.files if key[0] == RESULTS]
-    assert broker_calls == [(12, SUBMISSION, "rejected"), (12, SUBMISSION, "rejected")]
+    assert broker_calls == [(12, SUBMISSION, "rejected")]
     with pytest.raises(ReviewError, match="opposite"):
         reviewer.decide(SUBMISSION, "accepted", "maintainer")
 
@@ -1751,6 +1929,9 @@ def test_resume_uses_the_first_bound_decision_metadata() -> None:
     api, reviewer, _ = _reviewer(reserver=reserve)
     reviewer.decide(SUBMISSION, "rejected", "alice")
     decision = _decision_content(api)
+    # Resume an unreceipted decision rather than a completed local replay.
+    digest = hashlib.sha256(decision).hexdigest()
+    del api.files[(STAGING, f"volunteer/completions/{SUBMISSION}/{digest}.json")]
     reviewer.decide(SUBMISSION, "rejected", "bob")
 
     assert _decision_content(api) == decision
@@ -1974,18 +2155,131 @@ def test_stale_canonical_plan_cannot_be_approved() -> None:
     assert broker_calls == []
 
 
-def test_terminal_response_loss_recovers_with_durable_digest(
-    monkeypatch: pytest.MonkeyPatch,
+@pytest.mark.parametrize("failure", ["network", "evidence"])
+def test_status_failure_preserves_unreceipted_decision(
+    monkeypatch: pytest.MonkeyPatch, failure: str
 ) -> None:
-    """A fresh reviewer recovers a completed terminal broker transition.
+    """Status failures leave pending evidence intact before lock acquisition.
 
     Args:
-        monkeypatch:
-            Pytest fixture for replacing dependencies during the test.
+        monkeypatch: Fixture replacing broker transport and credentials.
+        failure: Failure reported by the read-only broker lookup.
+    """
+    api, reviewer, _ = _reviewer()
+    api.fail_result_upload_number = 1
+    with pytest.raises(RuntimeError, match="interruption"):
+        reviewer.decide(submission_id=SUBMISSION, outcome="accepted", reviewer="alice")
+
+    def unavailable(request: urllib.request.Request, timeout: int) -> None:
+        """Reject the actual read-only broker request.
+
+        Args:
+            request: Outgoing status request.
+            timeout: HTTP request timeout.
+
+        Raises:
+            OSError: If the network fails.
+            urllib.error.HTTPError: If broker evidence does not match.
+        """
+        assert request.full_url == "https://broker/status"
+        if failure == "network":
+            raise OSError("network unavailable")
+        raise urllib.error.HTTPError(
+            url=request.full_url,
+            code=409,
+            msg="Promotion reservation evidence differs",
+            hdrs=email.message.Message(),
+            fp=None,
+        )
+
+    monkeypatch.setenv("VOLUNTEER_PROMOTION_SECRET", "secret")
+    monkeypatch.setenv("VOLUNTEER_BROKER_PROMOTION_STATUS_URL", "https://broker/status")
+    monkeypatch.setattr(urllib.request, "urlopen", unavailable)
+    fresh_reviewer = VolunteerReviewer(
+        store=reviewer.store, results_bucket=RESULTS, scope_policy=reviewer.scope_policy
+    )
+    snapshot = dict(api.files)
+    uploads = list(api.uploads)
+    lock = t.cast(FakePublicationLock, reviewer.publisher.lock)
+    lock_requests = list(lock.requests)
+    assert [summary[0] for summary in fresh_reviewer.list_pending_submissions()] == [
+        SUBMISSION
+    ]
+    with pytest.raises(ReviewError, match="status lookup failed"):
+        fresh_reviewer.decide(
+            submission_id=SUBMISSION, outcome="accepted", reviewer="bob"
+        )
+    assert api.files == snapshot
+    assert api.uploads == uploads
+    assert lock.requests == lock_requests
+
+
+@pytest.mark.parametrize("corrupt", [False, True])
+def test_terminal_recovery_requires_original_predecessor_archives(
+    corrupt: bool,
+) -> None:
+    """Terminal broker state cannot repair missing or corrupt original archives.
+
+    Args:
+        corrupt: Whether to corrupt the archive instead of removing it.
+    """
+    api, reviewer, _ = _reviewer()
+    predecessors = _seed_older_results(api=api, reviewer=reviewer)
+    inspected = reviewer.show(submission_id=SUBMISSION)
+    reviewer.decide(
+        submission_id=SUBMISSION,
+        outcome="accepted",
+        reviewer="alice",
+        plan_fingerprint=inspected.plan_fingerprint,
+    )
+    decision = _decision_content(api)
+    digest = hashlib.sha256(decision).hexdigest()
+    del api.files[(STAGING, f"volunteer/completions/{SUBMISSION}/{digest}.json")]
+    predecessor_digest = hashlib.sha256(next(iter(predecessors.values()))).hexdigest()
+    archive_key = (
+        STAGING,
+        f"volunteer/predecessors/{SUBMISSION}/{predecessor_digest}.json",
+    )
+    if corrupt:
+        api.files[archive_key] = b"corrupted"
+    else:
+        del api.files[archive_key]
+    reviewer.status_checker = lambda issue, submission, outcome, records, digest: (
+        "terminal"
+    )
+    snapshot = dict(api.files)
+    uploads = list(api.uploads)
+    lock = t.cast(FakePublicationLock, reviewer.publisher.lock)
+    lock_requests = list(lock.requests)
+    assert [summary[0] for summary in reviewer.list_pending_submissions()] == [
+        SUBMISSION
+    ]
+    with pytest.raises(ReviewError, match="archive|Archive"):
+        reviewer.decide(submission_id=SUBMISSION, outcome="accepted", reviewer="bob")
+    assert api.files == snapshot
+    assert api.uploads == uploads
+    assert lock.requests == lock_requests
+
+
+@pytest.mark.parametrize("outcome", ["accepted", "rejected"])
+def test_terminal_response_loss_recovers_with_durable_digest(
+    monkeypatch: pytest.MonkeyPatch, outcome: t.Literal["accepted", "rejected"]
+) -> None:
+    """Recover lost terminal replies without locks or rewriting newer results.
+
+    Args:
+        monkeypatch: Fixture replacing broker transport and configuration.
+        outcome: Terminal outcome whose response is lost.
     """
     api, template, _ = _reviewer()
+    if outcome == "accepted":
+        _seed_older_results(api=api, reviewer=template)
+    inspected = template.show(submission_id=SUBMISSION)
     reviewer = VolunteerReviewer(
-        store=template.store, results_bucket=RESULTS, scope_policy=template.scope_policy
+        store=template.store,
+        results_bucket=RESULTS,
+        scope_policy=template.scope_policy,
+        publisher=template.publisher,
     )
     requests: list[tuple[str, dict[str, object]]] = []
     reservation = {
@@ -2057,6 +2351,22 @@ def test_terminal_response_loss_recovers_with_durable_digest(
         body = json.loads(request.data.decode())
         requests.append((request.full_url, body))
         assert request.get_header("X-promotion-secret") == "secret"
+        if request.full_url.endswith("/status"):
+            assert body == {
+                "protocol_version": "volunteer-worker/v1",
+                "issue_number": 12,
+                "submission_id": SUBMISSION,
+                "outcome": outcome,
+                "records": requests[0][1]["records"],
+                "decision_digest": bound_digest,
+            }
+            return Response(
+                {
+                    "protocol_version": "volunteer-worker/v1",
+                    "status": reservation["status"],
+                    "decision_digest": bound_digest,
+                }
+            )
         if request.full_url.endswith("/reserve"):
             if "reservation_token" not in body:
                 if "decision_digest" not in body:
@@ -2095,30 +2405,66 @@ def test_terminal_response_loss_recovers_with_durable_digest(
         if lost_response:
             lost_response = False
             raise OSError("completed response was lost")
-        return Response({"status": "rejected"})
+        return Response({"status": outcome})
 
     monkeypatch.setenv("VOLUNTEER_PROMOTION_SECRET", "secret")
     monkeypatch.setenv("VOLUNTEER_BROKER_RESERVATION_URL", "https://broker/reserve")
     monkeypatch.setenv("VOLUNTEER_BROKER_PROMOTION_URL", "https://broker/promote")
+    monkeypatch.setenv("VOLUNTEER_BROKER_PROMOTION_STATUS_URL", "https://broker/status")
     monkeypatch.setattr(urllib.request, "urlopen", urlopen)
 
     with pytest.raises(OSError, match="response was lost"):
-        reviewer.decide(SUBMISSION, "rejected", "alice")
-    decision_digest = hashlib.sha256(_decision_content(api)).hexdigest()
+        reviewer.decide(
+            submission_id=SUBMISSION,
+            outcome=outcome,
+            reviewer="alice",
+            plan_fingerprint=inspected.plan_fingerprint,
+        )
+    decision = _decision_content(api)
+    decision_digest = hashlib.sha256(decision).hexdigest()
     assert bound_digest == decision_digest
+    initial_uploads = list(api.uploads)
+    lock = t.cast(FakePublicationLock, template.publisher.lock)
+    initial_lock_requests = list(lock.requests)
+    if outcome == "accepted":
+        record = inspected.records[0]
+        successor = json.loads(record.content)
+        successor["eval_library"]["version"] = "19.0.0"
+        api.files[(RESULTS, record.canonical_path)] = json.dumps(successor).encode()
+    canonical = {key: value for key, value in api.files.items() if key[0] == RESULTS}
 
+    # The fresh process has no publication adapter or publication credentials.
+    monkeypatch.delenv("CANONICAL_PUBLICATION_SECRET", raising=False)
+    monkeypatch.delenv("CANONICAL_PUBLICATION_URL", raising=False)
     fresh_reviewer = VolunteerReviewer(
         store=template.store, results_bucket=RESULTS, scope_policy=template.scope_policy
     )
-    fresh_reviewer.decide(SUBMISSION, "rejected", "bob")
+    assert fresh_reviewer.list_pending_submissions() == []
+    assert api.uploads == initial_uploads
+    fresh_reviewer.decide(submission_id=SUBMISSION, outcome=outcome, reviewer="bob")
+    receipt_path = f"volunteer/completions/{SUBMISSION}/{decision_digest}.json"
+    assert api.uploads == [*initial_uploads, (STAGING, receipt_path)]
+    assert _decision_content(api) == decision
+    assert lock.requests == initial_lock_requests
+    assert {
+        key: value for key, value in api.files.items() if key[0] == RESULTS
+    } == canonical
 
     reserve_requests = [
         body
         for url, body in requests
         if url.endswith("/reserve") and "reservation_token" not in body
     ]
+    assert len(reserve_requests) == 1
     assert "decision_digest" not in reserve_requests[0]
-    assert reserve_requests[1]["decision_digest"] == decision_digest
-    assert reserve_requests[1]["records"] == reserve_requests[0]["records"]
-    assert "reservation_token" not in reserve_requests[1]
-    assert len([body for url, body in requests if url.endswith("/promote")]) == 2
+    assert len([body for url, body in requests if url.endswith("/promote")]) == 1
+    assert len([body for url, body in requests if url.endswith("/status")]) == 2
+
+    # A receipted replay no longer even needs broker credentials or transport.
+    monkeypatch.delenv("VOLUNTEER_PROMOTION_SECRET")
+    request_count = len(requests)
+    uploads = list(api.uploads)
+    fresh_reviewer.decide(submission_id=SUBMISSION, outcome=outcome, reviewer="carol")
+    assert fresh_reviewer.list_pending_submissions() == []
+    assert len(requests) == request_count
+    assert api.uploads == uploads

@@ -46,6 +46,11 @@ _MANIFEST_PREFIX = "volunteer/manifests"
 _LOCAL_DECISION_CREATED_AT = "1970-01-01T00:00:00Z"
 _DECISION_ARTIFACT = "volunteer-review-decision/v1"
 
+BrokerStatus = t.Literal["absent", "reserved", "terminal"]
+BrokerStatusChecker = c.Callable[
+    [int, str, str, list[dict[str, str]], str], BrokerStatus
+]
+
 
 def _has_collected_canary(records: list[dict[str, object]]) -> bool:
     """Return whether any canary record reports collected observations.
@@ -109,6 +114,7 @@ class VolunteerReviewer:
         scope_policy: JsonObject | None = None,
         publisher: CanonicalPublisher | None = None,
         publisher_factory: c.Callable[[], CanonicalPublisher] | None = None,
+        status_checker: BrokerStatusChecker | None = None,
     ) -> None:
         """Initialise the review service.
 
@@ -125,6 +131,9 @@ class VolunteerReviewer:
                 Renewer.
             binder (optional):
                 Binder.
+            status_checker (optional):
+                Read-only broker status lookup. Defaults to the broker transport
+                only when using the production promoter.
             now (optional):
                 Now.
             scope_policy (optional):
@@ -139,6 +148,9 @@ class VolunteerReviewer:
         )
         self.renewer = renewer or (renew_with_broker if self._broker_promoter else None)
         self.binder = binder or (bind_with_broker if self._broker_promoter else None)
+        self.status_checker = status_checker or (
+            inspect_with_broker if self._broker_promoter else None
+        )
         self.now = now
         self.scope_policy = scope_policy or load_scope_policy()
         self.publisher = publisher
@@ -153,6 +165,40 @@ class VolunteerReviewer:
         plan_fingerprint: str | None = None,
     ) -> ReviewReport:
         """Apply a confirmed decision, fencing accepted publication."""
+        inspected = self.show(submission_id=submission_id)
+        existing = _existing_decisions(
+            store=self.store, report=inspected, outcome=outcome
+        )
+        if existing:
+            decision = _load_object(content=existing[0][1], context=existing[0][0])
+            decision_digest = existing[0][2]
+            receipted = self._has_valid_completion_receipt(
+                submission_id=submission_id,
+                outcome=outcome,
+                decision_digest=decision_digest,
+            )
+            terminal = (
+                receipted
+                or self._inspect_decision(
+                    report=inspected, outcome=outcome, decision_digest=decision_digest
+                )
+                == "terminal"
+            )
+            if terminal:
+                _validate_predecessor_archives(
+                    store=self.store,
+                    report=inspected,
+                    decision=decision,
+                    results_bucket=self.results_bucket,
+                    completed=True,
+                )
+                if not receipted:
+                    self._write_completion_receipt(
+                        submission_id=submission_id,
+                        outcome=outcome,
+                        decision_digest=decision_digest,
+                    )
+                return inspected
         if outcome == "rejected":
             return self._decide(
                 submission_id=submission_id,
@@ -162,28 +208,6 @@ class VolunteerReviewer:
                 plan_fingerprint=plan_fingerprint,
                 publication=None,
             )
-        inspected = self.show(submission_id=submission_id)
-        existing = _existing_decisions(
-            store=self.store, report=inspected, outcome="accepted"
-        )
-        if existing and "canonical_plan" in _load_object(
-            content=existing[0][1], context=existing[0][0]
-        ):
-            decision_digest = existing[0][2]
-            if self._has_valid_completion_receipt(
-                submission_id=submission_id,
-                outcome="accepted",
-                decision_digest=decision_digest,
-            ):
-                _validate_predecessor_archives(
-                    store=self.store,
-                    report=inspected,
-                    decision=_load_object(
-                        content=existing[0][1], context=existing[0][0]
-                    ),
-                    results_bucket=self.results_bucket,
-                )
-                return inspected
         if (
             not existing
             and plan_fingerprint is not None
@@ -268,17 +292,7 @@ class VolunteerReviewer:
                     "Canonical plan changed or was not confirmed; run show and retry"
                 )
 
-        evidence = sorted(
-            [
-                {
-                    "identity": json.dumps(record.identity, separators=(",", ":")),
-                    "canonical_path": record.canonical_path,
-                    "digest": record.digest,
-                }
-                for record in report.records
-            ],
-            key=lambda item: item["identity"],
-        )
+        evidence = _promotion_evidence(report=report)
         if outcome == "accepted":
             canary_records = [
                 json.loads(record.content)
@@ -850,6 +864,29 @@ class VolunteerReviewer:
             decision_digest=decision_digest,
         )
 
+    def _inspect_decision(
+        self, report: ReviewReport, outcome: str, decision_digest: str
+    ) -> BrokerStatus:
+        """Inspect broker evidence without reserving or publishing anything.
+
+        Args:
+            report: Independently validated submission evidence.
+            outcome: Durable decision outcome.
+            decision_digest: Digest of the immutable decision bytes.
+
+        Returns:
+            Matching broker status, or absent for offline custom promoters.
+        """
+        if self.status_checker is None:
+            return "absent"
+        return self.status_checker(
+            report.issue_number,
+            report.submission_id,
+            outcome,
+            _promotion_evidence(report=report),
+            decision_digest,
+        )
+
     @contextmanager
     def _publication_session(self) -> t.Iterator[PublicationSession]:
         """Open the configured canonical publication session.
@@ -917,13 +954,40 @@ class VolunteerReviewer:
         if not decisions:
             return False
         decision = _load_object(content=decisions[0][1], context=decisions[0][0])
-        if "canonical_plan" not in decision:
+        if "canonical_plan" not in decision and (
+            decision["outcome"] == "accepted" or self.status_checker is None
+        ):
             return True
-        return self._has_valid_completion_receipt(
+        outcome = t.cast(t.Literal["accepted", "rejected"], decision["outcome"])
+        if self._has_valid_completion_receipt(
             submission_id=submission_id,
-            outcome=t.cast(t.Literal["accepted", "rejected"], decision["outcome"]),
+            outcome=outcome,
             decision_digest=decisions[0][2],
-        )
+        ):
+            return True
+        try:
+            terminal = (
+                self._inspect_decision(
+                    report=report, outcome=outcome, decision_digest=decisions[0][2]
+                )
+                == "terminal"
+            )
+            if terminal:
+                _validate_predecessor_archives(
+                    store=self.store,
+                    report=report,
+                    decision=decision,
+                    results_bucket=self.results_bucket,
+                    completed=True,
+                )
+            return terminal
+        except (ReviewError, OSError) as error:
+            logger.warning(
+                "Submission %s remains pending: broker status validation failed: %s",
+                submission_id,
+                error,
+            )
+            return False
 
     def _list_submission_summaries(self) -> list[tuple[str, int, str, str]]:
         """Load summaries for every durable manifest.
@@ -1376,6 +1440,28 @@ def _local_reservation(
     )
 
 
+def _promotion_evidence(report: ReviewReport) -> list[dict[str, str]]:
+    """Serialise immutable submission evidence for broker comparisons.
+
+    Args:
+        report: Independently validated staged results.
+
+    Returns:
+        Identity-sorted canonical paths and digests, including private canaries.
+    """
+    return sorted(
+        [
+            {
+                "identity": json.dumps(record.identity, separators=(",", ":")),
+                "canonical_path": record.canonical_path,
+                "digest": record.digest,
+            }
+            for record in report.records
+        ],
+        key=lambda item: item["identity"],
+    )
+
+
 def _restore_decision_plan(
     store: BucketStore, report: ReviewReport, decision: JsonObject, results_bucket: str
 ) -> ReviewReport:
@@ -1457,7 +1543,11 @@ def _restore_decision_plan(
 
 
 def _validate_predecessor_archives(
-    store: BucketStore, report: ReviewReport, decision: JsonObject, results_bucket: str
+    store: BucketStore,
+    report: ReviewReport,
+    decision: JsonObject,
+    results_bucket: str,
+    completed: bool = False,
 ) -> None:
     """Verify durable replacement evidence against private archives and destinations.
 
@@ -1466,6 +1556,7 @@ def _validate_predecessor_archives(
         report: Current validated submission evidence.
         decision: Previously persisted decision object.
         results_bucket: Canonical results bucket.
+        completed (optional): Require archives independently of current destinations.
 
     Raises:
         ReviewError: If predecessor evidence or canonical state is inconsistent.
@@ -1493,6 +1584,12 @@ def _validate_predecessor_archives(
             raise ReviewError("Persisted replacement plan is malformed")
         seen.add(path)
         archived = store.read_optional(store.staging_bucket, archive_path)
+        if completed:
+            if archived is None:
+                raise ReviewError("Replacement archive is missing after completion")
+            if _digest(archived) != digest:
+                raise ReviewError("Archived canonical predecessor is corrupted")
+            continue
         current = store.read_optional(results_bucket, path)
         if archived is not None:
             if _digest(archived) != digest:
@@ -1645,6 +1742,66 @@ def _request_reservation(
         decision_digest=response_digest if isinstance(response_digest, str) else None,
         status=body.get("status", "reserved"),
     )
+
+
+def inspect_with_broker(
+    issue_number: int,
+    submission_id: str,
+    outcome: str,
+    records: list[dict[str, str]],
+    decision_digest: str,
+) -> BrokerStatus:
+    """Read matching broker promotion status without changing its reservation.
+
+    Args:
+        issue_number: Evaluation request owning the submission.
+        submission_id: Submission whose decision is inspected.
+        outcome: Durable decision outcome.
+        records: Immutable identity/path/digest evidence bound to the decision.
+        decision_digest: Digest of the immutable decision bytes.
+
+    Returns:
+        Absent, reserved, or terminal status for the supplied evidence.
+
+    Raises:
+        ReviewError: If credentials, transport, protocol, or evidence are invalid.
+    """
+    secret = os.environ.get("VOLUNTEER_PROMOTION_SECRET")
+    if not secret:
+        raise ReviewError("VOLUNTEER_PROMOTION_SECRET is required")
+    endpoint = os.environ.get(
+        "VOLUNTEER_BROKER_PROMOTION_STATUS_URL",
+        "https://euroeval.com/api/worker/promotion-status",
+    )
+    payload = json.dumps(
+        {
+            "protocol_version": PROTOCOL_VERSION,
+            "issue_number": issue_number,
+            "submission_id": submission_id,
+            "outcome": outcome,
+            "records": records,
+            "decision_digest": decision_digest,
+        }
+    ).encode("utf-8")
+    request = urllib.request.Request(
+        endpoint,
+        data=payload,
+        headers={"content-type": "application/json", "x-promotion-secret": secret},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            body: object = json.loads(response.read().decode("utf-8"))
+    except (OSError, ValueError) as error:
+        raise ReviewError("Broker promotion status lookup failed") from error
+    if not isinstance(body, dict) or body.get("protocol_version") != PROTOCOL_VERSION:
+        raise ReviewError("Broker promotion status protocol differs")
+    status = body.get("status")
+    if status not in ("absent", "reserved", "terminal"):
+        raise ReviewError("Broker returned an invalid promotion status")
+    if status != "absent" and body.get("decision_digest") != decision_digest:
+        raise ReviewError("Broker promotion status decision evidence differs")
+    return t.cast(BrokerStatus, status)
 
 
 def promote_with_broker(
