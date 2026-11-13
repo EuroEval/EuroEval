@@ -755,7 +755,11 @@ def test_upload_results_keeps_canary_private(
         """Capture uploads made by the queue."""
 
         def batch_bucket_files(
-            self, *, bucket_id: str, add: list[tuple[str | Path | bytes, str]]
+            self,
+            *,
+            bucket_id: str,
+            add: list[tuple[str | Path | bytes, str]],
+            token: str = "",
         ) -> None:
             """Batch bucket files for this test.
 
@@ -764,9 +768,23 @@ def test_upload_results_keeps_canary_private(
                     Bucket id supplied to the test.
                 add:
                     Add supplied to the test.
+                token:
+                    Token supplied to the test.
             """
             assert bucket_id == process_evaluation_queue.HF_RESULTS_BUCKET
+            del token
             uploads.append(add)
+
+        def download_bucket_files(
+            self,
+            bucket_id: str,
+            files: list[tuple[str, Path]],
+            *,
+            raise_on_missing_files: bool,
+            token: str,
+        ) -> None:
+            """Model empty remote reads for this isolated test."""
+            del bucket_id, files, raise_on_missing_files, token
 
     def record(dataset: str) -> str:
         """Record for this test.

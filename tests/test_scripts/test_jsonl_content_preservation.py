@@ -70,7 +70,9 @@ def test_collector_upload_preserves_valid_record(
     path.write_bytes((json.dumps(record, ensure_ascii=False) + newline).encode("utf-8"))
     results_dir = tmp_path / "results"
     monkeypatch.setattr(collect, "RESULTS_DIR", results_dir)
-    monkeypatch.setattr(collect, "_upload_to_bucket", lambda paths: True)
+    monkeypatch.setattr(
+        collect, "_upload_to_bucket", lambda paths, *, source_bytes=None: True
+    )
 
     assert collect.upload_results_to_hf(new_results_path=path) is True
     written = list(results_dir.rglob("*.json"))
