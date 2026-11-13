@@ -15,24 +15,12 @@ from .types import EEERecord, JsonValue, Lease, canonical_json
 
 
 def _canary_tasks() -> list[str]:
-    """Return names of official benchmark tasks and the contamination-canary task.
+    """Return the dedicated benchmark task used for contamination canaries.
 
     Returns:
-        Unique official task names, followed by ``contamination-detection``.
+        The contamination-canary task selector.
     """
-    configs = get_all_dataset_configs(
-        custom_datasets_file=Path(""),
-        dataset_ids=[],
-        api_key=None,
-        cache_dir=Path(".cache"),
-        trust_remote_code=False,
-        run_with_cli=False,
-    )
-    tasks = dict.fromkeys(
-        config.task.name for config in configs.values() if not config.unofficial
-    )
-    tasks["contamination-detection"] = None
-    return list(tasks)
+    return ["contamination-detection"]
 
 
 def _evaluate_missing_scope(
@@ -252,8 +240,8 @@ class EuroEvalEvaluator(Evaluator):
         benchmarker = Benchmarker(
             progress_bar=False,
             save_results=False,
-            task=tasks,
-            dataset=None if canary_required else datasets,
+            task=None,
+            dataset=None,
             language=lease.language,
             cache_dir=str(self.cache_dir),
             trust_remote_code=False,
