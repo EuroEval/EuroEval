@@ -1060,3 +1060,80 @@ test("release resumes after marker removal with retained ownership", async () =>
     process.env = originalEnv;
   }
 });
+
+test("claim persists record-revision compatibility from client capabilities", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  Object.assign(process.env, { VOLUNTEER_MARKER_SECRET: "marker-secret",
+    VOLUNTEER_WORKER_IMAGE_DIGEST: "sha256:image", EUROEVAL_VERSION: "1.0.0",
+    VOLUNTEER_WORKER_VERSION: "1.0.0", UPSTASH_REDIS_REST_URL: "https://redis.test",
+    UPSTASH_REDIS_REST_TOKEN: "redis-token", GITHUB_TOKEN: "github-token",
+    VOLUNTEER_SCOPE_POLICY_JSON: JSON.stringify({ policy_version: "test-policy", policies: [{
+      euroeval_version: "1.0.0", model_type: "encoder", language: "da", language_group: "da",
+      allowed_identity_suffix_sets: [['["dataset",true,true]']],
+      task_groups: ["sequence_classification"], warnings: [],
+    }] }) });
+  const language = "Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)";
+  const issue = { number: issueNumber, title: "[MODEL EVALUATION REQUEST] org/model",
+    body: `### Model ID\n\norg/model\n\n- [x] ${language}\n`, state: "open", assignees: [] };
+  const credentialKey = `euroeval:worker:credential:${await sha256("credential")}`;
+  const values = new Map([[credentialKey, JSON.stringify({ contributor: "alice" })]]);
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input); const method = init.method || "GET";
+    if (url.includes("/buckets/EuroEval/results/resolve/")) return new Response(null, { status: 404 });
+    if (url === "https://redis.test") {
+      const command = JSON.parse(init.body);
+      if (command[0] === "GET") return Response.json({ result: values.get(command[1]) || null });
+      if (command[0] === "SMEMBERS") return Response.json({ result: [] });
+      if (command[0] === "SET") { values.set(command[1], command[2]); return Response.json({ result: "OK" }); }
+      if (command[0] === "EVAL" && command[1].includes("local issue=redis.call")) {
+        values.set(command[3], command[5]); values.set(command[4], command[5]);
+      }
+      return Response.json({ result: 1 });
+    }
+    if (url.includes("/repos/EuroEval/EuroEval/assignees/")) return new Response(null, { status: 204 });
+    if (url.includes("/repos/EuroEval/EuroEval/issues?")) return Response.json([issue]);
+    if (url.includes("huggingface.co/api/models/org/model")) return Response.json({ id: "org/model",
+      sha: "a".repeat(40), private: false, gated: false, pipeline_tag: "fill-mask",
+      siblings: [{ rfilename: "model.safetensors", size: 100 }, { rfilename: "config.json", size: 10 }] });
+    if (url.includes(`/org/model/raw/${"a".repeat(40)}/config.json`)) {
+      return Response.json({ model_type: "bert", architectures: ["BertModel"] });
+    }
+    if (url.endsWith(`/issues/${issueNumber}`) && method === "GET") return Response.json(issue);
+    if (url.endsWith(`/issues/${issueNumber}`) && method === "PATCH") {
+      issue.body = JSON.parse(init.body).body; return Response.json(issue);
+    }
+    throw new Error(`Unexpected request: ${method} ${url}`);
+  };
+  try {
+    const makeRequest = (capabilities) => new Request("https://euroeval.test/api/worker/claim", {
+      method: "POST", headers: { authorization: "Bearer credential", "content-type": "application/json" },
+      body: JSON.stringify({ protocol_version: "volunteer-worker/v1", worker_version: "1.0.0",
+        ...(capabilities === undefined ? {} : { capabilities }), hardware: { architecture: "amd64",
+          free_disk_bytes: 1_000_000, gpu_memory_utilisation: 0.8, selected_gpu_index: 0,
+          selected_gpu_uuid: "gpu", gpus: [{ index: 0, name: "GPU", uuid: "gpu",
+            free_memory_bytes: 1_000_000, total_memory_bytes: 1_000_000 }] } }),
+    });
+    const legacyResponse = await claim(makeRequest(undefined));
+    assert.equal(legacyResponse.status, 200, await legacyResponse.clone().text());
+    const legacy = await legacyResponse.json();
+    assert.equal(legacy.issue_number, issueNumber);
+    const legacyLease = JSON.parse(values.get(`euroeval:worker:lease:${issueNumber}:da`));
+    assert.equal(legacyLease.lease_id, legacy.lease_id);
+    assert.equal(legacyLease.record_revision_required, false);
+
+    values.delete(`euroeval:worker:lease:${issueNumber}:da`);
+    values.delete(`euroeval:worker:lease-id:${legacy.lease_id}`);
+    issue.body = `### Model ID\n\norg/model\n\n- [x] ${language}\n`;
+    const modernResponse = await claim(makeRequest(["canonical_coverage_v1"]));
+    assert.equal(modernResponse.status, 200, await modernResponse.clone().text());
+    const modern = await modernResponse.json();
+    assert.equal(modern.issue_number, issueNumber);
+    const modernLease = JSON.parse(values.get(`euroeval:worker:lease:${issueNumber}:da`));
+    assert.equal(modernLease.lease_id, modern.lease_id);
+    assert.equal(modernLease.record_revision_required, true);
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
