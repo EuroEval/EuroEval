@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
+from transformers import TokenizersBackend
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 
 from euroeval.benchmark_modules.hf import load_hf_model_config, load_tokeniser
@@ -51,7 +52,9 @@ def test_get_end_of_chat_token_ids(
         auth:
             Auth supplied to the test.
     """
-    tokeniser: Tokeniser = AutoTokenizer.from_pretrained(  # ty: ignore[invalid-assignment]
+    # These repositories provide tokenizer.json, including third-party Mistral models
+    # that automatic backend selection routes to MistralCommon instead.
+    tokeniser: Tokeniser = TokenizersBackend.from_pretrained(  # ty: ignore[invalid-assignment]
         model_id, token=auth, trust_remote_code=True
     )
     end_of_chat_token_ids = get_end_of_chat_token_ids(
