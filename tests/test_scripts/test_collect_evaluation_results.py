@@ -101,6 +101,131 @@ def clear_bucket_adapter() -> None:
     FakeHfApi.objects.clear()
 
 
+def test_collector_prepare_failure_leaves_local_files_untouched(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A failed durable source checkpoint prevents all collector local writes."""
+    results_dir = tmp_path / "results"
+    record_path = results_dir / "foo_bar" / "task__test__zeroshot.json"
+    record_path.parent.mkdir(parents=True)
+    original = _ranked_collector_record()
+    original_bytes = (json.dumps(original, indent=2) + "\n").encode()
+    record_path.write_bytes(original_bytes)
+    stale = results_dir / "stale.jsonl"
+    stale.write_bytes(b"keep\n")
+    incoming_record = json.loads(json.dumps(original))
+    incoming_record["metadata"] = {"open": True}
+    incoming_record["model_info"]["additional_details"] = {"open": True}
+    incoming = tmp_path / "incoming.jsonl"
+    incoming.write_text(json.dumps(incoming_record), encoding="utf-8")
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
+    _enable_real_collector_publisher(monkeypatch=monkeypatch, tmp_path=tmp_path)
+    monkeypatch.setattr(
+        canonical_publication.CanonicalPublisher,
+        "prepare",
+        lambda self, records, sources: (_ for _ in ()).throw(RuntimeError("prepare")),
+    )
+
+    assert not collect_evaluation_results.upload_results_to_hf(
+        new_results_path=incoming
+    )
+    assert record_path.read_bytes() == original_bytes
+    assert stale.read_bytes() == b"keep\n"
+    assert FakeHfApi.objects == {}
+
+
+def _enable_real_collector_publisher(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Use the real publisher with isolated in-memory adapters."""
+    monkeypatch.setattr(collect_evaluation_results, "HfApi", FakeHfApi)
+    monkeypatch.setattr(
+        canonical_publication.PublicationLock,
+        "from_environment",
+        classmethod(lambda cls, bucket="EuroEval/results": MemoryLock()),
+    )
+    monkeypatch.setenv("HF_TOKEN", "test-token")
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
+
+
+def _ranked_collector_record(
+    *, version: str = "1.0.0", timestamp: int = 1704067200, score: float = 0.5
+) -> dict[str, object]:
+    """Build an EEE record with an evaluation payload.
+
+    Args:
+        version: EEE library version.
+        timestamp: Result retrieval timestamp.
+        score: Evaluation score.
+
+    Returns:
+        An EEE result record.
+    """
+    return {
+        "model_info": {"id": "foo/bar"},
+        "eval_library": {
+            "additional_details": {
+                "dataset": "task",
+                "few_shot": False,
+                "validation_split": False,
+            },
+            "version": version,
+        },
+        "retrieved_timestamp": timestamp,
+        "evaluation_results": [
+            {"evaluation_name": "accuracy", "score_details": {"score": score}}
+        ],
+    }
+
+
+def test_collector_retries_after_post_prepare_metadata_failure(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Retry uses checkpointed original bytes after local write and metadata failure."""
+    results_dir = tmp_path / "results"
+    record_path = results_dir / "foo_bar" / "task__test__zeroshot.json"
+    record_path.parent.mkdir(parents=True)
+    original = _ranked_collector_record()
+    predecessor = (json.dumps(original, indent=2) + "\n").encode()
+    record_path.write_bytes(predecessor)
+    incoming_record = json.loads(json.dumps(original))
+    incoming_record["metadata"] = {"open": True}
+    incoming_record["model_info"]["additional_details"] = {"open": True}
+    incoming = tmp_path / "incoming.jsonl"
+    incoming.write_text(json.dumps(incoming_record), encoding="utf-8")
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
+    _enable_real_collector_publisher(monkeypatch=monkeypatch, tmp_path=tmp_path)
+    FakeHfApi.objects["foo_bar/task__test__zeroshot.json"] = predecessor
+    attempts = 0
+
+    def metadata_failure(
+        self: FakeHfApi, bucket_id: str, paths: list[str], *, token: str
+    ) -> list[object]:
+        nonlocal attempts
+        del self, bucket_id, paths, token
+        attempts += 1
+        if attempts == 1:
+            raise RuntimeError("metadata unavailable")
+        return []
+
+    monkeypatch.setattr(
+        FakeHfApi, "get_bucket_paths_info", metadata_failure, raising=False
+    )
+
+    assert not collect_evaluation_results.upload_results_to_hf(
+        new_results_path=incoming
+    )
+    transformed_local = record_path.read_bytes()
+    assert json.loads(transformed_local)["metadata"] == {"open": True}
+    assert FakeHfApi.objects["foo_bar/task__test__zeroshot.json"] == predecessor
+
+    assert collect_evaluation_results.upload_results_to_hf(new_results_path=incoming)
+    canonical = FakeHfApi.objects["foo_bar/task__test__zeroshot.json"]
+    assert json.loads(canonical)["metadata"] == {"open": True}
+    history = f"_history/{hashlib.sha256(predecessor).hexdigest()}.bin"
+    assert FakeHfApi.objects[history] == predecessor
+
+
 def test_initial_yes_does_not_approve_without_item_confirmation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -825,50 +950,6 @@ def test_upload_results_to_hf_alias_reconciliation_is_order_independent(
     canonical = directory / "task__test__zeroshot.json"
     published = json.loads(canonical.read_text(encoding="utf-8"))
     assert published["evaluation_results"] == second["evaluation_results"]
-
-
-def _enable_real_collector_publisher(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """Use the real publisher with isolated in-memory adapters."""
-    monkeypatch.setattr(collect_evaluation_results, "HfApi", FakeHfApi)
-    monkeypatch.setattr(
-        canonical_publication.PublicationLock,
-        "from_environment",
-        classmethod(lambda cls, bucket="EuroEval/results": MemoryLock()),
-    )
-    monkeypatch.setenv("HF_TOKEN", "test-token")
-    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
-
-
-def _ranked_collector_record(
-    *, version: str = "1.0.0", timestamp: int = 1704067200, score: float = 0.5
-) -> dict[str, object]:
-    """Build an EEE record with an evaluation payload.
-
-    Args:
-        version: EEE library version.
-        timestamp: Result retrieval timestamp.
-        score: Evaluation score.
-
-    Returns:
-        An EEE result record.
-    """
-    return {
-        "model_info": {"id": "foo/bar"},
-        "eval_library": {
-            "additional_details": {
-                "dataset": "task",
-                "few_shot": False,
-                "validation_split": False,
-            },
-            "version": version,
-        },
-        "retrieved_timestamp": timestamp,
-        "evaluation_results": [
-            {"evaluation_name": "accuracy", "score_details": {"score": score}}
-        ],
-    }
 
 
 def test_upload_results_to_hf_collision_leaves_results_dir_unmutated(

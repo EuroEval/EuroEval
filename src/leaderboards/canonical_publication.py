@@ -594,16 +594,18 @@ class PublicationSession:
         Returns:
             Safe source evidence keyed by candidate identity.
         """
-        identities = {identity for _, identity, _, _ in candidates}
+        candidates_by_identity = {
+            identity: record for _, identity, _, record in candidates
+        }
         validated: dict[ResultIdentity, bytes] = {}
         for identity, content in (sources or {}).items():
-            if identity not in identities or _contains_canary(content):
+            if identity not in candidates_by_identity or _contains_canary(content):
                 continue
             try:
                 record = _decode_record(content, identity_to_path(identity).as_posix())
-                candidate_record = next(
-                    item[3] for item in candidates if item[1] == identity
-                )
+                candidate_record = candidates_by_identity.get(identity)
+                if candidate_record is None:
+                    continue
                 if identity_from_eee_record(record) == identity and (
                     record == candidate_record
                     or is_metadata_only_transform(record, candidate_record)
@@ -641,12 +643,21 @@ class PublicationSession:
             self._store_sources(sources=validated_sources)
         sources = self._sources_with_pending(sources=validated_sources)
         remote_fingerprints = self._remote_fingerprints(candidates=candidates)
+        cached = self._cached_receipts()
+        warm_paths = {
+            path
+            for path, _, _, record in candidates
+            if remote_fingerprints is not None
+            and cached.get(path)
+            == (remote_fingerprints.get(path), _semantic_digest(record))
+        }
         local_fingerprints = (
-            self._local_fingerprints(candidates=candidates, sources=sources)
+            self._local_fingerprints(
+                candidates=candidates, sources=sources, skip_paths=warm_paths
+            )
             if remote_fingerprints is not None
             else {}
         )
-        cached = self._cached_receipts()
         source_paths = {
             identity_to_path(identity).as_posix(): content
             for identity, content in (sources or {}).items()
@@ -657,7 +668,7 @@ class PublicationSession:
             if remote_fingerprints is not None
             and remote_fingerprints.get(path) is not None
             and (
-                remote_fingerprints[path] == local_fingerprints[path]
+                remote_fingerprints[path] == local_fingerprints.get(path)
                 or cached.get(path)
                 == (remote_fingerprints[path], _semantic_digest(record))
                 or (
@@ -816,51 +827,64 @@ class PublicationSession:
         self,
         candidates: list[tuple[str, ResultIdentity, bytes, dict[str, object]]],
         sources: t.Mapping[ResultIdentity, bytes] | None = None,
+        skip_paths: set[str] | None = None,
     ) -> dict[str, str]:
         """Calculate local Xet fingerprints for candidate and source bytes.
 
         Args:
             candidates: Validated publication candidates.
             sources (optional): Validated predecessor bytes.
+            skip_paths (optional): Candidate paths already proven by fresh receipts.
 
         Returns:
             Xet fingerprints keyed by canonical path or source label.
 
-        Raises:
-            PublicationError:
-                If local fingerprint generation is incomplete.
         """
+        fingerprints: dict[str, str] = {}
+        skip_paths = skip_paths or set()
         with tempfile.TemporaryDirectory(prefix="euroeval-xet-hash-") as directory:
             root = Path(directory)
-            paths: list[str] = []
-            candidate_paths: list[str] = []
-            for index, (path, _, content, _) in enumerate(candidates):
+            batch_paths: list[str] = []
+            batch_labels: list[str] = []
+
+            def hash_batch() -> None:
+                if not batch_paths:
+                    return
+                infos = hf_xet.hash_files(batch_paths)
+                if len(infos) != len(batch_paths):
+                    raise PublicationError("Incomplete local Xet fingerprint results")
+                fingerprints.update(
+                    (label, info.hash)
+                    for label, info in zip(batch_labels, infos, strict=True)
+                )
+                batch_paths.clear()
+                batch_labels.clear()
+
+            inputs = (
+                (path, content)
+                for path, _, content, _ in candidates
+                if path not in skip_paths
+            )
+            inputs = iter(inputs)
+            for index, (path, content) in enumerate(inputs):
                 local = root / str(index)
                 local.write_bytes(content)
-                paths.append(str(local))
-                candidate_paths.append(path)
-            source_paths: list[str] = []
+                batch_paths.append(str(local))
+                batch_labels.append(path)
+                if len(batch_paths) == _COMPARISON_BATCH_SIZE:
+                    hash_batch()
             for index, (identity, content) in enumerate((sources or {}).items()):
+                path = identity_to_path(identity).as_posix()
+                if path in skip_paths:
+                    continue
                 local = root / f"source-{index}"
                 local.write_bytes(content)
-                paths.append(str(local))
-                source_paths.append(identity_to_path(identity).as_posix())
-            infos = hf_xet.hash_files(paths)
-            if len(infos) != len(paths):
-                raise PublicationError("Incomplete local Xet fingerprint results")
-            fingerprints = {
-                path: info.hash
-                for path, info in zip(candidate_paths, infos, strict=False)
-            }
-            fingerprints.update(
-                {
-                    f"source:{path}": info.hash
-                    for path, info in zip(
-                        source_paths, infos[len(candidate_paths) :], strict=True
-                    )
-                }
-            )
-            return fingerprints
+                batch_paths.append(str(local))
+                batch_labels.append(f"source:{path}")
+                if len(batch_paths) == _COMPARISON_BATCH_SIZE:
+                    hash_batch()
+            hash_batch()
+        return fingerprints
 
     def _reconcile_candidates(
         self,
