@@ -23,12 +23,14 @@ from .canonical_publication import BucketApi, CanonicalPublisher
 from .constants import HF_RESULTS_BUCKET, RESULTS_DIR
 from .eee_validation import is_eee_record
 from .evaluation_common import resolve_hf_token
+from .records import strip_anchor
 from .result_identity import (
     ResultIdentity,
     dedup_newer_record,
     identity_from_eee_record,
     identity_to_path,
     raise_on_collision,
+    record_relative_path,
 )
 
 load_dotenv()
@@ -347,7 +349,6 @@ def download_missing_bucket_files() -> int:
             or len(relative_path.parts) < 2
             or relative_path.parts[0] == "_history"
             or ".." in relative_path.parts
-            or len(relative_path.parts) != 2
             or not relative_path.name.endswith(
                 (
                     "__val__fewshot.json",
@@ -408,9 +409,7 @@ def download_missing_bucket_files() -> int:
                 raise ValueError(f"Bucket result is not an object: {entry.path}")
             if not is_eee_record(record=record):
                 raise ValueError(f"Bucket result is not an EEE record: {entry.path}")
-            identity = identity_from_eee_record(record)
-            canonical_path = identity_to_path(identity=identity).as_posix()
-            if canonical_path != Path(entry.path).as_posix():
+            if not _record_matches_bucket_path(record=record, bucket_path=entry.path):
                 raise ValueError(
                     f"Bucket result identity does not match path: {entry.path}"
                 )
@@ -432,6 +431,39 @@ def download_missing_bucket_files() -> int:
         result_loading = importlib.import_module(".result_loading", __package__)
         result_loading.load_raw_results.cache_clear()
     return len(to_download)
+
+
+def _record_matches_bucket_path(record: dict, bucket_path: str) -> bool:
+    """Check canonical and exact historical anchor-serialised paths.
+
+    Args:
+        record:
+            The downloaded result record.
+        bucket_path:
+            The relative path reported by the bucket.
+
+    Returns:
+        Whether the path is canonical or the record's exact historical path.
+    """
+    identity = identity_from_eee_record(record)
+    accepted_paths = {identity_to_path(identity=identity).as_posix()}
+    model_info = record.get("model_info")
+    if isinstance(model_info, dict):
+        raw_model_id = model_info.get("id") or model_info.get("name")
+        if (
+            isinstance(raw_model_id, str)
+            and strip_anchor(raw_model_id) != raw_model_id
+            and strip_anchor(raw_model_id) == identity[0]
+        ):
+            accepted_paths.add(
+                record_relative_path(
+                    model_id=raw_model_id,
+                    dataset=identity[1],
+                    validation_split=identity[2],
+                    few_shot=identity[3],
+                ).as_posix()
+            )
+    return Path(bucket_path).as_posix() in accepted_paths
 
 
 def upload_results_to_bucket(results_file: Path) -> None:
