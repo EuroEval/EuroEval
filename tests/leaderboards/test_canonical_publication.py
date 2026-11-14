@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+import tempfile
 import typing as t
 import urllib.error
 import urllib.request
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
+import hf_xet
 import pytest
 
 from leaderboards.cache import Cache
@@ -485,6 +488,73 @@ def test_publish_batches_remote_comparison_reads(
     assert len(api.download_batches) == 3
     assert [len(batch) for batch in api.download_batches] == [500, 500, 1]
     assert all(len(batch) <= 500 for batch in api.download_batches)
+
+
+def test_reconstructed_publisher_skips_verified_remote_bodies(tmp_path: Path) -> None:
+    """Fresh matching Xet metadata avoids downloading unchanged result bodies."""
+    api = FingerprintApi()
+    lock = MemoryLock()
+    checkpoint = tmp_path / "publication.sqlite3"
+    record = _record()
+    publisher = CanonicalPublisher(
+        api=api, token="test-token", lock=lock, checkpoint_path=checkpoint
+    )
+    with publisher.session() as session:
+        assert session.publish(records=[record]) == 1
+    initial_reads = api.download_calls
+    assert initial_reads > 0
+
+    publisher = CanonicalPublisher(
+        api=api, token="test-token", lock=lock, checkpoint_path=checkpoint
+    )
+    formatted = json.dumps(json.loads(record), indent=2).encode()
+    with publisher.session() as session:
+        assert session.publish(records=[formatted]) == 0
+    assert api.download_calls == initial_reads
+    assert api.metadata_calls == 2
+
+
+class FingerprintApi(MemoryApi):
+    """Memory adapter exposing fresh Xet metadata and read counters."""
+
+    def __init__(self) -> None:
+        """Initialise the API adapter and operation counters."""
+        super().__init__()
+        self.metadata_calls = 0
+        self.download_calls = 0
+
+    def download_bucket_files(
+        self,
+        bucket_id: str,
+        files: list[tuple[str, Path]],
+        *,
+        raise_on_missing_files: bool,
+        token: str,
+    ) -> None:
+        """Count remote body reads before delegating to the memory adapter."""
+        self.download_calls += len(files)
+        super().download_bucket_files(
+            bucket_id=bucket_id,
+            files=files,
+            raise_on_missing_files=raise_on_missing_files,
+            token=token,
+        )
+
+    def get_bucket_paths_info(
+        self, bucket_id: str, paths: list[str], *, token: str
+    ) -> list[object]:
+        """Return fresh content fingerprints for requested remote files."""
+        self.metadata_calls += 1
+        entries: list[object] = []
+        for path in paths:
+            content = self.objects.get(path)
+            if content is not None:
+                with tempfile.TemporaryDirectory() as directory:
+                    local = Path(directory) / "object"
+                    local.write_bytes(content)
+                    fingerprint = hf_xet.hash_files([str(local)])[0].hash
+                entries.append(SimpleNamespace(path=path, xet_hash=fingerprint))
+        return entries
 
 
 @pytest.mark.parametrize(("fail_batch", "record_count"), [(1, 1), (2, 501)])
