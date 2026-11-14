@@ -425,6 +425,9 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
     # Load existing results as identity -> record dict
     existing: dict[ResultIdentity, dict] = _load_existing_results()
 
+    # Capture predecessor bytes before incoming results can replace their records.
+    source_bytes = _source_bytes_for_records(existing=existing)
+
     # Process new results from JSONL file
     _process_new_results(new_results_path, existing)
 
@@ -435,8 +438,6 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
 
     # === VALIDATE PHASE: build path->identity map before any mutation ===
     _validate_paths(existing)
-    source_bytes = _source_bytes_for_records(existing=existing)
-
     # === MUTATE PHASE: only after validation succeeds ===
     records_written, records_unchanged, written_paths = _write_changed_records(
         existing=existing
@@ -485,27 +486,30 @@ def _load_existing_results() -> dict[ResultIdentity, dict]:
         try:
             content = json_file.read_text(encoding="utf-8")
             record = json.loads(content)
-            if is_canary_record(record):
-                continue
-            identity = _extract_identity_key(record)
-            if identity:
-                if identity not in existing:
-                    existing[identity] = record
-                    continue
-                current = existing[identity]
-                winner = dedup_newer_record(current, record)
-                if winner is not current:
-                    existing[identity] = record
-                elif _same_rank(current, record) and current != record:
-                    if _scores_differ(current, record):
-                        raise ValueError(
-                            f"Conflicting equal-ranked records for {identity}"
-                        )
-                    canonical_path = RESULTS_DIR / identity_to_path(identity)
-                    if json_file == canonical_path:
-                        existing[identity] = record
-        except (OSError, json.JSONDecodeError, ValueError):
+        except (OSError, json.JSONDecodeError):
             logger.debug(f"Skipping unreadable file {json_file}")
+            continue
+        if is_canary_record(record):
+            continue
+        identity = _extract_identity_key(record)
+        if not identity:
+            continue
+        if identity not in existing:
+            existing[identity] = record
+            continue
+
+        current = existing[identity]
+        winner = dedup_newer_record(current, record)
+        if winner is not current:
+            existing[identity] = record
+            continue
+        if not _same_rank(current, record) or current == record:
+            continue
+        if _scores_differ(current, record):
+            raise ValueError(f"Conflicting equal-ranked records for {identity}")
+        canonical_path = RESULTS_DIR / identity_to_path(identity)
+        if json_file == canonical_path:
+            existing[identity] = record
     return existing
 
 
@@ -526,20 +530,19 @@ def _extract_identity_key(result: dict) -> ResultIdentity | None:
 
 
 def _same_rank(record_a: dict, record_b: dict) -> bool:
-    """Whether records share version and retrieval timestamp.
+    """Whether the publication comparator considers two records equally ranked.
 
     Args:
         record_a: First record.
         record_b: Second record.
 
     Returns:
-        Whether the records have equal publication rank.
+        Whether each record wins when passed first to the comparator.
     """
-    version_a = record_a.get("eval_library", {}).get("version")
-    version_b = record_b.get("eval_library", {}).get("version")
-    return version_a == version_b and record_a.get(
-        "retrieved_timestamp"
-    ) == record_b.get("retrieved_timestamp")
+    return (
+        dedup_newer_record(record_a, record_b) is record_a
+        and dedup_newer_record(record_b, record_a) is record_b
+    )
 
 
 def _scores_differ(record_a: dict, record_b: dict) -> bool:
@@ -552,7 +555,7 @@ def _scores_differ(record_a: dict, record_b: dict) -> bool:
     Returns:
         Whether their evaluation score fields differ.
     """
-    return record_a.get("results") != record_b.get("results")
+    return record_a.get("evaluation_results") != record_b.get("evaluation_results")
 
 
 def _process_new_results(
@@ -565,6 +568,10 @@ def _process_new_results(
             Path to the JSONL file with new results.
         existing:
             Existing results dictionary (modified in-place).
+
+    Raises:
+        ValueError:
+            If equally ranked records contain conflicting evaluation results.
     """
     if not new_results_path.exists():
         logger.warning(f"Results file {new_results_path} does not exist.")
@@ -585,9 +592,16 @@ def _process_new_results(
                 logger.debug(f"Skipping line {line_number}: no identity")
                 continue
 
-            # Dedup: keep newer record by euroeval_version, then retrieved_timestamp
+            # Equal-ranked incoming metadata may be accepted only after the publisher
+            # verifies the exact predecessor bytes and metadata-only transformation.
             if identity in existing:
-                existing[identity] = dedup_newer_record(existing[identity], record)
+                current = existing[identity]
+                same_rank = _same_rank(current, record)
+                if same_rank and _scores_differ(current, record):
+                    raise ValueError(f"Conflicting equal-ranked records for {identity}")
+                winner = dedup_newer_record(current, record)
+                if winner is record or same_rank:
+                    existing[identity] = record
             else:
                 existing[identity] = record
         except json.JSONDecodeError:
@@ -610,6 +624,7 @@ def _source_bytes_for_records(
     canonical_paths = {
         identity: RESULTS_DIR / identity_to_path(identity) for identity in existing
     }
+    alias_sources: dict[ResultIdentity, bytes] = {}
     for path in sorted(RESULTS_DIR.glob("*/*.json")):
         try:
             raw = path.read_bytes()
@@ -617,9 +632,14 @@ def _source_bytes_for_records(
             identity = _extract_identity_key(record)
         except (OSError, json.JSONDecodeError, TypeError):
             continue
-        if identity not in existing or record != existing[identity]:
+        if identity not in existing or is_canary_record(record):
             continue
-        if identity not in sources or path == canonical_paths[identity]:
+        if path == canonical_paths[identity]:
+            sources[identity] = raw
+        elif record == existing[identity]:
+            alias_sources.setdefault(identity, raw)
+    for identity, raw in alias_sources.items():
+        if identity not in sources:
             sources[identity] = raw
     return sources
 

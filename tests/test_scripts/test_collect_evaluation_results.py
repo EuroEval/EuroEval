@@ -1,5 +1,6 @@
 """Tests for the collect_evaluation_results script, focusing on upload_results_to_hf."""
 
+import hashlib
 import json
 import signal
 import typing as t
@@ -10,7 +11,7 @@ import pytest
 
 from euroeval_worker.review import PublicStagingError, VolunteerReviewer
 from euroeval_worker.review_models import ReviewReport
-from leaderboards import constants
+from leaderboards import canonical_publication, constants
 from src.scripts import collect_evaluation_results
 
 
@@ -789,6 +790,115 @@ def test_reviewer_login_actor_and_safe_gh_fallback(
     )
 
 
+@pytest.mark.parametrize(
+    ("first_version", "second_version", "first_timestamp", "second_timestamp"),
+    [("1.0.0", "2.0.0", 2, 1), ("1.0.0", "1.0.0", 1, 2)],
+)
+def test_upload_results_to_hf_alias_reconciliation_is_order_independent(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    first_version: str,
+    second_version: str,
+    first_timestamp: int,
+    second_timestamp: int,
+) -> None:
+    """Higher version or timestamp wins regardless of file iteration order."""
+    results_dir = tmp_path / "results"
+    directory = results_dir / "foo_bar"
+    directory.mkdir(parents=True)
+    first = _ranked_collector_record(
+        version=first_version, timestamp=first_timestamp, score=0.1
+    )
+    second = _ranked_collector_record(
+        version=second_version, timestamp=second_timestamp, score=0.9
+    )
+    (directory / "a.json").write_text(json.dumps(first), encoding="utf-8")
+    (directory / "z.json").write_text(json.dumps(second), encoding="utf-8")
+    incoming = tmp_path / "incoming.jsonl"
+    incoming.write_text("", encoding="utf-8")
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
+    _enable_real_collector_publisher(monkeypatch=monkeypatch, tmp_path=tmp_path)
+
+    assert collect_evaluation_results.upload_results_to_hf(new_results_path=incoming)
+
+    canonical = directory / "task__test__zeroshot.json"
+    published = json.loads(canonical.read_text(encoding="utf-8"))
+    assert published["evaluation_results"] == second["evaluation_results"]
+
+
+def _enable_real_collector_publisher(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Use the real publisher with isolated in-memory adapters."""
+    monkeypatch.setattr(collect_evaluation_results, "HfApi", FakeHfApi)
+    monkeypatch.setattr(
+        canonical_publication.PublicationLock,
+        "from_environment",
+        classmethod(lambda cls, bucket="EuroEval/results": _CollectorMemoryLock()),
+    )
+    monkeypatch.setenv("HF_TOKEN", "test-token")
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
+
+
+class _CollectorMemoryLock:
+    """In-memory adapter for canonical publication lock tests."""
+
+    bucket = "EuroEval/results"
+    endpoint = "memory://collector-lock"
+    owner: str | None = None
+
+    def request(self, action: str, owner: str) -> str:
+        """Apply a deterministic lock operation.
+
+        Args:
+            action: Requested lock action.
+            owner: Lock owner identifier.
+
+        Returns:
+            Resulting lock state.
+
+        Raises:
+            PublicationError: If an assertion is made by a non-owner.
+        """
+        if action == "acquire":
+            self.owner = owner
+        elif action == "assert" and self.owner != owner:
+            raise canonical_publication.PublicationError("lock not owned")
+        elif action == "release":
+            self.owner = None
+        return "owned" if self.owner else "released"
+
+
+def _ranked_collector_record(
+    *, version: str = "1.0.0", timestamp: int = 1704067200, score: float = 0.5
+) -> dict[str, object]:
+    """Build an EEE record with an evaluation payload.
+
+    Args:
+        version: EEE library version.
+        timestamp: Result retrieval timestamp.
+        score: Evaluation score.
+
+    Returns:
+        An EEE result record.
+    """
+    return {
+        "model_info": {"id": "foo/bar"},
+        "eval_library": {
+            "additional_details": {
+                "dataset": "task",
+                "few_shot": False,
+                "validation_split": False,
+            },
+            "version": version,
+        },
+        "retrieved_timestamp": timestamp,
+        "evaluation_results": [
+            {"evaluation_name": "accuracy", "score_details": {"score": score}}
+        ],
+    }
+
+
 def test_upload_results_to_hf_collision_leaves_results_dir_unmutated(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -1013,6 +1123,35 @@ def test_upload_results_to_hf_does_not_touch_repo_root_jsonl(
     assert benchmark_results_file.read_text(encoding="utf-8") == '{"data": "benchmark"}'
 
 
+@pytest.mark.parametrize("reverse", [False, True])
+def test_upload_results_to_hf_equal_rank_score_conflict_is_preflighted(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, reverse: bool
+) -> None:
+    """Conflicting evaluation payloads fail before local or remote mutation."""
+    results_dir = tmp_path / "results"
+    directory = results_dir / "foo_bar"
+    directory.mkdir(parents=True)
+    first = _ranked_collector_record(score=0.2)
+    second = _ranked_collector_record(score=0.8)
+    records = [first, second]
+    if reverse:
+        records.reverse()
+    paths = [directory / "a.json", directory / "z.json"]
+    for path, record in zip(paths, records, strict=True):
+        path.write_bytes((json.dumps(record, indent=2) + "\n").encode())
+    before = {path: path.read_bytes() for path in paths}
+    incoming = tmp_path / "incoming.jsonl"
+    incoming.write_text("", encoding="utf-8")
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
+    _enable_real_collector_publisher(monkeypatch=monkeypatch, tmp_path=tmp_path)
+
+    with pytest.raises(ValueError, match="Conflicting equal-ranked"):
+        collect_evaluation_results.upload_results_to_hf(new_results_path=incoming)
+
+    assert {path: path.read_bytes() for path in paths} == before
+    assert FakeHfApi.objects == {}
+
+
 @pytest.mark.parametrize(
     "canary_dataset", ["contamination-canary", "contamination-canary-private-variant"]
 )
@@ -1071,6 +1210,84 @@ def _collector_test_record(dataset: str) -> dict[str, object]:
         },
         "retrieved_timestamp": 1704067200,
     }
+
+
+def test_upload_results_to_hf_metadata_enrichment_uses_original_source_bytes(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Equal-ranked metadata enrichment publishes against exact predecessor bytes."""
+    results_dir = tmp_path / "results"
+    path = results_dir / "foo_bar" / "task__test__zeroshot.json"
+    path.parent.mkdir(parents=True)
+    original = _ranked_collector_record()
+    predecessor = (json.dumps(original, indent=2) + "\n").encode()
+    path.write_bytes(predecessor)
+    enriched = json.loads(json.dumps(original))
+    enriched["metadata"] = {"open": True}
+    enriched["model_info"]["additional_details"] = {"open": True}
+    incoming = tmp_path / "incoming.jsonl"
+    incoming.write_text(json.dumps(enriched), encoding="utf-8")
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
+    _enable_real_collector_publisher(monkeypatch=monkeypatch, tmp_path=tmp_path)
+    FakeHfApi.objects["foo_bar/task__test__zeroshot.json"] = predecessor
+
+    assert collect_evaluation_results.upload_results_to_hf(new_results_path=incoming)
+
+    assert path.read_bytes() == json.dumps(enriched, separators=(",", ":")).encode()
+    history_suffix = f"_history/{hashlib.sha256(predecessor).hexdigest()}.bin"
+    assert any(
+        name.endswith(history_suffix) and content == predecessor
+        for name, content in FakeHfApi.objects.items()
+    )
+
+
+def test_upload_results_to_hf_reconciles_legacy_alias_to_canonical_once(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Equal-ranked aliases choose the canonical record regardless of path order."""
+    results_dir = tmp_path / "results"
+    record = _ranked_collector_record()
+    canonical = results_dir / "foo_bar" / "task__test__zeroshot.json"
+    legacy = results_dir / "aaa_legacy" / "anchored.json"
+    canonical.parent.mkdir(parents=True)
+    legacy.parent.mkdir(parents=True)
+    canonical_record = {**record, "metadata": {"open": True}}
+    legacy_record = {**record, "metadata": {"open": False}}
+    canonical.write_text(json.dumps(canonical_record), encoding="utf-8")
+    legacy.write_text(json.dumps(legacy_record), encoding="utf-8")
+    incoming = tmp_path / "incoming.jsonl"
+    incoming.write_text("", encoding="utf-8")
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
+    _enable_real_collector_publisher(monkeypatch=monkeypatch, tmp_path=tmp_path)
+
+    assert collect_evaluation_results.upload_results_to_hf(new_results_path=incoming)
+
+    published = [
+        content for name, content in FakeHfApi.objects.items() if name.endswith(".json")
+    ]
+    assert len(published) == 1
+    assert json.loads(published[0])["metadata"] == {"open": True}
+
+
+def test_upload_results_to_hf_retry_without_changes_is_idempotent(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A no-change retry accepts the already-published canonical record."""
+    results_dir = tmp_path / "results"
+    directory = results_dir / "foo_bar"
+    directory.mkdir(parents=True)
+    record = _ranked_collector_record()
+    path = directory / "task__test__zeroshot.json"
+    path.write_bytes(json.dumps(record).encode())
+    incoming = tmp_path / "incoming.jsonl"
+    incoming.write_text(json.dumps(record), encoding="utf-8")
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
+    _enable_real_collector_publisher(monkeypatch=monkeypatch, tmp_path=tmp_path)
+
+    assert collect_evaluation_results.upload_results_to_hf(new_results_path=incoming)
+    first_remote = dict(FakeHfApi.objects)
+    assert collect_evaluation_results.upload_results_to_hf(new_results_path=incoming)
+    assert FakeHfApi.objects == first_remote
 
 
 def test_upload_results_to_hf_same_identity_keeps_newer_record(
