@@ -435,11 +435,7 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
 
     # === VALIDATE PHASE: build path->identity map before any mutation ===
     _validate_paths(existing)
-    source_bytes: dict[ResultIdentity, bytes] = {}
-    for identity in existing:
-        source_path = RESULTS_DIR / identity_to_path(identity)
-        if source_path.is_file():
-            source_bytes[identity] = source_path.read_bytes()
+    source_bytes = _source_bytes_for_records(existing=existing)
 
     # === MUTATE PHASE: only after validation succeeds ===
     records_written, records_unchanged, written_paths = _write_changed_records(
@@ -459,7 +455,9 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
         f"({records_unchanged:,} unchanged) to {RESULTS_DIR}, uploading to bucket..."
     )
 
-    return _upload_to_bucket(written_paths, source_bytes=source_bytes)
+    return _upload_to_bucket(
+        records=existing, written_paths=written_paths, source_bytes=source_bytes
+    )
 
 
 def _cleanup_stale_artefacts() -> None:
@@ -475,9 +473,13 @@ def _load_existing_results() -> dict[ResultIdentity, dict]:
 
     Returns:
         Dictionary mapping identity to record.
+
+    Raises:
+        ValueError:
+            If equally ranked records contain conflicting scores.
     """
     existing: dict[ResultIdentity, dict] = {}
-    for json_file in RESULTS_DIR.glob("*/*.json"):
+    for json_file in sorted(RESULTS_DIR.glob("*/*.json")):
         if not json_file.is_file():
             continue
         try:
@@ -487,7 +489,21 @@ def _load_existing_results() -> dict[ResultIdentity, dict]:
                 continue
             identity = _extract_identity_key(record)
             if identity:
-                existing[identity] = record
+                if identity not in existing:
+                    existing[identity] = record
+                    continue
+                current = existing[identity]
+                winner = dedup_newer_record(current, record)
+                if winner is not current:
+                    existing[identity] = record
+                elif _same_rank(current, record) and current != record:
+                    if _scores_differ(current, record):
+                        raise ValueError(
+                            f"Conflicting equal-ranked records for {identity}"
+                        )
+                    canonical_path = RESULTS_DIR / identity_to_path(identity)
+                    if json_file == canonical_path:
+                        existing[identity] = record
         except (OSError, json.JSONDecodeError, ValueError):
             logger.debug(f"Skipping unreadable file {json_file}")
     return existing
@@ -507,6 +523,36 @@ def _extract_identity_key(result: dict) -> ResultIdentity | None:
         return identity_from_eee_record(result)
     except (ValueError, KeyError):
         return None
+
+
+def _same_rank(record_a: dict, record_b: dict) -> bool:
+    """Whether records share version and retrieval timestamp.
+
+    Args:
+        record_a: First record.
+        record_b: Second record.
+
+    Returns:
+        Whether the records have equal publication rank.
+    """
+    version_a = record_a.get("eval_library", {}).get("version")
+    version_b = record_b.get("eval_library", {}).get("version")
+    return version_a == version_b and record_a.get(
+        "retrieved_timestamp"
+    ) == record_b.get("retrieved_timestamp")
+
+
+def _scores_differ(record_a: dict, record_b: dict) -> bool:
+    """Whether equally-ranked records contain conflicting score payloads.
+
+    Args:
+        record_a: First record.
+        record_b: Second record.
+
+    Returns:
+        Whether their evaluation score fields differ.
+    """
+    return record_a.get("results") != record_b.get("results")
 
 
 def _process_new_results(
@@ -548,12 +594,46 @@ def _process_new_results(
             logger.warning(f"Skipping invalid JSON line: {line[:80]}...")
 
 
+def _source_bytes_for_records(
+    existing: dict[ResultIdentity, dict],
+) -> dict[ResultIdentity, bytes]:
+    """Capture original bytes for the selected records before canonical writes.
+
+    Args:
+        existing:
+            Reconciled identity-to-record map.
+
+    Returns:
+        Original bytes for selected local records, where available.
+    """
+    sources: dict[ResultIdentity, bytes] = {}
+    canonical_paths = {
+        identity: RESULTS_DIR / identity_to_path(identity) for identity in existing
+    }
+    for path in sorted(RESULTS_DIR.glob("*/*.json")):
+        try:
+            raw = path.read_bytes()
+            record = json.loads(raw)
+            identity = _extract_identity_key(record)
+        except (OSError, json.JSONDecodeError, TypeError):
+            continue
+        if identity not in existing or record != existing[identity]:
+            continue
+        if identity not in sources or path == canonical_paths[identity]:
+            sources[identity] = raw
+    return sources
+
+
 def _upload_to_bucket(
-    written_paths: list[Path], source_bytes: dict[ResultIdentity, bytes]
+    records: dict[ResultIdentity, dict],
+    written_paths: list[Path],
+    source_bytes: dict[ResultIdentity, bytes],
 ) -> bool:
     """Upload changed files to HF bucket using batch operation.
 
     Args:
+        records:
+            Reconciled identity-to-record candidates for publication.
         written_paths:
             Paths changed locally before publication.
         source_bytes:
@@ -563,28 +643,19 @@ def _upload_to_bucket(
         True if upload succeeded, False otherwise.
     """
     try:
-        records: list[bytes] = []
+        candidate_bytes = [
+            json.dumps(record, separators=(",", ":")).encode("utf-8")
+            for identity, record in records.items()
+            if not is_canary_record(record)
+        ]
         sources = dict(source_bytes)
-        for path in RESULTS_DIR.glob("*/*.json"):
-            if not path.is_file():
-                continue
-            raw = path.read_bytes()
-            try:
-                record = json.loads(raw)
-                if is_canary_record(record):
-                    continue
-                identity = identity_from_eee_record(record)
-            except (json.JSONDecodeError, ValueError, KeyError):
-                continue
-            records.append(raw)
-            sources.setdefault(identity, raw)
         token = os.environ.get("HF_TOKEN", "")
         publisher = CanonicalPublisher(
             api=t.cast(BucketApi, HfApi()), token=token, bucket=HF_RESULTS_BUCKET
         )
         with publisher.session() as session:
-            session.publish(records=records, sources=sources)
-        logger.info(f"Published {len(records)} file(s) to {HF_RESULTS_BUCKET}.")
+            session.publish(records=candidate_bytes, sources=sources)
+        logger.info(f"Published {len(candidate_bytes)} file(s) to {HF_RESULTS_BUCKET}.")
         return True
     except (HfHubHTTPError, RuntimeError, ValueError) as e:
         logger.error(f"Failed to publish to HF bucket: {e}")

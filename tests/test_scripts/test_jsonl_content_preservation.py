@@ -71,7 +71,7 @@ def test_collector_upload_preserves_valid_record(
     results_dir = tmp_path / "results"
     monkeypatch.setattr(collect, "RESULTS_DIR", results_dir)
     monkeypatch.setattr(
-        collect, "_upload_to_bucket", lambda paths, *, source_bytes=None: True
+        collect, "_upload_to_bucket", lambda records, written_paths, source_bytes: True
     )
 
     assert collect.upload_results_to_hf(new_results_path=path) is True
