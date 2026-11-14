@@ -1013,6 +1013,66 @@ def test_upload_results_to_hf_does_not_touch_repo_root_jsonl(
     assert benchmark_results_file.read_text(encoding="utf-8") == '{"data": "benchmark"}'
 
 
+@pytest.mark.parametrize(
+    "canary_dataset", ["contamination-canary", "contamination-canary-private-variant"]
+)
+def test_upload_results_to_hf_excludes_local_canaries_from_publication(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, canary_dataset: str
+) -> None:
+    """Local canary files are neither published nor modified."""
+    results_dir = tmp_path / "results"
+    model_dir = results_dir / "foo_bar"
+    model_dir.mkdir(parents=True)
+    ordinary = _collector_test_record(dataset="ordinary")
+    canary = _collector_test_record(dataset=canary_dataset)
+    ordinary_path = model_dir / "ordinary__test__zeroshot.json"
+    canary_path = model_dir / "canary__test__zeroshot.json"
+    ordinary_path.write_text(json.dumps(ordinary), encoding="utf-8")
+    private_bytes = (json.dumps(canary, indent=2) + "\n").encode()
+    canary_path.write_bytes(private_bytes)
+    incoming_path = tmp_path / "incoming.jsonl"
+    incoming_path.write_text(json.dumps(ordinary), encoding="utf-8")
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
+    monkeypatch.setattr(collect_evaluation_results, "HfApi", FakeHfApi)
+
+    assert (
+        collect_evaluation_results.upload_results_to_hf(new_results_path=incoming_path)
+        is True
+    )
+
+    published_datasets = {
+        json.loads(content)["eval_library"]["additional_details"]["dataset"]
+        for content in FakeHfApi.objects.values()
+    }
+    assert "ordinary" in published_datasets
+    assert canary_dataset not in published_datasets
+    assert canary_path.read_bytes() == private_bytes
+
+
+def _collector_test_record(dataset: str) -> dict[str, object]:
+    """Build a minimal result record for collection upload tests.
+
+    Args:
+        dataset:
+            Dataset name for the record.
+
+    Returns:
+        A minimally valid result record.
+    """
+    return {
+        "model_info": {"id": "foo/bar"},
+        "eval_library": {
+            "additional_details": {
+                "dataset": dataset,
+                "few_shot": False,
+                "validation_split": False,
+            },
+            "version": "1.0.0",
+        },
+        "retrieved_timestamp": 1704067200,
+    }
+
+
 def test_upload_results_to_hf_same_identity_keeps_newer_record(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -1150,3 +1210,62 @@ def test_upload_results_to_hf_same_identity_uses_timestamp_tiebreaker(
     # The newer record (by timestamp) should be written
     content = json.loads(existing_record_file.read_text(encoding="utf-8"))
     assert content["retrieved_timestamp"] == 1704153600
+
+
+def test_upload_results_to_hf_skips_incoming_canary_records(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Incoming canary JSONL lines do not replace or publish local results."""
+    results_dir = tmp_path / "results"
+    model_dir = results_dir / "foo_bar"
+    model_dir.mkdir(parents=True)
+    ordinary = _collector_test_record(dataset="ordinary")
+    canary = _collector_test_record(dataset="contamination-canary-worker")
+    ordinary_path = model_dir / "ordinary__test__zeroshot.json"
+    ordinary_bytes = json.dumps(ordinary).encode()
+    ordinary_path.write_bytes(ordinary_bytes)
+    incoming_path = tmp_path / "incoming.jsonl"
+    incoming_path.write_text(json.dumps(canary), encoding="utf-8")
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
+    monkeypatch.setattr(collect_evaluation_results, "HfApi", FakeHfApi)
+
+    assert (
+        collect_evaluation_results.upload_results_to_hf(new_results_path=incoming_path)
+        is True
+    )
+
+    assert ordinary_path.read_bytes() == ordinary_bytes
+    assert {
+        json.loads(content)["eval_library"]["additional_details"]["dataset"]
+        for content in FakeHfApi.objects.values()
+    } == {"ordinary"}
+
+
+def test_upload_results_to_hf_with_only_local_canaries_is_noop(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """An all-private local inventory remains untouched and unpublished."""
+    results_dir = tmp_path / "results"
+    model_dir = results_dir / "foo_bar"
+    model_dir.mkdir(parents=True)
+    private_path = model_dir / "private.json"
+    private_bytes = (
+        json.dumps(_collector_test_record(dataset="contamination-canary"), indent=2)
+        + "\n"
+    ).encode()
+    private_path.write_bytes(private_bytes)
+    incoming_path = tmp_path / "incoming.jsonl"
+    incoming_path.write_text(
+        json.dumps(_collector_test_record(dataset="contamination-canary")),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
+    monkeypatch.setattr(collect_evaluation_results, "HfApi", FakeHfApi)
+
+    assert (
+        collect_evaluation_results.upload_results_to_hf(new_results_path=incoming_path)
+        is False
+    )
+
+    assert private_path.read_bytes() == private_bytes
+    assert FakeHfApi.objects == {}
