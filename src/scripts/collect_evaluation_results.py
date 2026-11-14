@@ -442,7 +442,22 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
 
     # === VALIDATE PHASE: build path->identity map before any mutation ===
     _validate_paths(existing)
-    # === MUTATE PHASE: only after validation succeeds ===
+    candidate_bytes = [
+        json.dumps(record, separators=(",", ":")).encode("utf-8")
+        for record in existing.values()
+        if not is_canary_record(record)
+    ]
+    try:
+        publisher = CanonicalPublisher(
+            api=t.cast(BucketApi, HfApi()),
+            token=os.environ.get("HF_TOKEN", ""),
+            bucket=HF_RESULTS_BUCKET,
+        )
+        publisher.prepare(records=candidate_bytes, sources=source_bytes)
+    except (HfHubHTTPError, RuntimeError, ValueError) as error:
+        logger.error("Could not checkpoint publication evidence: %s", error)
+        return False
+    # === MUTATE PHASE: only after validation and evidence checkpoint ===
     records_written, records_unchanged, written_paths = _write_changed_records(
         existing=existing
     )
