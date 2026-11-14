@@ -8,6 +8,7 @@ import pytest
 from huggingface_hub import BucketFile
 
 from leaderboards import bucket_sync
+from leaderboards.result_identity import record_relative_path
 
 
 def test_all_downloads_validate_before_any_file_is_replaced(
@@ -223,6 +224,31 @@ def test_identity_mismatch_preserves_file_and_manifest(
 
     assert destination.read_bytes() == b"previous-good-file"
     assert manifest.read_text(encoding="utf-8") == '{"old": "generation"}'
+
+
+@pytest.mark.parametrize("field", ["id", "name"])
+@pytest.mark.parametrize("suffix", ["", "@revision#param"])
+def test_legacy_anchored_path_is_preserved(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, field: str, suffix: str
+) -> None:
+    """Exact pre-normalisation anchor paths remain valid storage locations."""
+    record = make_record()
+    model_info = t.cast("dict[str, object]", record["model_info"])
+    anchored = f'<a href="https://example.com">org/model{suffix}</a>'
+    if field == "name":
+        model_info.pop("id")
+        model_info["name"] = anchored
+    else:
+        model_info["id"] = anchored
+    legacy_path = record_relative_path(
+        model_id=anchored, dataset="dataset", validation_split=False, few_shot=False
+    ).as_posix()
+    data = json.dumps(record).encode()
+    bucket = FakeBucket({legacy_path: ("legacy-hash", data)})
+    configure(monkeypatch, tmp_path, bucket)
+
+    assert bucket_sync.download_missing_bucket_files() == 1
+    assert (tmp_path / "results" / legacy_path).read_bytes() == data
 
 
 def test_preserves_local_only_files(
