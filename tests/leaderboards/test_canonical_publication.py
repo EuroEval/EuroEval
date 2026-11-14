@@ -218,6 +218,33 @@ def test_checkpoint_filters_unrelated_sources_and_is_private(tmp_path: Path) -> 
     assert stat.S_IMODE(checkpoint.parent.stat().st_mode) == 0o700
 
 
+def test_checkpoint_sources_are_isolated_by_publisher_scope(tmp_path: Path) -> None:
+    """A different publisher credential cannot reuse another scope's source proof."""
+    api = MemoryApi()
+    lock = MemoryLock()
+    checkpoint = tmp_path / "publication.sqlite3"
+    original = _record()
+    identity = identity_from_eee_record(json.loads(original))
+    transformed_record = json.loads(original)
+    transformed_record["metadata"] = {"open": True}
+    transformed_record["model_info"]["additional_details"] = {"open": True}
+    transformed = json.dumps(transformed_record).encode()
+    path = identity_to_path(identity).as_posix()
+    api.objects[path] = original
+    first = CanonicalPublisher(
+        api=api, token="first-scope", lock=lock, checkpoint_path=checkpoint
+    )
+    second = CanonicalPublisher(
+        api=api, token="second-scope", lock=lock, checkpoint_path=checkpoint
+    )
+
+    first.prepare(records=[transformed], sources={identity: original})
+    with second.session() as session:
+        with pytest.raises(PublicationError, match="Equal-ranked"):
+            session.publish(records=[transformed])
+    assert api.objects[path] == original
+
+
 def test_cold_source_fingerprint_proves_formatting_only_candidate(
     tmp_path: Path,
 ) -> None:
@@ -414,6 +441,85 @@ def test_json_equal_formatting_change_is_a_noop(
     assert not any(name.startswith("_history/") for name in api.objects)
 
 
+def test_linear_candidate_validation_and_warm_formatted_retry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Large source validation and reconstructed formatting retries stay efficient."""
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    api = FingerprintApi()
+    lock = MemoryLock()
+    checkpoint = tmp_path / "publication.sqlite3"
+    records = []
+    sources = {}
+    for index in range(1_000):
+        record = json.loads(_record())
+        record["model_info"]["id"] = f"org/linear-{index}"
+        record["eval_library"]["additional_details"]["dataset"] = f"task-{index}"
+        content = json.dumps(record).encode()
+        identity = identity_from_eee_record(record)
+        records.append(content)
+        sources[identity] = content
+    publisher = CanonicalPublisher(
+        api=api, token="test-token", lock=lock, checkpoint_path=checkpoint
+    )
+    with publisher.session() as session:
+        session.prepare(records=records, sources=sources)
+        assert session.publish(records=records, sources=sources) == 1_000
+    reads = api.download_calls
+    publisher = CanonicalPublisher(
+        api=api, token="test-token", lock=lock, checkpoint_path=checkpoint
+    )
+    formatted = [
+        json.dumps(json.loads(record), indent=2).encode() for record in records
+    ]
+    hash_calls: list[int] = []
+    real_hash_files = hf_xet.hash_files
+
+    def count_hash_files(paths: list[str]) -> list[object]:
+        hash_calls.append(len(paths))
+        return real_hash_files(paths)
+
+    with patch(
+        "leaderboards.canonical_publication.hf_xet.hash_files", count_hash_files
+    ):
+        with publisher.session() as session:
+            assert session.publish(records=formatted, sources=sources) == 0
+    assert api.download_calls == reads
+    assert len(hash_calls) == 1_000
+    assert set(hash_calls) == {1}
+
+
+def test_local_hashing_is_bounded_to_comparison_batches(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Local candidate hashing never submits an unbounded path list."""
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    api = FingerprintApi()
+    publisher = CanonicalPublisher(api=api, token="test-token", lock=MemoryLock())
+    records = []
+    for index in range(1_001):
+        record = json.loads(_record())
+        record["model_info"]["id"] = f"org/hash-{index}"
+        record["eval_library"]["additional_details"]["dataset"] = f"task-{index}"
+        records.append(json.dumps(record).encode())
+
+    original_hash_files = hf_xet.hash_files
+
+    def counted_hash_files(paths: list[str]) -> list[object]:
+        sizes.append(len(paths))
+        return original_hash_files(paths)
+
+    sizes: list[int] = []
+    with patch(
+        "leaderboards.canonical_publication.hf_xet.hash_files", counted_hash_files
+    ):
+        with publisher.session() as session:
+            session.publish(records=records)
+
+    assert sizes
+    assert max(sizes) <= 500
+
+
 def test_lock_retries_lost_acquire_response_with_same_owner(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -456,6 +562,61 @@ def test_lock_retries_lost_acquire_response_with_same_owner(
     monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
     assert lock.request(action="acquire", owner="same-owner") == "owned"
     assert len(bodies) == 2 and bodies[0] == bodies[1]
+
+
+def test_metadata_source_race_does_not_cache_false_receipt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A body changed after metadata lookup is read and rejected on retry."""
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    api = CountingFingerprintApi()
+    lock = MemoryLock()
+    checkpoint = tmp_path / "publication.sqlite3"
+    original = _record()
+    identity = identity_from_eee_record(json.loads(original))
+    path = identity_to_path(identity).as_posix()
+    api.objects[path] = original
+    publisher = CanonicalPublisher(
+        api=api, token="test-token", lock=lock, checkpoint_path=checkpoint
+    )
+    formatted = json.dumps(json.loads(original), indent=2).encode()
+    replacement_record = json.loads(original)
+    replacement_record["score"] = 0.8
+    api.metadata_mutation[path] = json.dumps(replacement_record).encode()
+
+    with publisher.session() as session:
+        with pytest.raises(PublicationError, match="Equal-ranked"):
+            session.publish(records=[formatted])
+
+    connection = sqlite3.connect(checkpoint)
+    try:
+        rows = connection.execute("SELECT path FROM receipts").fetchall()
+    finally:
+        connection.close()
+    assert rows == []
+    with publisher.session() as session:
+        with pytest.raises(PublicationError, match="Equal-ranked"):
+            session.publish(records=[formatted])
+    assert api.download_calls >= 2
+
+
+class CountingFingerprintApi(FingerprintApi):
+    """Fingerprint adapter recording the largest local hash request."""
+
+    def __init__(self) -> None:
+        """Initialise hash request tracking."""
+        super().__init__()
+        self.hash_batch_sizes: list[int] = []
+        self.metadata_mutation: dict[str, bytes] = {}
+
+    def get_bucket_paths_info(
+        self, bucket_id: str, paths: list[str], *, token: str
+    ) -> list[object]:
+        """Return metadata and optionally race remote bodies after observing them."""
+        entries = super().get_bucket_paths_info(bucket_id, paths, token=token)
+        self.objects.update(self.metadata_mutation)
+        self.metadata_mutation.clear()
+        return entries
 
 
 def test_missing_lock_configuration_fails_closed() -> None:
@@ -546,6 +707,49 @@ def test_pipeline_numeric_enrichment_is_publishable(
         ]
         == 123456
     )
+
+
+def test_prepare_validates_sources_with_linear_identity_comparisons(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Public preparation validates N source identities with O(N) comparisons."""
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    publisher, _, _ = _publisher(tmp_path)
+    records: list[bytes] = []
+    sources: dict[tuple[str, str, bool | None, bool | None], bytes] = {}
+    for index in range(600):
+        record = json.loads(_record())
+        record["model_info"]["id"] = f"org/comparison-{index}"
+        record["eval_library"]["additional_details"]["dataset"] = f"task-{index}"
+        content = json.dumps(record).encode()
+        records.append(content)
+        sources[identity_from_eee_record(record)] = content
+
+    comparisons = 0
+
+    class CountedIdentity(tuple):
+        """Tuple identity counting equality checks performed by preparation."""
+
+        def __eq__(self, other: object) -> bool:
+            nonlocal comparisons
+            comparisons += 1
+            return super().__eq__(other)
+
+        __hash__ = tuple.__hash__
+
+    real_identity = identity_from_eee_record
+
+    def counted_identity(
+        record: dict[str, object],
+    ) -> tuple[str, str, bool | None, bool | None]:
+        return CountedIdentity(real_identity(record))
+
+    with patch(
+        "leaderboards.canonical_publication.identity_from_eee_record", counted_identity
+    ):
+        publisher.prepare(records=records, sources=sources)
+
+    assert comparisons < 6 * len(records)
 
 
 def test_publish_archives_predecessor_and_skips_old(
@@ -679,3 +883,17 @@ def test_write_verified_detects_mutated_expected_bytes(
         api.mutate_on_download["object"] = b"changed"
         with pytest.raises(PublicationError, match="Concurrent change"):
             session.write_verified(path="object", content=b"next", expected=b"before")
+
+
+def test_write_verified_rejects_external_remote_deletion(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A remotely deleted predecessor cannot be silently restored by a writer."""
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    publisher, api, _ = _publisher(tmp_path)
+    api.objects["object"] = b"before"
+    with publisher.session() as session:
+        del api.objects["object"]
+        with pytest.raises(PublicationError, match="Concurrent change"):
+            session.write_verified(path="object", content=b"next", expected=b"before")
+    assert "object" not in api.objects
