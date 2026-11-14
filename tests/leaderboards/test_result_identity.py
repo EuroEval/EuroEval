@@ -190,6 +190,16 @@ class TestIdentityFromBenchmarkResult:
 class TestIdentityFromEeeRecord:
     """Tests for identity_from_eee_record."""
 
+    def test_anchor_is_stripped_from_name_fallback(self) -> None:
+        """Fallback model names are normalised by the same anchor rule."""
+        record = _make_eee_record()
+        del record["model_info"]["id"]
+        record["model_info"]["name"] = (
+            "<a href='https://example.com'>org/model@revision#variant</a>"
+        )
+
+        assert identity_from_eee_record(record)[0] == "org/model@revision#variant"
+
     def test_basic(self) -> None:
         """Basic identity extraction."""
         record = _make_eee_record(
@@ -241,6 +251,31 @@ class TestIdentityFromEeeRecord:
         record = _make_eee_record(validation_split="true", few_shot="false")
         identity = identity_from_eee_record(record)
         assert identity == ("org/model", "test_dataset", True, False)
+
+    @pytest.mark.parametrize(
+        ("model_id", "expected"),
+        [
+            (
+                '<a href="https://example.com">org/model@revision#variant</a>',
+                "org/model@revision#variant",
+            ),
+            (
+                "<a href='https://example.com'>org/model@revision#variant</a>",
+                "org/model@revision#variant",
+            ),
+        ],
+    )
+    def test_strips_anchor_preserving_model_suffixes(
+        self, model_id: str, expected: str
+    ) -> None:
+        """Anchors are removed without losing revision or parameter suffixes."""
+        record = _make_eee_record(model_id=model_id)
+        original = {"model_info": dict(record["model_info"])}
+
+        identity = identity_from_eee_record(record)
+
+        assert identity[0] == expected
+        assert record["model_info"] == original["model_info"]
 
     def test_with_param_variant(self) -> None:
         """Model with #param should be preserved."""
