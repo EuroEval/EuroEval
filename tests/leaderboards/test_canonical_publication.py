@@ -307,6 +307,51 @@ class FingerprintApi(MemoryApi):
         return entries
 
 
+def test_cold_source_fingerprint_receipt_reuses_formatted_candidate(
+    tmp_path: Path,
+) -> None:
+    """A cold exact source proof seeds a reusable semantic receipt."""
+    api = FingerprintApi()
+    lock = MemoryLock()
+    checkpoint = tmp_path / "publication.sqlite3"
+    original = json.dumps(json.loads(_record()), indent=2).encode()
+    identity = identity_from_eee_record(json.loads(original))
+    path = identity_to_path(identity).as_posix()
+    api.objects[path] = original
+    publisher = CanonicalPublisher(
+        api=api, token="test-token", lock=lock, checkpoint_path=checkpoint
+    )
+    candidate = json.dumps(json.loads(original), separators=(",", ":")).encode()
+    with publisher.session() as session:
+        assert session.publish(records=[candidate], sources={identity: original}) == 0
+    assert api.download_calls == 0
+    assert api.upload_calls == 0
+
+    publisher = CanonicalPublisher(
+        api=api, token="test-token", lock=lock, checkpoint_path=checkpoint
+    )
+    reformatted = json.dumps(json.loads(candidate), indent=4).encode()
+    remote_fingerprint = hf_xet.hash_files
+    with tempfile.TemporaryDirectory() as directory:
+        local = Path(directory) / "remote"
+        local.write_bytes(original)
+        fingerprint = remote_fingerprint([str(local)])[0].hash
+    with (
+        patch.object(
+            api,
+            "get_bucket_paths_info",
+            return_value=[SimpleNamespace(path=path, xet_hash=fingerprint)],
+        ),
+        patch("leaderboards.canonical_publication.hf_xet.hash_files") as hash_files,
+    ):
+        with publisher.session() as session:
+            assert session.publish(records=[reformatted]) == 0
+        hash_files.assert_not_called()
+    assert api.download_calls == 0
+    assert api.upload_calls == 0
+    assert api.objects[path] == original
+
+
 def test_equal_rank_metadata_transform_cannot_change_evaluation_score(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
