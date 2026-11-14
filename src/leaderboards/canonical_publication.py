@@ -642,6 +642,10 @@ class PublicationSession:
         if validated_sources:
             self._store_sources(sources=validated_sources)
         sources = self._sources_with_pending(sources=validated_sources)
+        logger.info(
+            "Fetching fresh remote metadata for %s candidate result files...",
+            f"{len(candidates):,}",
+        )
         remote_fingerprints = self._remote_fingerprints(candidates=candidates)
         cached = self._cached_receipts()
         warm_paths = {
@@ -686,17 +690,19 @@ class PublicationSession:
             and path in remote_fingerprints
             and remote_fingerprints[path] == local_fingerprints.get(f"source:{path}")
         }
+        body_comparison_paths = [
+            path
+            for path, _, _, _ in candidates
+            if path not in trusted and path not in source_proven
+        ]
         logger.info(
-            "Comparing %s candidate result files with the current bucket...",
+            "Fresh metadata verified %s candidate files; comparing bodies for "
+            "%s of %s.",
+            f"{len(trusted | source_proven.keys()):,}",
+            f"{len(body_comparison_paths):,}",
             f"{len(candidates):,}",
         )
-        current_objects = self._download_many(
-            paths=[
-                path
-                for path, _, _, _ in candidates
-                if path not in trusted and path not in source_proven
-            ]
-        )
+        current_objects = self._download_many(paths=body_comparison_paths)
         current_objects.update(source_proven)
         writes, verified_receipts = self._reconcile_candidates(
             candidates=candidates,
@@ -706,10 +712,14 @@ class PublicationSession:
             sources=sources,
         )
 
-        logger.info(
-            "Remote comparison complete: %s writes required; archiving predecessors...",
-            f"{len(writes):,}",
-        )
+        if writes:
+            logger.info(
+                "Remote comparison complete: %s writes required; "
+                "archiving predecessors...",
+                f"{len(writes):,}",
+            )
+        else:
+            logger.info("Remote comparison complete: no writes required.")
         # Every predecessor is archived and verified before the first overwrite.
         predecessors = [
             (path, previous) for path, _, previous in writes if previous is not None
@@ -744,7 +754,12 @@ class PublicationSession:
                         local_fingerprints[path],
                         _semantic_digest(record),
                     )
-                elif path not in trusted and path not in current_objects:
+                elif path in trusted and remote_fingerprints.get(path) is not None:
+                    verified_receipts[path] = (
+                        remote_fingerprints[path],
+                        _semantic_digest(record),
+                    )
+                elif path not in current_objects:
                     verified_receipts.pop(path, None)
             self._store_receipts(receipts=verified_receipts)
         self._clear_sources(identities={identity for _, identity, _, _ in candidates})
@@ -850,15 +865,22 @@ class PublicationSession:
             def hash_batch() -> None:
                 if not batch_paths:
                     return
-                infos = hf_xet.hash_files(batch_paths)
-                if len(infos) != len(batch_paths):
-                    raise PublicationError("Incomplete local Xet fingerprint results")
-                fingerprints.update(
-                    (label, info.hash)
-                    for label, info in zip(batch_labels, infos, strict=True)
-                )
-                batch_paths.clear()
-                batch_labels.clear()
+                paths = batch_paths.copy()
+                try:
+                    infos = hf_xet.hash_files(paths)
+                    if len(infos) != len(paths):
+                        raise PublicationError(
+                            "Incomplete local Xet fingerprint results"
+                        )
+                    fingerprints.update(
+                        (label, info.hash)
+                        for label, info in zip(batch_labels, infos, strict=True)
+                    )
+                finally:
+                    for path in paths:
+                        Path(path).unlink(missing_ok=True)
+                    batch_paths.clear()
+                    batch_labels.clear()
 
             inputs = (
                 (path, content)
