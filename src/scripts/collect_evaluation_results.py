@@ -483,6 +483,8 @@ def _load_existing_results() -> dict[ResultIdentity, dict]:
         try:
             content = json_file.read_text(encoding="utf-8")
             record = json.loads(content)
+            if is_canary_record(record):
+                continue
             identity = _extract_identity_key(record)
             if identity:
                 existing[identity] = record
@@ -569,6 +571,8 @@ def _upload_to_bucket(
             raw = path.read_bytes()
             try:
                 record = json.loads(raw)
+                if is_canary_record(record):
+                    continue
                 identity = identity_from_eee_record(record)
             except (json.JSONDecodeError, ValueError, KeyError):
                 continue
