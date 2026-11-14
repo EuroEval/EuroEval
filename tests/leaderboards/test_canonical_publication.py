@@ -883,3 +883,17 @@ def test_write_verified_detects_mutated_expected_bytes(
         api.mutate_on_download["object"] = b"changed"
         with pytest.raises(PublicationError, match="Concurrent change"):
             session.write_verified(path="object", content=b"next", expected=b"before")
+
+
+def test_write_verified_rejects_external_remote_deletion(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A remotely deleted predecessor cannot be silently restored by a writer."""
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    publisher, api, _ = _publisher(tmp_path)
+    api.objects["object"] = b"before"
+    with publisher.session() as session:
+        del api.objects["object"]
+        with pytest.raises(PublicationError, match="Concurrent change"):
+            session.write_verified(path="object", content=b"next", expected=b"before")
+    assert "object" not in api.objects
