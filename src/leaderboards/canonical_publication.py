@@ -101,78 +101,6 @@ def _decode_record(content: bytes, path: str) -> dict[str, object]:
     return record
 
 
-def _metadata_only_transform(
-    current: dict[str, object], candidate: dict[str, object]
-) -> bool:
-    """Check that a result change is limited to model metadata.
-
-    Args:
-        current: Existing canonical result record.
-        candidate: Proposed replacement result record.
-
-    Returns:
-        Whether all non-metadata fields are unchanged.
-    """
-    if (
-        identity_from_eee_record(current) != identity_from_eee_record(candidate)
-        or current.get("retrieved_timestamp") != candidate.get("retrieved_timestamp")
-        or current.get("eval_library", {}).get("version")
-        != candidate.get("eval_library", {}).get("version")
-    ):
-        return False
-
-    current_copy = copy.deepcopy(current)
-    candidate_copy = copy.deepcopy(candidate)
-    current_details = _model_additional_details(record=current_copy)
-    candidate_details = _model_additional_details(record=candidate_copy)
-    for key, validator in (
-        ("num_model_parameters", positive_integer),
-        ("vocabulary_size", positive_integer),
-        ("max_sequence_length", positive_context_length),
-    ):
-        if (
-            validator(current_details.get(key)) is None
-            and validator(candidate_details.get(key)) is not None
-        ):
-            current_details.pop(key, None)
-            candidate_details.pop(key, None)
-    for record in (current_copy, candidate_copy):
-        record.pop("metadata", None)
-        model_info = record.get("model_info")
-        if isinstance(model_info, dict):
-            additional = model_info.get("additional_details")
-            if isinstance(additional, dict):
-                for key in (
-                    "commercially_licensed",
-                    "open",
-                    "merge",
-                    "trained_from_scratch",
-                    "generative_type",
-                    "model_url",
-                    "release_date",
-                ):
-                    additional.pop(key, None)
-                if not additional:
-                    model_info.pop("additional_details", None)
-    return current_copy == candidate_copy
-
-
-def _model_additional_details(record: dict[str, object]) -> dict[str, object]:
-    """Return model additional details, creating no missing record structure.
-
-    Args:
-        record: A decoded result record.
-
-    Returns:
-        The model metadata details, or an empty mapping when absent.
-    """
-    model_info = record.get("model_info")
-    if not isinstance(model_info, dict):
-        return {}
-    details = model_info.get("additional_details")
-    return details if isinstance(details, dict) else {}
-
-
 def _receipt_path(owner: str) -> Path:
     """Return the private recovery receipt path for an owner token."""
     root = Path(os.environ.get("XDG_CACHE_HOME", tempfile.gettempdir()))
@@ -223,6 +151,102 @@ def _write_receipt(path: Path, owner: str, endpoint: str, bucket: str) -> None:
     descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     with os.fdopen(descriptor, "w") as receipt:
         json.dump({"owner": owner, "endpoint": endpoint, "bucket": bucket}, receipt)
+
+
+def is_metadata_only_transform(
+    current: dict[str, object], candidate: dict[str, object]
+) -> bool:
+    """Check that a result change is limited to sanctioned metadata.
+
+    Args:
+        current: Existing canonical result record.
+        candidate: Proposed replacement result record.
+
+    Returns:
+        Whether all non-metadata fields are unchanged.
+    """
+    if (
+        identity_from_eee_record(current) != identity_from_eee_record(candidate)
+        or current.get("retrieved_timestamp") != candidate.get("retrieved_timestamp")
+        or current.get("eval_library", {}).get("version")
+        != candidate.get("eval_library", {}).get("version")
+    ):
+        return False
+
+    current_copy = copy.deepcopy(current)
+    candidate_copy = copy.deepcopy(candidate)
+    for record in (current_copy, candidate_copy):
+        for key in ("id", "name", "eval_id", "eval_timestamp"):
+            record.pop(key, None)
+    current_details = _model_additional_details(record=current_copy)
+    candidate_details = _model_additional_details(record=candidate_copy)
+    for key, validator in (
+        ("num_model_parameters", positive_integer),
+        ("vocabulary_size", positive_integer),
+        ("max_sequence_length", positive_context_length),
+    ):
+        if (
+            validator(current_details.get(key)) is None
+            and validator(candidate_details.get(key)) is not None
+        ):
+            current_details.pop(key, None)
+            candidate_details.pop(key, None)
+    for record in (current_copy, candidate_copy):
+        record.pop("metadata", None)
+        _normalise_raw_results(record=record)
+        model_info = record.get("model_info")
+        if isinstance(model_info, dict):
+            additional = model_info.get("additional_details")
+            if isinstance(additional, dict):
+                for key in (
+                    "commercially_licensed",
+                    "open",
+                    "merge",
+                    "trained_from_scratch",
+                    "generative_type",
+                    "model_url",
+                    "release_date",
+                ):
+                    additional.pop(key, None)
+                if not additional:
+                    model_info.pop("additional_details", None)
+    return current_copy == candidate_copy
+
+
+def _model_additional_details(record: dict[str, object]) -> dict[str, object]:
+    """Return model additional details, creating no missing record structure.
+
+    Args:
+        record: A decoded result record.
+
+    Returns:
+        The model metadata details, or an empty mapping when absent.
+    """
+    model_info = record.get("model_info")
+    if not isinstance(model_info, dict):
+        return {}
+    details = model_info.get("additional_details")
+    return details if isinstance(details, dict) else {}
+
+
+def _normalise_raw_results(record: dict[str, object]) -> None:
+    """Decode embedded raw-result JSON so equivalent serialisations compare equal.
+
+    Args:
+        record: A copied result record to normalise in place.
+    """
+    evaluation_library = record.get("eval_library")
+    if not isinstance(evaluation_library, dict):
+        return
+    details = evaluation_library.get("additional_details")
+    if not isinstance(details, dict):
+        return
+    raw_results = details.get("raw_results")
+    if isinstance(raw_results, str):
+        try:
+            details["raw_results"] = json.loads(raw_results)
+        except json.JSONDecodeError:
+            return
 
 
 class LockAdapter(t.Protocol):
@@ -495,7 +519,7 @@ class PublicationSession:
                 if (
                     sources is None
                     or sources.get(identity) != current
-                    or not _metadata_only_transform(current_record, record)
+                    or not is_metadata_only_transform(current_record, record)
                 ):
                     raise PublicationError(f"Equal-ranked result conflict at {path}")
             writes.append((path, candidate, current))
