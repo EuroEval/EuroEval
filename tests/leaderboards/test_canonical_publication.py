@@ -20,7 +20,7 @@ from leaderboards.canonical_publication import (
 )
 from leaderboards.constants import TRAINED_FROM_SCRATCH_PATTERNS
 from leaderboards.model_metadata import add_missing_entries
-from leaderboards.result_identity import identity_from_eee_record
+from leaderboards.result_identity import identity_from_eee_record, identity_to_path
 
 
 def test_canary_is_rejected_before_any_write(
@@ -47,6 +47,7 @@ class MemoryApi:
         self.interrupt_after_write = False
         self.fail_name: str | None = None
         self.mutate_on_download: dict[str, bytes] = {}
+        self.download_batches: list[list[str]] = []
 
     def batch_bucket_files(
         self,
@@ -85,6 +86,7 @@ class MemoryApi:
     ) -> None:
         """Download selected objects into temporary paths."""
         del bucket_id, raise_on_missing_files, token
+        self.download_batches.append([name for name, _ in files])
         for name, destination in files:
             if name in self.mutate_on_download:
                 self.objects[name] = self.mutate_on_download.pop(name)
@@ -444,6 +446,35 @@ def test_publish_archives_predecessor_and_skips_old(
         assert session.publish(records=[_record()]) == 0
         assert session.publish(records=[_record(version="2.0.0")]) == 1
     assert len([name for name in api.objects if name.startswith("_history/")]) == 1
+
+
+def test_publish_batches_remote_comparison_reads(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Unchanged records are compared in bounded bulk downloads."""
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    publisher, api, _ = _publisher(tmp_path)
+    records = []
+    for index in range(1_001):
+        record = json.loads(_record())
+        record["model_info"]["id"] = f"org/model-{index}"
+        record["eval_library"]["additional_details"]["dataset"] = f"task-{index}"
+        records.append(json.dumps(record).encode())
+    api.objects.update(
+        {
+            identity_to_path(
+                identity_from_eee_record(json.loads(record))
+            ).as_posix(): record
+            for record in records
+        }
+    )
+
+    with publisher.session() as session:
+        assert session.publish(records=records) == 0
+
+    assert len(api.download_batches) == 3
+    assert [len(batch) for batch in api.download_batches] == [500, 500, 1]
+    assert all(len(batch) <= 500 for batch in api.download_batches)
 
 
 def test_stale_candidate_cannot_replace_newer_current_record(
