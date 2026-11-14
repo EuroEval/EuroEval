@@ -49,7 +49,11 @@ from review_volunteer_results import show_and_render
 
 from euroeval_worker.review import PublicStagingError, reviewer_from_environment
 from leaderboards.backup import backup_results
-from leaderboards.canonical_publication import BucketApi, CanonicalPublisher
+from leaderboards.canonical_publication import (
+    BucketApi,
+    CanonicalPublisher,
+    is_metadata_only_transform,
+)
 from leaderboards.constants import (
     MODEL_REQUEST_LABEL,
     MODELS_PY_PATH,
@@ -546,16 +550,43 @@ def _same_rank(record_a: dict, record_b: dict) -> bool:
 
 
 def _scores_differ(record_a: dict, record_b: dict) -> bool:
-    """Whether equally-ranked records contain conflicting score payloads.
+    """Whether equally-ranked records contain conflicting evaluation payloads.
 
     Args:
         record_a: First record.
         record_b: Second record.
 
     Returns:
-        Whether their evaluation score fields differ.
+        Whether any leaderboard-consumed evaluation payload differs.
     """
-    return record_a.get("evaluation_results") != record_b.get("evaluation_results")
+    return _evaluation_payload(record_a) != _evaluation_payload(record_b)
+
+
+def _evaluation_payload(record: dict) -> tuple[object, object]:
+    """Return the aggregate and per-iteration evaluation payloads.
+
+    ``raw_results`` is sometimes stored as embedded JSON text and sometimes as
+    an already-decoded object. Decode only valid JSON, preserving other values.
+
+    Args:
+        record: Result record.
+
+    Returns:
+        Aggregate results and normalised raw results.
+    """
+    evaluation_library = record.get("eval_library")
+    details = (
+        evaluation_library.get("additional_details")
+        if isinstance(evaluation_library, dict)
+        else None
+    )
+    raw_results = details.get("raw_results") if isinstance(details, dict) else None
+    if isinstance(raw_results, str):
+        try:
+            raw_results = json.loads(raw_results)
+        except json.JSONDecodeError:
+            pass
+    return record.get("evaluation_results"), raw_results
 
 
 def _process_new_results(
@@ -599,6 +630,16 @@ def _process_new_results(
                 same_rank = _same_rank(current, record)
                 if same_rank and _scores_differ(current, record):
                     raise ValueError(f"Conflicting equal-ranked records for {identity}")
+                if (
+                    same_rank
+                    and current != record
+                    and not is_metadata_only_transform(
+                        current=current, candidate=record
+                    )
+                ):
+                    raise ValueError(
+                        f"Unsupported equal-ranked transformation for {identity}"
+                    )
                 winner = dedup_newer_record(current, record)
                 if winner is record or same_rank:
                     existing[identity] = record
