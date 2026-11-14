@@ -13,12 +13,15 @@ import json
 import logging
 import os
 import secrets
+import sqlite3
 import tempfile
 import typing as t
 import urllib.error
 import urllib.request
 from contextlib import contextmanager
 from pathlib import Path
+
+import hf_xet
 
 from euroeval.numeric_model_metadata import positive_context_length, positive_integer
 
@@ -105,6 +108,21 @@ def _receipt_path(owner: str) -> Path:
     """Return the private recovery receipt path for an owner token."""
     root = Path(os.environ.get("XDG_CACHE_HOME", tempfile.gettempdir()))
     return root / "euroeval-publication-locks" / f"{owner}.json"
+
+
+def _semantic_digest(record: dict[str, object]) -> str:
+    """Hash canonical JSON semantics independently of formatting.
+
+    Args:
+        record: Decoded result record.
+
+    Returns:
+        SHA-256 digest of deterministic JSON bytes.
+    """
+    encoded = json.dumps(
+        record, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def _validated_candidates(
@@ -367,6 +385,7 @@ class CanonicalPublisher:
         token: str,
         bucket: str = DEFAULT_BUCKET,
         lock: LockAdapter | None = None,
+        checkpoint_path: Path | None = None,
     ) -> None:
         """Create a publisher over a Hugging Face-compatible adapter.
 
@@ -375,6 +394,8 @@ class CanonicalPublisher:
             token: Hugging Face write token.
             bucket (optional): Canonical bucket. Defaults to EuroEval/results.
             lock (optional): Broker adapter; defaults to environment configuration.
+            checkpoint_path (optional): Incremental publication receipt database.
+                Defaults to the EuroEval cache directory.
 
         Raises:
             ValueError:
@@ -386,6 +407,21 @@ class CanonicalPublisher:
         self.token = token
         self.bucket = bucket
         self.lock = lock or PublicationLock.from_environment(bucket=bucket)
+        cache_root = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
+        self.checkpoint_path = checkpoint_path or (
+            cache_root / "euroeval" / "canonical-publication.sqlite3"
+        )
+        self.scope = hashlib.sha256(
+            "\0".join(
+                (
+                    bucket,
+                    self.lock.endpoint,
+                    str(getattr(api, "endpoint", "https://huggingface.co")),
+                    "canonical-publication-v1",
+                    hashlib.sha256(token.encode()).hexdigest(),
+                )
+            ).encode()
+        ).hexdigest()
         if self.lock.bucket != bucket:
             raise ValueError("Publication lock bucket does not match publisher bucket")
 
@@ -490,39 +526,41 @@ class PublicationSession:
         """
         candidates = _validated_candidates(records=records)
         self.assert_owned()
+        if sources:
+            self._store_sources(sources=sources)
+        sources = self._sources_with_pending(sources=sources)
+        remote_fingerprints = self._remote_fingerprints(candidates=candidates)
+        local_fingerprints = (
+            self._local_fingerprints(candidates=candidates)
+            if remote_fingerprints is not None
+            else {}
+        )
+        cached = self._cached_receipts()
+        trusted = {
+            path
+            for path, _, candidate, record in candidates
+            if remote_fingerprints is not None
+            and remote_fingerprints.get(path) is not None
+            and (
+                remote_fingerprints[path] == local_fingerprints[path]
+                or cached.get(path)
+                == (remote_fingerprints[path], _semantic_digest(record))
+            )
+        }
         logger.info(
             "Comparing %s candidate result files with the current bucket...",
             f"{len(candidates):,}",
         )
         current_objects = self._download_many(
-            paths=[path for path, _, _, _ in candidates]
+            paths=[path for path, _, _, _ in candidates if path not in trusted]
         )
-        writes: list[tuple[str, bytes, bytes | None]] = []
-        for path, identity, candidate, record in candidates:
-            current = current_objects[path]
-            if current is None:
-                writes.append((path, candidate, None))
-                continue
-            current_record = _decode_record(current, path)
-            if is_canary_record(current_record):
-                raise PublicationError(f"Canary record found at canonical path {path}")
-            current_identity = identity_from_eee_record(current_record)
-            if current_identity != identity:
-                raise PublicationError(f"Canonical path collision at {path}")
-            if record == current_record:
-                continue
-            newer = dedup_newer_record(current_record, record)
-            if newer is current_record:
-                equal_rank = dedup_newer_record(record, current_record) is record
-                if not equal_rank:
-                    continue
-                if (
-                    sources is None
-                    or sources.get(identity) != current
-                    or not is_metadata_only_transform(current_record, record)
-                ):
-                    raise PublicationError(f"Equal-ranked result conflict at {path}")
-            writes.append((path, candidate, current))
+        writes, verified_receipts = self._reconcile_candidates(
+            candidates=candidates,
+            trusted=trusted,
+            current_objects=current_objects,
+            remote_fingerprints=remote_fingerprints,
+            sources=sources,
+        )
 
         logger.info(
             "Remote comparison complete: %s writes required; archiving predecessors...",
@@ -554,7 +592,59 @@ class PublicationSession:
                     f"{index:,}",
                     f"{len(writes):,}",
                 )
+        if remote_fingerprints is not None:
+            written_paths = {path for path, _, _ in writes}
+            for path, _, _, record in candidates:
+                if path in written_paths:
+                    verified_receipts[path] = (
+                        local_fingerprints[path],
+                        _semantic_digest(record),
+                    )
+                elif path not in trusted and path not in current_objects:
+                    verified_receipts.pop(path, None)
+            self._store_receipts(receipts=verified_receipts)
         return len(writes)
+
+    def _cached_receipts(self) -> dict[str, tuple[str, str]]:
+        """Load successful semantic publication receipts.
+
+        Returns:
+            Path-keyed remote fingerprint and semantic digest pairs.
+        """
+        with self._database() as connection:
+            rows = connection.execute(
+                "SELECT path, fingerprint, digest FROM receipts WHERE scope = ?",
+                (self.publisher.scope,),
+            )
+            return {path: (fingerprint, digest) for path, fingerprint, digest in rows}
+
+    @contextmanager
+    def _database(self) -> t.Iterator[sqlite3.Connection]:
+        """Open and initialise the scoped incremental publication database.
+
+        Yields:
+            A configured SQLite connection, closed after the transaction.
+        """
+        self.publisher.checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+        connection = sqlite3.connect(self.publisher.checkpoint_path, timeout=30)
+        try:
+            connection.execute(
+                "CREATE TABLE IF NOT EXISTS receipts "
+                "(scope TEXT NOT NULL, path TEXT NOT NULL, fingerprint TEXT NOT NULL, "
+                "digest TEXT NOT NULL, PRIMARY KEY(scope, path))"
+            )
+            connection.execute(
+                "CREATE TABLE IF NOT EXISTS sources "
+                "(scope TEXT NOT NULL, identity TEXT NOT NULL, content BLOB NOT NULL, "
+                "PRIMARY KEY(scope, identity))"
+            )
+            yield connection
+            connection.commit()
+        except BaseException:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
 
     def _download_many(self, paths: list[str]) -> dict[str, bytes | None]:
         """Download exact current bucket objects in bounded batches.
@@ -598,6 +688,236 @@ class PublicationSession:
                     f"{len(paths):,}",
                 )
         return objects
+
+    def _local_fingerprints(
+        self, candidates: list[tuple[str, ResultIdentity, bytes, dict[str, object]]]
+    ) -> dict[str, str]:
+        """Calculate local Xet fingerprints for candidate bytes.
+
+        Args:
+            candidates: Validated publication candidates.
+
+        Returns:
+            Xet fingerprints keyed by canonical path.
+
+        Raises:
+            PublicationError:
+                If local fingerprint generation is incomplete.
+        """
+        with tempfile.TemporaryDirectory(prefix="euroeval-xet-hash-") as directory:
+            root = Path(directory)
+            paths: list[str] = []
+            candidate_paths: list[str] = []
+            for index, (path, _, content, _) in enumerate(candidates):
+                local = root / str(index)
+                local.write_bytes(content)
+                paths.append(str(local))
+                candidate_paths.append(path)
+            infos = hf_xet.hash_files(paths)
+            if len(infos) != len(paths):
+                raise PublicationError("Incomplete local Xet fingerprint results")
+            return {
+                path: info.hash
+                for path, info in zip(candidate_paths, infos, strict=True)
+            }
+
+    def _reconcile_candidates(
+        self,
+        candidates: list[tuple[str, ResultIdentity, bytes, dict[str, object]]],
+        trusted: set[str],
+        current_objects: dict[str, bytes | None],
+        remote_fingerprints: dict[str, str] | None,
+        sources: t.Mapping[ResultIdentity, bytes] | None,
+    ) -> tuple[list[tuple[str, bytes, bytes | None]], dict[str, tuple[str, str]]]:
+        """Reconcile untrusted candidates with current remote bytes.
+
+        Args:
+            candidates: Validated result candidates.
+            trusted: Paths proven equivalent by fresh fingerprints or receipts.
+            current_objects: Downloaded current bytes for untrusted candidates.
+            remote_fingerprints: Fresh metadata for existing remote paths.
+            sources: Exact predecessor bytes authorising metadata-only transforms.
+
+        Returns:
+            Pending writes and newly verified semantic receipts.
+
+        Raises:
+            PublicationError:
+                If a candidate conflicts with current canonical state.
+        """
+        writes: list[tuple[str, bytes, bytes | None]] = []
+        receipts: dict[str, tuple[str, str]] = {}
+        for path, identity, candidate, record in candidates:
+            if path in trusted:
+                continue
+            current = current_objects[path]
+            if current is None:
+                writes.append((path, candidate, None))
+                continue
+            current_record = _decode_record(current, path)
+            self._validate_current_record(
+                current_record=current_record, path=path, identity=identity
+            )
+            if record == current_record:
+                fingerprint = (
+                    remote_fingerprints.get(path)
+                    if remote_fingerprints is not None
+                    else None
+                )
+                if fingerprint is not None:
+                    receipts[path] = (fingerprint, _semantic_digest(record))
+                continue
+            newer = dedup_newer_record(current_record, record)
+            if newer is current_record:
+                if dedup_newer_record(record, current_record) is not record:
+                    continue
+                if not self._source_authorises_transform(
+                    identity=identity,
+                    current=current,
+                    current_record=current_record,
+                    record=record,
+                    sources=sources,
+                ):
+                    raise PublicationError(f"Equal-ranked result conflict at {path}")
+            writes.append((path, candidate, current))
+        return writes, receipts
+
+    def _source_authorises_transform(
+        self,
+        identity: ResultIdentity,
+        current: bytes,
+        current_record: dict[str, object],
+        record: dict[str, object],
+        sources: t.Mapping[ResultIdentity, bytes] | None,
+    ) -> bool:
+        """Check exact predecessor provenance for a metadata-only update.
+
+        Args:
+            identity: Candidate result identity.
+            current: Exact current remote bytes.
+            current_record: Decoded current record.
+            record: Candidate decoded record.
+            sources: Caller or checkpoint source evidence.
+
+        Returns:
+            Whether exact evidence authorises this transform.
+        """
+        return (
+            sources is not None
+            and sources.get(identity) == current
+            and is_metadata_only_transform(current_record, record)
+        )
+
+    def _validate_current_record(
+        self, current_record: dict[str, object], path: str, identity: ResultIdentity
+    ) -> None:
+        """Reject unsafe bytes at a canonical result path.
+
+        Args:
+            current_record: Decoded remote JSON record.
+            path: Canonical path containing the object.
+            identity: Expected result identity.
+
+        Raises:
+            PublicationError:
+                If remote object is canary evidence or a path collision.
+        """
+        if is_canary_record(current_record):
+            raise PublicationError(f"Canary record found at canonical path {path}")
+        if identity_from_eee_record(current_record) != identity:
+            raise PublicationError(f"Canonical path collision at {path}")
+
+    def _remote_fingerprints(
+        self, candidates: list[tuple[str, ResultIdentity, bytes, dict[str, object]]]
+    ) -> dict[str, str] | None:
+        """Fetch fresh remote Xet fingerprints when the adapter supports it.
+
+        Args:
+            candidates: Validated publication candidates.
+
+        Returns:
+            Fingerprints for existing candidates, or None for legacy adapters.
+
+        Raises:
+            PublicationError:
+                If remote metadata cannot be completely and safely interpreted.
+        """
+        method = getattr(self.publisher.api, "get_bucket_paths_info", None)
+        if method is None:
+            return None
+        paths = [path for path, _, _, _ in candidates]
+        try:
+            entries = list(method(self.bucket, paths, token=self.publisher.token))
+            fingerprints: dict[str, str] = {}
+            for entry in entries:
+                path = getattr(entry, "path", None)
+                fingerprint = getattr(entry, "xet_hash", None)
+                if not isinstance(path, str) or path not in paths:
+                    raise PublicationError("Malformed bucket metadata response")
+                if not isinstance(fingerprint, str) or not fingerprint:
+                    raise PublicationError(f"Missing remote Xet fingerprint for {path}")
+                if path in fingerprints:
+                    raise PublicationError(f"Duplicate bucket metadata for {path}")
+                fingerprints[path] = fingerprint
+            return fingerprints
+        except PublicationError:
+            raise
+        except Exception as error:
+            raise PublicationError("Could not verify remote bucket metadata") from error
+
+    def _sources_with_pending(
+        self, sources: t.Mapping[ResultIdentity, bytes] | None
+    ) -> t.Mapping[ResultIdentity, bytes] | None:
+        """Combine current source evidence with durable retry evidence.
+
+        Args:
+            sources: Current source bytes, if supplied.
+
+        Returns:
+            Exact source evidence keyed by result identity.
+        """
+        combined = dict(sources or {})
+        with self._database() as connection:
+            rows = connection.execute(
+                "SELECT identity, content FROM sources WHERE scope = ?",
+                (self.publisher.scope,),
+            )
+            for identity, content in rows:
+                key = tuple(json.loads(identity))
+                combined.setdefault(t.cast(ResultIdentity, key), content)
+        return combined or None
+
+    def _store_receipts(self, receipts: t.Mapping[str, tuple[str, str]]) -> None:
+        """Persist verified remote receipts in one SQLite transaction.
+
+        Args:
+            receipts: Path-keyed Xet fingerprint and semantic digest.
+        """
+        if not receipts:
+            return
+        with self._database() as connection:
+            connection.executemany(
+                "INSERT OR REPLACE INTO receipts VALUES (?, ?, ?, ?)",
+                [
+                    (self.publisher.scope, path, fingerprint, digest)
+                    for path, (fingerprint, digest) in receipts.items()
+                ],
+            )
+
+    def _store_sources(self, sources: t.Mapping[ResultIdentity, bytes]) -> None:
+        """Durably retain exact caller-provided predecessor evidence.
+
+        Args:
+            sources: Source bytes keyed by result identity.
+        """
+        with self._database() as connection:
+            connection.executemany(
+                "INSERT OR REPLACE INTO sources VALUES (?, ?, ?)",
+                [
+                    (self.publisher.scope, json.dumps(identity), content)
+                    for identity, content in sources.items()
+                ],
+            )
 
     def write_verified(self, path: str, content: bytes, expected: bytes | None) -> None:
         """Write only if the actual current object equals expected, then verify.
