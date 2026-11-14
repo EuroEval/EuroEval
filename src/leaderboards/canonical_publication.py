@@ -542,9 +542,6 @@ class PublicationSession:
         Returns:
             Current bytes for every requested path; absent objects map to None.
 
-        Raises:
-            FileNotFoundError:
-                If the batch reports missing objects after writing any local files.
         """
         objects: dict[str, bytes | None] = {}
         if not paths:
@@ -558,28 +555,18 @@ class PublicationSession:
                     path: root / str(start + offset)
                     for offset, path in enumerate(batch)
                 }
-                try:
-                    self.publisher.api.download_bucket_files(
-                        bucket_id=self.bucket,
-                        files=[(path, destinations[path]) for path in batch],
-                        raise_on_missing_files=False,
-                        token=self.publisher.token,
-                    )
-                except FileNotFoundError:
-                    if any(
-                        destination.exists() for destination in destinations.values()
-                    ):
-                        raise
-                    objects.update(dict.fromkeys(batch))
-                else:
-                    objects.update(
-                        {
-                            path: destination.read_bytes()
-                            if destination.exists()
-                            else None
-                            for path, destination in destinations.items()
-                        }
-                    )
+                self.publisher.api.download_bucket_files(
+                    bucket_id=self.bucket,
+                    files=[(path, destinations[path]) for path in batch],
+                    raise_on_missing_files=False,
+                    token=self.publisher.token,
+                )
+                objects.update(
+                    {
+                        path: destination.read_bytes() if destination.exists() else None
+                        for path, destination in destinations.items()
+                    }
+                )
                 compared = min(start + len(batch), len(paths))
                 logger.info(
                     "Compared %s of %s remote result files.",
