@@ -132,6 +132,7 @@ b80c76a4c146  # hf/vllm model_exists: parallel checks, intentionally separate
 # ---------- Backend interface wrappers: shared helpers already own the common logic ----------
 
 494325a47945  # euroeval/benchmark_modules label-extraction interface wrappers; shared helper owns logic
+97bf6f1a7030  # euroeval/benchmark_modules label-extraction interface wrappers; shared helper owns logic
 8296d291f455  # euroeval/benchmark_modules dataset-preparation wrappers; backend options differ, helper owns logic
 cb672719781f  # euroeval/benchmark_modules/zero_shot_classifier.py, euroeval/benchmark_modules/kev.py; backend-specific raw-text preservation and validation
 

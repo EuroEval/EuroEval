@@ -132,6 +132,32 @@ def result_path(root: Path) -> Path:
     return root / "org_model/dataset__test__zeroshot.json"
 
 
+def test_canonical_and_legacy_paths_are_preserved_separately(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Two representations retain their exact bytes and separate destinations."""
+    canonical_path = "org_model/dataset__test__zeroshot.json"
+    plain_data = json.dumps(make_record()).encode()
+    record = make_record()
+    anchored = '<a href="https://example.com">org/model</a>'
+    t.cast("dict[str, object]", record["model_info"])["id"] = anchored
+    anchored_data = json.dumps(record).encode()
+    legacy_path = record_relative_path(
+        model_id=anchored, dataset="dataset", validation_split=False, few_shot=False
+    ).as_posix()
+    files = {
+        canonical_path: ("plain-hash", plain_data),
+        legacy_path: ("legacy-hash", anchored_data),
+    }
+    configure(monkeypatch, tmp_path, FakeBucket(files))
+
+    assert bucket_sync.download_missing_bucket_files() == 2
+    for path, (_, expected) in files.items():
+        assert (tmp_path / "results" / path).read_bytes() == expected
+    manifest = json.loads((tmp_path / ".results-bucket-manifest.json").read_text())
+    assert set(manifest) == set(files)
+
+
 def test_existing_file_migrates_when_manifest_is_missing(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -177,17 +203,6 @@ def test_failed_download_does_not_replace_file_or_manifest(
     assert manifest.read_text(encoding="utf-8") == '{"old": "generation"}'
 
 
-def test_history_binary_objects_are_ignored(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """History binary objects are not treated as result records."""
-    bucket = FakeBucket({"_history/object.bin": ("hash", b"history")})
-    configure(monkeypatch, tmp_path, bucket)
-
-    assert bucket_sync.download_missing_bucket_files() == 0
-    assert bucket.download_calls == 0
-
-
 @pytest.mark.parametrize(
     ("field", "value"),
     [
@@ -197,12 +212,23 @@ def test_history_binary_objects_are_ignored(
         ("few_shot", True),
     ],
 )
+@pytest.mark.parametrize("legacy_path", [False, True])
 def test_identity_mismatch_preserves_file_and_manifest(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, field: str, value: object
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    field: str,
+    value: object,
+    legacy_path: bool,
 ) -> None:
-    """A record that disagrees with its bucket path cannot replace local state."""
-    path = "org_model/dataset__test__zeroshot.json"
+    """A record that disagrees with either storage layout cannot replace state."""
+    model_id = (
+        '<a href="https://example.com">org/model</a>' if legacy_path else "org/model"
+    )
+    path = record_relative_path(
+        model_id=model_id, dataset="dataset", validation_split=False, few_shot=False
+    ).as_posix()
     record = make_record()
+    t.cast("dict[str, object]", record["model_info"])["id"] = model_id
     if field == "model":
         model_info = t.cast("dict[str, object]", record["model_info"])
         model_info["id"] = value
@@ -213,7 +239,7 @@ def test_identity_mismatch_preserves_file_and_manifest(
     data = json.dumps(record).encode()
     bucket = FakeBucket({path: ("new-hash", data)})
     configure(monkeypatch, tmp_path, bucket)
-    destination = result_path(tmp_path / "results")
+    destination = tmp_path / "results" / path
     destination.parent.mkdir(parents=True)
     destination.write_bytes(b"previous-good-file")
     manifest = tmp_path / ".results-bucket-manifest.json"
@@ -249,6 +275,25 @@ def test_legacy_anchored_path_is_preserved(
 
     assert bucket_sync.download_missing_bucket_files() == 1
     assert (tmp_path / "results" / legacy_path).read_bytes() == data
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "_history/object.bin",
+        "backups/org_model/dataset__test__zeroshot.json",
+        "_history/org_model/dataset__test__zeroshot.json",
+    ],
+)
+def test_non_result_objects_are_ignored(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, path: str
+) -> None:
+    """History and nested backup objects are not treated as result records."""
+    bucket = FakeBucket({path: ("hash", b"history")})
+    configure(monkeypatch, tmp_path, bucket)
+
+    assert bucket_sync.download_missing_bucket_files() == 0
+    assert bucket.download_calls == 0
 
 
 def test_preserves_local_only_files(

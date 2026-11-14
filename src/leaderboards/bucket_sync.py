@@ -349,6 +349,7 @@ def download_missing_bucket_files() -> int:
             or len(relative_path.parts) < 2
             or relative_path.parts[0] == "_history"
             or ".." in relative_path.parts
+            or len(relative_path.parts) != 2
             or not relative_path.name.endswith(
                 (
                     "__val__fewshot.json",
