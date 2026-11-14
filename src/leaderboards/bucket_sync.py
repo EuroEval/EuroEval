@@ -544,18 +544,31 @@ def upload_results_to_bucket(results_file: Path) -> None:
         logger.warning("No valid results found to upload.")
         return
 
-    # Remove stale ROOT-level *.jsonl artefacts (old flat store) only
-    for jsonl_file in RESULTS_DIR.glob("*.jsonl"):
-        if jsonl_file.is_file():
-            logger.info(f"Removing stale jsonl file {jsonl_file}")
-            jsonl_file.unlink()
-
     # Preserve exact pre-transform source observations for metadata tie handling.
     source_bytes: dict[ResultIdentity, bytes] = {}
     for rel_path, (identity, _) in path_record_map.items():
         original = RESULTS_DIR / rel_path
         if original.is_file():
             source_bytes[identity] = original.read_bytes()
+
+    records: list[bytes] = []
+    sources: dict[ResultIdentity, bytes] = {}
+    for _, (identity, record) in path_record_map.items():
+        records.append(
+            json.dumps(record, sort_keys=True, separators=(",", ":")).encode()
+        )
+        if identity in source_bytes:
+            sources[identity] = source_bytes[identity]
+    publisher = CanonicalPublisher(
+        api=t.cast(BucketApi, HfApi()), token=hf_token, bucket=HF_RESULTS_BUCKET
+    )
+    publisher.prepare(records=records, sources=sources)
+
+    # Remove stale ROOT-level *.jsonl artefacts only after checkpoint success.
+    for jsonl_file in RESULTS_DIR.glob("*.jsonl"):
+        if jsonl_file.is_file():
+            logger.info(f"Removing stale jsonl file {jsonl_file}")
+            jsonl_file.unlink()
 
     written_files: list[tuple[str | Path | bytes, str]] = []
     for rel_path, (_, record) in path_record_map.items():
@@ -575,16 +588,6 @@ def upload_results_to_bucket(results_file: Path) -> None:
         "Wrote %d record files to %s, uploading to bucket...",
         len(written_files),
         RESULTS_DIR,
-    )
-    records: list[bytes] = []
-    sources: dict[ResultIdentity, bytes] = {}
-    for _, (identity, record) in path_record_map.items():
-        raw = json.dumps(record, sort_keys=True, separators=(",", ":")).encode()
-        records.append(raw)
-        if identity in source_bytes:
-            sources[identity] = source_bytes[identity]
-    publisher = CanonicalPublisher(
-        api=t.cast(BucketApi, HfApi()), token=hf_token, bucket=HF_RESULTS_BUCKET
     )
     with publisher.session() as session:
         session.publish(records=records, sources=sources)

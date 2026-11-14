@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sqlite3
+import stat
 import tempfile
 import typing as t
 import urllib.error
@@ -178,6 +180,104 @@ def _record(*, version: str = "1.0.0", score: float = 0.5) -> bytes:
             "score": score,
         }
     ).encode()
+
+
+def test_checkpoint_filters_unrelated_sources_and_is_private(tmp_path: Path) -> None:
+    """Only candidate-bound evidence is stored in private checkpoint files."""
+    checkpoint = tmp_path / "private" / "publication.sqlite3"
+    publisher = CanonicalPublisher(
+        api=MemoryApi(),
+        token="test-token",
+        lock=MemoryLock(),
+        checkpoint_path=checkpoint,
+    )
+    candidate = _record()
+    identity = identity_from_eee_record(json.loads(candidate))
+    other = json.loads(candidate)
+    other["model_info"]["id"] = "org/other"
+    other_bytes = json.dumps(other).encode()
+    canary = other.copy()
+    canary["eval_library"]["additional_details"]["dataset"] = "contamination-canary"
+    canary_identity = identity_from_eee_record(canary)
+    with publisher.session() as session:
+        session.prepare(
+            records=[candidate, other_bytes],
+            sources={
+                identity: candidate,
+                canary_identity: json.dumps(canary).encode(),
+                ("wrong", "task", True, False): candidate,
+            },
+        )
+    connection = sqlite3.connect(checkpoint)
+    try:
+        rows = connection.execute("SELECT identity FROM sources").fetchall()
+    finally:
+        connection.close()
+    assert rows == [(json.dumps(identity),)]
+    assert stat.S_IMODE(checkpoint.stat().st_mode) == 0o600
+    assert stat.S_IMODE(checkpoint.parent.stat().st_mode) == 0o700
+
+
+def test_cold_source_fingerprint_proves_formatting_only_candidate(
+    tmp_path: Path,
+) -> None:
+    """Exact source fingerprints avoid bodies without a prior receipt."""
+    api = FingerprintApi()
+    lock = MemoryLock()
+    checkpoint = tmp_path / "publication.sqlite3"
+    original = _record()
+    identity = identity_from_eee_record(json.loads(original))
+    api.objects[identity_to_path(identity).as_posix()] = original
+    publisher = CanonicalPublisher(
+        api=api, token="test-token", lock=lock, checkpoint_path=checkpoint
+    )
+    formatted = json.dumps(json.loads(original), indent=2).encode()
+    with publisher.session() as session:
+        assert session.publish(records=[formatted], sources={identity: original}) == 0
+    assert api.download_calls == 0
+
+
+class FingerprintApi(MemoryApi):
+    """Memory adapter exposing fresh Xet metadata and read counters."""
+
+    def __init__(self) -> None:
+        """Initialise the API adapter and operation counters."""
+        super().__init__()
+        self.metadata_calls = 0
+        self.download_calls = 0
+
+    def download_bucket_files(
+        self,
+        bucket_id: str,
+        files: list[tuple[str, Path]],
+        *,
+        raise_on_missing_files: bool,
+        token: str,
+    ) -> None:
+        """Count remote body reads before delegating to the memory adapter."""
+        self.download_calls += len(files)
+        super().download_bucket_files(
+            bucket_id=bucket_id,
+            files=files,
+            raise_on_missing_files=raise_on_missing_files,
+            token=token,
+        )
+
+    def get_bucket_paths_info(
+        self, bucket_id: str, paths: list[str], *, token: str
+    ) -> list[object]:
+        """Return fresh content fingerprints for requested remote files."""
+        self.metadata_calls += 1
+        entries: list[object] = []
+        for path in paths:
+            content = self.objects.get(path)
+            if content is not None:
+                with tempfile.TemporaryDirectory() as directory:
+                    local = Path(directory) / "object"
+                    local.write_bytes(content)
+                    fingerprint = hf_xet.hash_files([str(local)])[0].hash
+                entries.append(SimpleNamespace(path=path, xet_hash=fingerprint))
+        return entries
 
 
 def test_equal_rank_metadata_transform_cannot_change_evaluation_score(
@@ -512,49 +612,6 @@ def test_reconstructed_publisher_skips_verified_remote_bodies(tmp_path: Path) ->
         assert session.publish(records=[formatted]) == 0
     assert api.download_calls == initial_reads
     assert api.metadata_calls == 2
-
-
-class FingerprintApi(MemoryApi):
-    """Memory adapter exposing fresh Xet metadata and read counters."""
-
-    def __init__(self) -> None:
-        """Initialise the API adapter and operation counters."""
-        super().__init__()
-        self.metadata_calls = 0
-        self.download_calls = 0
-
-    def download_bucket_files(
-        self,
-        bucket_id: str,
-        files: list[tuple[str, Path]],
-        *,
-        raise_on_missing_files: bool,
-        token: str,
-    ) -> None:
-        """Count remote body reads before delegating to the memory adapter."""
-        self.download_calls += len(files)
-        super().download_bucket_files(
-            bucket_id=bucket_id,
-            files=files,
-            raise_on_missing_files=raise_on_missing_files,
-            token=token,
-        )
-
-    def get_bucket_paths_info(
-        self, bucket_id: str, paths: list[str], *, token: str
-    ) -> list[object]:
-        """Return fresh content fingerprints for requested remote files."""
-        self.metadata_calls += 1
-        entries: list[object] = []
-        for path in paths:
-            content = self.objects.get(path)
-            if content is not None:
-                with tempfile.TemporaryDirectory() as directory:
-                    local = Path(directory) / "object"
-                    local.write_bytes(content)
-                    fingerprint = hf_xet.hash_files([str(local)])[0].hash
-                entries.append(SimpleNamespace(path=path, xet_hash=fingerprint))
-        return entries
 
 
 @pytest.mark.parametrize(("fail_batch", "record_count"), [(1, 1), (2, 501)])

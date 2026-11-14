@@ -250,6 +250,21 @@ def _upload_per_model_files(
             if path.is_file():
                 source_bytes[identity] = path.read_bytes()
 
+    payloads = [
+        json.dumps(
+            record, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        ).encode("utf-8")
+        for record, _ in records_by_path.values()
+    ]
+    publisher = None
+    if upload_to_bucket:
+        publisher = CanonicalPublisher(
+            api=t.cast(BucketApi, HfApi()),
+            token=hf_token or "",
+            bucket=HF_RESULTS_BUCKET,
+        )
+        publisher.prepare(records=payloads, sources=source_bytes)
+
     written_files: list[tuple[str | Path | bytes, str]] = []
 
     logger.info("Writing result files...")
@@ -261,17 +276,7 @@ def _upload_per_model_files(
             written_files.append(result)
 
     if upload_to_bucket:
-        publisher = CanonicalPublisher(
-            api=t.cast(BucketApi, HfApi()),
-            token=hf_token or "",
-            bucket=HF_RESULTS_BUCKET,
-        )
-        payloads = [
-            json.dumps(
-                record, sort_keys=True, separators=(",", ":"), ensure_ascii=False
-            ).encode("utf-8")
-            for record, _ in records_by_path.values()
-        ]
+        assert publisher is not None
         with publisher.session() as session:
             session.publish(records=payloads, sources=source_bytes)
         logger.info(f"Published {len(payloads):,} result files to {hf_results_bucket}.")

@@ -425,6 +425,18 @@ class CanonicalPublisher:
         if self.lock.bucket != bucket:
             raise ValueError("Publication lock bucket does not match publisher bucket")
 
+    def prepare(
+        self, records: t.Sequence[bytes], sources: t.Mapping[ResultIdentity, bytes]
+    ) -> None:
+        """Checkpoint valid predecessor evidence before callers mutate local files.
+
+        Args:
+            records: Candidate result records that bind the evidence.
+            sources: Exact pre-mutation bytes keyed by result identity.
+        """
+        with self.session() as session:
+            session.prepare(records=records, sources=sources)
+
     @contextmanager
     def session(self) -> t.Iterator[PublicationSession]:
         """Acquire an owned publication session and safely release it.
@@ -505,6 +517,102 @@ class PublicationSession:
         """Confirm this session still owns the broker lock."""
         self.publisher.lock.request(action="assert", owner=self.owner)
 
+    def prepare(
+        self, records: t.Sequence[bytes], sources: t.Mapping[ResultIdentity, bytes]
+    ) -> None:
+        """Persist applicable source evidence before any local mutation.
+
+        Args:
+            records: Candidate result records.
+            sources: Exact predecessor bytes keyed by identity.
+
+        """
+        candidates = _validated_candidates(records=records)
+        self.assert_owned()
+        validated = self._validated_sources(candidates=candidates, sources=sources)
+        if validated:
+            self._store_sources(sources=validated)
+
+    def _store_sources(self, sources: t.Mapping[ResultIdentity, bytes]) -> None:
+        """Durably retain exact caller-provided predecessor evidence.
+
+        Args:
+            sources: Source bytes keyed by result identity.
+        """
+        with self._database() as connection:
+            connection.executemany(
+                "INSERT OR IGNORE INTO sources VALUES (?, ?, ?)",
+                [
+                    (self.publisher.scope, json.dumps(identity), content)
+                    for identity, content in sources.items()
+                ],
+            )
+
+    @contextmanager
+    def _database(self) -> t.Iterator[sqlite3.Connection]:
+        """Open and initialise the scoped incremental publication database.
+
+        Yields:
+            A configured SQLite connection, closed after the transaction.
+        """
+        self.publisher.checkpoint_path.parent.mkdir(
+            mode=0o700, parents=True, exist_ok=True
+        )
+        self.publisher.checkpoint_path.parent.chmod(0o700)
+        connection = sqlite3.connect(self.publisher.checkpoint_path, timeout=30)
+        os.chmod(self.publisher.checkpoint_path, 0o600)
+        try:
+            connection.execute(
+                "CREATE TABLE IF NOT EXISTS receipts "
+                "(scope TEXT NOT NULL, path TEXT NOT NULL, fingerprint TEXT NOT NULL, "
+                "digest TEXT NOT NULL, PRIMARY KEY(scope, path))"
+            )
+            connection.execute(
+                "CREATE TABLE IF NOT EXISTS sources "
+                "(scope TEXT NOT NULL, identity TEXT NOT NULL, content BLOB NOT NULL, "
+                "PRIMARY KEY(scope, identity))"
+            )
+            yield connection
+            connection.commit()
+        except BaseException:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
+
+    def _validated_sources(
+        self,
+        candidates: list[tuple[str, ResultIdentity, bytes, dict[str, object]]],
+        sources: t.Mapping[ResultIdentity, bytes] | None,
+    ) -> dict[ResultIdentity, bytes]:
+        """Keep only valid, candidate-identity-bound predecessor evidence.
+
+        Args:
+            candidates: Validated candidate records.
+            sources: Caller-provided predecessor bytes.
+
+        Returns:
+            Safe source evidence keyed by candidate identity.
+        """
+        identities = {identity for _, identity, _, _ in candidates}
+        validated: dict[ResultIdentity, bytes] = {}
+        for identity, content in (sources or {}).items():
+            if identity not in identities or _contains_canary(content):
+                continue
+            try:
+                record = _decode_record(content, identity_to_path(identity).as_posix())
+                candidate_record = next(
+                    item[3] for item in candidates if item[1] == identity
+                )
+                if identity_from_eee_record(record) == identity and (
+                    record == candidate_record
+                    or is_metadata_only_transform(record, candidate_record)
+                ):
+                    validated[identity] = content
+            except (PublicationError, ValueError, KeyError, TypeError):
+                continue
+        return validated
+
     def publish(
         self,
         records: t.Sequence[bytes],
@@ -526,16 +634,23 @@ class PublicationSession:
         """
         candidates = _validated_candidates(records=records)
         self.assert_owned()
-        if sources:
-            self._store_sources(sources=sources)
-        sources = self._sources_with_pending(sources=sources)
+        validated_sources = self._validated_sources(
+            candidates=candidates, sources=sources
+        )
+        if validated_sources:
+            self._store_sources(sources=validated_sources)
+        sources = self._sources_with_pending(sources=validated_sources)
         remote_fingerprints = self._remote_fingerprints(candidates=candidates)
         local_fingerprints = (
-            self._local_fingerprints(candidates=candidates)
+            self._local_fingerprints(candidates=candidates, sources=sources)
             if remote_fingerprints is not None
             else {}
         )
         cached = self._cached_receipts()
+        source_paths = {
+            identity_to_path(identity).as_posix(): content
+            for identity, content in (sources or {}).items()
+        }
         trusted = {
             path
             for path, _, candidate, record in candidates
@@ -545,15 +660,33 @@ class PublicationSession:
                 remote_fingerprints[path] == local_fingerprints[path]
                 or cached.get(path)
                 == (remote_fingerprints[path], _semantic_digest(record))
+                or (
+                    path in source_paths
+                    and remote_fingerprints[path]
+                    == local_fingerprints.get(f"source:{path}")
+                    and _decode_record(source_paths[path], path) == record
+                )
             )
+        }
+        source_proven = {
+            path: content
+            for path, content in source_paths.items()
+            if remote_fingerprints is not None
+            and path in remote_fingerprints
+            and remote_fingerprints[path] == local_fingerprints.get(f"source:{path}")
         }
         logger.info(
             "Comparing %s candidate result files with the current bucket...",
             f"{len(candidates):,}",
         )
         current_objects = self._download_many(
-            paths=[path for path, _, _, _ in candidates if path not in trusted]
+            paths=[
+                path
+                for path, _, _, _ in candidates
+                if path not in trusted and path not in source_proven
+            ]
         )
+        current_objects.update(source_proven)
         writes, verified_receipts = self._reconcile_candidates(
             candidates=candidates,
             trusted=trusted,
@@ -603,6 +736,7 @@ class PublicationSession:
                 elif path not in trusted and path not in current_objects:
                     verified_receipts.pop(path, None)
             self._store_receipts(receipts=verified_receipts)
+        self._clear_sources(identities={identity for _, identity, _, _ in candidates})
         return len(writes)
 
     def _cached_receipts(self) -> dict[str, tuple[str, str]]:
@@ -618,33 +752,22 @@ class PublicationSession:
             )
             return {path: (fingerprint, digest) for path, fingerprint, digest in rows}
 
-    @contextmanager
-    def _database(self) -> t.Iterator[sqlite3.Connection]:
-        """Open and initialise the scoped incremental publication database.
+    def _clear_sources(self, identities: set[ResultIdentity]) -> None:
+        """Remove retry evidence after its candidate has converged.
 
-        Yields:
-            A configured SQLite connection, closed after the transaction.
+        Args:
+            identities: Candidate identities that completed publication.
         """
-        self.publisher.checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
-        connection = sqlite3.connect(self.publisher.checkpoint_path, timeout=30)
-        try:
-            connection.execute(
-                "CREATE TABLE IF NOT EXISTS receipts "
-                "(scope TEXT NOT NULL, path TEXT NOT NULL, fingerprint TEXT NOT NULL, "
-                "digest TEXT NOT NULL, PRIMARY KEY(scope, path))"
+        if not identities:
+            return
+        with self._database() as connection:
+            connection.executemany(
+                "DELETE FROM sources WHERE scope = ? AND identity = ?",
+                [
+                    (self.publisher.scope, json.dumps(identity))
+                    for identity in identities
+                ],
             )
-            connection.execute(
-                "CREATE TABLE IF NOT EXISTS sources "
-                "(scope TEXT NOT NULL, identity TEXT NOT NULL, content BLOB NOT NULL, "
-                "PRIMARY KEY(scope, identity))"
-            )
-            yield connection
-            connection.commit()
-        except BaseException:
-            connection.rollback()
-            raise
-        finally:
-            connection.close()
 
     def _download_many(self, paths: list[str]) -> dict[str, bytes | None]:
         """Download exact current bucket objects in bounded batches.
@@ -690,15 +813,18 @@ class PublicationSession:
         return objects
 
     def _local_fingerprints(
-        self, candidates: list[tuple[str, ResultIdentity, bytes, dict[str, object]]]
+        self,
+        candidates: list[tuple[str, ResultIdentity, bytes, dict[str, object]]],
+        sources: t.Mapping[ResultIdentity, bytes] | None = None,
     ) -> dict[str, str]:
-        """Calculate local Xet fingerprints for candidate bytes.
+        """Calculate local Xet fingerprints for candidate and source bytes.
 
         Args:
             candidates: Validated publication candidates.
+            sources (optional): Validated predecessor bytes.
 
         Returns:
-            Xet fingerprints keyed by canonical path.
+            Xet fingerprints keyed by canonical path or source label.
 
         Raises:
             PublicationError:
@@ -713,13 +839,28 @@ class PublicationSession:
                 local.write_bytes(content)
                 paths.append(str(local))
                 candidate_paths.append(path)
+            source_paths: list[str] = []
+            for index, (identity, content) in enumerate((sources or {}).items()):
+                local = root / f"source-{index}"
+                local.write_bytes(content)
+                paths.append(str(local))
+                source_paths.append(identity_to_path(identity).as_posix())
             infos = hf_xet.hash_files(paths)
             if len(infos) != len(paths):
                 raise PublicationError("Incomplete local Xet fingerprint results")
-            return {
+            fingerprints = {
                 path: info.hash
-                for path, info in zip(candidate_paths, infos, strict=True)
+                for path, info in zip(candidate_paths, infos, strict=False)
             }
+            fingerprints.update(
+                {
+                    f"source:{path}": info.hash
+                    for path, info in zip(
+                        source_paths, infos[len(candidate_paths) :], strict=True
+                    )
+                }
+            )
+            return fingerprints
 
     def _reconcile_candidates(
         self,
@@ -764,7 +905,10 @@ class PublicationSession:
                     if remote_fingerprints is not None
                     else None
                 )
-                if fingerprint is not None:
+                if (
+                    fingerprint is not None
+                    and self._fingerprint_bytes(content=current) == fingerprint
+                ):
                     receipts[path] = (fingerprint, _semantic_digest(record))
                 continue
             newer = dedup_newer_record(current_record, record)
@@ -781,6 +925,26 @@ class PublicationSession:
                     raise PublicationError(f"Equal-ranked result conflict at {path}")
             writes.append((path, candidate, current))
         return writes, receipts
+
+    def _fingerprint_bytes(self, content: bytes) -> str:
+        """Return the Xet fingerprint for exact downloaded bytes.
+
+        Args:
+            content: Downloaded remote object bytes.
+
+        Returns:
+            Xet fingerprint.
+
+        Raises:
+            PublicationError: If fingerprint generation fails.
+        """
+        with tempfile.TemporaryDirectory(prefix="euroeval-xet-hash-") as directory:
+            path = Path(directory) / "object"
+            path.write_bytes(content)
+            infos = hf_xet.hash_files([str(path)])
+            if len(infos) != 1:
+                raise PublicationError("Incomplete downloaded Xet fingerprint")
+            return infos[0].hash
 
     def _source_authorises_transform(
         self,
@@ -846,13 +1010,14 @@ class PublicationSession:
         if method is None:
             return None
         paths = [path for path, _, _, _ in candidates]
+        requested_paths = set(paths)
         try:
             entries = list(method(self.bucket, paths, token=self.publisher.token))
             fingerprints: dict[str, str] = {}
             for entry in entries:
                 path = getattr(entry, "path", None)
                 fingerprint = getattr(entry, "xet_hash", None)
-                if not isinstance(path, str) or path not in paths:
+                if not isinstance(path, str) or path not in requested_paths:
                     raise PublicationError("Malformed bucket metadata response")
                 if not isinstance(fingerprint, str) or not fingerprint:
                     raise PublicationError(f"Missing remote Xet fingerprint for {path}")
@@ -876,7 +1041,7 @@ class PublicationSession:
         Returns:
             Exact source evidence keyed by result identity.
         """
-        combined = dict(sources or {})
+        combined: dict[ResultIdentity, bytes] = {}
         with self._database() as connection:
             rows = connection.execute(
                 "SELECT identity, content FROM sources WHERE scope = ?",
@@ -884,7 +1049,9 @@ class PublicationSession:
             )
             for identity, content in rows:
                 key = tuple(json.loads(identity))
-                combined.setdefault(t.cast(ResultIdentity, key), content)
+                combined[t.cast(ResultIdentity, key)] = content
+        for identity, content in (sources or {}).items():
+            combined.setdefault(identity, content)
         return combined or None
 
     def _store_receipts(self, receipts: t.Mapping[str, tuple[str, str]]) -> None:
@@ -901,21 +1068,6 @@ class PublicationSession:
                 [
                     (self.publisher.scope, path, fingerprint, digest)
                     for path, (fingerprint, digest) in receipts.items()
-                ],
-            )
-
-    def _store_sources(self, sources: t.Mapping[ResultIdentity, bytes]) -> None:
-        """Durably retain exact caller-provided predecessor evidence.
-
-        Args:
-            sources: Source bytes keyed by result identity.
-        """
-        with self._database() as connection:
-            connection.executemany(
-                "INSERT OR REPLACE INTO sources VALUES (?, ?, ?)",
-                [
-                    (self.publisher.scope, json.dumps(identity), content)
-                    for identity, content in sources.items()
                 ],
             )
 
