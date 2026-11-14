@@ -15,6 +15,7 @@ from pathlib import Path
 from euroeval.data_models import BenchmarkResult
 
 from .record_fields import get_version
+from .records import strip_anchor
 
 # Type alias for the identity tuple
 ResultIdentity = tuple[str, str, bool | None, bool | None]
@@ -191,6 +192,8 @@ def identity_from_eee_record(record: dict) -> ResultIdentity:
         raise ValueError(
             "model_info.id and model_info.name are both missing or empty in record"
         )
+
+    model_id = strip_anchor(model_id)
 
     additional = record.get("eval_library", {}).get("additional_details", {})
 
