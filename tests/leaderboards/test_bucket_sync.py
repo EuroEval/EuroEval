@@ -581,6 +581,141 @@ class TestUploadResultsToBucket:
         restored = json.loads(local_file.read_text(encoding="utf-8"))
         assert restored["model_info"]["id"] == "local/only"
 
+    def test_upload_all_private_records_has_no_mutations(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Leave local bytes and remote storage unchanged for private input only.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Fixture for replacing dependencies during the test.
+        """
+        results_dir = tmp_path / "results"
+        results_file = tmp_path / "results.jsonl"
+        records = [
+            _upload_record(dataset="contamination-canary"),
+            _upload_record(dataset="contamination-canary-worker"),
+        ]
+        results_file.write_text(
+            "".join(json.dumps(record) + "\n" for record in records), encoding="utf-8"
+        )
+        private_file = (
+            results_dir / "test_model" / "contamination-canary__none__none.json"
+        )
+        private_file.parent.mkdir(parents=True)
+        private_bytes = b'{ "private": "keep exact bytes" }\n'
+        private_file.write_bytes(private_bytes)
+
+        api = _TestBucketApi()
+        api.mutation_calls = 0
+        remote_adapter = api
+
+        def publisher_factory(
+            *, api: object, token: str, bucket: str
+        ) -> CanonicalPublisher:
+            del api
+            return CanonicalPublisher(
+                api=remote_adapter,
+                token=token,
+                bucket=bucket,
+                lock=_TestPublicationLock(bucket=bucket),
+            )
+
+        original_batch = api.batch_bucket_files
+
+        def track_mutations(
+            bucket_id: str,
+            add: list[tuple[Path, str]] | None = None,
+            delete: list[str] | None = None,
+            token: str = "",
+        ) -> None:
+            api.mutation_calls += 1
+            original_batch(bucket_id=bucket_id, add=add, delete=delete, token=token)
+
+        monkeypatch.setattr(api, "batch_bucket_files", track_mutations)
+        monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
+        monkeypatch.setattr(bucket_sync, "HF_RESULTS_BUCKET", "test/results")
+        monkeypatch.setattr(bucket_sync, "CanonicalPublisher", publisher_factory)
+        with patch("leaderboards.bucket_sync.resolve_hf_token", return_value="token"):
+            bucket_sync.upload_results_to_bucket(results_file=results_file)
+
+        assert api.mutation_calls == 0
+        assert api.objects == {}
+        assert private_file.read_bytes() == private_bytes
+
+    def test_upload_results_excludes_canaries_and_preserves_local_bytes(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Publish ordinary records while leaving private canary bytes untouched.
+
+        Args:
+            tmp_path:
+                Temporary directory for files created by the test.
+            monkeypatch:
+                Fixture for replacing dependencies during the test.
+        """
+        results_dir = tmp_path / "results"
+        results_file = tmp_path / "results.jsonl"
+        records = [
+            _upload_record(dataset="ordinary-task"),
+            _upload_record(dataset="contamination-canary"),
+            _upload_record(dataset="contamination-canary-worker"),
+        ]
+        results_file.write_text(
+            "".join(json.dumps(record) + "\n" for record in records), encoding="utf-8"
+        )
+        private_paths = [
+            results_dir / "test_model" / "contamination-canary__none__none.json",
+            results_dir / "test_model" / "contamination-canary-worker__none__none.json",
+        ]
+        private_bytes = [b'{ "private": "base" }\n', b'{ "private": "worker" }\n']
+        for path, content in zip(private_paths, private_bytes, strict=True):
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(content)
+
+        api = _TestBucketApi()
+        api.mutation_calls = 0
+
+        def publisher_factory(
+            *, api: object, token: str, bucket: str
+        ) -> CanonicalPublisher:
+            del api
+            return CanonicalPublisher(
+                api=remote_adapter,
+                token=token,
+                bucket=bucket,
+                lock=_TestPublicationLock(bucket=bucket),
+            )
+
+        remote_adapter = api
+        monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
+        monkeypatch.setattr(bucket_sync, "HF_RESULTS_BUCKET", "test/results")
+        monkeypatch.setattr(bucket_sync, "CanonicalPublisher", publisher_factory)
+        original_batch = api.batch_bucket_files
+
+        def track_mutations(
+            bucket_id: str,
+            add: list[tuple[Path, str]] | None = None,
+            delete: list[str] | None = None,
+            token: str = "",
+        ) -> None:
+            api.mutation_calls += 1
+            original_batch(bucket_id=bucket_id, add=add, delete=delete, token=token)
+
+        monkeypatch.setattr(api, "batch_bucket_files", track_mutations)
+        with patch("leaderboards.bucket_sync.resolve_hf_token", return_value="token"):
+            bucket_sync.upload_results_to_bucket(results_file=results_file)
+
+        assert api.mutation_calls > 0
+        assert all(
+            path.read_bytes() == content
+            for path, content in zip(private_paths, private_bytes, strict=True)
+        )
+        assert len(api.objects) == 1
+        assert "contamination-canary" not in "".join(api.objects)
+
     def test_upload_results_removes_stale_jsonl(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -867,30 +1002,6 @@ class TestUploadResultsToBucket:
         assert "does not exist" in caplog.text
 
 
-def _use_test_publisher(
-    monkeypatch: pytest.MonkeyPatch, upload_error: Exception | None = None
-) -> None:
-    """Replace publication's remote adapters with in-memory implementations.
-
-    Args:
-        monkeypatch: Fixture for replacing dependencies.
-        upload_error (optional): Optional error raised when publishing.
-    """
-
-    def publisher_factory(
-        *, api: object, token: str, bucket: str
-    ) -> CanonicalPublisher:
-        del api
-        return CanonicalPublisher(
-            api=_TestBucketApi(upload_error=upload_error),
-            token=token,
-            bucket=bucket,
-            lock=_TestPublicationLock(bucket=bucket),
-        )
-
-    monkeypatch.setattr(bucket_sync, "CanonicalPublisher", publisher_factory)
-
-
 class _TestBucketApi:
     """In-memory adapter for canonical publication tests."""
 
@@ -902,6 +1013,7 @@ class _TestBucketApi:
         """
         self.objects: dict[str, bytes] = {}
         self.upload_error = upload_error
+        self.mutation_calls = 0
 
     def batch_bucket_files(
         self,
@@ -912,6 +1024,7 @@ class _TestBucketApi:
     ) -> None:
         """Apply in-memory object mutations."""
         del bucket_id, token
+        self.mutation_calls += 1
         if self.upload_error is not None:
             raise self.upload_error
         for local_path, remote_path in add or []:
@@ -954,3 +1067,51 @@ class _TestPublicationLock:
         """
         del owner
         return "released" if action == "release" else "owned"
+
+
+def _upload_record(*, dataset: str) -> dict[str, object]:
+    """Build an EEE result record for a bucket upload test.
+
+    Args:
+        dataset:
+            Dataset identity for the result.
+
+    Returns:
+        Minimal EEE result record.
+    """
+    return {
+        "model_info": {"id": "test/model"},
+        "eval_library": {
+            "version": "1.0.0",
+            "additional_details": {
+                "dataset": dataset,
+                "few_shot": False,
+                "validation_split": False,
+            },
+        },
+        "retrieved_timestamp": "2026-01-01T00:00:00Z",
+    }
+
+
+def _use_test_publisher(
+    monkeypatch: pytest.MonkeyPatch, upload_error: Exception | None = None
+) -> None:
+    """Replace publication's remote adapters with in-memory implementations.
+
+    Args:
+        monkeypatch: Fixture for replacing dependencies.
+        upload_error (optional): Optional error raised when publishing.
+    """
+
+    def publisher_factory(
+        *, api: object, token: str, bucket: str
+    ) -> CanonicalPublisher:
+        del api
+        return CanonicalPublisher(
+            api=_TestBucketApi(upload_error=upload_error),
+            token=token,
+            bucket=bucket,
+            lock=_TestPublicationLock(bucket=bucket),
+        )
+
+    monkeypatch.setattr(bucket_sync, "CanonicalPublisher", publisher_factory)

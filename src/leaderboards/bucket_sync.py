@@ -21,6 +21,7 @@ from huggingface_hub.errors import HfHubHTTPError
 
 from .canonical_publication import BucketApi, CanonicalPublisher
 from .constants import HF_RESULTS_BUCKET, RESULTS_DIR
+from .contamination_canary import is_canary_record
 from .eee_validation import is_eee_record
 from .evaluation_common import resolve_hf_token
 from .records import strip_anchor
@@ -512,6 +513,10 @@ def upload_results_to_bucket(results_file: Path) -> None:
                 record = json.loads(line)
             except (json.JSONDecodeError, KeyError) as e:
                 logger.debug(f"Skipping invalid JSON: {e}")
+                continue
+
+            if isinstance(record, dict) and is_canary_record(record):
+                logger.debug("Skipping private canary result")
                 continue
 
             try:
