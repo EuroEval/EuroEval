@@ -10,6 +10,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import logging
 import os
 import secrets
 import tempfile
@@ -30,6 +31,8 @@ from .result_identity import (
 )
 
 DEFAULT_BUCKET = "EuroEval/results"
+_COMPARISON_BATCH_SIZE = 500
+logger = logging.getLogger(__name__)
 
 
 class BucketApi(t.Protocol):
@@ -463,9 +466,16 @@ class PublicationSession:
         """
         candidates = _validated_candidates(records=records)
         self.assert_owned()
+        logger.info(
+            "Comparing %s candidate result files with the current bucket...",
+            f"{len(candidates):,}",
+        )
+        current_objects = self._download_many(
+            paths=[path for path, _, _, _ in candidates]
+        )
         writes: list[tuple[str, bytes, bytes | None]] = []
         for path, identity, candidate, record in candidates:
-            current = self._download(path)
+            current = current_objects[path]
             if current is None:
                 writes.append((path, candidate, None))
                 continue
@@ -490,20 +500,93 @@ class PublicationSession:
                     raise PublicationError(f"Equal-ranked result conflict at {path}")
             writes.append((path, candidate, current))
 
+        logger.info(
+            "Remote comparison complete: %s writes required; archiving predecessors...",
+            f"{len(writes):,}",
+        )
         # Every predecessor is archived and verified before the first overwrite.
-        for path, _, previous in writes:
-            if previous is None:
-                continue
+        predecessors = [
+            (path, previous) for path, _, previous in writes if previous is not None
+        ]
+        for index, (path, previous) in enumerate(predecessors, start=1):
             archive = f"_history/{hashlib.sha256(previous).hexdigest()}.bin"
             archived = self._download(archive)
             if archived is None:
                 self.write_verified(path=archive, content=previous, expected=None)
             elif archived != previous:
                 raise PublicationError(f"History hash collision at {path}")
+            if index == len(predecessors) or index % 100 == 0:
+                logger.info(
+                    "Archived %s of %s predecessor result files.",
+                    f"{index:,}",
+                    f"{len(predecessors):,}",
+                )
 
-        for path, content, previous in writes:
+        for index, (path, content, previous) in enumerate(writes, start=1):
             self.write_verified(path=path, content=content, expected=previous)
+            if index == len(writes) or index % 100 == 0:
+                logger.info(
+                    "Published %s of %s canonical result files.",
+                    f"{index:,}",
+                    f"{len(writes):,}",
+                )
         return len(writes)
+
+    def _download_many(self, paths: list[str]) -> dict[str, bytes | None]:
+        """Download exact current bucket objects in bounded batches.
+
+        Args:
+            paths:
+                Bucket-relative object paths to download.
+
+        Returns:
+            Current bytes for every requested path; absent objects map to None.
+
+        Raises:
+            FileNotFoundError:
+                If the batch reports missing objects after writing any local files.
+        """
+        objects: dict[str, bytes | None] = {}
+        if not paths:
+            return objects
+
+        with tempfile.TemporaryDirectory(prefix="euroeval-publish-") as directory:
+            root = Path(directory)
+            for start in range(0, len(paths), _COMPARISON_BATCH_SIZE):
+                batch = paths[start : start + _COMPARISON_BATCH_SIZE]
+                destinations = {
+                    path: root / str(start + offset)
+                    for offset, path in enumerate(batch)
+                }
+                try:
+                    self.publisher.api.download_bucket_files(
+                        bucket_id=self.bucket,
+                        files=[(path, destinations[path]) for path in batch],
+                        raise_on_missing_files=False,
+                        token=self.publisher.token,
+                    )
+                except FileNotFoundError:
+                    if any(
+                        destination.exists() for destination in destinations.values()
+                    ):
+                        raise
+                    objects.update(dict.fromkeys(batch))
+                else:
+                    objects.update(
+                        {
+                            path: destination.read_bytes()
+                            if destination.exists()
+                            else None
+                            for path, destination in destinations.items()
+                        }
+                    )
+                compared = min(start + len(batch), len(paths))
+                logger.info(
+                    "Compared %s of %s remote result files.",
+                    f"{compared:,}",
+                    f"{len(paths):,}",
+                )
+        return objects
 
     def write_verified(self, path: str, content: bytes, expected: bytes | None) -> None:
         """Write only if the actual current object equals expected, then verify.
