@@ -43,9 +43,11 @@ class MemoryApi:
     def __init__(self) -> None:
         """Initialise an empty object store."""
         self.objects: dict[str, bytes] = {}
+        self.upload_calls = 0
         self.fail_upload = False
         self.interrupt_after_write = False
         self.fail_name: str | None = None
+        self.fail_download_batch: int | None = None
         self.mutate_on_download: dict[str, bytes] = {}
         self.download_batches: list[list[str]] = []
 
@@ -65,6 +67,7 @@ class MemoryApi:
                 If the adapter simulates cancellation after mutation.
         """
         del bucket_id, token
+        self.upload_calls += 1
         if self.fail_upload:
             raise OSError("upload failed")
         for local, name in add or []:
@@ -84,9 +87,16 @@ class MemoryApi:
         raise_on_missing_files: bool,
         token: str,
     ) -> None:
-        """Download selected objects into temporary paths."""
+        """Download selected objects into temporary paths.
+
+        Raises:
+            FileNotFoundError:
+                If the adapter is configured to fail a selected batch.
+        """
         del bucket_id, raise_on_missing_files, token
         self.download_batches.append([name for name, _ in files])
+        if len(self.download_batches) == self.fail_download_batch:
+            raise FileNotFoundError("remote comparison failed")
         for name, destination in files:
             if name in self.mutate_on_download:
                 self.objects[name] = self.mutate_on_download.pop(name)
@@ -475,6 +485,31 @@ def test_publish_batches_remote_comparison_reads(
     assert len(api.download_batches) == 3
     assert [len(batch) for batch in api.download_batches] == [500, 500, 1]
     assert all(len(batch) <= 500 for batch in api.download_batches)
+
+
+@pytest.mark.parametrize(("fail_batch", "record_count"), [(1, 1), (2, 501)])
+def test_remote_comparison_failure_aborts_before_any_upload(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, fail_batch: int, record_count: int
+) -> None:
+    """A failed batch comparison never treats unknown records as absent."""
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    publisher, api, _ = _publisher(tmp_path)
+    api.fail_download_batch = fail_batch
+    records = []
+    for index in range(record_count):
+        record = json.loads(_record())
+        if record_count > 1:
+            record["model_info"]["id"] = f"org/model-{index}"
+            record["eval_library"]["additional_details"]["dataset"] = f"task-{index}"
+        records.append(json.dumps(record).encode())
+
+    with pytest.raises(FileNotFoundError, match="remote comparison failed"):
+        with publisher.session() as session:
+            session.publish(records=records)
+
+    assert len(api.download_batches) == fail_batch
+    assert api.upload_calls == 0
+    assert api.objects == {}
 
 
 def test_stale_candidate_cannot_replace_newer_current_record(
