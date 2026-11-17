@@ -856,21 +856,21 @@ const starPath = (cx: number, cy: number, r: number): string => {
 };
 
 const hovered = ref<Point | null>(null);
-const pinnedIds = ref<Set<string>>(new Set());
+const pinnedPositions = ref(new Map<string, { left: string; top: string }>());
 const pinnedPoints = computed(() =>
-  visiblePoints.value.filter((point) => pinnedIds.value.has(point.id)),
+  visiblePoints.value.filter((point) => pinnedPositions.value.has(point.id)),
 );
 watch(
   () => props.xAxis,
   () => {
-    pinnedIds.value = new Set();
+    pinnedPositions.value = new Map();
     hovered.value = null;
   },
 );
 watch(
   () => props.table,
   () => {
-    pinnedIds.value = new Set();
+    pinnedPositions.value = new Map();
     hovered.value = null;
   },
 );
@@ -878,81 +878,18 @@ watch(
   () => visiblePoints.value.map((point) => point.id),
   (ids) => {
     const visibleIds = new Set(ids);
-    pinnedIds.value = new Set(
-      [...pinnedIds.value].filter((id) => visibleIds.has(id)),
+    pinnedPositions.value = new Map(
+      [...pinnedPositions.value].filter(([id]) => visibleIds.has(id)),
     );
     if (hovered.value && !visibleIds.has(hovered.value.id)) hovered.value = null;
   },
 );
-const tooltipElements = new Map<string, HTMLElement>();
-const tooltipSizes = ref(new Map<string, { width: number; height: number }>());
-const layoutRevision = ref(0);
-let tooltipObserver: ResizeObserver | null = null;
-const wrapElement = ref<HTMLElement | null>(null);
-const svgElement = ref<SVGSVGElement | null>(null);
-
-const setTooltipElement = (id: string, element: Element | null) => {
-  const previous = tooltipElements.get(id);
-  if (previous === element || (!previous && !element)) return;
-  if (previous) tooltipObserver?.unobserve(previous);
-  if (!(element instanceof HTMLElement)) {
-    tooltipElements.delete(id);
-    const sizes = new Map(tooltipSizes.value);
-    sizes.delete(id);
-    tooltipSizes.value = sizes;
-    return;
-  }
-  tooltipElements.set(id, element);
-  tooltipObserver?.observe(element);
-  const sizes = new Map(tooltipSizes.value);
-  sizes.set(id, { width: element.offsetWidth, height: element.offsetHeight });
-  tooltipSizes.value = sizes;
-};
-
-const pinnedStyle = (point: Point, index: number) => {
-  void layoutRevision.value;
-  const wrap = wrapElement.value;
-  const svg = svgElement.value;
-  if (!wrap || !svg) return { left: "0px", top: "0px" };
-  const wrapRect = wrap.getBoundingClientRect();
-  const svgRect = svg.getBoundingClientRect();
-  const size = tooltipSizes.value.get(point.id) ?? { width: 280, height: 160 };
-  const originX = wrapRect.left + wrap.clientLeft;
-  const originY = wrapRect.top + wrap.clientTop;
-  const leftBound = Math.max(originX, 0);
-  const topBound = Math.max(originY, 0);
-  const rightBound = Math.min(
-    originX + wrap.clientWidth,
-    window.innerWidth,
-  );
-  const bottomBound = Math.min(
-    originY + wrap.clientHeight,
-    window.innerHeight,
-  );
-  const availableWidth = Math.max(1, rightBound - leftBound);
-  const availableHeight = Math.max(1, bottomBound - topBound);
-  const anchorX = svgRect.left + (xScale(point.x) / width) * svgRect.width;
-  const anchorY = svgRect.top + (yScale(point.y) / height) * svgRect.height;
-  const cardWidth = Math.min(size.width, availableWidth);
-  const cardHeight = Math.min(size.height, availableHeight);
-  const stagger = (index % 5) * 14;
-  const desiredX = anchorX + 12 + stagger;
-  const desiredY = anchorY - cardHeight - 12 - stagger;
-  const x = clamp(desiredX, leftBound, rightBound - cardWidth);
-  const y = clamp(desiredY, topBound, bottomBound - cardHeight);
-  return {
-    left: `${x - originX}px`,
-    top: `${y - originY}px`,
-    maxWidth: `${availableWidth}px`,
-    maxHeight: `${availableHeight}px`,
-  };
-};
-const isPinned = (point: Point) => pinnedIds.value.has(point.id);
+const isPinned = (point: Point) => pinnedPositions.value.has(point.id);
 const tooltipPoints = computed(() => [
-  ...pinnedPoints.value.map((point, index) => ({
+  ...pinnedPoints.value.map((point) => ({
     point,
     pinned: true,
-    style: pinnedStyle(point, index),
+    style: pinnedPositions.value.get(point.id),
   })),
   ...(hovered.value && !isPinned(hovered.value)
     ? [{ point: hovered.value, pinned: false, style: tooltipStyle.value }]
@@ -971,40 +908,16 @@ let coarseMq: MediaQueryList | null = null;
 const onCoarseChange = (e: MediaQueryListEvent) => {
   isCoarsePointer.value = e.matches;
 };
-const onTooltipViewportChange = () => {
-  layoutRevision.value++;
-};
-
 onMounted(() => {
   if (typeof window !== "undefined" && window.matchMedia) {
     coarseMq = window.matchMedia("(pointer: coarse)");
     isCoarsePointer.value = coarseMq.matches;
     coarseMq.addEventListener?.("change", onCoarseChange);
   }
-  if (typeof ResizeObserver !== "undefined") {
-    tooltipObserver = new ResizeObserver(() => {
-      layoutRevision.value++;
-      const sizes = new Map(tooltipSizes.value);
-      for (const [id, element] of tooltipElements) {
-        sizes.set(id, { width: element.offsetWidth, height: element.offsetHeight });
-      }
-      tooltipSizes.value = sizes;
-    });
-    if (wrapElement.value) tooltipObserver.observe(wrapElement.value);
-    if (svgElement.value) tooltipObserver.observe(svgElement.value);
-    for (const element of tooltipElements.values()) {
-      tooltipObserver.observe(element);
-    }
-  }
-  window.addEventListener("resize", onTooltipViewportChange);
-  window.addEventListener("scroll", onTooltipViewportChange, true);
 });
 
 onBeforeUnmount(() => {
   coarseMq?.removeEventListener?.("change", onCoarseChange);
-  window.removeEventListener("resize", onTooltipViewportChange);
-  window.removeEventListener("scroll", onTooltipViewportChange, true);
-  tooltipObserver?.disconnect();
 });
 
 const TOOLTIP_W = 280; // approximate, kept in sync with .tooltip max-width
@@ -1039,17 +952,20 @@ const onLeave = () => {
   hovered.value = null;
 };
 
-const onPointClick = (p: Point) => {
+const onPointClick = (p: Point, e: MouseEvent) => {
   if (suppressNextClick) return;
-  const next = new Set(pinnedIds.value);
+  const next = new Map(pinnedPositions.value);
   if (next.has(p.id)) {
     next.delete(p.id);
-    pinnedIds.value = next;
+    pinnedPositions.value = next;
     if (hovered.value?.id === p.id) hovered.value = null;
     return;
   }
-  next.add(p.id);
-  pinnedIds.value = next;
+  if (hovered.value?.id !== p.id) {
+    positionFromEvent(e, TOOLTIP_W, TOOLTIP_H);
+  }
+  next.set(p.id, { ...tooltipStyle.value });
+  pinnedPositions.value = next;
   hovered.value = null;
 };
 
@@ -1159,11 +1075,10 @@ const tooltipStyle = computed(() => {
       available yet.
     </div>
 
-    <div v-else ref="wrapElement" class="scatter-wrap">
+    <div v-else class="scatter-wrap">
       <svg
         :viewBox="`0 0 ${width} ${height}`"
         preserveAspectRatio="xMidYMid meet"
-        ref="svgElement"
         class="scatter-svg"
         role="img"
         :aria-label="chartAriaLabel"
@@ -1295,7 +1210,7 @@ const tooltipStyle = computed(() => {
               }"
               @mousemove="onMove($event, p)"
               @mouseleave="onLeave"
-              @click.stop="onPointClick(p)"
+              @click.stop="onPointClick(p, $event)"
             />
             <circle
               v-else
@@ -1312,7 +1227,7 @@ const tooltipStyle = computed(() => {
               }"
               @mousemove="onMove($event, p)"
               @mouseleave="onLeave"
-              @click.stop="onPointClick(p)"
+              @click.stop="onPointClick(p, $event)"
             />
           </template>
         </g>
@@ -1322,9 +1237,6 @@ const tooltipStyle = computed(() => {
         v-for="card in tooltipPoints"
         :key="card.point.id"
         class="tooltip"
-        :ref="
-          (element) => setTooltipElement(card.point.id, element as Element | null)
-        "
         :class="{ pinned: card.pinned }"
         :style="card.style"
         :aria-label="card.pinned ? `${card.point.label} details` : undefined"
@@ -1336,7 +1248,7 @@ const tooltipStyle = computed(() => {
           type="button"
           class="tooltip-close"
           :aria-label="`Unpin ${card.point.label}`"
-          @click="onPointClick(card.point)"
+          @click="onPointClick(card.point, $event)"
         >
           ×
         </button>
@@ -1645,7 +1557,9 @@ const tooltipStyle = computed(() => {
 }
 
 .tooltip-close {
-  float: right;
+  position: absolute;
+  top: 0.35rem;
+  right: 0.45rem;
   border: 0;
   padding: 0 0.2rem;
   background: transparent;
@@ -1662,8 +1576,8 @@ const tooltipStyle = computed(() => {
   outline-offset: 2px;
 }
 
-.tooltip.pinned a {
-  color: inherit;
+.tooltip a {
+  color: var(--color-link);
 }
 
 .point.point-pinned {
