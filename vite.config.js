@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, searchForWorkspaceRoot } from "vite";
 import vue from "@vitejs/plugin-vue";
 import fs from "fs";
 import path from "path";
@@ -15,6 +15,11 @@ function readPackageVersion() {
   return match[1].replace(/\.dev\d*$/, "");
 }
 
+const csvDirectory = path.resolve(__dirname, "src/frontend/csv");
+const resolvedCsvDirectory = fs.existsSync(csvDirectory)
+  ? fs.realpathSync(csvDirectory)
+  : csvDirectory;
+
 export default defineConfig({
   plugins: [vue(), apiReference(), seoFiles()],
   resolve: {
@@ -26,6 +31,9 @@ export default defineConfig({
     __PACKAGE_VERSION__: JSON.stringify(readPackageVersion()),
   },
   server: {
+    fs: {
+      allow: [searchForWorkspaceRoot(process.cwd()), resolvedCsvDirectory],
+    },
     proxy: {
       "/api": {
         target:
