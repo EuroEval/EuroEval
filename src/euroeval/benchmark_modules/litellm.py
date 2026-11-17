@@ -334,6 +334,13 @@ class LiteLLMModel(BenchmarkModule):
     high_priority = False
     allowed_params: dict[re.Pattern[str], list[str]] = {
         # OpenAI models
+        re.compile(r"(openai/)?gpt-6\.2-(sol|astra)"): [
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+        ],
         re.compile(r"(openai/)?gpt-5.*"): [
             "none",
             "minimal",
