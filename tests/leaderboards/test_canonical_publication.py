@@ -40,18 +40,12 @@ def test_bulk_metadata_cannot_seed_false_receipts(tmp_path: Path, mode: str) -> 
         api.objects[path] = raw
     api.metadata_mode = mode
     publisher = bulk_publisher(tmp_path=tmp_path, api=api)
-    if mode == "malformed":
-        with pytest.raises(PublicationError, match="fingerprint"):
-            with publisher.session() as session:
-                session.publish(records=records)
-    else:
-        with publisher.session() as session:
-            assert session.publish(records=records) == 0
-        with sqlite3.connect(publisher.checkpoint_path) as connection:
-            assert connection.execute("SELECT COUNT(*) FROM receipts").fetchone() == (
-                0,
-            )
+    with publisher.session() as session:
+        assert session.publish(records=records) == 0
+    with sqlite3.connect(publisher.checkpoint_path) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM receipts").fetchone() == (0,)
     assert api.upload_calls == 0
+    assert api.downloaded_bytes > 0
 
 
 def bulk_records(count: int, version: str = "1.0.0") -> list[bytes]:
@@ -100,30 +94,23 @@ def test_bulk_precondition_mismatch_never_overwrites(tmp_path: Path) -> None:
     api = BulkApi(lock=CountingLock())
     records = bulk_records(count=501)
     path = identity_to_path(identity_from_eee_record(json.loads(records[0]))).as_posix()
-    calls = 0
-    download = api.download_bucket_files
+    metadata_calls = 0
+    metadata = api.get_bucket_paths_info
 
-    def race_download(
-        bucket_id: str,
-        files: list[tuple[str, Path]],
-        *,
-        raise_on_missing_files: bool,
-        token: str,
-    ) -> None:
-        """Change a predecessor just before the bulk precondition read."""
-        nonlocal calls
-        calls += 1
-        if calls == 3:
+    def race_metadata(bucket_id: str, paths: list[str], *, token: str) -> list[object]:
+        """Change a predecessor before the upload precondition lookup.
+
+        Returns:
+            The fresh metadata response after the mutation.
+        """
+        nonlocal metadata_calls
+        metadata_calls += 1
+        if metadata_calls == 3:
             api.objects[path] = _record(version="9.0.0")
-        download(
-            bucket_id=bucket_id,
-            files=files,
-            raise_on_missing_files=raise_on_missing_files,
-            token=token,
-        )
+        return metadata(bucket_id=bucket_id, paths=paths, token=token)
 
     publisher = bulk_publisher(tmp_path=tmp_path, api=api)
-    with patch.object(api, "download_bucket_files", side_effect=race_download):
+    with patch.object(api, "get_bucket_paths_info", side_effect=race_metadata):
         with pytest.raises(PublicationError, match="Concurrent change"):
             with publisher.session() as session:
                 session.publish(records=records)
@@ -142,10 +129,12 @@ def test_bulk_publication_request_budget(tmp_path: Path, count: int) -> None:
         assert session.publish(records=records) == count
     batches = (count + 499) // 500
     assert api.upload_calls == batches
-    assert len(api.events) == 5 * batches
+    assert len(api.events) == 4 * batches
     assert lock.calls == 3 + 2 * batches
     assert max(len(paths) for _, paths in api.events) <= 500
     assert len(api.objects) == count
+    assert api.downloaded_bytes == 0
+    assert api.downloaded_files == 0
     assert (len(api.events) + lock.calls) * 2 < 15 * 60
     with sqlite3.connect(publisher.checkpoint_path) as connection:
         assert connection.execute("SELECT COUNT(*) FROM receipts").fetchone() == (
@@ -189,7 +178,9 @@ def test_bulk_sleep_adapter_comparison(
     serial_seconds = time.perf_counter() - started
     serial_requests = len(serial_api.events) + serial_lock.calls
     assert serial_requests == 4 * count + 2
-    assert bulk_requests == 7 * ((count + 499) // 500) + 3
+    assert bulk_requests == 6 * ((count + 499) // 500) + 3
+    assert api.downloaded_bytes == 0
+    assert api.downloaded_files == 0
     assert bulk_requests * 2 < 900
     caplog.set_level(logging.INFO)
     logging.getLogger(__name__).info(
@@ -343,6 +334,8 @@ class BulkApi(MemoryApi):
         self.fail_batch: int | None = None
         self.failure = "partial"
         self.metadata_mode = "fresh"
+        self.downloaded_bytes = 0
+        self.downloaded_files = 0
 
     def batch_bucket_files(
         self,
@@ -403,6 +396,10 @@ class BulkApi(MemoryApi):
             token: Test credential.
         """
         self.events.append(("download", [path for path, _ in files]))
+        self.downloaded_files += sum(path in self.objects for path, _ in files)
+        self.downloaded_bytes += sum(
+            len(self.objects[path]) for path, _ in files if path in self.objects
+        )
         time.sleep(self.delay)
         super().download_bucket_files(
             bucket_id=bucket_id,
@@ -768,9 +765,13 @@ def test_existing_history_is_verified_and_not_uploaded_again(tmp_path: Path) -> 
     assert api.upload_calls == 0
     assert api.objects[path] == original
     api.objects[history] = original
+    api.events.clear()
     with publisher.session() as session:
         assert session.publish(records=[_record(version="2.0.0")]) == 1
     assert api.upload_calls == 1
+    assert not any(
+        operation == "download" and history in paths for operation, paths in api.events
+    )
 
 
 def test_failed_archive_retains_lock_before_canonical_overwrite(
@@ -1012,10 +1013,10 @@ def test_lock_retries_lost_acquire_response_with_same_owner(
 
 
 @pytest.mark.parametrize("mode", ["duplicate", "unexpected-path"])
-def test_malformed_metadata_batch_aborts_before_mutation(
+def test_malformed_metadata_batch_falls_back_to_exact_bodies(
     tmp_path: Path, mode: str
 ) -> None:
-    """Duplicate or unsolicited metadata never authorises mutation or receipts."""
+    """Malformed metadata uses exact body checks rather than authorising writes."""
     api = BulkApi(lock=CountingLock())
     records = bulk_records(count=501)
     path = identity_to_path(identity_from_eee_record(json.loads(records[0]))).as_posix()
@@ -1023,11 +1024,11 @@ def test_malformed_metadata_batch_aborts_before_mutation(
     if mode == "unexpected-path":
         entries = [SimpleNamespace(path="unknown", xet_hash="fingerprint")]
     with patch.object(api, "get_bucket_paths_info", return_value=entries):
-        with pytest.raises(PublicationError, match="metadata"):
-            with bulk_publisher(tmp_path=tmp_path, api=api).session() as session:
-                session.publish(records=records)
-    assert api.objects == {}
-    assert api.upload_calls == 0
+        with bulk_publisher(tmp_path=tmp_path, api=api).session() as session:
+            assert session.publish(records=records) == len(records)
+    assert len(api.objects) == len(records)
+    assert api.upload_calls == 2
+    assert api.downloaded_bytes > 0
 
 
 def test_metadata_source_race_does_not_cache_false_receipt(
@@ -1144,14 +1145,14 @@ def test_mixed_batches_archive_every_predecessor_before_canonical_upload(
     assert histories <= api.objects.keys()
     verified: dict[str, int] = {}
     for operation, paths in api.events:
-        if operation == "download":
+        if operation == "metadata":
             for path in paths:
                 if path in histories:
                     verified[path] = verified.get(path, 0) + 1
         if operation == "upload" and any(
             not path.startswith("_history/") for path in paths
         ):
-            assert histories == {path for path, count in verified.items() if count == 3}
+            assert histories == {path for path, count in verified.items() if count >= 2}
     assert api.upload_calls == 4
     api.events.clear()
     with publisher.session() as session:
@@ -1340,7 +1341,7 @@ def test_reconstructed_publisher_skips_verified_remote_bodies(tmp_path: Path) ->
     with publisher.session() as session:
         assert session.publish(records=[record]) == 1
     initial_reads = api.download_calls
-    assert initial_reads > 0
+    assert initial_reads == 0
 
     publisher = CanonicalPublisher(
         api=api, token="test-token", lock=lock, checkpoint_path=checkpoint
@@ -1349,7 +1350,7 @@ def test_reconstructed_publisher_skips_verified_remote_bodies(tmp_path: Path) ->
     with publisher.session() as session:
         assert session.publish(records=[formatted]) == 0
     assert api.download_calls == initial_reads
-    assert api.metadata_calls == 2
+    assert api.metadata_calls == 4
 
 
 @pytest.mark.parametrize(("fail_batch", "record_count"), [(1, 1), (2, 501)])

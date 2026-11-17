@@ -186,6 +186,49 @@ def _ranked_collector_record(
     }
 
 
+def test_collector_falls_back_to_exact_bytes_when_metadata_is_unavailable(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Exact predecessor bodies preserve safe metadata transforms on fallback."""
+    results_dir = tmp_path / "results"
+    record_path = results_dir / "foo_bar" / "task__test__zeroshot.json"
+    record_path.parent.mkdir(parents=True)
+    original = _ranked_collector_record()
+    predecessor = (json.dumps(original, indent=2) + "\n").encode()
+    record_path.write_bytes(predecessor)
+    incoming_record = json.loads(json.dumps(original))
+    incoming_record["metadata"] = {"open": True}
+    incoming_record["model_info"]["additional_details"] = {"open": True}
+    incoming = tmp_path / "incoming.jsonl"
+    incoming.write_text(json.dumps(incoming_record), encoding="utf-8")
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
+    _enable_real_collector_publisher(monkeypatch=monkeypatch, tmp_path=tmp_path)
+    FakeHfApi.objects["foo_bar/task__test__zeroshot.json"] = predecessor
+    attempts = 0
+
+    def metadata_failure(
+        self: FakeHfApi, bucket_id: str, paths: list[str], *, token: str
+    ) -> list[object]:
+        nonlocal attempts
+        del self, bucket_id, paths, token
+        attempts += 1
+        if attempts == 1:
+            raise RuntimeError("metadata unavailable")
+        return []
+
+    monkeypatch.setattr(
+        FakeHfApi, "get_bucket_paths_info", metadata_failure, raising=False
+    )
+
+    assert collect_evaluation_results.upload_results_to_hf(new_results_path=incoming)
+    transformed_local = record_path.read_bytes()
+    assert json.loads(transformed_local)["metadata"] == {"open": True}
+    canonical = FakeHfApi.objects["foo_bar/task__test__zeroshot.json"]
+    assert json.loads(canonical)["metadata"] == {"open": True}
+    history = f"_history/{hashlib.sha256(predecessor).hexdigest()}.bin"
+    assert FakeHfApi.objects[history] == predecessor
+
+
 def test_collector_prepare_failure_leaves_local_files_untouched(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -217,54 +260,6 @@ def test_collector_prepare_failure_leaves_local_files_untouched(
     assert record_path.read_bytes() == original_bytes
     assert stale.read_bytes() == b"keep\n"
     assert FakeHfApi.objects == {}
-
-
-def test_collector_retries_after_post_prepare_metadata_failure(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """Retry uses checkpointed original bytes after local write and metadata failure."""
-    results_dir = tmp_path / "results"
-    record_path = results_dir / "foo_bar" / "task__test__zeroshot.json"
-    record_path.parent.mkdir(parents=True)
-    original = _ranked_collector_record()
-    predecessor = (json.dumps(original, indent=2) + "\n").encode()
-    record_path.write_bytes(predecessor)
-    incoming_record = json.loads(json.dumps(original))
-    incoming_record["metadata"] = {"open": True}
-    incoming_record["model_info"]["additional_details"] = {"open": True}
-    incoming = tmp_path / "incoming.jsonl"
-    incoming.write_text(json.dumps(incoming_record), encoding="utf-8")
-    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
-    _enable_real_collector_publisher(monkeypatch=monkeypatch, tmp_path=tmp_path)
-    FakeHfApi.objects["foo_bar/task__test__zeroshot.json"] = predecessor
-    attempts = 0
-
-    def metadata_failure(
-        self: FakeHfApi, bucket_id: str, paths: list[str], *, token: str
-    ) -> list[object]:
-        nonlocal attempts
-        del self, bucket_id, paths, token
-        attempts += 1
-        if attempts == 1:
-            raise RuntimeError("metadata unavailable")
-        return []
-
-    monkeypatch.setattr(
-        FakeHfApi, "get_bucket_paths_info", metadata_failure, raising=False
-    )
-
-    assert not collect_evaluation_results.upload_results_to_hf(
-        new_results_path=incoming
-    )
-    transformed_local = record_path.read_bytes()
-    assert json.loads(transformed_local)["metadata"] == {"open": True}
-    assert FakeHfApi.objects["foo_bar/task__test__zeroshot.json"] == predecessor
-
-    assert collect_evaluation_results.upload_results_to_hf(new_results_path=incoming)
-    canonical = FakeHfApi.objects["foo_bar/task__test__zeroshot.json"]
-    assert json.loads(canonical)["metadata"] == {"open": True}
-    history = f"_history/{hashlib.sha256(predecessor).hexdigest()}.bin"
-    assert FakeHfApi.objects[history] == predecessor
 
 
 def test_initial_yes_does_not_approve_without_item_confirmation(

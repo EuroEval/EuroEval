@@ -693,7 +693,9 @@ class PublicationSession:
         body_comparison_paths = [
             path
             for path, _, _, _ in candidates
-            if path not in trusted and path not in source_proven
+            if path not in trusted
+            and path not in source_proven
+            and (remote_fingerprints is None or path in remote_fingerprints)
         ]
         logger.info(
             "Fresh metadata verified %s candidate files; comparing bodies for "
@@ -703,6 +705,14 @@ class PublicationSession:
             f"{len(candidates):,}",
         )
         current_objects = self._download_many(paths=body_comparison_paths)
+        if remote_fingerprints is not None:
+            current_objects.update(
+                {
+                    path: None
+                    for path, _, _, _ in candidates
+                    if path not in remote_fingerprints
+                }
+            )
         current_objects.update(source_proven)
         writes, verified_receipts = self._reconcile_candidates(
             candidates=candidates,
@@ -728,7 +738,33 @@ class PublicationSession:
             f"_history/{hashlib.sha256(previous).hexdigest()}.bin": previous
             for _, previous in predecessors
         }
-        archived = self._download_many(paths=list(archives))
+        archive_paths = list(archives)
+        archive_fingerprints = self._hash_bytes(
+            [(path, content) for path, content in archives.items()]
+        )
+        archived_metadata = (
+            self._bucket_fingerprints(paths=archive_paths) if archive_paths else {}
+        )
+        if archived_metadata is None:
+            archived = self._download_many(paths=archive_paths)
+        else:
+            uncertain_paths = [
+                path
+                for path in archive_paths
+                if path in archived_metadata
+                and archived_metadata[path] != archive_fingerprints[path]
+            ]
+            archived = self._download_many(paths=uncertain_paths)
+            archived.update(
+                {path: None for path in archive_paths if path not in archived_metadata}
+            )
+            archived.update(
+                {
+                    path: archives[path]
+                    for path in archive_paths
+                    if archived_metadata.get(path) == archive_fingerprints[path]
+                }
+            )
         missing_archives: list[tuple[str, bytes, bytes | None]] = []
         for path, content in archives.items():
             if archived[path] is None:
@@ -767,6 +803,44 @@ class PublicationSession:
             )
         self._clear_sources(identities={identity for _, identity, _, _ in candidates})
         return len(writes)
+
+    def _bucket_fingerprints(self, paths: list[str]) -> dict[str, str] | None:
+        """Fetch complete fresh metadata, falling back when it is unusable.
+
+        Args:
+            paths: Bucket-relative paths to query.
+
+        Returns:
+            Fingerprints for present paths, or None when metadata cannot be trusted.
+        """
+        method = getattr(self.publisher.api, "get_bucket_paths_info", None)
+        if method is None:
+            return None
+        requested_paths = set(paths)
+        try:
+            entries = [
+                entry
+                for start in range(0, len(paths), _COMPARISON_BATCH_SIZE)
+                for entry in method(
+                    self.bucket,
+                    paths[start : start + _COMPARISON_BATCH_SIZE],
+                    token=self.publisher.token,
+                )
+            ]
+            fingerprints: dict[str, str] = {}
+            for entry in entries:
+                path = getattr(entry, "path", None)
+                fingerprint = getattr(entry, "xet_hash", None)
+                if not isinstance(path, str) or path not in requested_paths:
+                    return None
+                if not isinstance(fingerprint, str) or not fingerprint:
+                    return None
+                if path in fingerprints:
+                    return None
+                fingerprints[path] = fingerprint
+            return fingerprints
+        except Exception:
+            return None
 
     def _cached_receipts(self) -> dict[str, tuple[str, str]]:
         """Load successful semantic publication receipts.
@@ -840,6 +914,38 @@ class PublicationSession:
                     f"{len(paths):,}",
                 )
         return objects
+
+    def _hash_bytes(self, contents: list[tuple[str, bytes]]) -> dict[str, str]:
+        """Hash arbitrary object bytes in bounded bulk Xet calls.
+
+        Args:
+            contents: Labels and exact object bytes to hash.
+
+        Returns:
+            Xet fingerprints keyed by label.
+
+        Raises:
+            PublicationError:
+                If Xet returns an incomplete fingerprint batch.
+        """
+        fingerprints: dict[str, str] = {}
+        with tempfile.TemporaryDirectory(prefix="euroeval-xet-hash-") as directory:
+            root = Path(directory)
+            for start in range(0, len(contents), _COMPARISON_BATCH_SIZE):
+                batch = contents[start : start + _COMPARISON_BATCH_SIZE]
+                paths = []
+                for index, (_, content) in enumerate(batch):
+                    local = root / f"{start + index}"
+                    local.write_bytes(content)
+                    paths.append(str(local))
+                infos = hf_xet.hash_files(paths)
+                if len(infos) != len(batch):
+                    raise PublicationError("Incomplete local Xet fingerprint results")
+                fingerprints.update(
+                    (label, info.hash)
+                    for (label, _), info in zip(batch, infos, strict=True)
+                )
+        return fingerprints
 
     def _local_fingerprints(
         self,
@@ -1033,49 +1139,15 @@ class PublicationSession:
     def _remote_fingerprints(
         self, candidates: list[tuple[str, ResultIdentity, bytes, dict[str, object]]]
     ) -> dict[str, str] | None:
-        """Fetch fresh remote Xet fingerprints when the adapter supports it.
+        """Fetch fresh remote Xet fingerprints for candidate paths.
 
         Args:
             candidates: Validated publication candidates.
 
         Returns:
-            Fingerprints for existing candidates, or None for legacy adapters.
-
-        Raises:
-            PublicationError:
-                If remote metadata cannot be completely and safely interpreted.
+            Fingerprints for existing candidates, or None when metadata is unusable.
         """
-        method = getattr(self.publisher.api, "get_bucket_paths_info", None)
-        if method is None:
-            return None
-        paths = [path for path, _, _, _ in candidates]
-        requested_paths = set(paths)
-        try:
-            entries = [
-                entry
-                for start in range(0, len(paths), _COMPARISON_BATCH_SIZE)
-                for entry in method(
-                    self.bucket,
-                    paths[start : start + _COMPARISON_BATCH_SIZE],
-                    token=self.publisher.token,
-                )
-            ]
-            fingerprints: dict[str, str] = {}
-            for entry in entries:
-                path = getattr(entry, "path", None)
-                fingerprint = getattr(entry, "xet_hash", None)
-                if not isinstance(path, str) or path not in requested_paths:
-                    raise PublicationError("Malformed bucket metadata response")
-                if not isinstance(fingerprint, str) or not fingerprint:
-                    raise PublicationError(f"Missing remote Xet fingerprint for {path}")
-                if path in fingerprints:
-                    raise PublicationError(f"Duplicate bucket metadata for {path}")
-                fingerprints[path] = fingerprint
-            return fingerprints
-        except PublicationError:
-            raise
-        except Exception as error:
-            raise PublicationError("Could not verify remote bucket metadata") from error
+        return self._bucket_fingerprints(paths=[path for path, _, _, _ in candidates])
 
     def _sources_with_pending(
         self, sources: t.Mapping[ResultIdentity, bytes] | None
@@ -1137,10 +1209,41 @@ class PublicationSession:
         for start in range(0, len(writes), _COMPARISON_BATCH_SIZE):
             batch = writes[start : start + _COMPARISON_BATCH_SIZE]
             paths = [path for path, _, _ in batch]
-            current = self._download_many(paths=paths)
-            for path, _, expected in batch:
-                if current[path] != expected:
-                    raise PublicationError(f"Concurrent change detected for {path}")
+            expected_fingerprints = self._hash_bytes(
+                [
+                    (f"expected:{path}", expected)
+                    for path, _, expected in batch
+                    if expected is not None
+                ]
+            )
+            intended_fingerprints = {
+                path: receipts[path][0] for path in paths if path in receipts
+            }
+            intended_fingerprints.update(
+                self._hash_bytes(
+                    [
+                        (path, content)
+                        for path, content, _ in batch
+                        if path not in intended_fingerprints
+                    ]
+                )
+            )
+            current_fingerprints = self._bucket_fingerprints(paths=paths)
+            exact_precondition = current_fingerprints is None
+            if current_fingerprints is not None:
+                for path, _, expected in batch:
+                    actual = current_fingerprints.get(path)
+                    expected_hash = expected_fingerprints.get(f"expected:{path}")
+                    if expected is None and actual is not None:
+                        raise PublicationError(f"Concurrent change detected for {path}")
+                    if expected is not None and actual != expected_hash:
+                        exact_precondition = True
+                        break
+            if exact_precondition:
+                current = self._download_many(paths=paths)
+                for path, _, expected in batch:
+                    if current[path] != expected:
+                        raise PublicationError(f"Concurrent change detected for {path}")
             with tempfile.TemporaryDirectory(prefix="euroeval-publish-") as directory:
                 uploads: list[tuple[Path, str]] = []
                 for index, (path, content, _) in enumerate(batch):
@@ -1154,16 +1257,28 @@ class PublicationSession:
                     self.publisher.api.batch_bucket_files(
                         bucket_id=self.bucket, add=uploads, token=self.publisher.token
                     )
-                    actual = self._download_many(paths=paths)
-                    for path, content, _ in batch:
-                        if actual[path] != content:
+                    verified = self._bucket_fingerprints(paths=paths)
+                    if verified is None:
+                        actual = self._download_many(paths=paths)
+                        if any(actual[path] != content for path, content, _ in batch):
                             raise PublicationError(
-                                f"Uploaded object verification failed for {path}"
+                                "Uploaded object verification failed"
+                            )
+                    elif any(
+                        verified.get(path) != intended_fingerprints[path]
+                        for path in paths
+                    ):
+                        actual = self._download_many(paths=paths)
+                        if any(actual[path] != content for path, content, _ in batch):
+                            raise PublicationError(
+                                "Uploaded object verification failed"
                             )
                     self.assert_owned()
                     self._store_receipts(
                         receipts={
-                            path: receipts[path] for path in paths if path in receipts
+                            path: (intended_fingerprints[path], receipts[path][1])
+                            for path in paths
+                            if path in receipts
                         }
                     )
                 except BaseException:
