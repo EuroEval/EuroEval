@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import sqlite3
 import stat
 import tempfile
+import time
 import typing as t
 import urllib.error
 import urllib.request
@@ -26,6 +28,181 @@ from leaderboards.canonical_publication import (
 from leaderboards.constants import TRAINED_FROM_SCRATCH_PATTERNS
 from leaderboards.model_metadata import add_missing_entries
 from leaderboards.result_identity import identity_from_eee_record, identity_to_path
+
+
+@pytest.mark.parametrize("mode", ["stale", "malformed"])
+def test_bulk_metadata_cannot_seed_false_receipts(tmp_path: Path, mode: str) -> None:
+    """Malformed metadata aborts; stale metadata forces exact body comparisons."""
+    api = BulkApi(lock=CountingLock())
+    records = bulk_records(count=501)
+    for raw in records:
+        path = identity_to_path(identity_from_eee_record(json.loads(raw))).as_posix()
+        api.objects[path] = raw
+    api.metadata_mode = mode
+    publisher = bulk_publisher(tmp_path=tmp_path, api=api)
+    if mode == "malformed":
+        with pytest.raises(PublicationError, match="fingerprint"):
+            with publisher.session() as session:
+                session.publish(records=records)
+    else:
+        with publisher.session() as session:
+            assert session.publish(records=records) == 0
+        with sqlite3.connect(publisher.checkpoint_path) as connection:
+            assert connection.execute("SELECT COUNT(*) FROM receipts").fetchone() == (
+                0,
+            )
+    assert api.upload_calls == 0
+
+
+def bulk_records(count: int, version: str = "1.0.0") -> list[bytes]:
+    """Build distinct result identities for bulk publication tests.
+
+    Args:
+        count: Number of records.
+        version (optional): Evaluation version.
+
+    Returns:
+        Encoded public result records.
+    """
+    records = []
+    for index in range(count):
+        record = json.loads(_record(version=version))
+        record["model_info"]["id"] = f"org/bulk-{index}"
+        records.append(json.dumps(record).encode())
+    return records
+
+
+def _record(*, version: str = "1.0.0", score: float = 0.5) -> bytes:
+    """Build a minimal public result record.
+
+    Returns:
+        JSON encoded result record.
+    """
+    return json.dumps(
+        {
+            "model_info": {"id": "org/model"},
+            "eval_library": {
+                "version": version,
+                "additional_details": {
+                    "dataset": "task",
+                    "few_shot": False,
+                    "validation_split": False,
+                },
+            },
+            "retrieved_timestamp": "2026-01-01T00:00:00Z",
+            "score": score,
+        }
+    ).encode()
+
+
+def test_bulk_precondition_mismatch_never_overwrites(tmp_path: Path) -> None:
+    """A body changed between initial comparison and upload cannot be overwritten."""
+    api = BulkApi(lock=CountingLock())
+    records = bulk_records(count=501)
+    path = identity_to_path(identity_from_eee_record(json.loads(records[0]))).as_posix()
+    calls = 0
+    download = api.download_bucket_files
+
+    def race_download(
+        bucket_id: str,
+        files: list[tuple[str, Path]],
+        *,
+        raise_on_missing_files: bool,
+        token: str,
+    ) -> None:
+        """Change a predecessor just before the bulk precondition read."""
+        nonlocal calls
+        calls += 1
+        if calls == 3:
+            api.objects[path] = _record(version="9.0.0")
+        download(
+            bucket_id=bucket_id,
+            files=files,
+            raise_on_missing_files=raise_on_missing_files,
+            token=token,
+        )
+
+    publisher = bulk_publisher(tmp_path=tmp_path, api=api)
+    with patch.object(api, "download_bucket_files", side_effect=race_download):
+        with pytest.raises(PublicationError, match="Concurrent change"):
+            with publisher.session() as session:
+                session.publish(records=records)
+    assert api.upload_calls == 0
+    assert api.lock.owner is None
+
+
+@pytest.mark.parametrize("count", [1, 499, 500, 501, 1000, 10_000])
+def test_bulk_publication_request_budget(tmp_path: Path, count: int) -> None:
+    """Remote work is O(batches), including ownership and exact verification."""
+    lock = CountingLock()
+    api = BulkApi(lock=lock)
+    publisher = bulk_publisher(tmp_path=tmp_path, api=api)
+    records = bulk_records(count=count)
+    with publisher.session() as session:
+        assert session.publish(records=records) == count
+    batches = (count + 499) // 500
+    assert api.upload_calls == batches
+    assert len(api.events) == 5 * batches
+    assert lock.calls == 3 + 2 * batches
+    assert max(len(paths) for _, paths in api.events) <= 500
+    assert len(api.objects) == count
+    assert (len(api.events) + lock.calls) * 2 < 15 * 60
+    with sqlite3.connect(publisher.checkpoint_path) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM receipts").fetchone() == (
+            count,
+        )
+    api.events.clear()
+    lock.calls = 0
+    # Reconstructed publisher must still fetch fresh metadata, but no bodies.
+    with bulk_publisher(tmp_path=tmp_path, api=api).session() as session:
+        assert session.publish(records=records) == 0
+    assert len(api.events) == batches
+    assert all(operation == "metadata" for operation, _ in api.events)
+    assert lock.calls == 3
+
+
+@pytest.mark.parametrize("count", [1, 10_000])
+def test_bulk_sleep_adapter_comparison(
+    tmp_path: Path, count: int, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Measure fakes with request latency; the model is not a wall-time guarantee."""
+    delay = 0.001
+    lock = CountingLock(delay=delay)
+    api = BulkApi(lock=lock, delay=delay)
+    records = bulk_records(count=count)
+    started = time.perf_counter()
+    with bulk_publisher(tmp_path=tmp_path, api=api).session() as session:
+        assert session.publish(records=records) == count
+    bulk_seconds = time.perf_counter() - started
+    bulk_requests = len(api.events) + lock.calls
+    serial_lock = CountingLock(delay=delay)
+    serial_api = BulkApi(lock=serial_lock, delay=delay)
+    started = time.perf_counter()
+    with bulk_publisher(
+        tmp_path=tmp_path / "serial", api=serial_api
+    ).session() as session:
+        for content in records:
+            path = identity_to_path(
+                identity_from_eee_record(json.loads(content))
+            ).as_posix()
+            session.write_verified(path=path, content=content, expected=None)
+    serial_seconds = time.perf_counter() - started
+    serial_requests = len(serial_api.events) + serial_lock.calls
+    assert serial_requests == 4 * count + 2
+    assert bulk_requests == 7 * ((count + 499) // 500) + 3
+    assert bulk_requests * 2 < 900
+    caplog.set_level(logging.INFO)
+    logging.getLogger(__name__).info(
+        "Sleep adapter %s records: bulk %s requests %.3fs; serial %s requests %.3fs; "
+        "2s/request model: bulk %ss, serial %ss (not a live timing guarantee)",
+        count,
+        bulk_requests,
+        bulk_seconds,
+        serial_requests,
+        serial_seconds,
+        bulk_requests * 2,
+        serial_requests * 2,
+    )
 
 
 def test_canary_is_rejected_before_any_write(
@@ -148,6 +325,184 @@ class MemoryLock:
         return "owned" if self.owner else "unlocked"
 
 
+class BulkApi(MemoryApi):
+    """Batch-aware adapter with deterministic failures and request accounting."""
+
+    def __init__(self, lock: MemoryLock, delay: float = 0) -> None:
+        """Initialise an isolated store and optional per-request sleep.
+
+        Args:
+            lock: Broker adapter to revoke during a simulated upload.
+            delay (optional): Seconds slept per remote request.
+        """
+        super().__init__()
+        self.lock = lock
+        self.delay = delay
+        self.events: list[tuple[str, list[str]]] = []
+        self.fingerprints: dict[bytes, str] = {}
+        self.fail_batch: int | None = None
+        self.failure = "partial"
+        self.metadata_mode = "fresh"
+
+    def batch_bucket_files(
+        self,
+        bucket_id: str,
+        add: list[tuple[Path, str]] | None = None,
+        delete: list[str] | None = None,
+        token: str = "",
+    ) -> None:
+        """Upload a batch with injectable nontransactional failure.
+
+        Args:
+            bucket_id: Requested bucket.
+            add (optional): Upload pairs.
+            delete (optional): Deletion paths.
+            token (optional): Test credential.
+
+        Raises:
+            OSError: If the batch fails partially or its response is lost.
+            KeyboardInterrupt: If interrupted after a partial mutation.
+        """
+        self.events.append(("upload", [path for _, path in add or []]))
+        time.sleep(self.delay)
+        failing = self.upload_calls + 1 == self.fail_batch
+        selected = add
+        if failing and self.failure in {"partial", "interrupt"}:
+            selected = (add or [])[:1]
+        super().batch_bucket_files(
+            bucket_id=bucket_id, add=selected, delete=delete, token=token
+        )
+        if not failing:
+            return
+        if self.failure == "interrupt":
+            raise KeyboardInterrupt
+        if self.failure in {"partial", "lost-response"}:
+            raise OSError("uncertain batch")
+        path = (add or [])[0][1]
+        if self.failure == "missing":
+            self.objects.pop(path)
+        elif self.failure == "corrupt":
+            self.objects[path] = b"corrupt output"
+        elif self.failure == "lock-loss":
+            self.lock.owner = "another-owner"
+
+    def download_bucket_files(
+        self,
+        bucket_id: str,
+        files: list[tuple[str, Path]],
+        *,
+        raise_on_missing_files: bool,
+        token: str,
+    ) -> None:
+        """Record and perform one bounded body request.
+
+        Args:
+            bucket_id: Requested bucket.
+            files: Object and destination pairs.
+            raise_on_missing_files: Missing file policy.
+            token: Test credential.
+        """
+        self.events.append(("download", [path for path, _ in files]))
+        time.sleep(self.delay)
+        super().download_bucket_files(
+            bucket_id=bucket_id,
+            files=files,
+            raise_on_missing_files=raise_on_missing_files,
+            token=token,
+        )
+
+    def get_bucket_paths_info(
+        self, bucket_id: str, paths: list[str], *, token: str
+    ) -> list[object]:
+        """Return bounded fresh metadata, optionally malformed or stale.
+
+        Args:
+            bucket_id: Requested bucket.
+            paths: Selected object paths.
+            token: Test credential.
+
+        Returns:
+            Fresh fingerprint entries for present objects.
+        """
+        del bucket_id, token
+        self.events.append(("metadata", paths.copy()))
+        time.sleep(self.delay)
+        contents = {self.objects[path] for path in paths if path in self.objects}
+        missing = contents - self.fingerprints.keys()
+        with tempfile.TemporaryDirectory() as directory:
+            files = []
+            for index, content in enumerate(missing):
+                local = Path(directory) / str(index)
+                local.write_bytes(content)
+                files.append((content, local))
+            if files:
+                infos = hf_xet.hash_files([str(local) for _, local in files])
+                self.fingerprints.update(
+                    (content, info.hash)
+                    for (content, _), info in zip(files, infos, strict=True)
+                )
+        if self.metadata_mode == "malformed":
+            return [SimpleNamespace(path=paths[0], xet_hash=None)]
+        return [
+            SimpleNamespace(
+                path=path,
+                xet_hash=(
+                    "stale"
+                    if self.metadata_mode == "stale"
+                    else self.fingerprints[self.objects[path]]
+                ),
+            )
+            for path in paths
+            if path in self.objects
+        ]
+
+
+class CountingLock(MemoryLock):
+    """Broker adapter counting remote operations and optional request latency."""
+
+    def __init__(self, delay: float = 0) -> None:
+        """Initialise counters.
+
+        Args:
+            delay (optional): Seconds slept per remote request.
+        """
+        super().__init__()
+        self.calls = 0
+        self.delay = delay
+
+    def request(self, action: str, owner: str) -> str:
+        """Count and perform an owned lock operation.
+
+        Args:
+            action: Broker operation.
+            owner: Session owner.
+
+        Returns:
+            Broker state.
+        """
+        self.calls += 1
+        time.sleep(self.delay)
+        return super().request(action=action, owner=owner)
+
+
+def bulk_publisher(tmp_path: Path, api: BulkApi) -> CanonicalPublisher:
+    """Construct a publisher with an isolated durable checkpoint.
+
+    Args:
+        tmp_path: Isolated test directory.
+        api: Remote adapter.
+
+    Returns:
+        Publisher using the adapter's broker lock.
+    """
+    return CanonicalPublisher(
+        api=api,
+        token="test-token",
+        lock=api.lock,
+        checkpoint_path=tmp_path / "publication.sqlite3",
+    )
+
+
 def _publisher(tmp_path: Path) -> tuple[CanonicalPublisher, MemoryApi, MemoryLock]:
     """Create an isolated publisher test fixture.
 
@@ -157,29 +512,6 @@ def _publisher(tmp_path: Path) -> tuple[CanonicalPublisher, MemoryApi, MemoryLoc
     api = MemoryApi()
     lock = MemoryLock()
     return CanonicalPublisher(api=api, token="test-token", lock=lock), api, lock
-
-
-def _record(*, version: str = "1.0.0", score: float = 0.5) -> bytes:
-    """Build a minimal public result record.
-
-    Returns:
-        JSON encoded result record.
-    """
-    return json.dumps(
-        {
-            "model_info": {"id": "org/model"},
-            "eval_library": {
-                "version": version,
-                "additional_details": {
-                    "dataset": "task",
-                    "few_shot": False,
-                    "validation_split": False,
-                },
-            },
-            "retrieved_timestamp": "2026-01-01T00:00:00Z",
-            "score": score,
-        }
-    ).encode()
 
 
 def test_checkpoint_filters_unrelated_sources_and_is_private(tmp_path: Path) -> None:
@@ -352,6 +684,18 @@ def test_cold_source_fingerprint_receipt_reuses_formatted_candidate(
     assert api.objects[path] == original
 
 
+def test_duplicate_candidates_archive_only_once(tmp_path: Path) -> None:
+    """Repeated identical candidates collapse to one archive and canonical write."""
+    api = BulkApi(lock=CountingLock())
+    original = _record()
+    path = identity_to_path(identity_from_eee_record(json.loads(original))).as_posix()
+    api.objects[path] = original
+    with bulk_publisher(tmp_path=tmp_path, api=api).session() as session:
+        assert session.publish(records=[_record(version="2.0.0")] * 1001) == 1
+    assert api.upload_calls == 2
+    assert len(api.objects) == 2
+
+
 def test_equal_rank_metadata_transform_cannot_change_evaluation_score(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -408,6 +752,25 @@ def test_equal_rank_numeric_enrichment_cannot_change_existing_value(
         session.publish(records=[original])
         with pytest.raises(PublicationError, match="Equal-ranked"):
             session.publish(records=[changed], sources={identity: original})
+
+
+def test_existing_history_is_verified_and_not_uploaded_again(tmp_path: Path) -> None:
+    """Content-addressed history is reused, but corrupt history blocks replacement."""
+    api = BulkApi(lock=CountingLock())
+    original = _record()
+    path = identity_to_path(identity_from_eee_record(json.loads(original))).as_posix()
+    history = f"_history/{hashlib.sha256(original).hexdigest()}.bin"
+    api.objects.update({path: original, history: b"corrupt"})
+    publisher = bulk_publisher(tmp_path=tmp_path, api=api)
+    with pytest.raises(PublicationError, match="History hash collision"):
+        with publisher.session() as session:
+            session.publish(records=[_record(version="2.0.0")])
+    assert api.upload_calls == 0
+    assert api.objects[path] == original
+    api.objects[history] = original
+    with publisher.session() as session:
+        assert session.publish(records=[_record(version="2.0.0")]) == 1
+    assert api.upload_calls == 1
 
 
 def test_failed_archive_retains_lock_before_canonical_overwrite(
@@ -484,6 +847,45 @@ def test_json_equal_formatting_change_is_a_noop(
     canonical = next(name for name in api.objects if name.endswith(".json"))
     assert api.objects[canonical] == original
     assert not any(name.startswith("_history/") for name in api.objects)
+
+
+def test_later_metadata_enrichment_only_reads_changed_records(tmp_path: Path) -> None:
+    """A later enrichment pass still publishes real changes without rereading peers."""
+    api = BulkApi(lock=CountingLock())
+    publisher = bulk_publisher(tmp_path=tmp_path, api=api)
+    originals = bulk_records(count=501)
+    with publisher.session() as session:
+        session.publish(records=originals)
+    enriched = []
+    for index, raw in enumerate(originals):
+        record = json.loads(raw)
+        if index < 5:
+            record["model_info"]["additional_details"] = {"open": True}
+        enriched.append(json.dumps(record, indent=2).encode())
+    sources = {identity_from_eee_record(json.loads(raw)): raw for raw in originals}
+    publisher.prepare(records=enriched, sources=sources)
+    api.events.clear()
+    with bulk_publisher(tmp_path=tmp_path, api=api).session() as session:
+        assert session.publish(records=enriched) == 5
+    unchanged = {
+        identity_to_path(identity).as_posix() for identity in list(sources)[5:]
+    }
+    assert all(
+        not unchanged.intersection(paths)
+        for operation, paths in api.events
+        if operation != "metadata"
+    )
+    histories = {
+        f"_history/{hashlib.sha256(raw).hexdigest()}.bin" for raw in originals[:5]
+    }
+    assert histories <= api.objects.keys()
+    for raw in enriched[:5]:
+        path = identity_to_path(identity_from_eee_record(json.loads(raw))).as_posix()
+        assert api.objects[path] == raw
+    api.events.clear()
+    with publisher.session() as session:
+        assert session.publish(records=enriched) == 0
+    assert all(operation == "metadata" for operation, _ in api.events)
 
 
 def test_linear_candidate_validation_and_warm_formatted_retry(
@@ -609,6 +1011,25 @@ def test_lock_retries_lost_acquire_response_with_same_owner(
     assert len(bodies) == 2 and bodies[0] == bodies[1]
 
 
+@pytest.mark.parametrize("mode", ["duplicate", "unexpected-path"])
+def test_malformed_metadata_batch_aborts_before_mutation(
+    tmp_path: Path, mode: str
+) -> None:
+    """Duplicate or unsolicited metadata never authorises mutation or receipts."""
+    api = BulkApi(lock=CountingLock())
+    records = bulk_records(count=501)
+    path = identity_to_path(identity_from_eee_record(json.loads(records[0]))).as_posix()
+    entries = [SimpleNamespace(path=path, xet_hash="fingerprint")] * 2
+    if mode == "unexpected-path":
+        entries = [SimpleNamespace(path="unknown", xet_hash="fingerprint")]
+    with patch.object(api, "get_bucket_paths_info", return_value=entries):
+        with pytest.raises(PublicationError, match="metadata"):
+            with bulk_publisher(tmp_path=tmp_path, api=api).session() as session:
+                session.publish(records=records)
+    assert api.objects == {}
+    assert api.upload_calls == 0
+
+
 def test_metadata_source_race_does_not_cache_false_receipt(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -668,6 +1089,74 @@ def test_missing_lock_configuration_fails_closed() -> None:
     """Publisher construction cannot silently fall back to a local lock."""
     with pytest.raises(ValueError, match="required"):
         CanonicalPublisher(api=MemoryApi(), token="token", lock=None)
+
+
+def test_missing_object_after_metadata_is_not_treated_as_new(tmp_path: Path) -> None:
+    """A missing predecessor body cannot lead to overwriting without its backup."""
+    api = BulkApi(lock=CountingLock())
+    original = _record()
+    path = identity_to_path(identity_from_eee_record(json.loads(original))).as_posix()
+    api.objects[path] = original
+    metadata = api.get_bucket_paths_info
+
+    def delete_after_metadata(
+        bucket_id: str, paths: list[str], *, token: str
+    ) -> list[object]:
+        """Simulate external deletion after metadata and before body download.
+
+        Args:
+            bucket_id: Requested bucket.
+            paths: Selected paths.
+            token: Test credential.
+
+        Returns:
+            Metadata observed just before deletion.
+        """
+        entries = metadata(bucket_id=bucket_id, paths=paths, token=token)
+        api.objects.pop(path)
+        return entries
+
+    with patch.object(api, "get_bucket_paths_info", side_effect=delete_after_metadata):
+        with pytest.raises(PublicationError, match="missing after metadata"):
+            with bulk_publisher(tmp_path=tmp_path, api=api).session() as session:
+                session.publish(records=[_record(version="2.0.0")])
+    assert api.upload_calls == 0
+    assert api.lock.owner is None
+
+
+def test_mixed_batches_archive_every_predecessor_before_canonical_upload(
+    tmp_path: Path,
+) -> None:
+    """Multiple archive batches finish verification before any canonical write."""
+    lock = CountingLock()
+    api = BulkApi(lock=lock)
+    originals = bulk_records(count=501)
+    for content in originals:
+        path = identity_to_path(
+            identity_from_eee_record(json.loads(content))
+        ).as_posix()
+        api.objects[path] = content
+    records = bulk_records(count=502, version="2.0.0")
+    publisher = bulk_publisher(tmp_path=tmp_path, api=api)
+    with publisher.session() as session:
+        assert session.publish(records=records) == 502
+    histories = {f"_history/{hashlib.sha256(raw).hexdigest()}.bin" for raw in originals}
+    assert histories <= api.objects.keys()
+    verified: dict[str, int] = {}
+    for operation, paths in api.events:
+        if operation == "download":
+            for path in paths:
+                if path in histories:
+                    verified[path] = verified.get(path, 0) + 1
+        if operation == "upload" and any(
+            not path.startswith("_history/") for path in paths
+        ):
+            assert histories == {path for path, count in verified.items() if count == 3}
+    assert api.upload_calls == 4
+    api.events.clear()
+    with publisher.session() as session:
+        assert session.publish(records=originals) == 0
+    assert not any(operation == "upload" for operation, _ in api.events)
 
 
 @pytest.mark.parametrize(
@@ -888,6 +1377,61 @@ def test_remote_comparison_failure_aborts_before_any_upload(
     assert api.objects == {}
 
 
+@pytest.mark.parametrize("count", [1, 10_000])
+def test_replacement_request_budget(tmp_path: Path, count: int) -> None:
+    """All-predecessor replacements also stay below the modelled request budget."""
+    lock = CountingLock()
+    api = BulkApi(lock=lock)
+    originals = bulk_records(count=count)
+    for raw in originals:
+        path = identity_to_path(identity_from_eee_record(json.loads(raw))).as_posix()
+        api.objects[path] = raw
+    with bulk_publisher(tmp_path=tmp_path, api=api).session() as session:
+        assert (
+            session.publish(records=bulk_records(count=count, version="2.0.0")) == count
+        )
+    batches = (count + 499) // 500
+    assert api.upload_calls == 2 * batches
+    assert len(api.events) == 9 * batches
+    assert lock.calls == 3 + 4 * batches
+    assert max(len(paths) for _, paths in api.events) <= 500
+    assert (len(api.events) + lock.calls) * 2 < 900
+
+
+@pytest.mark.parametrize("failure", ["missing", "corrupt", "partial", "interrupt"])
+def test_second_archive_batch_failure_blocks_all_canonical_writes(
+    tmp_path: Path, failure: str
+) -> None:
+    """No replacement starts while any predecessor backup remains unverified."""
+    api = BulkApi(lock=CountingLock())
+    originals = bulk_records(count=503)
+    original_objects = {
+        identity_to_path(identity_from_eee_record(json.loads(raw))).as_posix(): raw
+        for raw in originals
+    }
+    api.objects.update(original_objects)
+    api.fail_batch = 2
+    api.failure = failure
+    error = (
+        KeyboardInterrupt
+        if failure == "interrupt"
+        else (OSError if failure == "partial" else PublicationError)
+    )
+    publisher = bulk_publisher(tmp_path=tmp_path, api=api)
+    with pytest.raises(error):
+        with publisher.session() as session:
+            session.publish(records=bulk_records(count=503, version="2.0.0"))
+    assert all(api.objects[path] == raw for path, raw in original_objects.items())
+    assert all(
+        all(path.startswith("_history/") for path in paths)
+        for operation, paths in api.events
+        if operation == "upload"
+    )
+    assert api.lock.owner is not None
+    with sqlite3.connect(publisher.checkpoint_path) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM receipts").fetchone() == (0,)
+
+
 def test_stale_candidate_cannot_replace_newer_current_record(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -901,6 +1445,81 @@ def test_stale_candidate_cannot_replace_newer_current_record(
     with publisher.session() as session:
         assert session.publish(records=[_record(version="1.0.0")]) == 0
     assert api.objects[path] == newest
+
+
+@pytest.mark.parametrize(
+    "failure",
+    ["partial", "lost-response", "interrupt", "corrupt", "missing", "lock-loss"],
+)
+@pytest.mark.parametrize("replacements", [False, True])
+def test_uncertain_batch_preserves_receipts_evidence_and_converges(
+    tmp_path: Path, failure: str, replacements: bool
+) -> None:
+    """Verified earlier chunks survive; uncertain chunks retain lock and evidence."""
+    lock = CountingLock()
+    api = BulkApi(lock=lock)
+    originals = bulk_records(count=503)
+    sources = {identity_from_eee_record(json.loads(raw)): raw for raw in originals}
+    if replacements:
+        api.objects.update(
+            {
+                identity_to_path(identity).as_posix(): raw
+                for identity, raw in sources.items()
+            }
+        )
+    records = []
+    for raw in originals:
+        record = json.loads(raw)
+        record["metadata"] = {"open": True}
+        records.append(json.dumps(record).encode())
+    publisher = bulk_publisher(tmp_path=tmp_path, api=api)
+    publisher.prepare(records=records, sources=sources)
+    api.fail_batch = 4 if replacements else 2
+    api.failure = failure
+    exception = (
+        KeyboardInterrupt
+        if failure == "interrupt"
+        else (OSError if failure in {"partial", "lost-response"} else PublicationError)
+    )
+    with pytest.raises(exception):
+        with publisher.session() as session:
+            session.publish(records=records)
+    assert lock.owner is not None
+    with sqlite3.connect(publisher.checkpoint_path) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM receipts").fetchone() == (500,)
+        assert connection.execute("SELECT COUNT(*) FROM sources").fetchone() == (503,)
+    # Simulate explicit operator reconciliation/release, never automatic lock stealing.
+    lock.owner = None
+    api.fail_batch = None
+    if failure == "corrupt":
+        # Corruption must fail closed, not be silently accepted or overwritten.
+        with pytest.raises(PublicationError, match="Invalid JSON"):
+            with publisher.session() as session:
+                session.publish(records=records)
+        corrupt_path = next(
+            path
+            for path, content in api.objects.items()
+            if content == b"corrupt output"
+        )
+        api.objects.pop(corrupt_path)
+    api.events.clear()
+    with bulk_publisher(tmp_path=tmp_path, api=api).session() as session:
+        session.publish(records=records)
+    assert {
+        raw for path, raw in api.objects.items() if not path.startswith("_history/")
+    } == set(records)
+    if replacements:
+        assert all(
+            api.objects[f"_history/{hashlib.sha256(raw).hexdigest()}.bin"] == raw
+            for raw in originals
+        )
+    # The completed first chunk is receipt-proven, not downloaded or uploaded again.
+    assert all(
+        len(paths) <= 3 for operation, paths in api.events if operation != "metadata"
+    )
+    with sqlite3.connect(publisher.checkpoint_path) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM receipts").fetchone() == (503,)
+        assert connection.execute("SELECT COUNT(*) FROM sources").fetchone() == (0,)
 
 
 def test_upload_failure_poison_retains_lock(
