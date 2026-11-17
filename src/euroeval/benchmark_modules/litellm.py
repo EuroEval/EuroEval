@@ -120,6 +120,7 @@ VOCAB_SIZE_MAPPING = {
 MODEL_MAX_LENGTH_MAPPING = {
     # OpenAI models
     r"(openai/)?gpt-6-(astra|sol|luna)": 1_050_000,
+    r"(openai/)?gpt-6\.2-(sol|astra)": 1_050_000,
     r"(openai/)?gpt-6\.1-sol": 1_050_000,
     r"(openai/)?gpt-5\.6(-(?:sol|terra|luna))?": 1_050_000,
     r"(openai/)?gpt-5\.4-(mini|nano).*": 400_000,
@@ -233,6 +234,7 @@ MODEL_RELEASE_DATE_MAPPING = {
     r"(openai/)?gpt-5\.6(?:-(?:sol|terra|luna))?": "2026-07-09",
     r"(openai/)?gpt-6-astra": "2026-09-03",
     r"(openai/)?gpt-6-(?:sol|luna)": "2026-09-22",
+    r"(openai/)?gpt-6\.2-(?:sol|astra)": "2026-11-17",
     # Anthropic
     r"(anthropic/)?claude-3-opus": "2024-03-04",
     r"(anthropic/)?claude-3-sonnet": "2024-03-04",
@@ -289,6 +291,7 @@ MODEL_RELEASE_DATE_MAPPING = {
 }
 
 REASONING_MODELS = [
+    r"(openai/)?gpt-6\.2-(?:sol|astra)",
     r"(openai/)?gpt-5.4-.*",
     r"(openai/)?o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?",
     r"(gemini/)?gemini.*thinking.*",
@@ -331,6 +334,13 @@ class LiteLLMModel(BenchmarkModule):
     high_priority = False
     allowed_params: dict[re.Pattern[str], list[str]] = {
         # OpenAI models
+        re.compile(r"(openai/)?gpt-6\.2-(sol|astra)"): [
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+        ],
         re.compile(r"(openai/)?gpt-5.*"): [
             "none",
             "minimal",

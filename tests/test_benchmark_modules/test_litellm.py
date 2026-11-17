@@ -652,6 +652,8 @@ def test_api_context_length_override_takes_precedence(
     ("model_id", "expected"),
     [
         ("openai/gpt-6-astra", 1_050_000),
+        ("openai/gpt-6.2-astra", 1_050_000),
+        ("gpt-6.2-sol", 1_050_000),
         ("openai/gpt-6-sol", 1_050_000),
         ("openai/gpt-6-luna", 1_050_000),
         ("openai/gpt-6.1-sol", 1_050_000),
@@ -681,6 +683,8 @@ def test_api_context_length_override_takes_precedence(
         ("openai/gpt-5.6-nano", -1),
         ("openai/gpt-6-beta", -1),
         ("openai/gpt-6.1-astra", -1),
+        ("openai/gpt-6.2-beta", -1),
+        ("openai/gpt-6.2-sol-preview", -1),
         ("gemini/gemini-3.9-flash", -1),
         ("gemini/gemini-3.5-pro", -1),
         ("gemini/gemini-3.5-flash-preview", -1),
@@ -777,6 +781,9 @@ def test_deepseek_provider_prefix_is_preserved_for_custom_api(
         ("openai/gpt-5.6-luna", "2026-07-09"),
         ("openai/gpt-5.6", "2026-07-09"),
         ("openai/gpt-6-sol", "2026-09-22"),
+        ("openai/gpt-6.2-sol", "2026-11-17"),
+        ("gpt-6.2-astra", "2026-11-17"),
+        ("openai/gpt-6.2-beta", None),
         ("openai/gpt-6-luna", "2026-09-22"),
         ("typesafe/jev-1.13.0", "2026-09-15"),
         ("typesafe/jev-1.13.1", None),
@@ -1130,6 +1137,105 @@ def _make_response_format_unavailable_error() -> Exception:
         correctly.
     """
     return Exception(RESPONSE_FORMAT_UNAVAILABLE_MESSAGE)
+
+
+class TestGPT62Metadata:
+    """Tests public metadata and reasoning support for GPT-6.2 models."""
+
+    @pytest.mark.parametrize(
+        "model_id",
+        ["gpt-6.2-sol", "openai/gpt-6.2-sol", "gpt-6.2-astra", "openai/gpt-6.2-astra"],
+    )
+    @pytest.mark.parametrize("effort", [None, "low", "medium", "high", "xhigh", "max"])
+    def test_models_are_reasoning_models(
+        self,
+        model_id: str,
+        effort: str | None,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """Canonical prefixed and unprefixed IDs are recognised as reasoning models.
+
+        Args:
+            model_id:
+                The model identifier.
+            effort:
+                The optional reasoning effort suffix.
+            dataset_config:
+                The dataset configuration fixture.
+            benchmark_config:
+                The benchmark configuration fixture.
+        """
+        config = LiteLLMModel.get_model_config(
+            model_id=f"{model_id}#{effort}" if effort else model_id,
+            benchmark_config=benchmark_config,
+        )
+        with patch(
+            "euroeval.benchmark_modules.litellm.supports_reasoning", return_value=False
+        ):
+            model = LiteLLMModel(
+                model_config=config,
+                dataset_config=dataset_config,
+                benchmark_config=dataclasses.replace(
+                    benchmark_config, generative_type=None
+                ),
+                log_metadata=False,
+            )
+
+            assert model.generative_type == GenerativeType.REASONING
+        assert config.param == effort
+        assert config.release_date == "2026-11-17"
+        assert model.model_max_length == 1_050_000
+
+    def test_unrecognised_variant_is_not_reasoning(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """An unknown nearby GPT-6.2 ID does not inherit metadata."""
+        with patch(
+            "euroeval.benchmark_modules.litellm.supports_reasoning", return_value=False
+        ):
+            model = LiteLLMModel(
+                model_config=dataclasses.replace(
+                    model_config, model_id="openai/gpt-6.2-beta"
+                ),
+                dataset_config=dataset_config,
+                benchmark_config=dataclasses.replace(
+                    benchmark_config, generative_type=None
+                ),
+                log_metadata=False,
+            )
+
+            assert model.generative_type == GenerativeType.INSTRUCTION_TUNED
+
+    @pytest.mark.parametrize(
+        "model_id",
+        ["gpt-6.2-sol", "openai/gpt-6.2-sol", "gpt-6.2-astra", "openai/gpt-6.2-astra"],
+    )
+    @pytest.mark.parametrize("effort", ["none", "minimal"])
+    def test_unsupported_effort_is_rejected(
+        self,
+        model_id: str,
+        effort: str,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """Reject unsupported GPT-6.2 reasoning efforts through the constructor."""
+        config = LiteLLMModel.get_model_config(
+            model_id=f"{model_id}#{effort}", benchmark_config=benchmark_config
+        )
+
+        with pytest.raises(InvalidModel):
+            LiteLLMModel(
+                model_config=config,
+                dataset_config=dataset_config,
+                benchmark_config=dataclasses.replace(
+                    benchmark_config, generative_type=None
+                ),
+                log_metadata=False,
+            )
 
 
 class TestLiteLLMDeepSeekTransformation:
