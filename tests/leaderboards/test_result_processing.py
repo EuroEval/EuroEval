@@ -627,6 +627,66 @@ def test_process_results_keeps_canary_records_out_of_public_uploads() -> None:
     ]
 
 
+def test_process_results_returns_leaderboard_records_without_canary_exclusions() -> (
+    None
+):
+    """Return only processed records eligible for public leaderboards."""
+    records = [{"id": "kept"}, {"id": "excluded"}]
+    load = MagicMock(return_value=records)
+    load.cache_clear = MagicMock()
+    uploaded: list[list[dict[str, str]]] = []
+    with (
+        patch.object(result_processing, "load_raw_results", load),
+        patch.object(
+            result_processing,
+            "process_contamination_canaries",
+            return_value=(records, [], {"excluded"}, {"status": "scored"}),
+        ),
+        patch.object(Cache, "from_results_dir", return_value=Cache()),
+        patch.object(
+            result_processing,
+            "deduplicate_records",
+            side_effect=lambda records: records,
+        ),
+        patch.object(
+            result_processing, "fix_metadata", side_effect=lambda record: record
+        ),
+        patch.object(result_processing, "record_is_valid", return_value=True),
+        patch.object(
+            result_processing, "get_model_name", side_effect=lambda record: record["id"]
+        ),
+        patch.object(
+            result_processing,
+            "identity_from_eee_record",
+            side_effect=lambda record: (record["id"], "dataset", False, False),
+        ),
+        patch.object(
+            result_processing,
+            "add_missing_entries",
+            side_effect=lambda record, **kwargs: record,
+        ),
+        patch.object(
+            result_processing,
+            "_upload_per_model_files",
+            side_effect=lambda processed_records, **kwargs: uploaded.append(
+                processed_records
+            ),
+        ),
+    ):
+        processed = result_processing.process_results(
+            min_version="0.0.0",
+            min_number_of_model_records=0,
+            banned_versions=[],
+            banned_model_patterns=[],
+            api_model_patterns=[],
+            trained_from_scratch_patterns=[],
+            upload_to_bucket=True,
+        )
+
+    assert processed == [{"id": "kept"}]
+    assert uploaded[0] == records
+
+
 def test_sync_bucket_passes_hf_token(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

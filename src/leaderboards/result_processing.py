@@ -72,7 +72,7 @@ def process_results(
     api_model_patterns: list[re.Pattern],
     trained_from_scratch_patterns: list[re.Pattern],
     upload_to_bucket: bool = False,
-) -> None:
+) -> list[dict[str, t.Any]]:
     """Process EuroEval records from a JSONL file.
 
     Args:
@@ -92,6 +92,10 @@ def process_results(
         upload_to_bucket (optional):
             Whether to sync the processed per-model files to the Hugging Face
             results bucket. Defaults to False.
+
+    Returns:
+        Processed public records eligible for leaderboard generation. Canary-excluded
+        models are omitted, although their ordinary records remain in storage.
     """
     # Load raw results first so per-model files in RESULTS_DIR are synced.
     reset_leaderboard_result_filter()
@@ -165,6 +169,11 @@ def process_results(
     configure_leaderboard_result_filter(excluded_models=excluded_models)
     load_raw_results.cache_clear()
     logger.info("Cleared load_raw_results cache.")
+    return [
+        record
+        for record in processed_records
+        if identity_from_eee_record(record)[0] not in excluded_models
+    ]
 
 
 def _upload_per_model_files(

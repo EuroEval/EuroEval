@@ -32,10 +32,16 @@ from leaderboards.constants import (
     TRAINED_FROM_SCRATCH_PATTERNS,
 )
 from leaderboards.enums import LeaderboardCategory
-from leaderboards.leaderboard_generation import generate_leaderboard
+from leaderboards.leaderboard_generation import (
+    generate_leaderboard,
+    prepare_leaderboard_results,
+)
 from leaderboards.leaderboard_visibility import leaderboard_should_be_shown
 from leaderboards.records import plain_model_id
-from leaderboards.result_loading import reset_leaderboard_result_filter
+from leaderboards.result_loading import (
+    load_raw_results,
+    reset_leaderboard_result_filter,
+)
 from leaderboards.result_processing import (
     configure_canary_result_filter,
     process_results,
@@ -134,7 +140,7 @@ def main(
     restore_from_backup_if_missing()
 
     if not skip_results_processing:
-        process_results(
+        processed_records = process_results(
             min_version=MINIMUM_VERSION,
             min_number_of_model_records=MINIMUM_NUMBER_OF_MODEL_RECORDS,
             banned_versions=BANNED_VERSIONS,
@@ -145,6 +151,9 @@ def main(
         )
     else:
         configure_canary_result_filter()
+        processed_records = load_raw_results()
+
+    prepared_results = prepare_leaderboard_results(results=processed_records)
 
     # Offer to refresh the core-model list if it hasn't been touched in
     # over a month. Doing this inside `generate_leaderboards` keeps it on
@@ -165,6 +174,7 @@ def main(
             categories=list(categories),
             force=force,
             language_rank_cache=language_rank_cache,
+            prepared_results=prepared_results,
         )
     # Multilingual leaderboards stay yaml-configured since they encode a
     # curated grouping (e.g. Scandinavian, Slavic).
@@ -177,6 +187,7 @@ def main(
             categories=list(categories),
             force=force,
             language_rank_cache=language_rank_cache,
+            prepared_results=prepared_results,
         )
 
     # Keep the frontend's task -> metric-names map in sync with euroeval.
