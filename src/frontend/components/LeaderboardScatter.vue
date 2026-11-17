@@ -1122,6 +1122,7 @@ const tooltipStyle = computed(() => {
         <g
           v-if="showPareto && paretoPolyline"
           class="pareto-frontier"
+          :class="{ 'search-muted': hasSearchQuery }"
           :clip-path="`url(#${clipId})`"
           aria-hidden="true"
         >
@@ -1133,12 +1134,17 @@ const tooltipStyle = computed(() => {
           <template v-for="(p, i) in plotPoints" :key="`p-${i}`">
             <path
               v-if="p.commercial"
-              :d="starPath(xScale(p.x), yScale(p.y), 7)"
+              :d="starPath(
+                xScale(p.x),
+                yScale(p.y),
+                hasSearchQuery && isSearchMatch(p) ? 10 : 7,
+              )"
               :fill="KIND_COLOR[p.kind]"
               class="point"
               :class="{
                 'pareto-point': showPareto && paretoPointSet.has(p),
                 'search-muted': hasSearchQuery && !isSearchMatch(p),
+                'search-match': hasSearchQuery && isSearchMatch(p),
               }"
               @mousemove="onMove($event, p)"
               @mouseleave="onLeave"
@@ -1148,12 +1154,13 @@ const tooltipStyle = computed(() => {
               v-else
               :cx="xScale(p.x)"
               :cy="yScale(p.y)"
-              r="5"
+              :r="hasSearchQuery && isSearchMatch(p) ? 7 : 5"
               :fill="KIND_COLOR[p.kind]"
               class="point"
               :class="{
                 'pareto-point': showPareto && paretoPointSet.has(p),
                 'search-muted': hasSearchQuery && !isSearchMatch(p),
+                'search-match': hasSearchQuery && isSearchMatch(p),
               }"
               @mousemove="onMove($event, p)"
               @mouseleave="onLeave"
@@ -1386,6 +1393,11 @@ const tooltipStyle = computed(() => {
 
 .pareto-frontier {
   pointer-events: none;
+  transition: opacity 0.1s ease;
+}
+
+.pareto-frontier.search-muted {
+  opacity: 0.18;
 }
 
 .pareto-frontier polyline {
@@ -1410,7 +1422,7 @@ const tooltipStyle = computed(() => {
 }
 
 .point.search-muted {
-  opacity: 0.28;
+  opacity: 0.14;
 }
 
 .point.pareto-point {
@@ -1421,6 +1433,13 @@ const tooltipStyle = computed(() => {
 .point:hover {
   fill-opacity: 1;
   stroke-width: 1.8;
+}
+
+.point.search-match,
+.point.search-match:hover {
+  fill-opacity: 1;
+  stroke: var(--color-text);
+  stroke-width: 2.5;
 }
 
 .point.pareto-point:hover {
