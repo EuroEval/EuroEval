@@ -286,15 +286,27 @@ const toggleKind = (k: ModelKind) => {
 
 const isKindHidden = (k: ModelKind) => hiddenKinds.value.has(k);
 
-const visiblePoints = computed<Point[]>(() => {
-  const query = searchQuery.value.trim();
-  return allPoints.value.filter((p) => {
+const visiblePoints = computed<Point[]>(() =>
+  allPoints.value.filter((p) => {
     if (hiddenKinds.value.has(p.kind)) return false;
     if (p.commercial && hideCommercial.value) return false;
     if (!p.commercial && hideNonCommercial.value) return false;
-    if (query && !matchesQuery(p.label, query)) return false;
     return true;
-  });
+  }),
+);
+
+const normalizedSearchQuery = computed(() => searchQuery.value.trim());
+const hasSearchQuery = computed(() => normalizedSearchQuery.value.length > 0);
+const isSearchMatch = (point: Point) =>
+  !hasSearchQuery.value ||
+  matchesQuery(point.label, normalizedSearchQuery.value);
+
+// Keep matches last in SVG order so overlapping highlights remain interactive.
+const plotPoints = computed(() => {
+  if (!hasSearchQuery.value) return visiblePoints.value;
+  return [...visiblePoints.value].sort(
+    (a, b) => Number(isSearchMatch(a)) - Number(isSearchMatch(b)),
+  );
 });
 
 const paretoPoints = computed<Point[]>(() => {
@@ -1118,7 +1130,7 @@ const tooltipStyle = computed(() => {
 
         <!-- Points: commercial → star, otherwise → circle. Colored by kind. -->
         <g class="points" :clip-path="`url(#${clipId})`">
-          <template v-for="(p, i) in visiblePoints" :key="`p-${i}`">
+          <template v-for="(p, i) in plotPoints" :key="`p-${i}`">
             <path
               v-if="p.commercial"
               :d="starPath(xScale(p.x), yScale(p.y), 7)"
@@ -1126,6 +1138,7 @@ const tooltipStyle = computed(() => {
               class="point"
               :class="{
                 'pareto-point': showPareto && paretoPointSet.has(p),
+                'search-muted': hasSearchQuery && !isSearchMatch(p),
               }"
               @mousemove="onMove($event, p)"
               @mouseleave="onLeave"
@@ -1140,6 +1153,7 @@ const tooltipStyle = computed(() => {
               class="point"
               :class="{
                 'pareto-point': showPareto && paretoPointSet.has(p),
+                'search-muted': hasSearchQuery && !isSearchMatch(p),
               }"
               @mousemove="onMove($event, p)"
               @mouseleave="onLeave"
@@ -1390,8 +1404,13 @@ const tooltipStyle = computed(() => {
   stroke-width: 1;
   cursor: pointer;
   transition:
+    opacity 0.1s ease,
     fill-opacity 0.1s ease,
     stroke-width 0.1s ease;
+}
+
+.point.search-muted {
+  opacity: 0.28;
 }
 
 .point.pareto-point {
