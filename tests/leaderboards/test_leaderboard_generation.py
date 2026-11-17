@@ -93,6 +93,86 @@ class TestGlobalVariantSelection:
 
         assert captured_model_results == [{"org/model (val)": {"polish-dataset": []}}]
 
+    def test_prepared_results_are_reused_only_when_explicitly_passed(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Prepare global metadata once while keeping snapshots run-scoped.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing data access and expensive generation.
+            tmp_path:
+                Temporary directory for generated files.
+        """
+        standard_record = {"dataset": "standard"}
+        bpc_record = {"dataset": "bpc", "use_bits_per_character": True}
+        grouped = {"org/model": {"standard": []}}
+        metadata = {"org/model": {"generative_type": "base"}}
+        grouped_inputs: list[list[dict]] = []
+        metadata_inputs: list[list[dict]] = []
+
+        def group(*, results: list[dict]) -> dict:
+            grouped_inputs.append(results)
+            return grouped
+
+        def extract(*, results: list[dict]) -> dict:
+            metadata_inputs.append(results)
+            return metadata
+
+        monkeypatch.setattr(leaderboard_generation, "OUTPUT_DIR", tmp_path)
+        monkeypatch.setattr(
+            leaderboard_generation, "load_raw_results", lambda: pytest.fail("reload")
+        )
+        monkeypatch.setattr(leaderboard_generation, "group_results_by_model", group)
+        monkeypatch.setattr(leaderboard_generation, "extract_model_metadata", extract)
+        monkeypatch.setattr(
+            leaderboard_generation,
+            "drop_val_duplicates",
+            lambda model_results: model_results,
+        )
+        monkeypatch.setattr(
+            leaderboard_generation,
+            "invalid_datasets_by_model",
+            lambda invalid_results, model_datasets: {},
+        )
+        monkeypatch.setattr(leaderboard_generation, "load_invalid_results", lambda: [])
+        monkeypatch.setattr(
+            leaderboard_generation,
+            "official_datasets_for_language",
+            lambda language: {"task": ["standard"]},
+        )
+        captured: list[dict] = []
+        monkeypatch.setattr(
+            leaderboard_generation,
+            "_generate_dataframe",
+            lambda **kwargs: captured.append(kwargs) or [],
+        )
+
+        snapshot = leaderboard_generation.prepare_leaderboard_results(
+            results=[standard_record, bpc_record]
+        )
+        for name in ("first", "second"):
+            leaderboard_generation.generate_leaderboard(
+                leaderboard_name=name,
+                language_names=[name],
+                categories=[LeaderboardCategory.GENERATIVE],
+                force=False,
+                prepared_results=snapshot,
+            )
+
+        assert grouped_inputs == [[standard_record]]
+        assert metadata_inputs == [[standard_record]]
+        assert len(captured) == 2
+        assert all(item["model_results"] == grouped for item in captured)
+
+        changed_record = {"dataset": "changed"}
+        second_snapshot = leaderboard_generation.prepare_leaderboard_results(
+            results=[changed_record]
+        )
+        assert second_snapshot is not snapshot
+        assert grouped_inputs[-1] == [changed_record]
+        assert metadata_inputs[-1] == [changed_record]
+
     def test_simplified_outputs_use_global_canonical_variant(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
