@@ -857,12 +857,101 @@ const starPath = (cx: number, cy: number, r: number): string => {
 
 const hovered = ref<Point | null>(null);
 const pinnedPositions = ref(new Map<string, { left: string; top: string }>());
+const activeTooltip = ref<string | null>(null);
+let tooltipDrag: {
+  id: string;
+  pointerId: number;
+  card: HTMLDivElement;
+  startX: number;
+  startY: number;
+  originLeft: number;
+  originTop: number;
+  moved: boolean;
+} | null = null;
+let suppressTooltipClick = false;
+
+const endTooltipDrag = (event?: PointerEvent) => {
+  const drag = tooltipDrag;
+  if (!drag || (event && event.pointerId !== drag.pointerId)) return;
+  tooltipDrag = null;
+  if (drag.card.hasPointerCapture(drag.pointerId)) {
+    drag.card.releasePointerCapture(drag.pointerId);
+  }
+  suppressTooltipClick = event?.type === "pointerup" && drag.moved;
+  if (suppressTooltipClick) {
+    window.setTimeout(() => {
+      suppressTooltipClick = false;
+    }, 0);
+  }
+  activeTooltip.value = null;
+};
+
+const onTooltipPointerDown = (id: string, e: PointerEvent) => {
+  if (e.button !== 0 || (e.target as Element).closest(".tooltip-close")) return;
+  const header = (e.target as Element).closest(".tt-model");
+  if (!header) return;
+  const card = e.currentTarget as HTMLDivElement;
+  const wrap = card.parentElement;
+  if (!wrap) return;
+  const cardRect = card.getBoundingClientRect();
+  const wrapRect = wrap.getBoundingClientRect();
+  tooltipDrag = {
+    id,
+    pointerId: e.pointerId,
+    card,
+    startX: e.clientX,
+    startY: e.clientY,
+    originLeft: cardRect.left - wrapRect.left,
+    originTop: cardRect.top - wrapRect.top,
+    moved: false,
+  };
+  suppressTooltipClick = false;
+  activeTooltip.value = id;
+  card.setPointerCapture(e.pointerId);
+};
+
+const onTooltipPointerMove = (e: PointerEvent) => {
+  const drag = tooltipDrag;
+  if (!drag || e.pointerId !== drag.pointerId) return;
+  const dx = e.clientX - drag.startX;
+  const dy = e.clientY - drag.startY;
+  if (!drag.moved && Math.hypot(dx, dy) < 5) return;
+  drag.moved = true;
+  e.preventDefault();
+  const wrap = drag.card.parentElement;
+  if (!wrap || !pinnedPositions.value.has(drag.id)) return endTooltipDrag();
+  const wrapRect = wrap.getBoundingClientRect();
+  const cardRect = drag.card.getBoundingClientRect();
+  const left = clamp(
+    drag.originLeft + dx,
+    0,
+    Math.max(0, wrapRect.width - cardRect.width),
+  );
+  const headerHeight =
+    drag.card.querySelector(".tt-model")?.getBoundingClientRect().height ?? 0;
+  const top = clamp(
+    drag.originTop + dy,
+    0,
+    Math.max(0, wrapRect.height - headerHeight),
+  );
+  const next = new Map(pinnedPositions.value);
+  next.set(drag.id, { left: `${left}px`, top: `${top}px` });
+  pinnedPositions.value = next;
+};
+
+const onTooltipClick = (e: MouseEvent) => {
+  if (!suppressTooltipClick) return;
+  e.preventDefault();
+  e.stopPropagation();
+  suppressTooltipClick = false;
+};
 const pinnedPoints = computed(() =>
   visiblePoints.value.filter((point) => pinnedPositions.value.has(point.id)),
 );
 watch(
   () => props.xAxis,
   () => {
+    endTooltipDrag();
     pinnedPositions.value = new Map();
     hovered.value = null;
   },
@@ -870,14 +959,19 @@ watch(
 watch(
   () => props.table,
   () => {
+    endTooltipDrag();
     pinnedPositions.value = new Map();
     hovered.value = null;
   },
 );
+watch(pinnedPositions, (positions) => {
+  if (tooltipDrag && !positions.has(tooltipDrag.id)) endTooltipDrag();
+});
 watch(
   () => visiblePoints.value.map((point) => point.id),
   (ids) => {
     const visibleIds = new Set(ids);
+    if (tooltipDrag && !visibleIds.has(tooltipDrag.id)) endTooltipDrag();
     pinnedPositions.value = new Map(
       [...pinnedPositions.value].filter(([id]) => visibleIds.has(id)),
     );
@@ -917,6 +1011,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  endTooltipDrag();
   coarseMq?.removeEventListener?.("change", onCoarseChange);
 });
 
@@ -1241,11 +1336,23 @@ const tooltipStyle = computed(() => {
         v-for="card in tooltipPoints"
         :key="card.point.id"
         class="tooltip"
-        :class="{ pinned: card.pinned }"
-        :style="card.style"
+        :class="{
+          pinned: card.pinned,
+          dragging: activeTooltip === card.point.id,
+        }"
+        :style="[
+          card.style,
+          activeTooltip === card.point.id ? { zIndex: 6 } : undefined,
+        ]"
         :aria-label="card.pinned ? `${card.point.label} details` : undefined"
-        @pointerdown.stop
-        @click.stop
+        @pointerdown.stop="
+          card.pinned && onTooltipPointerDown(card.point.id, $event)
+        "
+        @pointermove.stop="onTooltipPointerMove"
+        @pointerup.stop="endTooltipDrag($event)"
+        @pointercancel.stop="endTooltipDrag($event)"
+        @lostpointercapture="endTooltipDrag($event)"
+        @click.stop="onTooltipClick"
       >
         <button
           v-if="card.pinned"
@@ -1558,6 +1665,15 @@ const tooltipStyle = computed(() => {
   pointer-events: auto;
   user-select: text;
   overflow-y: auto;
+}
+
+.tooltip.pinned .tt-model {
+  cursor: grab;
+  touch-action: none;
+}
+
+.tooltip.pinned.dragging .tt-model {
+  cursor: grabbing;
 }
 
 .tooltip-close {
