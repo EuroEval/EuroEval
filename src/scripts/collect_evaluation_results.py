@@ -426,11 +426,9 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
     """
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Load existing results as identity -> record dict
-    existing: dict[ResultIdentity, dict] = _load_existing_results()
-
-    # Capture predecessor bytes before incoming results can replace their records.
-    source_bytes = _source_bytes_for_records(existing=existing)
+    # Capture exact predecessors during the existing load, not a second tree scan.
+    source_bytes: dict[ResultIdentity, bytes] = {}
+    existing = _load_existing_results(sources=source_bytes)
 
     # Process new results from JSONL file
     _process_new_results(new_results_path, existing)
@@ -488,8 +486,13 @@ def _cleanup_stale_artefacts() -> None:
             logger.info(f"Removed stale artefact {jsonl_file}")
 
 
-def _load_existing_results() -> dict[ResultIdentity, dict]:
-    """Load existing results from local RESULTS_DIR.
+def _load_existing_results(
+    sources: dict[ResultIdentity, bytes] | None = None,
+) -> dict[ResultIdentity, dict]:
+    """Load existing results and capture exact predecessor bytes in one pass.
+
+    Args:
+        sources (optional): Output mapping for canonical or winning alias bytes.
 
     Returns:
         Dictionary mapping identity to record.
@@ -499,11 +502,13 @@ def _load_existing_results() -> dict[ResultIdentity, dict]:
             If equally ranked records contain conflicting scores.
     """
     existing: dict[ResultIdentity, dict] = {}
+    canonical_sources: dict[ResultIdentity, bytes] = {}
+    winning_sources: dict[ResultIdentity, bytes] = {}
     for json_file in sorted(RESULTS_DIR.glob("*/*.json")):
         if not json_file.is_file():
             continue
         try:
-            content = json_file.read_text(encoding="utf-8")
+            content = json_file.read_bytes()
             record = json.loads(content)
         except (OSError, json.JSONDecodeError):
             logger.debug(f"Skipping unreadable file {json_file}")
@@ -513,14 +518,18 @@ def _load_existing_results() -> dict[ResultIdentity, dict]:
         identity = _extract_identity_key(record)
         if not identity:
             continue
+        if json_file == RESULTS_DIR / identity_to_path(identity):
+            canonical_sources[identity] = content
         if identity not in existing:
             existing[identity] = record
+            winning_sources[identity] = content
             continue
 
         current = existing[identity]
         winner = dedup_newer_record(current, record)
         if winner is not current:
             existing[identity] = record
+            winning_sources[identity] = content
             continue
         if not _same_rank(current, record) or current == record:
             continue
@@ -529,6 +538,10 @@ def _load_existing_results() -> dict[ResultIdentity, dict]:
         canonical_path = RESULTS_DIR / identity_to_path(identity)
         if json_file == canonical_path:
             existing[identity] = record
+            winning_sources[identity] = content
+    if sources is not None:
+        sources.update(winning_sources)
+        sources.update(canonical_sources)
     return existing
 
 
@@ -662,42 +675,6 @@ def _process_new_results(
                 existing[identity] = record
         except json.JSONDecodeError:
             logger.warning(f"Skipping invalid JSON line: {line[:80]}...")
-
-
-def _source_bytes_for_records(
-    existing: dict[ResultIdentity, dict],
-) -> dict[ResultIdentity, bytes]:
-    """Capture original bytes for the selected records before canonical writes.
-
-    Args:
-        existing:
-            Reconciled identity-to-record map.
-
-    Returns:
-        Original bytes for selected local records, where available.
-    """
-    sources: dict[ResultIdentity, bytes] = {}
-    canonical_paths = {
-        identity: RESULTS_DIR / identity_to_path(identity) for identity in existing
-    }
-    alias_sources: dict[ResultIdentity, bytes] = {}
-    for path in sorted(RESULTS_DIR.glob("*/*.json")):
-        try:
-            raw = path.read_bytes()
-            record = json.loads(raw)
-            identity = _extract_identity_key(record)
-        except (OSError, json.JSONDecodeError, TypeError):
-            continue
-        if identity not in existing or is_canary_record(record):
-            continue
-        if path == canonical_paths[identity]:
-            sources[identity] = raw
-        elif record == existing[identity]:
-            alias_sources.setdefault(identity, raw)
-    for identity, raw in alias_sources.items():
-        if identity not in sources:
-            sources[identity] = raw
-    return sources
 
 
 def _upload_to_bucket(

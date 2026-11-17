@@ -101,37 +101,45 @@ def clear_bucket_adapter() -> None:
     FakeHfApi.objects.clear()
 
 
-def test_collector_prepare_failure_leaves_local_files_untouched(
+def test_collector_captures_predecessors_without_second_tree_read(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """A failed durable source checkpoint prevents all collector local writes."""
+    """Public collection retains exact source bytes using its original tree load."""
     results_dir = tmp_path / "results"
-    record_path = results_dir / "foo_bar" / "task__test__zeroshot.json"
-    record_path.parent.mkdir(parents=True)
-    original = _ranked_collector_record()
-    original_bytes = (json.dumps(original, indent=2) + "\n").encode()
-    record_path.write_bytes(original_bytes)
-    stale = results_dir / "stale.jsonl"
-    stale.write_bytes(b"keep\n")
-    incoming_record = json.loads(json.dumps(original))
-    incoming_record["metadata"] = {"open": True}
-    incoming_record["model_info"]["additional_details"] = {"open": True}
-    incoming = tmp_path / "incoming.jsonl"
-    incoming.write_text(json.dumps(incoming_record), encoding="utf-8")
+    path = results_dir / "foo_bar" / "task__test__zeroshot.json"
+    path.parent.mkdir(parents=True)
+    predecessor = (json.dumps(_ranked_collector_record(), indent=2) + "\n").encode()
+    path.write_bytes(predecessor)
+    incoming = json.loads(json.dumps(_ranked_collector_record()))
+    incoming["metadata"] = {"open": True}
+    incoming["model_info"]["additional_details"] = {"open": True}
+    new_results = tmp_path / "incoming.jsonl"
+    new_results.write_text(json.dumps(incoming), encoding="utf-8")
     monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
     _enable_real_collector_publisher(monkeypatch=monkeypatch, tmp_path=tmp_path)
-    monkeypatch.setattr(
-        canonical_publication.CanonicalPublisher,
-        "prepare",
-        lambda self, records, sources: (_ for _ in ()).throw(RuntimeError("prepare")),
-    )
+    FakeHfApi.objects["foo_bar/task__test__zeroshot.json"] = predecessor
+    reads = 0
+    original_read = Path.read_bytes
 
-    assert not collect_evaluation_results.upload_results_to_hf(
-        new_results_path=incoming
-    )
-    assert record_path.read_bytes() == original_bytes
-    assert stale.read_bytes() == b"keep\n"
-    assert FakeHfApi.objects == {}
+    def count_read(self: Path) -> bytes:
+        """Count exact source captures without counting local semantic checks.
+
+        Args:
+            self: File being read.
+
+        Returns:
+            Original file bytes.
+        """
+        nonlocal reads
+        if self == path:
+            reads += 1
+        return original_read(self)
+
+    monkeypatch.setattr(Path, "read_bytes", count_read)
+    assert collect_evaluation_results.upload_results_to_hf(new_results_path=new_results)
+    assert reads == 1
+    history = f"_history/{hashlib.sha256(predecessor).hexdigest()}.bin"
+    assert FakeHfApi.objects[history] == predecessor
 
 
 def _enable_real_collector_publisher(
@@ -176,6 +184,39 @@ def _ranked_collector_record(
             {"evaluation_name": "accuracy", "score_details": {"score": score}}
         ],
     }
+
+
+def test_collector_prepare_failure_leaves_local_files_untouched(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A failed durable source checkpoint prevents all collector local writes."""
+    results_dir = tmp_path / "results"
+    record_path = results_dir / "foo_bar" / "task__test__zeroshot.json"
+    record_path.parent.mkdir(parents=True)
+    original = _ranked_collector_record()
+    original_bytes = (json.dumps(original, indent=2) + "\n").encode()
+    record_path.write_bytes(original_bytes)
+    stale = results_dir / "stale.jsonl"
+    stale.write_bytes(b"keep\n")
+    incoming_record = json.loads(json.dumps(original))
+    incoming_record["metadata"] = {"open": True}
+    incoming_record["model_info"]["additional_details"] = {"open": True}
+    incoming = tmp_path / "incoming.jsonl"
+    incoming.write_text(json.dumps(incoming_record), encoding="utf-8")
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
+    _enable_real_collector_publisher(monkeypatch=monkeypatch, tmp_path=tmp_path)
+    monkeypatch.setattr(
+        canonical_publication.CanonicalPublisher,
+        "prepare",
+        lambda self, records, sources: (_ for _ in ()).throw(RuntimeError("prepare")),
+    )
+
+    assert not collect_evaluation_results.upload_results_to_hf(
+        new_results_path=incoming
+    )
+    assert record_path.read_bytes() == original_bytes
+    assert stale.read_bytes() == b"keep\n"
+    assert FakeHfApi.objects == {}
 
 
 def test_collector_retries_after_post_prepare_metadata_failure(

@@ -724,44 +724,47 @@ class PublicationSession:
         predecessors = [
             (path, previous) for path, _, previous in writes if previous is not None
         ]
-        for index, (path, previous) in enumerate(predecessors, start=1):
-            archive = f"_history/{hashlib.sha256(previous).hexdigest()}.bin"
-            archived = self._download(archive)
-            if archived is None:
-                self.write_verified(path=archive, content=previous, expected=None)
-            elif archived != previous:
+        archives = {
+            f"_history/{hashlib.sha256(previous).hexdigest()}.bin": previous
+            for _, previous in predecessors
+        }
+        archived = self._download_many(paths=list(archives))
+        missing_archives: list[tuple[str, bytes, bytes | None]] = []
+        for path, content in archives.items():
+            if archived[path] is None:
+                missing_archives.append((path, content, None))
+            elif archived[path] != content:
                 raise PublicationError(f"History hash collision at {path}")
-            if index == len(predecessors) or index % 100 == 0:
-                logger.info(
-                    "Archived %s of %s predecessor result files.",
-                    f"{index:,}",
-                    f"{len(predecessors):,}",
-                )
+        self._write_batches(writes=missing_archives)
 
-        for index, (path, content, previous) in enumerate(writes, start=1):
-            self.write_verified(path=path, content=content, expected=previous)
-            if index == len(writes) or index % 100 == 0:
-                logger.info(
-                    "Published %s of %s canonical result files.",
-                    f"{index:,}",
-                    f"{len(writes):,}",
-                )
+        self._write_batches(
+            writes=writes,
+            receipts={
+                path: (local_fingerprints[path], _semantic_digest(record))
+                for path, _, _, record in candidates
+                if path in local_fingerprints
+            },
+        )
         if remote_fingerprints is not None:
             written_paths = {path for path, _, _ in writes}
             for path, _, _, record in candidates:
                 if path in written_paths:
-                    verified_receipts[path] = (
-                        local_fingerprints[path],
-                        _semantic_digest(record),
-                    )
-                elif path in trusted and remote_fingerprints.get(path) is not None:
+                    # Verified upload chunks already have durable receipts.
+                    continue
+                if path in trusted and remote_fingerprints.get(path) is not None:
                     verified_receipts[path] = (
                         remote_fingerprints[path],
                         _semantic_digest(record),
                     )
                 elif path not in current_objects:
                     verified_receipts.pop(path, None)
-            self._store_receipts(receipts=verified_receipts)
+            self._store_receipts(
+                receipts={
+                    path: receipt
+                    for path, receipt in verified_receipts.items()
+                    if cached.get(path) != receipt
+                }
+            )
         self._clear_sources(identities={identity for _, identity, _, _ in candidates})
         return len(writes)
 
@@ -934,11 +937,16 @@ class PublicationSession:
         """
         writes: list[tuple[str, bytes, bytes | None]] = []
         receipts: dict[str, tuple[str, str]] = {}
+        equivalent: list[tuple[str, ResultIdentity, bytes, dict[str, object]]] = []
         for path, identity, candidate, record in candidates:
             if path in trusted:
                 continue
             current = current_objects[path]
             if current is None:
+                if remote_fingerprints is not None and path in remote_fingerprints:
+                    raise PublicationError(
+                        f"Remote object missing after metadata: {path}"
+                    )
                 writes.append((path, candidate, None))
                 continue
             current_record = _decode_record(current, path)
@@ -951,11 +959,8 @@ class PublicationSession:
                     if remote_fingerprints is not None
                     else None
                 )
-                if (
-                    fingerprint is not None
-                    and self._fingerprint_bytes(content=current) == fingerprint
-                ):
-                    receipts[path] = (fingerprint, _semantic_digest(record))
+                if fingerprint is not None:
+                    equivalent.append((path, identity, current, record))
                 continue
             newer = dedup_newer_record(current_record, record)
             if newer is current_record:
@@ -970,27 +975,15 @@ class PublicationSession:
                 ):
                     raise PublicationError(f"Equal-ranked result conflict at {path}")
             writes.append((path, candidate, current))
+        fingerprints = self._local_fingerprints(candidates=equivalent)
+        for path, _, _, record in equivalent:
+            fingerprint = fingerprints[path]
+            if (
+                remote_fingerprints is not None
+                and remote_fingerprints.get(path) == fingerprint
+            ):
+                receipts[path] = (fingerprint, _semantic_digest(record))
         return writes, receipts
-
-    def _fingerprint_bytes(self, content: bytes) -> str:
-        """Return the Xet fingerprint for exact downloaded bytes.
-
-        Args:
-            content: Downloaded remote object bytes.
-
-        Returns:
-            Xet fingerprint.
-
-        Raises:
-            PublicationError: If fingerprint generation fails.
-        """
-        with tempfile.TemporaryDirectory(prefix="euroeval-xet-hash-") as directory:
-            path = Path(directory) / "object"
-            path.write_bytes(content)
-            infos = hf_xet.hash_files([str(path)])
-            if len(infos) != 1:
-                raise PublicationError("Incomplete downloaded Xet fingerprint")
-            return infos[0].hash
 
     def _source_authorises_transform(
         self,
@@ -1058,7 +1051,15 @@ class PublicationSession:
         paths = [path for path, _, _, _ in candidates]
         requested_paths = set(paths)
         try:
-            entries = list(method(self.bucket, paths, token=self.publisher.token))
+            entries = [
+                entry
+                for start in range(0, len(paths), _COMPARISON_BATCH_SIZE)
+                for entry in method(
+                    self.bucket,
+                    paths[start : start + _COMPARISON_BATCH_SIZE],
+                    token=self.publisher.token,
+                )
+            ]
             fingerprints: dict[str, str] = {}
             for entry in entries:
                 path = getattr(entry, "path", None)
@@ -1117,6 +1118,77 @@ class PublicationSession:
                 ],
             )
 
+    def _write_batches(
+        self,
+        writes: list[tuple[str, bytes, bytes | None]],
+        receipts: t.Mapping[str, tuple[str, str]] | None = None,
+    ) -> None:
+        """Apply bounded nontransactional uploads with exact pre/postconditions.
+
+        Args:
+            writes: Path, replacement bytes and expected predecessor tuples.
+            receipts (optional): Candidate receipts to persist after verified batches.
+
+        Raises:
+            PublicationError:
+                If ownership, preconditions or output verification fail.
+        """
+        receipts = receipts or {}
+        for start in range(0, len(writes), _COMPARISON_BATCH_SIZE):
+            batch = writes[start : start + _COMPARISON_BATCH_SIZE]
+            paths = [path for path, _, _ in batch]
+            current = self._download_many(paths=paths)
+            for path, _, expected in batch:
+                if current[path] != expected:
+                    raise PublicationError(f"Concurrent change detected for {path}")
+            with tempfile.TemporaryDirectory(prefix="euroeval-publish-") as directory:
+                uploads: list[tuple[Path, str]] = []
+                for index, (path, content, _) in enumerate(batch):
+                    local = Path(directory) / str(index)
+                    local.write_bytes(content)
+                    uploads.append((local, path))
+                self.assert_owned()
+                # The bucket has no CAS or transaction: any uncertain mutation
+                # retains the no-TTL broker lock for explicit operator recovery.
+                try:
+                    self.publisher.api.batch_bucket_files(
+                        bucket_id=self.bucket, add=uploads, token=self.publisher.token
+                    )
+                    actual = self._download_many(paths=paths)
+                    for path, content, _ in batch:
+                        if actual[path] != content:
+                            raise PublicationError(
+                                f"Uploaded object verification failed for {path}"
+                            )
+                    self.assert_owned()
+                    self._store_receipts(
+                        receipts={
+                            path: receipts[path] for path in paths if path in receipts
+                        }
+                    )
+                except BaseException:
+                    self.poisoned = True
+                    raise
+            logger.info(
+                "Verified %s of %s uploaded files.", start + len(batch), len(writes)
+            )
+
+    def read(self, path: str) -> bytes | None:
+        """Read an exact object from the bucket.
+
+        Args:
+            path: Bucket-relative object path.
+
+        Returns:
+            Object bytes, or None if absent.
+        """
+        return self._download(path)
+
+    def release(self) -> None:
+        """Release only this owner's lock and remove its recovery receipt."""
+        self.publisher.lock.request(action="release", owner=self.owner)
+        self._receipt.unlink(missing_ok=True)
+
     def write_verified(self, path: str, content: bytes, expected: bytes | None) -> None:
         """Write only if the actual current object equals expected, then verify.
 
@@ -1158,19 +1230,3 @@ class PublicationSession:
             except BaseException:
                 self.poisoned = True
                 raise
-
-    def read(self, path: str) -> bytes | None:
-        """Read an exact object from the bucket.
-
-        Args:
-            path: Bucket-relative object path.
-
-        Returns:
-            Object bytes, or None if absent.
-        """
-        return self._download(path)
-
-    def release(self) -> None:
-        """Release only this owner's lock and remove its recovery receipt."""
-        self.publisher.lock.request(action="release", owner=self.owner)
-        self._receipt.unlink(missing_ok=True)
