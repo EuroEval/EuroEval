@@ -1142,10 +1142,15 @@ def _make_response_format_unavailable_error() -> Exception:
 class TestGPT62Metadata:
     """Tests public metadata and reasoning support for GPT-6.2 models."""
 
-    @pytest.mark.parametrize("model_id", ["gpt-6.2-sol", "openai/gpt-6.2-astra"])
+    @pytest.mark.parametrize(
+        "model_id",
+        ["gpt-6.2-sol", "openai/gpt-6.2-sol", "gpt-6.2-astra", "openai/gpt-6.2-astra"],
+    )
+    @pytest.mark.parametrize("effort", [None, "low", "medium", "high", "xhigh", "max"])
     def test_models_are_reasoning_models(
         self,
         model_id: str,
+        effort: str | None,
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
@@ -1154,13 +1159,16 @@ class TestGPT62Metadata:
         Args:
             model_id:
                 The model identifier.
+            effort:
+                The optional reasoning effort suffix.
             dataset_config:
                 The dataset configuration fixture.
             benchmark_config:
                 The benchmark configuration fixture.
         """
         config = LiteLLMModel.get_model_config(
-            model_id=f"{model_id}#xhigh", benchmark_config=benchmark_config
+            model_id=f"{model_id}#{effort}" if effort else model_id,
+            benchmark_config=benchmark_config,
         )
         model = LiteLLMModel(
             model_config=config,
@@ -1170,10 +1178,9 @@ class TestGPT62Metadata:
         )
 
         assert model.generative_type == GenerativeType.REASONING
-        assert (
-            model._setup_model_params(generation_kwargs={})["reasoning_effort"]
-            == "xhigh"
-        )
+        assert config.param == effort
+        assert config.release_date == "2026-11-17"
+        assert model.model_max_length == 1_050_000
 
     def test_unrecognised_variant_is_not_reasoning(
         self,
