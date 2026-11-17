@@ -705,6 +705,7 @@ interface ClientPoint {
 }
 
 const activePointers = new Map<number, ClientPoint>();
+const pointerStarts = new Map<number, ClientPoint>();
 const pointerCaptureTargets = new Map<number, Element>();
 let panStart: {
   point: { x: number; y: number };
@@ -731,6 +732,7 @@ const onPointerDown = (e: PointerEvent) => {
   if (activePointers.size === 0) suppressNextClick = false;
   const svg = e.currentTarget as SVGSVGElement;
   activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  pointerStarts.set(e.pointerId, { x: e.clientX, y: e.clientY });
   const pointTarget = (e.target as Element | null)?.closest(".point");
   const captureTarget = pointTarget ?? svg;
   captureTarget.setPointerCapture?.(e.pointerId);
@@ -765,6 +767,13 @@ const onPointerDown = (e: PointerEvent) => {
 const onPointerMove = (e: PointerEvent) => {
   const previous = activePointers.get(e.pointerId);
   if (!previous) return;
+  const start = pointerStarts.get(e.pointerId);
+  if (
+    start &&
+    (Math.abs(e.clientX - start.x) > 4 || Math.abs(e.clientY - start.y) > 4)
+  ) {
+    suppressNextClick = true;
+  }
   activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   const svg = e.currentTarget as SVGSVGElement;
 
@@ -819,6 +828,7 @@ const onPointerEnd = (e: PointerEvent) => {
   }
   pointerCaptureTargets.delete(e.pointerId);
   activePointers.delete(e.pointerId);
+  pointerStarts.delete(e.pointerId);
   if (activePointers.size === 0) {
     panStart = null;
     pinchStart = null;
@@ -883,6 +893,7 @@ const svgElement = ref<SVGSVGElement | null>(null);
 
 const setTooltipElement = (id: string, element: Element | null) => {
   const previous = tooltipElements.get(id);
+  if (previous === element || (!previous && !element)) return;
   if (previous) tooltipObserver?.unobserve(previous);
   if (!(element instanceof HTMLElement)) {
     tooltipElements.delete(id);
