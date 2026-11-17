@@ -858,10 +858,12 @@ const starPath = (cx: number, cy: number, r: number): string => {
 const hovered = ref<Point | null>(null);
 const pinnedPositions = ref(new Map<string, { left: string; top: string }>());
 const activeTooltip = ref<string | null>(null);
+const draggingTooltip = ref<string | null>(null);
 let tooltipDrag: {
   id: string;
   pointerId: number;
   card: HTMLDivElement;
+  captureTarget: Element;
   startX: number;
   startY: number;
   originLeft: number;
@@ -874,8 +876,8 @@ const endTooltipDrag = (event?: PointerEvent) => {
   const drag = tooltipDrag;
   if (!drag || (event && event.pointerId !== drag.pointerId)) return;
   tooltipDrag = null;
-  if (drag.card.hasPointerCapture(drag.pointerId)) {
-    drag.card.releasePointerCapture(drag.pointerId);
+  if (drag.captureTarget.hasPointerCapture(drag.pointerId)) {
+    drag.captureTarget.releasePointerCapture(drag.pointerId);
   }
   suppressTooltipClick = event?.type === "pointerup" && drag.moved;
   if (suppressTooltipClick) {
@@ -883,11 +885,14 @@ const endTooltipDrag = (event?: PointerEvent) => {
       suppressTooltipClick = false;
     }, 0);
   }
-  activeTooltip.value = null;
+  draggingTooltip.value = null;
 };
 
 const onTooltipPointerDown = (id: string, e: PointerEvent) => {
-  if (e.button !== 0 || (e.target as Element).closest(".tooltip-close")) return;
+  if (
+    tooltipDrag || e.button !== 0 ||
+    (e.target as Element).closest(".tooltip-close")
+  ) return;
   const header = (e.target as Element).closest(".tt-model");
   if (!header) return;
   const card = e.currentTarget as HTMLDivElement;
@@ -899,6 +904,7 @@ const onTooltipPointerDown = (id: string, e: PointerEvent) => {
     id,
     pointerId: e.pointerId,
     card,
+    captureTarget: e.target as Element,
     startX: e.clientX,
     startY: e.clientY,
     originLeft: cardRect.left - wrapRect.left,
@@ -907,7 +913,8 @@ const onTooltipPointerDown = (id: string, e: PointerEvent) => {
   };
   suppressTooltipClick = false;
   activeTooltip.value = id;
-  card.setPointerCapture(e.pointerId);
+  draggingTooltip.value = id;
+  (e.target as Element).setPointerCapture(e.pointerId);
 };
 
 const onTooltipPointerMove = (e: PointerEvent) => {
@@ -966,6 +973,9 @@ watch(
 );
 watch(pinnedPositions, (positions) => {
   if (tooltipDrag && !positions.has(tooltipDrag.id)) endTooltipDrag();
+  if (activeTooltip.value && !positions.has(activeTooltip.value)) {
+    activeTooltip.value = null;
+  }
 });
 watch(
   () => visiblePoints.value.map((point) => point.id),
@@ -1061,6 +1071,7 @@ const onPointClick = (p: Point, e: MouseEvent) => {
   }
   next.set(p.id, { ...tooltipStyle.value });
   pinnedPositions.value = next;
+  activeTooltip.value = p.id;
   hovered.value = null;
 };
 
@@ -1338,7 +1349,7 @@ const tooltipStyle = computed(() => {
         class="tooltip"
         :class="{
           pinned: card.pinned,
-          dragging: activeTooltip === card.point.id,
+          dragging: draggingTooltip === card.point.id,
         }"
         :style="[
           card.style,
@@ -1367,6 +1378,7 @@ const tooltipStyle = computed(() => {
           <a
             v-if="card.point.modelUrl"
             :href="card.point.modelUrl"
+            draggable="false"
             target="_blank"
             rel="noopener"
           >{{ card.point.icon }} {{ card.point.label }}</a>
@@ -1670,6 +1682,7 @@ const tooltipStyle = computed(() => {
 .tooltip.pinned .tt-model {
   cursor: grab;
   touch-action: none;
+  user-select: none;
 }
 
 .tooltip.pinned.dragging .tt-model {
