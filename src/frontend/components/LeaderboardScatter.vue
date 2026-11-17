@@ -39,6 +39,8 @@ interface Point {
   xLabel: string;
   y: number;
   label: string;
+  id: string;
+  modelUrl: string | null;
   icon: string;
   kind: ModelKind;
   commercial: boolean;
@@ -204,11 +206,17 @@ const allPoints = computed<Point[]>(() => {
       label: title,
       value: formatMetaValue(key, row.cells[idx]),
     }));
+    const label = mi >= 0 ? row.cells[mi].text : "";
+    const modelHtml = mi >= 0 ? row.cells[mi].html : "";
+    const linkMatch = modelHtml.match(/<a\s+href="([^"]+)"/i);
+    const modelUrl = linkMatch?.[1].replace(/&amp;/g, "&") ?? null;
     out.push({
       x: xk,
       xLabel,
       y: yk,
-      label: mi >= 0 ? row.cells[mi].text : "",
+      label,
+      id: `${label}\u0000${xk}\u0000${yk}`,
+      modelUrl,
       icon,
       kind: KIND_FROM_ICON[icon] ?? "other",
       commercial: commercialText === "✓",
@@ -829,6 +837,55 @@ const starPath = (cx: number, cy: number, r: number): string => {
 };
 
 const hovered = ref<Point | null>(null);
+const pinnedIds = ref<Set<string>>(new Set());
+const pinnedPoints = computed(() =>
+  visiblePoints.value.filter((point) => pinnedIds.value.has(point.id)),
+);
+watch(
+  () => props.xAxis,
+  () => {
+    pinnedIds.value = new Set();
+    hovered.value = null;
+  },
+);
+watch(
+  () => visiblePoints.value.map((point) => point.id),
+  (ids) => {
+    const visibleIds = new Set(ids);
+    pinnedIds.value = new Set(
+      [...pinnedIds.value].filter((id) => visibleIds.has(id)),
+    );
+    if (hovered.value && !visibleIds.has(hovered.value.id)) hovered.value = null;
+  },
+);
+const pinnedStyle = (point: Point) => {
+  const x = xScale(point.x);
+  const y = yScale(point.y);
+  return {
+    left: `${(x / width) * 100}%`,
+    top: `${(y / height) * 100}%`,
+    transform: `${
+      x > width * 0.65
+        ? "translateX(calc(-100% - 12px))"
+        : "translateX(12px)"
+    } ${
+      y > height * 0.62
+        ? "translateY(calc(-100% - 12px))"
+        : "translateY(12px)"
+    }`,
+  };
+};
+const isPinned = (point: Point) => pinnedIds.value.has(point.id);
+const tooltipPoints = computed(() => [
+  ...pinnedPoints.value.map((point) => ({
+    point,
+    pinned: true,
+    style: pinnedStyle(point),
+  })),
+  ...(hovered.value && !isPinned(hovered.value)
+    ? [{ point: hovered.value, pinned: false, style: tooltipStyle.value }]
+    : []),
+]);
 const hoverPos = ref<{ x: number; y: number; flipX: boolean; flipY: boolean }>({
   x: 0,
   y: 0,
@@ -836,18 +893,11 @@ const hoverPos = ref<{ x: number; y: number; flipX: boolean; flipY: boolean }>({
   flipY: false,
 });
 
-// On touch/coarse-pointer devices we show a minimal tooltip (model ID only),
-// triggered by tap, and dismissed by tapping anywhere else.
+// Coarse-pointer devices use the same complete, pinned tooltip as desktop.
 const isCoarsePointer = ref(false);
 let coarseMq: MediaQueryList | null = null;
 const onCoarseChange = (e: MediaQueryListEvent) => {
   isCoarsePointer.value = e.matches;
-};
-const onDocPointerDown = (e: PointerEvent) => {
-  if (!hovered.value) return;
-  const target = e.target as Element | null;
-  if (target && target.closest(".point")) return;
-  hovered.value = null;
 };
 
 onMounted(() => {
@@ -855,14 +905,10 @@ onMounted(() => {
   coarseMq = window.matchMedia("(pointer: coarse)");
   isCoarsePointer.value = coarseMq.matches;
   coarseMq.addEventListener?.("change", onCoarseChange);
-  document.addEventListener("pointerdown", onDocPointerDown);
 });
 
 onBeforeUnmount(() => {
   coarseMq?.removeEventListener?.("change", onCoarseChange);
-  if (typeof document !== "undefined") {
-    document.removeEventListener("pointerdown", onDocPointerDown);
-  }
 });
 
 const TOOLTIP_W = 280; // approximate, kept in sync with .tooltip max-width
@@ -884,6 +930,10 @@ const positionFromEvent = (e: { clientX: number; clientY: number; currentTarget:
 
 const onMove = (e: MouseEvent, p: Point) => {
   if (isCoarsePointer.value) return;
+  if (isPinned(p)) {
+    hovered.value = null;
+    return;
+  }
   hovered.value = p;
   positionFromEvent(e, TOOLTIP_W, TOOLTIP_H);
 };
@@ -893,26 +943,28 @@ const onLeave = () => {
   hovered.value = null;
 };
 
-const onPointClick = (e: MouseEvent, p: Point) => {
+const onPointClick = (p: Point) => {
   if (suppressNextClick) {
     suppressNextClick = false;
     return;
   }
-  if (!isCoarsePointer.value) return;
-  if (hovered.value === p) {
-    hovered.value = null;
+  const next = new Set(pinnedIds.value);
+  if (next.has(p.id)) {
+    next.delete(p.id);
+    pinnedIds.value = next;
+    if (hovered.value?.id === p.id) hovered.value = null;
     return;
   }
-  hovered.value = p;
-  // Smaller tooltip on mobile — only the model line is shown.
-  positionFromEvent(e, 200, 40);
+  next.add(p.id);
+  pinnedIds.value = next;
+  hovered.value = null;
 };
 
 const tooltipStyle = computed(() => {
   const x = hoverPos.value.x;
   const y = hoverPos.value.y;
-  const w = isCoarsePointer.value ? 200 : TOOLTIP_W;
-  const h = isCoarsePointer.value ? 40 : TOOLTIP_H;
+  const w = TOOLTIP_W;
+  const h = TOOLTIP_H;
   return {
     left: hoverPos.value.flipX ? `${Math.max(0, x - w - 12)}px` : `${x + 12}px`,
     top: hoverPos.value.flipY ? `${Math.max(0, y - h - 12)}px` : `${y + 12}px`,
@@ -1131,7 +1183,7 @@ const tooltipStyle = computed(() => {
 
         <!-- Points: commercial → star, otherwise → circle. Colored by kind. -->
         <g class="points" :clip-path="`url(#${clipId})`">
-          <template v-for="(p, i) in plotPoints" :key="`p-${i}`">
+          <template v-for="p in plotPoints" :key="p.id">
             <path
               v-if="p.commercial"
               :d="starPath(
@@ -1145,10 +1197,11 @@ const tooltipStyle = computed(() => {
                 'pareto-point': showPareto && paretoPointSet.has(p),
                 'search-muted': hasSearchQuery && !isSearchMatch(p),
                 'search-match': hasSearchQuery && isSearchMatch(p),
+                'point-pinned': isPinned(p),
               }"
               @mousemove="onMove($event, p)"
               @mouseleave="onLeave"
-              @click.stop="onPointClick($event, p)"
+              @click.stop="onPointClick(p)"
             />
             <circle
               v-else
@@ -1161,47 +1214,57 @@ const tooltipStyle = computed(() => {
                 'pareto-point': showPareto && paretoPointSet.has(p),
                 'search-muted': hasSearchQuery && !isSearchMatch(p),
                 'search-match': hasSearchQuery && isSearchMatch(p),
+                'point-pinned': isPinned(p),
               }"
               @mousemove="onMove($event, p)"
               @mouseleave="onLeave"
-              @click.stop="onPointClick($event, p)"
+              @click.stop="onPointClick(p)"
             />
           </template>
         </g>
       </svg>
 
       <div
-        v-if="hovered"
+        v-for="card in tooltipPoints"
+        :key="card.point.id"
         class="tooltip"
-        :class="{ compact: isCoarsePointer }"
-        :style="tooltipStyle"
+        :class="{ pinned: card.pinned }"
+        :style="card.style"
+        @pointerdown.stop
+        @click.stop
       >
-        <div class="tt-model">{{ hovered.icon }} {{ hovered.label }}</div>
-        <template v-if="!isCoarsePointer">
-          <div class="tt-row">
-            <span class="tt-label">Mean rank</span>
-            <span class="tt-value">{{ hovered.y.toFixed(2) }}</span>
-          </div>
-          <div
-            v-if="showPareto && paretoPointSet.has(hovered)"
-            class="tt-row pareto-status"
-          >
-            <span class="tt-label">{{ curveName }}</span>
-            <span class="tt-value">Yes</span>
-          </div>
-          <div v-if="xAxis === 'releaseDate'" class="tt-row">
-            <span class="tt-label">Release date</span>
-            <span class="tt-value">{{ hovered.xLabel }}</span>
-          </div>
-          <div class="tt-row">
-            <span class="tt-label">Kind</span>
-            <span class="tt-value">{{ KIND_LABEL[hovered.kind] }}</span>
-          </div>
-          <div v-for="m in hovered.meta" :key="m.label" class="tt-row">
-            <span class="tt-label">{{ m.label }}</span>
-            <span class="tt-value">{{ m.value }}</span>
-          </div>
-        </template>
+        <div class="tt-model">
+          <a
+            v-if="card.point.modelUrl"
+            :href="card.point.modelUrl"
+            target="_blank"
+            rel="noopener"
+          >{{ card.point.icon }} {{ card.point.label }}</a>
+          <template v-else>{{ card.point.icon }} {{ card.point.label }}</template>
+        </div>
+        <div class="tt-row">
+          <span class="tt-label">Mean rank</span>
+          <span class="tt-value">{{ card.point.y.toFixed(2) }}</span>
+        </div>
+        <div
+          v-if="showPareto && paretoPointSet.has(card.point)"
+          class="tt-row pareto-status"
+        >
+          <span class="tt-label">{{ curveName }}</span>
+          <span class="tt-value">Yes</span>
+        </div>
+        <div v-if="xAxis === 'releaseDate'" class="tt-row">
+          <span class="tt-label">Release date</span>
+          <span class="tt-value">{{ card.point.xLabel }}</span>
+        </div>
+        <div class="tt-row">
+          <span class="tt-label">Kind</span>
+          <span class="tt-value">{{ KIND_LABEL[card.point.kind] }}</span>
+        </div>
+        <div v-for="m in card.point.meta" :key="m.label" class="tt-row">
+          <span class="tt-label">{{ m.label }}</span>
+          <span class="tt-value">{{ m.value }}</span>
+        </div>
       </div>
     </div>
   </div>
@@ -1466,16 +1529,18 @@ const tooltipStyle = computed(() => {
   z-index: 5;
 }
 
-.tooltip.compact {
-  width: auto;
-  max-width: calc(100% - 24px);
-  padding: 0.35rem 0.55rem;
+.tooltip.pinned {
+  pointer-events: auto;
+  user-select: text;
 }
 
-.tooltip.compact .tt-model {
-  margin-bottom: 0;
-  border-bottom: 0;
-  padding-bottom: 0;
+.tooltip.pinned a {
+  color: inherit;
+}
+
+.point.point-pinned {
+  stroke: var(--color-text);
+  stroke-width: 2.5;
 }
 
 .tt-model {
