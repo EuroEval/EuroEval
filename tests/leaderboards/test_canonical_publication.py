@@ -1086,8 +1086,16 @@ class CountingFingerprintApi(FingerprintApi):
         return entries
 
 
-def test_missing_lock_configuration_fails_closed() -> None:
-    """Publisher construction cannot silently fall back to a local lock."""
+def test_missing_lock_configuration_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Publisher construction cannot silently fall back to a local lock.
+
+    Args:
+        monkeypatch:
+            Isolates missing configuration from the local publishing environment.
+    """
+    monkeypatch.delenv(name="CANONICAL_PUBLICATION_SECRET", raising=False)
     with pytest.raises(ValueError, match="required"):
         CanonicalPublisher(api=MemoryApi(), token="token", lock=None)
 
