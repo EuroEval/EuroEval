@@ -974,9 +974,13 @@ const tooltipStyle = computed(() => {
   const y = hoverPos.value.y;
   const w = TOOLTIP_W;
   const h = TOOLTIP_H;
+  const left = hoverPos.value.flipX ? Math.max(0, x - w - 12) : x + 12;
+  const top = hoverPos.value.flipY ? Math.max(0, y - h - 12) : y + 12;
   return {
-    left: hoverPos.value.flipX ? `${Math.max(0, x - w - 12)}px` : `${x + 12}px`,
-    top: hoverPos.value.flipY ? `${Math.max(0, y - h - 12)}px` : `${y + 12}px`,
+    left:
+      `clamp(0px, ${left}px, ` +
+      `max(0px, calc(100% - min(${w}px, calc(100% - 24px)))))`,
+    top: `clamp(0px, ${top}px, max(0px, calc(100% - ${h}px)))`,
   };
 });
 </script>
