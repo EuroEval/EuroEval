@@ -652,6 +652,8 @@ def test_api_context_length_override_takes_precedence(
     ("model_id", "expected"),
     [
         ("openai/gpt-6-astra", 1_050_000),
+        ("openai/gpt-6.2-astra", 1_050_000),
+        ("gpt-6.2-sol", 1_050_000),
         ("openai/gpt-6-sol", 1_050_000),
         ("openai/gpt-6-luna", 1_050_000),
         ("openai/gpt-6.1-sol", 1_050_000),
@@ -681,6 +683,8 @@ def test_api_context_length_override_takes_precedence(
         ("openai/gpt-5.6-nano", -1),
         ("openai/gpt-6-beta", -1),
         ("openai/gpt-6.1-astra", -1),
+        ("openai/gpt-6.2-beta", -1),
+        ("openai/gpt-6.2-sol-preview", -1),
         ("gemini/gemini-3.9-flash", -1),
         ("gemini/gemini-3.5-pro", -1),
         ("gemini/gemini-3.5-flash-preview", -1),
@@ -777,6 +781,9 @@ def test_deepseek_provider_prefix_is_preserved_for_custom_api(
         ("openai/gpt-5.6-luna", "2026-07-09"),
         ("openai/gpt-5.6", "2026-07-09"),
         ("openai/gpt-6-sol", "2026-09-22"),
+        ("openai/gpt-6.2-sol", "2026-11-17"),
+        ("gpt-6.2-astra", "2026-11-17"),
+        ("openai/gpt-6.2-beta", None),
         ("openai/gpt-6-luna", "2026-09-22"),
         ("typesafe/jev-1.13.0", "2026-09-15"),
         ("typesafe/jev-1.13.1", None),
@@ -1130,6 +1137,61 @@ def _make_response_format_unavailable_error() -> Exception:
         correctly.
     """
     return Exception(RESPONSE_FORMAT_UNAVAILABLE_MESSAGE)
+
+
+class TestGPT62Metadata:
+    """Tests public metadata and reasoning support for GPT-6.2 models."""
+
+    @pytest.mark.parametrize("model_id", ["gpt-6.2-sol", "openai/gpt-6.2-astra"])
+    def test_models_are_reasoning_models(
+        self,
+        model_id: str,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """Canonical prefixed and unprefixed IDs are recognised as reasoning models.
+
+        Args:
+            model_id:
+                The model identifier.
+            dataset_config:
+                The dataset configuration fixture.
+            benchmark_config:
+                The benchmark configuration fixture.
+        """
+        config = LiteLLMModel.get_model_config(
+            model_id=f"{model_id}#xhigh", benchmark_config=benchmark_config
+        )
+        model = LiteLLMModel(
+            model_config=config,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+
+        assert model.generative_type == GenerativeType.REASONING
+        assert (
+            model._setup_model_params(generation_kwargs={})["reasoning_effort"]
+            == "xhigh"
+        )
+
+    def test_unrecognised_variant_is_not_reasoning(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """An unknown nearby GPT-6.2 ID does not inherit metadata."""
+        model = LiteLLMModel(
+            model_config=dataclasses.replace(
+                model_config, model_id="openai/gpt-6.2-beta"
+            ),
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+
+        assert model.generative_type == GenerativeType.INSTRUCTION_TUNED
 
 
 class TestLiteLLMDeepSeekTransformation:

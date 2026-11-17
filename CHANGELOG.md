@@ -9,6 +9,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added documented context-length, release-date and reasoning metadata for GPT-6.2 Sol
+  and GPT-6.2 Astra, and included both models in OpenAI model discovery.
 - Added BLiMP-NL-mini as an unofficial Dutch sentence-level acceptability dataset,
   preserving linguistic phenomenon and paradigm metadata for analysis.
 - Added typed System One evaluation for Hugging Face repositories tagged
