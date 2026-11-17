@@ -1182,7 +1182,7 @@ class TestGPT62Metadata:
                 log_metadata=False,
             )
 
-        assert model.generative_type == GenerativeType.REASONING
+            assert model.generative_type == GenerativeType.REASONING
         assert config.param == effort
         assert config.release_date == "2026-11-17"
         assert model.model_max_length == 1_050_000
@@ -1208,7 +1208,7 @@ class TestGPT62Metadata:
                 log_metadata=False,
             )
 
-        assert model.generative_type == GenerativeType.INSTRUCTION_TUNED
+            assert model.generative_type == GenerativeType.INSTRUCTION_TUNED
 
     @pytest.mark.parametrize(
         "model_id",
