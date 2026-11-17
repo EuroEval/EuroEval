@@ -1170,12 +1170,17 @@ class TestGPT62Metadata:
             model_id=f"{model_id}#{effort}" if effort else model_id,
             benchmark_config=benchmark_config,
         )
-        model = LiteLLMModel(
-            model_config=config,
-            dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
-            log_metadata=False,
-        )
+        with patch(
+            "euroeval.benchmark_modules.litellm.supports_reasoning", return_value=False
+        ):
+            model = LiteLLMModel(
+                model_config=config,
+                dataset_config=dataset_config,
+                benchmark_config=dataclasses.replace(
+                    benchmark_config, generative_type=None
+                ),
+                log_metadata=False,
+            )
 
         assert model.generative_type == GenerativeType.REASONING
         assert config.param == effort
@@ -1189,16 +1194,48 @@ class TestGPT62Metadata:
         benchmark_config: BenchmarkConfig,
     ) -> None:
         """An unknown nearby GPT-6.2 ID does not inherit metadata."""
-        model = LiteLLMModel(
-            model_config=dataclasses.replace(
-                model_config, model_id="openai/gpt-6.2-beta"
-            ),
-            dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
-            log_metadata=False,
-        )
+        with patch(
+            "euroeval.benchmark_modules.litellm.supports_reasoning", return_value=False
+        ):
+            model = LiteLLMModel(
+                model_config=dataclasses.replace(
+                    model_config, model_id="openai/gpt-6.2-beta"
+                ),
+                dataset_config=dataset_config,
+                benchmark_config=dataclasses.replace(
+                    benchmark_config, generative_type=None
+                ),
+                log_metadata=False,
+            )
 
         assert model.generative_type == GenerativeType.INSTRUCTION_TUNED
+
+    @pytest.mark.parametrize(
+        "model_id",
+        ["gpt-6.2-sol", "openai/gpt-6.2-sol", "gpt-6.2-astra", "openai/gpt-6.2-astra"],
+    )
+    @pytest.mark.parametrize("effort", ["none", "minimal"])
+    def test_unsupported_effort_is_rejected(
+        self,
+        model_id: str,
+        effort: str,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """Reject unsupported GPT-6.2 reasoning efforts through the constructor."""
+        config = LiteLLMModel.get_model_config(
+            model_id=f"{model_id}#{effort}", benchmark_config=benchmark_config
+        )
+
+        with pytest.raises(InvalidModel):
+            LiteLLMModel(
+                model_config=config,
+                dataset_config=dataset_config,
+                benchmark_config=dataclasses.replace(
+                    benchmark_config, generative_type=None
+                ),
+                log_metadata=False,
+            )
 
 
 class TestLiteLLMDeepSeekTransformation:
