@@ -54,9 +54,19 @@ def test_category_selects_its_own_generated_csv(tmp_path: Path) -> None:
     assert scores["model-a"]["fo"] == 2.2
 
 
-def test_chat_bare_and_validation_rows_are_zero_shot(tmp_path: Path) -> None:
-    """Chat's unannotated generated rows are zero-shot by construction."""
-    _write_csv(tmp_path, "fo", "chat", [("model-a", "1.2"), ("model-a (val)", "1.3")])
+@pytest.mark.parametrize("annotation", ["", " (val)"])
+def test_chat_bare_and_validation_rows_are_zero_shot(
+    tmp_path: Path, annotation: str
+) -> None:
+    """Chat's unannotated generated rows are zero-shot by construction.
+
+    Args:
+        tmp_path:
+            Temporary leaderboard directory.
+        annotation:
+            Split annotation emitted by the leaderboard generator.
+    """
+    _write_csv(tmp_path, "fo", "chat", [(f"model-a{annotation}", "1.3")])
 
     scores, few_shot, _ = spider_plot.load_language_scores(
         models=("model-a",),
@@ -114,18 +124,30 @@ def test_conflicting_duplicate_rows_are_rejected(tmp_path: Path) -> None:
         )
 
 
-def test_emitted_model_formats_preserve_identifier_suffixes(tmp_path: Path) -> None:
-    """Generated annotations are parsed without consuming ID suffixes."""
+@pytest.mark.parametrize(
+    ("annotation", "expected_few_shot"),
+    [
+        ("", True),
+        (" (val)", True),
+        (" (zero-shot)", False),
+        (" (zero-shot, val)", False),
+    ],
+)
+def test_emitted_model_formats_preserve_identifier_suffixes(
+    tmp_path: Path, annotation: str, expected_few_shot: bool
+) -> None:
+    """Generated annotations are parsed without consuming ID suffixes.
+
+    Args:
+        tmp_path:
+            Temporary leaderboard directory.
+        annotation:
+            Shot and split annotation emitted by the generator.
+        expected_few_shot:
+            Expected shot mode for the generated row.
+    """
     _write_csv(
-        tmp_path,
-        "fo",
-        "generative",
-        [
-            ("model#thinking@revision", "1.1"),
-            ("model#thinking@revision (val)", "1.2"),
-            ("model#thinking@revision (zero-shot)", "1.3"),
-            ("model#thinking@revision (zero-shot, val)", "1.4"),
-        ],
+        tmp_path, "fo", "generative", [(f"model#thinking@revision{annotation}", "1.4")]
     )
 
     scores, few_shot, languages = spider_plot.load_language_scores(
@@ -133,7 +155,7 @@ def test_emitted_model_formats_preserve_identifier_suffixes(tmp_path: Path) -> N
     )
 
     assert scores == {"model#thinking@revision": {"fo": 1.4}}
-    assert few_shot is False
+    assert few_shot is expected_few_shot
     assert languages == ["fo"]
 
 
@@ -164,7 +186,13 @@ def test_invalid_category_columns_and_scores_are_rejected(tmp_path: Path) -> Non
         )
 
     path = tmp_path / "fo_generative_simplified.csv"
-    path.write_text("model,mean_rank_score\nmodel-a (zero-shot, val),NaN\n")
+    path.write_text("model,wrong_column\nmodel-a,1.2\n")
+    with pytest.raises(ValueError, match="Invalid leaderboard CSV columns"):
+        spider_plot.load_language_scores(
+            models=("model-a",), languages=("fo",), csv_dir=tmp_path
+        )
+
+    _write_csv(tmp_path, "fo", "generative", [("model-a (zero-shot, val)", "NaN")])
     with pytest.raises(ValueError, match="Invalid mean_rank_score"):
         spider_plot.load_language_scores(
             models=("model-a",), languages=("fo",), csv_dir=tmp_path
@@ -212,7 +240,7 @@ def test_missing_csv_and_missing_model_scores_are_informative(tmp_path: Path) ->
         )
 
     _write_csv(tmp_path, "fo", "generative", [("model-b (zero-shot, val)", "1.2")])
-    with pytest.raises(ValueError, match="No languages have scores"):
+    with pytest.raises(ValueError, match="No leaderboard scores found"):
         spider_plot.load_language_scores(
             models=("model-a",), languages=("fo",), csv_dir=tmp_path
         )
