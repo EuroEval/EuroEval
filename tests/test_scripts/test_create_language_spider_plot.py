@@ -54,6 +54,30 @@ def test_category_selects_its_own_generated_csv(tmp_path: Path) -> None:
     assert scores["model-a"]["fo"] == 2.2
 
 
+def test_chat_bare_and_validation_rows_are_zero_shot(tmp_path: Path) -> None:
+    """Chat's unannotated generated rows are zero-shot by construction."""
+    _write_csv(tmp_path, "fo", "chat", [("model-a", "1.2"), ("model-a (val)", "1.3")])
+
+    scores, few_shot, _ = spider_plot.load_language_scores(
+        models=("model-a",),
+        languages=("fo",),
+        shots="zero",
+        category="chat",
+        csv_dir=tmp_path,
+    )
+
+    assert scores == {"model-a": {"fo": 1.3}}
+    assert few_shot is False
+    with pytest.raises(ValueError, match="No languages have scores"):
+        spider_plot.load_language_scores(
+            models=("model-a",),
+            languages=("fo",),
+            shots="few",
+            category="chat",
+            csv_dir=tmp_path,
+        )
+
+
 def test_cli_category_and_success_output(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -75,6 +99,63 @@ def test_cli_category_and_success_output(
     assert "Error" not in result.output
 
 
+def test_conflicting_duplicate_rows_are_rejected(tmp_path: Path) -> None:
+    """Conflicting duplicate model, language, and shot rows are not overwritten."""
+    _write_csv(
+        tmp_path,
+        "fo",
+        "generative",
+        [("model-a (zero-shot, val)", "1.2"), ("model-a (zero-shot, val)", "1.3")],
+    )
+
+    with pytest.raises(ValueError, match="Conflicting duplicate scores"):
+        spider_plot.load_language_scores(
+            models=("model-a",), languages=("fo",), csv_dir=tmp_path
+        )
+
+
+def test_emitted_model_formats_preserve_identifier_suffixes(tmp_path: Path) -> None:
+    """Generated annotations are parsed without consuming ID suffixes."""
+    _write_csv(
+        tmp_path,
+        "fo",
+        "generative",
+        [
+            ("model#thinking@revision", "1.1"),
+            ("model#thinking@revision (val)", "1.2"),
+            ("model#thinking@revision (zero-shot)", "1.3"),
+            ("model#thinking@revision (zero-shot, val)", "1.4"),
+        ],
+    )
+
+    scores, few_shot, languages = spider_plot.load_language_scores(
+        models=("model#thinking@revision",), languages=("fo",), csv_dir=tmp_path
+    )
+
+    assert scores == {"model#thinking@revision": {"fo": 1.4}}
+    assert few_shot is False
+    assert languages == ["fo"]
+
+
+def test_excluded_shot_rows_do_not_participate_in_split_validation(
+    tmp_path: Path,
+) -> None:
+    """Split consistency applies only to rows selected by the shot filter."""
+    _write_csv(
+        tmp_path,
+        "fo",
+        "generative",
+        [("model-a (few-shot, val)", "1.2"), ("model-a (zero-shot, test)", "1.3")],
+    )
+
+    scores, few_shot, _ = spider_plot.load_language_scores(
+        models=("model-a",), languages=("fo",), shots="few", csv_dir=tmp_path
+    )
+
+    assert scores == {"model-a": {"fo": 1.2}}
+    assert few_shot is True
+
+
 def test_invalid_category_columns_and_scores_are_rejected(tmp_path: Path) -> None:
     """Unexpected category, schema, and score data fail clearly."""
     with pytest.raises(ValueError, match="Unsupported category"):
@@ -88,6 +169,39 @@ def test_invalid_category_columns_and_scores_are_rejected(tmp_path: Path) -> Non
         spider_plot.load_language_scores(
             models=("model-a",), languages=("fo",), csv_dir=tmp_path
         )
+
+
+def test_matrix_and_main_axis_exclude_non_common_languages(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Only shared language scores contribute to plotted data and axis bounds."""
+    _write_csv(
+        tmp_path,
+        "fo",
+        "generative",
+        [("model-a (zero-shot, val)", "1.2"), ("model-b (zero-shot, val)", "1.3")],
+    )
+    _write_csv(tmp_path, "is", "generative", [("model-a (zero-shot, val)", "100.0")])
+    monkeypatch.setattr(spider_plot, "OUTPUT_DIR", tmp_path)
+    monkeypatch.setattr(spider_plot, "_resolve_languages", lambda languages: languages)
+    monkeypatch.setattr(spider_plot, "_write_image_silent", lambda fig, path: None)
+    monkeypatch.setattr(spider_plot.webbrowser, "open", lambda _uri: True)
+
+    scores, _, languages = spider_plot.load_language_scores(
+        models=("model-a", "model-b"), languages=("fo", "is"), csv_dir=tmp_path
+    )
+    exit_code = spider_plot.main(
+        models=("model-a", "model-b"),
+        languages=("fo", "is"),
+        shots="auto",
+        max_score=2.0,
+        title=None,
+        filename=str(tmp_path / "plot.png"),
+    )
+
+    assert scores == {"model-a": {"fo": 1.2}, "model-b": {"fo": 1.3}}
+    assert languages == ["fo"]
+    assert exit_code == 0
 
 
 def test_missing_csv_and_missing_model_scores_are_informative(tmp_path: Path) -> None:

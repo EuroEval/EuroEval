@@ -522,12 +522,14 @@ def load_language_scores(
             ):
                 raise ValueError(f"Invalid leaderboard CSV columns in {path}")
             for row in reader:
-                parsed = _parse_leaderboard_model(row["model"] or "")
+                parsed = _parse_leaderboard_model(row["model"] or "", category=category)
                 if parsed is None:
                     continue
                 model_id, few_shot, split = parsed
                 selected_model = requested.get(_normalise_model_name(model_id))
-                if selected_model is None:
+                if selected_model is None or (
+                    shots != "auto" and few_shot != (shots == "few")
+                ):
                     continue
                 score_text = (row["mean_rank_score"] or "").strip()
                 score_match = re.fullmatch(r"(\d+(?:\.\d+)?)(?:\s*±.*)?", score_text)
@@ -536,8 +538,14 @@ def load_language_scores(
                         f"Invalid mean_rank_score {score_text!r} in {path} "
                         f"for {model_id}."
                     )
-                found[selected_model].setdefault(language, {})[few_shot] = float(
-                    score_match.group(1)
+                score = float(score_match.group(1))
+                language_scores = found[selected_model].setdefault(language, {})
+                _record_language_score(
+                    language_scores=language_scores,
+                    few_shot=few_shot,
+                    score=score,
+                    model_id=model_id,
+                    language=language,
                 )
                 split_modes.add(split)
 
@@ -588,6 +596,10 @@ def load_language_scores(
             "No languages have scores for all selected models. Missing scores: "
             + "; ".join(missing)
         )
+    matrix = {
+        model: {language: scores[language] for language in common_languages}
+        for model, scores in matrix.items()
+    }
     return matrix, few_shot, common_languages
 
 
@@ -604,22 +616,32 @@ def _language_csv_slug(language: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", name).strip("_")
 
 
-def _parse_leaderboard_model(value: str) -> tuple[str, bool, str] | None:
-    """Return the displayed model ID and shot mode from a CSV cell.
+def _parse_leaderboard_model(
+    value: str, category: str = "generative"
+) -> tuple[str, bool, str] | None:
+    """Return the model ID, shot mode, and split from a CSV cell.
 
     Args:
         value: Plain or HTML-anchored leaderboard model cell.
+        category (optional): Leaderboard category. Chat rows are zero-shot.
 
     Returns:
-        Model ID, few-shot flag, and split, or None when the row has no shot annotation.
+        Model ID, few-shot flag, and split, or None when the cell is not recognised.
     """
     parser = _ModelHTMLParser()
     parser.feed(value)
     display = "".join(parser.text).strip() or value.strip()
-    match = re.fullmatch(r"(.+?)\s*\((zero-shot|few-shot),\s*(val|test)\)", display)
+    match = re.fullmatch(
+        r"(?P<model>.+?)(?:\s+\((?P<shot>zero-shot|few-shot)"
+        r"(?:,\s*(?P<shot_split>val|test))?\)|\s+\((?P<split>val|test)\))?",
+        display,
+    )
     if match is None:
         return None
-    return match.group(1).strip(), match.group(2) == "few-shot", match.group(3)
+    shot = match.group("shot")
+    few_shot = shot == "few-shot" if shot else category != "chat"
+    split = match.group("shot_split") or match.group("split") or "test"
+    return match.group("model").strip(), few_shot, split
 
 
 class _ModelHTMLParser(HTMLParser):
@@ -631,6 +653,31 @@ class _ModelHTMLParser(HTMLParser):
 
     def handle_data(self, data: str) -> None:
         self.text.append(data)
+
+
+def _record_language_score(
+    language_scores: dict[bool, float],
+    few_shot: bool,
+    score: float,
+    model_id: str,
+    language: str,
+) -> None:
+    """Store a score unless it conflicts with an existing duplicate row.
+
+    Args:
+        language_scores: Scores already collected for this model and language.
+        few_shot: Shot mode for the score.
+        score: Parsed score to store.
+        model_id: Model identifier shown in the source CSV.
+        language: Language code for the source CSV.
+
+    Raises:
+        ValueError: If another row has a different score for the same identity.
+    """
+    previous_score = language_scores.get(few_shot)
+    if previous_score is not None and previous_score != score:
+        raise ValueError(f"Conflicting duplicate scores for {model_id} in {language}.")
+    language_scores[few_shot] = score
 
 
 @click.command()
