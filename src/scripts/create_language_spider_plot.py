@@ -1,63 +1,45 @@
-"""Create a language spider/radial plot comparing models across languages.
+"""Create language spider plots from generated leaderboard scores.
 
-This script loads evaluation results from the local result tree and generates a
-Plotly polar chart comparing selected models across languages.
-Only rank score is plotted (lower is better, axis is reversed).
-Output is a PNG file.
+The generated simplified leaderboard CSVs are the authoritative score source.
 """
 
 from __future__ import annotations
 
 import base64
-import json
-import logging
+import csv
 import math
 import re
 import subprocess
 import sys
 import tempfile
-import typing as t
 import webbrowser
-from collections import defaultdict
+from html.parser import HTMLParser
 from pathlib import Path
 
 import click
-import numpy as np
 import plotly.graph_objects as go
 
-from euroeval.constants import ORTHOGONAL_TASKS
 from euroeval.languages import get_all_languages
-from leaderboards.constants import RESULTS_DIR
-from leaderboards.jsonl_io import load_records_from_result_tree
-from leaderboards.record_fields import (
-    get_few_shot,
-    get_raw_results,
-    get_task,
-    get_total_scores,
-)
-from leaderboards.records import get_dataset
+from leaderboards.constants import OUTPUT_DIR
+from leaderboards.enums import LeaderboardCategory
 from leaderboards.task_metadata import (
     language_name_to_codes,
     languages_with_official_datasets,
-    official_datasets_for_language,
-    task_metric_names,
 )
-
-# Type alias for evaluation records (recursive JSON structure)
-Json = dict[str, "Json"] | list["Json"] | str | int | float | bool | None
-JsonDict = dict[str, Json]
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 EUROEVAL_LOGO_PATH = REPO_ROOT / "gfx" / "euroeval.png"
 
+_IMAGE_EXPORT_CODE = """
+import sys
 
-# Silence logging by default; script should emit exactly one line on success
-logging.basicConfig(
-    level=logging.CRITICAL,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-logger = logging.getLogger(__name__)
+import kaleido
+import plotly.io as pio
+
+figure = pio.read_json(sys.argv[1])
+figure.write_image(sys.argv[2], scale=3)
+kaleido.stop_sync_server(silence_warnings=True)
+"""
 
 
 def main(
@@ -67,676 +49,85 @@ def main(
     max_score: float | None,
     title: str | None,
     filename: str | None,
+    category: str = "generative",
 ) -> int:
-    """Create a language spider plot comparing models across languages.
-
-    Loads evaluation results from local JSONL files and generates a Plotly
-    polar chart comparing selected models across languages.
-    Only rank score is plotted (lower is better).
-    Output is a PNG file.
+    """Create a language spider plot using generated leaderboard scores.
 
     Args:
-        models:
-            Model IDs to include.
-        languages:
-            Language names or codes to include. Empty means official languages.
-        shots:
-            Shot setting: "auto", "zero", or "few".
-        max_score (optional):
-            Override maximum rank score for the radial axis. If omitted,
-            auto-computed from plotted rank scores (rounded up to nearest 0.5,
-            minimum 2.5; rank score of 1 is perfect).
-        title (optional):
-            Plot title. If omitted, uses default title.
-        filename (optional):
-            Output PNG filename (without .png suffix if desired, it will be
-            appended). If omitted and title is set, inferred from title using
-            snake_case. If both omitted, uses "language-spider-plot.png".
+        models: Model IDs to include.
+        languages: Language names or codes; empty selects official languages.
+        shots: Shot setting: ``auto``, ``zero``, or ``few``.
+        max_score: Optional maximum rank score for the radial axis.
+        title: Optional plot title.
+        filename: Optional output PNG filename.
+        category (optional): Leaderboard category. Defaults to ``generative``.
 
     Returns:
         Exit code (0 for success, 1 for failure).
     """
-    model_list = list(models)
-    language_list = list(languages) if languages else None
-
     try:
-        resolved_languages = _resolve_languages(language_list)
-    except ValueError as exc:
-        click.echo(f"Error: {exc}", err=True)
-        sys.exit(1)
-
-    # Load all records as reference population (for rank score computation)
-    all_records = _load_all_results()
-
-    # Verify requested models have data
-    requested_model_records = _load_results_for_models(model_list)
-    if not requested_model_records:
-        click.echo("Error: No results found for specified models", err=True)
-        sys.exit(1)
-
-    try:
-        filtered_records = _filter_by_shots(
-            requested_model_records, t.cast(t.Literal["auto", "zero", "few"], shots)
+        model_scores, shot_value, used_languages = load_language_scores(
+            models=models,
+            languages=tuple(_resolve_languages(list(languages) if languages else None)),
+            shots=shots,
+            category=category,
         )
-    except ValueError as exc:
+        max_score_val = _compute_max_score(model_scores, max_score)
+    except (ValueError, FileNotFoundError) as exc:
         click.echo(f"Error: {exc}", err=True)
-        sys.exit(1)
-
-    if not filtered_records:
-        click.echo("Error: No records after shot filtering", err=True)
-        sys.exit(1)
-
-    shot_value = _resolve_shot_value(
-        filtered_records=filtered_records,
-        shots_setting=t.cast(t.Literal["auto", "zero", "few"], shots),
-    )
-
-    # Build score matrix using all records as reference population
-    model_scores_matrix = _build_score_matrix(
-        all_records=all_records,
-        models=model_list,
-        languages=resolved_languages,
-        shot_value=shot_value,
-    )
-
-    model_scores_matrix, used_languages = _compute_language_intersection(
-        model_scores_matrix, resolved_languages
-    )
-
-    if not used_languages:
-        missing_info = []
-        for model_id, lang_scores in model_scores_matrix.items():
-            missing = [lang for lang, score in lang_scores.items() if score is None]
-            if missing:
-                missing_info.append(f"{model_id}: {', '.join(missing[:5])}")
-        click.echo(
-            "Error: No languages have scores for all selected models. "
-            "Missing scores:\n  " + "\n  ".join(missing_info),
-            err=True,
-        )
-        sys.exit(1)
-
-    # Language intersection applied silently (no output on success)
-
-    try:
-        max_score_val = _compute_max_score(model_scores_matrix, max_score)
-    except ValueError as exc:
-        click.echo(f"Error: {exc}", err=True)
-        sys.exit(1)
+        return 1
 
     fig = _create_spider_plot(
-        model_scores=model_scores_matrix,
+        model_scores=model_scores,
         languages=used_languages,
         max_score=max_score_val,
         title=title or _default_plot_title(shot_value=shot_value),
     )
-
-    # Determine output filename
     output_filename = _determine_output_filename(title, filename)
     output_path = Path(output_filename).resolve()
     file_uri = output_path.as_uri()
     try:
         _write_image_silent(fig, str(output_path))
-    except Exception as exc:
-        click.echo(f"Error writing PNG: {exc}", err=True)
-        return 1
-
-    try:
         opened = webbrowser.open(file_uri)
     except Exception as exc:
-        click.echo(f"Error opening PNG: {exc}", err=True)
+        click.echo(f"Error writing or opening PNG: {exc}", err=True)
         return 1
     if not opened:
         click.echo(f"Error opening PNG: {file_uri}", err=True)
         return 1
-
     click.echo(f"Finished. The output plot can now be found at {file_uri}")
-
     return 0
 
 
-def _build_score_matrix(
-    all_records: list[JsonDict],
-    models: list[str],
-    languages: list[str],
-    shot_value: bool | None,
-) -> dict[str, dict[str, float | None]]:
-    """Build a model x language mean rank score matrix from records.
-
-    Computes per-language mean rank scores following the EuroEval methodology:
-    1. Extract raw per-iteration/bootstrap scores per (model, dataset, language)
-    2. Compute mean_score(m,d) = mean of all raw scores for model m on dataset d
-    3. Compute pooled_std(d) = std of ALL raw scores from all models on dataset d
-       (uses all_records as reference population, not just requested models)
-    4. Compute rank_score = 1 + (best_mean - model_mean) / pooled_std
-    5. Aggregate hierarchy: dataset -> task -> language (unweighted means)
-
-    Rank score of 1 is perfect (best on dataset). Lower is better.
-    Reference population is all available records; output matrix contains
-    only the requested models.
-
-    Args:
-        all_records:
-            All result records (reference population for rank scores).
-        models:
-            Model IDs to include in output matrix.
-        languages:
-            Language codes to include in output matrix.
-        shot_value:
-            None for any, True for few-shot, False for zero-shot.
-
-    Returns:
-        Model x language mean rank score matrix (lower is better).
-    """
-    # Step 1: Collect raw scores
-    model_dataset_lang_raw_scores = _collect_raw_scores(
-        all_records=all_records,
-        models=models,
-        languages=languages,
-        shot_value=shot_value,
-    )
-
-    if not model_dataset_lang_raw_scores:
-        return {model: {lang: None for lang in languages} for model in models}
-
-    # Step 2: Compute model-dataset means
-    model_dataset_means = _compute_model_dataset_means(
-        model_dataset_lang_raw_scores=model_dataset_lang_raw_scores
-    )
-
-    # Step 3: Compute dataset statistics
-    dataset_stats = _compute_dataset_stats(
-        model_dataset_lang_raw_scores=model_dataset_lang_raw_scores,
-        model_dataset_means=model_dataset_means,
-    )
-
-    # Step 4: Compute rank scores
-    model_dataset_lang_rank_scores = _compute_rank_scores(
-        models=models,
-        model_dataset_lang_raw_scores=model_dataset_lang_raw_scores,
-        dataset_stats=dataset_stats,
-    )
-
-    # Step 5a: Build dataset mappings
-    dataset_to_task, dataset_to_lang_name = _build_dataset_mappings()
-
-    # Step 5b: Group scores by language and task
-    model_lang_task_scores = _group_scores_by_language_task(
-        models=models,
-        languages=languages,
-        model_dataset_lang_rank_scores=model_dataset_lang_rank_scores,
-        dataset_to_task=dataset_to_task,
-        dataset_to_lang_name=dataset_to_lang_name,
-    )
-
-    # Step 6: Aggregate to final matrix
-    return _aggregate_to_matrix(
-        models=models,
-        languages=languages,
-        model_lang_task_scores=model_lang_task_scores,
-    )
-
-
-def _aggregate_to_matrix(
-    models: list[str],
-    languages: list[str],
-    model_lang_task_scores: dict[str, dict[str, dict[str, list[float]]]],
-) -> dict[str, dict[str, float | None]]:
-    """Aggregate to language mean rank scores.
-
-    Args:
-        models:
-            Model IDs to include.
-        languages:
-            Language codes to include.
-        model_lang_task_scores:
-            Dict from _group_scores_by_language_task.
-
-    Returns:
-        Model x language mean rank score matrix.
-    """
-    matrix: dict[str, dict[str, float | None]] = {}
-    for model in models:
-        matrix[model] = {}
-        lang_task_scores = model_lang_task_scores.get(model, {})
-
-        for lang in languages:
-            task_scores = lang_task_scores.get(lang, {})
-            if not task_scores:
-                matrix[model][lang] = None
-                continue
-            task_means = [np.mean(scores) for scores in task_scores.values() if scores]
-            if task_means:
-                matrix[model][lang] = float(np.mean(task_means))
-            else:
-                matrix[model][lang] = None
-    return matrix
-
-
-def _build_dataset_mappings() -> tuple[dict[str, str], dict[str, str]]:
-    """Build mappings from dataset to task and language name.
-
-    Returns:
-        Tuple of (dataset_to_task, dataset_to_lang_name) dicts.
-    """
-    dataset_to_task: dict[str, str] = {}
-    dataset_to_lang_name: dict[str, str] = {}
-
-    for lang_name in languages_with_official_datasets():
-        try:
-            lang_configs = official_datasets_for_language(lang_name)
-            for task_name, datasets_list in lang_configs.items():
-                for ds in datasets_list:
-                    if ds not in dataset_to_task:
-                        dataset_to_task[ds] = task_name
-                        dataset_to_lang_name[ds] = lang_name
-        except Exception:
-            continue
-    return dataset_to_task, dataset_to_lang_name
-
-
-def _collect_raw_scores(
-    all_records: list[JsonDict],
-    models: list[str],
-    languages: list[str],
-    shot_value: bool | None,
-) -> dict[str, dict[str, dict[str, list[float]]]]:
-    """Collect raw per-iteration scores per (model, dataset, language).
-
-    Args:
-        all_records:
-            All result records.
-        models:
-            Model IDs to include.
-        languages:
-            Language codes to include.
-        shot_value:
-            Few-shot filter value.
-
-    Returns:
-        Nested dict: model -> dataset -> language -> list of raw scores.
-    """
-    model_dataset_lang_raw_scores: dict[str, dict[str, dict[str, list[float]]]] = (
-        defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-    )
-
-    for record in all_records:
-        model_name = _get_model_identifier(record)
-        record_few_shot = get_few_shot(record)
-        if shot_value is not None and record_few_shot is not None:
-            if record_few_shot != shot_value:
-                continue
-
-        task_name = get_task(record)
-        if (
-            not task_name
-            or task_name in ORTHOGONAL_TASKS
-            or task_name == "contamination-detection"
-        ):
-            continue
-
-        record_languages = _extract_languages_from_record(record)
-        dataset = get_dataset(record)
-
-        if not dataset or not record_languages:
-            continue
-
-        primary_metric, secondary_metric = task_metric_names(task_name)
-        raw_scores = _extract_raw_scores_from_record(
-            record, primary_metric, secondary_metric
-        )
-
-        if not raw_scores:
-            continue
-
-        for lang in record_languages:
-            if lang in languages:
-                model_dataset_lang_raw_scores[model_name][dataset][lang].extend(
-                    raw_scores
-                )
-
-    return model_dataset_lang_raw_scores
-
-
-def _extract_languages_from_record(record: JsonDict) -> list[str]:
-    """Extract language codes from an EEE-format record.
-
-    Handles both modern EEE format (JSON-encoded string in eval_library) and
-    legacy formats.
-
-    Args:
-        record:
-            EEE-format result record.
-
-    Returns:
-        List of language codes.
-    """
-    eval_lib = record.get("eval_library", {})
-    if not isinstance(eval_lib, dict):
-        eval_lib = {}
-    additional = eval_lib.get("additional_details", {})
-    if not isinstance(additional, dict):
-        additional = {}
-    languages_json = additional.get("languages")
-
-    if languages_json:
-        try:
-            languages = json.loads(languages_json)
-            if isinstance(languages, list):
-                return [str(lang) for lang in languages]
-        except (json.JSONDecodeError, TypeError):
-            pass
-
-    legacy_languages_value = record.get("languages")
-    if isinstance(legacy_languages_value, str):
-        try:
-            languages = json.loads(legacy_languages_value)
-            if isinstance(languages, list):
-                return [str(lang) for lang in languages]
-        except (json.JSONDecodeError, TypeError):
-            return [legacy_languages_value]
-    elif isinstance(legacy_languages_value, list):
-        return [str(lang) for lang in legacy_languages_value]
-
-    return []
-
-
-def _extract_raw_scores_from_record(
-    record: JsonDict, primary_metric: str, secondary_metric: str | None
-) -> list[float]:
-    """Extract raw per-iteration scores from an EEE-format record.
-
-    Retrieves raw bootstrap/iteration scores for the primary metric (or
-    secondary if primary is unavailable) from the record's raw_results.
-
-    Args:
-        record:
-            EEE-format result record.
-        primary_metric:
-            Primary metric name (e.g. "mcc", "macro_f1").
-        secondary_metric:
-            Secondary metric name, or None if single-metric task.
-
-    Returns:
-        List of raw per-iteration scores. Empty list if no raw scores found.
-    """
-    raw_results = get_raw_results(record)
-    if raw_results is None:
-        return []
-
-    raw_scores: list[float] = []
-    metrics_to_try = [primary_metric]
-    if secondary_metric:
-        metrics_to_try.append(secondary_metric)
-
-    for result_dict in raw_results:
-        if not isinstance(result_dict, dict):
-            continue
-        score: float | None = None
-        for metric in metrics_to_try:
-            # Try with test_ prefix first, then bare metric name
-            if f"test_{metric}" in result_dict:
-                score = float(result_dict[f"test_{metric}"])
-                break
-            if metric in result_dict:
-                score = float(result_dict[metric])
-                break
-        if score is not None and math.isfinite(score):
-            raw_scores.append(score)
-
-    # Scale normalised scores [0, 1] back to [0, 100] if needed
-    if raw_scores and max(raw_scores) <= 1.0:
-        raw_scores = [s * 100.0 for s in raw_scores]
-
-    return raw_scores
-
-
-def _get_model_identifier(record: JsonDict) -> str:
-    """Extract model identifier from an EEE-format record.
-
-    Args:
-        record:
-            EEE-format result record.
-
-    Returns:
-        Model name/ID.
-    """
-    model_info = record.get("model_info", {})
-    if not isinstance(model_info, dict):
-        return ""
-    return model_info.get("name", "") or model_info.get("id", "")
-
-
-def _compute_dataset_stats(
-    model_dataset_lang_raw_scores: dict[str, dict[str, dict[str, list[float]]]],
-    model_dataset_means: dict[str, dict[str, float]],
-) -> dict[str, tuple[float, float]]:
-    """Compute pooled_std per dataset from ALL raw scores across all models.
-
-    Args:
-        model_dataset_lang_raw_scores:
-            Nested dict from _collect_raw_scores.
-        model_dataset_means:
-            Dict from _compute_model_dataset_means.
-
-    Returns:
-        Dict: dataset -> (best_mean, pooled_std).
-    """
-    dataset_all_raw_scores: dict[str, list[float]] = defaultdict(list)
-    for model, datasets in model_dataset_lang_raw_scores.items():
-        for dataset, lang_raw_scores in datasets.items():
-            for scores_list in lang_raw_scores.values():
-                dataset_all_raw_scores[dataset].extend(scores_list)
-
-    dataset_stats: dict[str, tuple[float, float]] = {}
-    for dataset, all_scores in dataset_all_raw_scores.items():
-        if not all_scores:
-            continue
-        models_with_dataset = {
-            m for m, ds_means in model_dataset_means.items() if dataset in ds_means
-        }
-        if not models_with_dataset:
-            continue
-        best_mean = max(model_dataset_means[m][dataset] for m in models_with_dataset)
-        pooled_std = float(np.std(all_scores)) if len(all_scores) > 1 else 1.0
-        if pooled_std <= 0:
-            pooled_std = 1.0
-        dataset_stats[dataset] = (best_mean, pooled_std)
-    return dataset_stats
-
-
-def _compute_model_dataset_means(
-    model_dataset_lang_raw_scores: dict[str, dict[str, dict[str, list[float]]]],
-) -> dict[str, dict[str, float]]:
-    """Compute mean score per (model, dataset) from raw scores.
-
-    Args:
-        model_dataset_lang_raw_scores:
-            Nested dict from _collect_raw_scores.
-
-    Returns:
-        Dict: model -> dataset -> mean score.
-    """
-    model_dataset_means: dict[str, dict[str, float]] = defaultdict(dict)
-    for model, datasets in model_dataset_lang_raw_scores.items():
-        for dataset, lang_raw_scores in datasets.items():
-            all_raw_scores: list[float] = []
-            for scores_list in lang_raw_scores.values():
-                all_raw_scores.extend(scores_list)
-            if all_raw_scores:
-                model_dataset_means[model][dataset] = float(np.mean(all_raw_scores))
-    return model_dataset_means
-
-
-def _compute_rank_scores(
-    models: list[str],
-    model_dataset_lang_raw_scores: dict[str, dict[str, dict[str, list[float]]]],
-    dataset_stats: dict[str, tuple[float, float]],
-) -> dict[str, dict[str, dict[str, float]]]:
-    """Compute rank score per (model, dataset, language).
-
-    Args:
-        models:
-            Model IDs to include.
-        model_dataset_lang_raw_scores:
-            Nested dict from _collect_raw_scores.
-        dataset_stats:
-            Dict from _compute_dataset_stats.
-
-    Returns:
-        Nested dict: model -> dataset -> language -> rank score.
-    """
-    model_dataset_lang_rank_scores: dict[str, dict[str, dict[str, float]]] = (
-        defaultdict(lambda: defaultdict(dict))
-    )
-    for model in models:
-        if model not in model_dataset_lang_raw_scores:
-            continue
-        for dataset, lang_raw_scores in model_dataset_lang_raw_scores[model].items():
-            if dataset not in dataset_stats:
-                continue
-            best_mean, pooled_std = dataset_stats[dataset]
-            for lang, raw_scores_list in lang_raw_scores.items():
-                if not raw_scores_list:
-                    continue
-                model_mean = float(np.mean(raw_scores_list))
-                rank_score = 1.0 + (best_mean - model_mean) / pooled_std
-                model_dataset_lang_rank_scores[model][dataset][lang] = rank_score
-    return model_dataset_lang_rank_scores
-
-
-def _group_scores_by_language_task(
-    models: list[str],
-    languages: list[str],
-    model_dataset_lang_rank_scores: dict[str, dict[str, dict[str, float]]],
-    dataset_to_task: dict[str, str],
-    dataset_to_lang_name: dict[str, str],
-) -> dict[str, dict[str, dict[str, list[float]]]]:
-    """Group rank scores by (language, task).
-
-    Args:
-        models:
-            Model IDs to include.
-        languages:
-            Language codes to include.
-        model_dataset_lang_rank_scores:
-            Dict from _compute_rank_scores.
-        dataset_to_task:
-            Dataset to task mapping.
-        dataset_to_lang_name:
-            Dataset to language name mapping.
-
-    Returns:
-        Nested dict: model -> language -> task -> list of rank scores.
-    """
-    model_lang_task_scores: dict[str, dict[str, dict[str, list[float]]]] = defaultdict(
-        lambda: defaultdict(lambda: defaultdict(list))
-    )
-
-    for model in models:
-        model_rank_scores = model_dataset_lang_rank_scores.get(model, {})
-        for dataset, lang_rank_scores in model_rank_scores.items():
-            task = dataset_to_task.get(dataset)
-            lang_name = dataset_to_lang_name.get(dataset)
-            if not task or task in ORTHOGONAL_TASKS or not lang_name:
-                continue
-            for lang_code, rank_score in lang_rank_scores.items():
-                if lang_code in languages:
-                    model_lang_task_scores[model][lang_code][task].append(rank_score)
-    return model_lang_task_scores
-
-
-def _compute_language_intersection(
-    model_scores: dict[str, dict[str, float | None]], languages: list[str]
-) -> tuple[dict[str, dict[str, float | None]], list[str]]:
-    """Compute the intersection of languages with scores for all models.
-
-    Filters the score matrix to only include languages where all models
-    have at least one valid score.
-
-    Args:
-        model_scores:
-            Model x language score matrix.
-        languages:
-            Original language list.
-
-    Returns:
-        Tuple of (filtered score matrix, list of languages in intersection).
-    """
-    if not model_scores:
-        return model_scores, languages
-
-    languages_with_all_scores: set[str] = set(languages)
-
-    for model_id, lang_scores in model_scores.items():
-        models_valid_languages = {
-            lang for lang, score in lang_scores.items() if score is not None
-        }
-        languages_with_all_scores &= models_valid_languages
-
-    filtered_matrix: dict[str, dict[str, float | None]] = {}
-    for model_id, lang_scores in model_scores.items():
-        filtered_matrix[model_id] = {
-            lang: lang_scores[lang] for lang in languages_with_all_scores
-        }
-
-    return filtered_matrix, sorted(languages_with_all_scores)
-
-
 def _compute_max_score(
-    model_scores: dict[str, dict[str, float | None]], max_score_override: float | None
+    model_scores: dict[str, dict[str, float | None]], override: float | None
 ) -> float:
-    """Compute or validate maximum rank score for radial axis.
-
-    If max_score_override is None, automatically computes the maximum from
-    all plotted rank scores and rounds up to the nearest 0.5, with a minimum
-    of 2.5 (since rank score of 1 is perfect, typical values are 2.5–6).
-    If provided, validates that it is finite, > 1, and >= all plotted scores.
+    """Choose and validate the radial axis maximum.
 
     Args:
-        model_scores:
-            Nested dict of model -> language -> rank score (or None).
-        max_score_override (optional):
-            User-provided maximum rank score override. If omitted, auto-computed
-            from the plotted rank scores.
+        model_scores: Model-by-language score matrix.
+        override: Optional user-provided maximum.
 
     Returns:
-        Maximum rank score value for the radial axis.
+        Maximum score displayed on the radial axis.
 
     Raises:
-        ValueError:
-            If override is invalid (NaN, inf, <= 1, or too small).
+        ValueError: If override is not positive or below a plotted score.
     """
-    all_scores: list[float] = []
-    for lang_scores in model_scores.values():
-        for score in lang_scores.values():
-            if score is not None and math.isfinite(score) and score > 0:
-                all_scores.append(score)
-
-    if not all_scores:
-        return 2.5
-
-    max_found = max(all_scores)
-
-    if max_score_override is not None:
-        if not math.isfinite(max_score_override):
+    scores = [
+        score
+        for values in model_scores.values()
+        for score in values.values()
+        if score is not None
+    ]
+    maximum = max(scores, default=1.0)
+    if override is not None:
+        if override < maximum or override <= 1:
             raise ValueError(
-                f"max-score {max_score_override} is invalid (must be finite)."
+                f"max-score must be greater than all plotted scores ({maximum})."
             )
-        if max_score_override <= 1:
-            raise ValueError(
-                f"max-score {max_score_override} is invalid (must be > 1, "
-                f"since rank score of 1 is perfect)."
-            )
-        if max_score_override < max_found:
-            raise ValueError(
-                f"max-score {max_score_override} is too small; "
-                f"found rank scores up to {max_found:.2f}"
-            )
-        return max_score_override
-
-    rounded = math.ceil(max_found * 2) / 2
-    return max(rounded, 2.5)
+        return override
+    return max(2.5, math.ceil(maximum * 2) / 2)
 
 
 def _create_spider_plot(
@@ -892,21 +283,15 @@ def _load_logo_data_uri() -> str:
 
 
 def _normalise_model_name(model_id: str) -> str:
-    """Normalise model identifier for display.
-
-    Extracts the short model name from a full identifier like
-    "author/model-name" -> "model-name".
+    """Normalise whitespace and case for model identity matching.
 
     Args:
-        model_id:
-            Model identifier (may include author prefix).
+        model_id: Model identifier from user input or leaderboard display.
 
     Returns:
-        Normalised model name for display.
+        Normalised identifier.
     """
-    if "/" in model_id:
-        return model_id.split("/")[-1]
-    return model_id
+    return " ".join(model_id.strip().casefold().split())
 
 
 def _default_plot_title(shot_value: bool) -> str:
@@ -978,90 +363,6 @@ def _to_snake_case(text: str) -> str:
     return result.strip("_")
 
 
-def _filter_by_shots(
-    records: list[JsonDict], shots_setting: t.Literal["auto", "zero", "few"]
-) -> list[JsonDict]:
-    """Filter records by shot setting.
-
-    Args:
-        records:
-            All result records.
-        shots_setting:
-            Shot setting: "auto", "zero", or "few".
-
-    Returns:
-        Filtered records.
-
-    Raises:
-        ValueError:
-            If auto-detection is ambiguous or fails.
-    """
-    if shots_setting == "zero":
-        return [r for r in records if get_few_shot(r) is False]
-    elif shots_setting == "few":
-        return [r for r in records if get_few_shot(r) is True]
-
-    zero_records = [r for r in records if get_few_shot(r) is False]
-    few_records = [r for r in records if get_few_shot(r) is True]
-
-    zero_count = len(zero_records)
-    few_count = len(few_records)
-
-    if zero_count > 0 and few_count == 0:
-        return zero_records
-    elif few_count > 0 and zero_count == 0:
-        return few_records
-    elif zero_count > 0 and few_count > 0:
-        raise ValueError(
-            f"Auto-detection ambiguous: found {zero_count} zero-shot and "
-            f"{few_count} few-shot records. Please specify --shots zero or --shots few."
-        )
-    else:
-        raise ValueError(
-            "Auto-detection failed: no records with known shot setting. "
-            "Records may be missing few_shot metadata."
-        )
-
-
-def _load_all_results() -> list[JsonDict]:
-    """Load all results from the local result tree (reference population).
-
-    Loads all JSON files in the results tree structure.
-
-    Returns:
-        List of EEE-format result records from all models.
-    """
-    try:
-        records = load_records_from_result_tree(RESULTS_DIR)
-        return [t.cast(JsonDict, rec) for rec in records]
-    except Exception:
-        return []
-
-
-def _load_results_for_models(model_ids: list[str]) -> list[JsonDict]:
-    """Load results for the specified model IDs from local JSONL files.
-
-    Used to verify requested models have data. For rank score computation,
-    use _load_all_results() to get the full reference population.
-
-    Args:
-        model_ids:
-            List of model IDs to load results for.
-
-    Returns:
-        List of EEE-format result records for the specified models.
-    """
-    all_records = _load_all_results()
-    records: list[JsonDict] = []
-
-    for record in all_records:
-        model_name = _get_model_identifier(record)
-        if any(model_name == m or model_name.endswith("/" + m) for m in model_ids):
-            records.append(record)
-
-    return records
-
-
 def _resolve_languages(language_inputs: list[str] | None) -> list[str]:
     """Resolve language inputs to a list of language codes.
 
@@ -1125,27 +426,6 @@ def _normalise_language_input(language_input: str) -> set[str]:
     )
 
 
-def _resolve_shot_value(
-    filtered_records: list[JsonDict], shots_setting: t.Literal["auto", "zero", "few"]
-) -> bool:
-    """Resolve the shot setting to a Boolean few-shot value.
-
-    Args:
-        filtered_records:
-            Records remaining after shot filtering.
-        shots_setting:
-            User-requested shot setting.
-
-    Returns:
-        True for few-shot, False for zero-shot.
-    """
-    if shots_setting == "zero":
-        return False
-    if shots_setting == "few":
-        return True
-    return get_few_shot(filtered_records[0]) is True
-
-
 def _write_image_silent(fig: go.Figure, path: str) -> None:
     """Write Plotly figure to image without leaking Kaleido cleanup output.
 
@@ -1189,66 +469,168 @@ def _write_image_silent(fig: go.Figure, path: str) -> None:
     raise click.ClickException(message)
 
 
-def _extract_scores_from_record(record: JsonDict) -> dict[str, float]:
-    """Extract all scores from an EEE-format record.
-
-    Uses the robust get_total_scores helper which handles the
-    evaluation_results structure.
-
-    Args:
-        record:
-            EEE-format result record.
-
-    Returns:
-        Dict mapping metric names to scores. Empty dict if no scores found.
-    """
-    scores = get_total_scores(record)
-    return scores if scores is not None else {}
-
-
-def _extract_task_from_record(record: JsonDict) -> str | None:
-    """Extract task name from an EEE-format record.
+def load_language_scores(
+    models: tuple[str, ...],
+    languages: tuple[str, ...],
+    shots: str = "auto",
+    category: str = "generative",
+    csv_dir: Path | None = None,
+) -> tuple[dict[str, dict[str, float | None]], bool, list[str]]:
+    """Load exact mean rank scores from generated per-language CSVs.
 
     Args:
-        record:
-            EEE-format result record.
+        models: Model identifiers to select.
+        languages: Canonical language codes to include.
+        shots: ``auto``, ``zero``, or ``few``; auto rejects mixed shot modes.
+        category (optional): Supported leaderboard category.
+        csv_dir (optional): Directory containing generated simplified CSVs.
 
     Returns:
-        Task name, or None if not found.
+        Model-by-language score matrix, selected few-shot flag, and languages
+        with scores for every requested model.
+
+    Raises:
+        ValueError: If category, shot selection, models, or scores are invalid.
+        FileNotFoundError: If a requested language CSV is missing.
     """
-    eval_lib = record.get("eval_library", {})
-    if not isinstance(eval_lib, dict):
+    valid_categories = {item.value for item in LeaderboardCategory}
+    if category not in valid_categories:
+        choices = ", ".join(sorted(valid_categories))
+        raise ValueError(f"Unsupported category {category!r}; choose from {choices}.")
+    if shots not in {"auto", "zero", "few"}:
+        raise ValueError("shots must be 'auto', 'zero', or 'few'.")
+    if not models:
+        raise ValueError("At least one model must be selected.")
+
+    csv_dir = csv_dir or OUTPUT_DIR
+    requested = {_normalise_model_name(model): model for model in models}
+    found: dict[str, dict[str, dict[bool, float]]] = {model: {} for model in models}
+    split_modes: set[str] = set()
+    for language in languages:
+        path = csv_dir / f"{language}_{category}_simplified.csv"
+        if not path.is_file():
+            language_slug = _language_csv_slug(language)
+            path = csv_dir / f"{language_slug}_{category}_simplified.csv"
+        if not path.is_file():
+            raise FileNotFoundError(
+                f"Missing leaderboard CSV for {language} ({category}): {path}"
+            )
+        with path.open(encoding="utf-8-sig", newline="") as csv_file:
+            reader = csv.DictReader(csv_file)
+            if not reader.fieldnames or not {"model", "mean_rank_score"}.issubset(
+                reader.fieldnames
+            ):
+                raise ValueError(f"Invalid leaderboard CSV columns in {path}")
+            for row in reader:
+                parsed = _parse_leaderboard_model(row["model"] or "")
+                if parsed is None:
+                    continue
+                model_id, few_shot, split = parsed
+                selected_model = requested.get(_normalise_model_name(model_id))
+                if selected_model is None:
+                    continue
+                score_text = (row["mean_rank_score"] or "").strip()
+                score_match = re.fullmatch(r"(\d+(?:\.\d+)?)(?:\s*±.*)?", score_text)
+                if score_match is None:
+                    raise ValueError(
+                        f"Invalid mean_rank_score {score_text!r} in {path} "
+                        f"for {model_id}."
+                    )
+                found[selected_model].setdefault(language, {})[few_shot] = float(
+                    score_match.group(1)
+                )
+                split_modes.add(split)
+
+    if len(split_modes) > 1:
+        raise ValueError(
+            "Leaderboard CSVs contain both validation and test scores for the "
+            "selected models; select a consistent split before plotting."
+        )
+
+    shot_modes = {
+        shot
+        for language_scores in found.values()
+        for scores in language_scores.values()
+        for shot in scores
+    }
+    if shots == "auto":
+        if len(shot_modes) > 1:
+            raise ValueError(
+                "Auto shot selection is ambiguous: generated CSVs contain both "
+                "zero-shot and few-shot scores. Specify --shots zero or --shots few."
+            )
+        if not shot_modes:
+            raise ValueError("No leaderboard scores found for the selected models.")
+        few_shot = next(iter(shot_modes))
+    else:
+        few_shot = shots == "few"
+
+    matrix: dict[str, dict[str, float | None]] = {}
+    for model in models:
+        matrix[model] = {
+            language: found[model].get(language, {}).get(few_shot)
+            for language in languages
+        }
+    common_languages = [
+        language
+        for language in languages
+        if all(matrix[model][language] is not None for model in models)
+    ]
+    if not common_languages:
+        missing = []
+        for model in models:
+            model_missing = [
+                language for language in languages if matrix[model][language] is None
+            ]
+            if model_missing:
+                missing.append(f"{model}: {', '.join(model_missing)}")
+        raise ValueError(
+            "No languages have scores for all selected models. Missing scores: "
+            + "; ".join(missing)
+        )
+    return matrix, few_shot, common_languages
+
+
+def _language_csv_slug(language: str) -> str:
+    """Return the generated CSV filename slug for a language code.
+
+    Args:
+        language: Canonical language code.
+
+    Returns:
+        Lowercase language name with spaces represented by underscores.
+    """
+    name = _get_language_display_name(language).casefold()
+    return re.sub(r"[^a-z0-9]+", "_", name).strip("_")
+
+
+def _parse_leaderboard_model(value: str) -> tuple[str, bool, str] | None:
+    """Return the displayed model ID and shot mode from a CSV cell.
+
+    Args:
+        value: Plain or HTML-anchored leaderboard model cell.
+
+    Returns:
+        Model ID, few-shot flag, and split, or None when the row has no shot annotation.
+    """
+    parser = _ModelHTMLParser()
+    parser.feed(value)
+    display = "".join(parser.text).strip() or value.strip()
+    match = re.fullmatch(r"(.+?)\s*\((zero-shot|few-shot),\s*(val|test)\)", display)
+    if match is None:
         return None
-    additional = eval_lib.get("additional_details", {})
-    if not isinstance(additional, dict):
-        return None
-    return additional.get("task")
+    return match.group(1).strip(), match.group(2) == "few-shot", match.group(3)
 
 
-def _get_primary_metric_for_task(task: str) -> str:
-    """Get the primary metric for a task.
+class _ModelHTMLParser(HTMLParser):
+    """Extract visible model identifiers from leaderboard HTML links."""
 
-    Args:
-        task:
-            Task name.
+    def __init__(self) -> None:
+        super().__init__()
+        self.text: list[str] = []
 
-    Returns:
-        Primary metric name.
-    """
-    primary, _ = task_metric_names(task)
-    return primary
-
-
-_IMAGE_EXPORT_CODE = """
-import sys
-
-import kaleido
-import plotly.io as pio
-
-figure = pio.read_json(sys.argv[1])
-figure.write_image(sys.argv[2], scale=3)
-kaleido.stop_sync_server(silence_warnings=True)
-"""
+    def handle_data(self, data: str) -> None:
+        self.text.append(data)
 
 
 @click.command()
@@ -1267,8 +649,7 @@ kaleido.stop_sync_server(silence_warnings=True)
     "languages",
     multiple=True,
     metavar="LANGUAGE",
-    help="Language name or code to include (can be repeated). "
-    "Defaults to official languages.",
+    help="Language name or code to include; defaults to official languages.",
 )
 @click.option(
     "--shots",
@@ -1278,31 +659,20 @@ kaleido.stop_sync_server(silence_warnings=True)
     help="Shot setting: zero-shot, few-shot, or auto-detect.",
 )
 @click.option(
+    "--category",
+    type=click.Choice([item.value for item in LeaderboardCategory]),
+    default="generative",
+    show_default=True,
+    help="Leaderboard category supplying scores.",
+)
+@click.option(
     "--max-score",
     type=float,
     metavar="FLOAT",
-    help=(
-        "Optional override for maximum rank score on the radial axis. "
-        "When omitted, auto-computed from plotted rank scores (rounded up "
-        "to nearest 0.5, minimum 2.5; rank score of 1 is perfect)."
-    ),
+    help="Optional override for maximum radial rank score.",
 )
-@click.option(
-    "--title",
-    type=str,
-    metavar="TEXT",
-    help="Plot title. If omitted, uses default title.",
-)
-@click.option(
-    "--filename",
-    type=str,
-    metavar="PATH",
-    help=(
-        "Output PNG filename. If omitted and --title is set, "
-        "inferred from title using snake_case. If both omitted, "
-        "uses language-spider-plot.png. .png extension appended if missing."
-    ),
-)
+@click.option("--title", type=str, metavar="TEXT", help="Plot title.")
+@click.option("--filename", type=str, metavar="PATH", help="Output PNG filename.")
 def cli(
     models: tuple[str, ...],
     languages: tuple[str, ...],
@@ -1310,18 +680,18 @@ def cli(
     max_score: float | None,
     title: str | None,
     filename: str | None,
+    category: str,
 ) -> None:
-    """Generate a language spider plot from selected model results.
+    """Generate a language spider plot from generated leaderboard scores.
 
     Args:
         models: Model IDs to compare.
-        languages: Optional language names or codes; an empty tuple selects official
-            languages.
-        shots: Shot filter, either ``auto``, ``zero``, or ``few``; defaults to
-            ``auto`` in the command-line interface.
+        languages: Optional language names or codes.
+        shots: Shot filter, either ``auto``, ``zero``, or ``few``.
         max_score: Optional upper bound for the radial rank-score axis.
-        title: Optional plot title; defaults to a title derived from the selection.
-        filename: Optional output path; defaults to one derived from the title.
+        title: Optional plot title.
+        filename: Optional output path.
+        category: Leaderboard category used as the score source.
     """
     exit_code = main(
         models=models,
@@ -1330,6 +700,7 @@ def cli(
         max_score=max_score,
         title=title,
         filename=filename,
+        category=category,
     )
     if exit_code != 0:
         sys.exit(exit_code)
