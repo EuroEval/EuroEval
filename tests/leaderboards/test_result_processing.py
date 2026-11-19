@@ -12,6 +12,11 @@ from huggingface_hub.errors import HfHubHTTPError
 
 from leaderboards import bucket_sync, result_processing
 from leaderboards.cache import Cache
+from leaderboards.result_conflicts import (
+    ConflictChoice,
+    ConflictDecision,
+    resolve_result_conflict,
+)
 from leaderboards.result_identity import UnresolvedResultConflictError
 
 
@@ -357,6 +362,86 @@ class TestUploadPerModelFilesPerRecordTree:
         assert "org/model" in str(error.value)
         assert "results" in str(error.value)
         assert list(tmp_path.rglob("*.json")) == []
+
+    def test_three_contenders_resolve_against_processed_winner(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Use the prior selected contender, not the original, for later pairs.
+
+        Args:
+            monkeypatch: Fixture for replacing filesystem dependencies.
+            tmp_path: Isolated result directory.
+        """
+        monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
+        records = [
+            {
+                "model_info": {"id": "org/model", "name": "org/model"},
+                "dataset": {"name": "values"},
+                "task": {"name": "classification"},
+                "eval_library": {
+                    "name": "euroeval",
+                    "version": "1.0.0",
+                    "additional_details": {
+                        "dataset": "values",
+                        "few_shot": False,
+                        "validation_split": False,
+                    },
+                },
+                "results": {"score": score},
+            }
+            for score in (0.1, 0.5, 0.9)
+        ]
+        load = MagicMock(return_value=records)
+        load.cache_clear = MagicMock()
+        monkeypatch.setattr(result_processing, "load_raw_results", load)
+        monkeypatch.setattr(
+            result_processing,
+            "process_contamination_canaries",
+            lambda records: (records, [], set(), {"status": "scored"}),
+        )
+        monkeypatch.setattr(Cache, "from_results_dir", lambda results_dir: Cache())
+        monkeypatch.setattr(
+            result_processing, "deduplicate_records", lambda records: records
+        )
+        monkeypatch.setattr(result_processing, "record_is_valid", lambda **kwargs: True)
+        monkeypatch.setattr(
+            result_processing, "add_missing_entries", lambda record, **kwargs: record
+        )
+        prompted: list[tuple[float, float]] = []
+
+        def choose_incoming(
+            *,
+            current: dict[str, t.Any],
+            candidate: dict[str, t.Any],
+            current_bytes: bytes,
+            candidate_bytes: bytes,
+        ) -> ConflictDecision:
+            prompted.append(
+                (current["results"]["score"], candidate["results"]["score"])
+            )
+            return resolve_result_conflict(
+                current=current,
+                candidate=candidate,
+                current_bytes=current_bytes,
+                candidate_bytes=candidate_bytes,
+                choice=ConflictChoice.INCOMING,
+            )
+
+        result_processing.process_results(
+            min_version="0.0.0",
+            min_number_of_model_records=0,
+            banned_versions=[],
+            banned_model_patterns=[],
+            api_model_patterns=[],
+            trained_from_scratch_patterns=[],
+            conflict_resolver=choose_incoming,
+        )
+
+        assert prompted == [(0.1, 0.5), (0.5, 0.9)]
+        result_file = tmp_path / "org_model" / "values__test__zeroshot.json"
+        assert json.loads(result_file.read_text(encoding="utf-8"))["results"] == {
+            "score": 0.9
+        }
 
     def test_writes_expected_directory_tree(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
