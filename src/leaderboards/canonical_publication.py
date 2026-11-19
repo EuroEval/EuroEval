@@ -147,6 +147,14 @@ def _validated_candidates(
         record = _decode_record(content, "candidate")
         if is_canary_record(record):
             raise PublicationError("Canary records cannot be published canonically")
+        details = _model_additional_details(record=record)
+        for key, validator in (
+            ("num_model_parameters", positive_integer),
+            ("vocabulary_size", positive_integer),
+            ("max_sequence_length", positive_context_length),
+        ):
+            if key in details and validator(details[key]) is None:
+                raise PublicationError(f"Invalid numeric metadata {key}")
         identity = identity_from_eee_record(record)
         path = identity_to_path(identity).as_posix()
         if path in result and result[path][0] != identity:
@@ -155,6 +163,22 @@ def _validated_candidates(
             raise PublicationError(f"Multiple candidate records target {path}")
         result[path] = (identity, content, record)
     return [(path, *value) for path, value in result.items()]
+
+
+def _model_additional_details(record: dict[str, object]) -> dict[str, object]:
+    """Return model additional details, creating no missing record structure.
+
+    Args:
+        record: A decoded result record.
+
+    Returns:
+        The model metadata details, or an empty mapping when absent.
+    """
+    model_info = record.get("model_info")
+    if not isinstance(model_info, dict):
+        return {}
+    details = model_info.get("additional_details")
+    return details if isinstance(details, dict) else {}
 
 
 def _write_receipt(path: Path, owner: str, endpoint: str, bucket: str) -> None:
@@ -231,22 +255,6 @@ def is_metadata_only_transform(
                 if not additional:
                     model_info.pop("additional_details", None)
     return current_copy == candidate_copy
-
-
-def _model_additional_details(record: dict[str, object]) -> dict[str, object]:
-    """Return model additional details, creating no missing record structure.
-
-    Args:
-        record: A decoded result record.
-
-    Returns:
-        The model metadata details, or an empty mapping when absent.
-    """
-    model_info = record.get("model_info")
-    if not isinstance(model_info, dict):
-        return {}
-    details = model_info.get("additional_details")
-    return details if isinstance(details, dict) else {}
 
 
 def _normalise_raw_results(record: dict[str, object]) -> None:

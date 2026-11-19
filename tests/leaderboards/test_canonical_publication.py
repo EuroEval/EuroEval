@@ -739,7 +739,6 @@ def test_equal_rank_metadata_transform_requires_original_source(
     publisher, api, _ = _publisher(tmp_path)
     original = _record()
     transformed_record = json.loads(original)
-    transformed_record["metadata"] = {"open": True}
     transformed_record["model_info"]["additional_details"] = {"open": True}
     transformed = json.dumps(transformed_record).encode()
     identity = identity_from_eee_record(json.loads(original))
@@ -1718,7 +1717,10 @@ def test_uncertain_batch_preserves_receipts_evidence_and_converges(
     records = []
     for raw in originals:
         record = json.loads(raw)
-        record["metadata"] = {"open": True}
+        record["score"] = 0.6
+        record["evaluation_results"] = {"score": 0.6}
+        record["eval_timestamp"] = "2026-01-02T00:00:00Z"
+        record["retrieved_timestamp"] = "2026-01-02T00:00:00Z"
         records.append(json.dumps(record).encode())
     publisher = bulk_publisher(tmp_path=tmp_path, api=api)
     publisher.prepare(records=records, sources=sources)
