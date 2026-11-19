@@ -47,11 +47,13 @@ class DecisionEvidence:
 
 
 def _evaluation_time(*, record: dict[str, object]) -> datetime | None:
+    flat: dict[str, object] = {}
+    _flatten(record=record, prefix="", output=flat)
     evidence: list[datetime] = []
     for field in _EVALUATION_TIME_FIELDS:
-        if field not in record:
+        if field not in flat:
             continue
-        value = record[field]
+        value = flat[field]
         parsed = _parse_timestamp(value=value, epoch=field in _EPOCH_FIELDS)
         if parsed is None:
             return None
@@ -59,6 +61,17 @@ def _evaluation_time(*, record: dict[str, object]) -> datetime | None:
     if not evidence or len(set(evidence)) != 1:
         return None
     return evidence[0]
+
+
+def _flatten(
+    *, record: dict[str, object], prefix: str, output: dict[str, object]
+) -> None:
+    for key, value in record.items():
+        field = f"{prefix}.{key}" if prefix else key
+        if isinstance(value, dict) and not field.endswith("raw_results"):
+            _flatten(record=value, prefix=field, output=output)
+        else:
+            output[field] = value
 
 
 def _parse_timestamp(*, value: object, epoch: bool) -> datetime | None:
@@ -82,7 +95,12 @@ def _parse_timestamp(*, value: object, epoch: bool) -> datetime | None:
 
 
 def _is_known_metadata(*, field: str) -> bool:
-    return field.rsplit(".", 1)[-1].casefold() in _KNOWN_METADATA
+    lowered = field.casefold()
+    if lowered.startswith("model_info.additional_details."):
+        return True
+    if lowered.startswith("eval_library.additional_details."):
+        return lowered.rsplit(".", 1)[-1] in _KNOWN_METADATA
+    return "." not in field and lowered in _KNOWN_METADATA
 
 
 def _metadata_values(*, record: dict[str, object]) -> frozenset[tuple[str, str]]:
@@ -109,20 +127,17 @@ def _comparison_record(*, record: dict[str, object]) -> dict[str, object]:
     return result
 
 
-def _flatten(
-    *, record: dict[str, object], prefix: str, output: dict[str, object]
-) -> None:
-    for key, value in record.items():
-        field = f"{prefix}.{key}" if prefix else key
-        if isinstance(value, dict):
-            _flatten(record=value, prefix=field, output=output)
-        else:
-            output[field] = value
-
-
 def _is_ignored_alias(*, field: str) -> bool:
     return (
-        field in {"id", "name", "eval_id", "eval_timestamp"}
+        field
+        in {
+            "id",
+            "name",
+            "eval_id",
+            "eval_timestamp",
+            "evaluation_timestamp",
+            "evaluated_at",
+        }
         or field
         in {
             "retrieved_timestamp",
@@ -130,24 +145,20 @@ def _is_ignored_alias(*, field: str) -> bool:
             "import_timestamp",
             "created_at",
             "updated_at",
-            "timestamp",
-            "evaluation_timestamp",
-            "evaluated_at",
-            "evaluation_time",
             "eval_library.retrieved_timestamp",
+            "eval_library.version",
         }
         or field.endswith("_transport")
     )
 
 
 def _normalise_embedded_json(*, value: object) -> object:
-    if not isinstance(value, str):
-        return value
-    try:
-        parsed = json.loads(value)
-    except (json.JSONDecodeError, TypeError):
-        return value
-    return _canonical(value=parsed)
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except (json.JSONDecodeError, TypeError):
+            return value
+    return _canonical(value=value)
 
 
 def _canonical(*, value: object) -> object:
@@ -165,8 +176,12 @@ def _display(*, value: object) -> str:
 
 
 def _field_category(*, field: str) -> str:
-    root = field.split(".", 1)[0].casefold()
-    return "payload" if root in _PAYLOAD_ROOTS else "metadata"
+    lowered = field.casefold()
+    if lowered.split(".", 1)[0] in _PAYLOAD_ROOTS or lowered.startswith(
+        "eval_library.additional_details.raw_results"
+    ):
+        return "payload"
+    return "metadata"
 
 
 def _normalise_known(*, field: str, value: object) -> object:
@@ -359,12 +374,9 @@ _BOOLEAN_METADATA = {
     "generative",
 }
 _KNOWN_METADATA = (
-    _NUMERIC_METADATA | _BOOLEAN_METADATA | {"release_date", "model_url", "url"}
+    _NUMERIC_METADATA
+    | _BOOLEAN_METADATA
+    | {"release_date", "model_url", "url", "generative_type"}
 )
-_EVALUATION_TIME_FIELDS = {
-    "eval_timestamp",
-    "evaluation_timestamp",
-    "evaluation_timestamp",
-    "evaluated_at",
-}
+_EVALUATION_TIME_FIELDS = {"eval_timestamp", "evaluation_timestamp", "evaluated_at"}
 _EPOCH_FIELDS = {"eval_timestamp", "evaluation_timestamp"}

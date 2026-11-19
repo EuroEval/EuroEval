@@ -32,6 +32,15 @@ class TestResolveResultConflict:
         assert decision.needs_choice
         assert decision.reason == ConflictReason.UNRESOLVED_METADATA
 
+    def test_eval_library_configuration_addition_requires_choice(self) -> None:
+        """Configuration additions are substantive even when named like metadata."""
+        current = _record(eval_library={"name": "euroeval", "config": {}})
+        candidate = _record(
+            eval_library={"name": "euroeval", "config": {"few_shot": True}}
+        )
+        decision = resolve_result_conflict(current=current, candidate=candidate)
+        assert decision.needs_choice
+
     def test_eval_library_configuration_change_is_preserved(self) -> None:
         """Evaluation library configuration is substantive, not envelope noise."""
         current = _record(eval_library={"name": "euroeval", "config": {"batch": 8}})
@@ -106,12 +115,13 @@ class TestResolveResultConflict:
         decision = resolve_result_conflict(current=current, candidate=candidate)
         assert decision.selected == expected
 
-    def test_library_version_change_does_not_establish_recency(self) -> None:
-        """Version changes remain substantive and are not recency evidence."""
+    def test_library_version_only_change_is_bookkeeping(self) -> None:
+        """A library version difference neither changes results nor establishes age."""
         current = _record(eval_library={"version": "99.0"})
         candidate = _record(eval_library={"version": "1.0"})
         decision = resolve_result_conflict(current=current, candidate=candidate)
-        assert decision.needs_choice
+        assert decision.selected == ConflictChoice.STORED
+        assert decision.reason == ConflictReason.IDENTICAL
 
     def test_mixed_metadata_and_score_difference_needs_choice(self) -> None:
         """Timestamp evidence cannot auto-resolve mixed substantive changes."""
@@ -123,6 +133,83 @@ class TestResolveResultConflict:
         )
         decision = resolve_result_conflict(current=current, candidate=candidate)
         assert decision.needs_choice
+
+    @pytest.mark.parametrize(
+        ("current_key", "candidate_key", "expected"),
+        [
+            ("sparse", "rich", ConflictChoice.INCOMING),
+            ("rich", "sparse", ConflictChoice.STORED),
+        ],
+    )
+    def test_model_metadata_enrichment_ignores_library_version(
+        self, current_key: str, candidate_key: str, expected: ConflictChoice
+    ) -> None:
+        """Known and extension model metadata wins regardless of library version."""
+        records = {
+            "sparse": _eee_model_record(
+                eval_library={"name": "euroeval", "version": "99.0"}
+            ),
+            "rich": _eee_model_record(
+                generative_type="instruction-tuned",
+                custom_model_metadata="verified",
+                eval_library={"name": "euroeval", "version": "1.0"},
+            ),
+        }
+        decision = resolve_result_conflict(
+            current=records[current_key], candidate=records[candidate_key]
+        )
+        assert decision.selected == expected
+
+    def test_nested_eee_raw_payload_change_uses_actual_evaluation_time(self) -> None:
+        """Only evaluation chronology, not raw metric timestamps, selects a payload."""
+        current = _record(
+            evaluation_timestamp="2024-01-01T00:00:00Z",
+            eval_library={
+                "name": "euroeval",
+                "additional_details": {
+                    "raw_results": '{"timestamp":"2030-01-01", "score":0.4}'
+                },
+            },
+        )
+        candidate = _record(
+            evaluation_timestamp="2025-01-01T00:00:00Z",
+            eval_library={
+                "name": "euroeval",
+                "additional_details": {
+                    "raw_results": '{"timestamp":"2020-01-01", "score":0.5}'
+                },
+            },
+        )
+        decision = resolve_result_conflict(current=current, candidate=candidate)
+        assert decision.selected == ConflictChoice.INCOMING
+        assert decision.reason == ConflictReason.NEWER_EVALUATION
+
+    @pytest.mark.parametrize(
+        "representations",
+        [
+            ('{"a": 1, "b": [2, 3]}', {"b": [2, 3], "a": 1}),
+            ('[{"score": 0.5}]', [{"score": 0.5}]),
+        ],
+    )
+    def test_nested_eee_raw_results_representations_are_equivalent(
+        self, representations: tuple[object, object]
+    ) -> None:
+        """EEE raw results compare equally as JSON strings and decoded values."""
+        current = _record(
+            eval_library={
+                "name": "euroeval",
+                "additional_details": {"raw_results": representations[0]},
+            }
+        )
+        candidate = _record(
+            eval_library={
+                "name": "euroeval",
+                "additional_details": {"raw_results": representations[1]},
+            }
+        )
+        decision = resolve_result_conflict(current=current, candidate=candidate)
+        assert decision.selected == ConflictChoice.STORED
+        assert decision.reason == ConflictReason.IDENTICAL
 
     def test_newer_evaluation_wins_not_newer_library_version(self) -> None:
         """Reliable evaluation chronology wins independently of library version."""
@@ -140,14 +227,27 @@ class TestResolveResultConflict:
         assert decision.selected == ConflictChoice.INCOMING
         assert decision.reason == ConflictReason.NEWER_EVALUATION
 
-    def test_raw_results_json_formatting_is_comparison_only(self) -> None:
-        """Embedded JSON formatting does not create a substantive difference."""
-        decision = resolve_result_conflict(
-            current=_record(raw_results='{"a": 1, "b": [2, 3]}'),
-            candidate=_record(raw_results='{"b":[2,3],"a":1}'),
+    def test_raw_metric_timestamp_does_not_establish_recency(self) -> None:
+        """A timestamp inside EEE score data is payload, not chronology evidence."""
+        current = _record(
+            eval_library={
+                "name": "euroeval",
+                "additional_details": {
+                    "raw_results": '{"timestamp":"2024-01-01", "score":0.4}'
+                },
+            }
         )
-        assert decision.selected == ConflictChoice.STORED
-        assert decision.reason == ConflictReason.IDENTICAL
+        candidate = _record(
+            eval_library={
+                "name": "euroeval",
+                "additional_details": {
+                    "raw_results": '{"timestamp":"2025-01-01", "score":0.5}'
+                },
+            }
+        )
+        decision = resolve_result_conflict(current=current, candidate=candidate)
+        assert decision.needs_choice
+        assert decision.reason == ConflictReason.UNRESOLVED_TIMESTAMP
 
     @pytest.mark.parametrize(
         ("current_key", "candidate_key", "expected"),
