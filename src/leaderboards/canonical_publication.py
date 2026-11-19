@@ -754,7 +754,11 @@ class PublicationSession:
             if (
                 candidate is None
                 or source is None
-                or decision.reason is not ConflictReason.EXPLICIT_CHOICE
+                or decision.reason
+                not in (
+                    ConflictReason.EXPLICIT_CHOICE,
+                    ConflictReason.ENGINE_PREFERENCE,
+                )
                 or decision.selected
                 not in (ConflictChoice.STORED, ConflictChoice.INCOMING)
                 or evidence.policy_version != POLICY_VERSION
@@ -763,6 +767,16 @@ class PublicationSession:
                 or evidence.choice != decision.selected
                 or identity_from_eee_record(_decode_record(source, "decision source"))
                 != identity
+                or (
+                    decision.reason is ConflictReason.ENGINE_PREFERENCE
+                    and resolve_result_conflict(
+                        current=_decode_record(source, "decision source"),
+                        candidate=candidate[1],
+                        current_bytes=source,
+                        candidate_bytes=candidate[0],
+                    )
+                    != decision
+                )
             ):
                 raise PublicationError(
                     "Conflict decision is not bound to these records"

@@ -13,7 +13,7 @@ from enum import StrEnum
 from . import result_identity
 from .records import strip_anchor
 
-POLICY_VERSION = "1"
+POLICY_VERSION = "2"
 
 
 class ConflictChoice(StrEnum):
@@ -34,6 +34,7 @@ class ConflictReason(StrEnum):
     UNRESOLVED_TIMESTAMP = "unresolved_timestamp"
     UNRESOLVED_DIFFERENCE = "unresolved_difference"
     EXPLICIT_CHOICE = "explicit_choice"
+    ENGINE_PREFERENCE = "engine_preference"
 
 
 @dataclass(frozen=True)
@@ -263,6 +264,53 @@ def _useful_metadata(*, field: str, value: object) -> bool:
     return True
 
 
+def _preferred_engine_selection(
+    *, current: dict[str, object], candidate: dict[str, object]
+) -> ConflictChoice | None:
+    """Prefer an explicitly identified vLLM record over a LiteLLM record.
+
+    Args:
+        current:
+            The currently stored record.
+        candidate:
+            The incoming record.
+
+    Returns:
+        The selected source when the records explicitly identify the supported
+        engine pair, or None when the existing policy should decide.
+    """
+    current_engine = _inference_engine_name(record=current)
+    candidate_engine = _inference_engine_name(record=candidate)
+    if current_engine == "vllm" and candidate_engine == "litellm":
+        return ConflictChoice.STORED
+    if current_engine == "litellm" and candidate_engine == "vllm":
+        return ConflictChoice.INCOMING
+    return None
+
+
+def _inference_engine_name(*, record: dict[str, object]) -> str | None:
+    """Return a normalised explicit inference engine name, if present.
+
+    Args:
+        record:
+            An EEE result record.
+
+    Returns:
+        A lower-case engine name, or None when no usable name is recorded.
+    """
+    model_info = record.get("model_info")
+    if not isinstance(model_info, dict):
+        return None
+    inference_engine = model_info.get("inference_engine")
+    if not isinstance(inference_engine, dict):
+        return None
+    name = inference_engine.get("name")
+    if not isinstance(name, str):
+        return None
+    normalised = name.strip().casefold()
+    return normalised or None
+
+
 @dataclass(frozen=True)
 class FieldDifference:
     """A structured difference between corresponding record fields."""
@@ -347,6 +395,9 @@ def _automatic_selection(
     candidate: dict[str, object],
     differences: tuple[FieldDifference, ...],
 ) -> tuple[ConflictChoice | None, ConflictReason]:
+    preferred_engine = _preferred_engine_selection(current=current, candidate=candidate)
+    if preferred_engine is not None:
+        return preferred_engine, ConflictReason.ENGINE_PREFERENCE
     if not differences:
         current_anchor_count = _identifier_anchor_count(record=current)
         candidate_anchor_count = _identifier_anchor_count(record=candidate)
