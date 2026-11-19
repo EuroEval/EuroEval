@@ -4,6 +4,7 @@ import hashlib
 import json
 import signal
 import typing as t
+from contextlib import nullcontext
 from pathlib import Path
 from unittest.mock import Mock, call
 
@@ -12,6 +13,8 @@ import pytest
 from euroeval_worker.review import PublicStagingError, VolunteerReviewer
 from euroeval_worker.review_models import ReviewReport
 from leaderboards import canonical_publication, constants
+from leaderboards.result_conflicts import ConflictDecision
+from leaderboards.result_identity import UnresolvedResultConflictError
 from src.scripts import collect_evaluation_results
 from tests.leaderboards.test_canonical_publication import MemoryLock
 
@@ -101,6 +104,66 @@ def clear_bucket_adapter() -> None:
     FakeHfApi.objects.clear()
 
 
+def test_collector_abort_preserves_staging_and_local_results(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """An aborted conflict batch has no staging or result-file side effects."""
+    results_dir = tmp_path / "results"
+    record_path = results_dir / "foo_bar" / "task__test__zeroshot.json"
+    record_path.parent.mkdir(parents=True)
+    stored = _ranked_collector_record()
+    original_record = (json.dumps(stored, indent=2) + "\n").encode()
+    record_path.write_bytes(original_record)
+    staging = tmp_path / "new_results.jsonl"
+    staging.write_text("manual entry\n", encoding="utf-8")
+    incoming = json.loads(json.dumps(stored))
+    incoming["evaluation_results"][0]["score_details"]["score"] = 0.8
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
+    monkeypatch.setattr(collect_evaluation_results, "NEW_RESULTS_PATH", staging)
+    monkeypatch.setattr(
+        collect_evaluation_results,
+        "resolve_result_interactively",
+        lambda **_kwargs: (_ for _ in ()).throw(
+            UnresolvedResultConflictError("aborted")
+        ),
+    )
+    assert not collect_evaluation_results.upload_results_to_hf(
+        new_results_path=staging, pending_lines=[json.dumps(incoming)]
+    )
+    assert staging.read_text(encoding="utf-8") == "manual entry\n"
+    assert record_path.read_bytes() == original_record
+
+
+def _ranked_collector_record(
+    *, version: str = "1.0.0", timestamp: int = 1704067200, score: float = 0.5
+) -> dict[str, object]:
+    """Build an EEE record with an evaluation payload.
+
+    Args:
+        version: EEE library version.
+        timestamp: Result retrieval timestamp.
+        score: Evaluation score.
+
+    Returns:
+        An EEE result record.
+    """
+    return {
+        "model_info": {"id": "foo/bar"},
+        "eval_library": {
+            "additional_details": {
+                "dataset": "task",
+                "few_shot": False,
+                "validation_split": False,
+            },
+            "version": version,
+        },
+        "retrieved_timestamp": timestamp,
+        "evaluation_results": [
+            {"evaluation_name": "accuracy", "score_details": {"score": score}}
+        ],
+    }
+
+
 def test_collector_captures_predecessors_without_second_tree_read(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -156,36 +219,6 @@ def _enable_real_collector_publisher(
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
 
 
-def _ranked_collector_record(
-    *, version: str = "1.0.0", timestamp: int = 1704067200, score: float = 0.5
-) -> dict[str, object]:
-    """Build an EEE record with an evaluation payload.
-
-    Args:
-        version: EEE library version.
-        timestamp: Result retrieval timestamp.
-        score: Evaluation score.
-
-    Returns:
-        An EEE result record.
-    """
-    return {
-        "model_info": {"id": "foo/bar"},
-        "eval_library": {
-            "additional_details": {
-                "dataset": "task",
-                "few_shot": False,
-                "validation_split": False,
-            },
-            "version": version,
-        },
-        "retrieved_timestamp": timestamp,
-        "evaluation_results": [
-            {"evaluation_name": "accuracy", "score_details": {"score": score}}
-        ],
-    }
-
-
 def test_collector_falls_back_to_exact_bytes_when_metadata_is_unavailable(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -227,6 +260,61 @@ def test_collector_falls_back_to_exact_bytes_when_metadata_is_unavailable(
     assert json.loads(canonical)["metadata"] == {"open": True}
     history = f"_history/{hashlib.sha256(predecessor).hexdigest()}.bin"
     assert FakeHfApi.objects[history] == predecessor
+
+
+def test_collector_forwards_explicit_choice_proof_through_publication(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Explicit intent reaches both durable prepare and publish with exact bytes."""
+    results_dir = tmp_path / "results"
+    record_path = results_dir / "foo_bar" / "task__test__zeroshot.json"
+    record_path.parent.mkdir(parents=True)
+    stored = _ranked_collector_record()
+    predecessor = (json.dumps(stored, indent=2) + "\n").encode()
+    record_path.write_bytes(predecessor)
+    incoming = json.loads(json.dumps(stored))
+    incoming["evaluation_results"][0]["score_details"]["score"] = 0.8
+    staging = tmp_path / "new_results.jsonl"
+    staging.write_text("existing staging\n", encoding="utf-8")
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
+    monkeypatch.setattr(collect_evaluation_results, "NEW_RESULTS_PATH", staging)
+    monkeypatch.setattr(collect_evaluation_results, "HfApi", FakeHfApi)
+    monkeypatch.setenv("HF_TOKEN", "test-token")
+    checkpoints: list[dict[str, object]] = []
+
+    class Publisher:
+        """Capture the public publisher calls without performing network I/O."""
+
+        def __init__(self, **_kwargs: object) -> None:
+            pass
+
+        def prepare(self, **kwargs: object) -> None:
+            checkpoints.append(kwargs)
+
+        def publish(self, **kwargs: object) -> None:
+            checkpoints.append(kwargs)
+
+        def session(self) -> object:
+            return nullcontext(self)
+
+    monkeypatch.setattr(collect_evaluation_results, "CanonicalPublisher", Publisher)
+    monkeypatch.setattr(
+        collect_evaluation_results,
+        "resolve_result_interactively",
+        lambda **kwargs: collect_evaluation_results.resolve_result_interactively(
+            **kwargs, input_fn=lambda _prompt: "incoming", interactive=True
+        ),
+    )
+    assert collect_evaluation_results.upload_results_to_hf(
+        new_results_path=staging, pending_lines=[json.dumps(incoming)]
+    )
+    prepared = checkpoints[0]
+    published = checkpoints[2]
+    decision = t.cast(list[ConflictDecision], prepared["decisions"])[0]
+    final_bytes = json.dumps(incoming, separators=(",", ":")).encode("utf-8")
+    assert decision.evidence.current_sha256 == hashlib.sha256(predecessor).hexdigest()
+    assert decision.evidence.candidate_sha256 == hashlib.sha256(final_bytes).hexdigest()
+    assert published["decisions"] == prepared["decisions"]
 
 
 def test_collector_prepare_failure_leaves_local_files_untouched(
