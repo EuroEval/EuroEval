@@ -824,6 +824,11 @@ def upload_results_to_hf(
             prior.evidence.current_sha256 == current_digest
             and prior.evidence.candidate_sha256 == final_digest
         )
+        if final_record == original_record:
+            decisions[:] = [
+                item for item in decisions if item.evidence.identity != identity
+            ]
+            continue
         if not exact_pair:
             automatic = resolve_result_conflict(
                 current=original_record,
@@ -1010,6 +1015,11 @@ def _load_existing_results(
             if decisions is not None:
                 decisions.append(decision)
         if decision.selected.value == "incoming":
+            existing[identity] = record
+            winning_sources[identity] = content
+        elif not decision.needs_choice and json_file == RESULTS_DIR / identity_to_path(
+            identity
+        ):
             existing[identity] = record
             winning_sources[identity] = content
     if sources is not None:

@@ -394,6 +394,12 @@ def test_eof_after_earlier_choice_preserves_original_staging_and_records(
     answers = iter(["incoming"])
     resolver = collect_evaluation_results.resolve_result_interactively
 
+    def read_answer(_prompt: str) -> str:
+        try:
+            return next(answers)
+        except StopIteration:
+            raise EOFError from None
+
     def choose(
         *,
         current: dict[str, object],
@@ -406,7 +412,7 @@ def test_eof_after_earlier_choice_preserves_original_staging_and_records(
             candidate=candidate,
             current_bytes=current_bytes,
             candidate_bytes=candidate_bytes,
-            input_fn=lambda _prompt: next(answers),
+            input_fn=read_answer,
             interactive=True,
         )
 
@@ -1242,8 +1248,10 @@ def test_staged_resolved_winner_is_not_reloaded_with_rejected_contender(
     canonical = results_dir / "foo_bar" / "task__test__zeroshot.json"
     canonical.parent.mkdir(parents=True)
     stored = _ranked_collector_record(score=0.2)
+    stored["schema_version"] = 1
     canonical.write_bytes(json.dumps(stored).encode())
     incoming_record = _ranked_collector_record(score=0.8)
+    incoming_record["schema_version"] = 1
     staging = tmp_path / "new_results.jsonl"
     staged_line = json.dumps(incoming_record)
     staging.write_text("unmodified staging\n", encoding="utf-8")
@@ -1258,9 +1266,11 @@ def test_staged_resolved_winner_is_not_reloaded_with_rejected_contender(
         collect_evaluation_results,
         "resolve_result_interactively",
         lambda **kwargs: resolver(
-            **kwargs, input_fn=lambda _prompt: "incoming", interactive=True
+            **kwargs, input_fn=lambda _prompt: "stored", interactive=True
         ),
     )
+    predecessor = canonical.read_bytes()
+    FakeHfApi.objects["foo_bar/task__test__zeroshot.json"] = predecessor
 
     assert collect_evaluation_results.upload_results_to_hf(
         new_results_path=staging, pending_lines=[staged_line]
@@ -1270,7 +1280,7 @@ def test_staged_resolved_winner_is_not_reloaded_with_rejected_contender(
     result_loading.load_raw_results.cache_clear()
 
     assert len(records) == 1
-    assert records[0]["evaluation_results"] == incoming_record["evaluation_results"]
+    assert records[0]["evaluation_results"] == stored["evaluation_results"]
     assert not staging.exists()
 
 
@@ -1757,11 +1767,13 @@ def test_upload_results_to_hf_raw_results_json_encodings_compare_semantically(
     incoming.write_text("", encoding="utf-8")
     monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
     _enable_real_collector_publisher(monkeypatch=monkeypatch, tmp_path=tmp_path)
+    FakeHfApi.objects["foo_bar/task__test__zeroshot.json"] = canonical_bytes
 
     assert collect_evaluation_results.upload_results_to_hf(new_results_path=incoming)
 
     assert json.loads(canonical_path.read_bytes()) == canonical
     assert canonical_path.read_bytes() == canonical_bytes
+    assert FakeHfApi.objects["foo_bar/task__test__zeroshot.json"] == canonical_bytes
 
 
 def test_upload_results_to_hf_reconciles_legacy_alias_to_canonical_once(
