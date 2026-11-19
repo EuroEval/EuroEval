@@ -3,6 +3,7 @@
 import json
 import typing as t
 from enum import Enum, auto
+from functools import partial
 from pathlib import Path
 from unittest.mock import MagicMock, call, patch
 
@@ -12,12 +13,13 @@ from huggingface_hub.errors import HfHubHTTPError
 
 from leaderboards import bucket_sync, result_processing
 from leaderboards.cache import Cache
+from leaderboards.result_conflict_prompt import resolve_result_interactively
 from leaderboards.result_conflicts import (
     ConflictChoice,
     ConflictDecision,
     resolve_result_conflict,
 )
-from leaderboards.result_identity import UnresolvedResultConflictError
+from leaderboards.result_identity import ResultIdentity, UnresolvedResultConflictError
 
 
 class CallOrder(Enum):
@@ -363,14 +365,30 @@ class TestUploadPerModelFilesPerRecordTree:
         assert "results" in str(error.value)
         assert list(tmp_path.rglob("*.json")) == []
 
+    @pytest.mark.parametrize(
+        "scenario",
+        [
+            "keep_processed_winner",
+            "keep_original",
+            "new_identity",
+            "richer_final",
+            "richer_middle",
+            "later_approval",
+            "single_candidate",
+            "single_candidate_stored",
+            "stale_callback",
+            "abort",
+        ],
+    )
     def test_three_contenders_resolve_against_processed_winner(
-        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path, scenario: str
     ) -> None:
-        """Use the prior selected contender, not the original, for later pairs.
+        """Keep the final selected record and bind only its exact approval.
 
         Args:
             monkeypatch: Fixture for replacing filesystem dependencies.
             tmp_path: Isolated result directory.
+            scenario: Contender selection and canonical reconciliation case.
         """
         monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
         records = [
@@ -391,7 +409,106 @@ class TestUploadPerModelFilesPerRecordTree:
             }
             for score in (0.1, 0.5, 0.9)
         ]
-        load = MagicMock(return_value=records)
+        choices = ["incoming", "stored", "incoming"]
+        expected_pairs = [(0.1, 0.5), (0.5, 0.9), (0.1, 0.5)]
+        expected_record = records[1]
+        if scenario == "keep_original":
+            choices[-1] = "stored"
+            expected_record = records[0]
+        elif scenario == "new_identity":
+            choices.pop()
+            expected_pairs.pop()
+        elif scenario in ("richer_final", "richer_middle", "later_approval"):
+            records[2]["results"] = {"score": 0.5}
+            choices = ["incoming", "incoming"]
+            expected_pairs = [(0.1, 0.5), (0.1, 0.5)]
+            if scenario == "later_approval":
+                choices[0] = "stored"
+            else:
+                rich = records[2] if scenario == "richer_final" else records[1]
+                rich["model_info"] = {
+                    "id": "org/model",
+                    "name": "org/model",
+                    "additional_details": {"open": True},
+                }
+                expected_record = rich
+        elif scenario in (
+            "single_candidate",
+            "single_candidate_stored",
+            "stale_callback",
+        ):
+            choices = [
+                "stored" if scenario == "single_candidate_stored" else "incoming"
+            ]
+            expected_pairs = [(0.1, 0.5)]
+            if scenario == "single_candidate_stored":
+                expected_record = records[0]
+        elif scenario == "abort":
+            choices = ["incoming", "abort"]
+            expected_pairs.pop()
+        answers = iter(choices)
+        result_file = tmp_path / "org_model" / "values__test__zeroshot.json"
+        original_source = json.dumps(
+            records[0],
+            sort_keys=True,
+            indent=2 if scenario not in ("richer_final", "later_approval") else None,
+            separators=(",", ":"),
+        ).encode()
+        if scenario != "new_identity":
+            result_file.parent.mkdir(parents=True)
+            result_file.write_bytes(original_source)
+        publisher = MagicMock()
+        publisher.session.return_value.__enter__.return_value = publisher
+        verified_payloads: list[bytes] = []
+
+        def verify_publication(
+            *,
+            records: list[bytes],
+            sources: dict[ResultIdentity, bytes],
+            decisions: list[ConflictDecision],
+        ) -> None:
+            """Check final payload evidence and preflight-before-write ordering.
+
+            Args:
+                records: Final serialised publication candidates.
+                sources: Captured canonical predecessor bytes.
+                decisions: Exact incoming overwrite approvals.
+            """
+            assert len(records) == 1
+            assert json.loads(records[0]) == expected_record
+            if not verified_payloads:
+                if scenario == "new_identity":
+                    assert not result_file.exists()
+                else:
+                    assert result_file.read_bytes() == original_source
+            if scenario in ("new_identity", "keep_original", "single_candidate_stored"):
+                assert decisions == []
+            else:
+                assert len(decisions) == 1
+                expected = resolve_result_conflict(
+                    current=json.loads(original_source),
+                    candidate=json.loads(records[0]),
+                    current_bytes=original_source,
+                    candidate_bytes=records[0],
+                    choice=ConflictChoice.INCOMING,
+                )
+                assert decisions[0].selected is ConflictChoice.INCOMING
+                assert decisions[0].evidence == expected.evidence
+            assert list(sources.values()) == (
+                [] if scenario == "new_identity" else [original_source]
+            )
+            verified_payloads.append(records[0])
+
+        publisher.prepare.side_effect = verify_publication
+        publisher.publish.side_effect = verify_publication
+        monkeypatch.setattr(
+            result_processing, "CanonicalPublisher", lambda **_: publisher
+        )
+        monkeypatch.setattr(result_processing, "resolve_hf_token", lambda: "test-token")
+        monkeypatch.setattr(result_processing, "HfApi", MagicMock)
+        monkeypatch.setattr(result_processing, "fix_metadata", lambda record: record)
+        inputs = [records[1]] if scenario.startswith("single_candidate") else records
+        load = MagicMock(return_value=inputs)
         load.cache_clear = MagicMock()
         monkeypatch.setattr(result_processing, "load_raw_results", load)
         monkeypatch.setattr(
@@ -416,32 +533,69 @@ class TestUploadPerModelFilesPerRecordTree:
             current_bytes: bytes,
             candidate_bytes: bytes,
         ) -> ConflictDecision:
+            """Apply one owner choice to the exact supplied contender pair.
+
+            Args:
+                current: Current selected record.
+                candidate: Incoming contender.
+                current_bytes: Exact current record bytes.
+                candidate_bytes: Exact incoming record bytes.
+
+            Returns:
+                The explicit choice for the supplied pair.
+            """
             prompted.append(
                 (current["results"]["score"], candidate["results"]["score"])
             )
+            answer = next(answers)
+            if answer == "abort":
+                return resolve_result_interactively(
+                    current=current,
+                    candidate=candidate,
+                    current_bytes=current_bytes,
+                    candidate_bytes=candidate_bytes,
+                    input_fn=MagicMock(side_effect=EOFError),
+                    interactive=True,
+                )
             return resolve_result_conflict(
                 current=current,
                 candidate=candidate,
-                current_bytes=current_bytes,
+                current_bytes=(
+                    b"unrelated current record"
+                    if scenario == "stale_callback"
+                    else current_bytes
+                ),
                 candidate_bytes=candidate_bytes,
-                choice=ConflictChoice.INCOMING,
+                choice=ConflictChoice(answer),
             )
 
-        result_processing.process_results(
+        run = partial(
+            result_processing.process_results,
             min_version="0.0.0",
             min_number_of_model_records=0,
             banned_versions=[],
             banned_model_patterns=[],
             api_model_patterns=[],
             trained_from_scratch_patterns=[],
+            upload_to_bucket=True,
             conflict_resolver=choose_incoming,
         )
-
-        assert prompted == [(0.1, 0.5), (0.5, 0.9)]
-        result_file = tmp_path / "org_model" / "values__test__zeroshot.json"
-        assert json.loads(result_file.read_text(encoding="utf-8"))["results"] == {
-            "score": 0.9
-        }
+        if scenario in ("abort", "stale_callback"):
+            with pytest.raises(UnresolvedResultConflictError):
+                run()
+            assert prompted == expected_pairs
+            assert result_file.read_bytes() == original_source
+            publisher.prepare.assert_not_called()
+            publisher.publish.assert_not_called()
+            return
+        run()
+        assert prompted == expected_pairs
+        written = json.loads(result_file.read_text(encoding="utf-8"))
+        assert written["results"] == expected_record["results"]
+        assert written["model_info"] == expected_record["model_info"]
+        assert len(verified_payloads) == 2
+        assert verified_payloads[0] == verified_payloads[1]
+        assert json.loads(verified_payloads[0]) == written
 
     def test_writes_expected_directory_tree(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path

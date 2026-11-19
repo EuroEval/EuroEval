@@ -402,15 +402,18 @@ def _reconcile_canonical_record(
             return stored, None
         return candidate, None
 
-    for prior in prior_decisions:
-        evidence = prior.evidence
+    expected = resolve_result_conflict(
+        current=stored,
+        candidate=candidate,
+        current_bytes=source,
+        candidate_bytes=candidate_bytes,
+        choice=ConflictChoice.INCOMING,
+    )
+    for prior in reversed(prior_decisions):
         if (
-            evidence is not None
-            and evidence.identity == identity
-            and evidence.current_sha256 == decision.evidence.current_sha256
-            and evidence.candidate_sha256 == decision.evidence.candidate_sha256
-            and evidence.policy_version == decision.evidence.policy_version
-            and prior.reason.value == "explicit_choice"
+            prior.reason.value == "explicit_choice"
+            and prior.selected is ConflictChoice.INCOMING
+            and prior.evidence == expected.evidence
         ):
             decision = prior
             break
@@ -465,9 +468,24 @@ def _resolve_with_adapter(
         current_bytes=current_bytes,
         candidate_bytes=candidate_bytes,
     )
-    if decision.evidence is None or decision.reason.value != "explicit_choice":
+    if (
+        decision.evidence is None
+        or decision.reason.value != "explicit_choice"
+        or decision.selected not in (ConflictChoice.STORED, ConflictChoice.INCOMING)
+    ):
         raise UnresolvedResultConflictError(
             f"Conflict resolver did not provide an explicit choice for {identity}"
+        )
+    expected = resolve_result_conflict(
+        current=current,
+        candidate=candidate,
+        current_bytes=current_bytes,
+        candidate_bytes=candidate_bytes,
+        choice=decision.selected,
+    )
+    if decision.evidence != expected.evidence:
+        raise UnresolvedResultConflictError(
+            f"Conflict resolver choice is not bound to the exact pair for {identity}"
         )
     return decision
 
