@@ -9,7 +9,7 @@ import pytest
 from euroeval.data_models import BenchmarkResult
 from leaderboards.result_identity import (
     ResultIdentity,
-    _extract_timestamp,
+    UnresolvedResultConflictError,
     dedup_newer_record,
     identity_from_benchmark_result,
     identity_from_eee_record,
@@ -26,7 +26,7 @@ from leaderboards.result_identity import (
 
 
 class TestDedupNewerRecord:
-    """Tests for dedup_newer_record."""
+    """Tests for the legacy automatic-selection adapter."""
 
     def test_different_identity_raises(self) -> None:
         """Different identities should raise ValueError."""
@@ -35,40 +35,22 @@ class TestDedupNewerRecord:
         with pytest.raises(ValueError, match="different identities"):
             dedup_newer_record(record_a, record_b)
 
-    def test_equal_records_returns_first(self) -> None:
-        """Equal version and timestamp should return first record."""
-        record_a = _make_eee_record(version="1.0.0", timestamp="100")
-        record_b = _make_eee_record(version="1.0.0", timestamp="100")
-        winner = dedup_newer_record(record_a, record_b)
-        assert winner is record_a
+    def test_known_metadata_superset_wins(self) -> None:
+        """Useful stored metadata wins over placeholder candidate metadata."""
+        record_a = _make_eee_record()
+        record_b = _make_eee_record()
+        record_a["model_info"]["num_model_parameters"] = 8030261248
+        record_b["model_info"]["num_model_parameters"] = -1
+        assert dedup_newer_record(record_a, record_b) is record_a
 
-    def test_higher_version_wins(self) -> None:
-        """Record with higher version should win."""
-        record_a = _make_eee_record(version="1.0.0", timestamp="100")
-        record_b = _make_eee_record(version="2.0.0", timestamp="50")
-        winner = dedup_newer_record(record_a, record_b)
-        assert winner is record_b
-
-    def test_none_version_loses_to_some_version(self) -> None:
-        """Record with None version should lose to record with version."""
-        record_a = _make_eee_record(version=None, timestamp="100")
-        record_b = _make_eee_record(version="1.0.0", timestamp="50")
-        winner = dedup_newer_record(record_a, record_b)
-        assert winner is record_b
-
-    def test_same_version_timestamp_tiebreak(self) -> None:
-        """Same version should tie-break by timestamp."""
-        record_a = _make_eee_record(version="1.0.0", timestamp="100")
-        record_b = _make_eee_record(version="1.0.0", timestamp="200")
-        winner = dedup_newer_record(record_a, record_b)
-        assert winner is record_b
-
-    def test_version_comparison_complex(self) -> None:
-        """Complex version comparison."""
-        record_a = _make_eee_record(version="1.10.0", timestamp="100")
-        record_b = _make_eee_record(version="1.9.0", timestamp="200")
-        winner = dedup_newer_record(record_a, record_b)
-        assert winner is record_a
+    def test_unresolved_conflict_has_distinct_error(self) -> None:
+        """Ambiguous score changes are not reported as malformed-record errors."""
+        record_a = _make_eee_record()
+        record_b = _make_eee_record()
+        record_a["scores"] = {"accuracy": 0.5}
+        record_b["scores"] = {"accuracy": 0.6}
+        with pytest.raises(UnresolvedResultConflictError):
+            dedup_newer_record(record_a, record_b)
 
 
 def _make_eee_record(
@@ -79,24 +61,18 @@ def _make_eee_record(
     version: str | None = "1.0.0",
     timestamp: str | int | None = "1234567890",
 ) -> dict:
-    """Helper to create an EEE-format record for testing.
+    """Create an EEE-format test record.
 
     Args:
-        model_id (optional):
-            Model identifier. Defaults to "org/model".
-        dataset (optional):
-            Dataset name. Defaults to "test_dataset".
-        validation_split (optional):
-            Validation split flag. Defaults to False.
-        few_shot (optional):
-            Few-shot flag. Defaults to True.
-        version (optional):
-            EuroEval version. Defaults to "1.0.0".
-        timestamp (optional):
-            Retrieved timestamp. Defaults to "1234567890".
+        model_id: Model identifier.
+        dataset: Dataset name.
+        validation_split: Evaluation split flag.
+        few_shot: Few-shot flag.
+        version: Evaluation library version.
+        timestamp: Retrieval timestamp.
 
     Returns:
-        EEE-format record dictionary.
+        An EEE-format record.
     """
     return {
         "schema_version": "0.2.1",
@@ -113,54 +89,6 @@ def _make_eee_record(
         "retrieved_timestamp": timestamp,
         "evaluation_results": [],
     }
-
-
-class TestExtractTimestamp:
-    """Tests for _extract_timestamp."""
-
-    def test_integer(self) -> None:
-        """Integer should be returned as-is."""
-        record = _make_eee_record(timestamp=1234567890)
-        assert _extract_timestamp(record) == 1234567890
-
-    def test_integer_string(self) -> None:
-        """Integer string should be returned as-is."""
-        record = _make_eee_record(timestamp="1234567890")
-        assert _extract_timestamp(record) == 1234567890
-
-    def test_invalid_string_returns_zero(self) -> None:
-        """Invalid string should return 0."""
-        record = _make_eee_record(timestamp="not-a-timestamp")
-        assert _extract_timestamp(record) == 0
-
-    def test_iso8601_dedup_deterministic(self) -> None:
-        """ISO-8601 timestamps should enable deterministic dedup."""
-        record_a = _make_eee_record(version="1.0.0", timestamp="2024-01-01T00:00:00Z")
-        record_b = _make_eee_record(version="1.0.0", timestamp="2024-01-02T00:00:00Z")
-        # record_b is newer, should win
-        winner = dedup_newer_record(record_a, record_b)
-        assert winner is record_b
-
-    def test_iso8601_with_offset(self) -> None:
-        """ISO-8601 timestamp with timezone offset should be parsed."""
-        record = _make_eee_record(timestamp="2024-01-01T00:00:00+00:00")
-        assert _extract_timestamp(record) == 1704067200
-
-    def test_iso8601_with_z(self) -> None:
-        """ISO-8601 timestamp with trailing Z should be parsed."""
-        record = _make_eee_record(timestamp="2024-01-01T00:00:00Z")
-        # 2024-01-01 00:00:00 UTC = 1704067200
-        assert _extract_timestamp(record) == 1704067200
-
-    def test_iso8601_without_timezone_defaults_utc(self) -> None:
-        """ISO-8601 timestamp without timezone should default to UTC."""
-        record = _make_eee_record(timestamp="2024-01-01T00:00:00")
-        assert _extract_timestamp(record) == 1704067200
-
-    def test_none(self) -> None:
-        """None should return 0."""
-        record = _make_eee_record(timestamp=None)
-        assert _extract_timestamp(record) == 0
 
 
 class TestIdentityFromBenchmarkResult:
