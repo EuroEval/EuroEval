@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import typing as t
 
 import pytest
@@ -80,6 +81,20 @@ class TestResolveResultConflict:
         assert decision.evidence.choice == ConflictChoice.INCOMING
         with pytest.raises((AttributeError, TypeError)):
             setattr(decision.evidence, "choice", ConflictChoice.STORED)
+
+    def test_explicit_choice_overrides_engine_preference(self) -> None:
+        """An explicit owner choice remains stronger than automatic preference."""
+        current = _record(
+            model_info={"id": "org/model", "inference_engine": {"name": "litellm"}}
+        )
+        candidate = _record(
+            model_info={"id": "org/model", "inference_engine": {"name": "vllm"}}
+        )
+        decision = resolve_result_conflict(
+            current=current, candidate=candidate, choice=ConflictChoice.STORED
+        )
+        assert decision.selected == ConflictChoice.STORED
+        assert decision.reason == ConflictReason.EXPLICIT_CHOICE
 
     def test_false_and_zero_are_useful_values(self) -> None:
         """False and zero survive comparison rather than becoming missing."""
@@ -382,6 +397,31 @@ class TestResolveResultConflict:
         assert decision.reason == ConflictReason.NEWER_EVALUATION
         assert any(item.field == "score" for item in decision.differences)
 
+    @pytest.mark.parametrize(
+        ("current_engine", "candidate_engine"),
+        [("vllm", "vLLM"), ("litellm", "LiteLLM")],
+    )
+    def test_same_engine_keeps_existing_ambiguous_policy(
+        self, current_engine: str, candidate_engine: str
+    ) -> None:
+        """Engine preference does not resolve conflicts within one backend."""
+        current = _record(
+            model_info={
+                "id": "org/model",
+                "inference_engine": {"name": current_engine},
+            },
+            scores={"accuracy": 0.4},
+        )
+        candidate = _record(
+            model_info={
+                "id": "org/model",
+                "inference_engine": {"name": candidate_engine},
+            },
+            scores={"accuracy": 0.5},
+        )
+        decision = resolve_result_conflict(current=current, candidate=candidate)
+        assert decision.needs_choice
+
     def test_unknown_metadata_change_requires_choice(self) -> None:
         """Unknown custom fields are not treated as safe metadata additions."""
         decision = resolve_result_conflict(
@@ -413,6 +453,91 @@ class TestResolveResultConflict:
         decision = resolve_result_conflict(current=current, candidate=candidate)
         assert decision.needs_choice
         assert decision.reason == ConflictReason.UNRESOLVED_TIMESTAMP
+
+    def test_vllm_dependency_version_does_not_identify_backend(self) -> None:
+        """A dependency version alone is not explicit engine evidence."""
+        current = _record(
+            model_info={"id": "org/model"},
+            eval_library={"additional_details": {"vllm_version": "0.9"}},
+            scores={"accuracy": 0.4},
+        )
+        candidate = _record(
+            model_info={"id": "org/model", "inference_engine": {"name": "litellm"}},
+            scores={"accuracy": 0.5},
+        )
+        assert resolve_result_conflict(
+            current=current, candidate=candidate
+        ).needs_choice
+
+    @pytest.mark.parametrize(
+        ("current_engine", "candidate_engine", "expected"),
+        [
+            ("vLLM", "litellm", ConflictChoice.STORED),
+            ("LiteLLM", " VLLM ", ConflictChoice.INCOMING),
+        ],
+    )
+    def test_vllm_engine_preference_over_litellm(
+        self, current_engine: str, candidate_engine: str, expected: ConflictChoice
+    ) -> None:
+        """Explicit vLLM identification wins irrespective of other differences."""
+        current = _record(
+            model_info={
+                "id": "org/model",
+                "inference_engine": {"name": current_engine},
+            },
+            evaluation_timestamp="2026-10-22T00:00:00Z",
+            scores={"accuracy": 0.02032105367},
+            open=True,
+        )
+        candidate = _record(
+            model_info={
+                "id": "org/model",
+                "inference_engine": {"name": candidate_engine},
+            },
+            evaluation_timestamp="2026-07-18T00:00:00Z",
+            scores={"accuracy": 0.00065181237},
+        )
+        current_before = copy.deepcopy(current)
+        candidate_before = copy.deepcopy(candidate)
+        current_bytes = b'{"stored":true}'
+        candidate_bytes = b'{ "candidate": true }'
+        decision = resolve_result_conflict(
+            current=current,
+            candidate=candidate,
+            current_bytes=current_bytes,
+            candidate_bytes=candidate_bytes,
+        )
+        assert decision.selected == expected
+        assert decision.reason == ConflictReason.ENGINE_PREFERENCE
+        assert decision.evidence.policy_version == "2"
+        assert (
+            decision.evidence.current_sha256
+            == hashlib.sha256(current_bytes).hexdigest()
+        )
+        assert (
+            decision.evidence.candidate_sha256
+            == hashlib.sha256(candidate_bytes).hexdigest()
+        )
+        assert current == current_before
+        assert candidate == candidate_before
+
+    @pytest.mark.parametrize(
+        "current_engine", [None, {}, {"name": None}, {"name": 1}, {"name": "other"}]
+    )
+    def test_vllm_preference_requires_explicit_known_engine(
+        self, current_engine: object
+    ) -> None:
+        """Missing or unrelated engine evidence remains under existing policy."""
+        model_info: dict[str, object] = {"id": "org/model"}
+        if current_engine is not None:
+            model_info["inference_engine"] = current_engine
+        current = _record(model_info=model_info, scores={"accuracy": 0.4})
+        candidate = _record(
+            model_info={"id": "org/model", "inference_engine": {"name": "litellm"}},
+            scores={"accuracy": 0.5},
+        )
+        decision = resolve_result_conflict(current=current, candidate=candidate)
+        assert decision.needs_choice
 
 
 def _eee_model_record(**details: object) -> dict[str, object]:

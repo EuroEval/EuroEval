@@ -27,7 +27,11 @@ from leaderboards.canonical_publication import (
 )
 from leaderboards.constants import TRAINED_FROM_SCRATCH_PATTERNS
 from leaderboards.model_metadata import add_missing_entries
-from leaderboards.result_conflicts import ConflictChoice, resolve_result_conflict
+from leaderboards.result_conflicts import (
+    ConflictChoice,
+    ConflictReason,
+    resolve_result_conflict,
+)
 from leaderboards.result_identity import identity_from_eee_record, identity_to_path
 
 
@@ -1822,6 +1826,87 @@ def test_upload_failure_poison_retains_lock(
             session.write_verified(path="object", content=b"x", expected=None)
     assert lock.owner is not None
     assert list((tmp_path / "euroeval-publication-locks").glob("*.json"))
+
+
+@pytest.mark.parametrize(
+    ("stored_engine", "incoming_engine", "stored_score", "incoming_score", "replace"),
+    [
+        ("litellm", "vllm", 0.02032105367, 0.00065181237, True),
+        ("vllm", "litellm", 0.00065181237, 0.02032105367, False),
+    ],
+)
+def test_vllm_engine_preference_publication(
+    tmp_path: Path,
+    stored_engine: str,
+    incoming_engine: str,
+    stored_score: float,
+    incoming_score: float,
+    replace: bool,
+) -> None:
+    """Publish exact preferred-engine source and archive replaced bytes."""
+    api = MemoryApi()
+    publisher = CanonicalPublisher(
+        api=api,
+        token="test-token",
+        lock=MemoryLock(),
+        checkpoint_path=tmp_path / "publication.sqlite3",
+    )
+
+    def encode_record(*, engine: str, score: float, timestamp: str) -> bytes:
+        record: dict[str, object] = {
+            "model_info": {"id": "org/model", "inference_engine": {"name": engine}},
+            "eval_library": {
+                "name": "euroeval",
+                "version": "1.0",
+                "additional_details": {
+                    "dataset": "task",
+                    "few_shot": False,
+                    "validation_split": False,
+                    "library_version": engine,
+                    "raw_results": {"score": score},
+                },
+            },
+            "eval_timestamp": timestamp,
+            "evaluation_results": {"score": score},
+        }
+        if engine == "litellm":
+            record["model_type"] = "generative"
+        return json.dumps(record).encode()
+
+    stored = encode_record(
+        engine=stored_engine, score=stored_score, timestamp="2026-10-22T00:00:00Z"
+    )
+    incoming = encode_record(
+        engine=incoming_engine, score=incoming_score, timestamp="2026-07-18T00:00:00Z"
+    )
+    identity = identity_from_eee_record(record=json.loads(stored))
+    path = identity_to_path(identity).as_posix()
+    api.objects[path] = stored
+    decision = resolve_result_conflict(
+        current=json.loads(stored),
+        candidate=json.loads(incoming),
+        current_bytes=stored,
+        candidate_bytes=incoming,
+    )
+    assert decision.reason == ConflictReason.ENGINE_PREFERENCE
+    assert decision.evidence.current_sha256 == hashlib.sha256(stored).hexdigest()
+    assert decision.evidence.candidate_sha256 == hashlib.sha256(incoming).hexdigest()
+    assert decision.selected == (
+        ConflictChoice.INCOMING if replace else ConflictChoice.STORED
+    )
+    publisher.prepare(
+        records=[incoming], sources={identity: stored}, decisions=[decision]
+    )
+    with publisher.session() as session:
+        published = session.publish(
+            records=[incoming], sources={identity: stored}, decisions=[decision]
+        )
+
+    assert published == int(replace)
+    assert api.objects[path] == (incoming if replace else stored)
+    if replace:
+        history = f"_history/{hashlib.sha256(stored).hexdigest()}.bin"
+        assert api.objects[history] == stored
 
 
 def test_write_verified_detects_mutated_expected_bytes(
