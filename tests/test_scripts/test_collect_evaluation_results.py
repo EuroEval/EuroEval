@@ -12,7 +12,7 @@ import pytest
 
 from euroeval_worker.review import PublicStagingError, VolunteerReviewer
 from euroeval_worker.review_models import ReviewReport
-from leaderboards import canonical_publication, constants
+from leaderboards import canonical_publication, constants, result_loading
 from leaderboards.result_conflicts import ConflictDecision
 from leaderboards.result_identity import UnresolvedResultConflictError
 from src.scripts import collect_evaluation_results
@@ -174,8 +174,11 @@ def test_collector_captures_predecessors_without_second_tree_read(
     predecessor = (json.dumps(_ranked_collector_record(), indent=2) + "\n").encode()
     path.write_bytes(predecessor)
     incoming = json.loads(json.dumps(_ranked_collector_record()))
-    incoming["metadata"] = {"open": True}
-    incoming["model_info"]["additional_details"] = {"open": True}
+    incoming["model_info"]["additional_details"] = {
+        "open": True,
+        "commercially_licensed": True,
+        "trained_from_scratch": False,
+    }
     new_results = tmp_path / "incoming.jsonl"
     new_results.write_text(json.dumps(incoming), encoding="utf-8")
     monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
@@ -230,8 +233,11 @@ def test_collector_falls_back_to_exact_bytes_when_metadata_is_unavailable(
     predecessor = (json.dumps(original, indent=2) + "\n").encode()
     record_path.write_bytes(predecessor)
     incoming_record = json.loads(json.dumps(original))
-    incoming_record["metadata"] = {"open": True}
-    incoming_record["model_info"]["additional_details"] = {"open": True}
+    incoming_record["model_info"]["additional_details"] = {
+        "open": True,
+        "commercially_licensed": True,
+        "trained_from_scratch": False,
+    }
     incoming = tmp_path / "incoming.jsonl"
     incoming.write_text(json.dumps(incoming_record), encoding="utf-8")
     monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
@@ -255,9 +261,17 @@ def test_collector_falls_back_to_exact_bytes_when_metadata_is_unavailable(
 
     assert collect_evaluation_results.upload_results_to_hf(new_results_path=incoming)
     transformed_local = record_path.read_bytes()
-    assert json.loads(transformed_local)["metadata"] == {"open": True}
+    expected_details = {
+        "open": True,
+        "commercially_licensed": True,
+        "trained_from_scratch": False,
+    }
+    assert (
+        json.loads(transformed_local)["model_info"]["additional_details"]
+        == expected_details
+    )
     canonical = FakeHfApi.objects["foo_bar/task__test__zeroshot.json"]
-    assert json.loads(canonical)["metadata"] == {"open": True}
+    assert json.loads(canonical)["model_info"]["additional_details"] == expected_details
     history = f"_history/{hashlib.sha256(predecessor).hexdigest()}.bin"
     assert FakeHfApi.objects[history] == predecessor
 
@@ -331,8 +345,11 @@ def test_collector_prepare_failure_leaves_local_files_untouched(
     stale = results_dir / "stale.jsonl"
     stale.write_bytes(b"keep\n")
     incoming_record = json.loads(json.dumps(original))
-    incoming_record["metadata"] = {"open": True}
-    incoming_record["model_info"]["additional_details"] = {"open": True}
+    incoming_record["model_info"]["additional_details"] = {
+        "open": True,
+        "commercially_licensed": True,
+        "trained_from_scratch": False,
+    }
     incoming = tmp_path / "incoming.jsonl"
     incoming.write_text(json.dumps(incoming_record), encoding="utf-8")
     monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
@@ -349,6 +366,94 @@ def test_collector_prepare_failure_leaves_local_files_untouched(
     assert record_path.read_bytes() == original_bytes
     assert stale.read_bytes() == b"keep\n"
     assert FakeHfApi.objects == {}
+
+
+def test_eof_after_earlier_choice_preserves_original_staging_and_records(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A later EOF cannot commit earlier choices or rewrite staged input."""
+    results_dir = tmp_path / "results"
+    first_path = results_dir / "foo_bar" / "task__test__zeroshot.json"
+    second_path = results_dir / "foo_bar" / "another__test__zeroshot.json"
+    first_path.parent.mkdir(parents=True)
+    first = _ranked_collector_record(score=0.2)
+    second = _ranked_collector_record(score=0.3)
+    second_library = t.cast(dict[str, object], second["eval_library"])
+    second_details = t.cast(dict[str, object], second_library["additional_details"])
+    second_details["dataset"] = "another"
+    first_bytes = (json.dumps(first, indent=2) + "\n").encode()
+    second_bytes = (json.dumps(second, indent=2) + "\n").encode()
+    first_path.write_bytes(first_bytes)
+    second_path.write_bytes(second_bytes)
+    staging = tmp_path / "new_results.jsonl"
+    staging_bytes = b"original staged data\n"
+    staging.write_bytes(staging_bytes)
+    incoming_first = _ranked_collector_record(score=0.8)
+    incoming_second = json.loads(json.dumps(second))
+    incoming_second["evaluation_results"][0]["score_details"]["score"] = 0.9
+    answers = iter(["incoming"])
+    resolver = collect_evaluation_results.resolve_result_interactively
+
+    def choose(
+        *,
+        current: dict[str, object],
+        candidate: dict[str, object],
+        current_bytes: bytes | None = None,
+        candidate_bytes: bytes | None = None,
+    ) -> ConflictDecision:
+        return resolver(
+            current=current,
+            candidate=candidate,
+            current_bytes=current_bytes,
+            candidate_bytes=candidate_bytes,
+            input_fn=lambda _prompt: next(answers),
+            interactive=True,
+        )
+
+    monkeypatch.setattr(
+        collect_evaluation_results, "resolve_result_interactively", choose
+    )
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
+    monkeypatch.setattr(collect_evaluation_results, "NEW_RESULTS_PATH", staging)
+    lines = [json.dumps(incoming_first), json.dumps(incoming_second)]
+
+    assert not collect_evaluation_results.upload_results_to_hf(
+        new_results_path=staging, pending_lines=lines
+    )
+    assert staging.read_bytes() == staging_bytes
+    assert first_path.read_bytes() == first_bytes
+    assert second_path.read_bytes() == second_bytes
+    assert FakeHfApi.objects == {}
+
+
+def test_harvested_conflict_abort_preserves_canonical_bytes(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """An aborted harvested issue batch leaves canonical bytes untouched."""
+    results_dir = tmp_path / "results"
+    canonical = results_dir / "foo_bar" / "task__test__zeroshot.json"
+    canonical.parent.mkdir(parents=True)
+    stored = _ranked_collector_record(score=0.2)
+    original_bytes = (json.dumps(stored, indent=2) + "\n").encode()
+    canonical.write_bytes(original_bytes)
+    harvested = _ranked_collector_record(score=0.8)
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
+    monkeypatch.setattr(
+        collect_evaluation_results,
+        "resolve_result_interactively",
+        lambda **_kwargs: (_ for _ in ()).throw(
+            UnresolvedResultConflictError("aborted")
+        ),
+    )
+    harvest_dir = tmp_path / "harvest"
+    harvest_dir.mkdir()
+    issue_result = harvest_dir / "issue-result.jsonl"
+    issue_result.write_text(json.dumps(harvested), encoding="utf-8")
+
+    assert not collect_evaluation_results.upload_results_to_hf(
+        new_results_path=issue_result, pending_lines=[issue_result.read_text()]
+    )
+    assert canonical.read_bytes() == original_bytes
 
 
 def test_initial_yes_does_not_approve_without_item_confirmation(
@@ -982,6 +1087,94 @@ def test_preview_in_dev_server_starts_and_stops_fixed_port(
     assert "http://localhost:5173" in caplog.text
 
 
+def test_public_upload_accepts_multiple_new_identity_candidates_without_proof(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Multiple new identities need no predecessor choice evidence."""
+    results_dir = tmp_path / "results"
+    first = _ranked_collector_record(score=0.2)
+    second = _ranked_collector_record(score=0.8)
+    second_library = t.cast(dict[str, object], second["eval_library"])
+    second_details = t.cast(dict[str, object], second_library["additional_details"])
+    second_details["dataset"] = "another-task"
+    incoming = tmp_path / "incoming.jsonl"
+    lines = [json.dumps(first), json.dumps(second)]
+    incoming.write_text("\n".join(lines), encoding="utf-8")
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
+    _enable_real_collector_publisher(monkeypatch=monkeypatch, tmp_path=tmp_path)
+
+    assert collect_evaluation_results.upload_results_to_hf(new_results_path=incoming)
+    assert len([name for name in FakeHfApi.objects if name.endswith(".json")]) == 2
+
+
+def test_public_upload_reapproves_final_winner_after_multiple_contenders(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A later contender cannot displace the approved middle contender."""
+    results_dir = tmp_path / "results"
+    canonical = results_dir / "foo_bar" / "task__test__zeroshot.json"
+    canonical.parent.mkdir(parents=True)
+    stored = _ranked_collector_record(score=0.2)
+    original_bytes = (json.dumps(stored, indent=2) + "\n").encode()
+    canonical.write_bytes(original_bytes)
+    contender_b = _ranked_collector_record(score=0.5)
+    contender_c = _ranked_collector_record(score=0.8)
+    inputs = iter(["incoming", "stored", "incoming"])
+    prompted_pairs: list[tuple[object, object]] = []
+    approved_decisions: list[ConflictDecision] = []
+    resolver = collect_evaluation_results.resolve_result_interactively
+
+    def choose(
+        *,
+        current: dict[str, object],
+        candidate: dict[str, object],
+        current_bytes: bytes | None = None,
+        candidate_bytes: bytes | None = None,
+    ) -> ConflictDecision:
+        prompted_pairs.append(
+            (current["evaluation_results"], candidate["evaluation_results"])
+        )
+        decision = resolver(
+            current=current,
+            candidate=candidate,
+            current_bytes=current_bytes,
+            candidate_bytes=candidate_bytes,
+            input_fn=lambda _prompt: next(inputs),
+            interactive=True,
+        )
+        approved_decisions.append(decision)
+        return decision
+
+    monkeypatch.setattr(
+        collect_evaluation_results, "resolve_result_interactively", choose
+    )
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
+    _enable_real_collector_publisher(monkeypatch=monkeypatch, tmp_path=tmp_path)
+    FakeHfApi.objects["foo_bar/task__test__zeroshot.json"] = original_bytes
+    incoming = tmp_path / "incoming.jsonl"
+    lines = [json.dumps(contender_b), json.dumps(contender_c)]
+    incoming.write_text("\n".join(lines), encoding="utf-8")
+
+    assert collect_evaluation_results.upload_results_to_hf(
+        new_results_path=incoming, pending_lines=lines
+    )
+
+    assert json.loads(canonical.read_bytes()) == contender_b
+    assert prompted_pairs[-1] == (
+        stored["evaluation_results"],
+        contender_b["evaluation_results"],
+    )
+    final_bytes = json.dumps(contender_b, separators=(",", ":")).encode()
+    assert (
+        approved_decisions[-1].evidence.current_sha256
+        == hashlib.sha256(original_bytes).hexdigest()
+    )
+    assert (
+        approved_decisions[-1].evidence.candidate_sha256
+        == hashlib.sha256(final_bytes).hexdigest()
+    )
+
+
 def test_reviewer_login_actor_and_safe_gh_fallback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1041,6 +1234,46 @@ def test_reviewer_login_actor_and_safe_gh_fallback(
     )
 
 
+def test_staged_resolved_winner_is_not_reloaded_with_rejected_contender(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The public loader sees the winner, not a rejected staged contender."""
+    results_dir = tmp_path / "results"
+    canonical = results_dir / "foo_bar" / "task__test__zeroshot.json"
+    canonical.parent.mkdir(parents=True)
+    stored = _ranked_collector_record(score=0.2)
+    canonical.write_bytes(json.dumps(stored).encode())
+    incoming_record = _ranked_collector_record(score=0.8)
+    staging = tmp_path / "new_results.jsonl"
+    staged_line = json.dumps(incoming_record)
+    staging.write_text("unmodified staging\n", encoding="utf-8")
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
+    monkeypatch.setattr(collect_evaluation_results, "NEW_RESULTS_PATH", staging)
+    monkeypatch.setattr(result_loading, "RESULTS_DIR", results_dir)
+    monkeypatch.setattr(result_loading, "NEW_RESULTS_PATH", staging)
+    monkeypatch.setattr(result_loading, "_sync_results_from_bucket", lambda: None)
+    _enable_real_collector_publisher(monkeypatch=monkeypatch, tmp_path=tmp_path)
+    resolver = collect_evaluation_results.resolve_result_interactively
+    monkeypatch.setattr(
+        collect_evaluation_results,
+        "resolve_result_interactively",
+        lambda **kwargs: resolver(
+            **kwargs, input_fn=lambda _prompt: "incoming", interactive=True
+        ),
+    )
+
+    assert collect_evaluation_results.upload_results_to_hf(
+        new_results_path=staging, pending_lines=[staged_line]
+    )
+    result_loading.load_raw_results.cache_clear()
+    records = result_loading.load_raw_results()
+    result_loading.load_raw_results.cache_clear()
+
+    assert len(records) == 1
+    assert records[0]["evaluation_results"] == incoming_record["evaluation_results"]
+    assert not staging.exists()
+
+
 @pytest.mark.parametrize(
     ("first_version", "second_version", "first_timestamp", "second_timestamp"),
     [("1.0.0", "2.0.0", 2, 1), ("1.0.0", "1.0.0", 1, 2)],
@@ -1053,16 +1286,18 @@ def test_upload_results_to_hf_alias_reconciliation_is_order_independent(
     first_timestamp: int,
     second_timestamp: int,
 ) -> None:
-    """Higher version or timestamp wins regardless of file iteration order."""
+    """The later evaluation timestamp wins despite version/retrieval aliases."""
     results_dir = tmp_path / "results"
     directory = results_dir / "foo_bar"
     directory.mkdir(parents=True)
     first = _ranked_collector_record(
         version=first_version, timestamp=first_timestamp, score=0.1
     )
+    first["eval_timestamp"] = "2024-01-01T00:00:00Z"
     second = _ranked_collector_record(
         version=second_version, timestamp=second_timestamp, score=0.9
     )
+    second["eval_timestamp"] = "2024-01-02T00:00:00Z"
     (directory / "a.json").write_text(json.dumps(first), encoding="utf-8")
     (directory / "z.json").write_text(json.dumps(second), encoding="utf-8")
     incoming = tmp_path / "incoming.jsonl"
@@ -1323,7 +1558,7 @@ def test_upload_results_to_hf_equal_rank_envelope_aliases_are_allowed(
 
     assert collect_evaluation_results.upload_results_to_hf(new_results_path=incoming)
 
-    assert json.loads(path.read_bytes()) == enriched
+    assert path.read_bytes() == predecessor
 
 
 @pytest.mark.parametrize(
@@ -1358,12 +1593,15 @@ def test_upload_results_to_hf_equal_rank_raw_results_conflict_is_preflighted(
     before = {path: path.read_bytes() for path in paths}
     incoming = tmp_path / "incoming.jsonl"
     incoming.write_text("", encoding="utf-8")
+    incoming_bytes = incoming.read_bytes()
     monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
     _enable_real_collector_publisher(monkeypatch=monkeypatch, tmp_path=tmp_path)
 
-    with pytest.raises(ValueError, match="Conflicting equal-ranked"):
-        collect_evaluation_results.upload_results_to_hf(new_results_path=incoming)
+    assert not collect_evaluation_results.upload_results_to_hf(
+        new_results_path=incoming
+    )
 
+    assert incoming.read_bytes() == incoming_bytes
     assert {path: path.read_bytes() for path in paths} == before
     assert FakeHfApi.objects == {}
 
@@ -1387,12 +1625,15 @@ def test_upload_results_to_hf_equal_rank_score_conflict_is_preflighted(
     before = {path: path.read_bytes() for path in paths}
     incoming = tmp_path / "incoming.jsonl"
     incoming.write_text("", encoding="utf-8")
+    incoming_bytes = incoming.read_bytes()
     monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
     _enable_real_collector_publisher(monkeypatch=monkeypatch, tmp_path=tmp_path)
 
-    with pytest.raises(ValueError, match="Conflicting equal-ranked"):
-        collect_evaluation_results.upload_results_to_hf(new_results_path=incoming)
+    assert not collect_evaluation_results.upload_results_to_hf(
+        new_results_path=incoming
+    )
 
+    assert incoming.read_bytes() == incoming_bytes
     assert {path: path.read_bytes() for path in paths} == before
     assert FakeHfApi.objects == {}
 
@@ -1468,8 +1709,11 @@ def test_upload_results_to_hf_metadata_enrichment_uses_original_source_bytes(
     predecessor = (json.dumps(original, indent=2) + "\n").encode()
     path.write_bytes(predecessor)
     enriched = json.loads(json.dumps(original))
-    enriched["metadata"] = {"open": True}
-    enriched["model_info"]["additional_details"] = {"open": True}
+    enriched["model_info"]["additional_details"] = {
+        "open": True,
+        "commercially_licensed": True,
+        "trained_from_scratch": False,
+    }
     incoming = tmp_path / "incoming.jsonl"
     incoming.write_text(json.dumps(enriched), encoding="utf-8")
     monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
@@ -1505,9 +1749,9 @@ def test_upload_results_to_hf_raw_results_json_encodings_compare_semantically(
     )
     canonical_details["raw_results"] = {"iteration": 1, "score": 0.2}
     alias_details["raw_results"] = '{"score": 0.2, "iteration": 1}'
-    (directory / "task__test__zeroshot.json").write_text(
-        json.dumps(canonical, indent=2), encoding="utf-8"
-    )
+    canonical_path = directory / "task__test__zeroshot.json"
+    canonical_bytes = json.dumps(canonical, indent=2).encode()
+    canonical_path.write_bytes(canonical_bytes)
     (directory / "alias.json").write_text(json.dumps(alias), encoding="utf-8")
     incoming = tmp_path / "incoming.jsonl"
     incoming.write_text("", encoding="utf-8")
@@ -1516,9 +1760,8 @@ def test_upload_results_to_hf_raw_results_json_encodings_compare_semantically(
 
     assert collect_evaluation_results.upload_results_to_hf(new_results_path=incoming)
 
-    assert (
-        json.loads((directory / "task__test__zeroshot.json").read_bytes()) == canonical
-    )
+    assert json.loads(canonical_path.read_bytes()) == canonical
+    assert canonical_path.read_bytes() == canonical_bytes
 
 
 def test_upload_results_to_hf_reconciles_legacy_alias_to_canonical_once(
@@ -1531,10 +1774,10 @@ def test_upload_results_to_hf_reconciles_legacy_alias_to_canonical_once(
     legacy = results_dir / "aaa_legacy" / "anchored.json"
     canonical.parent.mkdir(parents=True)
     legacy.parent.mkdir(parents=True)
-    canonical_record = {**record, "metadata": {"open": True}}
-    legacy_record = {**record, "metadata": {"open": False}}
-    canonical.write_text(json.dumps(canonical_record), encoding="utf-8")
-    legacy.write_text(json.dumps(legacy_record), encoding="utf-8")
+    canonical_record = {**record, "model_info": {"id": "foo/bar"}}
+    canonical_bytes = json.dumps(canonical_record).encode()
+    canonical.write_bytes(canonical_bytes)
+    legacy.write_text(json.dumps(canonical_record), encoding="utf-8")
     incoming = tmp_path / "incoming.jsonl"
     incoming.write_text("", encoding="utf-8")
     monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
@@ -1546,7 +1789,8 @@ def test_upload_results_to_hf_reconciles_legacy_alias_to_canonical_once(
         content for name, content in FakeHfApi.objects.items() if name.endswith(".json")
     ]
     assert len(published) == 1
-    assert json.loads(published[0])["metadata"] == {"open": True}
+    assert json.loads(published[0]) == canonical_record
+    assert canonical.read_bytes() == canonical_bytes
 
 
 def test_upload_results_to_hf_retry_without_changes_is_idempotent(
@@ -1573,10 +1817,7 @@ def test_upload_results_to_hf_retry_without_changes_is_idempotent(
 def test_upload_results_to_hf_same_identity_keeps_newer_record(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Same-identity duplicate keeps the NEWER record.
-
-    When two records share the same identity, the newer one wins (by euroeval_version,
-    then retrieved_timestamp).
+    """A version-only difference is an identical no-op under conflict policy.
 
     Args:
         monkeypatch:
@@ -1587,7 +1828,7 @@ def test_upload_results_to_hf_same_identity_keeps_newer_record(
     results_dir = tmp_path / "results"
     results_dir.mkdir()
 
-    # Create existing record with older version
+    # Existing and incoming records differ only in an ignored version alias.
     model_dir = results_dir / "foo_bar"
     model_dir.mkdir()
     existing_record_file = model_dir / "dataset__test__zeroshot.json"
@@ -1605,7 +1846,7 @@ def test_upload_results_to_hf_same_identity_keeps_newer_record(
     }
     existing_record_file.write_text(json.dumps(older_record), encoding="utf-8")
 
-    # Create new results file with newer version (same identity)
+    # The changed version does not prove a newer evaluation.
     new_results_file = tmp_path / "new_results.jsonl"
     newer_record = {
         "model_info": {"id": "foo/bar"},
@@ -1635,17 +1876,15 @@ def test_upload_results_to_hf_same_identity_keeps_newer_record(
     )
     assert result is True
 
-    # The newer record should be written
+    # The stored record remains canonical.
     content = json.loads(existing_record_file.read_text(encoding="utf-8"))
-    assert content["eval_library"]["version"] == "2.0.0"
+    assert content["eval_library"]["version"] == "1.0.0"
 
 
 def test_upload_results_to_hf_same_identity_uses_timestamp_tiebreaker(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Same-identity with same version uses retrieved_timestamp as tiebreaker.
-
-    When versions are equal, the record with newer retrieved_timestamp wins.
+    """A retrieval timestamp difference alone is an identical no-op.
 
     Args:
         monkeypatch:
@@ -1656,7 +1895,7 @@ def test_upload_results_to_hf_same_identity_uses_timestamp_tiebreaker(
     results_dir = tmp_path / "results"
     results_dir.mkdir()
 
-    # Create existing record with older timestamp
+    # Stored result has an earlier retrieval timestamp.
     model_dir = results_dir / "foo_bar"
     model_dir.mkdir()
     existing_record_file = model_dir / "dataset__test__zeroshot.json"
@@ -1674,7 +1913,7 @@ def test_upload_results_to_hf_same_identity_uses_timestamp_tiebreaker(
     }
     existing_record_file.write_text(json.dumps(older_record), encoding="utf-8")
 
-    # Create new results file with newer timestamp (same version)
+    # Retrieval time is not evidence of a newer evaluation.
     new_results_file = tmp_path / "new_results.jsonl"
     newer_record = {
         "model_info": {"id": "foo/bar"},
@@ -1704,9 +1943,9 @@ def test_upload_results_to_hf_same_identity_uses_timestamp_tiebreaker(
     )
     assert result is True
 
-    # The newer record (by timestamp) should be written
+    # The stored record remains canonical.
     content = json.loads(existing_record_file.read_text(encoding="utf-8"))
-    assert content["retrieved_timestamp"] == 1704153600
+    assert content["retrieved_timestamp"] == 1704067200
 
 
 def test_upload_results_to_hf_skips_incoming_canary_records(
@@ -1759,8 +1998,9 @@ def test_upload_results_to_hf_unsupported_equal_rank_change_is_preflighted(
     monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
     _enable_real_collector_publisher(monkeypatch=monkeypatch, tmp_path=tmp_path)
 
-    with pytest.raises(ValueError, match="Unsupported equal-ranked"):
-        collect_evaluation_results.upload_results_to_hf(new_results_path=incoming)
+    assert not collect_evaluation_results.upload_results_to_hf(
+        new_results_path=incoming
+    )
 
     assert path.read_bytes() == predecessor
     assert stale.read_bytes() == stale_bytes
