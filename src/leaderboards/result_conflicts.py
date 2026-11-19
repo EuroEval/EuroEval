@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from enum import StrEnum
 
 from . import result_identity
+from .records import strip_anchor
 
 POLICY_VERSION = "1"
 
@@ -94,6 +95,44 @@ def _parse_timestamp(*, value: object, epoch: bool) -> datetime | None:
         return None
 
 
+def _identifier_anchor_count(*, record: dict[str, object]) -> int:
+    """Count legacy anchor-wrapped values in recognised identifier fields.
+
+    Args:
+        record:
+            Result record to inspect.
+
+    Returns:
+        Number of recognised identifier values wrapped in HTML anchors.
+    """
+    flattened: dict[str, object] = {}
+    _flatten(record=record, prefix="", output=flattened)
+    return sum(
+        1
+        for field, value in flattened.items()
+        if field in _PRESENTATION_IDENTIFIER_FIELDS
+        and isinstance(value, str)
+        and _strip_identifier_anchors(value=value) != value
+    )
+
+
+def _strip_identifier_anchors(*, value: str) -> str:
+    """Remove recognised legacy anchors from an identifier string.
+
+    Args:
+        value:
+            Identifier string, possibly containing an anchored model identifier.
+
+    Returns:
+        Identifier with anchor wrappers removed.
+    """
+    return re.sub(
+        r"<a [^>]*>(?P<inner>[^<]+)</a>",
+        lambda match: strip_anchor(match.group(0)),
+        value,
+    )
+
+
 def _is_known_metadata(*, field: str) -> bool:
     lowered = field.casefold()
     if lowered.startswith("model_info."):
@@ -121,6 +160,8 @@ def _comparison_record(*, record: dict[str, object]) -> dict[str, object]:
     for field, value in flat.items():
         if _is_ignored_alias(field=field):
             continue
+        if field in _PRESENTATION_IDENTIFIER_FIELDS and isinstance(value, str):
+            value = _strip_identifier_anchors(value=value)
         if field.endswith("raw_results"):
             value = _normalise_embedded_json(value=value)
         result[field] = value
@@ -307,6 +348,15 @@ def _automatic_selection(
     differences: tuple[FieldDifference, ...],
 ) -> tuple[ConflictChoice | None, ConflictReason]:
     if not differences:
+        current_anchor_count = _identifier_anchor_count(record=current)
+        candidate_anchor_count = _identifier_anchor_count(record=candidate)
+        if current_anchor_count != candidate_anchor_count:
+            selected = (
+                ConflictChoice.STORED
+                if current_anchor_count < candidate_anchor_count
+                else ConflictChoice.INCOMING
+            )
+            return selected, ConflictReason.IDENTICAL
         return ConflictChoice.STORED, ConflictReason.IDENTICAL
     metadata = tuple(item for item in differences if item.category == "metadata")
     payload = tuple(item for item in differences if item.category == "payload")
@@ -363,6 +413,13 @@ def _stable_bytes(*, record: dict[str, object]) -> bytes:
     ).encode()
 
 
+_PRESENTATION_IDENTIFIER_FIELDS = {
+    "model_info.id",
+    "model_info.name",
+    "eval_id",
+    "evaluation_id",
+    "evaluation_identifier",
+}
 _MISSING = object()
 _PAYLOAD_ROOTS = {
     "evaluation_results",
