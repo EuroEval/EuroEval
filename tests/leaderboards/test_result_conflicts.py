@@ -72,16 +72,18 @@ class TestResolveResultConflict:
     def test_false_and_zero_are_useful_values(self) -> None:
         """False and zero survive comparison rather than becoming missing."""
         base = _record(model_info={"id": "org/model"})
-        decision = resolve_result_conflict(
-            current={**base, "open": False, "parameter_count": 0}, candidate=base
-        )
+        current = _eee_model_record(open=False, custom_zero_extension=0)
+        decision = resolve_result_conflict(current=current, candidate=base)
         assert decision.selected == ConflictChoice.STORED
 
     def test_identity_mismatch_raises(self) -> None:
         """Resolver refuses to decide across distinct result identities."""
         with pytest.raises(ValueError, match="different identities"):
             resolve_result_conflict(
-                current=_record(), candidate=_record(dataset="other")
+                current=_record(),
+                candidate=_record(
+                    eval_library={"additional_details": {"dataset": "other"}}
+                ),
             )
 
     @pytest.mark.parametrize(
@@ -91,7 +93,7 @@ class TestResolveResultConflict:
             ({}, {"open": True}, ConflictChoice.INCOMING),
             ({"open": False}, {}, ConflictChoice.STORED),
             (
-                {"num_model_parameters": 0},
+                {"num_model_parameters": 803},
                 {"num_model_parameters": -1},
                 ConflictChoice.STORED,
             ),
@@ -319,13 +321,15 @@ def _eee_model_record(**details: object) -> dict[str, object]:
     Returns:
         A result record with a stable identity.
     """
-    return {
-        **_record(),
-        "model_info": {
-            "id": "AI-Sweden-Models/Llama-3-8B-instruct",
-            "additional_details": details,
-        },
+    eval_library = details.pop("eval_library", None)
+    record = _record()
+    if eval_library is not None:
+        record["eval_library"] = eval_library
+    record["model_info"] = {
+        "id": "AI-Sweden-Models/Llama-3-8B-instruct",
+        "additional_details": details,
     }
+    return record
 
 
 def _record(**changes: object) -> dict[str, object]:
@@ -343,12 +347,15 @@ def _record(**changes: object) -> dict[str, object]:
             },
         },
         "scores": {"accuracy": 0.5},
-        "model_parameters": 8030261248,
-        "trained_from_scratch": False,
-        "commercially_licensed": True,
-        "open": True,
-        "release_date": "2024-06-01",
-        "model_url": "https://example.test/model",
     }
     record.update(changes)
+    if "eval_library" in changes:
+        supplied = changes["eval_library"]
+        if isinstance(supplied, dict):
+            library = {**record["eval_library"], **supplied}
+            library["additional_details"] = {
+                **record["eval_library"]["additional_details"],
+                **supplied.get("additional_details", {}),
+            }
+            record["eval_library"] = library
     return record
