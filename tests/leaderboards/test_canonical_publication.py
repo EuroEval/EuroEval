@@ -27,6 +27,7 @@ from leaderboards.canonical_publication import (
 )
 from leaderboards.constants import TRAINED_FROM_SCRATCH_PATTERNS
 from leaderboards.model_metadata import add_missing_entries
+from leaderboards.result_conflicts import ConflictChoice, resolve_result_conflict
 from leaderboards.result_identity import identity_from_eee_record, identity_to_path
 
 
@@ -569,7 +570,7 @@ def test_checkpoint_sources_are_isolated_by_publisher_scope(tmp_path: Path) -> N
 
     first.prepare(records=[transformed], sources={identity: original})
     with second.session() as session:
-        with pytest.raises(PublicationError, match="Equal-ranked"):
+        with pytest.raises(PublicationError, match="Unresolved"):
             session.publish(records=[transformed])
     assert api.objects[path] == original
 
@@ -706,7 +707,7 @@ def test_equal_rank_metadata_transform_cannot_change_evaluation_score(
     identity = identity_from_eee_record(json.loads(original))
     with publisher.session() as session:
         session.publish(records=[original])
-        with pytest.raises(PublicationError, match="Equal-ranked"):
+        with pytest.raises(PublicationError, match="Unresolved"):
             session.publish(records=[changed], sources={identity: original})
     canonical = next(name for name in api.objects if name.endswith(".json"))
     assert api.objects[canonical] == original
@@ -726,7 +727,7 @@ def test_equal_rank_metadata_transform_requires_original_source(
     identity = identity_from_eee_record(json.loads(original))
     with publisher.session() as session:
         assert session.publish(records=[original]) == 1
-        with pytest.raises(PublicationError, match="Equal-ranked"):
+        with pytest.raises(PublicationError, match="Unresolved"):
             session.publish(records=[transformed])
         assert session.publish(records=[transformed], sources={identity: original}) == 1
     assert any(name.startswith("_history/") for name in api.objects)
@@ -747,7 +748,7 @@ def test_equal_rank_numeric_enrichment_cannot_change_existing_value(
     identity = identity_from_eee_record(original_record)
     with publisher.session() as session:
         session.publish(records=[original])
-        with pytest.raises(PublicationError, match="Equal-ranked"):
+        with pytest.raises(PublicationError, match="Unresolved"):
             session.publish(records=[changed], sources={identity: original})
 
 
@@ -830,7 +831,7 @@ def test_invalid_numeric_metadata_enrichment_is_rejected(
     identity = identity_from_eee_record(json.loads(original))
     with publisher.session() as session:
         session.publish(records=[original])
-        with pytest.raises(PublicationError, match="Equal-ranked"):
+        with pytest.raises(PublicationError, match="Unresolved"):
             session.publish(records=[enriched], sources={identity: original})
 
 
@@ -1031,6 +1032,78 @@ def test_malformed_metadata_batch_falls_back_to_exact_bodies(
     assert api.downloaded_bytes > 0
 
 
+def test_manual_incoming_choice_archives_exact_predecessor(tmp_path: Path) -> None:
+    """An explicit incoming choice can replace an older conflicting record."""
+    api = MemoryApi()
+    lock = MemoryLock()
+    publisher = CanonicalPublisher(
+        api=api,
+        token="test-token",
+        lock=lock,
+        checkpoint_path=tmp_path / "publication.sqlite3",
+    )
+    original = _record(score=0.9)
+    candidate = _record(score=0.1)
+    identity = identity_from_eee_record(json.loads(original))
+    path = identity_to_path(identity).as_posix()
+    api.objects[path] = original
+    decision = resolve_result_conflict(
+        current=json.loads(original),
+        candidate=json.loads(candidate),
+        current_bytes=original,
+        candidate_bytes=candidate,
+        choice=ConflictChoice.INCOMING,
+    )
+
+    publisher.prepare(
+        records=[candidate], sources={identity: original}, decisions=[decision]
+    )
+    with publisher.session() as session:
+        assert (
+            session.publish(
+                records=[candidate], sources={identity: original}, decisions=[decision]
+            )
+            == 1
+        )
+
+    assert api.objects[path] == candidate
+    assert (
+        api.objects[f"_history/{hashlib.sha256(original).hexdigest()}.bin"] == original
+    )
+
+
+def test_manual_stored_choice_retains_canonical_bytes(tmp_path: Path) -> None:
+    """A stored-side decision cannot turn into an incoming overwrite."""
+    api = MemoryApi()
+    lock = MemoryLock()
+    publisher = CanonicalPublisher(
+        api=api,
+        token="test-token",
+        lock=lock,
+        checkpoint_path=tmp_path / "publication.sqlite3",
+    )
+    original = _record(score=0.9)
+    candidate = _record(score=0.1)
+    identity = identity_from_eee_record(json.loads(original))
+    api.objects[identity_to_path(identity).as_posix()] = original
+    decision = resolve_result_conflict(
+        current=json.loads(original),
+        candidate=json.loads(candidate),
+        current_bytes=original,
+        candidate_bytes=candidate,
+        choice=ConflictChoice.STORED,
+    )
+    with publisher.session() as session:
+        assert (
+            session.publish(
+                records=[candidate], sources={identity: original}, decisions=[decision]
+            )
+            == 0
+        )
+    assert api.objects[identity_to_path(identity).as_posix()] == original
+    assert not any(path.startswith("_history/") for path in api.objects)
+
+
 def test_metadata_source_race_does_not_cache_false_receipt(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1052,7 +1125,7 @@ def test_metadata_source_race_does_not_cache_false_receipt(
     api.metadata_mutation[path] = json.dumps(replacement_record).encode()
 
     with publisher.session() as session:
-        with pytest.raises(PublicationError, match="Equal-ranked"):
+        with pytest.raises(PublicationError, match="Unresolved"):
             session.publish(records=[formatted])
 
     connection = sqlite3.connect(checkpoint)
@@ -1062,7 +1135,7 @@ def test_metadata_source_race_does_not_cache_false_receipt(
         connection.close()
     assert rows == []
     with publisher.session() as session:
-        with pytest.raises(PublicationError, match="Equal-ranked"):
+        with pytest.raises(PublicationError, match="Unresolved"):
             session.publish(records=[formatted])
     assert api.download_calls >= 2
 
@@ -1168,6 +1241,34 @@ def test_mixed_batches_archive_every_predecessor_before_canonical_upload(
     assert not any(operation == "upload" for operation, _ in api.events)
 
 
+def test_non_manual_decision_cannot_authorise_conflict(tmp_path: Path) -> None:
+    """Automatic resolver outcomes are not manual authorisation proofs."""
+    api = MemoryApi()
+    lock = MemoryLock()
+    publisher = CanonicalPublisher(
+        api=api,
+        token="test-token",
+        lock=lock,
+        checkpoint_path=tmp_path / "publication.sqlite3",
+    )
+    original = _record(score=0.9)
+    candidate = _record(score=0.1)
+    identity = identity_from_eee_record(json.loads(original))
+    api.objects[identity_to_path(identity).as_posix()] = original
+    automatic = resolve_result_conflict(
+        current=json.loads(original),
+        candidate=json.loads(candidate),
+        current_bytes=original,
+        candidate_bytes=candidate,
+    )
+    with pytest.raises(PublicationError, match="not bound"):
+        with publisher.session() as session:
+            session.publish(
+                records=[candidate], sources={identity: original}, decisions=[automatic]
+            )
+    assert api.objects[identity_to_path(identity).as_posix()] == original
+
+
 @pytest.mark.parametrize(
     ("field", "value"),
     [
@@ -1193,7 +1294,7 @@ def test_numeric_enrichment_does_not_authorise_other_changes(
     identity = identity_from_eee_record(json.loads(original))
     with publisher.session() as session:
         session.publish(records=[original])
-        with pytest.raises(PublicationError, match="Equal-ranked"):
+        with pytest.raises(PublicationError, match="Unresolved"):
             session.publish(records=[candidate], sources={identity: original})
 
 

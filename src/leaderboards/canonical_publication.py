@@ -26,12 +26,14 @@ import hf_xet
 from euroeval.numeric_model_metadata import positive_context_length, positive_integer
 
 from .contamination_canary import is_canary_record
-from .result_identity import (
-    ResultIdentity,
-    dedup_newer_record,
-    identity_from_eee_record,
-    identity_to_path,
+from .result_conflicts import (
+    POLICY_VERSION,
+    ConflictChoice,
+    ConflictDecision,
+    ConflictReason,
+    resolve_result_conflict,
 )
+from .result_identity import ResultIdentity, identity_from_eee_record, identity_to_path
 
 DEFAULT_BUCKET = "EuroEval/results"
 _COMPARISON_BATCH_SIZE = 500
@@ -426,16 +428,21 @@ class CanonicalPublisher:
             raise ValueError("Publication lock bucket does not match publisher bucket")
 
     def prepare(
-        self, records: t.Sequence[bytes], sources: t.Mapping[ResultIdentity, bytes]
+        self,
+        records: t.Sequence[bytes],
+        sources: t.Mapping[ResultIdentity, bytes],
+        *,
+        decisions: t.Sequence[ConflictDecision] = (),
     ) -> None:
         """Checkpoint valid predecessor evidence before callers mutate local files.
 
         Args:
             records: Candidate result records that bind the evidence.
             sources: Exact pre-mutation bytes keyed by result identity.
+            decisions (optional): Explicit, byte-bound conflict choices.
         """
         with self.session() as session:
-            session.prepare(records=records, sources=sources)
+            session.prepare(records=records, sources=sources, decisions=decisions)
 
     @contextmanager
     def session(self) -> t.Iterator[PublicationSession]:
@@ -472,6 +479,32 @@ class PublicationSession:
         self.poisoned = False
         self._receipt = _receipt_path(self.owner)
         self._receipt.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+
+    def _source_authorises_transform(
+        self,
+        identity: ResultIdentity,
+        current: bytes,
+        current_record: dict[str, object],
+        record: dict[str, object],
+        sources: t.Mapping[ResultIdentity, bytes] | None,
+    ) -> bool:
+        """Check exact predecessor provenance for a metadata-only update.
+
+        Args:
+            identity: Candidate result identity.
+            current: Exact current remote bytes.
+            current_record: Decoded current record.
+            record: Candidate decoded record.
+            sources: Caller or checkpoint source evidence.
+
+        Returns:
+            Whether exact evidence authorises this transform.
+        """
+        return (
+            sources is not None
+            and sources.get(identity) == current
+            and is_metadata_only_transform(current_record, record)
+        )
 
     def acquire(self) -> None:
         """Persist recovery details before acquiring the no-TTL lock."""
@@ -518,33 +551,103 @@ class PublicationSession:
         self.publisher.lock.request(action="assert", owner=self.owner)
 
     def prepare(
-        self, records: t.Sequence[bytes], sources: t.Mapping[ResultIdentity, bytes]
+        self,
+        records: t.Sequence[bytes],
+        sources: t.Mapping[ResultIdentity, bytes],
+        *,
+        decisions: t.Sequence[ConflictDecision] = (),
     ) -> None:
         """Persist applicable source evidence before any local mutation.
 
         Args:
             records: Candidate result records.
             sources: Exact predecessor bytes keyed by identity.
+            decisions (optional): Explicit, byte-bound conflict choices.
 
+        Raises:
+            PublicationError: If a supplied conflict decision is stale or invalid.
         """
         candidates = _validated_candidates(records=records)
         self.assert_owned()
         validated = self._validated_sources(candidates=candidates, sources=sources)
+        proofs = self._validated_decisions(
+            candidates=candidates, sources=validated, decisions=decisions
+        )
+        if proofs:
+            proof_paths = [identity_to_path(identity).as_posix() for identity in proofs]
+            current = self._download_many(paths=proof_paths)
+            for identity, proof in proofs.items():
+                path = identity_to_path(identity).as_posix()
+                remote_predecessor = current.get(path)
+                if (
+                    remote_predecessor is None
+                    or hashlib.sha256(remote_predecessor).hexdigest() != proof[1]
+                ):
+                    raise PublicationError(
+                        f"Conflict decision predecessor changed at {path}"
+                    )
         if validated:
             self._store_sources(sources=validated)
+        if proofs:
+            self._store_decisions(proofs=proofs)
 
-    def _store_sources(self, sources: t.Mapping[ResultIdentity, bytes]) -> None:
-        """Durably retain exact caller-provided predecessor evidence.
+    def _download_many(self, paths: list[str]) -> dict[str, bytes | None]:
+        """Download exact current bucket objects in bounded batches.
 
         Args:
-            sources: Source bytes keyed by result identity.
+            paths:
+                Bucket-relative object paths to download.
+
+        Returns:
+            Current bytes for every requested path; absent objects map to None.
+
+        """
+        objects: dict[str, bytes | None] = {}
+        if not paths:
+            return objects
+
+        with tempfile.TemporaryDirectory(prefix="euroeval-publish-") as directory:
+            root = Path(directory)
+            for start in range(0, len(paths), _COMPARISON_BATCH_SIZE):
+                batch = paths[start : start + _COMPARISON_BATCH_SIZE]
+                destinations = {
+                    path: root / str(start + offset)
+                    for offset, path in enumerate(batch)
+                }
+                self.publisher.api.download_bucket_files(
+                    bucket_id=self.bucket,
+                    files=[(path, destinations[path]) for path in batch],
+                    raise_on_missing_files=False,
+                    token=self.publisher.token,
+                )
+                objects.update(
+                    {
+                        path: destination.read_bytes() if destination.exists() else None
+                        for path, destination in destinations.items()
+                    }
+                )
+                compared = min(start + len(batch), len(paths))
+                logger.info(
+                    "Compared %s of %s remote result files.",
+                    f"{compared:,}",
+                    f"{len(paths):,}",
+                )
+        return objects
+
+    def _store_decisions(
+        self, proofs: t.Mapping[ResultIdentity, tuple[str, str, str, str]]
+    ) -> None:
+        """Persist explicit proofs in the publisher's isolated scope.
+
+        Args:
+            proofs: Candidate/source fingerprints, policy version and selected side.
         """
         with self._database() as connection:
             connection.executemany(
-                "INSERT OR IGNORE INTO sources VALUES (?, ?, ?)",
+                "INSERT OR REPLACE INTO decisions VALUES (?, ?, ?, ?, ?, ?)",
                 [
-                    (self.publisher.scope, json.dumps(identity), content)
-                    for identity, content in sources.items()
+                    (self.publisher.scope, json.dumps(identity), *proof)
+                    for identity, proof in proofs.items()
                 ],
             )
 
@@ -572,6 +675,13 @@ class PublicationSession:
                 "(scope TEXT NOT NULL, identity TEXT NOT NULL, content BLOB NOT NULL, "
                 "PRIMARY KEY(scope, identity))"
             )
+            connection.execute(
+                "CREATE TABLE IF NOT EXISTS decisions "
+                "(scope TEXT NOT NULL, identity TEXT NOT NULL, "
+                "candidate_sha256 TEXT NOT NULL, current_sha256 TEXT NOT NULL, "
+                "policy_version TEXT NOT NULL, choice TEXT NOT NULL, "
+                "PRIMARY KEY(scope, identity))"
+            )
             yield connection
             connection.commit()
         except BaseException:
@@ -579,6 +689,76 @@ class PublicationSession:
             raise
         finally:
             connection.close()
+
+    def _store_sources(self, sources: t.Mapping[ResultIdentity, bytes]) -> None:
+        """Durably retain exact caller-provided predecessor evidence.
+
+        Args:
+            sources: Source bytes keyed by result identity.
+        """
+        with self._database() as connection:
+            connection.executemany(
+                "INSERT OR IGNORE INTO sources VALUES (?, ?, ?)",
+                [
+                    (self.publisher.scope, json.dumps(identity), content)
+                    for identity, content in sources.items()
+                ],
+            )
+
+    def _validated_decisions(
+        self,
+        candidates: list[tuple[str, ResultIdentity, bytes, dict[str, object]]],
+        sources: t.Mapping[ResultIdentity, bytes],
+        decisions: t.Sequence[ConflictDecision],
+    ) -> dict[ResultIdentity, tuple[str, str, str, str]]:
+        """Accept only explicit decisions bound to source and candidate bytes.
+
+        Args:
+            candidates: Validated candidate records.
+            sources: Exact caller-provided predecessor records.
+            decisions: Choices supplied by the collector.
+
+        Returns:
+            Publisher-scope-independent proof tuples indexed by result identity.
+
+        Raises:
+            PublicationError: If any supplied proof is stale or non-manual.
+        """
+        candidates_by_identity = {
+            identity: (content, record) for _, identity, content, record in candidates
+        }
+        proofs: dict[ResultIdentity, tuple[str, str, str, str]] = {}
+        for decision in decisions:
+            evidence = decision.evidence
+            identity = evidence.identity
+            candidate = candidates_by_identity.get(identity)
+            source = sources.get(identity)
+            if (
+                candidate is None
+                or source is None
+                or decision.reason is not ConflictReason.EXPLICIT_CHOICE
+                or decision.selected
+                not in (ConflictChoice.STORED, ConflictChoice.INCOMING)
+                or evidence.policy_version != POLICY_VERSION
+                or hashlib.sha256(candidate[0]).hexdigest() != evidence.candidate_sha256
+                or hashlib.sha256(source).hexdigest() != evidence.current_sha256
+                or evidence.choice != decision.selected
+                or identity_from_eee_record(_decode_record(source, "decision source"))
+                != identity
+            ):
+                raise PublicationError(
+                    "Conflict decision is not bound to these records"
+                )
+            proof = (
+                evidence.candidate_sha256,
+                evidence.current_sha256,
+                evidence.policy_version,
+                decision.selected.value,
+            )
+            if identity in proofs and proofs[identity] != proof:
+                raise PublicationError("Multiple conflict decisions target one result")
+            proofs[identity] = proof
+        return proofs
 
     def _validated_sources(
         self,
@@ -594,22 +774,16 @@ class PublicationSession:
         Returns:
             Safe source evidence keyed by candidate identity.
         """
-        candidates_by_identity = {
-            identity: record for _, identity, _, record in candidates
-        }
+        candidates_by_identity = {identity for _, identity, _, _ in candidates}
         validated: dict[ResultIdentity, bytes] = {}
         for identity, content in (sources or {}).items():
             if identity not in candidates_by_identity or _contains_canary(content):
                 continue
             try:
                 record = _decode_record(content, identity_to_path(identity).as_posix())
-                candidate_record = candidates_by_identity.get(identity)
-                if candidate_record is None:
+                if identity not in candidates_by_identity:
                     continue
-                if identity_from_eee_record(record) == identity and (
-                    record == candidate_record
-                    or is_metadata_only_transform(record, candidate_record)
-                ):
+                if identity_from_eee_record(record) == identity:
                     validated[identity] = content
             except (PublicationError, ValueError, KeyError, TypeError):
                 continue
@@ -619,6 +793,8 @@ class PublicationSession:
         self,
         records: t.Sequence[bytes],
         sources: t.Mapping[ResultIdentity, bytes] | None = None,
+        *,
+        decisions: t.Sequence[ConflictDecision] = (),
     ) -> int:
         """Validate, reconcile, archive predecessors, and publish records.
 
@@ -626,6 +802,7 @@ class PublicationSession:
             records: Candidate JSON result records.
             sources (optional): Original bytes keyed by identity for sanctioned
                 metadata transformations. Defaults to no source records.
+            decisions (optional): Explicit, byte-bound conflict choices.
 
         Returns:
             Number of canonical result objects written.
@@ -639,8 +816,14 @@ class PublicationSession:
         validated_sources = self._validated_sources(
             candidates=candidates, sources=sources
         )
+        proofs = self._validated_decisions(
+            candidates=candidates, sources=validated_sources, decisions=decisions
+        )
         if validated_sources:
             self._store_sources(sources=validated_sources)
+        if proofs:
+            self._store_decisions(proofs=proofs)
+        decisions_by_identity = self._decisions_with_pending(proofs=proofs)
         sources = self._sources_with_pending(sources=validated_sources)
         logger.info(
             "Fetching fresh remote metadata for %s candidate result files...",
@@ -720,6 +903,7 @@ class PublicationSession:
             current_objects=current_objects,
             remote_fingerprints=remote_fingerprints,
             sources=sources,
+            decisions=decisions_by_identity,
         )
 
         if writes:
@@ -802,6 +986,7 @@ class PublicationSession:
                 }
             )
         self._clear_sources(identities={identity for _, identity, _, _ in candidates})
+        self._clear_decisions(identities={identity for _, identity, _, _ in candidates})
         return len(writes)
 
     def _bucket_fingerprints(self, paths: list[str]) -> dict[str, str] | None:
@@ -855,6 +1040,23 @@ class PublicationSession:
             )
             return {path: (fingerprint, digest) for path, fingerprint, digest in rows}
 
+    def _clear_decisions(self, identities: set[ResultIdentity]) -> None:
+        """Remove completed manual proofs from the retry checkpoint.
+
+        Args:
+            identities: Result identities that completed reconciliation.
+        """
+        if not identities:
+            return
+        with self._database() as connection:
+            connection.executemany(
+                "DELETE FROM decisions WHERE scope = ? AND identity = ?",
+                [
+                    (self.publisher.scope, json.dumps(identity))
+                    for identity in identities
+                ],
+            )
+
     def _clear_sources(self, identities: set[ResultIdentity]) -> None:
         """Remove retry evidence after its candidate has converged.
 
@@ -872,48 +1074,33 @@ class PublicationSession:
                 ],
             )
 
-    def _download_many(self, paths: list[str]) -> dict[str, bytes | None]:
-        """Download exact current bucket objects in bounded batches.
+    def _decisions_with_pending(
+        self, proofs: t.Mapping[ResultIdentity, tuple[str, str, str, str]]
+    ) -> dict[ResultIdentity, tuple[str, str, str, str]]:
+        """Load durable proofs, preferring newly validated caller proofs.
 
         Args:
-            paths:
-                Bucket-relative object paths to download.
+            proofs: Newly validated decisions.
 
         Returns:
-            Current bytes for every requested path; absent objects map to None.
-
+            All scope-bound pending proofs.
         """
-        objects: dict[str, bytes | None] = {}
-        if not paths:
-            return objects
-
-        with tempfile.TemporaryDirectory(prefix="euroeval-publish-") as directory:
-            root = Path(directory)
-            for start in range(0, len(paths), _COMPARISON_BATCH_SIZE):
-                batch = paths[start : start + _COMPARISON_BATCH_SIZE]
-                destinations = {
-                    path: root / str(start + offset)
-                    for offset, path in enumerate(batch)
-                }
-                self.publisher.api.download_bucket_files(
-                    bucket_id=self.bucket,
-                    files=[(path, destinations[path]) for path in batch],
-                    raise_on_missing_files=False,
-                    token=self.publisher.token,
+        combined: dict[ResultIdentity, tuple[str, str, str, str]] = {}
+        with self._database() as connection:
+            rows = connection.execute(
+                "SELECT identity, candidate_sha256, current_sha256, policy_version, "
+                "choice FROM decisions WHERE scope = ?",
+                (self.publisher.scope,),
+            )
+            for identity, candidate_sha, current_sha, version, choice in rows:
+                combined[t.cast(ResultIdentity, tuple(json.loads(identity)))] = (
+                    candidate_sha,
+                    current_sha,
+                    version,
+                    choice,
                 )
-                objects.update(
-                    {
-                        path: destination.read_bytes() if destination.exists() else None
-                        for path, destination in destinations.items()
-                    }
-                )
-                compared = min(start + len(batch), len(paths))
-                logger.info(
-                    "Compared %s of %s remote result files.",
-                    f"{compared:,}",
-                    f"{len(paths):,}",
-                )
-        return objects
+        combined.update(proofs)
+        return combined
 
     def _hash_bytes(self, contents: list[tuple[str, bytes]]) -> dict[str, str]:
         """Hash arbitrary object bytes in bounded bulk Xet calls.
@@ -1024,6 +1211,7 @@ class PublicationSession:
         current_objects: dict[str, bytes | None],
         remote_fingerprints: dict[str, str] | None,
         sources: t.Mapping[ResultIdentity, bytes] | None,
+        decisions: t.Mapping[ResultIdentity, tuple[str, str, str, str]],
     ) -> tuple[list[tuple[str, bytes, bytes | None]], dict[str, tuple[str, str]]]:
         """Reconcile untrusted candidates with current remote bytes.
 
@@ -1032,7 +1220,8 @@ class PublicationSession:
             trusted: Paths proven equivalent by fresh fingerprints or receipts.
             current_objects: Downloaded current bytes for untrusted candidates.
             remote_fingerprints: Fresh metadata for existing remote paths.
-            sources: Exact predecessor bytes authorising metadata-only transforms.
+            sources: Exact predecessor bytes retained for retries.
+            decisions: Stored byte-bound manual choices.
 
         Returns:
             Pending writes and newly verified semantic receipts.
@@ -1049,6 +1238,10 @@ class PublicationSession:
                 continue
             current = current_objects[path]
             if current is None:
+                if identity in decisions:
+                    raise PublicationError(
+                        f"Conflict decision predecessor is missing at {path}"
+                    )
                 if remote_fingerprints is not None and path in remote_fingerprints:
                     raise PublicationError(
                         f"Remote object missing after metadata: {path}"
@@ -1068,18 +1261,33 @@ class PublicationSession:
                 if fingerprint is not None:
                     equivalent.append((path, identity, current, record))
                 continue
-            newer = dedup_newer_record(current_record, record)
-            if newer is current_record:
-                if dedup_newer_record(record, current_record) is not record:
-                    continue
-                if not self._source_authorises_transform(
-                    identity=identity,
-                    current=current,
-                    current_record=current_record,
-                    record=record,
-                    sources=sources,
+            proof = decisions.get(identity)
+            if proof is not None:
+                candidate_sha, current_sha, version, choice = proof
+                if (
+                    candidate_sha != hashlib.sha256(candidate).hexdigest()
+                    or current_sha != hashlib.sha256(current).hexdigest()
+                    or version != POLICY_VERSION
                 ):
-                    raise PublicationError(f"Equal-ranked result conflict at {path}")
+                    raise PublicationError(
+                        f"Stored conflict proof no longer matches {path}"
+                    )
+                if choice == ConflictChoice.STORED.value:
+                    continue
+                if choice != ConflictChoice.INCOMING.value:
+                    raise PublicationError(f"Invalid stored conflict choice for {path}")
+                writes.append((path, candidate, current))
+                continue
+            decision = resolve_result_conflict(
+                current=current_record,
+                candidate=record,
+                current_bytes=current,
+                candidate_bytes=candidate,
+            )
+            if decision.selected is None:
+                raise PublicationError(f"Unresolved result conflict at {path}")
+            if decision.selected is ConflictChoice.STORED:
+                continue
             writes.append((path, candidate, current))
         fingerprints = self._local_fingerprints(candidates=equivalent)
         for path, _, _, record in equivalent:
@@ -1090,32 +1298,6 @@ class PublicationSession:
             ):
                 receipts[path] = (fingerprint, _semantic_digest(record))
         return writes, receipts
-
-    def _source_authorises_transform(
-        self,
-        identity: ResultIdentity,
-        current: bytes,
-        current_record: dict[str, object],
-        record: dict[str, object],
-        sources: t.Mapping[ResultIdentity, bytes] | None,
-    ) -> bool:
-        """Check exact predecessor provenance for a metadata-only update.
-
-        Args:
-            identity: Candidate result identity.
-            current: Exact current remote bytes.
-            current_record: Decoded current record.
-            record: Candidate decoded record.
-            sources: Caller or checkpoint source evidence.
-
-        Returns:
-            Whether exact evidence authorises this transform.
-        """
-        return (
-            sources is not None
-            and sources.get(identity) == current
-            and is_metadata_only_transform(current_record, record)
-        )
 
     def _validate_current_record(
         self, current_record: dict[str, object], path: str, identity: ResultIdentity
