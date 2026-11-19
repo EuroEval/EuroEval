@@ -470,6 +470,7 @@ def _record(dataset: str) -> dict[str, object]:
                 "num_failed_instances": 0,
             },
         },
+        "eval_timestamp": 20,
         "evaluation_results": [
             {
                 "evaluation_name": "accuracy",
@@ -570,6 +571,8 @@ def _seed_older_results(
     for record in reviewer.show(submission_id=SUBMISSION).records:
         predecessor = json.loads(record.content)
         predecessor["eval_library"]["version"] = "17.0.0"
+        predecessor["eval_timestamp"] = 10
+        predecessor["evaluation_results"][0]["score_details"]["score"] = 79
         content = json.dumps(predecessor).encode()
         api.files[(RESULTS, record.canonical_path)] = content
         predecessors[record.canonical_path] = content
@@ -607,6 +610,8 @@ def test_approval_replaces_strictly_older_same_identity_and_archives_bytes() -> 
     staged = report.records[0]
     predecessor_record = json.loads(staged.content)
     predecessor_record["eval_library"]["version"] = "17.0.0"
+    predecessor_record["eval_timestamp"] = 10
+    predecessor_record["evaluation_results"][0]["score_details"]["score"] = 79
     predecessor = json.dumps(predecessor_record).encode()
     api.files[(RESULTS, staged.canonical_path)] = predecessor
 
@@ -2024,25 +2029,25 @@ def test_reject_is_idempotent_and_opposite_decision_fails() -> None:
 
 
 @pytest.mark.parametrize(
-    ("version", "timestamp", "replacement"),
+    ("version", "evaluation_timestamp", "replacement"),
     [
-        ("17.0.0", 9999999999, True),
-        ("18.1.0.dev4", -1, True),
-        ("18.1.0.dev4", 0, False),
-        ("18.1.0.dev4", 1, False),
-        ("19.0.0", 0, False),
+        ("17.0.0", 10, True),
+        ("18.1.0.dev4", 19, True),
+        ("18.1.0.dev4", 20, False),
+        ("18.1.0.dev4", 21, False),
+        ("19.0.0", 10, True),
     ],
 )
 def test_replacement_uses_strict_existing_result_order(
-    version: str, timestamp: int, replacement: bool
+    version: str, evaluation_timestamp: int, replacement: bool
 ) -> None:
-    """Only a strict win by version then timestamp can replace canonical bytes.
+    """Only newer evaluation evidence can replace canonical bytes.
 
     Args:
         version:
-            Existing library version.
-        timestamp:
-            Existing retrieval timestamp.
+            Existing library version, which does not determine precedence.
+        evaluation_timestamp:
+            Existing evaluation timestamp.
         replacement:
             Whether the staged record strictly outranks the existing record.
     """
@@ -2050,7 +2055,8 @@ def test_replacement_uses_strict_existing_result_order(
     record = reviewer.show(submission_id=SUBMISSION).records[0]
     old = json.loads(record.content)
     old["eval_library"]["version"] = version
-    old["retrieved_timestamp"] = timestamp
+    old["eval_timestamp"] = evaluation_timestamp
+    old["evaluation_results"][0]["score_details"]["score"] = 79
     api.files[(RESULTS, record.canonical_path)] = json.dumps(old).encode()
     report = reviewer.show(submission_id=SUBMISSION)
     assert report.canonical_observations[0].replacement is replacement
@@ -2267,6 +2273,27 @@ def test_review_renewal_round_trip_includes_bound_digest(
     )
     assert requests[0]["decision_digest"] == digest
     assert requests[0]["reservation_token"] == "reservation"
+
+
+def test_semantically_identical_canonical_record_is_retained() -> None:
+    """Envelope/version differences do not rewrite equivalent canonical evidence."""
+    api, reviewer, _ = _reviewer()
+    staged = reviewer.show(submission_id=SUBMISSION).records[0]
+    stored = json.loads(staged.content)
+    stored["eval_library"]["version"] = "17.0.0"
+    stored["retrieved_timestamp"] = 123
+    content = json.dumps(stored).encode()
+    api.files[(RESULTS, staged.canonical_path)] = content
+
+    report = reviewer.show(submission_id=SUBMISSION)
+    observation = report.canonical_observations[0]
+    assert observation.conflict is None
+    assert not observation.replacement
+
+    reviewer.decide(
+        SUBMISSION, "accepted", "maintainer", plan_fingerprint=report.plan_fingerprint
+    )
+    assert api.files[(RESULTS, staged.canonical_path)] == content
 
 
 def test_show_and_acceptance_allow_raw_records_without_metadata() -> None:

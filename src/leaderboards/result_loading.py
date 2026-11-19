@@ -103,8 +103,8 @@ def _dedup_by_storage_identity(
     """Deduplicate records by canonical storage identity.
 
     Groups records by ``(model_id, dataset, validation_split, few_shot)`` and
-    keeps only the newest record per identity using
-    :func:`.result_identity.dedup_newer_record`.
+    applies the shared semantic conflict policy. Identical evidence retains the
+    stored record; newer evaluation evidence can replace it, while ambiguity raises.
 
     Args:
         records:

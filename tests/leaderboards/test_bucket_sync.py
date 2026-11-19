@@ -70,6 +70,10 @@ class TestMergeResults:
                 "version": "1.0.0",
             },
             "retrieved_timestamp": "2024-01-01T00:00:00Z",
+            "eval_timestamp": 100,
+            "evaluation_results": [
+                {"evaluation_name": "accuracy", "score_details": {"score": 0.4}}
+            ],
         }
         record1_path = model_dir / "dataset1__test__test.json"
         record1_path.write_text(json.dumps(record_old), encoding="utf-8")
@@ -84,6 +88,10 @@ class TestMergeResults:
                 "version": "1.5.0",
             },
             "retrieved_timestamp": "2024-01-01T12:00:00Z",
+            "eval_timestamp": 200,
+            "evaluation_results": [
+                {"evaluation_name": "accuracy", "score_details": {"score": 0.5}}
+            ],
             "extra_field": "should_be_deduped",
         }
         (model_dir2 / "dataset1__test__test.json").write_text(
@@ -94,7 +102,7 @@ class TestMergeResults:
 
         count = bucket_sync.merge_results(results_file=results_file)
 
-        # Should deduplicate to 1 record (version 1.5.0 wins over 1.0.0)
+        # A later recorded evaluation with changed score wins.
         assert count == 1
         lines = results_file.read_text(encoding="utf-8").splitlines()
         merged_record = json.loads(lines[0])
@@ -293,6 +301,10 @@ class TestMergeResults:
                 "version": "1.0.0",
             },
             "retrieved_timestamp": "1704067200",
+            "eval_timestamp": 100,
+            "evaluation_results": [
+                {"evaluation_name": "accuracy", "score_details": {"score": 0.4}}
+            ],
         }
         results_file.write_text(json.dumps(old_record) + "\n", encoding="utf-8")
 
@@ -306,6 +318,10 @@ class TestMergeResults:
                 "version": "2.0.0",
             },
             "retrieved_timestamp": "1704153600",
+            "eval_timestamp": 200,
+            "evaluation_results": [
+                {"evaluation_name": "accuracy", "score_details": {"score": 0.5}}
+            ],
         }
         (model_dir / "same_ds__test__test.json").write_text(
             json.dumps(new_record), encoding="utf-8"
@@ -319,7 +335,7 @@ class TestMergeResults:
         assert count == 1
         lines = results_file.read_text(encoding="utf-8").splitlines()
         merged_record = json.loads(lines[0])
-        # Tree record (newer version) should win
+        # The newer evaluation evidence should win.
         assert merged_record["eval_library"]["version"] == "2.0.0"
         assert merged_record["retrieved_timestamp"] == "1704153600"
 

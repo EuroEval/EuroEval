@@ -445,9 +445,16 @@ def _download_should_replace(*, destination: Path, temporary: Path) -> bool:
     """
     if not destination.is_file():
         return True
-    current = json.loads(destination.read_text(encoding="utf-8"))
+    try:
+        current = json.loads(destination.read_text(encoding="utf-8"))
+        if not isinstance(current, dict) or not is_eee_record(record=current):
+            return True
+        current_identity = identity_from_eee_record(current)
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        # A valid, freshly validated remote record repairs a corrupt local cache.
+        return True
+
     incoming = json.loads(temporary.read_text(encoding="utf-8"))
-    current_identity = identity_from_eee_record(current)
     incoming_identity = identity_from_eee_record(incoming)
     if current_identity != incoming_identity:
         raise_on_collision(current_identity, incoming_identity)
