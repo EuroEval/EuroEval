@@ -73,7 +73,6 @@ def load_raw_results() -> list[dict[str, t.Any]]:
         new_records = load_records_from_jsonl_files(paths=[NEW_RESULTS_PATH])
         logger.info(f"Loaded {len(new_records):,} new results from staging file.")
         records.extend(new_records)
-        NEW_RESULTS_PATH.unlink()
 
     # Canary duplicates must reach private scoring so immutable conflicts cannot be
     # hidden by ordinary storage-identity deduplication.
@@ -84,6 +83,9 @@ def load_raw_results() -> list[dict[str, t.Any]]:
     for idx, record in enumerate(records, start=1):
         if not is_eee_record(record=record):
             raise ValueError(f"raw results record {idx:,} is not an EEE-format record.")
+
+    if NEW_RESULTS_PATH.exists():
+        NEW_RESULTS_PATH.unlink()
 
     if _HIDE_AUXILIARY_RESULTS:
         records = [
