@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import collections.abc as c
+import itertools
 import json
 from pathlib import Path
 
 import pytest
 
+from leaderboards import result_loading
 from leaderboards.constants import NEW_RESULTS_PATH
+from leaderboards.result_identity import UnresolvedResultConflictError
 from leaderboards.result_loading import (
     _dedup_by_storage_identity,
     configure_leaderboard_result_filter,
@@ -33,16 +36,6 @@ class TestDedupByStorageIdentity:
         deduped = _dedup_by_storage_identity(records=[record_a, record_b])
 
         assert len(deduped) == 2
-
-    def test_keeps_newer_version(self) -> None:
-        """Should keep the record with higher version."""
-        older = _make_eee_record(version="1.0.0", timestamp="200")
-        newer = _make_eee_record(version="1.1.0", timestamp="100")
-
-        deduped = _dedup_by_storage_identity(records=[older, newer])
-
-        assert len(deduped) == 1
-        assert deduped[0]["eval_library"]["version"] == "1.1.0"
 
     def test_preserves_metadata_in_dedup(self) -> None:
         """Should preserve all metadata fields in the kept record."""
@@ -97,6 +90,14 @@ class TestDedupByStorageIdentity:
 
         assert len(deduped) == 1
         assert deduped[0]["retrieved_timestamp"] == "200"
+
+    def test_version_alone_does_not_choose_a_winner(self) -> None:
+        """A library version change without newer evaluation evidence is unresolved."""
+        older = _make_eee_record(version="1.0.0", timestamp="100")
+        newer = _make_eee_record(version="1.1.0", timestamp="100")
+
+        with pytest.raises(UnresolvedResultConflictError):
+            _dedup_by_storage_identity(records=[older, newer])
 
 
 def _make_eee_record(
@@ -370,3 +371,55 @@ class TestLoadRawResults:
 
         with pytest.raises(FileNotFoundError, match="No results available"):
             load_raw_results()
+
+    def test_staging_file_remains_when_identity_conflict_is_unresolved(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """An unresolved conflict cannot consume its staged source file."""
+        monkeypatch.setattr(
+            "leaderboards.result_loading.download_missing_bucket_files", lambda: 0
+        )
+        monkeypatch.setattr("leaderboards.result_loading.backup_results", lambda: None)
+        monkeypatch.setattr(
+            "leaderboards.result_loading.RESULTS_DIR", tmp_path / "tree"
+        )
+        staging = tmp_path / "new-results.jsonl"
+        monkeypatch.setattr("leaderboards.result_loading.NEW_RESULTS_PATH", staging)
+        existing = _make_eee_record(timestamp="100", score=0.5)
+        incoming = _make_eee_record(timestamp="100", score=0.7)
+        (tmp_path / "tree").mkdir()
+        (tmp_path / "tree" / "existing.json").write_text(json.dumps(existing))
+        staging.write_text(json.dumps(incoming) + "\n")
+
+        with pytest.raises(UnresolvedResultConflictError):
+            result_loading.load_raw_results.__wrapped__()
+
+        assert staging.exists()
+
+
+def test_storage_dedup_keeps_known_metadata_superset_in_both_orders() -> None:
+    """Compatible metadata enrichment wins regardless of input order."""
+    richer = _make_eee_record()
+    richer["model_info"]["additional_details"].update(
+        {
+            "commercially_licensed": False,
+            "open": True,
+            "trained_from_scratch": False,
+            "model_parameters": 8_030_000_000,
+        }
+    )
+    poorer = _make_eee_record()
+    poorer["model_info"]["additional_details"]["model_parameters"] = -1
+
+    for records in itertools.permutations([richer, poorer]):
+        assert _dedup_by_storage_identity(records=list(records)) == [richer]
+
+
+def test_storage_dedup_raises_for_ambiguous_score_conflict() -> None:
+    """Conflicting score and metadata evidence is not silently discarded."""
+    current = _make_eee_record(timestamp="100", score=0.5)
+    incoming = _make_eee_record(timestamp="100", score=0.7)
+    current["model_info"]["additional_details"]["open"] = True
+
+    with pytest.raises(UnresolvedResultConflictError):
+        _dedup_by_storage_identity(records=[current, incoming])

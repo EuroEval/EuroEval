@@ -12,10 +12,9 @@ from .records import get_bool_field, get_record_hash, is_few_shot_record
 
 
 def _metadata_richness_score(record: dict) -> int:
-    """Score how "rich" a record's metadata is.
+    """Count known metadata fields for diagnostics only.
 
-    Higher scores indicate more complete, non-default metadata. Used to break
-    ties during deduplication when two records share the same version.
+    This score is not used to choose between leaderboard-equivalent rows.
 
     Args:
         record:
@@ -61,16 +60,12 @@ def _metadata_richness_score(record: dict) -> int:
 
 
 def deduplicate_records(records: list[dict[str, t.Any]]) -> list[dict[str, t.Any]]:
-    """Deduplicate records by hash, keeping the newest EuroEval version per hash.
+    """Deduplicate leaderboard-equivalent records without metadata ranking.
 
-    Records sharing a :func:`~leaderboards.records.get_record_hash` value render
-    on the same leaderboard row, so only one should survive. Among records with
-    an equal (newest) version, the one with richer metadata wins (more non-default
-    fields for commercially_licensed, open, merge, trained_from_scratch,
-    generative_type, model_url, and release_date). If still tied, the first one in
-    input order is kept to preserve explicit boolean values against conflicting later
-    duplicates.
-    Output is ordered by hash for stable, diff-friendly downstream files.
+    Storage-identity conflict resolution is handled before this function. Distinct
+    storage identities can share a leaderboard row, so neither metadata count nor
+    library version is a safe basis for choosing between them. The first record for
+    each hash is retained. Output is ordered by hash for stable downstream files.
 
     Args:
         records:

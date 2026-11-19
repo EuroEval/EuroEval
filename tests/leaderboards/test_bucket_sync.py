@@ -11,10 +11,38 @@ from huggingface_hub.errors import HfHubHTTPError
 
 from leaderboards import bucket_sync
 from leaderboards.canonical_publication import CanonicalPublisher
+from leaderboards.result_identity import UnresolvedResultConflictError
 
 
 class TestMergeResults:
     """Tests for ``merge_results``."""
+
+    def test_merge_results_conflict_preserves_source_files(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Unresolved same-identity records abort before merge mutations."""
+        results_dir = tmp_path / "results"
+        model_dir = results_dir / "model"
+        model_dir.mkdir(parents=True)
+        tree_record = {
+            "model_info": {"id": "test/model"},
+            "eval_library": {"additional_details": {"dataset": "dataset1"}},
+            "retrieved_timestamp": "2024-01-01T00:00:00Z",
+            "evaluation_results": [{"score": 2}],
+        }
+        tree_file = model_dir / "dataset.json"
+        tree_file.write_text(json.dumps(tree_record), encoding="utf-8")
+        results_file = tmp_path / "merged.jsonl"
+        jsonl_record = {**tree_record, "evaluation_results": [{"score": 1}]}
+        original_jsonl = json.dumps(jsonl_record) + "\n"
+        results_file.write_text(original_jsonl, encoding="utf-8")
+        monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
+
+        with pytest.raises(UnresolvedResultConflictError):
+            bucket_sync.merge_results(results_file=results_file)
+
+        assert results_file.read_text(encoding="utf-8") == original_jsonl
+        assert tree_file.read_text(encoding="utf-8") == json.dumps(tree_record)
 
     def test_merge_results_dedups_by_identity(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

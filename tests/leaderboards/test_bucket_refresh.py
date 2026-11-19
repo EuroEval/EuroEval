@@ -8,7 +8,10 @@ import pytest
 from huggingface_hub import BucketFile
 
 from leaderboards import bucket_sync
-from leaderboards.result_identity import record_relative_path
+from leaderboards.result_identity import (
+    UnresolvedResultConflictError,
+    record_relative_path,
+)
 
 
 def test_all_downloads_validate_before_any_file_is_replaced(
@@ -111,6 +114,33 @@ def make_record(score: int = 1) -> dict[str, object]:
     }
 
 
+def test_ambiguous_refresh_preserves_files_and_manifest(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A same-identity score conflict aborts before refresh mutations."""
+    path = "org_model/dataset__test__zeroshot.json"
+    local = json.dumps(make_record(score=1)).encode()
+    remote = json.dumps(make_record(score=2)).encode()
+    bucket = FakeBucket({path: ("remote-generation", remote)})
+    configure(monkeypatch, tmp_path, bucket)
+    destination = result_path(tmp_path / "results")
+    destination.parent.mkdir(parents=True)
+    destination.write_bytes(local)
+    manifest = tmp_path / ".results-bucket-manifest.json"
+    manifest.write_text('{"old": "generation"}', encoding="utf-8")
+
+    with pytest.raises(UnresolvedResultConflictError):
+        bucket_sync.download_missing_bucket_files()
+
+    assert destination.read_bytes() == local
+    assert manifest.read_text(encoding="utf-8") == '{"old": "generation"}'
+
+
+def result_path(root: Path) -> Path:
+    """Return the canonical result path beneath a result root."""
+    return root / "org_model/dataset__test__zeroshot.json"
+
+
 def test_anchored_record_refreshes_at_canonical_path(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -125,11 +155,6 @@ def test_anchored_record_refreshes_at_canonical_path(
 
     assert bucket_sync.download_missing_bucket_files() == 1
     assert result_path(tmp_path / "results").read_bytes() == data
-
-
-def result_path(root: Path) -> Path:
-    """Return the canonical result path beneath a result root."""
-    return root / "org_model/dataset__test__zeroshot.json"
 
 
 def test_canonical_and_legacy_paths_are_preserved_separately(
