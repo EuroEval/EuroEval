@@ -1780,6 +1780,36 @@ def test_uncertain_batch_preserves_receipts_evidence_and_converges(
         assert connection.execute("SELECT COUNT(*) FROM sources").fetchone() == (0,)
 
 
+@pytest.mark.parametrize(
+    "key", ["num_model_parameters", "vocabulary_size", "max_sequence_length"]
+)
+@pytest.mark.parametrize("value", [None, -1, "-1"])
+def test_unknown_numeric_metadata_can_be_published(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, key: str, value: object
+) -> None:
+    """Preserve recognised unknown metadata on new and unchanged records.
+
+    Args:
+        tmp_path: Isolated publication state directory.
+        monkeypatch: Environment isolation fixture.
+        key: Numeric metadata field.
+        value: Recognised unknown-value placeholder.
+    """
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    publisher, api, _ = _publisher(tmp_path)
+    record = json.loads(_record())
+    record["model_info"]["additional_details"] = {key: value}
+    content = json.dumps(record).encode()
+    identity = identity_from_eee_record(record=record)
+    publisher.prepare(records=[content], sources={})
+    with publisher.session() as session:
+        assert session.publish(records=[content]) == 1
+    publisher.prepare(records=[content], sources={identity: content})
+    with publisher.session() as session:
+        assert session.publish(records=[content], sources={identity: content}) == 0
+    assert api.objects[identity_to_path(identity=identity).as_posix()] == content
+
+
 def test_upload_failure_poison_retains_lock(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -153,7 +153,11 @@ def _validated_candidates(
             ("vocabulary_size", positive_integer),
             ("max_sequence_length", positive_context_length),
         ):
-            if key in details and validator(details[key]) is None:
+            if (
+                key in details
+                and details[key] not in (None, -1, "-1")
+                and validator(details[key]) is None
+            ):
                 raise PublicationError(f"Invalid numeric metadata {key}")
         identity = identity_from_eee_record(record)
         path = identity_to_path(identity).as_posix()
