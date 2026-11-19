@@ -907,7 +907,7 @@ def upload_results_to_hf(
             for identity in sorted(staged_identities)
             if identity in existing and not is_canary_record(existing[identity])
         ]
-        NEW_RESULTS_PATH.write_text(
+        new_results_path.write_text(
             "\n".join(staged) + ("\n" if staged else ""), encoding="utf-8"
         )
     # === MUTATE PHASE: only after validation and evidence checkpoint ===

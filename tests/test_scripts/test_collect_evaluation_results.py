@@ -1255,8 +1255,10 @@ def test_staged_resolved_winner_is_not_reloaded_with_rejected_contender(
     staging = tmp_path / "new_results.jsonl"
     staged_line = json.dumps(incoming_record)
     staging.write_text("unmodified staging\n", encoding="utf-8")
+    default_staging = tmp_path / "default_new_results.jsonl"
+    default_staging.write_text("unrelated manual input\n", encoding="utf-8")
     monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
-    monkeypatch.setattr(collect_evaluation_results, "NEW_RESULTS_PATH", staging)
+    monkeypatch.setattr(collect_evaluation_results, "NEW_RESULTS_PATH", default_staging)
     monkeypatch.setattr(result_loading, "RESULTS_DIR", results_dir)
     monkeypatch.setattr(result_loading, "NEW_RESULTS_PATH", staging)
     monkeypatch.setattr(result_loading, "_sync_results_from_bucket", lambda: None)
@@ -1274,6 +1276,11 @@ def test_staged_resolved_winner_is_not_reloaded_with_rejected_contender(
 
     assert collect_evaluation_results.upload_results_to_hf(
         new_results_path=staging, pending_lines=[staged_line]
+    )
+    assert default_staging.read_text(encoding="utf-8") == "unrelated manual input\n"
+    assert (
+        json.loads(staging.read_text())["evaluation_results"]
+        == stored["evaluation_results"]
     )
     result_loading.load_raw_results.cache_clear()
     records = result_loading.load_raw_results()
