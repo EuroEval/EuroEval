@@ -17,6 +17,15 @@ from leaderboards.result_conflicts import (
 class TestResolveResultConflict:
     """Exercise policy via its immutable public decision interface."""
 
+    def test_anchor_normalisation_does_not_cross_model_revisions(self) -> None:
+        """Identifier presentation cannot erase model revision identity."""
+        anchored = _record(
+            model_info={"id": "<a href='https://example.org'>org/model@v1</a>"}
+        )
+        plain = _record(model_info={"id": "org/model@v2"})
+        with pytest.raises(ValueError, match="different identities"):
+            resolve_result_conflict(current=anchored, candidate=plain)
+
     @pytest.mark.parametrize(
         ("stored", "incoming"),
         [
@@ -80,6 +89,24 @@ class TestResolveResultConflict:
         decision = resolve_result_conflict(current=current, candidate=candidate)
         assert decision.selected == ConflictChoice.STORED
 
+    def test_identifier_format_does_not_hide_score_or_metadata_changes(self) -> None:
+        """Plain identifiers do not resolve substantive score or metadata changes."""
+        anchored = _record(
+            model_info={"id": "<a href='https://example.org'>org/model</a>"},
+            scores={"accuracy": 0.4},
+        )
+        score_change = _record(model_info={"id": "org/model"}, scores={"accuracy": 0.5})
+        anchored["open"] = False
+        metadata_change = _record(
+            model_info={"id": "org/model"}, open=True, scores={"accuracy": 0.4}
+        )
+        assert resolve_result_conflict(
+            current=anchored, candidate=score_change
+        ).needs_choice
+        assert resolve_result_conflict(
+            current=anchored, candidate=metadata_change
+        ).needs_choice
+
     def test_identity_mismatch_raises(self) -> None:
         """Resolver refuses to decide across distinct result identities."""
         with pytest.raises(ValueError, match="different identities"):
@@ -120,6 +147,40 @@ class TestResolveResultConflict:
         candidate = {**base, **incoming}
         decision = resolve_result_conflict(current=current, candidate=candidate)
         assert decision.selected == expected
+
+    @pytest.mark.parametrize(
+        ("current_is_plain", "expected"),
+        [(False, ConflictChoice.INCOMING), (True, ConflictChoice.STORED)],
+    )
+    def test_legacy_identifier_anchors_prefer_plain_record_without_mutation(
+        self, current_is_plain: bool, expected: ConflictChoice
+    ) -> None:
+        """Presentation-only anchors select the exact plain record."""
+        plain = _record(
+            model_info={
+                "id": "ollama_chat/gemma3:4b-it-q8_0",
+                "name": "ollama_chat/gemma3:4b-it-q8_0",
+            },
+            evaluation_id=("angry-tweets/ollama_chat/gemma3:4b-it-q8_0/1781766560"),
+        )
+        anchored = copy.deepcopy(plain)
+        anchor = (
+            "<a href='https://ollama.com/library/gemma3:4b-it-q8_0'>"
+            "ollama_chat/gemma3:4b-it-q8_0</a>"
+        )
+        anchored_model = t.cast(dict[str, object], anchored["model_info"])
+        anchored_model["id"] = anchor
+        anchored_model["name"] = anchor
+        anchored["evaluation_id"] = f"angry-tweets/{anchor}/1781766560"
+        original = copy.deepcopy(anchored)
+        current, candidate = (
+            (plain, anchored) if current_is_plain else (anchored, plain)
+        )
+        decision = resolve_result_conflict(current=current, candidate=candidate)
+        assert decision.selected == expected
+        assert not decision.needs_choice
+        assert current == (plain if current_is_plain else original)
+        assert candidate == (original if current_is_plain else plain)
 
     def test_library_version_only_change_is_bookkeeping(self) -> None:
         """A library version difference neither changes results nor establishes age."""
@@ -290,6 +351,18 @@ class TestResolveResultConflict:
             for item in decision.differences
         )
 
+    def test_richer_anchored_record_beats_poorer_plain_record(self) -> None:
+        """Plain presentation cannot discard useful metadata."""
+        anchored = _record(
+            model_info={
+                "id": "<a href='https://example.org'>org/model</a>",
+                "num_model_parameters": 803,
+            }
+        )
+        plain = _record(model_info={"id": "org/model"})
+        decision = resolve_result_conflict(current=anchored, candidate=plain)
+        assert decision.selected == ConflictChoice.STORED
+
     def test_root_score_alias_is_payload_and_newer_evaluation_wins(self) -> None:
         """A singular root score is payload alongside canonical results."""
         current = _record(
@@ -314,6 +387,13 @@ class TestResolveResultConflict:
         decision = resolve_result_conflict(
             current=_record(custom_metadata="-1"), candidate=_record()
         )
+        assert decision.needs_choice
+
+    def test_unrelated_html_payload_remains_substantive(self) -> None:
+        """HTML outside recognised identifier fields is not normalised."""
+        current = _record(raw_results="<a href='x'>same</a>")
+        candidate = _record(raw_results="same")
+        decision = resolve_result_conflict(current=current, candidate=candidate)
         assert decision.needs_choice
 
     @pytest.mark.parametrize(
