@@ -12,6 +12,7 @@ from pathlib import Path
 
 from euroeval.data_models import BenchmarkResult
 
+from . import result_conflicts
 from .records import strip_anchor
 
 # Type alias for the identity tuple
@@ -34,10 +35,9 @@ def dedup_newer_record(record_a: dict, record_b: dict) -> dict:
         UnresolvedResultConflictError:
             If owner choice is required.
     """
-    # The local import avoids a module cycle: the policy uses canonical identity.
-    from .result_conflicts import resolve_result_conflict  # noqa: PLC0415
-
-    decision = resolve_result_conflict(current=record_a, candidate=record_b)
+    decision = result_conflicts.resolve_result_conflict(
+        current=record_a, candidate=record_b
+    )
     if decision.needs_choice:
         raise UnresolvedResultConflictError(
             f"Result conflict requires an explicit choice: {decision.reason}"

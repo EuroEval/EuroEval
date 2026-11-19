@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import hashlib
 import json
-import typing as t
+import math
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import StrEnum
 
-from .result_identity import ResultIdentity, identity_from_eee_record
+from . import result_identity
 
 POLICY_VERSION = "1"
 
@@ -38,7 +39,7 @@ class ConflictReason(StrEnum):
 class DecisionEvidence:
     """Immutable evidence bound to both exact record byte sequences."""
 
-    identity: ResultIdentity
+    identity: result_identity.ResultIdentity
     current_sha256: str
     candidate_sha256: str
     policy_version: str
@@ -46,30 +47,27 @@ class DecisionEvidence:
 
 
 def _evaluation_time(*, record: dict[str, object]) -> datetime | None:
-    found: list[datetime] = []
-    for key, value in _walk_values(record=record):
-        if _is_evaluation_timestamp(field=key):
-            parsed = _parse_timestamp(value=value)
-            if parsed is None:
-                return None
-            found.append(parsed)
-    if not found or len(set(found)) != 1:
+    evidence: list[datetime] = []
+    for field in _EVALUATION_TIME_FIELDS:
+        if field not in record:
+            continue
+        value = record[field]
+        parsed = _parse_timestamp(value=value, epoch=field in _EPOCH_FIELDS)
+        if parsed is None:
+            return None
+        evidence.append(parsed)
+    if not evidence or len(set(evidence)) != 1:
         return None
-    return found[0]
+    return evidence[0]
 
 
-def _is_evaluation_timestamp(*, field: str) -> bool:
-    name = field.rsplit(".", 1)[-1].casefold()
-    return (
-        name in {"evaluation_timestamp", "evaluated_at", "evaluation_time", "timestamp"}
-        and ("eval" in field.casefold() or name != "timestamp")
-        or name in {"evaluation_timestamp", "evaluated_at", "evaluation_time"}
-    )
-
-
-def _parse_timestamp(*, value: object) -> datetime | None:
+def _parse_timestamp(*, value: object, epoch: bool) -> datetime | None:
     try:
+        if isinstance(value, bool):
+            return None
         if isinstance(value, (int, float)):
+            if not epoch:
+                return None
             return datetime.fromtimestamp(value, tz=timezone.utc)
         if not isinstance(value, str) or not value.strip():
             return None
@@ -83,75 +81,63 @@ def _parse_timestamp(*, value: object) -> datetime | None:
         return None
 
 
-def _walk_values(
-    *, record: dict[str, object], prefix: str = ""
-) -> t.Iterator[tuple[str, object]]:
-    for key, value in record.items():
-        field = f"{prefix}.{key}" if prefix else key
-        yield field, value
-        if isinstance(value, dict):
-            yield from _walk_values(record=value, prefix=field)
+def _is_known_metadata(*, field: str) -> bool:
+    return field.rsplit(".", 1)[-1].casefold() in _KNOWN_METADATA
 
 
 def _metadata_values(*, record: dict[str, object]) -> frozenset[tuple[str, str]]:
     values = set()
-    for key, value in _comparison_record(record=record).items():
-        if _field_category(field=key) != "metadata":
+    for field, value in _comparison_record(record=record).items():
+        if _field_category(field=field) != "metadata":
             continue
-        useful = _useful_metadata(field=key, value=value)
-        if useful is not _MISSING:
-            values.add((key, _display(value=useful)))
+        normalised = _normalise_known(field=field, value=value)
+        if _useful_metadata(field=field, value=normalised):
+            values.add((field, _display(value=normalised)))
     return frozenset(values)
 
 
 def _comparison_record(*, record: dict[str, object]) -> dict[str, object]:
-    result = dict(record)
-    for key in _ENVELOPE_KEYS:
-        value = result.get(key)
-        if key == "eval_library":
-            result.pop(key, None)
-        elif isinstance(value, dict):
-            result.update(
-                {f"{key}.{subkey}": subvalue for subkey, subvalue in value.items()}
-            )
-            result.pop(key, None)
-    for key, value in tuple(result.items()):
-        if _is_bookkeeping(field=key):
-            result.pop(key)
-        elif (
-            _field_category(field=key) == "metadata"
-            and _useful_metadata(field=key, value=value) is _MISSING
-        ):
-            result.pop(key)
-        elif key.endswith("raw_results"):
-            result[key] = _normalise_embedded_json(value=value)
+    flat: dict[str, object] = {}
+    _flatten(record=record, prefix="", output=flat)
+    result: dict[str, object] = {}
+    for field, value in flat.items():
+        if _is_ignored_alias(field=field):
+            continue
+        if field.endswith("raw_results"):
+            value = _normalise_embedded_json(value=value)
+        result[field] = value
     return result
 
 
-def _field_category(*, field: str) -> str:
-    name = field.rsplit(".", 1)[-1].casefold()
+def _flatten(
+    *, record: dict[str, object], prefix: str, output: dict[str, object]
+) -> None:
+    for key, value in record.items():
+        field = f"{prefix}.{key}" if prefix else key
+        if isinstance(value, dict):
+            _flatten(record=value, prefix=field, output=output)
+        else:
+            output[field] = value
+
+
+def _is_ignored_alias(*, field: str) -> bool:
     return (
-        "payload"
-        if any(token in name for token in ("score", "result", "metric"))
-        else "metadata"
+        field in {"id", "name", "eval_id", "eval_timestamp"}
+        or field
+        in {
+            "retrieved_timestamp",
+            "imported_at",
+            "import_timestamp",
+            "created_at",
+            "updated_at",
+            "timestamp",
+            "evaluation_timestamp",
+            "evaluated_at",
+            "evaluation_time",
+            "eval_library.retrieved_timestamp",
+        }
+        or field.endswith("_transport")
     )
-
-
-def _is_bookkeeping(*, field: str) -> bool:
-    name = field.rsplit(".", 1)[-1].casefold()
-    return name in {
-        "retrieved_timestamp",
-        "imported_at",
-        "import_timestamp",
-        "created_at",
-        "updated_at",
-        "timestamp",
-        "eval_library",
-        "library_version",
-        "evaluation_timestamp",
-        "evaluated_at",
-        "evaluation_time",
-    } or name.endswith("_transport")
 
 
 def _normalise_embedded_json(*, value: object) -> object:
@@ -172,24 +158,45 @@ def _canonical(*, value: object) -> object:
     return value
 
 
-def _useful_metadata(*, field: str, value: object) -> object:
-    if value is None or value == "" or value == -1 or value == "-1":
-        return _MISSING
-    if (
-        field.endswith("num_model_parameters")
-        and isinstance(value, (int, float))
-        and value < 0
-    ):
-        return _MISSING
-    if isinstance(value, str) and value.casefold() in {"unknown", "n/a", "none"}:
-        return _MISSING
-    return value
-
-
 def _display(*, value: object) -> str:
     if value is _MISSING:
         return "<missing>"
     return json.dumps(value, sort_keys=True, default=str)
+
+
+def _field_category(*, field: str) -> str:
+    root = field.split(".", 1)[0].casefold()
+    return "payload" if root in _PAYLOAD_ROOTS else "metadata"
+
+
+def _normalise_known(*, field: str, value: object) -> object:
+    if value is _MISSING:
+        return value
+    name = field.rsplit(".", 1)[-1].casefold()
+    if name in _BOOLEAN_METADATA and isinstance(value, str):
+        lowered = value.casefold()
+        if lowered in {"true", "false"}:
+            return lowered == "true"
+    if name in _NUMERIC_METADATA:
+        if isinstance(value, str) and re.fullmatch(r"-?\d+(?:\.\d+)?", value.strip()):
+            number = float(value) if "." in value else int(value)
+            return number
+    return value
+
+
+def _useful_metadata(*, field: str, value: object) -> bool:
+    if value is _MISSING:
+        return False
+    name = field.rsplit(".", 1)[-1].casefold()
+    if value is None or value == "":
+        return False
+    if name in _NUMERIC_METADATA and isinstance(value, (int, float)):
+        return not (not math.isfinite(value) or value < 0)
+    if name in _BOOLEAN_METADATA and isinstance(value, str):
+        return value.casefold() in {"true", "false"}
+    if name in _KNOWN_METADATA and isinstance(value, str):
+        return value.casefold() not in {"unknown", "n/a", "none", "null"}
+    return True
 
 
 @dataclass(frozen=True)
@@ -227,9 +234,6 @@ def resolve_result_conflict(
 ) -> ConflictDecision:
     """Resolve two records with matching identities without mutating either.
 
-    Exact bytes should be supplied by storage adapters. When omitted, stable JSON
-    bytes of each mapping are used to bind evidence for in-memory callers.
-
     Args:
         current: The currently stored EEE record.
         candidate: The incoming EEE record.
@@ -243,13 +247,12 @@ def resolve_result_conflict(
     Raises:
         ValueError: If record identities differ or cannot be extracted.
     """
-    identity = identity_from_eee_record(record=current)
-    candidate_identity = identity_from_eee_record(record=candidate)
+    identity = result_identity.identity_from_eee_record(record=current)
+    candidate_identity = result_identity.identity_from_eee_record(record=candidate)
     if identity != candidate_identity:
         raise ValueError(
             f"Records have different identities: {identity} vs {candidate_identity}"
         )
-
     if current_bytes is None:
         current_bytes = _stable_bytes(record=current)
     if candidate_bytes is None:
@@ -259,8 +262,7 @@ def resolve_result_conflict(
         current=current, candidate=candidate, differences=differences
     )
     if choice is not None:
-        selection = choice
-        reason = ConflictReason.EXPLICIT_CHOICE
+        selection, reason = choice, ConflictReason.EXPLICIT_CHOICE
     return ConflictDecision(
         selected=selection,
         reason=reason,
@@ -283,10 +285,11 @@ def _automatic_selection(
 ) -> tuple[ConflictChoice | None, ConflictReason]:
     if not differences:
         return ConflictChoice.STORED, ConflictReason.IDENTICAL
-
     metadata = tuple(item for item in differences if item.category == "metadata")
     payload = tuple(item for item in differences if item.category == "payload")
     if metadata and not payload:
+        if any(not _is_known_metadata(field=item.field) for item in metadata):
+            return None, ConflictReason.UNRESOLVED_METADATA
         current_values = _metadata_values(record=current)
         candidate_values = _metadata_values(record=candidate)
         if current_values > candidate_values:
@@ -314,13 +317,17 @@ def _record_differences(
     right = _comparison_record(record=candidate)
     differences = []
     for field in sorted(left.keys() | right.keys()):
-        if left.get(field, _MISSING) == right.get(field, _MISSING):
+        left_value = left.get(field, _MISSING)
+        right_value = right.get(field, _MISSING)
+        left_value = _normalise_known(field=field, value=left_value)
+        right_value = _normalise_known(field=field, value=right_value)
+        if left_value == right_value:
             continue
         differences.append(
             FieldDifference(
                 field=field,
-                current=_display(value=left.get(field, _MISSING)),
-                candidate=_display(value=right.get(field, _MISSING)),
+                current=_display(value=left_value),
+                candidate=_display(value=right_value),
                 category=_field_category(field=field),
             )
         )
@@ -334,4 +341,30 @@ def _stable_bytes(*, record: dict[str, object]) -> bytes:
 
 
 _MISSING = object()
-_ENVELOPE_KEYS = {"model_info", "eval_library", "evaluation", "metadata"}
+_PAYLOAD_ROOTS = {"evaluation_results", "scores", "results", "raw_results", "metrics"}
+_NUMERIC_METADATA = {
+    "num_model_parameters",
+    "model_parameters",
+    "parameter_count",
+    "max_sequence_length",
+    "vocabulary_size",
+}
+_BOOLEAN_METADATA = {
+    "open",
+    "commercially_licensed",
+    "trained_from_scratch",
+    "few_shot",
+    "validation_split",
+    "merge",
+    "generative",
+}
+_KNOWN_METADATA = (
+    _NUMERIC_METADATA | _BOOLEAN_METADATA | {"release_date", "model_url", "url"}
+)
+_EVALUATION_TIME_FIELDS = {
+    "eval_timestamp",
+    "evaluation_timestamp",
+    "evaluation_timestamp",
+    "evaluated_at",
+}
+_EPOCH_FIELDS = {"eval_timestamp", "evaluation_timestamp"}
