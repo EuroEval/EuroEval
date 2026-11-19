@@ -38,6 +38,7 @@ from leaderboards.leaderboard_generation import (
 )
 from leaderboards.leaderboard_visibility import leaderboard_should_be_shown
 from leaderboards.records import plain_model_id
+from leaderboards.result_conflict_prompt import resolve_result_interactively
 from leaderboards.result_loading import (
     load_raw_results,
     reset_leaderboard_result_filter,
@@ -148,6 +149,7 @@ def main(
             api_model_patterns=API_MODEL_PATTERNS,
             trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
             upload_to_bucket=upload,
+            conflict_resolver=resolve_result_interactively,
         )
     else:
         configure_canary_result_filter()
