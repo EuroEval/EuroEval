@@ -10,7 +10,6 @@ from pathlib import Path
 import pytest
 
 from leaderboards import result_loading
-from leaderboards.constants import NEW_RESULTS_PATH
 from leaderboards.result_identity import UnresolvedResultConflictError
 from leaderboards.result_loading import (
     _dedup_by_storage_identity,
@@ -132,7 +131,14 @@ def _make_eee_record(
     """
     return {
         "schema_version": "1.0",
-        "model_info": {"id": model_id},
+        "model_info": {
+            "id": model_id,
+            "additional_details": {
+                "commercially_licensed": False,
+                "open": True,
+                "trained_from_scratch": False,
+            },
+        },
         "eval_library": {
             "additional_details": {
                 "dataset": dataset,
@@ -150,14 +156,28 @@ class TestLoadRawResults:
     """Tests for load_raw_results."""
 
     @pytest.fixture(autouse=True)
-    def _clear_cache(self) -> c.Generator[None]:
-        """Reset raw-result filters and caches between tests.
+    def _clear_cache(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> c.Generator[None]:
+        """Isolate staging, filters, and cached results between tests.
+
+        Args:
+            tmp_path:
+                Temporary directory for the staging input.
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
 
         Yields:
             None
         """
+        monkeypatch.setattr(
+            "leaderboards.result_loading.NEW_RESULTS_PATH",
+            tmp_path / "new_results.jsonl",
+        )
+        load_raw_results.cache_clear()
         reset_leaderboard_result_filter()
         yield
+        load_raw_results.cache_clear()
         reset_leaderboard_result_filter()
 
     def test_canary_conflicts_are_not_hidden_by_storage_deduplication(
@@ -209,33 +229,32 @@ class TestLoadRawResults:
         )
         monkeypatch.setattr("leaderboards.result_loading.backup_results", lambda: None)
         monkeypatch.setattr("leaderboards.result_loading.RESULTS_DIR", tmp_path)
-        monkeypatch.setattr(
-            "leaderboards.result_loading.NEW_RESULTS_PATH", NEW_RESULTS_PATH
-        )
+        staging = result_loading.NEW_RESULTS_PATH
 
         # Create tree record
         model_dir = tmp_path / "test_model"
         model_dir.mkdir()
         older = _make_eee_record(
-            model_id="test/model", version="1.0.0", timestamp="100"
+            model_id="test/model", version="1.0.0", timestamp="100", score=0.4
         )
+        older["eval_timestamp"] = 100
         (model_dir / "dataset1__test__zeroshot.json").write_text(json.dumps(older))
 
-        # Create staging JSONL with same identity but newer version
+        # Newer recorded evaluation evidence wins on its changed score.
         newer = _make_eee_record(
-            model_id="test/model", version="1.1.0", timestamp="200"
+            model_id="test/model", version="1.1.0", timestamp="200", score=0.5
         )
-        NEW_RESULTS_PATH.write_text(json.dumps(newer) + "\n")
+        newer["eval_timestamp"] = 200
+        staging.write_text(json.dumps(newer) + "\n")
 
         try:
             records = load_raw_results()
 
-            # Should have deduplicated to 1 record (newer wins)
             assert len(records) == 1
             assert records[0]["eval_library"]["version"] == "1.1.0"
         finally:
-            if NEW_RESULTS_PATH.exists():
-                NEW_RESULTS_PATH.unlink()
+            if staging.exists():
+                staging.unlink()
 
     def test_leaderboard_filter_hides_auxiliary_and_selected_models(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -321,9 +340,7 @@ class TestLoadRawResults:
         )
         monkeypatch.setattr("leaderboards.result_loading.backup_results", lambda: None)
         monkeypatch.setattr("leaderboards.result_loading.RESULTS_DIR", tmp_path)
-        monkeypatch.setattr(
-            "leaderboards.result_loading.NEW_RESULTS_PATH", NEW_RESULTS_PATH
-        )
+        staging = result_loading.NEW_RESULTS_PATH
 
         # Create tree record
         model_dir = tmp_path / "test_model"
@@ -335,7 +352,7 @@ class TestLoadRawResults:
 
         # Create staging JSONL file
         staging_record = _make_eee_record(model_id="staging/model", dataset="dataset2")
-        NEW_RESULTS_PATH.write_text(json.dumps(staging_record) + "\n")
+        staging.write_text(json.dumps(staging_record) + "\n")
 
         try:
             records = load_raw_results()
@@ -346,11 +363,11 @@ class TestLoadRawResults:
             assert model_ids == {"tree/model", "staging/model"}
 
             # Staging file should be removed
-            assert not NEW_RESULTS_PATH.exists()
+            assert not staging.exists()
         finally:
             # Clean up staging file if test fails
-            if NEW_RESULTS_PATH.exists():
-                NEW_RESULTS_PATH.unlink()
+            if staging.exists():
+                staging.unlink()
 
     def test_raises_on_no_results_after_sync(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
@@ -400,6 +417,11 @@ class TestLoadRawResults:
 def test_storage_dedup_keeps_known_metadata_superset_in_both_orders() -> None:
     """Compatible metadata enrichment wins regardless of input order."""
     richer = _make_eee_record()
+    richer["model_info"]["additional_details"] = {
+        "commercially_licensed": True,
+        "open": True,
+        "trained_from_scratch": False,
+    }
     richer["model_info"]["additional_details"].update(
         {
             "commercially_licensed": False,

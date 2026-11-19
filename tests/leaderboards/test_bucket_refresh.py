@@ -337,6 +337,21 @@ def test_preserves_local_only_files(
     assert local_only.read_text(encoding="utf-8") == "keep"
 
 
+def test_refresh_repairs_invalid_existing_local_record(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A valid remote record replaces malformed local cache bytes."""
+    path = "org_model/dataset__test__zeroshot.json"
+    data = json.dumps(make_record()).encode()
+    configure(monkeypatch, tmp_path, FakeBucket({path: ("remote", data)}))
+    destination = result_path(tmp_path / "results")
+    destination.parent.mkdir(parents=True)
+    destination.write_bytes(b"old!")
+
+    assert bucket_sync.download_missing_bucket_files() == 1
+    assert destination.read_bytes() == data
+
+
 def test_refreshes_same_path_and_size_when_hash_changes(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
