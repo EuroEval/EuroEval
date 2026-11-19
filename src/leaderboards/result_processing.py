@@ -31,7 +31,6 @@ from .result_conflicts import ConflictChoice, ConflictDecision, resolve_result_c
 from .result_identity import (
     ResultIdentity,
     UnresolvedResultConflictError,
-    dedup_newer_record,
     identity_from_eee_record,
     raise_on_collision,
     record_relative_path,
@@ -228,25 +227,16 @@ def _upload_per_model_files(
         )
 
     # Capture canonical predecessors before deciding collisions or writing files.
-    source_bytes: dict[ResultIdentity, bytes] = {}
-    if upload_to_bucket:
-        for record in processed_records:
-            try:
-                identity = identity_from_eee_record(record)
-            except ValueError:
-                continue
-            path = RESULTS_DIR / record_relative_path(
-                model_id=identity[0],
-                dataset=identity[1],
-                validation_split=identity[2],
-                few_shot=identity[3],
-            )
-            if identity not in source_bytes and path.is_file():
-                source_bytes[identity] = path.read_bytes()
+    source_bytes = (
+        _capture_local_sources(records=processed_records, results_dir=RESULTS_DIR)
+        if upload_to_bucket
+        else {}
+    )
 
-    # Group records by path, handling deduplication and collision detection.
+    # Resolve input contenders first; canonical predecessor reconciliation happens
+    # only after each identity has one final payload.
     records_by_path: dict[Path, tuple[dict[str, t.Any], ResultIdentity]] = {}
-    decisions: dict[ResultIdentity, ConflictDecision] = {}
+    input_decisions: dict[ResultIdentity, list[ConflictDecision]] = {}
     dropped_count = 0
 
     for record in processed_records:
@@ -274,20 +264,34 @@ def _upload_per_model_files(
                 existing_record=existing_record,
                 candidate=record,
                 identity=identity,
-                source=source_bytes.get(identity),
                 conflict_resolver=conflict_resolver,
             )
             if decision is not None:
-                decisions[identity] = decision
+                input_decisions.setdefault(identity, []).append(decision)
             records_by_path[relative_path] = (selected, identity)
         else:
             records_by_path[relative_path] = (record, identity)
 
     hf_results_bucket = f"hf://buckets/{HF_RESULTS_BUCKET}"
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    final_records: dict[Path, tuple[dict[str, t.Any], ResultIdentity]] = {}
+    decisions: dict[ResultIdentity, ConflictDecision] = {}
+    for relative_path, (record, identity) in records_by_path.items():
+        source = source_bytes.get(identity)
+        if source is not None:
+            record, decision = _reconcile_canonical_record(
+                candidate=record,
+                source=source,
+                identity=identity,
+                prior_decisions=input_decisions.get(identity, []),
+                conflict_resolver=conflict_resolver,
+            )
+            if decision is not None:
+                decisions[identity] = decision
+        final_records[relative_path] = (record, identity)
 
     payloads = [
-        _serialise_record(record=record) for record, _ in records_by_path.values()
+        _serialise_record(record=record) for record, _ in final_records.values()
     ]
     publisher = None
     if upload_to_bucket:
@@ -300,10 +304,11 @@ def _upload_per_model_files(
             records=payloads, sources=source_bytes, decisions=list(decisions.values())
         )
 
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     written_files: list[tuple[str | Path | bytes, str]] = []
 
     logger.info("Writing result files...")
-    for relative_path, (record, _) in records_by_path.items():
+    for relative_path, (record, _) in final_records.items():
         result = _write_record_file(
             relative_path=relative_path, record=record, results_dir=RESULTS_DIR
         )
@@ -335,62 +340,136 @@ def _upload_per_model_files(
         logger.info(f"Dropped {dropped_count:,} records with unresolvable identities.")
 
 
-def _select_collision_record(
-    *,
-    existing_record: dict[str, t.Any],
-    candidate: dict[str, t.Any],
-    identity: ResultIdentity,
-    source: bytes | None,
-    conflict_resolver: Callable[..., ConflictDecision] | None,
-) -> tuple[dict[str, t.Any], ConflictDecision | None]:
-    """Select one record for a canonical identity, preserving owner-choice proof.
+def _capture_local_sources(
+    *, records: list[dict[str, t.Any]], results_dir: Path
+) -> dict[ResultIdentity, bytes]:
+    """Read each existing canonical predecessor once before local writes.
 
     Args:
-        existing_record: Earlier processed contender for this identity.
-        candidate: Later processed contender.
-        identity: Shared canonical storage identity.
-        source: Exact canonical predecessor bytes, if present.
+        records: Processed records whose predecessor files may exist.
+        results_dir: Local canonical results directory.
+
+    Returns:
+        Existing record bytes keyed by logical identity.
+    """
+    sources: dict[ResultIdentity, bytes] = {}
+    for record in records:
+        try:
+            identity = identity_from_eee_record(record)
+        except ValueError:
+            continue
+        path = results_dir / record_relative_path(
+            model_id=identity[0],
+            dataset=identity[1],
+            validation_split=identity[2],
+            few_shot=identity[3],
+        )
+        if identity not in sources and path.is_file():
+            sources[identity] = path.read_bytes()
+    return sources
+
+
+def _reconcile_canonical_record(
+    *,
+    candidate: dict[str, t.Any],
+    source: bytes,
+    identity: ResultIdentity,
+    prior_decisions: list[ConflictDecision],
+    conflict_resolver: Callable[..., ConflictDecision] | None,
+) -> tuple[dict[str, t.Any], ConflictDecision | None]:
+    """Reconcile a final input winner against its exact local predecessor.
+
+    Args:
+        candidate: Final record selected from processed input contenders.
+        source: Captured canonical predecessor bytes.
+        identity: Record identity.
+        prior_decisions: Earlier explicit contender choices for this identity.
         conflict_resolver: Optional terminal adapter for unresolved conflicts.
 
     Returns:
-        Selected record and explicit decision evidence, if owner choice was needed.
-
-    Raises:
-        UnresolvedResultConflictError: If the conflict cannot be safely resolved.
+        The final payload and an incoming explicit choice that authorises it.
     """
-    stored = json.loads(source) if source is not None else existing_record
-    try:
-        return dedup_newer_record(stored, candidate), None
-    except UnresolvedResultConflictError as error:
-        if conflict_resolver is None:
-            raise UnresolvedResultConflictError(
-                f"Unresolved result conflict for {identity}: "
-                f"{_describe_differences(existing_record, candidate)}"
-            ) from error
-        if source is None:
-            raise UnresolvedResultConflictError(
-                f"Cannot resolve {identity}: no canonical predecessor exists to "
-                "authorise a stored/incoming choice"
-            ) from error
+    stored = json.loads(source)
+    candidate_bytes = _serialise_record(record=candidate)
+    decision = resolve_result_conflict(
+        current=stored,
+        candidate=candidate,
+        current_bytes=source,
+        candidate_bytes=candidate_bytes,
+    )
+    if not decision.needs_choice:
+        if decision.selected is ConflictChoice.STORED:
+            return stored, None
+        return candidate, None
 
-        decision = conflict_resolver(
+    for prior in prior_decisions:
+        evidence = prior.evidence
+        if (
+            evidence is not None
+            and evidence.identity == identity
+            and evidence.current_sha256 == decision.evidence.current_sha256
+            and evidence.candidate_sha256 == decision.evidence.candidate_sha256
+            and evidence.policy_version == decision.evidence.policy_version
+            and prior.reason.value == "explicit_choice"
+        ):
+            decision = prior
+            break
+    else:
+        decision = _resolve_with_adapter(
             current=stored,
             candidate=candidate,
             current_bytes=source,
-            candidate_bytes=_serialise_record(record=candidate),
+            candidate_bytes=candidate_bytes,
+            identity=identity,
+            conflict_resolver=conflict_resolver,
         )
-        selected = stored if decision.selected is ConflictChoice.STORED else candidate
-        if decision.reason.value != "explicit_choice":
-            return selected, None
-        if decision.selected is ConflictChoice.STORED:
-            decision = resolve_result_conflict(
-                current=stored,
-                candidate=selected,
-                current_bytes=source,
-                candidate_bytes=_serialise_record(record=selected),
-                choice=ConflictChoice.STORED,
-            )
-        return selected, decision
+
+    if decision.selected is ConflictChoice.STORED:
+        return stored, None
+    return candidate, decision
+
+
+def _resolve_with_adapter(
+    *,
+    current: dict[str, t.Any],
+    candidate: dict[str, t.Any],
+    current_bytes: bytes,
+    candidate_bytes: bytes,
+    identity: ResultIdentity,
+    conflict_resolver: Callable[..., ConflictDecision] | None,
+) -> ConflictDecision:
+    """Resolve an ambiguous exact record pair through the supplied adapter.
+
+    Args:
+        current: Stored-side record in this choice pair.
+        candidate: Incoming-side record in this choice pair.
+        current_bytes: Exact stored-side bytes.
+        candidate_bytes: Exact incoming-side bytes.
+        identity: Pair identity.
+        conflict_resolver: Optional owner-choice adapter.
+
+    Returns:
+        A policy decision bound to this exact pair.
+
+    Raises:
+        UnresolvedResultConflictError: If no adapter is available.
+    """
+    if conflict_resolver is None:
+        raise UnresolvedResultConflictError(
+            f"Unresolved result conflict for {identity}: "
+            f"{_describe_differences(current, candidate)}"
+        )
+    decision = conflict_resolver(
+        current=current,
+        candidate=candidate,
+        current_bytes=current_bytes,
+        candidate_bytes=candidate_bytes,
+    )
+    if decision.evidence is None or decision.reason.value != "explicit_choice":
+        raise UnresolvedResultConflictError(
+            f"Conflict resolver did not provide an explicit choice for {identity}"
+        )
+    return decision
 
 
 def _describe_differences(
@@ -425,6 +504,47 @@ def _serialise_record(*, record: dict[str, t.Any]) -> bytes:
     return json.dumps(
         record, sort_keys=True, separators=(",", ":"), ensure_ascii=False
     ).encode("utf-8")
+
+
+def _select_collision_record(
+    *,
+    existing_record: dict[str, t.Any],
+    candidate: dict[str, t.Any],
+    identity: ResultIdentity,
+    conflict_resolver: Callable[..., ConflictDecision] | None,
+) -> tuple[dict[str, t.Any], ConflictDecision | None]:
+    """Select the winner between two processed contenders for one identity.
+
+    Args:
+        existing_record: Current processed winner.
+        candidate: Next processed contender.
+        identity: Shared canonical storage identity.
+        conflict_resolver: Optional terminal adapter for unresolved conflicts.
+
+    Returns:
+        The selected record and any explicit choice evidence.
+    """
+    current_bytes = _serialise_record(record=existing_record)
+    candidate_bytes = _serialise_record(record=candidate)
+    decision = resolve_result_conflict(
+        current=existing_record,
+        candidate=candidate,
+        current_bytes=current_bytes,
+        candidate_bytes=candidate_bytes,
+    )
+    if decision.needs_choice:
+        decision = _resolve_with_adapter(
+            current=existing_record,
+            candidate=candidate,
+            current_bytes=current_bytes,
+            candidate_bytes=candidate_bytes,
+            identity=identity,
+            conflict_resolver=conflict_resolver,
+        )
+    selected = (
+        existing_record if decision.selected is ConflictChoice.STORED else candidate
+    )
+    return (selected, decision if decision.reason.value == "explicit_choice" else None)
 
 
 def _write_record_file(
