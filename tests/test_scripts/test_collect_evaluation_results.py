@@ -298,10 +298,11 @@ def test_collector_forwards_explicit_choice_proof_through_publication(
             return nullcontext(self)
 
     monkeypatch.setattr(collect_evaluation_results, "CanonicalPublisher", Publisher)
+    actual_resolver = collect_evaluation_results.resolve_result_interactively
     monkeypatch.setattr(
         collect_evaluation_results,
         "resolve_result_interactively",
-        lambda **kwargs: collect_evaluation_results.resolve_result_interactively(
+        lambda **kwargs: actual_resolver(
             **kwargs, input_fn=lambda _prompt: "incoming", interactive=True
         ),
     )

@@ -55,12 +55,12 @@ def resolve_result_interactively(
     output_fn(f"Reason: {decision.reason.value}")
     output_fn(
         "Evaluation timestamps: "
-        f"stored={_display(current.get('retrieved_timestamp'))}; "
-        f"incoming={_display(candidate.get('retrieved_timestamp'))}"
+        f"stored={_display(_evaluation_timestamp(current))}; "
+        f"incoming={_display(_evaluation_timestamp(candidate))}"
     )
     for difference in decision.differences:
         output_fn(
-            f"{difference.path}: stored={_display(difference.current)}; "
+            f"{difference.field}: stored={_display(difference.current)}; "
             f"incoming={_display(difference.candidate)}"
         )
     while True:
@@ -100,3 +100,18 @@ def _display(value: object) -> str:
     """
     rendered = repr(value)
     return rendered if len(rendered) <= 240 else f"{rendered[:237]}..."
+
+
+def _evaluation_timestamp(record: dict[str, object]) -> object:
+    """Return the recorded evaluation time, never the retrieval time.
+
+    Args:
+        record: Evaluation result record.
+
+    Returns:
+        The first available evaluation timestamp or ``None``.
+    """
+    for key in ("evaluation_timestamp", "eval_timestamp", "evaluated_at"):
+        if key in record:
+            return record[key]
+    return None

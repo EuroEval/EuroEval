@@ -36,6 +36,7 @@ import signal
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 import typing as t
 import urllib.error
@@ -255,18 +256,22 @@ def _harvest_results(issues: list[dict]) -> list[tuple[int, list[str]]]:
     logger.info(f"Snapshot: {len(snapshot_issue_numbers)} issue(s) to process.")
 
     harvested: list[tuple[int, list[str]]] = []
-    for issue in issues:
-        number = issue["number"]
-        lines = find_results_for_issue(issue=issue)
-        if not lines:
-            logger.info(f"#{number}: no results in bucket yet -- skipping.")
-            continue
-        logger.info(f"#{number}: found {len(lines)} result line(s).")
-        harvested.append((number, lines))
+    with tempfile.TemporaryDirectory(prefix="euroeval-harvest-") as scratch:
+        scratch_dir = Path(scratch)
+        for issue in issues:
+            number = issue["number"]
+            lines = find_results_for_issue(issue=issue, destination=scratch_dir)
+            if not lines:
+                logger.info(f"#{number}: no results in bucket yet -- skipping.")
+                continue
+            logger.info(f"#{number}: found {len(lines)} result line(s).")
+            harvested.append((number, lines))
     return harvested
 
 
-def find_results_for_issue(issue: dict) -> list[str] | None:
+def find_results_for_issue(
+    issue: dict, *, destination: Path | None = None
+) -> list[str] | None:
     """Fetch the model's JSON results from the HF bucket tree.
 
     Downloads all JSON files for the model's directory from the bucket
@@ -275,6 +280,8 @@ def find_results_for_issue(issue: dict) -> list[str] | None:
     Args:
         issue:
             The issue object containing the model evaluation request.
+        destination (optional):
+            Isolated directory for downloaded files. Defaults to RESULTS_DIR.
 
     Returns:
         List of JSON strings for all results for this model,
@@ -290,6 +297,7 @@ def find_results_for_issue(issue: dict) -> list[str] | None:
         return None
 
     model_dir = sanitise_model_dir_name(model_id)
+    download_dir = destination or RESULTS_DIR
 
     try:
         api = HfApi()
@@ -311,7 +319,7 @@ def find_results_for_issue(issue: dict) -> list[str] | None:
 
         # Download all files for this model
         files_spec: list[tuple[str | BucketFile, str | Path]] = [
-            (f, RESULTS_DIR / f.path) for f in model_files
+            (f, download_dir / f.path) for f in model_files
         ]
         api.download_bucket_files(
             bucket_id=HF_RESULTS_BUCKET, files=files_spec, raise_on_missing_files=False
@@ -323,7 +331,7 @@ def find_results_for_issue(issue: dict) -> list[str] | None:
     # Collect all JSON records
     results: list[str] = []
     for bucket_file in model_files:
-        local_path = RESULTS_DIR / bucket_file.path
+        local_path = download_dir / bucket_file.path
         if not local_path.exists():
             logger.warning(f"Downloaded file not found: {local_path}")
             continue
@@ -795,42 +803,35 @@ def upload_results_to_hf(
         logger.error("Result collection aborted: %s", error)
         return False
 
-    # Rebind every explicit choice to the exact original source and final candidate.
+    # Bind publication evidence only to the canonical predecessor and final winner.
     explicit_identities = {decision.evidence.identity for decision in decisions}
     for identity in explicit_identities:
         original_bytes = source_bytes.get(identity)
         if original_bytes is None:
+            decisions[:] = [
+                item for item in decisions if item.evidence.identity != identity
+            ]
             continue
         original_record = json.loads(original_bytes)
         final_record = existing[identity]
         final_bytes = json.dumps(final_record, separators=(",", ":")).encode("utf-8")
         prior = next(
-            decision
-            for decision in reversed(decisions)
-            if decision.evidence.identity == identity
+            item for item in reversed(decisions) if item.evidence.identity == identity
         )
-        selected_digest = (
-            prior.evidence.candidate_sha256
-            if prior.selected == ConflictChoice.INCOMING
-            else prior.evidence.current_sha256
+        current_digest = hashlib.sha256(original_bytes).hexdigest()
+        final_digest = hashlib.sha256(final_bytes).hexdigest()
+        exact_pair = (
+            prior.evidence.current_sha256 == current_digest
+            and prior.evidence.candidate_sha256 == final_digest
         )
-        selected_still_applies = hashlib.sha256(
-            final_bytes
-        ).hexdigest() == selected_digest or (
-            prior.selected == ConflictChoice.STORED and final_record == original_record
-        )
-        if not selected_still_applies:
+        if not exact_pair:
             automatic = resolve_result_conflict(
                 current=original_record,
                 candidate=final_record,
                 current_bytes=original_bytes,
                 candidate_bytes=final_bytes,
             )
-            automatically_safe = automatic.selected == ConflictChoice.INCOMING or (
-                automatic.selected == ConflictChoice.STORED
-                and final_bytes == original_bytes
-            )
-            if automatic.needs_choice or not automatically_safe:
+            if automatic.needs_choice:
                 try:
                     prior = resolve_result_interactively(
                         current=original_record,
@@ -843,23 +844,20 @@ def upload_results_to_hf(
                     return False
             else:
                 decisions[:] = [
-                    decision
-                    for decision in decisions
-                    if decision.evidence.identity != identity
+                    item for item in decisions if item.evidence.identity != identity
                 ]
                 continue
-        choice = prior.selected
         decisions[:] = [
-            decision for decision in decisions if decision.evidence.identity != identity
+            item for item in decisions if item.evidence.identity != identity
         ]
-        if choice is not None:
+        if prior.selected is not None:
             decisions.append(
                 resolve_result_conflict(
                     current=original_record,
                     candidate=final_record,
                     current_bytes=original_bytes,
                     candidate_bytes=final_bytes,
-                    choice=choice,
+                    choice=prior.selected,
                 )
             )
 
@@ -888,7 +886,24 @@ def upload_results_to_hf(
         logger.error("Could not checkpoint publication evidence: %s", error)
         return False
     if pending_lines is not None:
-        NEW_RESULTS_PATH.write_text("\n".join(pending_lines) + "\n", encoding="utf-8")
+        staged_identities: set[ResultIdentity] = set()
+        for line in pending_lines:
+            if not line.strip():
+                continue
+            try:
+                identity = _extract_identity_key(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+            if identity is not None:
+                staged_identities.add(identity)
+        staged = [
+            json.dumps(existing[identity], separators=(",", ":"))
+            for identity in sorted(staged_identities)
+            if identity in existing and not is_canary_record(existing[identity])
+        ]
+        NEW_RESULTS_PATH.write_text(
+            "\n".join(staged) + ("\n" if staged else ""), encoding="utf-8"
+        )
     # === MUTATE PHASE: only after validation and evidence checkpoint ===
     records_written, records_unchanged, written_paths = _write_changed_records(
         existing=existing
@@ -921,6 +936,22 @@ def _cleanup_stale_artefacts() -> None:
         if jsonl_file.is_file():
             jsonl_file.unlink()
             logger.info(f"Removed stale artefact {jsonl_file}")
+
+
+def _extract_identity_key(result: dict) -> ResultIdentity | None:
+    """Extract the identity key from a result record.
+
+    Args:
+        result:
+            The parsed result record.
+
+    Returns:
+        Identity tuple or None if extraction fails.
+    """
+    try:
+        return identity_from_eee_record(result)
+    except (ValueError, KeyError):
+        return None
 
 
 def _load_existing_results(
@@ -984,22 +1015,6 @@ def _load_existing_results(
         sources.update(winning_sources)
         sources.update(canonical_sources)
     return existing
-
-
-def _extract_identity_key(result: dict) -> ResultIdentity | None:
-    """Extract the identity key from a result record.
-
-    Args:
-        result:
-            The parsed result record.
-
-    Returns:
-        Identity tuple or None if extraction fails.
-    """
-    try:
-        return identity_from_eee_record(result)
-    except (ValueError, KeyError):
-        return None
 
 
 def _process_new_results(
