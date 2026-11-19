@@ -51,6 +51,7 @@ def _record() -> dict[str, object]:
         "eval_library": {"additional_details": {"dataset": "task"}},
         "scores": {"accuracy": 0.5},
         "retrieved_timestamp": 100,
+        "evaluation_timestamp": "2024-01-01T00:00:00Z",
     }
 
 
@@ -88,7 +89,9 @@ def test_invalid_answer_reprompts_and_shows_field_context() -> None:
     assert decision.selected == ConflictChoice.INCOMING
     assert any("scores.accuracy" in line for line in output)
     assert any("stored=" in line and "incoming=" in line for line in output)
-    assert any("Evaluation timestamps" in line for line in output)
+    timestamp_line = next(line for line in output if "Evaluation timestamps" in line)
+    assert "2024-01-01T00:00:00Z" in timestamp_line
+    assert "100" not in timestamp_line
     assert any("Invalid choice" in line for line in output)
 
 
