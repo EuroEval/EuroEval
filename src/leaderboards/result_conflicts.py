@@ -364,7 +364,14 @@ def _stable_bytes(*, record: dict[str, object]) -> bytes:
 
 
 _MISSING = object()
-_PAYLOAD_ROOTS = {"evaluation_results", "scores", "results", "raw_results", "metrics"}
+_PAYLOAD_ROOTS = {
+    "evaluation_results",
+    "score",
+    "scores",
+    "results",
+    "raw_results",
+    "metrics",
+}
 _NUMERIC_METADATA = {
     "num_model_parameters",
     "model_parameters",

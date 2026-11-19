@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import copy
+import typing as t
+
 import pytest
 
 from leaderboards.result_conflicts import (
@@ -71,9 +74,10 @@ class TestResolveResultConflict:
 
     def test_false_and_zero_are_useful_values(self) -> None:
         """False and zero survive comparison rather than becoming missing."""
-        base = _record(model_info={"id": "org/model"})
+        model_id = "AI-Sweden-Models/Llama-3-8B-instruct"
         current = _eee_model_record(open=False, custom_zero_extension=0)
-        decision = resolve_result_conflict(current=current, candidate=base)
+        candidate = _record(model_info={"id": model_id})
+        decision = resolve_result_conflict(current=current, candidate=candidate)
         assert decision.selected == ConflictChoice.STORED
 
     def test_identity_mismatch_raises(self) -> None:
@@ -286,6 +290,25 @@ class TestResolveResultConflict:
             for item in decision.differences
         )
 
+    def test_root_score_alias_is_payload_and_newer_evaluation_wins(self) -> None:
+        """A singular root score is payload alongside canonical results."""
+        current = _record(
+            eval_timestamp="2025-01-01T00:00:00Z",
+            score=0.4,
+            evaluation_results={"accuracy": 0.4},
+        )
+        candidate = _record(
+            eval_timestamp="2026-01-01T00:00:00Z",
+            score=0.5,
+            evaluation_results={"accuracy": 0.5},
+        )
+
+        decision = resolve_result_conflict(current=current, candidate=candidate)
+
+        assert decision.selected == ConflictChoice.INCOMING
+        assert decision.reason == ConflictReason.NEWER_EVALUATION
+        assert any(item.field == "score" for item in decision.differences)
+
     def test_unknown_metadata_change_requires_choice(self) -> None:
         """Unknown custom fields are not treated as safe metadata additions."""
         decision = resolve_result_conflict(
@@ -322,9 +345,9 @@ def _eee_model_record(**details: object) -> dict[str, object]:
         A result record with a stable identity.
     """
     eval_library = details.pop("eval_library", None)
-    record = _record()
-    if eval_library is not None:
-        record["eval_library"] = eval_library
+    record = (
+        _record(eval_library=eval_library) if eval_library is not None else _record()
+    )
     record["model_info"] = {
         "id": "AI-Sweden-Models/Llama-3-8B-instruct",
         "additional_details": details,
@@ -348,14 +371,17 @@ def _record(**changes: object) -> dict[str, object]:
         },
         "scores": {"accuracy": 0.5},
     }
-    record.update(changes)
-    if "eval_library" in changes:
-        supplied = changes["eval_library"]
-        if isinstance(supplied, dict):
-            library = {**record["eval_library"], **supplied}
-            library["additional_details"] = {
-                **record["eval_library"]["additional_details"],
-                **supplied.get("additional_details", {}),
-            }
-            record["eval_library"] = library
+    supplied_library = changes.get("eval_library")
+    record.update(
+        {key: value for key, value in changes.items() if key != "eval_library"}
+    )
+    if isinstance(supplied_library, dict):
+        base_library = t.cast(dict[str, object], copy.deepcopy(record["eval_library"]))
+        supplied_details = t.cast(
+            dict[str, object], supplied_library.get("additional_details", {})
+        )
+        base_details = t.cast(dict[str, object], base_library["additional_details"])
+        library = {**base_library, **copy.deepcopy(supplied_library)}
+        library["additional_details"] = {**base_details, **supplied_details}
+        record["eval_library"] = library
     return record
