@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
+
 import pytest
 
 from leaderboards.result_conflict_prompt import resolve_result_interactively
@@ -65,14 +68,23 @@ def test_explicit_choice_returns_bound_decision(
     """Both supported choices are represented as explicit decisions."""
     current = _record()
     candidate = {**current, "scores": {"accuracy": 0.8}}
+    current_bytes = (json.dumps(current, indent=2) + "\n").encode()
+    candidate_bytes = (json.dumps(candidate, separators=(",", ":")) + "\n").encode()
     decision = resolve_result_interactively(
         current=current,
         candidate=candidate,
+        current_bytes=current_bytes,
+        candidate_bytes=candidate_bytes,
         input_fn=lambda _prompt: answer,
         interactive=True,
     )
     assert decision.selected == expected
     assert decision.reason == ConflictReason.EXPLICIT_CHOICE
+    assert decision.evidence.current_sha256 == hashlib.sha256(current_bytes).hexdigest()
+    assert (
+        decision.evidence.candidate_sha256
+        == hashlib.sha256(candidate_bytes).hexdigest()
+    )
 
 
 def test_invalid_answer_reprompts_and_shows_field_context() -> None:

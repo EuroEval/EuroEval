@@ -879,8 +879,9 @@ def upload_results_to_hf(
             token=os.environ.get("HF_TOKEN", ""),
             bucket=HF_RESULTS_BUCKET,
         )
+        prepare_options = {"decisions": decisions} if decisions else {}
         publisher.prepare(
-            records=candidate_bytes, sources=source_bytes, decisions=decisions
+            records=candidate_bytes, sources=source_bytes, **prepare_options
         )
     except (HfHubHTTPError, RuntimeError, ValueError) as error:
         logger.error("Could not checkpoint publication evidence: %s", error)
@@ -1126,11 +1127,12 @@ def _upload_to_bucket(
             api=t.cast(BucketApi, HfApi()), token=token, bucket=HF_RESULTS_BUCKET
         )
         with publisher.session() as session:
+            decision_options = {"decisions": decisions} if decisions else {}
             session.prepare(
-                records=candidate_bytes, sources=sources, decisions=decisions or ()
+                records=candidate_bytes, sources=sources, **decision_options
             )
             session.publish(
-                records=candidate_bytes, sources=sources, decisions=decisions or ()
+                records=candidate_bytes, sources=sources, **decision_options
             )
         logger.info(f"Published {len(candidate_bytes)} file(s) to {HF_RESULTS_BUCKET}.")
         return True
