@@ -298,6 +298,66 @@ class TestUploadPerModelFilesPerRecordTree:
         # No files should be written on collision
         assert list(tmp_path.iterdir()) == []
 
+    def test_process_results_reports_identity_normalised_conflict(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Catch distinct source splits collapsing after metadata repair.
+
+        Args:
+            monkeypatch: Fixture for replacing filesystem dependencies.
+            tmp_path: Isolated result directory.
+        """
+        monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
+        records = [
+            {
+                "model_info": {"id": "org/model", "name": "org/model"},
+                "dataset": {"name": "values"},
+                "task": {"name": "european-values"},
+                "eval_library": {
+                    "name": "euroeval",
+                    "version": "1.0.0",
+                    "additional_details": {
+                        "dataset": "values",
+                        "task": "european-values",
+                        "few_shot": False,
+                        "validation_split": split,
+                    },
+                },
+                "results": {"score": score},
+            }
+            for split, score in ((False, 0.5), (True, 0.9))
+        ]
+        load = MagicMock(return_value=records)
+        load.cache_clear = MagicMock()
+        monkeypatch.setattr(result_processing, "load_raw_results", load)
+        monkeypatch.setattr(
+            result_processing,
+            "process_contamination_canaries",
+            lambda records: (records, [], set(), {"status": "scored"}),
+        )
+        monkeypatch.setattr(Cache, "from_results_dir", lambda results_dir: Cache())
+        monkeypatch.setattr(
+            result_processing, "deduplicate_records", lambda records: records
+        )
+        monkeypatch.setattr(result_processing, "record_is_valid", lambda **kwargs: True)
+        monkeypatch.setattr(
+            result_processing, "add_missing_entries", lambda record, **kwargs: record
+        )
+
+        with pytest.raises(UnresolvedResultConflictError) as error:
+            result_processing.process_results(
+                min_version="0.0.0",
+                min_number_of_model_records=0,
+                banned_versions=[],
+                banned_model_patterns=[],
+                api_model_patterns=[],
+                trained_from_scratch_patterns=[],
+            )
+
+        assert "org/model" in str(error.value)
+        assert "results" in str(error.value)
+        assert list(tmp_path.rglob("*.json")) == []
+
     def test_writes_expected_directory_tree(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:

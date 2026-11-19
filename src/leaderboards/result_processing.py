@@ -13,6 +13,7 @@ import logging
 import re
 import typing as t
 from collections import Counter
+from collections.abc import Callable
 from pathlib import Path
 
 from huggingface_hub import HfApi
@@ -26,8 +27,10 @@ from .evaluation_common import resolve_hf_token
 from .model_metadata import add_missing_entries, fix_metadata, record_is_valid
 from .record_fields import deduplicate_records
 from .records import get_model_name
+from .result_conflicts import ConflictChoice, ConflictDecision, resolve_result_conflict
 from .result_identity import (
     ResultIdentity,
+    UnresolvedResultConflictError,
     dedup_newer_record,
     identity_from_eee_record,
     raise_on_collision,
@@ -72,6 +75,7 @@ def process_results(
     api_model_patterns: list[re.Pattern],
     trained_from_scratch_patterns: list[re.Pattern],
     upload_to_bucket: bool = False,
+    conflict_resolver: Callable[..., ConflictDecision] | None = None,
 ) -> list[dict[str, t.Any]]:
     """Process EuroEval records from a JSONL file.
 
@@ -92,6 +96,9 @@ def process_results(
         upload_to_bucket (optional):
             Whether to sync the processed per-model files to the Hugging Face
             results bucket. Defaults to False.
+        conflict_resolver (optional):
+            Terminal adapter for unresolved duplicate result identities. Defaults to
+            automatic-only policy for library callers.
 
     Returns:
         Processed public records eligible for leaderboard generation. Canary-excluded
@@ -156,8 +163,13 @@ def process_results(
         )
         for record in tqdm(processed_records, desc="Adding missing entries")
     ]
+    upload_options: dict[str, t.Any] = {}
+    if conflict_resolver is not None:
+        upload_options["conflict_resolver"] = conflict_resolver
     _upload_per_model_files(
-        processed_records=processed_records, upload_to_bucket=upload_to_bucket
+        processed_records=processed_records,
+        upload_to_bucket=upload_to_bucket,
+        **upload_options,
     )
     # Completion-bearing evidence remains local/private and is never uploaded to
     # the public canonical results bucket.
@@ -180,6 +192,7 @@ def _upload_per_model_files(
     processed_records: list[dict[str, t.Any]],
     upload_to_bucket: bool = False,
     local_only_label: str | None = None,
+    conflict_resolver: Callable[..., ConflictDecision] | None = None,
 ) -> None:
     """Write one JSON file per logical result and optionally sync to the HF bucket.
 
@@ -200,6 +213,8 @@ def _upload_per_model_files(
         local_only_label (optional):
             Safe description for local-only files, such as private canary
             results, included in the non-upload log message.
+        conflict_resolver (optional):
+            Terminal adapter for unresolved records; omitted callers fail closed.
 
     Raises:
         RuntimeError:
@@ -212,9 +227,26 @@ def _upload_per_model_files(
             "Run 'hf auth login' or set the HF_TOKEN environment variable."
         )
 
+    # Capture canonical predecessors before deciding collisions or writing files.
+    source_bytes: dict[ResultIdentity, bytes] = {}
+    if upload_to_bucket:
+        for record in processed_records:
+            try:
+                identity = identity_from_eee_record(record)
+            except ValueError:
+                continue
+            path = RESULTS_DIR / record_relative_path(
+                model_id=identity[0],
+                dataset=identity[1],
+                validation_split=identity[2],
+                few_shot=identity[3],
+            )
+            if identity not in source_bytes and path.is_file():
+                source_bytes[identity] = path.read_bytes()
+
     # Group records by path, handling deduplication and collision detection.
-    # Store (record, identity) to detect when distinct identities map to same path.
     records_by_path: dict[Path, tuple[dict[str, t.Any], ResultIdentity]] = {}
+    decisions: dict[ResultIdentity, ConflictDecision] = {}
     dropped_count = 0
 
     for record in processed_records:
@@ -238,33 +270,24 @@ def _upload_per_model_files(
             # raise_on_collision will raise ValueError if identities differ
             raise_on_collision(existing_identity, identity)
             # Identities match - keep the newer record based on version/timestamp
-            records_by_path[relative_path] = (
-                dedup_newer_record(existing_record, record),
-                identity,
+            selected, decision = _select_collision_record(
+                existing_record=existing_record,
+                candidate=record,
+                identity=identity,
+                source=source_bytes.get(identity),
+                conflict_resolver=conflict_resolver,
             )
+            if decision is not None:
+                decisions[identity] = decision
+            records_by_path[relative_path] = (selected, identity)
         else:
             records_by_path[relative_path] = (record, identity)
 
     hf_results_bucket = f"hf://buckets/{HF_RESULTS_BUCKET}"
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    source_bytes: dict[ResultIdentity, bytes] = {}
-    if upload_to_bucket:
-        for _, identity in records_by_path.values():
-            path = RESULTS_DIR / record_relative_path(
-                model_id=identity[0],
-                dataset=identity[1],
-                validation_split=identity[2],
-                few_shot=identity[3],
-            )
-            if path.is_file():
-                source_bytes[identity] = path.read_bytes()
-
     payloads = [
-        json.dumps(
-            record, sort_keys=True, separators=(",", ":"), ensure_ascii=False
-        ).encode("utf-8")
-        for record, _ in records_by_path.values()
+        _serialise_record(record=record) for record, _ in records_by_path.values()
     ]
     publisher = None
     if upload_to_bucket:
@@ -273,7 +296,9 @@ def _upload_per_model_files(
             token=hf_token or "",
             bucket=HF_RESULTS_BUCKET,
         )
-        publisher.prepare(records=payloads, sources=source_bytes)
+        publisher.prepare(
+            records=payloads, sources=source_bytes, decisions=list(decisions.values())
+        )
 
     written_files: list[tuple[str | Path | bytes, str]] = []
 
@@ -288,7 +313,11 @@ def _upload_per_model_files(
     if upload_to_bucket:
         assert publisher is not None
         with publisher.session() as session:
-            session.publish(records=payloads, sources=source_bytes)
+            session.publish(
+                records=payloads,
+                sources=source_bytes,
+                decisions=list(decisions.values()),
+            )
         logger.info(f"Published {len(payloads):,} result files to {hf_results_bucket}.")
     else:
         if local_only_label is not None:
@@ -304,6 +333,98 @@ def _upload_per_model_files(
 
     if dropped_count > 0:
         logger.info(f"Dropped {dropped_count:,} records with unresolvable identities.")
+
+
+def _select_collision_record(
+    *,
+    existing_record: dict[str, t.Any],
+    candidate: dict[str, t.Any],
+    identity: ResultIdentity,
+    source: bytes | None,
+    conflict_resolver: Callable[..., ConflictDecision] | None,
+) -> tuple[dict[str, t.Any], ConflictDecision | None]:
+    """Select one record for a canonical identity, preserving owner-choice proof.
+
+    Args:
+        existing_record: Earlier processed contender for this identity.
+        candidate: Later processed contender.
+        identity: Shared canonical storage identity.
+        source: Exact canonical predecessor bytes, if present.
+        conflict_resolver: Optional terminal adapter for unresolved conflicts.
+
+    Returns:
+        Selected record and explicit decision evidence, if owner choice was needed.
+
+    Raises:
+        UnresolvedResultConflictError: If the conflict cannot be safely resolved.
+    """
+    stored = json.loads(source) if source is not None else existing_record
+    try:
+        return dedup_newer_record(stored, candidate), None
+    except UnresolvedResultConflictError as error:
+        if conflict_resolver is None:
+            raise UnresolvedResultConflictError(
+                f"Unresolved result conflict for {identity}: "
+                f"{_describe_differences(existing_record, candidate)}"
+            ) from error
+        if source is None:
+            raise UnresolvedResultConflictError(
+                f"Cannot resolve {identity}: no canonical predecessor exists to "
+                "authorise a stored/incoming choice"
+            ) from error
+
+        decision = conflict_resolver(
+            current=stored,
+            candidate=candidate,
+            current_bytes=source,
+            candidate_bytes=_serialise_record(record=candidate),
+        )
+        selected = stored if decision.selected is ConflictChoice.STORED else candidate
+        if decision.reason.value != "explicit_choice":
+            return selected, None
+        if decision.selected is ConflictChoice.STORED:
+            decision = resolve_result_conflict(
+                current=stored,
+                candidate=selected,
+                current_bytes=source,
+                candidate_bytes=_serialise_record(record=selected),
+                choice=ConflictChoice.STORED,
+            )
+        return selected, decision
+
+
+def _describe_differences(
+    existing_record: dict[str, t.Any], candidate: dict[str, t.Any]
+) -> str:
+    """Describe conflicting fields without exposing full result records.
+
+    Args:
+        existing_record: First record for an identity.
+        candidate: Conflicting record.
+
+    Returns:
+        Comma-separated names of differing top-level fields.
+    """
+    differences = sorted(
+        key
+        for key in existing_record.keys() | candidate.keys()
+        if existing_record.get(key) != candidate.get(key)
+    )
+    return ", ".join(differences) or "unknown differences"
+
+
+def _serialise_record(*, record: dict[str, t.Any]) -> bytes:
+    """Encode records consistently for storage and byte-bound conflict proofs.
+
+    Args:
+        record: Processed result record.
+
+    Returns:
+        Canonical JSON bytes used for both local payloads and publication proofs.
+    """
+    return json.dumps(
+        record, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode("utf-8")
 
 
 def _write_record_file(
