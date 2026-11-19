@@ -576,13 +576,19 @@ class PublicationSession:
         if proofs:
             proof_paths = [identity_to_path(identity).as_posix() for identity in proofs]
             current = self._download_many(paths=proof_paths)
+            candidate_bytes = {
+                identity: content for _, identity, content, _ in candidates
+            }
             for identity, proof in proofs.items():
                 path = identity_to_path(identity).as_posix()
                 remote_predecessor = current.get(path)
-                if (
-                    remote_predecessor is None
-                    or hashlib.sha256(remote_predecessor).hexdigest() != proof[1]
-                ):
+                candidate = candidate_bytes[identity]
+                remote_hash = (
+                    hashlib.sha256(remote_predecessor).hexdigest()
+                    if remote_predecessor is not None
+                    else None
+                )
+                if remote_hash not in {proof[1], hashlib.sha256(candidate).hexdigest()}:
                     raise PublicationError(
                         f"Conflict decision predecessor changed at {path}"
                     )
