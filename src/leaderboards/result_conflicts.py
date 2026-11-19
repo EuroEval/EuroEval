@@ -96,7 +96,7 @@ def _parse_timestamp(*, value: object, epoch: bool) -> datetime | None:
 
 def _is_known_metadata(*, field: str) -> bool:
     lowered = field.casefold()
-    if lowered.startswith("model_info.additional_details."):
+    if lowered.startswith("model_info."):
         return True
     if lowered.startswith("eval_library.additional_details."):
         return lowered.rsplit(".", 1)[-1] in _KNOWN_METADATA
@@ -205,8 +205,16 @@ def _useful_metadata(*, field: str, value: object) -> bool:
     name = field.rsplit(".", 1)[-1].casefold()
     if value is None or value == "":
         return False
-    if name in _NUMERIC_METADATA and isinstance(value, (int, float)):
-        return not (not math.isfinite(value) or value < 0)
+    if name in _NUMERIC_METADATA:
+        if isinstance(value, bool):
+            return False
+        if isinstance(value, (int, float)):
+            if not math.isfinite(value) or value <= 0 or not float(value).is_integer():
+                return False
+            if name == "max_sequence_length" and value > 1_000_000_000:
+                return False
+        else:
+            return False
     if name in _BOOLEAN_METADATA and isinstance(value, str):
         return value.casefold() in {"true", "false"}
     if name in _KNOWN_METADATA and isinstance(value, str):
