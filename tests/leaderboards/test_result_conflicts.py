@@ -32,6 +32,16 @@ class TestResolveResultConflict:
         assert decision.needs_choice
         assert decision.reason == ConflictReason.UNRESOLVED_METADATA
 
+    def test_eval_library_configuration_change_is_preserved(self) -> None:
+        """Evaluation library configuration is substantive, not envelope noise."""
+        current = _record(eval_library={"name": "euroeval", "config": {"batch": 8}})
+        candidate = _record(eval_library={"name": "euroeval", "config": {"batch": 4}})
+        decision = resolve_result_conflict(current=current, candidate=candidate)
+        assert decision.needs_choice
+        assert any(
+            "eval_library.config.batch" == item.field for item in decision.differences
+        )
+
     def test_explicit_choice_evidence_binds_exact_bytes(self) -> None:
         """Evidence carries the selected source and exact supplied byte hashes."""
         current_bytes = b'{ "stored": true }'
@@ -96,6 +106,13 @@ class TestResolveResultConflict:
         decision = resolve_result_conflict(current=current, candidate=candidate)
         assert decision.selected == expected
 
+    def test_library_version_change_does_not_establish_recency(self) -> None:
+        """Version changes remain substantive and are not recency evidence."""
+        current = _record(eval_library={"version": "99.0"})
+        candidate = _record(eval_library={"version": "1.0"})
+        decision = resolve_result_conflict(current=current, candidate=candidate)
+        assert decision.needs_choice
+
     def test_mixed_metadata_and_score_difference_needs_choice(self) -> None:
         """Timestamp evidence cannot auto-resolve mixed substantive changes."""
         current = _record(evaluation_timestamp="2024-01-01T00:00:00Z")
@@ -111,7 +128,7 @@ class TestResolveResultConflict:
         """Reliable evaluation chronology wins independently of library version."""
         current = _record(
             evaluation_timestamp="2024-01-01T00:00:00Z",
-            eval_library={"version": "99.0"},
+            eval_library={"version": "1.0"},
             scores={"accuracy": 0.4},
         )
         candidate = _record(
@@ -132,23 +149,47 @@ class TestResolveResultConflict:
         assert decision.selected == ConflictChoice.STORED
         assert decision.reason == ConflictReason.IDENTICAL
 
-    def test_superset_selects_stored_for_concrete_regression(self) -> None:
-        """Stored useful details win even if incoming carries the same scores."""
-        current = _record(
-            model_info={
-                "id": "AI-Sweden-Models/Llama-3-8B-instruct",
-                "num_model_parameters": 8030261248,
-            }
+    @pytest.mark.parametrize(
+        ("current_key", "candidate_key", "expected"),
+        [
+            ("stored", "incoming", ConflictChoice.STORED),
+            ("incoming", "stored", ConflictChoice.INCOMING),
+        ],
+    )
+    def test_realistic_eee_metadata_regression_both_directions(
+        self, current_key: str, candidate_key: str, expected: ConflictChoice
+    ) -> None:
+        """Nested EEE model metadata supersets survive placeholder regressions."""
+        records = {
+            "stored": _eee_model_record(
+                num_model_parameters=8030261248,
+                trained_from_scratch=False,
+                commercially_licensed=True,
+                open=True,
+                release_date="2024-06-01",
+                model_url="https://example.test/model",
+            ),
+            "incoming": _eee_model_record(num_model_parameters="-1"),
+        }
+        decision = resolve_result_conflict(
+            current=records[current_key], candidate=records[candidate_key]
         )
-        candidate = _record(
-            model_info={
-                "id": "AI-Sweden-Models/Llama-3-8B-instruct",
-                "num_model_parameters": "-1",
-            }
+        assert decision.selected == expected
+        assert decision.reason in {
+            ConflictReason.STORED_METADATA_SUPERSET,
+            ConflictReason.INCOMING_METADATA_SUPERSET,
+        }
+        assert any(
+            "model_info.additional_details.open" == item.field
+            for item in decision.differences
         )
-        decision = resolve_result_conflict(current=current, candidate=candidate)
-        assert decision.selected == ConflictChoice.STORED
-        assert decision.reason == ConflictReason.STORED_METADATA_SUPERSET
+
+    def test_unknown_metadata_change_requires_choice(self) -> None:
+        """Unknown custom fields are not treated as safe metadata additions."""
+        decision = resolve_result_conflict(
+            current=_record(custom_metadata="-1"), candidate=_record()
+        )
+        assert decision.needs_choice
 
     @pytest.mark.parametrize(
         "times",
@@ -169,12 +210,38 @@ class TestResolveResultConflict:
         assert decision.reason == ConflictReason.UNRESOLVED_TIMESTAMP
 
 
+def _eee_model_record(**details: object) -> dict[str, object]:
+    """Build an EEE-shaped record with nested model details.
+
+    Args:
+        details: Model metadata values.
+
+    Returns:
+        A result record with a stable identity.
+    """
+    return {
+        **_record(),
+        "model_info": {
+            "id": "AI-Sweden-Models/Llama-3-8B-instruct",
+            "additional_details": details,
+        },
+    }
+
+
 def _record(**changes: object) -> dict[str, object]:
     record: dict[str, object] = {
         "model_info": {"id": "AI-Sweden-Models/Llama-3-8B-instruct"},
         "dataset": "alba-mcq-pt",
         "validation_split": None,
         "few_shot": True,
+        "eval_library": {
+            "name": "euroeval",
+            "additional_details": {
+                "dataset": "alba-mcq-pt",
+                "validation_split": None,
+                "few_shot": True,
+            },
+        },
         "scores": {"accuracy": 0.5},
         "model_parameters": 8030261248,
         "trained_from_scratch": False,
