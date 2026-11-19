@@ -97,10 +97,7 @@ def merge_results(results_file: Path) -> int:
                 except (json.JSONDecodeError, ValueError, KeyError, TypeError) as e:
                     logger.debug(f"Skipping invalid JSONL line in {results_file}: {e}")
 
-    # Remove empty JSON files before processing
-    remove_empty_json_files(RESULTS_DIR)
-
-    # PHASE 2: Read all record files from the tree (these override existing)
+    # PHASE 2: Read all record files from the tree
     if RESULTS_DIR.exists():
         for record_file in RESULTS_DIR.rglob("*.json"):
             if not record_file.is_file():
@@ -121,6 +118,7 @@ def merge_results(results_file: Path) -> int:
         logger.warning("No results found to merge")
         return 0
 
+    remove_empty_json_files(RESULTS_DIR)
     results_file.parent.mkdir(parents=True, exist_ok=True)
     with results_file.open("w", encoding="utf-8") as f:
         for record in sorted(existing.values(), key=_sort_key):

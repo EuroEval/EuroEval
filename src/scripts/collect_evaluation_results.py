@@ -49,11 +49,7 @@ from review_volunteer_results import show_and_render
 
 from euroeval_worker.review import PublicStagingError, reviewer_from_environment
 from leaderboards.backup import backup_results
-from leaderboards.canonical_publication import (
-    BucketApi,
-    CanonicalPublisher,
-    is_metadata_only_transform,
-)
+from leaderboards.canonical_publication import BucketApi, CanonicalPublisher
 from leaderboards.constants import (
     MODEL_REQUEST_LABEL,
     MODELS_PY_PATH,
@@ -68,8 +64,11 @@ from leaderboards.leaderboard_visibility import (
     leaderboard_should_be_shown,
 )
 from leaderboards.queue_parsing import extract_model_id
+from leaderboards.result_conflict_prompt import resolve_result_interactively
+from leaderboards.result_conflicts import resolve_result_conflict
 from leaderboards.result_identity import (
     ResultIdentity,
+    UnresolvedResultConflictError,
     dedup_newer_record,
     identity_from_eee_record,
     identity_to_path,
@@ -498,8 +497,8 @@ def _load_existing_results(
         Dictionary mapping identity to record.
 
     Raises:
-        ValueError:
-            If equally ranked records contain conflicting scores.
+        UnresolvedResultConflictError:
+            If stored records contain a conflict requiring owner choice.
     """
     existing: dict[ResultIdentity, dict] = {}
     canonical_sources: dict[ResultIdentity, bytes] = {}
@@ -526,17 +525,17 @@ def _load_existing_results(
             continue
 
         current = existing[identity]
-        winner = dedup_newer_record(current, record)
-        if winner is not current:
-            existing[identity] = record
-            winning_sources[identity] = content
-            continue
-        if not _same_rank(current, record) or current == record:
-            continue
-        if _scores_differ(current, record):
-            raise ValueError(f"Conflicting equal-ranked records for {identity}")
-        canonical_path = RESULTS_DIR / identity_to_path(identity)
-        if json_file == canonical_path:
+        decision = resolve_result_conflict(
+            current=current,
+            candidate=record,
+            current_bytes=winning_sources[identity],
+            candidate_bytes=content,
+        )
+        if decision.needs_choice:
+            raise UnresolvedResultConflictError(
+                f"Unresolved stored result conflict for {identity}"
+            )
+        if decision.selected.value == "incoming":
             existing[identity] = record
             winning_sources[identity] = content
     if sources is not None:
@@ -561,62 +560,6 @@ def _extract_identity_key(result: dict) -> ResultIdentity | None:
         return None
 
 
-def _same_rank(record_a: dict, record_b: dict) -> bool:
-    """Whether the publication comparator considers two records equally ranked.
-
-    Args:
-        record_a: First record.
-        record_b: Second record.
-
-    Returns:
-        Whether each record wins when passed first to the comparator.
-    """
-    return (
-        dedup_newer_record(record_a, record_b) is record_a
-        and dedup_newer_record(record_b, record_a) is record_b
-    )
-
-
-def _scores_differ(record_a: dict, record_b: dict) -> bool:
-    """Whether equally-ranked records contain conflicting evaluation payloads.
-
-    Args:
-        record_a: First record.
-        record_b: Second record.
-
-    Returns:
-        Whether any leaderboard-consumed evaluation payload differs.
-    """
-    return _evaluation_payload(record_a) != _evaluation_payload(record_b)
-
-
-def _evaluation_payload(record: dict) -> tuple[object, object]:
-    """Return the aggregate and per-iteration evaluation payloads.
-
-    ``raw_results`` is sometimes stored as embedded JSON text and sometimes as
-    an already-decoded object. Decode only valid JSON, preserving other values.
-
-    Args:
-        record: Result record.
-
-    Returns:
-        Aggregate results and normalised raw results.
-    """
-    evaluation_library = record.get("eval_library")
-    details = (
-        evaluation_library.get("additional_details")
-        if isinstance(evaluation_library, dict)
-        else None
-    )
-    raw_results = details.get("raw_results") if isinstance(details, dict) else None
-    if isinstance(raw_results, str):
-        try:
-            raw_results = json.loads(raw_results)
-        except json.JSONDecodeError:
-            pass
-    return record.get("evaluation_results"), raw_results
-
-
 def _process_new_results(
     new_results_path: Path, existing: dict[ResultIdentity, dict]
 ) -> None:
@@ -628,9 +571,6 @@ def _process_new_results(
         existing:
             Existing results dictionary (modified in-place).
 
-    Raises:
-        ValueError:
-            If equally ranked records contain conflicting evaluation results.
     """
     if not new_results_path.exists():
         logger.warning(f"Results file {new_results_path} does not exist.")
@@ -638,6 +578,7 @@ def _process_new_results(
 
     new_lines = new_results_path.read_text(encoding="utf-8").split("\n")
     logger.info(f"Processing {len(new_lines):,} new result lines...")
+    merged = existing.copy()
 
     for line_number, line in enumerate(new_lines, start=1):
         if not line.strip():
@@ -651,30 +592,21 @@ def _process_new_results(
                 logger.debug(f"Skipping line {line_number}: no identity")
                 continue
 
-            # Equal-ranked incoming metadata may be accepted only after the publisher
-            # verifies the exact predecessor bytes and metadata-only transformation.
-            if identity in existing:
-                current = existing[identity]
-                same_rank = _same_rank(current, record)
-                if same_rank and _scores_differ(current, record):
-                    raise ValueError(f"Conflicting equal-ranked records for {identity}")
-                if (
-                    same_rank
-                    and current != record
-                    and not is_metadata_only_transform(
+            if identity in merged:
+                current = merged[identity]
+                decision = resolve_result_conflict(current=current, candidate=record)
+                if decision.needs_choice:
+                    decision = resolve_result_interactively(
                         current=current, candidate=record
                     )
-                ):
-                    raise ValueError(
-                        f"Unsupported equal-ranked transformation for {identity}"
-                    )
-                winner = dedup_newer_record(current, record)
-                if winner is record or same_rank:
-                    existing[identity] = record
+                if decision.selected.value == "incoming":
+                    merged[identity] = record
             else:
-                existing[identity] = record
+                merged[identity] = record
         except json.JSONDecodeError:
             logger.warning(f"Skipping invalid JSON line: {line[:80]}...")
+    existing.clear()
+    existing.update(merged)
 
 
 def _upload_to_bucket(
@@ -1277,6 +1209,62 @@ def verify_leaderboards() -> bool:
         logger.info(f"All {valid_count} leaderboard CSVs passed sanity checks.")
 
     return valid_count > 0
+
+
+def _same_rank(record_a: dict, record_b: dict) -> bool:
+    """Whether the publication comparator considers two records equally ranked.
+
+    Args:
+        record_a: First record.
+        record_b: Second record.
+
+    Returns:
+        Whether each record wins when passed first to the comparator.
+    """
+    return (
+        dedup_newer_record(record_a, record_b) is record_a
+        and dedup_newer_record(record_b, record_a) is record_b
+    )
+
+
+def _scores_differ(record_a: dict, record_b: dict) -> bool:
+    """Whether equally-ranked records contain conflicting evaluation payloads.
+
+    Args:
+        record_a: First record.
+        record_b: Second record.
+
+    Returns:
+        Whether any leaderboard-consumed evaluation payload differs.
+    """
+    return _evaluation_payload(record_a) != _evaluation_payload(record_b)
+
+
+def _evaluation_payload(record: dict) -> tuple[object, object]:
+    """Return the aggregate and per-iteration evaluation payloads.
+
+    ``raw_results`` is sometimes stored as embedded JSON text and sometimes as
+    an already-decoded object. Decode only valid JSON, preserving other values.
+
+    Args:
+        record: Result record.
+
+    Returns:
+        Aggregate results and normalised raw results.
+    """
+    evaluation_library = record.get("eval_library")
+    details = (
+        evaluation_library.get("additional_details")
+        if isinstance(evaluation_library, dict)
+        else None
+    )
+    raw_results = details.get("raw_results") if isinstance(details, dict) else None
+    if isinstance(raw_results, str):
+        try:
+            raw_results = json.loads(raw_results)
+        except json.JSONDecodeError:
+            pass
+    return record.get("evaluation_results"), raw_results
 
 
 def build_dedup_key(result: dict) -> ResultIdentity | None:
