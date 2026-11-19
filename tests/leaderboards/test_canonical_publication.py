@@ -1894,13 +1894,18 @@ def test_vllm_engine_preference_publication(
     assert decision.selected == (
         ConflictChoice.INCOMING if replace else ConflictChoice.STORED
     )
-    publisher.prepare(
-        records=[incoming], sources={identity: stored}, decisions=[decision]
-    )
-    with publisher.session() as session:
-        published = session.publish(
+    with pytest.raises(PublicationError, match="Conflict decision"):
+        publisher.prepare(
             records=[incoming], sources={identity: stored}, decisions=[decision]
         )
+    publisher.prepare(records=[incoming], sources={identity: stored})
+    with publisher.session() as session:
+        with pytest.raises(PublicationError, match="Conflict decision"):
+            session.publish(
+                records=[incoming], sources={identity: stored}, decisions=[decision]
+            )
+        assert api.objects[path] == stored
+        published = session.publish(records=[incoming], sources={identity: stored})
 
     assert published == int(replace)
     assert api.objects[path] == (incoming if replace else stored)
