@@ -12,6 +12,7 @@ from huggingface_hub.errors import HfHubHTTPError
 
 from leaderboards import bucket_sync, result_processing
 from leaderboards.cache import Cache
+from leaderboards.result_identity import UnresolvedResultConflictError
 
 
 class CallOrder(Enum):
@@ -24,6 +25,76 @@ class CallOrder(Enum):
 
 class TestUploadPerModelFilesPerRecordTree:
     """Tests for the per-record JSON tree storage format."""
+
+    def test_ambiguous_duplicate_aborts_before_writing(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Different scores without chronology abort before local mutation.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
+        monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
+
+        mock_api = MemoryBucketApi()
+
+        # Older record (version 1.0.0)
+        older_record: dict[str, t.Any] = {
+            "model_info": {
+                "id": "org/model",
+                "name": "org/model",
+                "additional_details": {"score": 50},
+            },
+            "dataset": {"name": "mmlu"},
+            "task": {"name": "classification"},
+            "eval_library": {
+                "name": "euroeval",
+                "version": "1.0.0",  # Older version
+                "additional_details": {
+                    "dataset": "mmlu",
+                    "few_shot": False,
+                    "validation_split": False,
+                },
+            },
+            "results": {},
+        }
+
+        # Newer record (version 2.0.0)
+        newer_record: dict[str, t.Any] = {
+            "model_info": {
+                "id": "org/model",
+                "name": "org/model",
+                "additional_details": {"score": 90},
+            },
+            "dataset": {"name": "mmlu"},
+            "task": {"name": "classification"},
+            "eval_library": {
+                "name": "euroeval",
+                "version": "2.0.0",  # Newer version
+                "additional_details": {
+                    "dataset": "mmlu",
+                    "few_shot": False,
+                    "validation_split": False,
+                },
+            },
+            "results": {},
+        }
+
+        with patch("leaderboards.result_processing.HfApi", return_value=mock_api):
+            with patch(
+                "leaderboards.result_processing.resolve_hf_token",
+                return_value="test_token",
+            ):
+                with pytest.raises(UnresolvedResultConflictError):
+                    result_processing._upload_per_model_files(
+                        processed_records=[older_record, newer_record],
+                        upload_to_bucket=True,
+                    )
+
+        assert not list(tmp_path.rglob("*.json"))
 
     def test_invalid_model_record_dropped_with_log(
         self,
@@ -152,83 +223,6 @@ class TestUploadPerModelFilesPerRecordTree:
             written_record["model_info"]["additional_details"]["trained_from_scratch"]
             is True
         )
-
-    def test_older_duplicate_does_not_clobber_newer(
-        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-    ) -> None:
-        """Test that when two records have the same identity, the newer is kept.
-
-        Args:
-            monkeypatch:
-                Pytest fixture for replacing dependencies during the test.
-            tmp_path:
-                Temporary directory for files created by the test.
-        """
-        monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
-
-        mock_api = MemoryBucketApi()
-
-        # Older record (version 1.0.0)
-        older_record: dict[str, t.Any] = {
-            "model_info": {
-                "id": "org/model",
-                "name": "org/model",
-                "additional_details": {"score": 50},
-            },
-            "dataset": {"name": "mmlu"},
-            "task": {"name": "classification"},
-            "eval_library": {
-                "name": "euroeval",
-                "version": "1.0.0",  # Older version
-                "additional_details": {
-                    "dataset": "mmlu",
-                    "few_shot": False,
-                    "validation_split": False,
-                },
-            },
-            "results": {},
-        }
-
-        # Newer record (version 2.0.0)
-        newer_record: dict[str, t.Any] = {
-            "model_info": {
-                "id": "org/model",
-                "name": "org/model",
-                "additional_details": {"score": 90},
-            },
-            "dataset": {"name": "mmlu"},
-            "task": {"name": "classification"},
-            "eval_library": {
-                "name": "euroeval",
-                "version": "2.0.0",  # Newer version
-                "additional_details": {
-                    "dataset": "mmlu",
-                    "few_shot": False,
-                    "validation_split": False,
-                },
-            },
-            "results": {},
-        }
-
-        with patch("leaderboards.result_processing.HfApi", return_value=mock_api):
-            with patch(
-                "leaderboards.result_processing.resolve_hf_token",
-                return_value="test_token",
-            ):
-                result_processing._upload_per_model_files(
-                    processed_records=[older_record, newer_record],
-                    upload_to_bucket=True,
-                )
-
-        # Only one file should exist
-        model_dir = tmp_path / "org_model"
-        result_file = model_dir / "mmlu__test__zeroshot.json"
-        assert result_file.exists()
-
-        # The newer record should be kept (score=90)
-        content = result_file.read_text(encoding="utf-8")
-        written_record = json.loads(content)
-        assert written_record["model_info"]["additional_details"]["score"] == 90
 
     def test_path_collision_raises_clear_error(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path

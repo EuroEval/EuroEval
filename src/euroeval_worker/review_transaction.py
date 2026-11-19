@@ -18,7 +18,11 @@ from leaderboards.canonical_publication import CanonicalPublisher, PublicationSe
 from leaderboards.constants import HF_RESULTS_BUCKET, REQUIRED_METADATA_FIELDS
 from leaderboards.contamination_canary import process_contamination_canaries
 from leaderboards.eee_validation import is_eee_record
-from leaderboards.result_identity import dedup_newer_record, identity_from_eee_record
+from leaderboards.result_identity import (
+    UnresolvedResultConflictError,
+    dedup_newer_record,
+    identity_from_eee_record,
+)
 
 from .review_models import (
     BrokerBinder,
@@ -966,7 +970,7 @@ class VolunteerReviewer:
                             "staged record does not strictly outrank canonical"
                         )
                     replace = True
-                except (TypeError, ValueError) as error:
+                except (TypeError, ValueError, UnresolvedResultConflictError) as error:
                     conflict = str(error)
                 else:
                     conflict = None

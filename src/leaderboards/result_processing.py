@@ -185,8 +185,9 @@ def _upload_per_model_files(
 
     Each record is written to
     ``results/<sanitise(model_id)>/<dataset>__<split>__<shot>.json``.
-    If two records resolve to the same path, the newer one is kept (based on
-    version and timestamp). Records with unresolvable model identities are dropped
+    If two records resolve to the same path, the canonical result-conflict policy
+    selects a compatible metadata superset or newer evaluation, and unresolved
+    conflicts fail closed. Records with unresolvable model identities are dropped
     with a log line.
 
     Args:

@@ -576,6 +576,30 @@ def _seed_older_results(
     return predecessors
 
 
+def test_ambiguous_result_conflict_requires_explicit_review() -> None:
+    """Ambiguous canonical changes cannot be auto-approved or published."""
+    api, reviewer, broker_calls = _reviewer()
+    report = reviewer.show(submission_id=SUBMISSION)
+    staged = report.records[0]
+    existing = json.loads(staged.content)
+    existing["evaluation_results"][0]["score_details"]["score"] = 71
+    existing["model_info"]["additional_details"]["open"] = False
+    api.files[(RESULTS, staged.canonical_path)] = json.dumps(existing).encode()
+
+    inspected = reviewer.show(submission_id=SUBMISSION)
+    assert inspected.canonical_observations[0].conflict
+    with pytest.raises(ReviewError):
+        reviewer.decide(
+            submission_id=SUBMISSION,
+            outcome="accepted",
+            reviewer="maintainer",
+            plan_fingerprint=inspected.plan_fingerprint,
+        )
+    assert api.files[(RESULTS, staged.canonical_path)] == json.dumps(existing).encode()
+    assert broker_calls == []
+    assert not _decision_paths(api)
+
+
 def test_approval_replaces_strictly_older_same_identity_and_archives_bytes() -> None:
     """A newer same-identity result replaces only after preserving its predecessor."""
     api, reviewer, _ = _reviewer()
