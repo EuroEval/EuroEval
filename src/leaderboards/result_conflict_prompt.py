@@ -1,7 +1,9 @@
 """Terminal adapter for conflicts that require an explicit result owner choice."""
 
+import collections.abc as c
 import sys
-import typing as t
+
+import click
 
 from .result_conflicts import ConflictChoice, ConflictDecision, resolve_result_conflict
 from .result_identity import UnresolvedResultConflictError
@@ -13,8 +15,8 @@ def resolve_result_interactively(
     candidate: dict[str, object],
     current_bytes: bytes | None = None,
     candidate_bytes: bytes | None = None,
-    input_fn: t.Callable[[str], str] = input,
-    output_fn: t.Callable[[str], None] = print,
+    input_fn: c.Callable[[str], str] = input,
+    output_fn: c.Callable[[str], None] = click.echo,
     interactive: bool | None = None,
 ) -> ConflictDecision:
     """Apply automatic policy, prompting only for unresolved conflicts.
@@ -51,17 +53,33 @@ def resolve_result_interactively(
 
     output_fn(f"Unresolved result conflict: {decision.evidence.identity}")
     output_fn(f"Reason: {decision.reason.value}")
+    output_fn(
+        "Evaluation timestamps: "
+        f"stored={_display(current.get('retrieved_timestamp'))}; "
+        f"incoming={_display(candidate.get('retrieved_timestamp'))}"
+    )
     for difference in decision.differences:
         output_fn(
             f"{difference.path}: stored={_display(difference.current)}; "
             f"incoming={_display(difference.candidate)}"
         )
-    choice = input_fn("Choose [s]tored, [i]ncoming, or [a]bort: ").strip().lower()
-    if choice not in {"s", "stored", "i", "incoming"}:
-        raise UnresolvedResultConflictError("Result conflict resolution aborted")
-    selected = (
-        ConflictChoice.STORED if choice in {"s", "stored"} else ConflictChoice.INCOMING
-    )
+    while True:
+        try:
+            choice = input_fn("Choose [s]tored, [i]ncoming, or [a]bort: ")
+        except (EOFError, KeyboardInterrupt) as error:
+            raise UnresolvedResultConflictError(
+                "Result conflict resolution aborted"
+            ) from error
+        choice = choice.strip().lower()
+        if choice in {"s", "stored"}:
+            selected = ConflictChoice.STORED
+            break
+        if choice in {"i", "incoming"}:
+            selected = ConflictChoice.INCOMING
+            break
+        if choice in {"a", "abort"}:
+            raise UnresolvedResultConflictError("Result conflict resolution aborted")
+        output_fn("Invalid choice. Enter s, i, or a.")
     return resolve_result_conflict(
         current=current,
         candidate=candidate,

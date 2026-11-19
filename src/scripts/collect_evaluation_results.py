@@ -27,6 +27,7 @@ HF_TOKEN            A Hugging Face token with write access to upload results.
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import logging
 import os
@@ -65,11 +66,14 @@ from leaderboards.leaderboard_visibility import (
 )
 from leaderboards.queue_parsing import extract_model_id
 from leaderboards.result_conflict_prompt import resolve_result_interactively
-from leaderboards.result_conflicts import resolve_result_conflict
+from leaderboards.result_conflicts import (
+    ConflictChoice,
+    ConflictDecision,
+    resolve_result_conflict,
+)
 from leaderboards.result_identity import (
     ResultIdentity,
     UnresolvedResultConflictError,
-    dedup_newer_record,
     identity_from_eee_record,
     identity_to_path,
     raise_on_collision,
@@ -137,8 +141,9 @@ def main(force: bool = False) -> None:
             return
         logger.info("Forcing leaderboard regeneration despite no new results.")
     else:
-        _write_new_results(harvested=harvested, manual_lines=manual_lines)
-        if not _upload_results():
+        if not upload_results_to_hf(
+            new_results_path=NEW_RESULTS_PATH, pending_lines=all_lines
+        ):
             sys.exit(1)
 
     if not regenerate_leaderboards(force=force):
@@ -388,343 +393,6 @@ def _upload_model_list_to_space(models_file: Path) -> bool:
             f"Failed to upload models.py to {HF_LEADERBOARD_SPACE}: {e}", exc_info=True
         )
         return False
-
-
-def _upload_results() -> bool:
-    """Upload results to Hugging Face bucket.
-
-    Returns:
-        Whether canonical publication succeeded.
-    """
-    if upload_results_to_hf(new_results_path=NEW_RESULTS_PATH):
-        logger.info("Results uploaded to Hugging Face bucket.")
-        return True
-
-    logger.error(
-        "Failed to upload results to Hugging Face bucket. "
-        "The new results are staged locally, but the bucket is now out "
-        "of sync. Please run upload_results_to_hf() manually or check "
-        "your Hugging Face credentials and re-run this script."
-    )
-    return False
-
-
-def upload_results_to_hf(new_results_path: Path) -> bool:
-    """Upload results to Hugging Face bucket.
-
-    Loads existing results from local RESULTS_DIR, merges new results from the
-    JSONL file, deduplicates by identity (newer records win), then syncs
-    changed files back to the bucket.
-
-    Args:
-        new_results_path:
-            Path to the newly harvested results file (JSONL format).
-
-    Returns:
-        True if upload succeeded, False otherwise.
-    """
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-
-    # Capture exact predecessors during the existing load, not a second tree scan.
-    source_bytes: dict[ResultIdentity, bytes] = {}
-    existing = _load_existing_results(sources=source_bytes)
-
-    # Process new results from JSONL file
-    _process_new_results(new_results_path, existing)
-
-    # Check if we got any results
-    if not existing:
-        logger.warning("No valid results to upload.")
-        return False
-
-    # === VALIDATE PHASE: build path->identity map before any mutation ===
-    _validate_paths(existing)
-    candidate_bytes = [
-        json.dumps(record, separators=(",", ":")).encode("utf-8")
-        for record in existing.values()
-        if not is_canary_record(record)
-    ]
-    try:
-        publisher = CanonicalPublisher(
-            api=t.cast(BucketApi, HfApi()),
-            token=os.environ.get("HF_TOKEN", ""),
-            bucket=HF_RESULTS_BUCKET,
-        )
-        publisher.prepare(records=candidate_bytes, sources=source_bytes)
-    except (HfHubHTTPError, RuntimeError, ValueError) as error:
-        logger.error("Could not checkpoint publication evidence: %s", error)
-        return False
-    # === MUTATE PHASE: only after validation and evidence checkpoint ===
-    records_written, records_unchanged, written_paths = _write_changed_records(
-        existing=existing
-    )
-
-    # Remove stale ROOT-level RESULTS_DIR/*.jsonl artefacts
-    _cleanup_stale_artefacts()
-
-    if not records_written:
-        logger.info(
-            f"All {records_unchanged:,} local records unchanged; verifying publication."
-        )
-
-    logger.info(
-        f"Wrote {records_written:,} changed record file(s) "
-        f"({records_unchanged:,} unchanged) to {RESULTS_DIR}, uploading to bucket..."
-    )
-
-    return _upload_to_bucket(
-        records=existing, written_paths=written_paths, source_bytes=source_bytes
-    )
-
-
-def _cleanup_stale_artefacts() -> None:
-    """Remove stale ROOT-level RESULTS_DIR/*.jsonl artefacts."""
-    for jsonl_file in RESULTS_DIR.glob("*.jsonl"):
-        if jsonl_file.is_file():
-            jsonl_file.unlink()
-            logger.info(f"Removed stale artefact {jsonl_file}")
-
-
-def _load_existing_results(
-    sources: dict[ResultIdentity, bytes] | None = None,
-) -> dict[ResultIdentity, dict]:
-    """Load existing results and capture exact predecessor bytes in one pass.
-
-    Args:
-        sources (optional): Output mapping for canonical or winning alias bytes.
-
-    Returns:
-        Dictionary mapping identity to record.
-
-    Raises:
-        UnresolvedResultConflictError:
-            If stored records contain a conflict requiring owner choice.
-    """
-    existing: dict[ResultIdentity, dict] = {}
-    canonical_sources: dict[ResultIdentity, bytes] = {}
-    winning_sources: dict[ResultIdentity, bytes] = {}
-    for json_file in sorted(RESULTS_DIR.glob("*/*.json")):
-        if not json_file.is_file():
-            continue
-        try:
-            content = json_file.read_bytes()
-            record = json.loads(content)
-        except (OSError, json.JSONDecodeError):
-            logger.debug(f"Skipping unreadable file {json_file}")
-            continue
-        if is_canary_record(record):
-            continue
-        identity = _extract_identity_key(record)
-        if not identity:
-            continue
-        if json_file == RESULTS_DIR / identity_to_path(identity):
-            canonical_sources[identity] = content
-        if identity not in existing:
-            existing[identity] = record
-            winning_sources[identity] = content
-            continue
-
-        current = existing[identity]
-        decision = resolve_result_conflict(
-            current=current,
-            candidate=record,
-            current_bytes=winning_sources[identity],
-            candidate_bytes=content,
-        )
-        if decision.needs_choice:
-            raise UnresolvedResultConflictError(
-                f"Unresolved stored result conflict for {identity}"
-            )
-        if decision.selected.value == "incoming":
-            existing[identity] = record
-            winning_sources[identity] = content
-    if sources is not None:
-        sources.update(winning_sources)
-        sources.update(canonical_sources)
-    return existing
-
-
-def _extract_identity_key(result: dict) -> ResultIdentity | None:
-    """Extract the identity key from a result record.
-
-    Args:
-        result:
-            The parsed result record.
-
-    Returns:
-        Identity tuple or None if extraction fails.
-    """
-    try:
-        return identity_from_eee_record(result)
-    except (ValueError, KeyError):
-        return None
-
-
-def _process_new_results(
-    new_results_path: Path, existing: dict[ResultIdentity, dict]
-) -> None:
-    """Process new results from JSONL file and merge into existing.
-
-    Args:
-        new_results_path:
-            Path to the JSONL file with new results.
-        existing:
-            Existing results dictionary (modified in-place).
-
-    """
-    if not new_results_path.exists():
-        logger.warning(f"Results file {new_results_path} does not exist.")
-        return
-
-    new_lines = new_results_path.read_text(encoding="utf-8").split("\n")
-    logger.info(f"Processing {len(new_lines):,} new result lines...")
-    merged = existing.copy()
-
-    for line_number, line in enumerate(new_lines, start=1):
-        if not line.strip():
-            continue
-        try:
-            record = json.loads(line)
-            if is_canary_record(record):
-                continue
-            identity = _extract_identity_key(record)
-            if not identity:
-                logger.debug(f"Skipping line {line_number}: no identity")
-                continue
-
-            if identity in merged:
-                current = merged[identity]
-                decision = resolve_result_conflict(current=current, candidate=record)
-                if decision.needs_choice:
-                    decision = resolve_result_interactively(
-                        current=current, candidate=record
-                    )
-                if decision.selected.value == "incoming":
-                    merged[identity] = record
-            else:
-                merged[identity] = record
-        except json.JSONDecodeError:
-            logger.warning(f"Skipping invalid JSON line: {line[:80]}...")
-    existing.clear()
-    existing.update(merged)
-
-
-def _upload_to_bucket(
-    records: dict[ResultIdentity, dict],
-    written_paths: list[Path],
-    source_bytes: dict[ResultIdentity, bytes],
-) -> bool:
-    """Upload changed files to HF bucket using batch operation.
-
-    Args:
-        records:
-            Reconciled identity-to-record candidates for publication.
-        written_paths:
-            Paths changed locally before publication.
-        source_bytes:
-            Exact original bytes indexed by result identity.
-
-    Returns:
-        True if upload succeeded, False otherwise.
-    """
-    try:
-        candidate_bytes = [
-            json.dumps(record, separators=(",", ":")).encode("utf-8")
-            for identity, record in records.items()
-            if not is_canary_record(record)
-        ]
-        sources = dict(source_bytes)
-        token = os.environ.get("HF_TOKEN", "")
-        publisher = CanonicalPublisher(
-            api=t.cast(BucketApi, HfApi()), token=token, bucket=HF_RESULTS_BUCKET
-        )
-        with publisher.session() as session:
-            session.publish(records=candidate_bytes, sources=sources)
-        logger.info(f"Published {len(candidate_bytes)} file(s) to {HF_RESULTS_BUCKET}.")
-        return True
-    except (HfHubHTTPError, RuntimeError, ValueError) as e:
-        logger.error(f"Failed to publish to HF bucket: {e}")
-        return False
-
-
-def _validate_paths(existing: dict[ResultIdentity, dict]) -> dict[Path, ResultIdentity]:
-    """Validate path->identity mapping before mutation.
-
-    Args:
-        existing:
-            Dictionary mapping identity to record.
-
-    Returns:
-        Dictionary mapping path to identity.
-    """
-    path_to_identity: dict[Path, ResultIdentity] = {}
-    for identity in existing:
-        record_path = RESULTS_DIR / identity_to_path(identity)
-        if record_path in path_to_identity:
-            raise_on_collision(identity, path_to_identity[record_path])
-        path_to_identity[record_path] = identity
-    return path_to_identity
-
-
-def _write_changed_records(
-    existing: dict[ResultIdentity, dict],
-) -> "tuple[int, int, list[Path]]":
-    """Write only records whose content changed.
-
-    Args:
-        existing:
-            Dictionary mapping identity to record.
-
-    Returns:
-        Tuple of (records_written, records_unchanged, written_paths).
-    """
-    records_written = 0
-    records_unchanged = 0
-    written_paths: list[Path] = []
-    for identity, record in existing.items():
-        record_path = RESULTS_DIR / identity_to_path(identity)
-        desired = json.dumps(record, separators=(",", ":"))
-        try:
-            if record_path.exists():
-                try:
-                    existing_content = json.loads(
-                        record_path.read_text(encoding="utf-8")
-                    )
-                    if existing_content == record:
-                        records_unchanged += 1
-                        continue
-                except (json.JSONDecodeError, ValueError):
-                    pass
-            record_path.parent.mkdir(parents=True, exist_ok=True)
-            record_path.write_text(desired, encoding="utf-8")
-            records_written += 1
-            written_paths.append(record_path)
-        except (ValueError, OSError) as e:
-            logger.warning(f"Failed to write record for {identity}: {e}")
-    return records_written, records_unchanged, written_paths
-
-
-def _write_new_results(
-    harvested: list[tuple[int, list[str]]], manual_lines: list[str]
-) -> None:
-    """Write combined results to new_results.jsonl.
-
-    Args:
-        harvested:
-            Issue numbers and their harvested result lines.
-        manual_lines:
-            Result lines supplied manually for the collection.
-    """
-    all_lines: list[str] = []
-    for _, lines in harvested:
-        all_lines.extend(lines)
-    all_lines.extend(manual_lines)
-    NEW_RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
-    harvested_count = sum(len(lines) for _, lines in harvested)
-    logger.info(
-        f"Wrote {len(all_lines)} line(s) to {NEW_RESULTS_PATH} "
-        f"({harvested_count} harvested, {len(manual_lines)} manual)."
-    )
 
 
 def check_required_env_vars() -> None:
@@ -1089,6 +757,430 @@ def regenerate_leaderboards(force: bool = False) -> bool:
         return False
 
 
+def upload_results_to_hf(
+    new_results_path: Path, *, pending_lines: list[str] | None = None
+) -> bool:
+    """Upload results to Hugging Face bucket.
+
+    Loads existing results from local RESULTS_DIR, resolves incoming conflicts
+    under the shared automatic policy and owner-choice adapter, then syncs
+    changed files back to the bucket.
+
+    Args:
+        new_results_path:
+            Path to the newly harvested results file (JSONL format).
+        pending_lines (optional): Fully harvested and manually staged lines to resolve
+            without rewriting the staging file first.
+
+    Returns:
+        True if upload succeeded, False otherwise.
+    """
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Capture exact predecessors during the existing load, not a second tree scan.
+    source_bytes: dict[ResultIdentity, bytes] = {}
+    decisions: list[ConflictDecision] = []
+    try:
+        existing = _load_existing_results(sources=source_bytes, decisions=decisions)
+
+        # Resolve the batch before touching staging, results, or checkpoints.
+        _process_new_results(
+            new_results_path,
+            existing,
+            source_bytes=source_bytes,
+            decisions=decisions,
+            lines=pending_lines,
+        )
+    except UnresolvedResultConflictError as error:
+        logger.error("Result collection aborted: %s", error)
+        return False
+
+    # Rebind every explicit choice to the exact original source and final candidate.
+    explicit_identities = {decision.evidence.identity for decision in decisions}
+    for identity in explicit_identities:
+        original_bytes = source_bytes.get(identity)
+        if original_bytes is None:
+            continue
+        original_record = json.loads(original_bytes)
+        final_record = existing[identity]
+        final_bytes = json.dumps(final_record, separators=(",", ":")).encode("utf-8")
+        prior = next(
+            decision
+            for decision in reversed(decisions)
+            if decision.evidence.identity == identity
+        )
+        selected_digest = (
+            prior.evidence.candidate_sha256
+            if prior.selected == ConflictChoice.INCOMING
+            else prior.evidence.current_sha256
+        )
+        selected_still_applies = hashlib.sha256(
+            final_bytes
+        ).hexdigest() == selected_digest or (
+            prior.selected == ConflictChoice.STORED and final_record == original_record
+        )
+        if not selected_still_applies:
+            automatic = resolve_result_conflict(
+                current=original_record,
+                candidate=final_record,
+                current_bytes=original_bytes,
+                candidate_bytes=final_bytes,
+            )
+            automatically_safe = automatic.selected == ConflictChoice.INCOMING or (
+                automatic.selected == ConflictChoice.STORED
+                and final_bytes == original_bytes
+            )
+            if automatic.needs_choice or not automatically_safe:
+                try:
+                    prior = resolve_result_interactively(
+                        current=original_record,
+                        candidate=final_record,
+                        current_bytes=original_bytes,
+                        candidate_bytes=final_bytes,
+                    )
+                except UnresolvedResultConflictError as error:
+                    logger.error("Result collection aborted: %s", error)
+                    return False
+            else:
+                decisions[:] = [
+                    decision
+                    for decision in decisions
+                    if decision.evidence.identity != identity
+                ]
+                continue
+        choice = prior.selected
+        decisions[:] = [
+            decision for decision in decisions if decision.evidence.identity != identity
+        ]
+        if choice is not None:
+            decisions.append(
+                resolve_result_conflict(
+                    current=original_record,
+                    candidate=final_record,
+                    current_bytes=original_bytes,
+                    candidate_bytes=final_bytes,
+                    choice=choice,
+                )
+            )
+
+    # Check if we got any results
+    if not existing:
+        logger.warning("No valid results to upload.")
+        return False
+
+    # === VALIDATE PHASE: build path->identity map before any mutation ===
+    _validate_paths(existing)
+    candidate_bytes = [
+        json.dumps(record, separators=(",", ":")).encode("utf-8")
+        for record in existing.values()
+        if not is_canary_record(record)
+    ]
+    try:
+        publisher = CanonicalPublisher(
+            api=t.cast(BucketApi, HfApi()),
+            token=os.environ.get("HF_TOKEN", ""),
+            bucket=HF_RESULTS_BUCKET,
+        )
+        publisher.prepare(
+            records=candidate_bytes, sources=source_bytes, decisions=decisions
+        )
+    except (HfHubHTTPError, RuntimeError, ValueError) as error:
+        logger.error("Could not checkpoint publication evidence: %s", error)
+        return False
+    if pending_lines is not None:
+        NEW_RESULTS_PATH.write_text("\n".join(pending_lines) + "\n", encoding="utf-8")
+    # === MUTATE PHASE: only after validation and evidence checkpoint ===
+    records_written, records_unchanged, written_paths = _write_changed_records(
+        existing=existing
+    )
+
+    # Remove stale ROOT-level RESULTS_DIR/*.jsonl artefacts
+    _cleanup_stale_artefacts()
+
+    if not records_written:
+        logger.info(
+            f"All {records_unchanged:,} local records unchanged; verifying publication."
+        )
+
+    logger.info(
+        f"Wrote {records_written:,} changed record file(s) "
+        f"({records_unchanged:,} unchanged) to {RESULTS_DIR}, uploading to bucket..."
+    )
+
+    return _upload_to_bucket(
+        records=existing,
+        written_paths=written_paths,
+        source_bytes=source_bytes,
+        decisions=decisions,
+    )
+
+
+def _cleanup_stale_artefacts() -> None:
+    """Remove stale ROOT-level RESULTS_DIR/*.jsonl artefacts."""
+    for jsonl_file in RESULTS_DIR.glob("*.jsonl"):
+        if jsonl_file.is_file():
+            jsonl_file.unlink()
+            logger.info(f"Removed stale artefact {jsonl_file}")
+
+
+def _load_existing_results(
+    sources: dict[ResultIdentity, bytes] | None = None,
+    decisions: list[ConflictDecision] | None = None,
+) -> dict[ResultIdentity, dict]:
+    """Load existing results and capture exact predecessor bytes in one pass.
+
+    Args:
+        sources (optional): Output mapping for canonical or winning alias bytes.
+        decisions (optional): Collected explicit choices for durable publication.
+
+    Returns:
+        Dictionary mapping identity to record.
+
+    """
+    existing: dict[ResultIdentity, dict] = {}
+    canonical_sources: dict[ResultIdentity, bytes] = {}
+    winning_sources: dict[ResultIdentity, bytes] = {}
+    for json_file in sorted(RESULTS_DIR.glob("*/*.json")):
+        if not json_file.is_file():
+            continue
+        try:
+            content = json_file.read_bytes()
+            record = json.loads(content)
+        except (OSError, json.JSONDecodeError):
+            logger.debug(f"Skipping unreadable file {json_file}")
+            continue
+        if is_canary_record(record):
+            continue
+        identity = _extract_identity_key(record)
+        if not identity:
+            continue
+        if json_file == RESULTS_DIR / identity_to_path(identity):
+            canonical_sources[identity] = content
+        if identity not in existing:
+            existing[identity] = record
+            winning_sources[identity] = content
+            continue
+
+        current = existing[identity]
+        decision = resolve_result_conflict(
+            current=current,
+            candidate=record,
+            current_bytes=winning_sources[identity],
+            candidate_bytes=content,
+        )
+        if decision.needs_choice:
+            decision = resolve_result_interactively(
+                current=current,
+                candidate=record,
+                current_bytes=winning_sources[identity],
+                candidate_bytes=content,
+            )
+            if decisions is not None:
+                decisions.append(decision)
+        if decision.selected.value == "incoming":
+            existing[identity] = record
+            winning_sources[identity] = content
+    if sources is not None:
+        sources.update(winning_sources)
+        sources.update(canonical_sources)
+    return existing
+
+
+def _extract_identity_key(result: dict) -> ResultIdentity | None:
+    """Extract the identity key from a result record.
+
+    Args:
+        result:
+            The parsed result record.
+
+    Returns:
+        Identity tuple or None if extraction fails.
+    """
+    try:
+        return identity_from_eee_record(result)
+    except (ValueError, KeyError):
+        return None
+
+
+def _process_new_results(
+    new_results_path: Path,
+    existing: dict[ResultIdentity, dict],
+    *,
+    source_bytes: dict[ResultIdentity, bytes] | None = None,
+    decisions: list[ConflictDecision] | None = None,
+    lines: list[str] | None = None,
+) -> None:
+    """Process new results from JSONL file and merge into existing.
+
+    Args:
+        new_results_path:
+            Path to the JSONL file with new results.
+        existing:
+            Existing results dictionary (modified only after successful resolution).
+        source_bytes (optional): Original source bytes indexed by result identity.
+        decisions (optional): Output list for explicit owner choices.
+        lines (optional): Already harvested lines replacing the on-disk staging file.
+
+    """
+    if lines is None and not new_results_path.exists():
+        logger.warning(f"Results file {new_results_path} does not exist.")
+        return
+
+    new_lines = (
+        lines
+        if lines is not None
+        else new_results_path.read_text(encoding="utf-8").split("\n")
+    )
+    logger.info(f"Processing {len(new_lines):,} new result lines...")
+    merged = existing.copy()
+
+    for line_number, line in enumerate(new_lines, start=1):
+        if not line.strip():
+            continue
+        try:
+            record = json.loads(line)
+            if is_canary_record(record):
+                continue
+            identity = _extract_identity_key(record)
+            if not identity:
+                logger.debug(f"Skipping line {line_number}: no identity")
+                continue
+
+            if identity in merged:
+                current = merged[identity]
+                current_bytes = json.dumps(current, separators=(",", ":")).encode(
+                    "utf-8"
+                )
+                candidate_bytes = json.dumps(record, separators=(",", ":")).encode(
+                    "utf-8"
+                )
+                decision = resolve_result_conflict(
+                    current=current,
+                    candidate=record,
+                    current_bytes=current_bytes,
+                    candidate_bytes=candidate_bytes,
+                )
+                if decision.needs_choice:
+                    decision = resolve_result_interactively(
+                        current=current,
+                        candidate=record,
+                        current_bytes=current_bytes,
+                        candidate_bytes=candidate_bytes,
+                    )
+                    if decisions is not None:
+                        decisions.append(decision)
+                if decision.selected == ConflictChoice.INCOMING:
+                    merged[identity] = record
+            else:
+                merged[identity] = record
+        except json.JSONDecodeError:
+            logger.warning(f"Skipping invalid JSON line: {line[:80]}...")
+    existing.clear()
+    existing.update(merged)
+
+
+def _upload_to_bucket(
+    records: dict[ResultIdentity, dict],
+    written_paths: list[Path],
+    source_bytes: dict[ResultIdentity, bytes],
+    decisions: list[ConflictDecision] | None = None,
+) -> bool:
+    """Upload changed files to HF bucket using batch operation.
+
+    Args:
+        records:
+            Reconciled identity-to-record candidates for publication.
+        written_paths:
+            Paths changed locally before publication.
+        source_bytes:
+            Exact original bytes indexed by result identity.
+        decisions (optional): Explicit byte-bound owner choices.
+
+    Returns:
+        True if upload succeeded, False otherwise.
+    """
+    try:
+        candidate_bytes = [
+            json.dumps(record, separators=(",", ":")).encode("utf-8")
+            for identity, record in records.items()
+            if not is_canary_record(record)
+        ]
+        sources = dict(source_bytes)
+        token = os.environ.get("HF_TOKEN", "")
+        publisher = CanonicalPublisher(
+            api=t.cast(BucketApi, HfApi()), token=token, bucket=HF_RESULTS_BUCKET
+        )
+        with publisher.session() as session:
+            session.prepare(
+                records=candidate_bytes, sources=sources, decisions=decisions or ()
+            )
+            session.publish(
+                records=candidate_bytes, sources=sources, decisions=decisions or ()
+            )
+        logger.info(f"Published {len(candidate_bytes)} file(s) to {HF_RESULTS_BUCKET}.")
+        return True
+    except (HfHubHTTPError, RuntimeError, ValueError) as e:
+        logger.error(f"Failed to publish to HF bucket: {e}")
+        return False
+
+
+def _validate_paths(existing: dict[ResultIdentity, dict]) -> dict[Path, ResultIdentity]:
+    """Validate path->identity mapping before mutation.
+
+    Args:
+        existing:
+            Dictionary mapping identity to record.
+
+    Returns:
+        Dictionary mapping path to identity.
+    """
+    path_to_identity: dict[Path, ResultIdentity] = {}
+    for identity in existing:
+        record_path = RESULTS_DIR / identity_to_path(identity)
+        if record_path in path_to_identity:
+            raise_on_collision(identity, path_to_identity[record_path])
+        path_to_identity[record_path] = identity
+    return path_to_identity
+
+
+def _write_changed_records(
+    existing: dict[ResultIdentity, dict],
+) -> "tuple[int, int, list[Path]]":
+    """Write only records whose content changed.
+
+    Args:
+        existing:
+            Dictionary mapping identity to record.
+
+    Returns:
+        Tuple of (records_written, records_unchanged, written_paths).
+    """
+    records_written = 0
+    records_unchanged = 0
+    written_paths: list[Path] = []
+    for identity, record in existing.items():
+        record_path = RESULTS_DIR / identity_to_path(identity)
+        desired = json.dumps(record, separators=(",", ":"))
+        try:
+            if record_path.exists():
+                try:
+                    existing_content = json.loads(
+                        record_path.read_text(encoding="utf-8")
+                    )
+                    if existing_content == record:
+                        records_unchanged += 1
+                        continue
+                except (json.JSONDecodeError, ValueError):
+                    pass
+            record_path.parent.mkdir(parents=True, exist_ok=True)
+            record_path.write_text(desired, encoding="utf-8")
+            records_written += 1
+            written_paths.append(record_path)
+        except (ValueError, OSError) as e:
+            logger.warning(f"Failed to write record for {identity}: {e}")
+    return records_written, records_unchanged, written_paths
+
+
 def verify_leaderboards() -> bool:
     """Verify that generated leaderboards look sane before deploying.
 
@@ -1211,22 +1303,6 @@ def verify_leaderboards() -> bool:
     return valid_count > 0
 
 
-def _same_rank(record_a: dict, record_b: dict) -> bool:
-    """Whether the publication comparator considers two records equally ranked.
-
-    Args:
-        record_a: First record.
-        record_b: Second record.
-
-    Returns:
-        Whether each record wins when passed first to the comparator.
-    """
-    return (
-        dedup_newer_record(record_a, record_b) is record_a
-        and dedup_newer_record(record_b, record_a) is record_b
-    )
-
-
 def _scores_differ(record_a: dict, record_b: dict) -> bool:
     """Whether equally-ranked records contain conflicting evaluation payloads.
 
@@ -1265,6 +1341,48 @@ def _evaluation_payload(record: dict) -> tuple[object, object]:
         except json.JSONDecodeError:
             pass
     return record.get("evaluation_results"), raw_results
+
+
+def _upload_results() -> bool:
+    """Upload results to Hugging Face bucket.
+
+    Returns:
+        Whether canonical publication succeeded.
+    """
+    if upload_results_to_hf(new_results_path=NEW_RESULTS_PATH):
+        logger.info("Results uploaded to Hugging Face bucket.")
+        return True
+
+    logger.error(
+        "Failed to upload results to Hugging Face bucket. "
+        "The new results are staged locally, but the bucket is now out "
+        "of sync. Please run upload_results_to_hf() manually or check "
+        "your Hugging Face credentials and re-run this script."
+    )
+    return False
+
+
+def _write_new_results(
+    harvested: list[tuple[int, list[str]]], manual_lines: list[str]
+) -> None:
+    """Write combined results to new_results.jsonl.
+
+    Args:
+        harvested:
+            Issue numbers and their harvested result lines.
+        manual_lines:
+            Result lines supplied manually for the collection.
+    """
+    all_lines: list[str] = []
+    for _, lines in harvested:
+        all_lines.extend(lines)
+    all_lines.extend(manual_lines)
+    NEW_RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
+    harvested_count = sum(len(lines) for _, lines in harvested)
+    logger.info(
+        f"Wrote {len(all_lines)} line(s) to {NEW_RESULTS_PATH} "
+        f"({harvested_count} harvested, {len(manual_lines)} manual)."
+    )
 
 
 def build_dedup_key(result: dict) -> ResultIdentity | None:
