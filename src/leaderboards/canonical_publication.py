@@ -1292,6 +1292,13 @@ class PublicationSession:
                     raise PublicationError(f"Invalid stored conflict choice for {path}")
                 writes.append((path, candidate, current))
                 continue
+            if (
+                is_metadata_only_transform(current_record, record)
+                and (sources or {}).get(identity) != current
+            ):
+                raise PublicationError(
+                    f"Unresolved metadata transformation without exact source at {path}"
+                )
             decision = resolve_result_conflict(
                 current=current_record,
                 candidate=record,
