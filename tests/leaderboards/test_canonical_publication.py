@@ -49,12 +49,15 @@ def test_bulk_metadata_cannot_seed_false_receipts(tmp_path: Path, mode: str) -> 
     assert api.downloaded_bytes > 0
 
 
-def bulk_records(count: int, version: str = "1.0.0") -> list[bytes]:
+def bulk_records(
+    count: int, version: str = "1.0.0", *, later_evaluation: bool = False
+) -> list[bytes]:
     """Build distinct result identities for bulk publication tests.
 
     Args:
         count: Number of records.
         version (optional): Evaluation version.
+        later_evaluation (optional): Whether to record a later evaluation score.
 
     Returns:
         Encoded public result records.
@@ -63,11 +66,19 @@ def bulk_records(count: int, version: str = "1.0.0") -> list[bytes]:
     for index in range(count):
         record = json.loads(_record(version=version))
         record["model_info"]["id"] = f"org/bulk-{index}"
+        if later_evaluation:
+            record["eval_timestamp"] = "2026-01-02T00:00:00Z"
+            record["evaluation_results"] = {"score": 0.6}
         records.append(json.dumps(record).encode())
     return records
 
 
-def _record(*, version: str = "1.0.0", score: float = 0.5) -> bytes:
+def _record(
+    *,
+    version: str = "1.0.0",
+    score: float = 0.5,
+    timestamp: str = "2026-01-01T00:00:00Z",
+) -> bytes:
     """Build a minimal public result record.
 
     Returns:
@@ -84,7 +95,9 @@ def _record(*, version: str = "1.0.0", score: float = 0.5) -> bytes:
                     "validation_split": False,
                 },
             },
-            "retrieved_timestamp": "2026-01-01T00:00:00Z",
+            "retrieved_timestamp": timestamp,
+            "eval_timestamp": timestamp,
+            "evaluation_results": {"score": score},
             "score": score,
         }
     ).encode()
@@ -689,7 +702,12 @@ def test_duplicate_candidates_archive_only_once(tmp_path: Path) -> None:
     path = identity_to_path(identity_from_eee_record(json.loads(original))).as_posix()
     api.objects[path] = original
     with bulk_publisher(tmp_path=tmp_path, api=api).session() as session:
-        assert session.publish(records=[_record(version="2.0.0")] * 1001) == 1
+        assert (
+            session.publish(
+                records=[_record(score=0.6, timestamp="2026-01-02T00:00:00Z")] * 1001
+            )
+            == 1
+        )
     assert api.upload_calls == 2
     assert len(api.objects) == 2
 
@@ -760,15 +778,16 @@ def test_existing_history_is_verified_and_not_uploaded_again(tmp_path: Path) -> 
     history = f"_history/{hashlib.sha256(original).hexdigest()}.bin"
     api.objects.update({path: original, history: b"corrupt"})
     publisher = bulk_publisher(tmp_path=tmp_path, api=api)
+    replacement = _record(score=0.6, timestamp="2026-01-02T00:00:00Z")
     with pytest.raises(PublicationError, match="History hash collision"):
         with publisher.session() as session:
-            session.publish(records=[_record(version="2.0.0")])
+            session.publish(records=[replacement])
     assert api.upload_calls == 0
     assert api.objects[path] == original
     api.objects[history] = original
     api.events.clear()
     with publisher.session() as session:
-        assert session.publish(records=[_record(version="2.0.0")]) == 1
+        assert session.publish(records=[replacement]) == 1
     assert api.upload_calls == 1
     assert not any(
         operation == "download" and history in paths for operation, paths in api.events
@@ -789,7 +808,9 @@ def test_failed_archive_retains_lock_before_canonical_overwrite(
     try:
         with pytest.raises(OSError):
             with publisher.session() as session:
-                session.publish(records=[_record(version="2.0.0")])
+                session.publish(
+                    records=[_record(score=0.6, timestamp="2026-01-02T00:00:00Z")]
+                )
     finally:
         api.fail_name = None
     assert api.objects[path] == original
@@ -1032,6 +1053,39 @@ def test_malformed_metadata_batch_falls_back_to_exact_bodies(
     assert api.downloaded_bytes > 0
 
 
+def test_manual_decision_cannot_be_reused_for_changed_candidate(tmp_path: Path) -> None:
+    """A manual decision remains bound to the exact approved candidate bytes."""
+    api = MemoryApi()
+    lock = MemoryLock()
+    publisher = CanonicalPublisher(
+        api=api,
+        token="test-token",
+        lock=lock,
+        checkpoint_path=tmp_path / "publication.sqlite3",
+    )
+    original = _record(score=0.9)
+    candidate = _record(score=0.1)
+    changed_candidate = _record(score=0.2)
+    identity = identity_from_eee_record(json.loads(original))
+    path = identity_to_path(identity).as_posix()
+    api.objects[path] = original
+    decision = resolve_result_conflict(
+        current=json.loads(original),
+        candidate=json.loads(candidate),
+        current_bytes=original,
+        candidate_bytes=candidate,
+        choice=ConflictChoice.INCOMING,
+    )
+
+    with pytest.raises(PublicationError, match="not bound"):
+        publisher.prepare(
+            records=[changed_candidate],
+            sources={identity: original},
+            decisions=[decision],
+        )
+    assert api.objects[path] == original
+
+
 def test_manual_incoming_choice_archives_exact_predecessor(tmp_path: Path) -> None:
     """An explicit incoming choice can replace an older conflicting record."""
     api = MemoryApi()
@@ -1201,7 +1255,9 @@ def test_missing_object_after_metadata_is_not_treated_as_new(tmp_path: Path) -> 
     with patch.object(api, "get_bucket_paths_info", side_effect=delete_after_metadata):
         with pytest.raises(PublicationError, match="missing after metadata"):
             with bulk_publisher(tmp_path=tmp_path, api=api).session() as session:
-                session.publish(records=[_record(version="2.0.0")])
+                session.publish(
+                    records=[_record(score=0.6, timestamp="2026-01-02T00:00:00Z")]
+                )
     assert api.upload_calls == 0
     assert api.lock.owner is None
 
@@ -1218,7 +1274,7 @@ def test_mixed_batches_archive_every_predecessor_before_canonical_upload(
             identity_from_eee_record(json.loads(content))
         ).as_posix()
         api.objects[path] = content
-    records = bulk_records(count=502, version="2.0.0")
+    records = bulk_records(count=502, later_evaluation=True)
     publisher = bulk_publisher(tmp_path=tmp_path, api=api)
     with publisher.session() as session:
         assert session.publish(records=records) == 502
@@ -1353,6 +1409,36 @@ def test_pipeline_numeric_enrichment_is_publishable(
     )
 
 
+def test_prepare_rejects_changed_remote_for_manual_retry(tmp_path: Path) -> None:
+    """An approved decision cannot be prepared against an unrelated remote body."""
+    api = MemoryApi()
+    lock = MemoryLock()
+    publisher = CanonicalPublisher(
+        api=api,
+        token="test-token",
+        lock=lock,
+        checkpoint_path=tmp_path / "publication.sqlite3",
+    )
+    original = _record(score=0.9)
+    candidate = _record(score=0.1)
+    identity = identity_from_eee_record(json.loads(original))
+    path = identity_to_path(identity).as_posix()
+    api.objects[path] = original
+    decision = resolve_result_conflict(
+        current=json.loads(original),
+        candidate=json.loads(candidate),
+        current_bytes=original,
+        candidate_bytes=candidate,
+        choice=ConflictChoice.INCOMING,
+    )
+    api.objects[path] = _record(score=0.8)
+
+    with pytest.raises(PublicationError, match="predecessor changed"):
+        publisher.prepare(
+            records=[candidate], sources={identity: original}, decisions=[decision]
+        )
+
+
 def test_prepare_validates_sources_with_linear_identity_comparisons(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1396,6 +1482,52 @@ def test_prepare_validates_sources_with_linear_identity_comparisons(
     assert comparisons < 6 * len(records)
 
 
+def test_prepared_manual_publication_retry_accepts_exact_candidate(
+    tmp_path: Path,
+) -> None:
+    """A durable manual proof permits retry after the candidate was uploaded."""
+    api = MemoryApi()
+    lock = MemoryLock()
+    checkpoint = tmp_path / "publication.sqlite3"
+    publisher = CanonicalPublisher(
+        api=api, token="test-token", lock=lock, checkpoint_path=checkpoint
+    )
+    original = _record(score=0.9)
+    candidate = _record(score=0.1)
+    identity = identity_from_eee_record(json.loads(original))
+    path = identity_to_path(identity).as_posix()
+    api.objects[path] = original
+    decision = resolve_result_conflict(
+        current=json.loads(original),
+        candidate=json.loads(candidate),
+        current_bytes=original,
+        candidate_bytes=candidate,
+        choice=ConflictChoice.INCOMING,
+    )
+
+    publisher.prepare(
+        records=[candidate], sources={identity: original}, decisions=[decision]
+    )
+    with publisher.session() as session:
+        assert session.publish(records=[candidate]) == 1
+
+    history = f"_history/{hashlib.sha256(original).hexdigest()}.bin"
+    assert api.objects[history] == original
+    uploads_after_publication = api.upload_calls
+    retry_publisher = CanonicalPublisher(
+        api=api, token="test-token", lock=lock, checkpoint_path=checkpoint
+    )
+    retry_publisher.prepare(
+        records=[candidate], sources={identity: original}, decisions=[decision]
+    )
+    with retry_publisher.session() as session:
+        assert session.publish(records=[candidate]) == 0
+
+    assert api.objects[path] == candidate
+    assert api.objects[history] == original
+    assert api.upload_calls == uploads_after_publication
+
+
 def test_publish_archives_predecessor_and_skips_old(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1405,7 +1537,12 @@ def test_publish_archives_predecessor_and_skips_old(
     with publisher.session() as session:
         assert session.publish(records=[_record()]) == 1
         assert session.publish(records=[_record()]) == 0
-        assert session.publish(records=[_record(version="2.0.0")]) == 1
+        assert (
+            session.publish(
+                records=[_record(score=0.6, timestamp="2026-01-02T00:00:00Z")]
+            )
+            == 1
+        )
     assert len([name for name in api.objects if name.startswith("_history/")]) == 1
 
 
@@ -1498,7 +1635,8 @@ def test_replacement_request_budget(tmp_path: Path, count: int) -> None:
         api.objects[path] = raw
     with bulk_publisher(tmp_path=tmp_path, api=api).session() as session:
         assert (
-            session.publish(records=bulk_records(count=count, version="2.0.0")) == count
+            session.publish(records=bulk_records(count=count, later_evaluation=True))
+            == count
         )
     batches = (count + 499) // 500
     assert api.upload_calls == 2 * batches
@@ -1530,7 +1668,7 @@ def test_second_archive_batch_failure_blocks_all_canonical_writes(
     publisher = bulk_publisher(tmp_path=tmp_path, api=api)
     with pytest.raises(error):
         with publisher.session() as session:
-            session.publish(records=bulk_records(count=503, version="2.0.0"))
+            session.publish(records=bulk_records(count=503, later_evaluation=True))
     assert all(api.objects[path] == raw for path, raw in original_objects.items())
     assert all(
         all(path.startswith("_history/") for path in paths)
