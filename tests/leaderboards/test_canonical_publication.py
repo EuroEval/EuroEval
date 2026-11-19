@@ -744,9 +744,15 @@ def test_equal_rank_metadata_transform_requires_original_source(
     identity = identity_from_eee_record(json.loads(original))
     with publisher.session() as session:
         assert session.publish(records=[original]) == 1
+        canonical_path = identity_to_path(identity).as_posix()
+        upload_calls = api.upload_calls
         with pytest.raises(PublicationError, match="Unresolved"):
             session.publish(records=[transformed])
+        assert api.objects[canonical_path] == original
+        assert api.upload_calls == upload_calls
+        assert not any(name.startswith("_history/") for name in api.objects)
         assert session.publish(records=[transformed], sources={identity: original}) == 1
+    assert api.objects[canonical_path] == transformed
     assert any(name.startswith("_history/") for name in api.objects)
 
 
@@ -843,7 +849,7 @@ def test_invalid_numeric_metadata_enrichment_is_rejected(
 ) -> None:
     """Reject invalid numeric values in otherwise metadata-only changes."""
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    publisher, _, _ = _publisher(tmp_path)
+    publisher, api, _ = _publisher(tmp_path)
     original = _record()
     enriched_record = json.loads(original)
     enriched_record["model_info"]["additional_details"] = {key: value}
@@ -851,8 +857,10 @@ def test_invalid_numeric_metadata_enrichment_is_rejected(
     identity = identity_from_eee_record(json.loads(original))
     with publisher.session() as session:
         session.publish(records=[original])
-        with pytest.raises(PublicationError, match="Unresolved"):
+        with pytest.raises(PublicationError, match="Invalid numeric metadata"):
             session.publish(records=[enriched], sources={identity: original})
+    canonical_path = identity_to_path(identity).as_posix()
+    assert api.objects[canonical_path] == original
 
 
 def test_json_equal_formatting_change_is_a_noop(
