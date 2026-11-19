@@ -357,8 +357,12 @@ def test_refreshes_same_path_and_size_when_hash_changes(
 ) -> None:
     """Changed object fingerprints refresh even when byte lengths match."""
     path = "org_model/dataset__test__zeroshot.json"
-    old = json.dumps(make_record(score=1)).encode()
-    new = json.dumps(make_record(score=2)).encode()
+    old_record = make_record(score=1)
+    old_record["eval_timestamp"] = 100
+    new_record = make_record(score=2)
+    new_record["eval_timestamp"] = 200
+    old = json.dumps(old_record).encode()
+    new = json.dumps(new_record).encode()
     assert len(old) == len(new)
     bucket = FakeBucket({path: ("new-hash", new)})
     configure(monkeypatch, tmp_path, bucket)
