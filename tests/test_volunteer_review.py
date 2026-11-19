@@ -507,6 +507,8 @@ def test_accepted_history_ignores_later_canonical_results() -> None:
     record = reviewer.show(submission_id=SUBMISSION).records[0]
     successor = json.loads(record.content)
     successor["eval_library"]["version"] = "19.0.0"
+    successor["eval_timestamp"] += 1
+    successor["evaluation_results"][0]["score_details"]["score"] += 1
     api.files[(RESULTS, record.canonical_path)] = json.dumps(successor).encode()
     assert reviewer.list_pending_submissions() == []
     assert len(reviewer.list_submissions()) == 1
@@ -1295,6 +1297,8 @@ def test_legacy_decision_cannot_adopt_a_new_replacement_plan() -> None:
     pending = report.records[1]
     old = json.loads(pending.content)
     old["eval_library"]["version"] = "17.0.0"
+    old["eval_timestamp"] = 10
+    old["evaluation_results"][0]["score_details"]["score"] = 79
     unexpected = json.dumps(old).encode()
     api.files[(RESULTS, pending.canonical_path)] = unexpected
     uploads = list(api.uploads)

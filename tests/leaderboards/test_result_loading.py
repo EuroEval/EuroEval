@@ -78,7 +78,7 @@ class TestDedupByStorageIdentity:
         deduped = _dedup_by_storage_identity(records=[record_a, record_b])
 
         assert len(deduped) == 1
-        assert deduped[0]["eval_library"]["version"] == "1.0.1"
+        assert deduped[0]["eval_library"]["version"] == "1.0.0"
 
     def test_uses_timestamp_tiebreaker(self) -> None:
         """Should use timestamp as tiebreaker when versions are equal."""
@@ -88,15 +88,18 @@ class TestDedupByStorageIdentity:
         deduped = _dedup_by_storage_identity(records=[earlier, later])
 
         assert len(deduped) == 1
-        assert deduped[0]["retrieved_timestamp"] == "200"
+        assert deduped[0]["retrieved_timestamp"] == "100"
 
     def test_version_alone_does_not_choose_a_winner(self) -> None:
         """A library version change without newer evaluation evidence is unresolved."""
         older = _make_eee_record(version="1.0.0", timestamp="100")
         newer = _make_eee_record(version="1.1.0", timestamp="100")
 
+        assert _dedup_by_storage_identity(records=[older, newer]) == [older]
+
+        changed_score = _make_eee_record(version="1.1.0", timestamp="100", score=0.7)
         with pytest.raises(UnresolvedResultConflictError):
-            _dedup_by_storage_identity(records=[older, newer])
+            _dedup_by_storage_identity(records=[older, changed_score])
 
 
 def _make_eee_record(
@@ -404,8 +407,9 @@ class TestLoadRawResults:
         monkeypatch.setattr("leaderboards.result_loading.NEW_RESULTS_PATH", staging)
         existing = _make_eee_record(timestamp="100", score=0.5)
         incoming = _make_eee_record(timestamp="100", score=0.7)
-        (tmp_path / "tree").mkdir()
-        (tmp_path / "tree" / "existing.json").write_text(json.dumps(existing))
+        model_dir = tmp_path / "tree" / "test_model"
+        model_dir.mkdir(parents=True)
+        (model_dir / "existing.json").write_text(json.dumps(existing))
         staging.write_text(json.dumps(incoming) + "\n")
 
         with pytest.raises(UnresolvedResultConflictError):

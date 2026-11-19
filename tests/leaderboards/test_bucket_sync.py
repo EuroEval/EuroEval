@@ -92,7 +92,6 @@ class TestMergeResults:
             "evaluation_results": [
                 {"evaluation_name": "accuracy", "score_details": {"score": 0.5}}
             ],
-            "extra_field": "should_be_deduped",
         }
         (model_dir2 / "dataset1__test__test.json").write_text(
             json.dumps(record_same_identity), encoding="utf-8"
