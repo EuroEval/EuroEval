@@ -19,15 +19,35 @@ const issue = {
   created_at: "2026-01-01T00:00:00Z",
 };
 
-test("queue entries merge assigned and trusted public evaluators case-insensitively", () => {
-  const trusted = new Map([[42, [
-    { login: "alice", avatarUrl: "https://avatar/trusted" },
-    { login: "saattrupdan", avatarUrl: "https://github.com/saattrupdan.png" },
+test("assignment display uses only current GitHub issue assignees", () => {
+  const projected = new Map([[42, [
+    { login: "Alice", avatarUrl: "https://avatar/projected" },
   ]]]);
-  const entry = toQueueEntry(issue, trusted);
-  assert.equal(entry.publicVolunteer, true);
-  assert.deepEqual(entry.evaluators.map(({ login }) => login), ["Alice", "saattrupdan"]);
-  assert.equal(entry.evaluators[0].avatarUrl, "https://avatar/alice");
+  const withoutCurrentAssignees = toQueueEntry({
+    ...issue,
+    assignee: null,
+    assignees: [],
+  }, projected);
+  assert.deepEqual(withoutCurrentAssignees.evaluators, []);
+  assert.equal(withoutCurrentAssignees.publicVolunteer, false);
+
+  const currentAndStale = toQueueEntry({
+    ...issue,
+    assignee: { login: "Bob", avatar_url: "https://avatar/bob" },
+    assignees: [{ login: "Bob", avatar_url: "https://avatar/bob" }],
+  }, projected);
+  assert.deepEqual(currentAndStale.evaluators.map(({ login }) => login), ["Bob"]);
+});
+
+test("all current GitHub issue assignees remain in the assignment display", () => {
+  const entry = toQueueEntry({
+    ...issue,
+    assignees: [
+      { login: "Alice", avatar_url: "https://avatar/alice" },
+      { login: "Bob", avatar_url: "https://avatar/bob" },
+    ],
+  });
+  assert.deepEqual(entry.evaluators.map(({ login }) => login), ["Alice", "Bob"]);
 });
 
 test("community review submissions are pending review with or without assignees", () => {
@@ -48,6 +68,19 @@ test("community review label without trusted completion fails closed", () => {
     labels: [{ name: "community-review-ready" }],
   }, new Map(), new Set());
   assert.equal(entry.status, "Evaluating");
+});
+
+test("verified completion controls pending review for a full model", () => {
+  const complete = toQueueEntry({
+    ...issue,
+    labels: ["community-review-ready"],
+  }, new Map(), new Set([42]));
+  const incomplete = toQueueEntry({
+    ...issue,
+    labels: ["community-review-ready"],
+  }, new Map(), new Set());
+  assert.equal(complete.status, "Pending review");
+  assert.equal(incomplete.status, "Evaluating");
 });
 
 test("partial language completion remains evaluating without an assignee", () => {
@@ -106,6 +139,23 @@ test("queue sorts pending reviews after results ready and before evaluating", as
   try {
     const entries = await listOpenEvalIssues();
     assert.deepEqual(entries.map(({ number }) => number), [3, 2, 1]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("fresh queue refresh bypasses caches for completion projection", async () => {
+  const originalFetch = globalThis.fetch;
+  const urls = [];
+  globalThis.fetch = async (url, init) => {
+    urls.push({ url, init });
+    return { ok: true, json: async () => [] };
+  };
+  try {
+    await listOpenEvalIssues({ fresh: true });
+    const projection = urls.find(({ url }) => url.startsWith("/api/hall-of-fame"));
+    assert.match(projection.url, /[?&]_=/);
+    assert.deepEqual(projection.init, { cache: "no-store" });
   } finally {
     globalThis.fetch = originalFetch;
   }

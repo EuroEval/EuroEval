@@ -183,11 +183,10 @@ export function toQueueEntry(
       issue, failed, gated, resultsReady, communityReviewReady,
       completedIssues.has(issue.number),
     ),
-    publicVolunteer: (publicEvaluators.get(issue.number)?.length ?? 0) > 0,
-    evaluators: mergeQueueEvaluators(
-      evaluatorsFromIssue(issue),
-      publicEvaluators.get(issue.number) ?? [],
-    ),
+    // Assignment display reflects only current GitHub issue assignees. The
+    // projection is retained for verified completion status, not attribution.
+    publicVolunteer: false,
+    evaluators: evaluatorsFromIssue(issue),
     createdAt: issue.created_at,
   };
 }
@@ -213,25 +212,19 @@ export async function listOpenEvalIssues(
     raw.push(...chunk);
     if (chunk.length < 100) break;
   }
-  const publicEvaluators = new Map<number, QueueEvaluator[]>();
   const completedIssues = new Set<number>();
   try {
-    const projection = await fetch("/api/hall-of-fame?projection=queue", init);
+    const projectionUrl = fresh
+      ? `/api/hall-of-fame?projection=queue&_=${Date.now()}`
+      : "/api/hall-of-fame?projection=queue";
+    const projection = await fetch(projectionUrl, init);
     if (projection.ok) {
       const entries = (await projection.json()) as Array<{
         number: number;
-        evaluators: Array<{ login: string; avatar_url?: string }>;
         allLanguagesComplete?: boolean;
       }>;
       for (const entry of entries) {
         if (entry.allLanguagesComplete === true) completedIssues.add(entry.number);
-        publicEvaluators.set(
-          entry.number,
-          entry.evaluators.map((evaluator) => ({
-            login: evaluator.login,
-            avatarUrl: evaluator.avatar_url || null,
-          })),
-        );
       }
     }
   } catch {
@@ -246,7 +239,7 @@ export async function listOpenEvalIssues(
     Error: 5,
   };
   return raw
-    .map((issue) => toQueueEntry(issue, publicEvaluators, completedIssues))
+    .map((issue) => toQueueEntry(issue, new Map(), completedIssues))
     .filter((e): e is QueueEntry => e !== null)
     .sort((a, b) => {
       if (a.status !== b.status) return order[a.status] - order[b.status];
