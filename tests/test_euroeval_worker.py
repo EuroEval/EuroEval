@@ -660,6 +660,21 @@ def test_continuous_worker_recovers_after_submission_retries_from_saved_records(
             super().__init__()
             self.uploaded: list[EEERecord] = []
 
+        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            """Report no new work after the saved lease is finalised.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                hardware:
+                    Hardware report used to request work.
+
+            Returns:
+                An empty claim so the test reaches its controlled shutdown.
+            """
+            self.claims += 1
+            return Claim(None)
+
         def submit_result(
             self, credential: str, lease: Lease, result: EEERecord
         ) -> None:
