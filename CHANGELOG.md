@@ -19,6 +19,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Count logical parameters from Hugging Face model metadata when packed safetensors
+  tensors make shard-storage counts lower than the actual model size.
 - Retry transient Hugging Face Hub failures when checking model availability, and
   propagate exhausted rate limits and server errors instead of treating models as
   missing.
