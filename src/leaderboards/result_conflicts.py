@@ -13,7 +13,7 @@ from enum import StrEnum
 from . import result_identity
 from .records import strip_anchor
 
-POLICY_VERSION = "2"
+POLICY_VERSION = "3"
 
 
 class ConflictChoice(StrEnum):
@@ -440,7 +440,12 @@ def _record_differences(
     left = _comparison_record(record=current)
     right = _comparison_record(record=candidate)
     differences = []
+    ignore_generated_id = _has_generated_evaluation_id(
+        record=current
+    ) and _has_generated_evaluation_id(record=candidate)
     for field in sorted(left.keys() | right.keys()):
+        if field == "evaluation_id" and ignore_generated_id:
+            continue
         left_value = left.get(field, _MISSING)
         right_value = right.get(field, _MISSING)
         left_value = _normalise_known(field=field, value=left_value)
@@ -456,6 +461,36 @@ def _record_differences(
             )
         )
     return tuple(differences)
+
+
+def _has_generated_evaluation_id(*, record: dict[str, object]) -> bool:
+    """Check whether an evaluation ID matches EuroEval's generated envelope.
+
+    Args:
+        record:
+            An EEE record already validated against its counterpart's identity.
+
+    Returns:
+        Whether the ID is exactly dataset/model/retrieved-epoch as emitted by EuroEval.
+    """
+    evaluation_id = record.get("evaluation_id")
+    retrieved_timestamp = record.get("retrieved_timestamp")
+    model_info = record.get("model_info")
+    eval_library = record.get("eval_library")
+    if not isinstance(evaluation_id, str) or not isinstance(retrieved_timestamp, str):
+        return False
+    if re.fullmatch(r"0|[1-9][0-9]*", retrieved_timestamp) is None:
+        return False
+    if not isinstance(model_info, dict) or not isinstance(eval_library, dict):
+        return False
+    model_id = model_info.get("id")
+    details = eval_library.get("additional_details")
+    if not isinstance(model_id, str) or not isinstance(details, dict):
+        return False
+    dataset = details.get("dataset")
+    if not isinstance(dataset, str):
+        return False
+    return evaluation_id == f"{dataset}/{model_id}/{retrieved_timestamp}"
 
 
 def _stable_bytes(*, record: dict[str, object]) -> bytes:

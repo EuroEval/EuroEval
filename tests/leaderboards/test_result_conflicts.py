@@ -45,6 +45,30 @@ class TestResolveResultConflict:
         assert decision.needs_choice
         assert decision.reason == ConflictReason.UNRESOLVED_METADATA
 
+    @pytest.mark.parametrize("evaluation_id", ["custom-run-a", "custom-run-b"])
+    def test_custom_evaluation_ids_remain_substantive(self, evaluation_id: str) -> None:
+        """IDs outside EuroEval's exact producer format remain metadata."""
+        current = _producer_envelope(
+            retrieved_timestamp="1735689600",
+            evaluation_timestamp="2025-01-01T00:00:00Z",
+            score=0.4,
+        )
+        candidate = _producer_envelope(
+            retrieved_timestamp="1767225600",
+            evaluation_timestamp="2026-01-01T00:00:00Z",
+            score=0.5,
+        )
+        current["evaluation_id"] = "custom-run-a"
+        candidate["evaluation_id"] = evaluation_id
+
+        decision = resolve_result_conflict(current=current, candidate=candidate)
+
+        assert decision.needs_choice
+        assert decision.reason == ConflictReason.UNRESOLVED_DIFFERENCE
+        assert any(
+            difference.field == "evaluation_id" for difference in decision.differences
+        )
+
     def test_eval_library_configuration_addition_requires_choice(self) -> None:
         """Configuration additions are substantive even when named like metadata."""
         current = _record(eval_library={"name": "euroeval", "config": {}})
@@ -103,6 +127,68 @@ class TestResolveResultConflict:
         candidate = _record(model_info={"id": model_id})
         decision = resolve_result_conflict(current=current, candidate=candidate)
         assert decision.selected == ConflictChoice.STORED
+
+    def test_generated_evaluation_ids_do_not_block_newer_eee_result(self) -> None:
+        """EuroEval-generated run IDs do not mask reliable evaluation chronology."""
+        current = _producer_envelope(
+            retrieved_timestamp="1735689600",
+            evaluation_timestamp="2025-01-01T00:00:00Z",
+            score=0.4,
+        )
+        candidate = _producer_envelope(
+            retrieved_timestamp="1767225600",
+            evaluation_timestamp="2026-01-01T00:00:00Z",
+            score=0.5,
+        )
+
+        decision = resolve_result_conflict(current=current, candidate=candidate)
+
+        assert decision.selected == ConflictChoice.INCOMING
+        assert decision.reason == ConflictReason.NEWER_EVALUATION
+        assert [difference.field for difference in decision.differences] == [
+            "evaluation_results.0.score_details.score"
+        ]
+        assert current["evaluation_id"] != candidate["evaluation_id"]
+        assert current["evaluation_results"] != candidate["evaluation_results"]
+
+    def test_generated_evaluation_ids_do_not_cross_result_identity(self) -> None:
+        """Generated IDs cannot bypass the resolver's identity validation."""
+        current = _producer_envelope(
+            retrieved_timestamp="1735689600",
+            evaluation_timestamp="2025-01-01T00:00:00Z",
+            score=0.4,
+        )
+        candidate = _producer_envelope(
+            retrieved_timestamp="1767225600",
+            evaluation_timestamp="2026-01-01T00:00:00Z",
+            score=0.5,
+        )
+        eval_library = t.cast(dict[str, object], candidate["eval_library"])
+        details = t.cast(dict[str, object], eval_library["additional_details"])
+        details["dataset"] = "other"
+        candidate["evaluation_id"] = (
+            "other/AI-Sweden-Models/Llama-3-8B-instruct/1767225600"
+        )
+
+        with pytest.raises(ValueError, match="different identities"):
+            resolve_result_conflict(current=current, candidate=candidate)
+
+    def test_generated_evaluation_ids_without_evaluation_time_need_choice(self) -> None:
+        """Generated IDs and retrieval time cannot substitute for evaluation time."""
+        current = _producer_envelope(
+            retrieved_timestamp="1735689600", evaluation_timestamp=None, score=0.4
+        )
+        candidate = _producer_envelope(
+            retrieved_timestamp="1767225600", evaluation_timestamp=None, score=0.5
+        )
+
+        decision = resolve_result_conflict(current=current, candidate=candidate)
+
+        assert decision.needs_choice
+        assert decision.reason == ConflictReason.UNRESOLVED_TIMESTAMP
+        assert not any(
+            difference.field == "evaluation_id" for difference in decision.differences
+        )
 
     def test_identifier_format_does_not_hide_score_or_metadata_changes(self) -> None:
         """Plain identifiers do not resolve substantive score or metadata changes."""
@@ -509,7 +595,7 @@ class TestResolveResultConflict:
         )
         assert decision.selected == expected
         assert decision.reason == ConflictReason.ENGINE_PREFERENCE
-        assert decision.evidence.policy_version == "2"
+        assert decision.evidence.policy_version == "3"
         assert (
             decision.evidence.current_sha256
             == hashlib.sha256(current_bytes).hexdigest()
@@ -589,4 +675,35 @@ def _record(**changes: object) -> dict[str, object]:
         library = {**base_library, **copy.deepcopy(supplied_library)}
         library["additional_details"] = {**base_details, **supplied_details}
         record["eval_library"] = library
+    return record
+
+
+def _producer_envelope(
+    *, retrieved_timestamp: str, evaluation_timestamp: str | None, score: float
+) -> dict[str, object]:
+    """Build the producer's nested EEE envelope for resolver regressions.
+
+    Args:
+        retrieved_timestamp:
+            The retrieval epoch embedded in EuroEval's generated ID.
+        evaluation_timestamp:
+            The trustworthy producer evaluation timestamp, if available.
+        score:
+            The metric value placed in a realistic evaluation-results envelope.
+
+    Returns:
+        A producer-shaped record sharing one canonical result identity.
+    """
+    model_id = "AI-Sweden-Models/Llama-3-8B-instruct"
+    dataset = "alba-mcq-pt"
+    record = _record(
+        evaluation_timestamp=evaluation_timestamp,
+        model_info={"id": model_id, "name": model_id},
+        eval_library={"additional_details": {"dataset": dataset}},
+        evaluation_results=[
+            {"evaluation_name": "accuracy", "score_details": {"score": score}}
+        ],
+    )
+    record["retrieved_timestamp"] = retrieved_timestamp
+    record["evaluation_id"] = f"{dataset}/{model_id}/{retrieved_timestamp}"
     return record
