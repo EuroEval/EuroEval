@@ -192,6 +192,12 @@ function mockBroker(issue, values) {
       issue.labels = [...(issue.labels || []), ...labels];
       return Response.json(issue.labels);
     }
+    const labelDelete = url.match(new RegExp(`/issues/${issueNumber}/labels/([^/?]+)$`));
+    if (labelDelete && method === "DELETE") {
+      const label = decodeURIComponent(labelDelete[1]);
+      issue.labels = (issue.labels || []).filter((item) => item.name !== label);
+      return Response.json(issue.labels);
+    }
     if (url.includes(`/issues/${issueNumber}/comments`) && method === "GET") {
       return Response.json(issue.comments || []);
     }

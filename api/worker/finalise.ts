@@ -13,7 +13,7 @@ import type { Lease, LeaseScope, VolunteerLeaseMarker } from "./_lib.js";
 
 export const config = { runtime: "nodejs" };
 
-type ResultEntry = { digest: string; identity: string; path: string; failed?: number; warnings?: string[] }
+type ResultEntry = { digest: string; identity: string; path: string; failed?: number; warnings?: string[] };
 
 /** Reconcile the review label from authenticated whole-request completion state. */
 async function reconcileReviewLabel(issue: Awaited<ReturnType<typeof fetchIssue>>, marker: VolunteerLeaseMarker): Promise<void> {
@@ -158,6 +158,7 @@ export async function fetch(req: Request): Promise<Response> {
           if (marker && await verifyVolunteerMarker(issue.number, marker) &&
               extractModelId(issue.title, issue.body) === old.lease.model_id &&
               selectedLanguages(issue.body).includes(old.lease.language)) {
+            await mutex.assertOwned();
             await reconcileReviewLabel(issue, marker);
             await reconcilePublicAssignments(issue, marker, () => mutex.assertOwned());
           }
@@ -223,6 +224,10 @@ export async function fetch(req: Request): Promise<Response> {
         if (lease.ownership_mode !== "public") await requireAssignee(fencedIssue, lease.contributor);
       }
       if (lease.ownership_mode !== "public") await requireAssignee(await fetchIssue(lease.issue_number), lease.contributor);
+      if (lease.ownership_mode !== "public") await requireAssignee(await fetchIssue(lease.issue_number), lease.contributor);
+      receipt.status = "ready";
+      await redis("SET", statusKey, JSON.stringify(receipt), "EX", String(30 * 24 * 60 * 60));
+      await deleteLease(lease);
       const labelIssue = await fetchIssue(lease.issue_number);
       const labelMarker = parseVolunteerMarker(labelIssue.body);
       if (extractModelId(labelIssue.title, labelIssue.body) !== lease.model_id ||
@@ -232,11 +237,6 @@ export async function fetch(req: Request): Promise<Response> {
       }
       await mutex.assertOwned();
       await reconcileReviewLabel(labelIssue, labelMarker);
-      if (lease.ownership_mode !== "public") await requireAssignee(await fetchIssue(lease.issue_number), lease.contributor);
-      if (lease.ownership_mode !== "public") await requireAssignee(await fetchIssue(lease.issue_number), lease.contributor);
-      receipt.status = "ready";
-      await redis("SET", statusKey, JSON.stringify(receipt), "EX", String(30 * 24 * 60 * 60));
-      await deleteLease(lease);
       if (lease.ownership_mode === "public") {
         const finalIssue = await fetchIssue(lease.issue_number);
         const finalMarker = parseVolunteerMarker(finalIssue.body);
