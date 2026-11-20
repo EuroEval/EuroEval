@@ -874,6 +874,7 @@ class TestNumParams:
         monkeypatch.setattr(
             "euroeval.safetensors_utils.internet_connection_available", lambda: True
         )
+        monkeypatch.setattr("euroeval.safetensors_utils.HfApi.model_info", raise_error)
         monkeypatch.setattr(
             "euroeval.safetensors_utils.get_safetensors_metadata", raise_error
         )
