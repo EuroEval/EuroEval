@@ -96,6 +96,7 @@ test("bound promotion records survive Redis Lua ordering across the full lifecyc
       });
       const promoted = await promote(promoteRequest());
       assert.equal(promoted.status, 200, await promoted.text());
+      assert.equal(comments.length, 0);
       assert.equal((await promote(promoteRequest({ decision_digest: "e".repeat(64) }))).status, 409);
       assert.equal((await promote(promoteRequest({ records: [{ ...records[0], digest: "b".repeat(64) }] }))).status, 409);
       const otherIdentity = JSON.stringify(["other/model", "dataset", false, true]);

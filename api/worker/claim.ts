@@ -4,7 +4,7 @@ import {
   claimableLanguages, env, expectedScope, validateScopePolicyVersion,
   extractModelId, enforceRateLimit, fitsGpu, fetchIssue, json, languageGroup, leaseTtl, selectedGpu,
   listOpenIssues, method,
-  patchIssue, putLease, randomToken, readJson, deleteLease, unassignIssue, hasIssueAssignee, ensureVolunteerComment,
+  patchIssue, putLease, randomToken, readJson, deleteLease, unassignIssue, hasIssueAssignee,
   reconcilePublicAssignments,
   getLeaseForIssue, reclaimExpiredLease,
   modelMayFit, parseVolunteerMarker, resolveModel, selectedLanguages, volunteerAssigneesMatch,
@@ -376,24 +376,7 @@ export default async function handler(req: Request): Promise<Response> {
             throw new BrokerError(409, "GitHub ownership fence lost during claim.");
           }
           const reconciled = await reconcilePublicAssignments(after, afterMarker, () => mutex.assertOwned());
-          if (!hasIssueAssignee(reconciled.issue, identity.contributor)) {
-            try {
-              await ensureVolunteerComment(identity, snapshot.number, async () => {
-                await mutex.assertOwned();
-                const live = await fetchIssue(snapshot.number);
-                const liveMarker = parseVolunteerMarker(live.body);
-                if (live.state !== "open" || !liveMarker || !(await verifyVolunteerMarker(snapshot.number, liveMarker)) ||
-                    !liveMarker.leases.some((item) => item.lease_id === lease.lease_id &&
-                      item.contributor.toLowerCase() === identity.contributor.toLowerCase() &&
-                      item.ownership_mode === "public" && Date.parse(item.expires_at) > Date.now())) {
-                  throw new BrokerError(409, "Volunteer lease is no longer eligible for a comment.");
-                }
-              });
-            } catch (error) {
-              if (error instanceof BrokerError && error.code === "github_grant_invalid") throw error;
-              // Public assignment remains the best-effort projection when the claimant is ineligible.
-            }
-          }
+
         } catch (error) {
           // Never restore a stale body: another lease may have been added while
           // GitHub was unavailable. Remove only our reservation when still present.
