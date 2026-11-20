@@ -9,7 +9,7 @@ const MAX_PAGES = 10;
 const PER_PAGE = 100;
 
 import { sha256, verifyVolunteerMarker } from "./worker/_lib/protocol.js";
-import { parseVolunteerMarker } from "./worker/_lib/markers.js";
+import { parseVolunteerMarker, selectedLanguages } from "./worker/_lib/markers.js";
 import { redis } from "./worker/_lib/redis.js";
 
 interface RawAssignee { login: string; avatar_url?: string; }
@@ -93,12 +93,20 @@ export default async function handler(req: Request): Promise<Response> {
   const token = process.env.GITHUB_TOKEN; const headers: Record<string, string> = { accept: "application/vnd.github+json", "x-github-api-version": "2022-11-28" }; if (token) headers.authorization = `Bearer ${token}`;
   if (new URL(req.url).searchParams.get("projection") === "queue") {
     try {
-      const queue: Array<{ number: number; evaluators: RawAssignee[] }> = [];
+      const queue: Array<{ number: number; evaluators: RawAssignee[]; allLanguagesComplete: boolean }> = [];
       for (let page = 1; page <= MAX_PAGES; page++) {
         const chunk = await fetchPage(page, headers, "open");
         for (const issue of chunk) {
-          const evaluators = await publicQueueEvaluators(issue);
-          if (evaluators.length) queue.push({ number: issue.number, evaluators });
+          const marker = await trustedMarker(issue);
+          const evaluators = marker ? await publicQueueEvaluators(issue) : [];
+          const languages = selectedLanguages(issue.body);
+          const completed = new Set((marker?.submissions ?? [])
+            .filter((submission) => submission.status === "submitted" || submission.status === "accepted")
+            .map((submission) => submission.language));
+          const allLanguagesComplete = languages.length > 0 && languages.every((language) => completed.has(language));
+          if (evaluators.length || allLanguagesComplete) {
+            queue.push({ number: issue.number, evaluators, allLanguagesComplete });
+          }
         }
         if (chunk.length < PER_PAGE) break;
       }
