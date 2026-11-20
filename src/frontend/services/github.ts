@@ -56,7 +56,6 @@ export interface QueueEntry {
   modelId: string;
   languageGroups: string[];
   status: QueueStatus;
-  publicVolunteer: boolean;
   evaluators: QueueEvaluator[];
   createdAt: string;
 }
@@ -80,11 +79,10 @@ function currentAssignees(issue: RawIssue): RawAssignee[] {
 
 export function mergeQueueEvaluators(
   assigned: QueueEvaluator[],
-  trustedPublic: QueueEvaluator[],
 ): QueueEvaluator[] {
   const evaluators: QueueEvaluator[] = [];
   const seen = new Set<string>();
-  for (const evaluator of [...assigned, ...trustedPublic]) {
+  for (const evaluator of assigned) {
     const key = evaluator.login.toLowerCase();
     if (seen.has(key)) {
       const existing = evaluators.find(
@@ -110,7 +108,6 @@ export function evaluatorsFromIssue(issue: RawIssue): QueueEvaluator[] {
       login: assignee.login,
       avatarUrl: assignee.avatar_url || null,
     })),
-    [],
   );
 }
 
@@ -148,21 +145,16 @@ export function issueStatus(
   gated: boolean,
   resultsReady: boolean,
   communityReviewReady: boolean,
-  allLanguagesComplete = false,
 ): QueueStatus {
   if (resultsReady) return "Awaiting publish";
-  if (communityReviewReady) return allLanguagesComplete ? "Pending review" : "Evaluating";
+  if (communityReviewReady) return "Pending review";
   if (currentAssignees(issue).length > 0) return "Evaluating";
   if (gated) return "Gated model";
   if (failed) return "Error";
   return "Waiting";
 }
 
-export function toQueueEntry(
-  issue: RawIssue,
-  publicEvaluators: ReadonlyMap<number, QueueEvaluator[]> = new Map(),
-  completedIssues: ReadonlySet<number> = new Set(),
-): QueueEntry | null {
+export function toQueueEntry(issue: RawIssue): QueueEntry | null {
   const modelId = extractModelId(issue.title, issue.body);
   if (!modelId) return null;
   // The queue can't run GGUF models. We rely on the GGUF_LABEL applied by the
@@ -179,13 +171,7 @@ export function toQueueEntry(
     url: issue.html_url,
     modelId,
     languageGroups: extractLanguageGroups(issue.body),
-    status: issueStatus(
-      issue, failed, gated, resultsReady, communityReviewReady,
-      completedIssues.has(issue.number),
-    ),
-    // Assignment display reflects only current GitHub issue assignees. The
-    // projection is retained for verified completion status, not attribution.
-    publicVolunteer: false,
+    status: issueStatus(issue, failed, gated, resultsReady, communityReviewReady),
     evaluators: evaluatorsFromIssue(issue),
     createdAt: issue.created_at,
   };
@@ -212,24 +198,6 @@ export async function listOpenEvalIssues(
     raw.push(...chunk);
     if (chunk.length < 100) break;
   }
-  const completedIssues = new Set<number>();
-  try {
-    const projectionUrl = fresh
-      ? `/api/hall-of-fame?projection=queue&_=${Date.now()}`
-      : "/api/hall-of-fame?projection=queue";
-    const projection = await fetch(projectionUrl, init);
-    if (projection.ok) {
-      const entries = (await projection.json()) as Array<{
-        number: number;
-        allLanguagesComplete?: boolean;
-      }>;
-      for (const entry of entries) {
-        if (entry.allLanguagesComplete === true) completedIssues.add(entry.number);
-      }
-    }
-  } catch {
-    // Queue loading remains available if the optional trusted projection is unavailable.
-  }
   const order: Record<QueueStatus, number> = {
     "Awaiting publish": 0,
     "Pending review": 1,
@@ -239,7 +207,7 @@ export async function listOpenEvalIssues(
     Error: 5,
   };
   return raw
-    .map((issue) => toQueueEntry(issue, new Map(), completedIssues))
+    .map(toQueueEntry)
     .filter((e): e is QueueEntry => e !== null)
     .sort((a, b) => {
       if (a.status !== b.status) return order[a.status] - order[b.status];
