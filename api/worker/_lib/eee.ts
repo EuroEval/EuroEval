@@ -100,7 +100,7 @@ export function validateRecord(record: unknown, expected: { modelId: string; rev
   const group = languageGroup(expected.language);
   let languages: unknown;
   try { languages = typeof details.languages === "string" ? JSON.parse(details.languages) : details.languages; } catch { throw new BrokerError(422, "additional_details.languages is not valid JSON."); }
-  const acceptedLanguages = group === "no" ? [...GROUPS[group], "nb", "nn"] : group === null ? [] : GROUPS[group];
+  const acceptedLanguages = group === null ? [] : GROUPS[group].flatMap((language) => language === "no" ? ["no", "nb", "nn"] : [language]);
   if (!Array.isArray(languages) || !languages.length || !languages.every((item) => typeof item === "string" && acceptedLanguages.includes(item))) throw new BrokerError(422, "record languages must be a non-empty subset of the leased language group.");
   const recordLanguage = details.language ?? value.language;
   if (recordLanguage !== undefined && (typeof recordLanguage !== "string" || !languages.includes(recordLanguage))) throw new BrokerError(422, "record language is inconsistent with languages.");
