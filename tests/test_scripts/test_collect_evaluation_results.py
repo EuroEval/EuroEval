@@ -1181,6 +1181,43 @@ def test_public_upload_reapproves_final_winner_after_multiple_contenders(
     )
 
 
+def test_public_upload_restores_original_when_final_choice_is_stored(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Staging, local files, and publication use the same stored final winner."""
+    results_dir = tmp_path / "results"
+    canonical = results_dir / "foo_bar" / "task__test__zeroshot.json"
+    canonical.parent.mkdir(parents=True)
+    stored = _ranked_collector_record(score=0.2)
+    original_bytes = (json.dumps(stored, indent=2) + "\n").encode()
+    canonical.write_bytes(original_bytes)
+    contender_b = _ranked_collector_record(score=0.5)
+    contender_c = _ranked_collector_record(score=0.8)
+    answers = iter(["incoming", "stored", "stored"])
+    resolver = collect_evaluation_results.resolve_result_interactively
+    monkeypatch.setattr(
+        collect_evaluation_results,
+        "resolve_result_interactively",
+        lambda **kwargs: resolver(
+            **kwargs, input_fn=lambda _prompt: next(answers), interactive=True
+        ),
+    )
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
+    _enable_real_collector_publisher(monkeypatch=monkeypatch, tmp_path=tmp_path)
+    FakeHfApi.objects["foo_bar/task__test__zeroshot.json"] = original_bytes
+    staging = tmp_path / "custom-staging.jsonl"
+    lines = [json.dumps(contender_b), json.dumps(contender_c)]
+    staging.write_text("unmodified staging\n", encoding="utf-8")
+
+    assert collect_evaluation_results.upload_results_to_hf(
+        new_results_path=staging, pending_lines=lines
+    )
+
+    assert json.loads(canonical.read_bytes()) == stored
+    assert json.loads(staging.read_text(encoding="utf-8")) == stored
+    assert json.loads(FakeHfApi.objects["foo_bar/task__test__zeroshot.json"]) == stored
+
+
 def test_reviewer_login_actor_and_safe_gh_fallback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1553,6 +1590,33 @@ def test_upload_results_to_hf_does_not_touch_repo_root_jsonl(
     assert benchmark_results_file.read_text(encoding="utf-8") == '{"data": "benchmark"}'
 
 
+def test_upload_results_to_hf_engine_preference_beats_canonical_path(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Canonical filenames do not override an engine-policy winner."""
+    results_dir = tmp_path / "results"
+    directory = results_dir / "foo_bar"
+    directory.mkdir(parents=True)
+    alias = _ranked_collector_record(score=0.9)
+    alias_model_info = t.cast(dict[str, object], alias["model_info"])
+    alias_model_info["inference_engine"] = {"name": "vLLM"}
+    canonical = _ranked_collector_record(score=0.1)
+    canonical_model_info = t.cast(dict[str, object], canonical["model_info"])
+    canonical_model_info["inference_engine"] = {"name": "LiteLLM"}
+    (directory / "a.json").write_text(json.dumps(alias), encoding="utf-8")
+    canonical_path = directory / "task__test__zeroshot.json"
+    canonical_path.write_text(json.dumps(canonical), encoding="utf-8")
+    incoming = tmp_path / "incoming.jsonl"
+    incoming.write_text("", encoding="utf-8")
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
+    _enable_real_collector_publisher(monkeypatch=monkeypatch, tmp_path=tmp_path)
+
+    assert collect_evaluation_results.upload_results_to_hf(new_results_path=incoming)
+
+    assert json.loads(canonical_path.read_text(encoding="utf-8")) == alias
+    assert json.loads(FakeHfApi.objects["foo_bar/task__test__zeroshot.json"]) == alias
+
+
 def test_upload_results_to_hf_equal_rank_envelope_aliases_are_allowed(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -1713,6 +1777,38 @@ def _collector_test_record(dataset: str) -> dict[str, object]:
         },
         "retrieved_timestamp": 1704067200,
     }
+
+
+def test_upload_results_to_hf_manual_alias_choice_beats_canonical_path(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """An explicit alias winner survives canonical-path reconciliation."""
+    results_dir = tmp_path / "results"
+    directory = results_dir / "foo_bar"
+    directory.mkdir(parents=True)
+    alias = _ranked_collector_record(score=0.9)
+    canonical = _ranked_collector_record(score=0.1)
+    (directory / "a.json").write_text(json.dumps(alias), encoding="utf-8")
+    canonical_path = directory / "task__test__zeroshot.json"
+    canonical_path.write_text(json.dumps(canonical), encoding="utf-8")
+    answers = iter(["stored", "incoming"])
+    resolver = collect_evaluation_results.resolve_result_interactively
+    monkeypatch.setattr(
+        collect_evaluation_results,
+        "resolve_result_interactively",
+        lambda **kwargs: resolver(
+            **kwargs, input_fn=lambda _prompt: next(answers), interactive=True
+        ),
+    )
+    incoming = tmp_path / "incoming.jsonl"
+    incoming.write_text("", encoding="utf-8")
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
+    _enable_real_collector_publisher(monkeypatch=monkeypatch, tmp_path=tmp_path)
+
+    assert collect_evaluation_results.upload_results_to_hf(new_results_path=incoming)
+
+    assert json.loads(canonical_path.read_text(encoding="utf-8")) == alias
+    assert json.loads(FakeHfApi.objects["foo_bar/task__test__zeroshot.json"]) == alias
 
 
 def test_upload_results_to_hf_metadata_enrichment_uses_original_source_bytes(
