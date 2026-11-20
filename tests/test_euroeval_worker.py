@@ -2,6 +2,7 @@
 
 import dataclasses
 import email.message
+import http.client
 import io
 import json
 import os
@@ -310,6 +311,28 @@ def test_broker_normalises_legacy_scope_and_rejects_malformed_alternatives() -> 
     }
     with pytest.raises(ValueError, match="alternatives"):
         lease_from_dict(data=malformed)
+
+
+def test_broker_normalises_truncated_http_response_as_transient(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Expose truncated response transport failures as broker errors.
+
+    Args:
+        monkeypatch:
+            Fixture replacing the HTTP transport.
+    """
+
+    def truncated_response(request: urllib.request.Request, timeout: int) -> None:
+        raise http.client.IncompleteRead(b"partial")
+
+    monkeypatch.setattr(urllib.request, "urlopen", truncated_response)
+    client = BrokerClient("https://broker.example")
+
+    with pytest.raises(BrokerError) as captured:
+        client.claim(credential="credential", hardware=HARDWARE)
+
+    assert captured.value.status is None
 
 
 def test_broker_protocol_payload_is_canonical() -> None:
@@ -1206,6 +1229,32 @@ def test_expired_active_lease_is_archived_before_new_claim(
     assert state.load_active() is None
 
 
+def test_failure_recording_preserves_latest_renewal_and_acknowledgements(
+    tmp_path: Path,
+) -> None:
+    """Record failure metadata without replacing newer lease or result state.
+
+    Args:
+        tmp_path:
+            Private worker state directory.
+    """
+    state = StateStore(tmp_path)
+    result = EEERecord({"id": "durable"})
+    pending = PendingRecord.from_record(result)
+    state.save_active(lease=LEASE, records=(pending,))
+    renewed = dataclasses.replace(LEASE, expires_at="2099-01-02T00:00:00Z")
+    state.renew_active(renewed)
+    state.save_records((dataclasses.replace(pending, acknowledged=True),))
+
+    active = state.record_evaluation_failure(lease_id=LEASE.lease_id, max_failures=3)
+
+    assert active.lease == renewed
+    assert active.records[0].acknowledged
+    assert active.evaluation_failures == 1
+    assert not active.release_pending
+    assert state.load_active() == active
+
+
 def test_finalise_response_loss_is_idempotently_retried(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -1671,6 +1720,112 @@ def test_partial_acknowledgements_survive_restart(
     worker.run(once=True)
     assert broker.submissions > submissions_before
     assert StateStore(tmp_path).load_active() is None
+
+
+def test_pending_release_failure_does_not_reevaluate_or_clear_intent(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Keep an exhausted lease pending when broker release is unavailable.
+
+    Args:
+        monkeypatch:
+            Fixture replacing authentication.
+        tmp_path:
+            Private worker state directory.
+    """
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    state = StateStore(tmp_path)
+    state.save_active(lease=LEASE, evaluation_failures=3, release_pending=True)
+
+    class BusyReleaseBroker(Broker):
+        """Broker whose issue mutex is temporarily occupied."""
+
+        def release(self, credential: str, lease_id: str, reason: str) -> None:
+            """Reject release with its structured temporary contention code.
+
+            Raises:
+                BrokerError:
+                    To simulate temporary issue mutex contention.
+            """
+            raise BrokerError("issue busy", status=503, code="ISSUE_BUSY")
+
+    class MustNotEvaluate:
+        """Evaluator tracking accidental retries of exhausted work."""
+
+        calls = 0
+
+        def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
+            """Fail if the exhausted lease reaches evaluation.
+
+            Raises:
+                AssertionError:
+                    If the worker reevaluates exhausted work.
+            """
+            self.calls += 1
+            raise AssertionError("exhausted work must be released, not evaluated")
+
+    evaluator_instance = MustNotEvaluate()
+    with pytest.raises(BrokerError, match="issue busy"):
+        runtime.Worker(
+            client=BusyReleaseBroker(),
+            state=state,
+            evaluator=evaluator_instance,
+            hardware_factory=lambda: HARDWARE,
+        ).run(once=True)
+
+    active = state.load_active()
+    assert active is not None and active.release_pending
+    assert active.evaluation_failures == 3
+    assert evaluator_instance.calls == 0
+
+
+def test_repeated_transient_claim_failures_keep_backoff_finite(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Keep long-running retry backoff bounded without exponent overflow.
+
+    Args:
+        monkeypatch:
+            Fixture replacing authentication and sleep.
+        tmp_path:
+            Private worker state directory.
+    """
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    delays: list[float] = []
+
+    def stop_after_many_retries(delay: float) -> None:
+        delays.append(delay)
+        if len(delays) == 1_100:
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(runtime.time, "sleep", stop_after_many_retries)
+
+    class TemporarilyUnavailableBroker(Broker):
+        """Broker returning a retryable request timeout."""
+
+        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            """Raise a transient broker failure.
+
+            Raises:
+                BrokerError:
+                    To simulate a temporary timeout response.
+            """
+            raise BrokerError("temporarily unavailable", status=408)
+
+    with pytest.raises(KeyboardInterrupt):
+        runtime.Worker(
+            client=TemporarilyUnavailableBroker(),
+            state=StateStore(tmp_path),
+            evaluator=OneRecordEvaluator(),
+            hardware_factory=lambda: HARDWARE,
+        ).run()
+
+    assert len(delays) == 1_100
+    assert all(0 <= delay <= 300 for delay in delays)
 
 
 def test_required_canary_preserves_partial_ordinary_scope(

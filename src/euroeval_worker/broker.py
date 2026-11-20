@@ -2,6 +2,7 @@
 
 import collections.abc as c
 import email.utils
+import http.client
 import json
 import logging
 import time
@@ -529,7 +530,7 @@ def _http_request(
             retry_after=_retry_after(error.headers.get("Retry-After")),
             body=body,
         ) from error
-    except (OSError, json.JSONDecodeError) as error:
+    except (OSError, http.client.HTTPException, json.JSONDecodeError) as error:
         raise BrokerError(f"invalid broker response: {error}") from error
     if not isinstance(decoded, dict):
         raise BrokerError("broker response was not a JSON object")

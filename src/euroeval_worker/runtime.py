@@ -411,8 +411,9 @@ class Worker:
 
     def _sleep_recovery_backoff(self) -> None:
         """Sleep with bounded exponential delay after a retryable failure."""
-        delay = min(300.0, 30.0 * 2**self._recovery_failures)
-        self._recovery_failures += 1
+        exponent = min(self._recovery_failures, 4)
+        delay = min(300.0, 30.0 * 2**exponent)
+        self._recovery_failures = exponent + 1
         time.sleep(delay)
 
     def _clear_finalised_lease(self, *, once: bool) -> bool:
@@ -878,15 +879,10 @@ class Worker:
         """
         if once:
             raise error.__cause__ or error
-        failures = active.evaluation_failures + 1
-        self.state.save_active(
-            lease=active.lease,
-            records=active.records,
-            github_login=active.github_login,
-            finalised_submission_id=active.finalised_submission_id,
-            evaluation_failures=failures,
-            release_pending=failures >= self._max_evaluation_failures,
+        updated = self.state.record_evaluation_failure(
+            lease_id=active.lease.lease_id, max_failures=self._max_evaluation_failures
         )
+        failures = updated.evaluation_failures
         logger.error(
             "Evaluation failed for lease %s (attempt %d/%d)",
             active.lease.lease_id,
@@ -1210,7 +1206,9 @@ def _recoverable_broker_error(error: BaseException) -> bool:
         Whether the failure is a transient broker/network condition.
     """
     if isinstance(error, BrokerError):
-        return _transient(error) and not _lease_lost(error)
+        return (
+            _submission_transient(error) or error.code == "ISSUE_BUSY"
+        ) and not _lease_lost(error)
     return isinstance(error, (urllib.error.URLError, TimeoutError))
 
 
