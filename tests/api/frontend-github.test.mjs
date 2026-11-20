@@ -61,9 +61,12 @@ test("results ready takes precedence over pending review and evaluation", () => 
 });
 
 test("gated and failed labels preserve their statuses", () => {
-  assert.equal(toQueueEntry({ ...issue, labels: ["gated"] }).status, "Gated model");
   assert.equal(
-    toQueueEntry({ ...issue, labels: ["evaluation-failed"] }).status,
+    toQueueEntry({ ...issue, assignee: null, assignees: [], labels: ["gated"] }).status,
+    "Gated model",
+  );
+  assert.equal(
+    toQueueEntry({ ...issue, assignee: null, assignees: [], labels: ["evaluation-failed"] }).status,
     "Error",
   );
 });

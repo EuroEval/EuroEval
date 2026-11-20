@@ -3,7 +3,7 @@ declare const process: { env: Record<string, string | undefined> };
 import {
   BrokerError, ConfigurationError, PROTOCOL_VERSION, addIssueLabel, acquireRenewableIssueMutex,
   brokerErrorBody, completePromotionReservation, fetchIssue, getPromotionReservation,
-  json, method, parsePromotionRecords,
+  isReadyForReview, json, method, parsePromotionRecords,
   parseVolunteerMarker, patchIssue, promotionSecret, readJson,
   releaseResultReservations,
   removeIssueLabel, replaceVolunteerMarker, requireProtocol,
@@ -57,7 +57,7 @@ export function promotionPlan(
   const releaseContributor = outcome === "rejected" && !contributorRetained ?
     current.verified_contributor : null;
   return {
-    marker: next, complete, removeReviewLabel: !submitted,
+    marker: next, complete, removeReviewLabel: !isReadyForReview(next, selected),
     releaseContributor,
   };
 }
@@ -144,6 +144,9 @@ export default async function handler(req: Request): Promise<Response> {
       if (plan.removeReviewLabel) {
         await mutex.assertOwned();
         await removeIssueLabel(issueNumber, reviewLabel);
+      } else if (!fencedIssue.labels?.some((item) => item.name === reviewLabel)) {
+        await mutex.assertOwned();
+        await addIssueLabel(issueNumber, reviewLabel);
       }
       const promotedSubmission = marker.submissions?.find((item) => item.submission_id === submissionId);
       if (plan.releaseContributor && promotedSubmission?.ownership_mode !== "public") {

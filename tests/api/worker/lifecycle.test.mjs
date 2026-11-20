@@ -209,7 +209,8 @@ function mockBroker(issue, values) {
   };
 }
 
-test("public finalisation retries assignment cleanup without posting comments", async () => {
+for (const failure of ["assignment", "review label"]) test(
+  `public finalisation retries ${failure} cleanup without posting comments`, async () => {
   const originalFetch = globalThis.fetch;
   const originalEnv = { ...process.env };
   Object.assign(process.env, {
@@ -254,9 +255,13 @@ test("public finalisation retries assignment cleanup without posting comments", 
         return Response.json({ result: null });
       }
     }
+    if (failure === "review label" && failCleanup &&
+        url.endsWith(`/issues/${issueNumber}/labels`) && init.method === "POST") {
+      return Response.json({ message: "Injected label write failure" }, { status: 400 });
+    }
     if (url.endsWith(`/issues/${issueNumber}`) && init.method === "PATCH") {
       const proposed = parseVolunteerMarker(JSON.parse(init.body).body);
-      if (failCleanup && !proposed.public_assignees.includes("alice")) {
+      if (failure === "assignment" && failCleanup && !proposed.public_assignees.includes("alice")) {
         return Response.json({ message: "Injected provenance write failure" }, { status: 400 });
       }
     }
@@ -270,7 +275,8 @@ test("public finalisation retries assignment cleanup without posting comments", 
     const failed = await finalise(request());
     assert.equal(failed.status, 502, await failed.clone().text());
     assert.equal(JSON.parse(values.get(statusKey)).status, "ready");
-    assert.deepEqual(issue.assignees.map(({ login }) => login), ["bob", "manual"]);
+    assert.deepEqual(issue.assignees.map(({ login }) => login), failure === "assignment"
+      ? ["bob", "manual"] : ["alice", "bob", "manual"]);
     assert.deepEqual(parseVolunteerMarker(issue.body).public_assignees, ["alice", "bob"]);
     values.delete(`euroeval:worker:lease-id:${activeLease.lease_id}`);
     failCleanup = false;
@@ -286,8 +292,91 @@ test("public finalisation retries assignment cleanup without posting comments", 
     assert.deepEqual(finalMarker.public_assignees, ["bob"]);
     assert.deepEqual(finalMarker.leases, [bobLease]);
     assert.equal(finalMarker.submissions[0].verified_contributor, "alice");
+    assert.deepEqual(issue.assignees.map(({ login }) => login), ["bob", "manual"]);
+    assert.ok(issue.labels.some(({ name }) => name === "community-review-ready"));
     assert.equal(await verifyVolunteerMarker(issueNumber, finalMarker), true);
     assert.equal(commentRequests, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
+
+for (const scenario of [
+  { name: "partial completion", languages: ["da", "fo", "is", "no"], labelled: false, expected: false },
+  { name: "premature review label", languages: ["da", "fo", "is", "no"], labelled: true, expected: false },
+  { name: "all selected languages", languages: ["da", "fo", "is", "no", "sv"], labelled: false, expected: true },
+  { name: "all results already accepted", languages: ["da", "fo", "is", "no", "sv"], labelled: true, expected: false, acceptedAll: true },
+  { name: "failed label addition", languages: ["da", "fo", "is", "no", "sv"], labelled: false, expected: true, fail: true },
+  { name: "failed label removal", languages: ["da", "fo", "is", "no"], labelled: true, expected: false, fail: true },
+  { name: "active lease only", languages: [], labelled: false, expected: false, active: true },
+  { name: "forged marker", languages: ["da", "fo", "is", "no"], labelled: true, expected: true, forged: true },
+  { name: "changed model", languages: ["da", "fo", "is", "no"], labelled: true, expected: true, changed: true },
+]) test(`ready finalisation reconciles ${scenario.name} without a live lease`, async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  Object.assign(process.env, { VOLUNTEER_MARKER_SECRET: "marker-secret",
+    UPSTASH_REDIS_REST_URL: "https://redis.test", UPSTASH_REDIS_REST_TOKEN: "redis-token",
+    GITHUB_TOKEN: "github-token" });
+  try {
+    const savedLease = { ...lease, language: "no", ownership_mode: "public" };
+    const marker = await signVolunteerMarker(issueNumber, {
+      protocol_version: "volunteer-worker/v1", coordinator: "coordinator", submission: "submitted",
+      leases: scenario.active ? [{ lease_id: "next", language: "sv", worker: "worker",
+        contributor: "alice", expires_at: lease.expires_at, ownership_mode: "public" }] : [],
+      public_assignees: ["alice"],
+      submissions: scenario.languages.map((language) => ({ submission_id: `done-${language}`,
+        language, manifest_path: `manifests/${language}.json`, submitted_at: "2026-11-20T18:00:00Z",
+        verified_contributor: "alice", result_count: 1,
+        status: scenario.acceptedAll || language === "da" ? "accepted" : "submitted", ownership_mode: "public" })),
+    });
+    if (scenario.forged) marker.signature = "forged";
+    const reviewLabel = "community-review-ready";
+    const issue = { number: issueNumber,
+      title: `[MODEL EVALUATION REQUEST] ${scenario.changed ? "org/changed" : "org/model"}`,
+      body: markerBody(marker).replace("- [x] Greek",
+        "- [x] Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)"),
+      state: "open", labels: scenario.labelled ? [{ name: reviewLabel }] : [],
+      assignees: [{ login: "alice" }, { login: "manual" }] };
+    const values = new Map([
+      [`euroeval:worker:credential:${await sha256("credential")}`, JSON.stringify({ contributor: "alice" })],
+      [`euroeval:worker:finalisation:${lease.lease_id}`, JSON.stringify({ status: "ready",
+        submission_id: lease.lease_id, lease: savedLease, entries: [], manifest_path: "manifests/no.json" })],
+    ]);
+    const broker = mockBroker(issue, values);
+    let fail = scenario.fail;
+    let mutations = 0;
+    globalThis.fetch = async (input, init = {}) => {
+      const url = String(input);
+      if (url.startsWith("https://api.github.com/") && init.method && init.method !== "GET") {
+        mutations++;
+        if (fail && url.includes(`/issues/${issueNumber}/labels`)) {
+          return Response.json({ message: "Injected label failure" }, { status: 400 });
+        }
+      }
+      return broker(input, init);
+    };
+    const request = () => new Request("https://euroeval.test/api/worker/finalise", {
+      method: "POST", headers: { authorization: "Bearer credential", "content-type": "application/json" },
+      body: JSON.stringify({ protocol_version: "volunteer-worker/v1", lease_id: lease.lease_id }),
+    });
+    let response = await finalise(request());
+    if (scenario.fail) {
+      assert.equal(response.status, 502, await response.clone().text());
+      fail = false;
+      response = await finalise(request());
+    }
+    assert.equal(response.status, 200, await response.clone().text());
+    assert.equal((await response.json()).status, "already_finalised");
+    assert.equal(issue.labels.some(({ name }) => name === reviewLabel), scenario.expected);
+    if (scenario.forged || scenario.changed) {
+      assert.equal(mutations, 0);
+      assert.deepEqual(issue.assignees.map(({ login }) => login), ["alice", "manual"]);
+    } else {
+      assert.deepEqual(issue.assignees.map(({ login }) => login), scenario.active
+        ? ["alice", "manual"] : ["manual"]);
+      assert.deepEqual(parseVolunteerMarker(issue.body).submissions, marker.submissions);
+    }
   } finally {
     globalThis.fetch = originalFetch;
     process.env = originalEnv;
