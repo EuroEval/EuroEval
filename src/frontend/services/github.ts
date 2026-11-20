@@ -148,9 +148,10 @@ export function issueStatus(
   gated: boolean,
   resultsReady: boolean,
   communityReviewReady: boolean,
+  allLanguagesComplete = false,
 ): QueueStatus {
   if (resultsReady) return "Awaiting publish";
-  if (communityReviewReady) return "Pending review";
+  if (communityReviewReady && allLanguagesComplete) return "Pending review";
   if (currentAssignees(issue).length > 0) return "Evaluating";
   if (gated) return "Gated model";
   if (failed) return "Error";
@@ -160,6 +161,7 @@ export function issueStatus(
 export function toQueueEntry(
   issue: RawIssue,
   publicEvaluators: ReadonlyMap<number, QueueEvaluator[]> = new Map(),
+  completedIssues: ReadonlySet<number> = new Set(),
 ): QueueEntry | null {
   const modelId = extractModelId(issue.title, issue.body);
   if (!modelId) return null;
@@ -177,7 +179,10 @@ export function toQueueEntry(
     url: issue.html_url,
     modelId,
     languageGroups: extractLanguageGroups(issue.body),
-    status: issueStatus(issue, failed, gated, resultsReady, communityReviewReady),
+    status: issueStatus(
+      issue, failed, gated, resultsReady, communityReviewReady,
+      completedIssues.has(issue.number),
+    ),
     publicVolunteer: (publicEvaluators.get(issue.number)?.length ?? 0) > 0,
     evaluators: mergeQueueEvaluators(
       evaluatorsFromIssue(issue),
@@ -209,14 +214,17 @@ export async function listOpenEvalIssues(
     if (chunk.length < 100) break;
   }
   const publicEvaluators = new Map<number, QueueEvaluator[]>();
+  const completedIssues = new Set<number>();
   try {
     const projection = await fetch("/api/hall-of-fame?projection=queue", init);
     if (projection.ok) {
       const entries = (await projection.json()) as Array<{
         number: number;
         evaluators: Array<{ login: string; avatar_url?: string }>;
+        allLanguagesComplete?: boolean;
       }>;
       for (const entry of entries) {
+        if (entry.allLanguagesComplete === true) completedIssues.add(entry.number);
         publicEvaluators.set(
           entry.number,
           entry.evaluators.map((evaluator) => ({
@@ -238,7 +246,7 @@ export async function listOpenEvalIssues(
     Error: 5,
   };
   return raw
-    .map((issue) => toQueueEntry(issue, publicEvaluators))
+    .map((issue) => toQueueEntry(issue, publicEvaluators, completedIssues))
     .filter((e): e is QueueEntry => e !== null)
     .sort((a, b) => {
       if (a.status !== b.status) return order[a.status] - order[b.status];

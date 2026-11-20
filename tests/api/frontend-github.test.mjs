@@ -37,17 +37,27 @@ test("community review submissions are pending review with or without assignees"
       assignee,
       assignees: assignee ? [assignee] : [],
       labels: ["community-review-ready"],
-    });
+    }, new Map(), new Set([42]));
     assert.equal(entry.status, "Pending review");
   }
 });
 
-test("community review label accepts GitHub label objects", () => {
+test("community review label without trusted completion fails closed", () => {
   const entry = toQueueEntry({
     ...issue,
     labels: [{ name: "community-review-ready" }],
-  });
-  assert.equal(entry.status, "Pending review");
+  }, new Map(), new Set([42]));
+  assert.equal(entry.status, "Evaluating");
+});
+
+test("partial language completion remains evaluating without an assignee", () => {
+  const entry = toQueueEntry({
+    ...issue,
+    assignee: null,
+    assignees: [],
+    labels: ["community-review-ready"],
+  }, new Map(), new Set());
+  assert.equal(entry.status, "Evaluating");
 });
 
 test("results ready takes precedence over pending review and evaluation", () => {
