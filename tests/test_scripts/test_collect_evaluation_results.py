@@ -1790,7 +1790,8 @@ def test_upload_results_to_hf_manual_alias_choice_beats_canonical_path(
     canonical = _ranked_collector_record(score=0.1)
     (directory / "a.json").write_text(json.dumps(alias), encoding="utf-8")
     canonical_path = directory / "task__test__zeroshot.json"
-    canonical_path.write_text(json.dumps(canonical), encoding="utf-8")
+    canonical_bytes = json.dumps(canonical).encode("utf-8")
+    canonical_path.write_bytes(canonical_bytes)
     answers = iter(["stored", "incoming"])
     resolver = collect_evaluation_results.resolve_result_interactively
     monkeypatch.setattr(
@@ -1804,11 +1805,14 @@ def test_upload_results_to_hf_manual_alias_choice_beats_canonical_path(
     incoming.write_text("", encoding="utf-8")
     monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
     _enable_real_collector_publisher(monkeypatch=monkeypatch, tmp_path=tmp_path)
+    FakeHfApi.objects["foo_bar/task__test__zeroshot.json"] = canonical_bytes
 
     assert collect_evaluation_results.upload_results_to_hf(new_results_path=incoming)
 
     assert json.loads(canonical_path.read_text(encoding="utf-8")) == alias
     assert json.loads(FakeHfApi.objects["foo_bar/task__test__zeroshot.json"]) == alias
+    history_path = f"_history/{hashlib.sha256(canonical_bytes).hexdigest()}.bin"
+    assert FakeHfApi.objects[history_path] == canonical_bytes
 
 
 def test_upload_results_to_hf_metadata_enrichment_uses_original_source_bytes(
