@@ -36,6 +36,41 @@ test("ignored GitHub assignee requests do not break signed public lease ownershi
   }
 });
 
+test("submitted public credit alone does not keep a contributor assigned", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  process.env.GITHUB_TOKEN = "token";
+  process.env.VOLUNTEER_MARKER_SECRET = "marker-secret";
+  const marker = await signVolunteerMarker(issueNumber, {
+    protocol_version: "volunteer-worker/v1", coordinator: "coordinator", submission: "submitted",
+    leases: [], submissions: [{ submission_id: "done", status: "submitted", ownership_mode: "public", verified_contributor: "alice" }],
+    public_assignees: ["alice"],
+  });
+  const issue = { number: issueNumber, title: "request", body: markerBody(marker), state: "open", assignees: [{ login: "alice" }, { login: "manual" }] };
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input);
+    if (url.endsWith(`/issues/${issueNumber}/assignees`) && init.method === "DELETE") {
+      issue.assignees = issue.assignees.filter(({ login }) => login !== "alice");
+      return Response.json(issue);
+    }
+    if (url.endsWith(`/issues/${issueNumber}`) && init.method === "PATCH") {
+      issue.body = JSON.parse(init.body).body;
+      return Response.json(issue);
+    }
+    if (url.endsWith(`/issues/${issueNumber}`)) return Response.json(issue);
+    throw new Error(`Unexpected request: ${init.method || "GET"} ${url}`);
+  };
+  try {
+    const result = await reconcilePublicAssignments(issue, marker, async () => {});
+    assert.deepEqual(issue.assignees, [{ login: "manual" }]);
+    assert.deepEqual(result.marker.public_assignees, []);
+    assert.equal(result.marker.submissions[0].verified_contributor, "alice");
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
+
 test("reconciles verified public contributors as broker-tracked assignees", async () => {
   const originalFetch = globalThis.fetch;
   const originalEnv = { ...process.env };
