@@ -5,7 +5,7 @@ import {
   authenticate, brokerErrorBody, commentIssue, contributorLabel, deleteLease, enforceRateLimit, extractModelId,
   fetchIssue, getLeaseById, issueComments, json, method, patchIssue, parseVolunteerMarker,
   readJson, redis, redisGet, requireLeaseOwnership, requireAssignee, requireProtocol,
-  selectedLanguages, replaceVolunteerMarker,
+  selectedLanguages, replaceVolunteerMarker, reconcilePublicAssignments,
   signVolunteerMarker, verifyVolunteerMarker,
 } from "./_lib.js";
 import { uploadStaging } from "./_lib/eee.js";
@@ -137,7 +137,18 @@ export async function fetch(req: Request): Promise<Response> {
       if (!old.lease || old.lease.contributor.toLowerCase() !== identity.contributor.toLowerCase()) {
         throw new BrokerError(409, "Lease is absent or belongs to another contributor.");
       }
-      if (old.lease.ownership_mode !== "public") await requireAssignee(await fetchIssue(old.lease.issue_number), old.lease.contributor);
+      if (old.lease.ownership_mode === "public") {
+        const mutex = await acquireRenewableIssueMutex(old.lease.issue_number);
+        if (mutex) {
+          try {
+            const issue = await fetchIssue(old.lease.issue_number);
+            const marker = parseVolunteerMarker(issue.body);
+            if (marker && await verifyVolunteerMarker(issue.number, marker)) {
+              await reconcilePublicAssignments(issue, marker, () => mutex.assertOwned());
+            }
+          } finally { await mutex.release(); }
+        }
+      } else await requireAssignee(await fetchIssue(old.lease.issue_number), old.lease.contributor);
       return json(200, { protocol_version: PROTOCOL_VERSION, status: "already_finalised", submission_id: old.submission_id });
     }
     const active = await getLeaseById(body.lease_id);
@@ -196,6 +207,7 @@ export async function fetch(req: Request): Promise<Response> {
         const fencedIssue = await fetchIssue(lease.issue_number); const fenced = parseVolunteerMarker(fencedIssue.body);
         if (!fenced || !(await verifyVolunteerMarker(lease.issue_number, fenced)) || !fenced.submissions?.some((item) => item.submission_id === receipt.submission_id)) throw new BrokerError(409, "GitHub submission fence lost.");
         if (lease.ownership_mode !== "public") await requireAssignee(fencedIssue, lease.contributor);
+        else await reconcilePublicAssignments(fencedIssue, fenced, () => mutex.assertOwned());
       }
       if (lease.ownership_mode !== "public") await requireAssignee(await fetchIssue(lease.issue_number), lease.contributor);
       const label = process.env.COMMUNITY_REVIEW_LABEL || "community-review-ready";
