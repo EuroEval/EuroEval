@@ -439,6 +439,44 @@ class StateStore:
         temporary.replace(path)
         os.chmod(path, mode)
 
+    def record_evaluation_failure(
+        self, *, lease_id: str, max_failures: int
+    ) -> ActiveLease:
+        """Record an evaluation failure against the latest persisted lease.
+
+        Args:
+            lease_id:
+                Identity of the lease whose evaluation failed.
+            max_failures:
+                Failure count after which release becomes mandatory.
+
+        Returns:
+            The updated active lease.
+
+        Raises:
+            RuntimeError:
+                If the active lease is missing or has changed identity.
+        """
+        with self._lock:
+            active = self.load_active()
+            if active is None or active.lease.lease_id != lease_id:
+                raise RuntimeError(
+                    "cannot record failure for a missing or different lease"
+                )
+            updated = ActiveLease(
+                lease=active.lease,
+                records=active.records,
+                github_login=active.github_login,
+                finalised_submission_id=active.finalised_submission_id,
+                evaluation_failures=active.evaluation_failures + 1,
+                release_pending=(
+                    active.release_pending
+                    or active.evaluation_failures + 1 >= max_failures
+                ),
+            )
+            self._atomic_write(self.active_path, _active_dict(updated))
+            return updated
+
     def renew_active(self, lease: Lease) -> None:
         """Atomically persist a broker-issued lease renewal.
 

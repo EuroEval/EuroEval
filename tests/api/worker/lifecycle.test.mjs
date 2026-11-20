@@ -890,6 +890,38 @@ test("heartbeat renews a full TTL and preserves a valid marker signature", async
   }
 });
 
+test("release reports mutex contention with a retryable broker code", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
+  const values = new Map([[`euroeval:worker:credential:${await sha256("credential")}`,
+    JSON.stringify({ contributor: "alice" })],
+  [`euroeval:worker:lease-id:${lease.lease_id}`,
+    JSON.stringify({ ...lease, expires_at: new Date(Date.now() + 60_000).toISOString() })]]);
+  globalThis.fetch = async (input, init = {}) => {
+    const url = new URL(String(input));
+    if (url.origin !== "https://redis.test") throw new Error("GitHub must not be contacted");
+    const command = JSON.parse(init.body);
+    if (command[0] === "GET") return Response.json({ result: values.get(command[1]) || null });
+    if (command[0] === "SET" && command[1].includes(":mutex:")) {
+      return Response.json({ result: null });
+    }
+    return Response.json({ result: 1 });
+  };
+  try {
+    const response = await release(new Request("https://euroeval.test/api/worker/release", {
+      method: "POST", headers: { authorization: "Bearer credential", "content-type": "application/json" },
+      body: JSON.stringify({ protocol_version: "volunteer-worker/v1", lease_id: lease.lease_id }),
+    }));
+    assert.equal(response.status, 503);
+    assert.equal((await response.json()).code, "ISSUE_BUSY");
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
+
 test("release retries a released tombstone without touching GitHub", async () => {
   const originalFetch = globalThis.fetch;
   const originalEnv = { ...process.env };
