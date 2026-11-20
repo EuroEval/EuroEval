@@ -185,6 +185,26 @@ export default async function handler(req: Request): Promise<Response> {
           listed.assignees, parseVolunteerMarker(listed.body), Date.now(), true, true,
         ) ? [{ listed, modelId }] : [];
     });
+    // Continue work associated with this authenticated contributor before
+    // unrelated queue items, but only from a verified signed marker and only
+    // while the issue still has an uncompleted selected language.
+    const affinity = new Map<number, number>();
+    for (const { listed } of candidates) {
+      const marker = parseVolunteerMarker(listed.body);
+      if (!marker || !(await verifyVolunteerMarker(listed.number, marker))) continue;
+      const selected = selectedLanguages(listed.body);
+      if (!claimableLanguages(selected, activeMarker(marker)).length) continue;
+      const own = (marker.submissions || []).filter((submission) =>
+        (submission.status === "submitted" || submission.status === "accepted") &&
+        submission.verified_contributor.toLowerCase() === identity.contributor.toLowerCase() &&
+        selected.includes(submission.language),
+      );
+      const mostRecent = own.map((submission) => Date.parse(submission.submitted_at))
+        .filter(Number.isFinite).reduce((latest, timestamp) => Math.max(latest, timestamp), 0);
+      if (mostRecent) affinity.set(listed.number, mostRecent);
+    }
+    candidates.sort((left, right) =>
+      (affinity.get(right.listed.number) || 0) - (affinity.get(left.listed.number) || 0));
     // Resolve candidates in issue-priority batches. Do not inspect later issues
     // until every earlier candidate has either been ruled out or attempted.
     const resolved = new Map<string, Awaited<ReturnType<typeof resolveModel>> | null>();
