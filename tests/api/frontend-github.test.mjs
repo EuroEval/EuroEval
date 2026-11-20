@@ -46,7 +46,7 @@ test("community review label without trusted completion fails closed", () => {
   const entry = toQueueEntry({
     ...issue,
     labels: [{ name: "community-review-ready" }],
-  }, new Map(), new Set([42]));
+  }, new Map(), new Set());
   assert.equal(entry.status, "Evaluating");
 });
 
@@ -99,7 +99,9 @@ test("queue sorts pending reviews after results ready and before evaluating", as
   ];
   globalThis.fetch = async (url) => ({
     ok: true,
-    json: async () => url.startsWith("/api/issues") ? queuedIssues : [],
+    json: async () => url.startsWith("/api/issues")
+      ? queuedIssues
+      : [{ number: 2, evaluators: [], allLanguagesComplete: true }],
   });
   try {
     const entries = await listOpenEvalIssues();

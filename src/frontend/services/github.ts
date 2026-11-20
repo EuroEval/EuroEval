@@ -151,7 +151,7 @@ export function issueStatus(
   allLanguagesComplete = false,
 ): QueueStatus {
   if (resultsReady) return "Awaiting publish";
-  if (communityReviewReady && allLanguagesComplete) return "Pending review";
+  if (communityReviewReady) return allLanguagesComplete ? "Pending review" : "Evaluating";
   if (currentAssignees(issue).length > 0) return "Evaluating";
   if (gated) return "Gated model";
   if (failed) return "Error";
