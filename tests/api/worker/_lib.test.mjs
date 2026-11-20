@@ -164,6 +164,26 @@ test("validates canonical model identity and score bounds", () => {
     evaluation_results: [{ evaluation_name: "accuracy", source_data: { dataset_name: "dataset" }, metric_config: { lower_is_better: false, min_score: 0, max_score: 100 }, score_details: { score: 85 } }],
   };
   assert.equal(validateRecord(record, { modelId: "org/model", revision: "deadbeef", language: "da" }).failed, 0);
+  const norwegianExpected = { modelId: "org/model", revision: "deadbeef", language: "no" };
+  for (const languages of ['["no"]', '["nb","no"]', ["nn", "no"], '["nb","nn","no"]']) {
+    const norwegianRecord = {
+      ...record,
+      eval_library: { ...record.eval_library, additional_details: {
+        ...record.eval_library.additional_details, language: "no", languages,
+      } },
+    };
+    assert.equal(validateRecord(norwegianRecord, norwegianExpected).failed, 0);
+  }
+  for (const languages of ['["en"]', '["nb","en"]']) {
+    const invalidRecord = { ...record, eval_library: { ...record.eval_library, additional_details: {
+      ...record.eval_library.additional_details, language: "no", languages,
+    } } };
+    assert.throws(() => validateRecord(invalidRecord, norwegianExpected), /non-empty subset/);
+  }
+  const inconsistentNorwegianRecord = { ...record, eval_library: { ...record.eval_library, additional_details: {
+    ...record.eval_library.additional_details, language: "nb", languages: '["nn","no"]',
+  } } };
+  assert.throws(() => validateRecord(inconsistentNorwegianRecord, norwegianExpected), /inconsistent with languages/);
   const legacyRecord = { ...record, model_info: { id: "org/model" } };
   assert.throws(() => validateRecord(legacyRecord, {
     modelId: "org/model", revision: "deadbeef", language: "da",
