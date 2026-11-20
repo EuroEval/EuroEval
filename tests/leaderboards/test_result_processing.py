@@ -588,7 +588,7 @@ class TestUploadPerModelFilesPerRecordTree:
             publisher.prepare.assert_not_called()
             publisher.publish.assert_not_called()
             return
-        run()
+        leaderboard_records = run()
         assert prompted == expected_pairs
         written = json.loads(result_file.read_text(encoding="utf-8"))
         assert written["results"] == expected_record["results"]
@@ -596,6 +596,7 @@ class TestUploadPerModelFilesPerRecordTree:
         assert len(verified_payloads) == 2
         assert verified_payloads[0] == verified_payloads[1]
         assert json.loads(verified_payloads[0]) == written
+        assert leaderboard_records == [written]
 
     def test_writes_expected_directory_tree(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
@@ -772,7 +773,9 @@ def test_cache_freshness_load_before_cache_construction(
     monkeypatch.setattr(
         result_processing,
         "_upload_per_model_files",
-        lambda processed_records, upload_to_bucket=False, local_only_label=None: None,
+        lambda processed_records, upload_to_bucket=False, local_only_label=None: (
+            processed_records
+        ),
     )
 
     result_processing.process_results(
@@ -868,7 +871,9 @@ def test_process_results_clears_cache_after_upload(
     monkeypatch.setattr(
         result_processing,
         "_upload_per_model_files",
-        lambda processed_records, upload_to_bucket=False, local_only_label=None: None,
+        lambda processed_records, upload_to_bucket=False, local_only_label=None: (
+            processed_records
+        ),
     )
 
     result_processing.process_results(
@@ -900,6 +905,7 @@ def test_process_results_keeps_canary_records_out_of_public_uploads() -> None:
         patch.object(Cache, "from_results_dir", return_value=Cache()),
         patch.object(result_processing, "_upload_per_model_files") as upload,
     ):
+        upload.return_value = []
         result_processing.process_results(
             min_version="0.0.0",
             min_number_of_model_records=0,
@@ -961,8 +967,8 @@ def test_process_results_returns_leaderboard_records_without_canary_exclusions()
         patch.object(
             result_processing,
             "_upload_per_model_files",
-            side_effect=lambda processed_records, **kwargs: uploaded.append(
-                processed_records
+            side_effect=lambda processed_records, **kwargs: (
+                uploaded.append(processed_records) or processed_records
             ),
         ),
     ):
@@ -978,6 +984,84 @@ def test_process_results_returns_leaderboard_records_without_canary_exclusions()
 
     assert processed == [{"id": "kept"}]
     assert uploaded[0] == records
+
+
+def test_process_results_returns_the_written_conflict_winner(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Leaderboard input uses the same payload selected and written by storage."""
+    monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
+    records: list[dict[str, t.Any]] = []
+    for score in (0.2, 0.8):
+        records.append(
+            {
+                "model_info": {"id": "org/model", "name": "org/model"},
+                "eval_library": {
+                    "name": "euroeval",
+                    "version": "1.0.0",
+                    "additional_details": {
+                        "dataset": "dataset",
+                        "few_shot": False,
+                        "validation_split": False,
+                    },
+                },
+                "evaluation_results": [{"score": score}],
+            }
+        )
+    load = MagicMock(return_value=records)
+    load.cache_clear = MagicMock()
+
+    def incoming_choice(
+        *,
+        current: dict[str, t.Any],
+        candidate: dict[str, t.Any],
+        current_bytes: bytes | None = None,
+        candidate_bytes: bytes | None = None,
+    ) -> ConflictDecision:
+        return resolve_result_conflict(
+            current=current,
+            candidate=candidate,
+            current_bytes=current_bytes,
+            candidate_bytes=candidate_bytes,
+            choice=ConflictChoice.INCOMING,
+        )
+
+    with (
+        patch.object(result_processing, "load_raw_results", load),
+        patch.object(
+            result_processing,
+            "process_contamination_canaries",
+            return_value=(records, [], set(), {"status": "scored"}),
+        ),
+        patch.object(Cache, "from_results_dir", return_value=Cache()),
+        patch.object(
+            result_processing,
+            "deduplicate_records",
+            side_effect=lambda records: records,
+        ),
+        patch.object(
+            result_processing, "fix_metadata", side_effect=lambda record: record
+        ),
+        patch.object(result_processing, "record_is_valid", return_value=True),
+        patch.object(
+            result_processing,
+            "add_missing_entries",
+            side_effect=lambda record, **kwargs: record,
+        ),
+    ):
+        leaderboard_records = result_processing.process_results(
+            min_version="0.0.0",
+            min_number_of_model_records=0,
+            banned_versions=[],
+            banned_model_patterns=[],
+            api_model_patterns=[],
+            trained_from_scratch_patterns=[],
+            conflict_resolver=incoming_choice,
+        )
+
+    written_record = json.loads(next(tmp_path.rglob("*.json")).read_text())
+    assert leaderboard_records == [written_record]
+    assert leaderboard_records[0]["evaluation_results"] == [{"score": 0.8}]
 
 
 def test_sync_bucket_passes_hf_token(

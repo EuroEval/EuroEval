@@ -100,8 +100,9 @@ def process_results(
             automatic-only policy for library callers.
 
     Returns:
-        Processed public records eligible for leaderboard generation. Canary-excluded
-        models are omitted, although their ordinary records remain in storage.
+        Reconciled public records eligible for leaderboard generation. These are the
+        exact winners written and optionally published; canary-excluded models are
+        omitted, although their ordinary records remain in storage.
     """
     # Load raw results first so per-model files in RESULTS_DIR are synced.
     reset_leaderboard_result_filter()
@@ -165,7 +166,7 @@ def process_results(
     upload_options: dict[str, t.Any] = {}
     if conflict_resolver is not None:
         upload_options["conflict_resolver"] = conflict_resolver
-    _upload_per_model_files(
+    reconciled_records = _upload_per_model_files(
         processed_records=processed_records,
         upload_to_bucket=upload_to_bucket,
         **upload_options,
@@ -182,7 +183,7 @@ def process_results(
     logger.info("Cleared load_raw_results cache.")
     return [
         record
-        for record in processed_records
+        for record in reconciled_records
         if identity_from_eee_record(record)[0] not in excluded_models
     ]
 
@@ -192,7 +193,7 @@ def _upload_per_model_files(
     upload_to_bucket: bool = False,
     local_only_label: str | None = None,
     conflict_resolver: Callable[..., ConflictDecision] | None = None,
-) -> None:
+) -> list[dict[str, t.Any]]:
     """Write one JSON file per logical result and optionally sync to the HF bucket.
 
     Each record is written to
@@ -214,6 +215,9 @@ def _upload_per_model_files(
             results, included in the non-upload log message.
         conflict_resolver (optional):
             Terminal adapter for unresolved records; omitted callers fail closed.
+
+    Returns:
+        The final records selected for each written path, in path insertion order.
 
     Raises:
         RuntimeError:
@@ -338,6 +342,8 @@ def _upload_per_model_files(
 
     if dropped_count > 0:
         logger.info(f"Dropped {dropped_count:,} records with unresolvable identities.")
+
+    return [record for record, _ in final_records.values()]
 
 
 def _capture_local_sources(

@@ -70,6 +70,7 @@ from leaderboards.result_conflict_prompt import resolve_result_interactively
 from leaderboards.result_conflicts import (
     ConflictChoice,
     ConflictDecision,
+    ConflictReason,
     resolve_result_conflict,
 )
 from leaderboards.result_identity import (
@@ -848,6 +849,8 @@ def upload_results_to_hf(
                     logger.error("Result collection aborted: %s", error)
                     return False
             else:
+                if automatic.selected is ConflictChoice.STORED:
+                    existing[identity] = original_record
                 decisions[:] = [
                     item for item in decisions if item.evidence.identity != identity
                 ]
@@ -855,14 +858,19 @@ def upload_results_to_hf(
         decisions[:] = [
             item for item in decisions if item.evidence.identity != identity
         ]
-        if prior.selected is not None:
+        if prior.selected is ConflictChoice.STORED:
+            existing[identity] = original_record
+            decisions[:] = [
+                item for item in decisions if item.evidence.identity != identity
+            ]
+        elif prior.selected is ConflictChoice.INCOMING:
             decisions.append(
                 resolve_result_conflict(
                     current=original_record,
                     candidate=final_record,
                     current_bytes=original_bytes,
                     candidate_bytes=final_bytes,
-                    choice=prior.selected,
+                    choice=ConflictChoice.INCOMING,
                 )
             )
 
@@ -1017,8 +1025,9 @@ def _load_existing_results(
         if decision.selected.value == "incoming":
             existing[identity] = record
             winning_sources[identity] = content
-        elif not decision.needs_choice and json_file == RESULTS_DIR / identity_to_path(
-            identity
+        elif (
+            decision.reason is ConflictReason.IDENTICAL
+            and json_file == RESULTS_DIR / identity_to_path(identity)
         ):
             existing[identity] = record
             winning_sources[identity] = content
