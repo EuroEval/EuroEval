@@ -1,7 +1,9 @@
 """Tests for the `safetensors_utils` module."""
 
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+import pytest
 from huggingface_hub.errors import NotASafetensorsRepoError
 
 from euroeval.safetensors_utils import get_num_params_from_safetensors_metadata
@@ -36,6 +38,58 @@ class TestGetNumParamsFromSafetensorsMetadata:
         )
 
         assert result is None
+
+    def test_falls_back_when_hub_request_fails(self, mock_hub_api: MagicMock) -> None:
+        """Use header counts when the Hub model-info request fails.
+
+        Args:
+            mock_hub_api:
+                Mock Hub API constructor supplied to the test.
+        """
+        mock_hub_api.return_value.model_info.side_effect = RuntimeError("offline")
+        metadata = MagicMock(parameter_count={"BF16": 100})
+        with (
+            patch(
+                "euroeval.safetensors_utils.get_safetensors_metadata",
+                return_value=metadata,
+            ),
+            patch("euroeval.safetensors_utils.get_hf_token", return_value=None),
+        ):
+            result = get_num_params_from_safetensors_metadata(
+                model_id="test/model", revision="main", api_key=None
+            )
+
+        assert result == 100
+
+    @pytest.mark.parametrize("total", [None, 0])
+    def test_falls_back_when_hub_total_is_missing(
+        self, mock_hub_api: MagicMock, total: int | None
+    ) -> None:
+        """Use header counts when Hub safetensors totals are unavailable.
+
+        Args:
+            mock_hub_api:
+                Mock Hub API constructor supplied to the test.
+            total:
+                Missing or zero total from Hub model information.
+        """
+        mock_hub_api.return_value.model_info.return_value.safetensors = (
+            None if total is None else SimpleNamespace(total=total)
+        )
+        metadata = MagicMock(parameter_count={"U8": 19_110_297_600})
+        with (
+            patch(
+                "euroeval.safetensors_utils.get_safetensors_metadata",
+                return_value=metadata,
+            ) as get_metadata,
+            patch("euroeval.safetensors_utils.get_hf_token", return_value=None),
+        ):
+            result = get_num_params_from_safetensors_metadata(
+                model_id="test/model", revision="main", api_key=None
+            )
+
+        assert result == 19_110_297_600
+        get_metadata.assert_called_once()
 
     @patch("euroeval.safetensors_utils.get_hf_token")
     @patch("euroeval.safetensors_utils.get_safetensors_metadata")
@@ -126,6 +180,41 @@ class TestGetNumParamsFromSafetensorsMetadata:
             repo_id="test/model", revision="main", token=False
         )
 
+    @pytest.mark.parametrize(
+        ("total", "expected"),
+        [
+            (20_914_757_184, 20_914_757_184),
+            (116_829_156_672, 116_829_156_672),
+            (1_234, 1_234),
+        ],
+    )
+    def test_uses_hub_logical_total(
+        self, mock_hub_api: MagicMock, total: int, expected: int
+    ) -> None:
+        """Return Hub's logical total without adjusting packed dtype counts.
+
+        Args:
+            mock_hub_api:
+                Mock Hub API constructor supplied to the test.
+            total:
+                Logical parameter total in Hub model information.
+            expected:
+                Expected parameter count.
+        """
+        mock_hub_api.return_value.model_info.return_value.safetensors = SimpleNamespace(
+            total=total
+        )
+
+        result = get_num_params_from_safetensors_metadata(
+            model_id="test/model", revision="release", api_key="secret"
+        )
+
+        assert result == expected
+        mock_hub_api.assert_called_once_with(token="secret")
+        mock_hub_api.return_value.model_info.assert_called_once_with(
+            repo_id="test/model", revision="release"
+        )
+
     @patch("euroeval.safetensors_utils.get_hf_token")
     @patch("euroeval.safetensors_utils.get_safetensors_metadata")
     def test_with_api_key(
@@ -187,3 +276,24 @@ class TestGetNumParamsFromSafetensorsMetadata:
         mock_get_metadata.assert_called_once_with(
             repo_id="test/model", revision="v2.0", token=False
         )
+
+
+@pytest.fixture(autouse=True)
+def mock_hub_api(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
+    """Mock Hub model-info requests for every public-function test.
+
+    Args:
+        monkeypatch:
+            Pytest monkeypatch fixture.
+
+    Returns:
+        The mocked Hub API constructor.
+    """
+    api = MagicMock()
+    api.model_info.return_value.safetensors = None
+    hf_api = MagicMock(return_value=api)
+    monkeypatch.setattr("euroeval.safetensors_utils.HfApi", hf_api)
+    monkeypatch.setattr(
+        "euroeval.safetensors_utils.internet_connection_available", lambda: True
+    )
+    return hf_api
