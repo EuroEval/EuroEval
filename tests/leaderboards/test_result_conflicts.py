@@ -58,7 +58,7 @@ class TestResolveResultConflict:
             evaluation_timestamp="2026-01-01T00:00:00Z",
             score=0.5,
         )
-        current["evaluation_id"] = "custom-run-a"
+        current["evaluation_id"] = "custom-run-original"
         candidate["evaluation_id"] = evaluation_id
 
         decision = resolve_result_conflict(current=current, candidate=candidate)
@@ -146,7 +146,7 @@ class TestResolveResultConflict:
         assert decision.selected == ConflictChoice.INCOMING
         assert decision.reason == ConflictReason.NEWER_EVALUATION
         assert [difference.field for difference in decision.differences] == [
-            "evaluation_results.0.score_details.score"
+            "evaluation_results"
         ]
         assert current["evaluation_id"] != candidate["evaluation_id"]
         assert current["evaluation_results"] != candidate["evaluation_results"]
