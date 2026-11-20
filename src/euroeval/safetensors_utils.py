@@ -3,7 +3,7 @@
 import logging
 from pathlib import Path
 
-from huggingface_hub import get_safetensors_metadata
+from huggingface_hub import HfApi, get_safetensors_metadata
 from huggingface_hub.errors import (
     GatedRepoError,
     HfHubHTTPError,
@@ -38,9 +38,20 @@ def get_num_params_from_safetensors_metadata(
     if not internet_connection_available() or Path(model_id).exists():
         return None
 
+    token = get_hf_token(api_key=api_key)
+    try:
+        model_info = HfApi(token=token).model_info(repo_id=model_id, revision=revision)
+        safetensors = model_info.safetensors
+        if safetensors is not None and safetensors.total:
+            return safetensors.total
+    except Exception:
+        # Hub metadata is an optimisation; retain safetensors-header fallback when
+        # model_info is unavailable or lacks a logical parameter total.
+        pass
+
     try:
         metadata = get_safetensors_metadata(
-            repo_id=model_id, revision=revision, token=get_hf_token(api_key=api_key)
+            repo_id=model_id, revision=revision, token=token
         )
     except NotASafetensorsRepoError:
         log_once(
