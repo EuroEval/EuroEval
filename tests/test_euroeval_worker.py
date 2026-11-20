@@ -610,6 +610,80 @@ def test_canary_corpus_outage_does_not_block_results(
     assert not broker.releases
 
 
+def test_continuous_worker_retries_evaluation_and_completes_work(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Continue after a failed evaluation and process subsequent work.
+
+    Args:
+        monkeypatch:
+            Fixture replacing network dependencies and the delay function.
+        tmp_path:
+            Private worker state directory.
+    """
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
+    delay_calls: list[float] = []
+
+    def stop_after_completion(delay: float) -> None:
+        """Stop the unbounded worker after the next no-work response.
+
+        Raises:
+            KeyboardInterrupt:
+                To terminate the test worker after successful work.
+        """
+        delay_calls.append(delay)
+        if len(delay_calls) == 2:
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(runtime.time, "sleep", stop_after_completion)
+
+    class OneFailureEvaluator:
+        """Fail once, then provide a result on the retry."""
+
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
+            """Return a result after the first simulated engine failure.
+
+            Raises:
+                RuntimeError:
+                    On the first evaluator invocation.
+            """
+            self.calls += 1
+            if self.calls == 1:
+                raise RuntimeError("engine initialisation failed")
+            return [EEERecord({"id": "recovered"})]
+
+    class OneLeaseBroker(Broker):
+        """Offer one lease, then report no additional work."""
+
+        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            """Return the lease once and then no work."""
+            self.claims += 1
+            return Claim(LEASE if self.claims == 1 else None)
+
+    broker = OneLeaseBroker()
+    evaluator_instance = OneFailureEvaluator()
+    with pytest.raises(KeyboardInterrupt):
+        runtime.Worker(
+            client=broker,
+            state=StateStore(tmp_path),
+            evaluator=evaluator_instance,
+            hardware_factory=lambda: HARDWARE,
+        ).run()
+
+    assert evaluator_instance.calls == 2
+    assert broker.finalised
+    assert delay_calls == [30.0, 30]
+    assert StateStore(tmp_path).load_active() is None
+
+
 def test_discover_hardware_does_not_import_torch_in_worker(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -797,10 +871,10 @@ def test_encoder_canary_uses_ordinary_result_path_without_corpus(
     assert broker.finalised
 
 
-def test_evaluation_failure_releases_lease(
+def test_evaluation_failure_keeps_active_lease_for_once(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Release a lease when evaluation fails.
+    """Preserve the lease and propagate evaluation errors in once mode.
 
     Args:
         monkeypatch:
@@ -839,10 +913,13 @@ def test_evaluation_failure_releases_lease(
         evaluator=FailingEvaluator(),
         hardware_factory=lambda: HARDWARE,
     )
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError, match="evaluation failed"):
         worker.run(once=True)
     assert broker.releases == []
-    assert StateStore(tmp_path).load_active() is not None
+    active = StateStore(tmp_path).load_active()
+    assert active is not None
+    assert active.evaluation_failures == 0
+    assert not active.release_pending
 
 
 class Broker:
@@ -1823,11 +1900,13 @@ def test_state_round_trip_preserves_scope_alternatives_and_canary(
     )
     state = StateStore(tmp_path)
 
-    state.save_active(lease=lease)
+    state.save_active(lease=lease, evaluation_failures=2, release_pending=True)
     active = state.load_active()
 
     assert active is not None
     assert active.lease == lease
+    assert active.evaluation_failures == 2
+    assert active.release_pending
 
 
 def test_worker_caps_vllm_utilisation_to_fresh_free_gpu_memory(

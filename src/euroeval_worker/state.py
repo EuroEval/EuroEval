@@ -200,6 +200,8 @@ class ActiveLease:
     records: tuple[PendingRecord, ...]
     github_login: str | None = None
     finalised_submission_id: str | None = None
+    evaluation_failures: int = 0
+    release_pending: bool = False
 
 
 class StateStore:
@@ -221,12 +223,13 @@ class StateStore:
 
     def archive_active(self) -> None:
         """Move expired or lost work aside before claiming another lease."""
-        if not self.active_path.exists():
-            return
-        self.archive_dir.mkdir(parents=True, exist_ok=True)
-        target = self.archive_dir / f"active-lease-{time.time_ns()}.json"
-        self.active_path.replace(target)
-        os.chmod(target, 0o600)
+        with self._lock:
+            if not self.active_path.exists():
+                return
+            self.archive_dir.mkdir(parents=True, exist_ok=True)
+            target = self.archive_dir / f"active-lease-{time.time_ns()}.json"
+            self.active_path.replace(target)
+            os.chmod(target, 0o600)
 
     def clear_active(self) -> None:
         """Remove the active lease after successful finalisation."""
@@ -331,6 +334,16 @@ class StateStore:
             github_login = raw.get("github_login")
             if github_login is not None and not isinstance(github_login, str):
                 raise ValueError("github_login is malformed")
+            evaluation_failures = raw.get("evaluation_failures", 0)
+            if (
+                not isinstance(evaluation_failures, int)
+                or isinstance(evaluation_failures, bool)
+                or evaluation_failures < 0
+            ):
+                raise ValueError("evaluation_failures is malformed")
+            release_pending = raw.get("release_pending", False)
+            if not isinstance(release_pending, bool):
+                raise ValueError("release_pending is malformed")
             finalised_submission_id = raw.get("finalised_submission_id")
             if finalised_submission_id is not None and (
                 not isinstance(finalised_submission_id, str)
@@ -342,6 +355,8 @@ class StateStore:
                 records=records,
                 github_login=github_login,
                 finalised_submission_id=finalised_submission_id,
+                evaluation_failures=evaluation_failures,
+                release_pending=release_pending,
             )
         except (
             OSError,
@@ -360,6 +375,8 @@ class StateStore:
         records: tuple[PendingRecord, ...] = (),
         github_login: str | None = None,
         finalised_submission_id: str | None = None,
+        evaluation_failures: int = 0,
+        release_pending: bool = False,
     ) -> None:
         """Atomically save a lease before evaluation or submission starts.
 
@@ -372,6 +389,10 @@ class StateStore:
                 Verified account name associated with the broker credential.
             finalised_submission_id (optional):
                 Finalised submission id.
+            evaluation_failures (optional):
+                Number of failed evaluator attempts retained across restarts.
+            release_pending (optional):
+                Whether an exhausted failed job must be released before claiming.
         """
         with self._lock:
             self._atomic_write(
@@ -382,6 +403,8 @@ class StateStore:
                         records=records,
                         github_login=github_login,
                         finalised_submission_id=finalised_submission_id,
+                        evaluation_failures=evaluation_failures,
+                        release_pending=release_pending,
                     )
                 ),
             )
@@ -439,6 +462,8 @@ class StateStore:
                         records=active.records,
                         github_login=active.github_login,
                         finalised_submission_id=active.finalised_submission_id,
+                        evaluation_failures=active.evaluation_failures,
+                        release_pending=active.release_pending,
                     )
                 ),
             )
@@ -513,6 +538,8 @@ class StateStore:
                 records=records,
                 github_login=active.github_login,
                 finalised_submission_id=active.finalised_submission_id,
+                evaluation_failures=active.evaluation_failures,
+                release_pending=active.release_pending,
             )
 
     def save_submission_id(self, submission_id: str) -> None:
@@ -541,6 +568,8 @@ def _active_dict(active: ActiveLease) -> JsonObject:
         "records": [dataclasses.asdict(record) for record in active.records],
         "github_login": active.github_login,
         "finalised_submission_id": active.finalised_submission_id,
+        "evaluation_failures": active.evaluation_failures,
+        "release_pending": active.release_pending,
     }
 
 
