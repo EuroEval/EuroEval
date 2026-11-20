@@ -3,6 +3,7 @@
 import json
 import typing as t
 from enum import Enum, auto
+from functools import partial
 from pathlib import Path
 from unittest.mock import MagicMock, call, patch
 
@@ -12,6 +13,13 @@ from huggingface_hub.errors import HfHubHTTPError
 
 from leaderboards import bucket_sync, result_processing
 from leaderboards.cache import Cache
+from leaderboards.result_conflict_prompt import resolve_result_interactively
+from leaderboards.result_conflicts import (
+    ConflictChoice,
+    ConflictDecision,
+    resolve_result_conflict,
+)
+from leaderboards.result_identity import ResultIdentity, UnresolvedResultConflictError
 
 
 class CallOrder(Enum):
@@ -24,6 +32,76 @@ class CallOrder(Enum):
 
 class TestUploadPerModelFilesPerRecordTree:
     """Tests for the per-record JSON tree storage format."""
+
+    def test_ambiguous_duplicate_aborts_before_writing(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Different scores without chronology abort before local mutation.
+
+        Args:
+            monkeypatch:
+                Pytest fixture for replacing dependencies during the test.
+            tmp_path:
+                Temporary directory for files created by the test.
+        """
+        monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
+
+        mock_api = MemoryBucketApi()
+
+        # Older record (version 1.0.0)
+        older_record: dict[str, t.Any] = {
+            "model_info": {
+                "id": "org/model",
+                "name": "org/model",
+                "additional_details": {"score": 50},
+            },
+            "dataset": {"name": "mmlu"},
+            "task": {"name": "classification"},
+            "eval_library": {
+                "name": "euroeval",
+                "version": "1.0.0",  # Older version
+                "additional_details": {
+                    "dataset": "mmlu",
+                    "few_shot": False,
+                    "validation_split": False,
+                },
+            },
+            "results": {},
+        }
+
+        # Newer record (version 2.0.0)
+        newer_record: dict[str, t.Any] = {
+            "model_info": {
+                "id": "org/model",
+                "name": "org/model",
+                "additional_details": {"score": 90},
+            },
+            "dataset": {"name": "mmlu"},
+            "task": {"name": "classification"},
+            "eval_library": {
+                "name": "euroeval",
+                "version": "2.0.0",  # Newer version
+                "additional_details": {
+                    "dataset": "mmlu",
+                    "few_shot": False,
+                    "validation_split": False,
+                },
+            },
+            "results": {},
+        }
+
+        with patch("leaderboards.result_processing.HfApi", return_value=mock_api):
+            with patch(
+                "leaderboards.result_processing.resolve_hf_token",
+                return_value="test_token",
+            ):
+                with pytest.raises(UnresolvedResultConflictError):
+                    result_processing._upload_per_model_files(
+                        processed_records=[older_record, newer_record],
+                        upload_to_bucket=True,
+                    )
+
+        assert not list(tmp_path.rglob("*.json"))
 
     def test_invalid_model_record_dropped_with_log(
         self,
@@ -153,83 +231,6 @@ class TestUploadPerModelFilesPerRecordTree:
             is True
         )
 
-    def test_older_duplicate_does_not_clobber_newer(
-        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-    ) -> None:
-        """Test that when two records have the same identity, the newer is kept.
-
-        Args:
-            monkeypatch:
-                Pytest fixture for replacing dependencies during the test.
-            tmp_path:
-                Temporary directory for files created by the test.
-        """
-        monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
-
-        mock_api = MemoryBucketApi()
-
-        # Older record (version 1.0.0)
-        older_record: dict[str, t.Any] = {
-            "model_info": {
-                "id": "org/model",
-                "name": "org/model",
-                "additional_details": {"score": 50},
-            },
-            "dataset": {"name": "mmlu"},
-            "task": {"name": "classification"},
-            "eval_library": {
-                "name": "euroeval",
-                "version": "1.0.0",  # Older version
-                "additional_details": {
-                    "dataset": "mmlu",
-                    "few_shot": False,
-                    "validation_split": False,
-                },
-            },
-            "results": {},
-        }
-
-        # Newer record (version 2.0.0)
-        newer_record: dict[str, t.Any] = {
-            "model_info": {
-                "id": "org/model",
-                "name": "org/model",
-                "additional_details": {"score": 90},
-            },
-            "dataset": {"name": "mmlu"},
-            "task": {"name": "classification"},
-            "eval_library": {
-                "name": "euroeval",
-                "version": "2.0.0",  # Newer version
-                "additional_details": {
-                    "dataset": "mmlu",
-                    "few_shot": False,
-                    "validation_split": False,
-                },
-            },
-            "results": {},
-        }
-
-        with patch("leaderboards.result_processing.HfApi", return_value=mock_api):
-            with patch(
-                "leaderboards.result_processing.resolve_hf_token",
-                return_value="test_token",
-            ):
-                result_processing._upload_per_model_files(
-                    processed_records=[older_record, newer_record],
-                    upload_to_bucket=True,
-                )
-
-        # Only one file should exist
-        model_dir = tmp_path / "org_model"
-        result_file = model_dir / "mmlu__test__zeroshot.json"
-        assert result_file.exists()
-
-        # The newer record should be kept (score=90)
-        content = result_file.read_text(encoding="utf-8")
-        written_record = json.loads(content)
-        assert written_record["model_info"]["additional_details"]["score"] == 90
-
     def test_path_collision_raises_clear_error(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
@@ -303,6 +304,299 @@ class TestUploadPerModelFilesPerRecordTree:
 
         # No files should be written on collision
         assert list(tmp_path.iterdir()) == []
+
+    def test_process_results_reports_identity_normalised_conflict(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Catch distinct source splits collapsing after metadata repair.
+
+        Args:
+            monkeypatch: Fixture for replacing filesystem dependencies.
+            tmp_path: Isolated result directory.
+        """
+        monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
+        records = [
+            {
+                "model_info": {"id": "org/model", "name": "org/model"},
+                "dataset": {"name": "values"},
+                "task": {"name": "european-values"},
+                "eval_library": {
+                    "name": "euroeval",
+                    "version": "1.0.0",
+                    "additional_details": {
+                        "dataset": "values",
+                        "task": "european-values",
+                        "few_shot": False,
+                        "validation_split": split,
+                    },
+                },
+                "results": {"score": score},
+            }
+            for split, score in ((False, 0.5), (True, 0.9))
+        ]
+        load = MagicMock(return_value=records)
+        load.cache_clear = MagicMock()
+        monkeypatch.setattr(result_processing, "load_raw_results", load)
+        monkeypatch.setattr(
+            result_processing,
+            "process_contamination_canaries",
+            lambda records: (records, [], set(), {"status": "scored"}),
+        )
+        monkeypatch.setattr(Cache, "from_results_dir", lambda results_dir: Cache())
+        monkeypatch.setattr(
+            result_processing, "deduplicate_records", lambda records: records
+        )
+        monkeypatch.setattr(result_processing, "record_is_valid", lambda **kwargs: True)
+        monkeypatch.setattr(
+            result_processing, "add_missing_entries", lambda record, **kwargs: record
+        )
+
+        with pytest.raises(UnresolvedResultConflictError) as error:
+            result_processing.process_results(
+                min_version="0.0.0",
+                min_number_of_model_records=0,
+                banned_versions=[],
+                banned_model_patterns=[],
+                api_model_patterns=[],
+                trained_from_scratch_patterns=[],
+            )
+
+        assert "org/model" in str(error.value)
+        assert "results" in str(error.value)
+        assert list(tmp_path.rglob("*.json")) == []
+
+    @pytest.mark.parametrize(
+        "scenario",
+        [
+            "keep_processed_winner",
+            "keep_original",
+            "new_identity",
+            "richer_final",
+            "richer_middle",
+            "later_approval",
+            "single_candidate",
+            "single_candidate_stored",
+            "stale_callback",
+            "abort",
+        ],
+    )
+    def test_three_contenders_resolve_against_processed_winner(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path, scenario: str
+    ) -> None:
+        """Keep the final selected record and bind only its exact approval.
+
+        Args:
+            monkeypatch: Fixture for replacing filesystem dependencies.
+            tmp_path: Isolated result directory.
+            scenario: Contender selection and canonical reconciliation case.
+        """
+        monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
+        records = [
+            {
+                "model_info": {"id": "org/model", "name": "org/model"},
+                "dataset": {"name": "values"},
+                "task": {"name": "classification"},
+                "eval_library": {
+                    "name": "euroeval",
+                    "version": "1.0.0",
+                    "additional_details": {
+                        "dataset": "values",
+                        "few_shot": False,
+                        "validation_split": False,
+                    },
+                },
+                "results": {"score": score},
+            }
+            for score in (0.1, 0.5, 0.9)
+        ]
+        choices = ["incoming", "stored", "incoming"]
+        expected_pairs = [(0.1, 0.5), (0.5, 0.9), (0.1, 0.5)]
+        expected_record = records[1]
+        if scenario == "keep_original":
+            choices[-1] = "stored"
+            expected_record = records[0]
+        elif scenario == "new_identity":
+            choices.pop()
+            expected_pairs.pop()
+        elif scenario in ("richer_final", "richer_middle", "later_approval"):
+            records[2]["results"] = {"score": 0.5}
+            choices = ["incoming", "incoming"]
+            expected_pairs = [(0.1, 0.5), (0.1, 0.5)]
+            if scenario == "later_approval":
+                choices[0] = "stored"
+            else:
+                rich = records[2] if scenario == "richer_final" else records[1]
+                rich["model_info"] = {
+                    "id": "org/model",
+                    "name": "org/model",
+                    "additional_details": {"open": True},
+                }
+                expected_record = rich
+        elif scenario in (
+            "single_candidate",
+            "single_candidate_stored",
+            "stale_callback",
+        ):
+            choices = [
+                "stored" if scenario == "single_candidate_stored" else "incoming"
+            ]
+            expected_pairs = [(0.1, 0.5)]
+            if scenario == "single_candidate_stored":
+                expected_record = records[0]
+        elif scenario == "abort":
+            choices = ["incoming", "abort"]
+            expected_pairs.pop()
+        answers = iter(choices)
+        result_file = tmp_path / "org_model" / "values__test__zeroshot.json"
+        original_source = json.dumps(
+            records[0],
+            sort_keys=True,
+            indent=2 if scenario not in ("richer_final", "later_approval") else None,
+            separators=(",", ":"),
+        ).encode()
+        if scenario != "new_identity":
+            result_file.parent.mkdir(parents=True)
+            result_file.write_bytes(original_source)
+        publisher = MagicMock()
+        publisher.session.return_value.__enter__.return_value = publisher
+        verified_payloads: list[bytes] = []
+
+        def verify_publication(
+            *,
+            records: list[bytes],
+            sources: dict[ResultIdentity, bytes],
+            decisions: list[ConflictDecision],
+        ) -> None:
+            """Check final payload evidence and preflight-before-write ordering.
+
+            Args:
+                records: Final serialised publication candidates.
+                sources: Captured canonical predecessor bytes.
+                decisions: Exact incoming overwrite approvals.
+            """
+            assert len(records) == 1
+            assert json.loads(records[0]) == expected_record
+            if not verified_payloads:
+                if scenario == "new_identity":
+                    assert not result_file.exists()
+                else:
+                    assert result_file.read_bytes() == original_source
+            if scenario in ("new_identity", "keep_original", "single_candidate_stored"):
+                assert decisions == []
+            else:
+                assert len(decisions) == 1
+                expected = resolve_result_conflict(
+                    current=json.loads(original_source),
+                    candidate=json.loads(records[0]),
+                    current_bytes=original_source,
+                    candidate_bytes=records[0],
+                    choice=ConflictChoice.INCOMING,
+                )
+                assert decisions[0].selected is ConflictChoice.INCOMING
+                assert decisions[0].evidence == expected.evidence
+            assert list(sources.values()) == (
+                [] if scenario == "new_identity" else [original_source]
+            )
+            verified_payloads.append(records[0])
+
+        publisher.prepare.side_effect = verify_publication
+        publisher.publish.side_effect = verify_publication
+        monkeypatch.setattr(
+            result_processing, "CanonicalPublisher", lambda **_: publisher
+        )
+        monkeypatch.setattr(result_processing, "resolve_hf_token", lambda: "test-token")
+        monkeypatch.setattr(result_processing, "HfApi", MagicMock)
+        monkeypatch.setattr(result_processing, "fix_metadata", lambda record: record)
+        inputs = [records[1]] if scenario.startswith("single_candidate") else records
+        load = MagicMock(return_value=inputs)
+        load.cache_clear = MagicMock()
+        monkeypatch.setattr(result_processing, "load_raw_results", load)
+        monkeypatch.setattr(
+            result_processing,
+            "process_contamination_canaries",
+            lambda records: (records, [], set(), {"status": "scored"}),
+        )
+        monkeypatch.setattr(Cache, "from_results_dir", lambda results_dir: Cache())
+        monkeypatch.setattr(
+            result_processing, "deduplicate_records", lambda records: records
+        )
+        monkeypatch.setattr(result_processing, "record_is_valid", lambda **kwargs: True)
+        monkeypatch.setattr(
+            result_processing, "add_missing_entries", lambda record, **kwargs: record
+        )
+        prompted: list[tuple[float, float]] = []
+
+        def choose_incoming(
+            *,
+            current: dict[str, t.Any],
+            candidate: dict[str, t.Any],
+            current_bytes: bytes,
+            candidate_bytes: bytes,
+        ) -> ConflictDecision:
+            """Apply one owner choice to the exact supplied contender pair.
+
+            Args:
+                current: Current selected record.
+                candidate: Incoming contender.
+                current_bytes: Exact current record bytes.
+                candidate_bytes: Exact incoming record bytes.
+
+            Returns:
+                The explicit choice for the supplied pair.
+            """
+            prompted.append(
+                (current["results"]["score"], candidate["results"]["score"])
+            )
+            answer = next(answers)
+            if answer == "abort":
+                return resolve_result_interactively(
+                    current=current,
+                    candidate=candidate,
+                    current_bytes=current_bytes,
+                    candidate_bytes=candidate_bytes,
+                    input_fn=MagicMock(side_effect=EOFError),
+                    interactive=True,
+                )
+            return resolve_result_conflict(
+                current=current,
+                candidate=candidate,
+                current_bytes=(
+                    b"unrelated current record"
+                    if scenario == "stale_callback"
+                    else current_bytes
+                ),
+                candidate_bytes=candidate_bytes,
+                choice=ConflictChoice(answer),
+            )
+
+        run = partial(
+            result_processing.process_results,
+            min_version="0.0.0",
+            min_number_of_model_records=0,
+            banned_versions=[],
+            banned_model_patterns=[],
+            api_model_patterns=[],
+            trained_from_scratch_patterns=[],
+            upload_to_bucket=True,
+            conflict_resolver=choose_incoming,
+        )
+        if scenario in ("abort", "stale_callback"):
+            with pytest.raises(UnresolvedResultConflictError):
+                run()
+            assert prompted == expected_pairs
+            assert result_file.read_bytes() == original_source
+            publisher.prepare.assert_not_called()
+            publisher.publish.assert_not_called()
+            return
+        leaderboard_records = run()
+        assert prompted == expected_pairs
+        written = json.loads(result_file.read_text(encoding="utf-8"))
+        assert written["results"] == expected_record["results"]
+        assert written["model_info"] == expected_record["model_info"]
+        assert len(verified_payloads) == 2
+        assert verified_payloads[0] == verified_payloads[1]
+        assert json.loads(verified_payloads[0]) == written
+        assert leaderboard_records == [written]
 
     def test_writes_expected_directory_tree(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
@@ -479,7 +773,9 @@ def test_cache_freshness_load_before_cache_construction(
     monkeypatch.setattr(
         result_processing,
         "_upload_per_model_files",
-        lambda processed_records, upload_to_bucket=False, local_only_label=None: None,
+        lambda processed_records, upload_to_bucket=False, local_only_label=None: (
+            processed_records
+        ),
     )
 
     result_processing.process_results(
@@ -575,7 +871,9 @@ def test_process_results_clears_cache_after_upload(
     monkeypatch.setattr(
         result_processing,
         "_upload_per_model_files",
-        lambda processed_records, upload_to_bucket=False, local_only_label=None: None,
+        lambda processed_records, upload_to_bucket=False, local_only_label=None: (
+            processed_records
+        ),
     )
 
     result_processing.process_results(
@@ -607,6 +905,7 @@ def test_process_results_keeps_canary_records_out_of_public_uploads() -> None:
         patch.object(Cache, "from_results_dir", return_value=Cache()),
         patch.object(result_processing, "_upload_per_model_files") as upload,
     ):
+        upload.return_value = []
         result_processing.process_results(
             min_version="0.0.0",
             min_number_of_model_records=0,
@@ -668,8 +967,8 @@ def test_process_results_returns_leaderboard_records_without_canary_exclusions()
         patch.object(
             result_processing,
             "_upload_per_model_files",
-            side_effect=lambda processed_records, **kwargs: uploaded.append(
-                processed_records
+            side_effect=lambda processed_records, **kwargs: (
+                uploaded.append(processed_records) or processed_records
             ),
         ),
     ):
@@ -685,6 +984,84 @@ def test_process_results_returns_leaderboard_records_without_canary_exclusions()
 
     assert processed == [{"id": "kept"}]
     assert uploaded[0] == records
+
+
+def test_process_results_returns_the_written_conflict_winner(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Leaderboard input uses the same payload selected and written by storage."""
+    monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
+    records: list[dict[str, t.Any]] = []
+    for score in (0.2, 0.8):
+        records.append(
+            {
+                "model_info": {"id": "org/model", "name": "org/model"},
+                "eval_library": {
+                    "name": "euroeval",
+                    "version": "1.0.0",
+                    "additional_details": {
+                        "dataset": "dataset",
+                        "few_shot": False,
+                        "validation_split": False,
+                    },
+                },
+                "evaluation_results": [{"score": score}],
+            }
+        )
+    load = MagicMock(return_value=records)
+    load.cache_clear = MagicMock()
+
+    def incoming_choice(
+        *,
+        current: dict[str, t.Any],
+        candidate: dict[str, t.Any],
+        current_bytes: bytes | None = None,
+        candidate_bytes: bytes | None = None,
+    ) -> ConflictDecision:
+        return resolve_result_conflict(
+            current=current,
+            candidate=candidate,
+            current_bytes=current_bytes,
+            candidate_bytes=candidate_bytes,
+            choice=ConflictChoice.INCOMING,
+        )
+
+    with (
+        patch.object(result_processing, "load_raw_results", load),
+        patch.object(
+            result_processing,
+            "process_contamination_canaries",
+            return_value=(records, [], set(), {"status": "scored"}),
+        ),
+        patch.object(Cache, "from_results_dir", return_value=Cache()),
+        patch.object(
+            result_processing,
+            "deduplicate_records",
+            side_effect=lambda records: records,
+        ),
+        patch.object(
+            result_processing, "fix_metadata", side_effect=lambda record: record
+        ),
+        patch.object(result_processing, "record_is_valid", return_value=True),
+        patch.object(
+            result_processing,
+            "add_missing_entries",
+            side_effect=lambda record, **kwargs: record,
+        ),
+    ):
+        leaderboard_records = result_processing.process_results(
+            min_version="0.0.0",
+            min_number_of_model_records=0,
+            banned_versions=[],
+            banned_model_patterns=[],
+            api_model_patterns=[],
+            trained_from_scratch_patterns=[],
+            conflict_resolver=incoming_choice,
+        )
+
+    written_record = json.loads(next(tmp_path.rglob("*.json")).read_text())
+    assert leaderboard_records == [written_record]
+    assert leaderboard_records[0]["evaluation_results"] == [{"score": 0.8}]
 
 
 def test_sync_bucket_passes_hf_token(

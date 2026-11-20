@@ -73,7 +73,6 @@ def load_raw_results() -> list[dict[str, t.Any]]:
         new_records = load_records_from_jsonl_files(paths=[NEW_RESULTS_PATH])
         logger.info(f"Loaded {len(new_records):,} new results from staging file.")
         records.extend(new_records)
-        NEW_RESULTS_PATH.unlink()
 
     # Canary duplicates must reach private scoring so immutable conflicts cannot be
     # hidden by ordinary storage-identity deduplication.
@@ -84,6 +83,9 @@ def load_raw_results() -> list[dict[str, t.Any]]:
     for idx, record in enumerate(records, start=1):
         if not is_eee_record(record=record):
             raise ValueError(f"raw results record {idx:,} is not an EEE-format record.")
+
+    if NEW_RESULTS_PATH.exists():
+        NEW_RESULTS_PATH.unlink()
 
     if _HIDE_AUXILIARY_RESULTS:
         records = [
@@ -101,8 +103,8 @@ def _dedup_by_storage_identity(
     """Deduplicate records by canonical storage identity.
 
     Groups records by ``(model_id, dataset, validation_split, few_shot)`` and
-    keeps only the newest record per identity using
-    :func:`.result_identity.dedup_newer_record`.
+    applies the shared semantic conflict policy. Identical evidence retains the
+    stored record; newer evaluation evidence can replace it, while ambiguity raises.
 
     Args:
         records:

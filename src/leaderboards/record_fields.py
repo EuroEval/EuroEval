@@ -11,48 +11,10 @@ from euroeval.date_utils import normalise_release_date
 from .records import get_bool_field, get_record_hash, is_few_shot_record
 
 
-def deduplicate_records(records: list[dict[str, t.Any]]) -> list[dict[str, t.Any]]:
-    """Deduplicate records by hash, keeping the newest EuroEval version per hash.
-
-    Records sharing a :func:`~leaderboards.records.get_record_hash` value render
-    on the same leaderboard row, so only one should survive. Among records with
-    an equal (newest) version, the one with richer metadata wins (more non-default
-    fields for commercially_licensed, open, merge, trained_from_scratch,
-    generative_type, model_url, and release_date). If still tied, the first one in
-    input order is kept to preserve explicit boolean values against conflicting later
-    duplicates.
-    Output is ordered by hash for stable, diff-friendly downstream files.
-
-    Args:
-        records:
-            The records to deduplicate. Every record must carry a dataset (so
-            that hashing succeeds).
-
-    Returns:
-        The deduplicated records, ordered by hash. Note that
-        ``get_record_hash`` raises ``ValueError`` if any record has no dataset.
-    """
-    best: dict[str, tuple[list[int], int, dict[str, t.Any]]] = {}
-    for record in records:
-        hash_value = get_record_hash(record=record)
-        version = list(map(int, (get_version(record=record) or "0.0.0").split(".")))
-        richness = _metadata_richness_score(record=record)
-        existing = best.get(hash_value)
-        # Prefer: newer version > richer metadata
-        # On tie (same version and richness), keep existing record to preserve
-        # explicit boolean values (e.g. False) against conflicting later duplicates
-        if existing is None or version > existing[0]:
-            best[hash_value] = (version, richness, record)
-        elif version == existing[0] and richness > existing[1]:
-            best[hash_value] = (version, richness, record)
-    return [record for _, (_, _, record) in sorted(best.items())]
-
-
 def _metadata_richness_score(record: dict) -> int:
-    """Score how "rich" a record's metadata is.
+    """Count known metadata fields for diagnostics only.
 
-    Higher scores indicate more complete, non-default metadata. Used to break
-    ties during deduplication when two records share the same version.
+    This score is not used to choose between leaderboard-equivalent rows.
 
     Args:
         record:
@@ -97,21 +59,28 @@ def _metadata_richness_score(record: dict) -> int:
     return score
 
 
-def get_version(record: dict) -> str | None:
-    """Get the EuroEval version from an EEE record.
+def deduplicate_records(records: list[dict[str, t.Any]]) -> list[dict[str, t.Any]]:
+    """Deduplicate leaderboard-equivalent records without metadata ranking.
+
+    Storage-identity conflict resolution is handled before this function. Distinct
+    storage identities can share a leaderboard row, so neither metadata count nor
+    library version is a safe basis for choosing between them. The first record for
+    each hash is retained. Output is ordered by hash for stable downstream files.
 
     Args:
-        record:
-            A result record in EEE format.
+        records:
+            The records to deduplicate. Every record must carry a dataset (so
+            that hashing succeeds).
 
     Returns:
-        The ``eval_library.version`` string with any ``.dev`` suffix stripped,
-        or None if not found.
+        The deduplicated records, ordered by hash. Note that
+        ``get_record_hash`` raises ``ValueError`` if any record has no dataset.
     """
-    version = record.get("eval_library", {}).get("version")
-    if version:
-        return re.sub(r"\.dev\d*$", "", version)
-    return None
+    best: dict[str, dict[str, t.Any]] = {}
+    for record in records:
+        hash_value = get_record_hash(record=record)
+        best.setdefault(hash_value, record)
+    return [best[hash_value] for hash_value in sorted(best)]
 
 
 def get_few_shot(record: dict) -> bool:
@@ -240,3 +209,20 @@ def get_validation_split(record: dict) -> bool:
         The validation_split boolean value, defaulting to False.
     """
     return get_bool_field(record, "validation_split", False)
+
+
+def get_version(record: dict) -> str | None:
+    """Get the EuroEval version from an EEE record.
+
+    Args:
+        record:
+            A result record in EEE format.
+
+    Returns:
+        The ``eval_library.version`` string with any ``.dev`` suffix stripped,
+        or None if not found.
+    """
+    version = record.get("eval_library", {}).get("version")
+    if version:
+        return re.sub(r"\.dev\d*$", "", version)
+    return None

@@ -8,7 +8,10 @@ import pytest
 from huggingface_hub import BucketFile
 
 from leaderboards import bucket_sync
-from leaderboards.result_identity import record_relative_path
+from leaderboards.result_identity import (
+    UnresolvedResultConflictError,
+    record_relative_path,
+)
 
 
 def test_all_downloads_validate_before_any_file_is_replaced(
@@ -111,6 +114,33 @@ def make_record(score: int = 1) -> dict[str, object]:
     }
 
 
+def test_ambiguous_refresh_preserves_files_and_manifest(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A same-identity score conflict aborts before refresh mutations."""
+    path = "org_model/dataset__test__zeroshot.json"
+    local = json.dumps(make_record(score=1)).encode()
+    remote = json.dumps(make_record(score=2)).encode()
+    bucket = FakeBucket({path: ("remote-generation", remote)})
+    configure(monkeypatch, tmp_path, bucket)
+    destination = result_path(tmp_path / "results")
+    destination.parent.mkdir(parents=True)
+    destination.write_bytes(local)
+    manifest = tmp_path / ".results-bucket-manifest.json"
+    manifest.write_text('{"old": "generation"}', encoding="utf-8")
+
+    with pytest.raises(UnresolvedResultConflictError):
+        bucket_sync.download_missing_bucket_files()
+
+    assert destination.read_bytes() == local
+    assert manifest.read_text(encoding="utf-8") == '{"old": "generation"}'
+
+
+def result_path(root: Path) -> Path:
+    """Return the canonical result path beneath a result root."""
+    return root / "org_model/dataset__test__zeroshot.json"
+
+
 def test_anchored_record_refreshes_at_canonical_path(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -125,11 +155,6 @@ def test_anchored_record_refreshes_at_canonical_path(
 
     assert bucket_sync.download_missing_bucket_files() == 1
     assert result_path(tmp_path / "results").read_bytes() == data
-
-
-def result_path(root: Path) -> Path:
-    """Return the canonical result path beneath a result root."""
-    return root / "org_model/dataset__test__zeroshot.json"
 
 
 def test_canonical_and_legacy_paths_are_preserved_separately(
@@ -312,13 +337,32 @@ def test_preserves_local_only_files(
     assert local_only.read_text(encoding="utf-8") == "keep"
 
 
+def test_refresh_repairs_invalid_existing_local_record(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A valid remote record replaces malformed local cache bytes."""
+    path = "org_model/dataset__test__zeroshot.json"
+    data = json.dumps(make_record()).encode()
+    configure(monkeypatch, tmp_path, FakeBucket({path: ("remote", data)}))
+    destination = result_path(tmp_path / "results")
+    destination.parent.mkdir(parents=True)
+    destination.write_bytes(b"old!")
+
+    assert bucket_sync.download_missing_bucket_files() == 1
+    assert destination.read_bytes() == data
+
+
 def test_refreshes_same_path_and_size_when_hash_changes(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """Changed object fingerprints refresh even when byte lengths match."""
     path = "org_model/dataset__test__zeroshot.json"
-    old = json.dumps(make_record(score=1)).encode()
-    new = json.dumps(make_record(score=2)).encode()
+    old_record = make_record(score=1)
+    old_record["eval_timestamp"] = 100
+    new_record = make_record(score=2)
+    new_record["eval_timestamp"] = 200
+    old = json.dumps(old_record).encode()
+    new = json.dumps(new_record).encode()
     assert len(old) == len(new)
     bucket = FakeBucket({path: ("new-hash", new)})
     configure(monkeypatch, tmp_path, bucket)

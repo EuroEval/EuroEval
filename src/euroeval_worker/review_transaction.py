@@ -14,11 +14,16 @@ import urllib.request
 from contextlib import contextmanager
 
 from euroeval.canary_evidence import evidence_from_dict
+from leaderboards import result_conflicts
 from leaderboards.canonical_publication import CanonicalPublisher, PublicationSession
 from leaderboards.constants import HF_RESULTS_BUCKET, REQUIRED_METADATA_FIELDS
 from leaderboards.contamination_canary import process_contamination_canaries
 from leaderboards.eee_validation import is_eee_record
-from leaderboards.result_identity import dedup_newer_record, identity_from_eee_record
+from leaderboards.result_identity import (
+    UnresolvedResultConflictError,
+    dedup_newer_record,
+    identity_from_eee_record,
+)
 
 from .review_models import (
     BrokerBinder,
@@ -90,6 +95,23 @@ def _is_canary_identity(identity: tuple[str, str, bool | None, bool | None]) -> 
     return identity[1] == "contamination-canary" or identity[1].startswith(
         "contamination-canary-"
     )
+
+
+def _records_semantically_identical(
+    *, old: dict[str, object], new: dict[str, object]
+) -> bool:
+    """Return whether records differ only in non-evaluation envelope fields.
+
+    Args:
+        old: The currently stored EEE record.
+        new: The incoming EEE record.
+
+    Returns:
+        Whether evaluation payload and substantive metadata are identical.
+    """
+    return not result_conflicts.resolve_result_conflict(
+        current=old, candidate=new
+    ).differences
 
 
 logger = logging.getLogger(__name__)
@@ -625,6 +647,14 @@ class VolunteerReviewer:
                     content=record.content,
                     expected=observation.predecessor_content,
                 )
+            elif (
+                current == observation.predecessor_content
+                and current is not None
+                and _records_semantically_identical(
+                    old=json.loads(current), new=json.loads(record.content)
+                )
+            ):
+                continue
             else:
                 raise ReviewError("Canonical destination changed during promotion")
 
@@ -691,6 +721,9 @@ class VolunteerReviewer:
                 current is not None
                 and current != record.content
                 and not observation.replacement
+                and not _records_semantically_identical(
+                    old=json.loads(current), new=raw_record
+                )
             ):
                 raise ReviewError(
                     "Canonical result collision at "
@@ -961,12 +994,15 @@ class VolunteerReviewer:
                         raise ValueError(
                             "staged record identity does not match its path"
                         )
-                    if dedup_newer_record(old, new) is not new:
-                        raise ValueError(
-                            "staged record does not strictly outrank canonical"
-                        )
-                    replace = True
-                except (TypeError, ValueError) as error:
+                    selected = dedup_newer_record(old, new)
+                    if selected is old:
+                        if not _records_semantically_identical(old=old, new=new):
+                            raise ValueError(
+                                "staged record does not strictly outrank canonical"
+                            )
+                    else:
+                        replace = True
+                except (TypeError, ValueError, UnresolvedResultConflictError) as error:
                     conflict = str(error)
                 else:
                     conflict = None
@@ -1407,10 +1443,12 @@ def _validate_existing_decision(
                         )
                     )
                 )
-                or (item.get("disposition") == "replace")
-                != (
-                    predecessor_digest is not None
-                    and predecessor_digest != record.digest
+                or (
+                    item.get("disposition") == "replace"
+                    and (
+                        predecessor_digest is None
+                        or predecessor_digest == record.digest
+                    )
                 )
             ):
                 raise ReviewError(

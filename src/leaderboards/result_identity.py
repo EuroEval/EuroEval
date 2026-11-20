@@ -8,13 +8,11 @@ is the full model identifier including ``@revision`` and ``#param`` variants.
 
 from __future__ import annotations
 
-import re
-from datetime import datetime, timezone
 from pathlib import Path
 
 from euroeval.data_models import BenchmarkResult
 
-from .record_fields import get_version
+from . import result_conflicts
 from .records import strip_anchor
 
 # Type alias for the identity tuple
@@ -22,145 +20,49 @@ ResultIdentity = tuple[str, str, bool | None, bool | None]
 
 
 def dedup_newer_record(record_a: dict, record_b: dict) -> dict:
-    """Determine which of two records with the same identity is newer.
-
-    Compares by ``eval_library.version`` (semver-ish, higher wins),
-    tie-broken by ``retrieved_timestamp`` (higher/newer wins).
+    """Select an automatic winner for two same-identity records.
 
     Args:
         record_a:
-            First record in EEE format.
+            Current or first record in EEE format.
         record_b:
-            Second record in EEE format.
+            Incoming or second record in EEE format.
 
     Returns:
-        The newer record (either record_a or record_b).
+        The automatically selected record.
 
     Raises:
-        ValueError:
-            If the records do not share the same identity.
+        UnresolvedResultConflictError:
+            If owner choice is required.
     """
-    identity_a = identity_from_eee_record(record_a)
-    identity_b = identity_from_eee_record(record_b)
-
-    if identity_a != identity_b:
-        raise ValueError(
-            f"Records have different identities: {identity_a} vs {identity_b}"
+    decision = result_conflicts.resolve_result_conflict(
+        current=record_a, candidate=record_b
+    )
+    if decision.needs_choice:
+        raise UnresolvedResultConflictError(
+            f"Result conflict requires an explicit choice: {decision.reason}"
         )
-
-    version_a = get_version(record=record_a)
-    version_b = get_version(record=record_b)
-
-    version_cmp = _compare_versions(version_a, version_b)
-    if version_cmp > 0:
-        return record_a
-    if version_cmp < 0:
-        return record_b
-
-    timestamp_a = _extract_timestamp(record_a)
-    timestamp_b = _extract_timestamp(record_b)
-
-    if timestamp_a >= timestamp_b:
-        return record_a
-    return record_b
+    return record_a if decision.selected.value == "stored" else record_b
 
 
-def _compare_versions(version_a: str | None, version_b: str | None) -> int:
-    """Compare two version strings.
+class UnresolvedResultConflictError(RuntimeError):
+    """Raised when legacy deduplication cannot select a safe automatic winner."""
 
-    Performs a component-wise numeric comparison. Higher version wins.
-    If either version is None, the non-None version wins. If both are None,
-    returns 0 (tie).
+
+def identity_from_benchmark_result(result: BenchmarkResult) -> ResultIdentity:
+    """Extract the identity tuple from a BenchmarkResult.
+
+    Identity is ``(model_id, dataset, validation_split, few_shot)`` where
+    ``model_id`` is the full model identifier.
 
     Args:
-        version_a:
-            First version string.
-        version_b:
-            Second version string.
+        result:
+            A BenchmarkResult instance.
 
     Returns:
-        Positive if version_a > version_b, negative if version_a < version_b,
-        0 if equal or both None.
+        Identity tuple ``(model_id, dataset, validation_split, few_shot)``.
     """
-    if version_a is None and version_b is None:
-        return 0
-    if version_a is None:
-        return -1
-    if version_b is None:
-        return 1
-
-    parts_a = _parse_version(version_a)
-    parts_b = _parse_version(version_b)
-
-    for pa, pb in zip(parts_a, parts_b, strict=False):
-        if pa > pb:
-            return 1
-        if pa < pb:
-            return -1
-
-    if len(parts_a) > len(parts_b):
-        return 1
-    if len(parts_a) < len(parts_b):
-        return -1
-
-    return 0
-
-
-def _parse_version(version: str) -> list[int]:
-    """Parse a version string into numeric components.
-
-    Splits on non-digit characters and converts each component to int.
-    Non-numeric parts are treated as 0.
-
-    Args:
-        version:
-            Version string (e.g., "1.2.3", "2.0.1rc1").
-
-    Returns:
-        List of integer components.
-    """
-    parts = re.split(r"[^0-9]+", version)
-    result = []
-    for part in parts:
-        if part:
-            try:
-                result.append(int(part))
-            except ValueError:
-                result.append(0)
-    return result
-
-
-def _extract_timestamp(record: dict) -> int:
-    """Extract the retrieved_timestamp from a record.
-
-    Handles integer strings (e.g. '1234567890') and ISO-8601 timestamps
-    (e.g. '2024-01-01T00:00:00Z' with trailing Z). Integer string behaviour
-    is preserved.
-
-    Args:
-        record:
-            A record in EEE format.
-
-    Returns:
-        Timestamp as integer (Unix timestamp), or 0 if not found or unparseable.
-    """
-    ts = record.get("retrieved_timestamp")
-    if ts is None:
-        return 0
-    try:
-        return int(ts)
-    except (ValueError, TypeError):
-        pass
-    if isinstance(ts, str):
-        try:
-            iso_str = ts.replace("Z", "+00:00")
-            dt = datetime.fromisoformat(iso_str)
-            if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=timezone.utc)
-            return int(dt.timestamp())
-        except (ValueError, TypeError):
-            pass
-    return 0
+    return (result.model, result.dataset, result.validation_split, result.few_shot)
 
 
 def identity_from_eee_record(record: dict) -> ResultIdentity:
@@ -243,22 +145,6 @@ def normalise_bool_value(value: bool | str | None) -> bool | None:
             return None
         raise ValueError(f"Invalid boolean string value: {value!r}")
     raise TypeError(f"Unexpected type for boolean value: {type(value)}")
-
-
-def identity_from_benchmark_result(result: BenchmarkResult) -> ResultIdentity:
-    """Extract the identity tuple from a BenchmarkResult.
-
-    Identity is ``(model_id, dataset, validation_split, few_shot)`` where
-    ``model_id`` is the full model identifier.
-
-    Args:
-        result:
-            A BenchmarkResult instance.
-
-    Returns:
-        Identity tuple ``(model_id, dataset, validation_split, few_shot)``.
-    """
-    return (result.model, result.dataset, result.validation_split, result.few_shot)
 
 
 def raise_on_collision(identity_a: ResultIdentity, identity_b: ResultIdentity) -> None:

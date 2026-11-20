@@ -97,10 +97,7 @@ def merge_results(results_file: Path) -> int:
                 except (json.JSONDecodeError, ValueError, KeyError, TypeError) as e:
                     logger.debug(f"Skipping invalid JSONL line in {results_file}: {e}")
 
-    # Remove empty JSON files before processing
-    remove_empty_json_files(RESULTS_DIR)
-
-    # PHASE 2: Read all record files from the tree (these override existing)
+    # PHASE 2: Read all record files from the tree
     if RESULTS_DIR.exists():
         for record_file in RESULTS_DIR.rglob("*.json"):
             if not record_file.is_file():
@@ -121,6 +118,7 @@ def merge_results(results_file: Path) -> int:
         logger.warning("No results found to merge")
         return 0
 
+    remove_empty_json_files(RESULTS_DIR)
     results_file.parent.mkdir(parents=True, exist_ok=True)
     with results_file.open("w", encoding="utf-8") as f:
         for record in sorted(existing.values(), key=_sort_key):
@@ -406,18 +404,18 @@ def download_missing_bucket_files() -> int:
         for (entry, destination), temporary in zip(to_download, temporary_paths):
             if not temporary.is_file() or temporary.stat().st_size == 0:
                 raise ValueError(f"Bucket download missing or empty: {entry.path}")
-            record = json.loads(temporary.read_text(encoding="utf-8"))
-            if not isinstance(record, dict):
-                raise ValueError(f"Bucket result is not an object: {entry.path}")
-            if not is_eee_record(record=record):
-                raise ValueError(f"Bucket result is not an EEE record: {entry.path}")
-            if not _record_matches_bucket_path(record=record, bucket_path=entry.path):
-                raise ValueError(
-                    f"Bucket result identity does not match path: {entry.path}"
-                )
+            _validate_downloaded_record(entry=entry, temporary=temporary)
 
-        for (_, destination), temporary in zip(to_download, temporary_paths):
-            os.replace(temporary, destination)
+        install_downloads = [
+            _download_should_replace(destination=destination, temporary=temporary)
+            for (_, destination), temporary in zip(to_download, temporary_paths)
+        ]
+
+        for (_, destination), temporary, install in zip(
+            to_download, temporary_paths, install_downloads
+        ):
+            if install:
+                os.replace(temporary, destination)
 
         manifest_tmp = manifest_path.with_name(f".{manifest_path.name}.tmp")
         manifest_tmp.write_text(
@@ -433,6 +431,53 @@ def download_missing_bucket_files() -> int:
         result_loading = importlib.import_module(".result_loading", __package__)
         result_loading.load_raw_results.cache_clear()
     return len(to_download)
+
+
+def _download_should_replace(*, destination: Path, temporary: Path) -> bool:
+    """Return whether a staged bucket record wins against its local file.
+
+    Args:
+        destination: Existing canonical local destination.
+        temporary: Validated staged bucket file.
+
+    Returns:
+        Whether the staged file should replace the destination.
+    """
+    if not destination.is_file():
+        return True
+    try:
+        current = json.loads(destination.read_text(encoding="utf-8"))
+        if not isinstance(current, dict) or not is_eee_record(record=current):
+            return True
+        current_identity = identity_from_eee_record(current)
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        # A valid, freshly validated remote record repairs a corrupt local cache.
+        return True
+
+    incoming = json.loads(temporary.read_text(encoding="utf-8"))
+    incoming_identity = identity_from_eee_record(incoming)
+    if current_identity != incoming_identity:
+        raise_on_collision(current_identity, incoming_identity)
+    return dedup_newer_record(record_a=current, record_b=incoming) is incoming
+
+
+def _validate_downloaded_record(*, entry: BucketFile, temporary: Path) -> None:
+    """Validate a staged bucket record before any installation.
+
+    Args:
+        entry: The corresponding bucket tree entry.
+        temporary: Local staged record bytes.
+
+    Raises:
+        ValueError: If the staged record is malformed or mismatches its path.
+    """
+    record = json.loads(temporary.read_text(encoding="utf-8"))
+    if not isinstance(record, dict):
+        raise ValueError(f"Bucket result is not an object: {entry.path}")
+    if not is_eee_record(record=record):
+        raise ValueError(f"Bucket result is not an EEE record: {entry.path}")
+    if not _record_matches_bucket_path(record=record, bucket_path=entry.path):
+        raise ValueError(f"Bucket result identity does not match path: {entry.path}")
 
 
 def _record_matches_bucket_path(record: dict, bucket_path: str) -> bool:
@@ -535,9 +580,12 @@ def upload_results_to_bucket(results_file: Path) -> None:
             record_path = RESULTS_DIR / identity_to_path(identity)
             rel_path = str(record_path.relative_to(RESULTS_DIR))
 
-            # Check for collision: distinct identity at same path
+            # Distinct identities cannot share a path; matching identities use the
+            # same automatic policy as the bucket and local merge paths.
             if rel_path in path_record_map:
-                raise_on_collision(path_record_map[rel_path][0], identity)
+                existing_identity, existing_record = path_record_map[rel_path]
+                raise_on_collision(existing_identity, identity)
+                record = dedup_newer_record(record_a=existing_record, record_b=record)
             path_record_map[rel_path] = (identity, record)
 
     if not path_record_map:

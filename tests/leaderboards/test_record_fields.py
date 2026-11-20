@@ -4,23 +4,17 @@ import typing as t
 
 import pytest
 
-from leaderboards.record_fields import _metadata_richness_score, deduplicate_records
+from leaderboards.record_fields import deduplicate_records
 
 
-@pytest.mark.parametrize("version", ["18.1.0.dev", "18.1.0.dev0"])
-def test_deduplicate_accepts_development_versions(version: str) -> None:
-    """Development suffixes do not prevent numeric version comparisons.
+def test_deduplicate_collapses_generative_flag_variants() -> None:
+    """Records differing only in the ``generative`` flag collapse to one.
 
-    Args:
-        version:
-            Version supplied to the test.
+    This is the Apertus v1.1 regression (issue #1970): the two records render
+    on the same leaderboard row, so only one must survive deduplication.
     """
-    old = _record(version="18.0.0")
-    new = _record(version=version)
-
-    deduped = deduplicate_records(records=[old, new])
-
-    assert deduped[0]["eval_library"]["version"] == version
+    records = [_record(generative=True), _record(generative=None)]
+    assert len(deduplicate_records(records=records)) == 1
 
 
 def _record(
@@ -59,14 +53,82 @@ def _record(
     return {"model_info": model_info, "eval_library": library}
 
 
-def test_deduplicate_collapses_generative_flag_variants() -> None:
-    """Records differing only in the ``generative`` flag collapse to one.
+def test_deduplicate_does_not_rank_by_metadata_completeness() -> None:
+    """Metadata completeness does not rank leaderboard-equivalent records."""
+    # Enriched record with full metadata
+    enriched = _record(name="Qwen/Qwen3.6-27B-FP8 (val)", version="17.6.0")
+    enriched["model_info"]["additional_details"].update(
+        {
+            "commercially_licensed": True,
+            "open": True,
+            "merge": False,
+            "trained_from_scratch": True,
+            "generative_type": "instruction_tuned",
+            "model_url": "https://huggingface.co/Qwen/Qwen3.6-27B-FP8",
+        }
+    )
 
-    This is the Apertus v1.1 regression (issue #1970): the two records render
-    on the same leaderboard row, so only one must survive deduplication.
+    # Stale record with missing metadata
+    stale = _record(name="Qwen/Qwen3.6-27B-FP8 (val)", version="17.6.0")
+    # No additional metadata - defaults only
+
+    # Stale record comes last in input order
+    deduped = deduplicate_records(records=[enriched, stale])
+
+    assert len(deduped) == 1
+    assert deduped[0] is enriched
+
+
+def test_deduplicate_does_not_rank_by_release_date() -> None:
+    """Metadata completeness does not rank leaderboard-equivalent records."""
+    without_date = _record(version="18.0.0")
+    with_date = _record(version="18.0.0")
+    with_date["model_info"]["additional_details"]["release_date"] = "2024-02-03"
+
+    deduped = deduplicate_records(records=[without_date, with_date])
+
+    assert len(deduped) == 1
+    assert "release_date" not in deduped[0]["model_info"]["additional_details"]
+
+
+def test_deduplicate_does_not_rank_by_version() -> None:
+    """Leaderboard-equivalent records are not ranked by library version."""
+    old = _record(version="17.5.0", generative=True)
+    new = _record(version="17.6.0", generative=None)
+
+    deduped = deduplicate_records(records=[old, new])
+
+    assert len(deduped) == 1
+    assert deduped[0] is old
+
+
+@pytest.mark.parametrize("version", ["18.1.0.dev", "18.1.0.dev0"])
+def test_deduplicate_does_not_rank_development_versions(version: str) -> None:
+    """Development suffixes do not rank leaderboard-equivalent records.
+
+    Args:
+        version:
+            Version supplied to the test.
     """
-    records = [_record(generative=True), _record(generative=None)]
-    assert len(deduplicate_records(records=records)) == 1
+    old = _record(version="18.0.0")
+    new = _record(version=version)
+
+    deduped = deduplicate_records(records=[old, new])
+
+    assert deduped[0] is old
+
+
+def test_deduplicate_does_not_rank_malformed_release_metadata() -> None:
+    """Release metadata does not rank leaderboard-equivalent records."""
+    malformed = _record(version="18.0.0")
+    malformed["model_info"]["additional_details"]["release_date"] = "not-a-date"
+    valid = _record(version="18.0.0")
+    valid["model_info"]["additional_details"]["release_date"] = "2024-02-03"
+
+    deduped = deduplicate_records(records=[malformed, valid])
+
+    assert len(deduped) == 1
+    assert deduped[0] is malformed
 
 
 def test_deduplicate_equal_richness_preserves_first_record() -> None:
@@ -139,81 +201,6 @@ def test_deduplicate_false_counts_as_rich_metadata() -> None:
     assert additional.get("trained_from_scratch") is False
 
 
-def test_deduplicate_keeps_newest_version() -> None:
-    """Among duplicates, the newest EuroEval version is kept."""
-    old = _record(version="17.5.0", generative=True)
-    new = _record(version="17.6.0", generative=None)
-
-    deduped = deduplicate_records(records=[old, new])
-
-    assert len(deduped) == 1
-    assert deduped[0]["eval_library"]["version"] == "17.6.0"
-
-
-def test_deduplicate_prefers_record_with_release_date() -> None:
-    """Release metadata survives deduplication against an otherwise equal record."""
-    without_date = _record(version="18.0.0")
-    with_date = _record(version="18.0.0")
-    with_date["model_info"]["additional_details"]["release_date"] = "2024-02-03"
-
-    deduped = deduplicate_records(records=[without_date, with_date])
-
-    assert len(deduped) == 1
-    assert (
-        deduped[0]["model_info"]["additional_details"]["release_date"] == "2024-02-03"
-    )
-
-
-def test_deduplicate_prefers_richer_metadata_same_version() -> None:
-    """Among same-version duplicates, the one with richer metadata wins.
-
-    Regression test for issue where misfiled results would override
-    enriched metadata during deduplication.
-    """
-    # Enriched record with full metadata
-    enriched = _record(name="Qwen/Qwen3.6-27B-FP8 (val)", version="17.6.0")
-    enriched["model_info"]["additional_details"].update(
-        {
-            "commercially_licensed": True,
-            "open": True,
-            "merge": False,
-            "trained_from_scratch": True,
-            "generative_type": "instruction_tuned",
-            "model_url": "https://huggingface.co/Qwen/Qwen3.6-27B-FP8",
-        }
-    )
-
-    # Stale record with missing metadata
-    stale = _record(name="Qwen/Qwen3.6-27B-FP8 (val)", version="17.6.0")
-    # No additional metadata - defaults only
-
-    # Stale record comes last in input order
-    deduped = deduplicate_records(records=[enriched, stale])
-
-    assert len(deduped) == 1
-    # Enriched record should win despite being first in input order
-    result = deduped[0]
-    additional = result["model_info"]["additional_details"]
-    assert additional.get("commercially_licensed") is True
-    assert additional.get("open") is True
-    assert additional.get("trained_from_scratch") is True
-
-
-def test_deduplicate_prefers_valid_release_date_over_malformed_value() -> None:
-    """Malformed release metadata does not win over a valid release date."""
-    malformed = _record(version="18.0.0")
-    malformed["model_info"]["additional_details"]["release_date"] = "not-a-date"
-    valid = _record(version="18.0.0")
-    valid["model_info"]["additional_details"]["release_date"] = "2024-02-03"
-
-    deduped = deduplicate_records(records=[malformed, valid])
-
-    assert len(deduped) == 1
-    assert (
-        deduped[0]["model_info"]["additional_details"]["release_date"] == "2024-02-03"
-    )
-
-
 def test_deduplicate_preserves_distinct_datasets() -> None:
     """Records for genuinely distinct rows are all preserved."""
     records = [
@@ -224,8 +211,8 @@ def test_deduplicate_preserves_distinct_datasets() -> None:
     assert len(deduplicate_records(records=records)) == 3
 
 
-def test_deduplicate_richness_beats_input_order() -> None:
-    """Richer metadata wins even when the poorer record appears later."""
+def test_deduplicate_preserves_first_metadata_variant() -> None:
+    """Metadata completeness does not override input order."""
     poor = _record(version="17.6.0")
     rich = _record(version="17.6.0")
     rich["model_info"]["additional_details"]["open"] = True
@@ -234,68 +221,4 @@ def test_deduplicate_richness_beats_input_order() -> None:
     deduped = deduplicate_records(records=[rich, poor])
 
     assert len(deduped) == 1
-    assert deduped[0]["model_info"]["additional_details"].get("open") is True
-
-
-def test_metadata_richness_score_counts_release_date() -> None:
-    """A known release date contributes to metadata richness."""
-    record = _record()
-    initial_score = _metadata_richness_score(record)
-    record["model_info"]["additional_details"]["release_date"] = "2024-02-03"
-    assert _metadata_richness_score(record) == initial_score + 1
-
-
-def test_metadata_richness_score_empty() -> None:
-    """A record with no metadata gets a score of 0."""
-    record = _record()
-    assert _metadata_richness_score(record=record) == 0
-
-
-@pytest.mark.parametrize(
-    "field", ["commercially_licensed", "open", "merge", "trained_from_scratch"]
-)
-def test_metadata_richness_score_explicit_false(field: str) -> None:
-    """Explicit False values contribute to metadata richness.
-
-    Args:
-        field:
-            Field supplied to the test.
-    """
-    record = _record()
-    record["model_info"]["additional_details"][field] = False
-    assert _metadata_richness_score(record=record) == 1
-
-
-def test_metadata_richness_score_full() -> None:
-    """A record with all metadata fields gets a score of 6."""
-    record = _record()
-    record["model_info"]["additional_details"].update(
-        {
-            "commercially_licensed": True,
-            "open": True,
-            "merge": True,
-            "trained_from_scratch": True,
-            "generative_type": "instruction_tuned",
-            "model_url": "https://example.com/model",
-        }
-    )
-    assert _metadata_richness_score(record=record) == 6
-
-
-@pytest.mark.parametrize(
-    "release_date", [None, "", "not-a-date", "2025-02-30", "20240203"]
-)
-def test_metadata_richness_score_ignores_invalid_release_date(
-    release_date: str | None,
-) -> None:
-    """Missing and malformed release dates do not contribute to richness.
-
-    Args:
-        release_date:
-            Release date supplied to the test.
-    """
-    record = _record()
-    initial_score = _metadata_richness_score(record)
-    record["model_info"]["additional_details"]["release_date"] = release_date
-
-    assert _metadata_richness_score(record) == initial_score
+    assert deduped[0] is rich

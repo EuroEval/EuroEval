@@ -11,10 +11,38 @@ from huggingface_hub.errors import HfHubHTTPError
 
 from leaderboards import bucket_sync
 from leaderboards.canonical_publication import CanonicalPublisher
+from leaderboards.result_identity import UnresolvedResultConflictError
 
 
 class TestMergeResults:
     """Tests for ``merge_results``."""
+
+    def test_merge_results_conflict_preserves_source_files(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Unresolved same-identity records abort before merge mutations."""
+        results_dir = tmp_path / "results"
+        model_dir = results_dir / "model"
+        model_dir.mkdir(parents=True)
+        tree_record = {
+            "model_info": {"id": "test/model"},
+            "eval_library": {"additional_details": {"dataset": "dataset1"}},
+            "retrieved_timestamp": "2024-01-01T00:00:00Z",
+            "evaluation_results": [{"score": 2}],
+        }
+        tree_file = model_dir / "dataset.json"
+        tree_file.write_text(json.dumps(tree_record), encoding="utf-8")
+        results_file = tmp_path / "merged.jsonl"
+        jsonl_record = {**tree_record, "evaluation_results": [{"score": 1}]}
+        original_jsonl = json.dumps(jsonl_record) + "\n"
+        results_file.write_text(original_jsonl, encoding="utf-8")
+        monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
+
+        with pytest.raises(UnresolvedResultConflictError):
+            bucket_sync.merge_results(results_file=results_file)
+
+        assert results_file.read_text(encoding="utf-8") == original_jsonl
+        assert tree_file.read_text(encoding="utf-8") == json.dumps(tree_record)
 
     def test_merge_results_dedups_by_identity(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -42,6 +70,10 @@ class TestMergeResults:
                 "version": "1.0.0",
             },
             "retrieved_timestamp": "2024-01-01T00:00:00Z",
+            "eval_timestamp": 100,
+            "evaluation_results": [
+                {"evaluation_name": "accuracy", "score_details": {"score": 0.4}}
+            ],
         }
         record1_path = model_dir / "dataset1__test__test.json"
         record1_path.write_text(json.dumps(record_old), encoding="utf-8")
@@ -56,7 +88,10 @@ class TestMergeResults:
                 "version": "1.5.0",
             },
             "retrieved_timestamp": "2024-01-01T12:00:00Z",
-            "extra_field": "should_be_deduped",
+            "eval_timestamp": 200,
+            "evaluation_results": [
+                {"evaluation_name": "accuracy", "score_details": {"score": 0.5}}
+            ],
         }
         (model_dir2 / "dataset1__test__test.json").write_text(
             json.dumps(record_same_identity), encoding="utf-8"
@@ -66,7 +101,7 @@ class TestMergeResults:
 
         count = bucket_sync.merge_results(results_file=results_file)
 
-        # Should deduplicate to 1 record (version 1.5.0 wins over 1.0.0)
+        # A later recorded evaluation with changed score wins.
         assert count == 1
         lines = results_file.read_text(encoding="utf-8").splitlines()
         merged_record = json.loads(lines[0])
@@ -265,6 +300,10 @@ class TestMergeResults:
                 "version": "1.0.0",
             },
             "retrieved_timestamp": "1704067200",
+            "eval_timestamp": 100,
+            "evaluation_results": [
+                {"evaluation_name": "accuracy", "score_details": {"score": 0.4}}
+            ],
         }
         results_file.write_text(json.dumps(old_record) + "\n", encoding="utf-8")
 
@@ -278,6 +317,10 @@ class TestMergeResults:
                 "version": "2.0.0",
             },
             "retrieved_timestamp": "1704153600",
+            "eval_timestamp": 200,
+            "evaluation_results": [
+                {"evaluation_name": "accuracy", "score_details": {"score": 0.5}}
+            ],
         }
         (model_dir / "same_ds__test__test.json").write_text(
             json.dumps(new_record), encoding="utf-8"
@@ -291,7 +334,7 @@ class TestMergeResults:
         assert count == 1
         lines = results_file.read_text(encoding="utf-8").splitlines()
         merged_record = json.loads(lines[0])
-        # Tree record (newer version) should win
+        # The newer evaluation evidence should win.
         assert merged_record["eval_library"]["version"] == "2.0.0"
         assert merged_record["retrieved_timestamp"] == "1704153600"
 
