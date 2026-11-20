@@ -16,11 +16,21 @@ test("queue completion requires every selected language in a verified submission
   const group = "- [x] Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)";
   const languages = ["da", "fo", "is", "no", "sv"];
   const cases = [
-    { name: "one language is not the whole group", languages: ["da"], complete: false },
+    ...languages.map((language) => ({
+      name: `only ${language} does not complete the group`, languages: [language], complete: false,
+    })),
     { name: "all submitted languages complete the group", languages, complete: true },
-    { name: "accepted and submitted languages both count", languages, accepted: "da", complete: true },
-    { name: "one missing language keeps evaluation active", languages: languages.slice(0, -1), complete: false },
-    { name: "a rejected language does not count", languages, rejected: "sv", complete: false },
+    ...languages.map((language) => ({
+      name: `accepted ${language} counts alongside submitted results`, languages,
+      accepted: language, complete: true,
+    })),
+    ...languages.map((language) => ({
+      name: `missing ${language} leaves the group incomplete`,
+      languages: languages.filter((other) => other !== language), complete: false,
+    })),
+    ...languages.map((language) => ({
+      name: `rejected ${language} does not count`, languages, rejected: language, complete: false,
+    })),
     { name: "an active lease is not a submission", languages: [], active: true, complete: false },
     { name: "all selected groups must be complete", languages, extra: "\n- [x] Greek", complete: false },
     { name: "no selected languages is not complete", languages, body: "", complete: false },

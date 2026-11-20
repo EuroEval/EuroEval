@@ -325,10 +325,10 @@ for (const scenario of [
       leases: scenario.active ? [{ lease_id: "next", language: "sv", worker: "worker",
         contributor: "alice", expires_at: lease.expires_at, ownership_mode: "public" }] : [],
       public_assignees: ["alice"],
-      submissions: scenario.languages.map((language) => ({ submission_id: `done-${language}`,
+      submissions: scenario.languages.map((language, index) => ({ submission_id: `done-${language}`,
         language, manifest_path: `manifests/${language}.json`, submitted_at: "2026-11-20T18:00:00Z",
         verified_contributor: "alice", result_count: 1,
-        status: scenario.acceptedAll || language === "da" ? "accepted" : "submitted", ownership_mode: "public" })),
+        status: scenario.acceptedAll || index === 0 ? "accepted" : "submitted", ownership_mode: "public" })),
     });
     if (scenario.forged) marker.signature = "forged";
     const reviewLabel = "community-review-ready";

@@ -30,11 +30,11 @@ for (const scenario of ["recent own work", "completed", "foreign", "unsigned", "
         const languages = scenario === "completed" ? ["da", "fo", "is", "no", "sv"] : ["sv"];
         const marker = await signVolunteerMarker(issue.number, {
           protocol_version: "volunteer-worker/v1", coordinator: "coordinator", submission: "submitted",
-          leases: [], submissions: languages.map((language) => ({
+          leases: [], submissions: languages.map((language, index) => ({
             submission_id: `done-${language}`, language, manifest_path: `manifests/${language}.json`,
             submitted_at: issue.number === 3 ? "2026-11-20T18:00:00Z" : "2026-11-19T18:00:00Z",
             verified_contributor: scenario === "foreign" ? "bob" : "alice", result_count: 1,
-            status: language === "da" ? "accepted" : "submitted", ownership_mode: "public",
+            status: index === 0 ? "accepted" : "submitted", ownership_mode: "public",
           })),
         });
         if (scenario === "unsigned") delete marker.signature;
