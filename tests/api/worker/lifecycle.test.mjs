@@ -203,6 +203,91 @@ function mockBroker(issue, values) {
   };
 }
 
+test("public finalisation retries assignment cleanup without posting comments", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  Object.assign(process.env, {
+    VOLUNTEER_MARKER_SECRET: "marker-secret",
+    UPSTASH_REDIS_REST_URL: "https://redis.test",
+    UPSTASH_REDIS_REST_TOKEN: "redis-token",
+    GITHUB_TOKEN: "github-token",
+  });
+  const activeLease = { ...lease, language: "el", ownership_mode: "public" };
+  const bobLease = { lease_id: "bob-lease", language: "da", worker: "bob-worker",
+    contributor: "bob", expires_at: activeLease.expires_at, ownership_mode: "public" };
+  const signed = await signVolunteerMarker(issueNumber, {
+    protocol_version: "volunteer-worker/v1", coordinator: "coordinator", submission: "active",
+    leases: [{ lease_id: activeLease.lease_id, language: "el", worker: "worker",
+      contributor: "alice", expires_at: activeLease.expires_at, ownership_mode: "public" }, bobLease],
+    public_assignees: ["alice", "bob"],
+  });
+  const issue = { number: issueNumber, title: "[MODEL EVALUATION REQUEST] org/model",
+    body: markerBody(signed), state: "open", labels: [],
+    assignees: [{ login: "alice" }, { login: "bob" }, { login: "manual" }] };
+  const statusKey = `euroeval:worker:finalisation:${activeLease.lease_id}`;
+  const values = new Map([
+    [`euroeval:worker:credential:${await sha256("credential")}`, JSON.stringify({ contributor: "alice" })],
+    [`euroeval:worker:lease-id:${activeLease.lease_id}`, JSON.stringify(activeLease)],
+    [statusKey, JSON.stringify({ status: "manifest_uploaded", submission_id: activeLease.lease_id,
+      lease: activeLease, entries: [{ digest: "digest", identity: '["org/model","dataset",true,true]',
+        path: "results/digest.json", failed: 0 }], manifest_path: "volunteer/manifests/lease.json" })],
+  ]);
+  const broker = mockBroker(issue, values);
+  let failCleanup = true;
+  let mutexBusy = false;
+  let commentRequests = 0;
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input);
+    if (url.includes("/comments")) {
+      commentRequests++;
+      throw new Error("Contributor flow must not access issue comments");
+    }
+    if (url === "https://redis.test" && mutexBusy) {
+      const command = JSON.parse(init.body);
+      if (command[0] === "SET" && command[1] === `euroeval:worker:mutex:${issueNumber}`) {
+        return Response.json({ result: null });
+      }
+    }
+    if (url.endsWith(`/issues/${issueNumber}`) && init.method === "PATCH") {
+      const proposed = parseVolunteerMarker(JSON.parse(init.body).body);
+      if (failCleanup && !proposed.public_assignees.includes("alice")) {
+        return Response.json({ message: "Injected provenance write failure" }, { status: 400 });
+      }
+    }
+    return broker(input, init);
+  };
+  const request = () => new Request("https://euroeval.test/api/worker/finalise", {
+    method: "POST", headers: { authorization: "Bearer credential", "content-type": "application/json" },
+    body: JSON.stringify({ protocol_version: "volunteer-worker/v1", lease_id: activeLease.lease_id }),
+  });
+  try {
+    const failed = await finalise(request());
+    assert.equal(failed.status, 502, await failed.clone().text());
+    assert.equal(JSON.parse(values.get(statusKey)).status, "ready");
+    assert.deepEqual(issue.assignees.map(({ login }) => login), ["bob", "manual"]);
+    assert.deepEqual(parseVolunteerMarker(issue.body).public_assignees, ["alice", "bob"]);
+    values.delete(`euroeval:worker:lease-id:${activeLease.lease_id}`);
+    failCleanup = false;
+    mutexBusy = true;
+    const busy = await finalise(request());
+    assert.equal(busy.status, 503);
+    assert.equal((await busy.json()).code, "issue_busy");
+    mutexBusy = false;
+    const resumed = await finalise(request());
+    assert.equal(resumed.status, 200, await resumed.clone().text());
+    assert.equal((await resumed.json()).status, "already_finalised");
+    const finalMarker = parseVolunteerMarker(issue.body);
+    assert.deepEqual(finalMarker.public_assignees, ["bob"]);
+    assert.deepEqual(finalMarker.leases, [bobLease]);
+    assert.equal(finalMarker.submissions[0].verified_contributor, "alice");
+    assert.equal(await verifyVolunteerMarker(issueNumber, finalMarker), true);
+    assert.equal(commentRequests, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
+
 for (const upstreamSlow of [false, true]) test(
   `claim scans 148 candidates without GPU allocation${upstreamSlow ? " and bounds slow Hub retries" : ""}`,
   async () => {
