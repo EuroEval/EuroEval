@@ -2,8 +2,8 @@ declare const process: { env: Record<string, string | undefined> };
 
 import {
   BrokerError, ConfigurationError, expectedScope, PROTOCOL_VERSION, addIssueLabel, acquireRenewableIssueMutex,
-  authenticate, brokerErrorBody, commentIssue, contributorLabel, deleteLease, enforceRateLimit, extractModelId,
-  fetchIssue, getLeaseById, issueComments, json, method, patchIssue, parseVolunteerMarker,
+  authenticate, brokerErrorBody, deleteLease, enforceRateLimit, extractModelId,
+  fetchIssue, getLeaseById, json, method, patchIssue, parseVolunteerMarker,
   readJson, redis, redisGet, requireLeaseOwnership, requireAssignee, requireProtocol,
   selectedLanguages, replaceVolunteerMarker, reconcilePublicAssignments,
   signVolunteerMarker, verifyVolunteerMarker,
@@ -13,7 +13,6 @@ import type { Lease, LeaseScope, VolunteerLeaseMarker } from "./_lib.js";
 
 export const config = { runtime: "nodejs" };
 
-const FINAL_MARKER = "euroeval-volunteer-finalised:v1";
 type ResultEntry = { digest: string; identity: string; path: string; failed?: number; warnings?: string[] };
 type Receipt = { status?: string; submission_id: string; lease: Lease; entries: ResultEntry[]; manifest_path: string; manifest?: string; matched_identity_suffixes?: string[] };
 
@@ -212,14 +211,6 @@ export async function fetch(req: Request): Promise<Response> {
       if (!issue.labels?.some((item) => item.name === label)) {
         await mutex.assertOwned();
         await addIssueLabel(lease.issue_number, label);
-        if (lease.ownership_mode !== "public") await requireAssignee(await fetchIssue(lease.issue_number), lease.contributor);
-      }
-      const comments = await issueComments(lease.issue_number);
-      if (!comments.some((item) => item.body?.includes(`${FINAL_MARKER} ${receipt.submission_id}`))) {
-        const maintainer = process.env.COMMUNITY_MAINTAINER_LOGIN || "saattrupdan";
-        const comment = `<!-- ${FINAL_MARKER} ${receipt.submission_id} -->\n@${maintainer} — community evaluation ready.\n\nContributor: **${contributorLabel(identity.contributor)}**  \nModel: **${lease.model_id}@${lease.model_revision}**  \nLanguage: **${lease.language}**  \nSubmission: **${receipt.submission_id}**  \nValidation: **${receipt.entries.length} identities; ${receipt.entries.reduce((total, entry) => total + (entry.failed || 0), 0)} failed instances (informational)**`;
-        await mutex.assertOwned();
-        await commentIssue(lease.issue_number, comment);
         if (lease.ownership_mode !== "public") await requireAssignee(await fetchIssue(lease.issue_number), lease.contributor);
       }
       if (lease.ownership_mode !== "public") await requireAssignee(await fetchIssue(lease.issue_number), lease.contributor);

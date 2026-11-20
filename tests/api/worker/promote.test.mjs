@@ -135,7 +135,7 @@ test("repeated rejection is safe after cleanup interruption", async () => {
     assert.equal(cleanupCalls, 3); // first call retries the interrupted atomic EVAL
     assert.equal(JSON.parse(values.get("euroeval:worker:promotion:12:one")).status, "terminal");
     assert.match(issue.body, /"submission":"rejected"/);
-    assert.equal(comments.length, 1);
+    assert.equal(comments.length, 0);
   } finally {
     globalThis.fetch = originalFetch;
     process.env = originalEnv;
@@ -384,7 +384,7 @@ test("handler finishes GitHub labels, credit, ownership, and notification", asyn
     assert.doesNotMatch(issue.body, /euroeval-volunteer-credit:v1/);
     assert.deepEqual(issue.labels, [{ name: "results-ready" }]);
     assert.deepEqual(issue.assignees, [{ login: "coordinator" }]);
-    assert.match(comments[0].body, /submission \*\*one\*\*/);
+    assert.equal(comments.length, 0);
   } finally {
     globalThis.fetch = originalFetch;
     process.env = originalEnv;

@@ -43,7 +43,7 @@ test("submitted public credit alone does not keep a contributor assigned", async
   process.env.VOLUNTEER_MARKER_SECRET = "marker-secret";
   const marker = await signVolunteerMarker(issueNumber, {
     protocol_version: "volunteer-worker/v1", coordinator: "coordinator", submission: "submitted",
-    leases: [], submissions: [{ submission_id: "done", status: "submitted", ownership_mode: "public", verified_contributor: "alice" }],
+    leases: [], submissions: [{ submission_id: "done", language: "da", manifest_path: "volunteer/manifests/done.json", submitted_at: "2026-09-06T10:00:00Z", result_count: 1, status: "submitted", ownership_mode: "public", verified_contributor: "alice" }],
     public_assignees: ["alice"],
   });
   const issue = { number: issueNumber, title: "request", body: markerBody(marker), state: "open", assignees: [{ login: "alice" }, { login: "manual" }] };

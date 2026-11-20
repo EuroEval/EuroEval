@@ -2,8 +2,8 @@ declare const process: { env: Record<string, string | undefined> };
 
 import {
   BrokerError, ConfigurationError, PROTOCOL_VERSION, addIssueLabel, acquireRenewableIssueMutex,
-  brokerErrorBody, commentIssue, completePromotionReservation, fetchIssue, getPromotionReservation,
-  issueComments, json, method, parsePromotionRecords,
+  brokerErrorBody, completePromotionReservation, fetchIssue, getPromotionReservation,
+  json, method, parsePromotionRecords,
   parseVolunteerMarker, patchIssue, promotionSecret, readJson,
   releaseResultReservations,
   removeIssueLabel, replaceVolunteerMarker, requireProtocol,
@@ -15,7 +15,6 @@ import type {
 } from "./_lib.js";
 
 export const config = { runtime: "edge" };
-export const PROMOTION_MARKER = "euroeval-volunteer-promotion:v1";
 
 export interface PromotionPlan {
   marker: VolunteerLeaseMarker;
@@ -159,12 +158,6 @@ export default async function handler(req: Request): Promise<Response> {
             throw new BrokerError(409, "Promotion assignment fence lost.");
           }
         }
-      }
-      const comments = await issueComments(issueNumber);
-      if (!comments.some((item) => item.body?.includes(`${PROMOTION_MARKER} ${submissionId}`))) {
-        const current = plan.marker.submissions?.find((item) => item.submission_id === submissionId);
-        await mutex.assertOwned();
-        await commentIssue(issueNumber, `<!-- ${PROMOTION_MARKER} ${submissionId} -->\nCommunity submission **${submissionId}** was **${outcome}**.\n\nManifest: \`${current?.manifest_path}\``);
       }
       await terminalReservation(reservation);
       return json(200, { protocol_version: PROTOCOL_VERSION, status: outcome, submission_id: submissionId,
