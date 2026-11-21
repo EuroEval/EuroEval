@@ -50,7 +50,7 @@ export default async function handler(req: Request): Promise<Response> {
       throw new BrokerError(409, "Lease is absent, expired, or belongs to another contributor.");
     }
     const mutex = await acquireRenewableIssueMutex(lease.issue_number);
-    if (!mutex) throw new BrokerError(409, "Issue is busy; retry release.");
+    if (!mutex) throw new BrokerError(503, "Issue is busy; retry release.", "ISSUE_BUSY");
     try {
       let current = await fetchIssue(lease.issue_number);
       let marker = parseVolunteerMarker(current.body);

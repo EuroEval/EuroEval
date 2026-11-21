@@ -2,6 +2,7 @@
 
 import dataclasses
 import email.message
+import http.client
 import io
 import json
 import os
@@ -312,6 +313,28 @@ def test_broker_normalises_legacy_scope_and_rejects_malformed_alternatives() -> 
         lease_from_dict(data=malformed)
 
 
+def test_broker_normalises_truncated_http_response_as_transient(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Expose truncated response transport failures as broker errors.
+
+    Args:
+        monkeypatch:
+            Fixture replacing the HTTP transport.
+    """
+
+    def truncated_response(request: urllib.request.Request, timeout: int) -> None:
+        raise http.client.IncompleteRead(b"partial")
+
+    monkeypatch.setattr(urllib.request, "urlopen", truncated_response)
+    client = BrokerClient("https://broker.example")
+
+    with pytest.raises(BrokerError) as captured:
+        client.claim(credential="credential", hardware=HARDWARE)
+
+    assert captured.value.status is None
+
+
 def test_broker_protocol_payload_is_canonical() -> None:
     """The Python client emits the same flat v1 envelope as the broker."""
     calls: list[tuple[str, str, dict[str, object]]] = []
@@ -610,6 +633,238 @@ def test_canary_corpus_outage_does_not_block_results(
     assert not broker.releases
 
 
+def test_continuous_worker_recovers_after_submission_retries_from_saved_records(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Resume exact pending records after bounded upload retries are exhausted.
+
+    Args:
+        monkeypatch:
+            Fixture replacing network dependencies and sleep.
+        tmp_path:
+            Private worker state directory.
+    """
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    first = PendingRecord.from_record(EEERecord({"id": "acknowledged"}))
+    second = PendingRecord.from_record(EEERecord({"id": "pending"}))
+    first = dataclasses.replace(first, acknowledged=True)
+    state = StateStore(tmp_path)
+    state.save_active(lease=LEASE, records=(first, second), github_login="login")
+
+    class FlakyUploadBroker(Broker):
+        """Transiently reject the pending record before accepting its retry."""
+
+        def __init__(self) -> None:
+            super().__init__()
+            self.uploaded: list[EEERecord] = []
+
+        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            """Report no new work after the saved lease is finalised.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                hardware:
+                    Hardware report used to request work.
+
+            Returns:
+                An empty claim so the test reaches its controlled shutdown.
+            """
+            self.claims += 1
+            return Claim(None)
+
+        def submit_result(
+            self, credential: str, lease: Lease, result: EEERecord
+        ) -> None:
+            self.submissions += 1
+            if self.submissions <= 3:
+                raise BrokerError(
+                    "transient result failure",
+                    status=(408, 425, 425)[self.submissions - 1],
+                )
+            self.uploaded.append(result)
+
+    class MustNotEvaluate:
+        """Ensure restart uses its persisted records."""
+
+        def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
+            raise AssertionError("saved results must not be reevaluated")
+
+    broker = FlakyUploadBroker()
+
+    def stop_after_finalisation(delay: float) -> None:
+        if broker.finalised:
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(runtime.time, "sleep", stop_after_finalisation)
+    with pytest.raises(KeyboardInterrupt):
+        runtime.Worker(
+            client=broker,
+            state=state,
+            evaluator=MustNotEvaluate(),
+            hardware_factory=lambda: HARDWARE,
+        ).run()
+
+    assert broker.submissions == 4
+    assert broker.uploaded == [second.to_record()]
+    assert broker.finalised
+    assert state.load_active() is None
+
+
+def test_continuous_worker_retries_evaluation_and_completes_work(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Continue after a failed evaluation and process subsequent work.
+
+    Args:
+        monkeypatch:
+            Fixture replacing network dependencies and the delay function.
+        tmp_path:
+            Private worker state directory.
+    """
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
+    delay_calls: list[float] = []
+
+    def stop_after_completion(delay: float) -> None:
+        """Stop after work is finalised and the broker reports no more work.
+
+        Raises:
+            KeyboardInterrupt:
+                To terminate the test worker after successful work.
+        """
+        delay_calls.append(delay)
+        if broker.finalised:
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(runtime.time, "sleep", stop_after_completion)
+
+    class OneFailureEvaluator:
+        """Fail once, then provide a result on the retry."""
+
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
+            """Return a result after the first simulated engine failure.
+
+            Raises:
+                RuntimeError:
+                    On the first evaluator invocation.
+            """
+            self.calls += 1
+            if self.calls == 1:
+                raise RuntimeError("engine initialisation failed")
+            return [EEERecord({"id": "recovered"})]
+
+    class OneLeaseBroker(Broker):
+        """Offer one lease, then report no additional work."""
+
+        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            """Return the lease once and then no work."""
+            self.claims += 1
+            return Claim(LEASE if self.claims == 1 else None)
+
+    broker = OneLeaseBroker()
+    broker.submissions = 1
+    evaluator_instance = OneFailureEvaluator()
+    with pytest.raises(KeyboardInterrupt):
+        runtime.Worker(
+            client=broker,
+            state=StateStore(tmp_path),
+            evaluator=evaluator_instance,
+            hardware_factory=lambda: HARDWARE,
+        ).run()
+
+    assert evaluator_instance.calls == 2
+    assert broker.finalised
+    assert len(delay_calls) >= 2
+    assert StateStore(tmp_path).load_active() is None
+
+
+def test_continuous_worker_retries_exhausted_release_and_claims_new_work(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Retry exhausted-work release, then process a distinct lease.
+
+    Args:
+        monkeypatch:
+            Fixture replacing network dependencies and sleep.
+        tmp_path:
+            Private worker state directory.
+    """
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
+
+    second_lease = dataclasses.replace(LEASE, lease_id="lease-2", issue_number=43)
+
+    class RetryReleaseBroker(Broker):
+        """Fail one release temporarily and offer a second distinct lease."""
+
+        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            self.claims += 1
+            return Claim(
+                LEASE
+                if self.claims == 1
+                else second_lease
+                if self.claims == 2
+                else None
+            )
+
+        def release(self, credential: str, lease_id: str, reason: str) -> None:
+            if not self.releases:
+                self.releases.append("temporary failure")
+                raise BrokerError("temporarily busy", status=503)
+            self.releases.append(reason)
+
+    class FirstLeaseFails:
+        """Exhaust the first lease and successfully evaluate the next one."""
+
+        calls = 0
+
+        def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
+            self.calls += 1
+            if lease.lease_id == LEASE.lease_id:
+                raise RuntimeError("evaluation unavailable")
+            return [EEERecord({"id": "second-lease"})]
+
+    broker = RetryReleaseBroker()
+    evaluator_instance = FirstLeaseFails()
+
+    def stop_after_finalisation(delay: float) -> None:
+        if broker.finalised:
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(runtime.time, "sleep", stop_after_finalisation)
+    state = StateStore(tmp_path)
+    with pytest.raises(KeyboardInterrupt):
+        runtime.Worker(
+            client=broker,
+            state=state,
+            evaluator=evaluator_instance,
+            hardware_factory=lambda: HARDWARE,
+        ).run()
+
+    assert evaluator_instance.calls == 4
+    assert broker.releases == ["temporary failure", "evaluation_failed"]
+    assert broker.finalised
+    assert broker.claims >= 3
+    assert state.load_active() is None
+    archived = list(state.archive_dir.glob("active-lease-*.json"))
+    assert len(archived) == 1
+    assert json.loads(archived[0].read_text())["evaluation_failures"] == 3
+
+
 def test_discover_hardware_does_not_import_torch_in_worker(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -797,10 +1052,10 @@ def test_encoder_canary_uses_ordinary_result_path_without_corpus(
     assert broker.finalised
 
 
-def test_evaluation_failure_releases_lease(
+def test_evaluation_failure_keeps_active_lease_for_once(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Release a lease when evaluation fails.
+    """Preserve the lease and propagate evaluation errors in once mode.
 
     Args:
         monkeypatch:
@@ -839,10 +1094,13 @@ def test_evaluation_failure_releases_lease(
         evaluator=FailingEvaluator(),
         hardware_factory=lambda: HARDWARE,
     )
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError, match="evaluation failed"):
         worker.run(once=True)
     assert broker.releases == []
-    assert StateStore(tmp_path).load_active() is not None
+    active = StateStore(tmp_path).load_active()
+    assert active is not None
+    assert active.evaluation_failures == 0
+    assert not active.release_pending
 
 
 class Broker:
@@ -1127,6 +1385,32 @@ def test_expired_active_lease_is_archived_before_new_claim(
     ).run(once=True)
     assert list((tmp_path / "archive").glob("*.json"))
     assert state.load_active() is None
+
+
+def test_failure_recording_preserves_latest_renewal_and_acknowledgements(
+    tmp_path: Path,
+) -> None:
+    """Record failure metadata without replacing newer lease or result state.
+
+    Args:
+        tmp_path:
+            Private worker state directory.
+    """
+    state = StateStore(tmp_path)
+    result = EEERecord({"id": "durable"})
+    pending = PendingRecord.from_record(result)
+    state.save_active(lease=LEASE, records=(pending,))
+    renewed = dataclasses.replace(LEASE, expires_at="2099-01-02T00:00:00Z")
+    state.renew_active(renewed)
+    state.save_records((dataclasses.replace(pending, acknowledged=True),))
+
+    active = state.record_evaluation_failure(lease_id=LEASE.lease_id, max_failures=3)
+
+    assert active.lease == renewed
+    assert active.records[0].acknowledged
+    assert active.evaluation_failures == 1
+    assert not active.release_pending
+    assert state.load_active() == active
 
 
 def test_finalise_response_loss_is_idempotently_retried(
@@ -1596,6 +1880,114 @@ def test_partial_acknowledgements_survive_restart(
     assert StateStore(tmp_path).load_active() is None
 
 
+def test_pending_release_failure_does_not_reevaluate_or_clear_intent(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Keep an exhausted lease pending when broker release is unavailable.
+
+    Args:
+        monkeypatch:
+            Fixture replacing authentication.
+        tmp_path:
+            Private worker state directory.
+    """
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    state = StateStore(tmp_path)
+    state.save_active(
+        lease=LEASE, evaluation_failures=3, release_pending=True, github_login="login"
+    )
+
+    class BusyReleaseBroker(Broker):
+        """Broker whose issue mutex is temporarily occupied."""
+
+        def release(self, credential: str, lease_id: str, reason: str) -> None:
+            """Reject release with its structured temporary contention code.
+
+            Raises:
+                BrokerError:
+                    To simulate temporary issue mutex contention.
+            """
+            raise BrokerError("issue busy", status=503, code="ISSUE_BUSY")
+
+    class MustNotEvaluate:
+        """Evaluator tracking accidental retries of exhausted work."""
+
+        calls = 0
+
+        def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
+            """Fail if the exhausted lease reaches evaluation.
+
+            Raises:
+                AssertionError:
+                    If the worker reevaluates exhausted work.
+            """
+            self.calls += 1
+            raise AssertionError("exhausted work must be released, not evaluated")
+
+    evaluator_instance = MustNotEvaluate()
+    with pytest.raises(BrokerError, match="issue busy"):
+        runtime.Worker(
+            client=BusyReleaseBroker(),
+            state=state,
+            evaluator=evaluator_instance,
+            hardware_factory=lambda: HARDWARE,
+        ).run(once=True)
+
+    active = state.load_active()
+    assert active is not None and active.release_pending
+    assert active.evaluation_failures == 3
+    assert evaluator_instance.calls == 0
+
+
+def test_repeated_transient_claim_failures_keep_backoff_finite(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Keep long-running retry backoff bounded without exponent overflow.
+
+    Args:
+        monkeypatch:
+            Fixture replacing authentication and sleep.
+        tmp_path:
+            Private worker state directory.
+    """
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    delays: list[float] = []
+
+    def stop_after_many_retries(delay: float) -> None:
+        delays.append(delay)
+        if len(delays) == 1_100:
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(runtime.time, "sleep", stop_after_many_retries)
+
+    class TemporarilyUnavailableBroker(Broker):
+        """Broker returning a retryable request timeout."""
+
+        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            """Raise a transient broker failure.
+
+            Raises:
+                BrokerError:
+                    To simulate a temporary timeout response.
+            """
+            raise BrokerError("temporarily unavailable", status=408)
+
+    with pytest.raises(KeyboardInterrupt):
+        runtime.Worker(
+            client=TemporarilyUnavailableBroker(),
+            state=StateStore(tmp_path),
+            evaluator=OneRecordEvaluator(),
+            hardware_factory=lambda: HARDWARE,
+        ).run()
+
+    assert len(delays) == 1_100
+    assert all(0 <= delay <= 300 for delay in delays)
+
+
 def test_required_canary_preserves_partial_ordinary_scope(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -1823,11 +2215,13 @@ def test_state_round_trip_preserves_scope_alternatives_and_canary(
     )
     state = StateStore(tmp_path)
 
-    state.save_active(lease=lease)
+    state.save_active(lease=lease, evaluation_failures=2, release_pending=True)
     active = state.load_active()
 
     assert active is not None
     assert active.lease == lease
+    assert active.evaluation_failures == 2
+    assert active.release_pending
 
 
 def test_worker_caps_vllm_utilisation_to_fresh_free_gpu_memory(

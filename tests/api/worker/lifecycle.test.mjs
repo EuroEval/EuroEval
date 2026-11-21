@@ -36,6 +36,41 @@ test("ignored GitHub assignee requests do not break signed public lease ownershi
   }
 });
 
+test("submitted public credit alone does not keep a contributor assigned", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  process.env.GITHUB_TOKEN = "token";
+  process.env.VOLUNTEER_MARKER_SECRET = "marker-secret";
+  const marker = await signVolunteerMarker(issueNumber, {
+    protocol_version: "volunteer-worker/v1", coordinator: "coordinator", submission: "submitted",
+    leases: [], submissions: [{ submission_id: "done", language: "da", manifest_path: "volunteer/manifests/done.json", submitted_at: "2026-09-06T10:00:00Z", result_count: 1, status: "submitted", ownership_mode: "public", verified_contributor: "alice" }],
+    public_assignees: ["alice"],
+  });
+  const issue = { number: issueNumber, title: "request", body: markerBody(marker), state: "open", assignees: [{ login: "alice" }, { login: "manual" }] };
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input);
+    if (url.endsWith(`/issues/${issueNumber}/assignees`) && init.method === "DELETE") {
+      issue.assignees = issue.assignees.filter(({ login }) => login !== "alice");
+      return Response.json(issue);
+    }
+    if (url.endsWith(`/issues/${issueNumber}`) && init.method === "PATCH") {
+      issue.body = JSON.parse(init.body).body;
+      return Response.json(issue);
+    }
+    if (url.endsWith(`/issues/${issueNumber}`)) return Response.json(issue);
+    throw new Error(`Unexpected request: ${init.method || "GET"} ${url}`);
+  };
+  try {
+    const result = await reconcilePublicAssignments(issue, marker, async () => {});
+    assert.deepEqual(issue.assignees, [{ login: "manual" }]);
+    assert.deepEqual(result.marker.public_assignees, []);
+    assert.equal(result.marker.submissions[0].verified_contributor, "alice");
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
+
 test("reconciles verified public contributors as broker-tracked assignees", async () => {
   const originalFetch = globalThis.fetch;
   const originalEnv = { ...process.env };
@@ -157,6 +192,12 @@ function mockBroker(issue, values) {
       issue.labels = [...(issue.labels || []), ...labels];
       return Response.json(issue.labels);
     }
+    const labelDelete = url.match(new RegExp(`/issues/${issueNumber}/labels/([^/?]+)$`));
+    if (labelDelete && method === "DELETE") {
+      const label = decodeURIComponent(labelDelete[1]);
+      issue.labels = (issue.labels || []).filter((item) => item.name !== label);
+      return Response.json(issue.labels);
+    }
     if (url.includes(`/issues/${issueNumber}/comments`) && method === "GET") {
       return Response.json(issue.comments || []);
     }
@@ -167,6 +208,180 @@ function mockBroker(issue, values) {
     throw new Error(`Unexpected request: ${method} ${url}`);
   };
 }
+
+for (const failure of ["assignment", "review label"]) test(
+  `public finalisation retries ${failure} cleanup without posting comments`, async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  Object.assign(process.env, {
+    VOLUNTEER_MARKER_SECRET: "marker-secret",
+    UPSTASH_REDIS_REST_URL: "https://redis.test",
+    UPSTASH_REDIS_REST_TOKEN: "redis-token",
+    GITHUB_TOKEN: "github-token",
+  });
+  const activeLease = { ...lease, language: "el", ownership_mode: "public" };
+  const bobLease = { lease_id: "bob-lease", language: "da", worker: "bob-worker",
+    contributor: "bob", expires_at: activeLease.expires_at, ownership_mode: "public" };
+  const signed = await signVolunteerMarker(issueNumber, {
+    protocol_version: "volunteer-worker/v1", coordinator: "coordinator", submission: "active",
+    leases: [{ lease_id: activeLease.lease_id, language: "el", worker: "worker",
+      contributor: "alice", expires_at: activeLease.expires_at, ownership_mode: "public" }, bobLease],
+    public_assignees: ["alice", "bob"],
+  });
+  const issue = { number: issueNumber, title: "[MODEL EVALUATION REQUEST] org/model",
+    body: markerBody(signed), state: "open", labels: [],
+    assignees: [{ login: "alice" }, { login: "bob" }, { login: "manual" }] };
+  const statusKey = `euroeval:worker:finalisation:${activeLease.lease_id}`;
+  const values = new Map([
+    [`euroeval:worker:credential:${await sha256("credential")}`, JSON.stringify({ contributor: "alice" })],
+    [`euroeval:worker:lease-id:${activeLease.lease_id}`, JSON.stringify(activeLease)],
+    [statusKey, JSON.stringify({ status: "manifest_uploaded", submission_id: activeLease.lease_id,
+      lease: activeLease, entries: [{ digest: "digest", identity: '["org/model","dataset",true,true]',
+        path: "results/digest.json", failed: 0 }], manifest_path: "volunteer/manifests/lease.json" })],
+  ]);
+  const broker = mockBroker(issue, values);
+  let failCleanup = true;
+  let mutexBusy = false;
+  let commentRequests = 0;
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input);
+    if (url.includes("/comments")) {
+      commentRequests++;
+      throw new Error("Contributor flow must not access issue comments");
+    }
+    if (url === "https://redis.test" && mutexBusy) {
+      const command = JSON.parse(init.body);
+      if (command[0] === "SET" && command[1] === `euroeval:worker:mutex:${issueNumber}`) {
+        return Response.json({ result: null });
+      }
+    }
+    if (failure === "review label" && failCleanup &&
+        url.endsWith(`/issues/${issueNumber}/labels`) && init.method === "POST") {
+      return Response.json({ message: "Injected label write failure" }, { status: 400 });
+    }
+    if (url.endsWith(`/issues/${issueNumber}`) && init.method === "PATCH") {
+      const proposed = parseVolunteerMarker(JSON.parse(init.body).body);
+      if (failure === "assignment" && failCleanup && !proposed.public_assignees.includes("alice")) {
+        return Response.json({ message: "Injected provenance write failure" }, { status: 400 });
+      }
+    }
+    return broker(input, init);
+  };
+  const request = () => new Request("https://euroeval.test/api/worker/finalise", {
+    method: "POST", headers: { authorization: "Bearer credential", "content-type": "application/json" },
+    body: JSON.stringify({ protocol_version: "volunteer-worker/v1", lease_id: activeLease.lease_id }),
+  });
+  try {
+    const failed = await finalise(request());
+    assert.equal(failed.status, 502, await failed.clone().text());
+    assert.equal(JSON.parse(values.get(statusKey)).status, "ready");
+    assert.deepEqual(issue.assignees.map(({ login }) => login), failure === "assignment"
+      ? ["bob", "manual"] : ["alice", "bob", "manual"]);
+    assert.deepEqual(parseVolunteerMarker(issue.body).public_assignees, ["alice", "bob"]);
+    values.delete(`euroeval:worker:lease-id:${activeLease.lease_id}`);
+    failCleanup = false;
+    mutexBusy = true;
+    const busy = await finalise(request());
+    assert.equal(busy.status, 503);
+    assert.equal((await busy.json()).code, "issue_busy");
+    mutexBusy = false;
+    const resumed = await finalise(request());
+    assert.equal(resumed.status, 200, await resumed.clone().text());
+    assert.equal((await resumed.json()).status, "already_finalised");
+    const finalMarker = parseVolunteerMarker(issue.body);
+    assert.deepEqual(finalMarker.public_assignees, ["bob"]);
+    assert.deepEqual(finalMarker.leases, [bobLease]);
+    assert.equal(finalMarker.submissions[0].verified_contributor, "alice");
+    assert.deepEqual(issue.assignees.map(({ login }) => login), ["bob", "manual"]);
+    assert.ok(issue.labels.some(({ name }) => name === "community-review-ready"));
+    assert.equal(await verifyVolunteerMarker(issueNumber, finalMarker), true);
+    assert.equal(commentRequests, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
+
+for (const scenario of [
+  { name: "partial completion", languages: ["da", "fo", "is", "no"], labelled: false, expected: false },
+  { name: "premature review label", languages: ["da", "fo", "is", "no"], labelled: true, expected: false },
+  { name: "all selected languages", languages: ["da", "fo", "is", "no", "sv"], labelled: false, expected: true },
+  { name: "all results already accepted", languages: ["da", "fo", "is", "no", "sv"], labelled: true, expected: false, acceptedAll: true },
+  { name: "failed label addition", languages: ["da", "fo", "is", "no", "sv"], labelled: false, expected: true, fail: true },
+  { name: "failed label removal", languages: ["da", "fo", "is", "no"], labelled: true, expected: false, fail: true },
+  { name: "active lease only", languages: [], labelled: false, expected: false, active: true },
+  { name: "forged marker", languages: ["da", "fo", "is", "no"], labelled: true, expected: true, forged: true },
+  { name: "changed model", languages: ["da", "fo", "is", "no"], labelled: true, expected: true, changed: true },
+]) test(`ready finalisation reconciles ${scenario.name} without a live lease`, async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  Object.assign(process.env, { VOLUNTEER_MARKER_SECRET: "marker-secret",
+    UPSTASH_REDIS_REST_URL: "https://redis.test", UPSTASH_REDIS_REST_TOKEN: "redis-token",
+    GITHUB_TOKEN: "github-token" });
+  try {
+    const savedLease = { ...lease, language: "no", ownership_mode: "public" };
+    const marker = await signVolunteerMarker(issueNumber, {
+      protocol_version: "volunteer-worker/v1", coordinator: "coordinator", submission: "submitted",
+      leases: scenario.active ? [{ lease_id: "next", language: "sv", worker: "worker",
+        contributor: "alice", expires_at: lease.expires_at, ownership_mode: "public" }] : [],
+      public_assignees: ["alice"],
+      submissions: scenario.languages.map((language, index) => ({ submission_id: `done-${language}`,
+        language, manifest_path: `manifests/${language}.json`, submitted_at: "2026-11-20T18:00:00Z",
+        verified_contributor: "alice", result_count: 1,
+        status: scenario.acceptedAll || index === 0 ? "accepted" : "submitted", ownership_mode: "public" })),
+    });
+    if (scenario.forged) marker.signature = "forged";
+    const reviewLabel = "community-review-ready";
+    const issue = { number: issueNumber,
+      title: `[MODEL EVALUATION REQUEST] ${scenario.changed ? "org/changed" : "org/model"}`,
+      body: markerBody(marker).replace("- [x] Greek",
+        "- [x] Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)"),
+      state: "open", labels: scenario.labelled ? [{ name: reviewLabel }] : [],
+      assignees: [{ login: "alice" }, { login: "manual" }] };
+    const values = new Map([
+      [`euroeval:worker:credential:${await sha256("credential")}`, JSON.stringify({ contributor: "alice" })],
+      [`euroeval:worker:finalisation:${lease.lease_id}`, JSON.stringify({ status: "ready",
+        submission_id: lease.lease_id, lease: savedLease, entries: [], manifest_path: "manifests/no.json" })],
+    ]);
+    const broker = mockBroker(issue, values);
+    let fail = scenario.fail;
+    let mutations = 0;
+    globalThis.fetch = async (input, init = {}) => {
+      const url = String(input);
+      if (url.startsWith("https://api.github.com/") && init.method && init.method !== "GET") {
+        mutations++;
+        if (fail && url.includes(`/issues/${issueNumber}/labels`)) {
+          return Response.json({ message: "Injected label failure" }, { status: 400 });
+        }
+      }
+      return broker(input, init);
+    };
+    const request = () => new Request("https://euroeval.test/api/worker/finalise", {
+      method: "POST", headers: { authorization: "Bearer credential", "content-type": "application/json" },
+      body: JSON.stringify({ protocol_version: "volunteer-worker/v1", lease_id: lease.lease_id }),
+    });
+    let response = await finalise(request());
+    if (scenario.fail) {
+      assert.equal(response.status, 502, await response.clone().text());
+      fail = false;
+      response = await finalise(request());
+    }
+    assert.equal(response.status, 200, await response.clone().text());
+    assert.equal((await response.json()).status, "already_finalised");
+    assert.equal(issue.labels.some(({ name }) => name === reviewLabel), scenario.expected);
+    if (scenario.forged || scenario.changed) {
+      assert.equal(mutations, 0);
+      assert.deepEqual(issue.assignees.map(({ login }) => login), ["alice", "manual"]);
+    } else {
+      assert.deepEqual(issue.assignees.map(({ login }) => login), scenario.active
+        ? ["alice", "manual"] : ["manual"]);
+      assert.deepEqual(parseVolunteerMarker(issue.body).submissions, marker.submissions);
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
 
 for (const upstreamSlow of [false, true]) test(
   `claim scans 148 candidates without GPU allocation${upstreamSlow ? " and bounds slow Hub retries" : ""}`,
@@ -884,6 +1099,38 @@ test("heartbeat renews a full TTL and preserves a valid marker signature", async
     assert.ok(Date.parse(renewed.leases[0].expires_at) >= Date.now() + 59_000);
     assert.match(issue.body, /harmless comment/);
     assert.match(issue.body, /- \[x\] Greek/);
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
+
+test("release reports mutex contention with a retryable broker code", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
+  const values = new Map([[`euroeval:worker:credential:${await sha256("credential")}`,
+    JSON.stringify({ contributor: "alice" })],
+  [`euroeval:worker:lease-id:${lease.lease_id}`,
+    JSON.stringify({ ...lease, expires_at: new Date(Date.now() + 60_000).toISOString() })]]);
+  globalThis.fetch = async (input, init = {}) => {
+    const url = new URL(String(input));
+    if (url.origin !== "https://redis.test") throw new Error("GitHub must not be contacted");
+    const command = JSON.parse(init.body);
+    if (command[0] === "GET") return Response.json({ result: values.get(command[1]) || null });
+    if (command[0] === "SET" && command[1].includes(":mutex:")) {
+      return Response.json({ result: null });
+    }
+    return Response.json({ result: 1 });
+  };
+  try {
+    const response = await release(new Request("https://euroeval.test/api/worker/release", {
+      method: "POST", headers: { authorization: "Bearer credential", "content-type": "application/json" },
+      body: JSON.stringify({ protocol_version: "volunteer-worker/v1", lease_id: lease.lease_id }),
+    }));
+    assert.equal(response.status, 503);
+    assert.equal((await response.json()).code, "ISSUE_BUSY");
   } finally {
     globalThis.fetch = originalFetch;
     process.env = originalEnv;

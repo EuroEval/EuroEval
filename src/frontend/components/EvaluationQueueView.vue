@@ -41,7 +41,6 @@ function onSubmitted(payload: {
     modelId: payload.modelId,
     languageGroups: payload.languageGroups,
     status: "Waiting",
-    publicVolunteer: false,
     evaluators: [],
     createdAt: new Date().toISOString(),
   };

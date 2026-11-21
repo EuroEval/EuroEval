@@ -115,6 +115,12 @@ class BenchmarkModule(ABC):
             logging_msg += f"and a maximum context length of {self.model_max_length:,}."
         log_once(message=logging_msg, level=logging.INFO)
 
+    def close(self) -> None:
+        """Release owned inference resources after the model's final dataset.
+
+        Backends with external executors override this idempotent lifecycle method.
+        """
+
     def collect_canary_completions(self, prompts: c.Sequence[str]) -> list[str]:
         """Generate raw continuations for the separate contamination canary.
 

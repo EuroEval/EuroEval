@@ -56,7 +56,6 @@ export interface QueueEntry {
   modelId: string;
   languageGroups: string[];
   status: QueueStatus;
-  publicVolunteer: boolean;
   evaluators: QueueEvaluator[];
   createdAt: string;
 }
@@ -80,11 +79,10 @@ function currentAssignees(issue: RawIssue): RawAssignee[] {
 
 export function mergeQueueEvaluators(
   assigned: QueueEvaluator[],
-  trustedPublic: QueueEvaluator[],
 ): QueueEvaluator[] {
   const evaluators: QueueEvaluator[] = [];
   const seen = new Set<string>();
-  for (const evaluator of [...assigned, ...trustedPublic]) {
+  for (const evaluator of assigned) {
     const key = evaluator.login.toLowerCase();
     if (seen.has(key)) {
       const existing = evaluators.find(
@@ -110,7 +108,6 @@ export function evaluatorsFromIssue(issue: RawIssue): QueueEvaluator[] {
       login: assignee.login,
       avatarUrl: assignee.avatar_url || null,
     })),
-    [],
   );
 }
 
@@ -157,10 +154,7 @@ export function issueStatus(
   return "Waiting";
 }
 
-export function toQueueEntry(
-  issue: RawIssue,
-  publicEvaluators: ReadonlyMap<number, QueueEvaluator[]> = new Map(),
-): QueueEntry | null {
+export function toQueueEntry(issue: RawIssue): QueueEntry | null {
   const modelId = extractModelId(issue.title, issue.body);
   if (!modelId) return null;
   // The queue can't run GGUF models. We rely on the GGUF_LABEL applied by the
@@ -178,11 +172,7 @@ export function toQueueEntry(
     modelId,
     languageGroups: extractLanguageGroups(issue.body),
     status: issueStatus(issue, failed, gated, resultsReady, communityReviewReady),
-    publicVolunteer: (publicEvaluators.get(issue.number)?.length ?? 0) > 0,
-    evaluators: mergeQueueEvaluators(
-      evaluatorsFromIssue(issue),
-      publicEvaluators.get(issue.number) ?? [],
-    ),
+    evaluators: evaluatorsFromIssue(issue),
     createdAt: issue.created_at,
   };
 }
@@ -208,27 +198,6 @@ export async function listOpenEvalIssues(
     raw.push(...chunk);
     if (chunk.length < 100) break;
   }
-  const publicEvaluators = new Map<number, QueueEvaluator[]>();
-  try {
-    const projection = await fetch("/api/hall-of-fame?projection=queue", init);
-    if (projection.ok) {
-      const entries = (await projection.json()) as Array<{
-        number: number;
-        evaluators: Array<{ login: string; avatar_url?: string }>;
-      }>;
-      for (const entry of entries) {
-        publicEvaluators.set(
-          entry.number,
-          entry.evaluators.map((evaluator) => ({
-            login: evaluator.login,
-            avatarUrl: evaluator.avatar_url || null,
-          })),
-        );
-      }
-    }
-  } catch {
-    // Queue loading remains available if the optional trusted projection is unavailable.
-  }
   const order: Record<QueueStatus, number> = {
     "Awaiting publish": 0,
     "Pending review": 1,
@@ -238,7 +207,7 @@ export async function listOpenEvalIssues(
     Error: 5,
   };
   return raw
-    .map((issue) => toQueueEntry(issue, publicEvaluators))
+    .map(toQueueEntry)
     .filter((e): e is QueueEntry => e !== null)
     .sort((a, b) => {
       if (a.status !== b.status) return order[a.status] - order[b.status];

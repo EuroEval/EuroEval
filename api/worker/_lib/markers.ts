@@ -101,6 +101,16 @@ export function volunteerAssigneesMatch(
   return [...expected].every((login) => actual.has(login) || optional.has(login));
 }
 
+/** Whether every requested language is complete and selected results still need review. */
+export function isReadyForReview(marker: VolunteerLeaseMarker, selected: string[]): boolean {
+  const completed = new Set((marker.submissions || [])
+    .filter((submission) => submission.status === "submitted" || submission.status === "accepted")
+    .map((submission) => submission.language));
+  return selected.length > 0 && selected.every((language) => completed.has(language)) &&
+    (marker.submissions || []).some((submission) =>
+      submission.status === "submitted" && selected.includes(submission.language));
+}
+
 export function claimableLanguages(
   selected: string[], marker: VolunteerLeaseMarker | null, now = Date.now(),
 ): string[] {

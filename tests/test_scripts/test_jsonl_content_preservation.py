@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from unittest.mock import MagicMock, create_autospec
 
 import pytest
 
@@ -22,6 +23,23 @@ def newline(request: pytest.FixtureRequest) -> str:
         A record delimiter to write as exact bytes.
     """
     return request.param
+
+
+@pytest.fixture
+def publisher(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
+    """Isolate publication while retaining the real local collector workflow.
+
+    Args:
+        monkeypatch:
+            Replace publisher construction and prevent real Hub client use.
+
+    Returns:
+        The publisher adapter receiving the parsed records.
+    """
+    adapter = create_autospec(spec=collect.CanonicalPublisher, instance=True)
+    monkeypatch.setattr(collect, "CanonicalPublisher", MagicMock(return_value=adapter))
+    monkeypatch.setattr(collect, "HfApi", MagicMock(return_value=object()))
+    return adapter
 
 
 @pytest.fixture(params=["left}{right", "x\u0085y", "x\u2028y", "x\u2029y"])
@@ -53,6 +71,7 @@ def test_collector_upload_preserves_valid_record(
     monkeypatch: pytest.MonkeyPatch,
     record: dict[str, object],
     newline: str,
+    publisher: MagicMock,
 ) -> None:
     """Parse a real local input and preserve it in the result tree.
 
@@ -60,21 +79,26 @@ def test_collector_upload_preserves_valid_record(
         tmp_path:
             Temporary local directory.
         monkeypatch:
-            Replace only the output directory and remote upload.
+            Replace the local output directory.
         record:
             Synthetic benchmark record.
         newline:
             Physical LF or CRLF input delimiter.
+        publisher:
+            Remote publication adapter without Hub access.
     """
     path = tmp_path / "input.jsonl"
     path.write_bytes((json.dumps(record, ensure_ascii=False) + newline).encode("utf-8"))
     results_dir = tmp_path / "results"
     monkeypatch.setattr(collect, "RESULTS_DIR", results_dir)
-    monkeypatch.setattr(
-        collect, "_upload_to_bucket", lambda records, written_paths, source_bytes: True
-    )
 
     assert collect.upload_results_to_hf(new_results_path=path) is True
+    publisher.prepare.assert_called_once()
+    session = publisher.session.return_value.__enter__.return_value
+    session.publish.assert_called_once()
+    assert [
+        json.loads(item) for item in session.publish.call_args.kwargs["records"]
+    ] == [record]
     written = list(results_dir.rglob("*.json"))
     assert len(written) == 1
     assert json.loads(written[0].read_text(encoding="utf-8")) == record
@@ -85,6 +109,7 @@ def test_manual_collection_does_not_rewrite_quoted_separators(
     monkeypatch: pytest.MonkeyPatch,
     record: dict[str, object],
     newline: str,
+    publisher: MagicMock,
 ) -> None:
     """Exercise the public command's manual-input path and stop before deployment.
 
@@ -97,15 +122,17 @@ def test_manual_collection_does_not_rewrite_quoted_separators(
             Synthetic benchmark record.
         newline:
             Physical LF or CRLF input delimiter.
+        publisher:
+            Remote publication adapter without Hub access.
     """
     path = tmp_path / "new_results.jsonl"
     path.write_bytes((json.dumps(record, ensure_ascii=False) + newline).encode("utf-8"))
     monkeypatch.setattr(collect, "NEW_RESULTS_PATH", path)
+    monkeypatch.setattr(collect, "RESULTS_DIR", tmp_path / "results")
     monkeypatch.setattr(collect, "check_required_env_vars", lambda: None)
     monkeypatch.setattr(collect, "preflight_volunteer_review", lambda: True)
     monkeypatch.setattr(collect, "_fetch_issues", lambda: [])
     monkeypatch.setattr(collect, "_harvest_results", lambda issues: [])
-    monkeypatch.setattr(collect, "_upload_results", lambda: None)
     monkeypatch.setattr(collect, "regenerate_leaderboards", lambda **kwargs: False)
     callback = collect.main.callback
     assert callback is not None
@@ -114,6 +141,12 @@ def test_manual_collection_does_not_rewrite_quoted_separators(
         callback(force=False)
 
     assert caught.value.code == 1
+    publisher.prepare.assert_called_once()
+    session = publisher.session.return_value.__enter__.return_value
+    session.publish.assert_called_once()
+    assert [
+        json.loads(item) for item in session.publish.call_args.kwargs["records"]
+    ] == [record]
     assert json.loads(path.read_text(encoding="utf-8")) == record
 
 

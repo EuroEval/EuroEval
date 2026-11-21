@@ -1,5 +1,5 @@
 import { uploadFile } from "@huggingface/hub";
-import { BrokerError, ConfigurationError, GROUPS, env } from "./protocol.js";
+import { BrokerError, ConfigurationError, env } from "./protocol.js";
 import { fetchWithRetry } from "./http.js";
 import { languageGroup } from "./model.js";
 import {
@@ -100,7 +100,7 @@ export function validateRecord(record: unknown, expected: { modelId: string; rev
   const group = languageGroup(expected.language);
   let languages: unknown;
   try { languages = typeof details.languages === "string" ? JSON.parse(details.languages) : details.languages; } catch { throw new BrokerError(422, "additional_details.languages is not valid JSON."); }
-  if (!Array.isArray(languages) || !languages.length || !languages.every((item) => typeof item === "string" && group !== null && GROUPS[group].includes(item))) throw new BrokerError(422, "record languages must be a non-empty subset of the leased language group.");
+  if (group === null || !Array.isArray(languages) || !languages.length || !languages.every((item) => typeof item === "string" && languageGroup(item) === group)) throw new BrokerError(422, "record languages must be a non-empty subset of the leased language group.");
   const recordLanguage = details.language ?? value.language;
   if (recordLanguage !== undefined && (typeof recordLanguage !== "string" || !languages.includes(recordLanguage))) throw new BrokerError(422, "record language is inconsistent with languages.");
   const normaliseBool = (item: unknown): boolean | null | undefined => item === null || item === undefined ? null : item === true || item === "true" ? true : item === false || item === "false" ? false : undefined;

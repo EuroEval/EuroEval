@@ -1,11 +1,11 @@
 declare const process: { env: Record<string, string | undefined> };
 
 import {
-  BrokerError, ConfigurationError, expectedScope, PROTOCOL_VERSION, addIssueLabel, acquireRenewableIssueMutex,
-  authenticate, brokerErrorBody, commentIssue, contributorLabel, deleteLease, enforceRateLimit, extractModelId,
-  fetchIssue, getLeaseById, issueComments, json, method, patchIssue, parseVolunteerMarker,
+  BrokerError, ConfigurationError, expectedScope, PROTOCOL_VERSION, addIssueLabel, removeIssueLabel, acquireRenewableIssueMutex,
+  authenticate, brokerErrorBody, deleteLease, enforceRateLimit, extractModelId,
+  fetchIssue, getLeaseById, isReadyForReview, json, method, patchIssue, parseVolunteerMarker,
   readJson, redis, redisGet, requireLeaseOwnership, requireAssignee, requireProtocol,
-  selectedLanguages, replaceVolunteerMarker,
+  selectedLanguages, replaceVolunteerMarker, reconcilePublicAssignments,
   signVolunteerMarker, verifyVolunteerMarker,
 } from "./_lib.js";
 import { uploadStaging } from "./_lib/eee.js";
@@ -13,8 +13,16 @@ import type { Lease, LeaseScope, VolunteerLeaseMarker } from "./_lib.js";
 
 export const config = { runtime: "nodejs" };
 
-const FINAL_MARKER = "euroeval-volunteer-finalised:v1";
 type ResultEntry = { digest: string; identity: string; path: string; failed?: number; warnings?: string[] };
+
+/** Reconcile the review label from authenticated whole-request completion state. */
+async function reconcileReviewLabel(issue: Awaited<ReturnType<typeof fetchIssue>>, marker: VolunteerLeaseMarker): Promise<void> {
+  const label = process.env.COMMUNITY_REVIEW_LABEL || "community-review-ready";
+  const complete = isReadyForReview(marker, selectedLanguages(issue.body));
+  const labelled = issue.labels?.some((item) => item.name === label) || false;
+  if (complete && !labelled) await addIssueLabel(issue.number, label);
+  if (!complete && labelled) await removeIssueLabel(issue.number, label);
+}
 type Receipt = { status?: string; submission_id: string; lease: Lease; entries: ResultEntry[]; manifest_path: string; manifest?: string; matched_identity_suffixes?: string[] };
 
 function resultEntries(value: unknown): ResultEntry[] {
@@ -137,7 +145,22 @@ export async function fetch(req: Request): Promise<Response> {
       if (!old.lease || old.lease.contributor.toLowerCase() !== identity.contributor.toLowerCase()) {
         throw new BrokerError(409, "Lease is absent or belongs to another contributor.");
       }
-      if (old.lease.ownership_mode !== "public") await requireAssignee(await fetchIssue(old.lease.issue_number), old.lease.contributor);
+      const mutex = await acquireRenewableIssueMutex(old.lease.issue_number);
+      if (!mutex) throw new BrokerError(503, "Issue is busy; retry finalisation.", "issue_busy");
+      try {
+        const issue = await fetchIssue(old.lease.issue_number);
+        if (old.lease.ownership_mode !== "public") await requireAssignee(issue, old.lease.contributor);
+        const marker = parseVolunteerMarker(issue.body);
+        if (marker && await verifyVolunteerMarker(issue.number, marker) &&
+            extractModelId(issue.title, issue.body) === old.lease.model_id &&
+            selectedLanguages(issue.body).includes(old.lease.language)) {
+          await mutex.assertOwned();
+          await reconcileReviewLabel(issue, marker);
+          if (old.lease.ownership_mode === "public") {
+            await reconcilePublicAssignments(issue, marker, () => mutex.assertOwned());
+          }
+        }
+      } finally { await mutex.release(); }
       return json(200, { protocol_version: PROTOCOL_VERSION, status: "already_finalised", submission_id: old.submission_id });
     }
     const active = await getLeaseById(body.lease_id);
@@ -198,22 +221,25 @@ export async function fetch(req: Request): Promise<Response> {
         if (lease.ownership_mode !== "public") await requireAssignee(fencedIssue, lease.contributor);
       }
       if (lease.ownership_mode !== "public") await requireAssignee(await fetchIssue(lease.issue_number), lease.contributor);
-      const label = process.env.COMMUNITY_REVIEW_LABEL || "community-review-ready";
-      if (!issue.labels?.some((item) => item.name === label)) {
-        await mutex.assertOwned();
-        await addIssueLabel(lease.issue_number, label);
-        if (lease.ownership_mode !== "public") await requireAssignee(await fetchIssue(lease.issue_number), lease.contributor);
+      receipt.status = "ready";
+      await redis("SET", statusKey, JSON.stringify(receipt), "EX", String(30 * 24 * 60 * 60));
+      await deleteLease(lease);
+      const labelIssue = await fetchIssue(lease.issue_number);
+      const labelMarker = parseVolunteerMarker(labelIssue.body);
+      if (extractModelId(labelIssue.title, labelIssue.body) !== lease.model_id ||
+          !labelMarker || !(await verifyVolunteerMarker(labelIssue.number, labelMarker)) ||
+          !selectedLanguages(labelIssue.body).includes(lease.language)) {
+        throw new BrokerError(409, "The issue scope or ownership marker changed before review-label reconciliation.");
       }
-      const comments = await issueComments(lease.issue_number);
-      if (!comments.some((item) => item.body?.includes(`${FINAL_MARKER} ${receipt.submission_id}`))) {
-        const maintainer = process.env.COMMUNITY_MAINTAINER_LOGIN || "saattrupdan";
-        const comment = `<!-- ${FINAL_MARKER} ${receipt.submission_id} -->\n@${maintainer} — community evaluation ready.\n\nContributor: **${contributorLabel(identity.contributor)}**  \nModel: **${lease.model_id}@${lease.model_revision}**  \nLanguage: **${lease.language}**  \nSubmission: **${receipt.submission_id}**  \nValidation: **${receipt.entries.length} identities; ${receipt.entries.reduce((total, entry) => total + (entry.failed || 0), 0)} failed instances (informational)**`;
-        await mutex.assertOwned();
-        await commentIssue(lease.issue_number, comment);
-        if (lease.ownership_mode !== "public") await requireAssignee(await fetchIssue(lease.issue_number), lease.contributor);
+      await mutex.assertOwned();
+      await reconcileReviewLabel(labelIssue, labelMarker);
+      if (lease.ownership_mode === "public") {
+        const finalIssue = await fetchIssue(lease.issue_number);
+        const finalMarker = parseVolunteerMarker(finalIssue.body);
+        if (finalMarker && await verifyVolunteerMarker(finalIssue.number, finalMarker)) {
+          await reconcilePublicAssignments(finalIssue, finalMarker, () => mutex.assertOwned());
+        }
       }
-      if (lease.ownership_mode !== "public") await requireAssignee(await fetchIssue(lease.issue_number), lease.contributor);
-      await deleteLease(lease); receipt.status = "ready"; await redis("SET", statusKey, JSON.stringify(receipt), "EX", String(30 * 24 * 60 * 60));
     } finally { await mutex.release(); }
     return json(200, { protocol_version: PROTOCOL_VERSION, status: "ready", submission_id: receipt.submission_id, coverage: { language: lease.language, records: receipt.entries.length }, manifest_path: receipt.manifest_path });
   } catch (error) {

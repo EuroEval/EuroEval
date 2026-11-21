@@ -4,7 +4,7 @@ import {
   claimableLanguages, env, expectedScope, validateScopePolicyVersion,
   extractModelId, enforceRateLimit, fitsGpu, fetchIssue, json, languageGroup, leaseTtl, selectedGpu,
   listOpenIssues, method,
-  patchIssue, putLease, randomToken, readJson, deleteLease, unassignIssue, hasIssueAssignee, ensureVolunteerComment,
+  patchIssue, putLease, randomToken, readJson, deleteLease, unassignIssue, hasIssueAssignee,
   reconcilePublicAssignments,
   getLeaseForIssue, reclaimExpiredLease,
   modelMayFit, parseVolunteerMarker, resolveModel, selectedLanguages, volunteerAssigneesMatch,
@@ -185,6 +185,26 @@ export default async function handler(req: Request): Promise<Response> {
           listed.assignees, parseVolunteerMarker(listed.body), Date.now(), true, true,
         ) ? [{ listed, modelId }] : [];
     });
+    // Continue work associated with this authenticated contributor before
+    // unrelated queue items, but only from a verified signed marker and only
+    // while the issue still has an uncompleted selected language.
+    const affinity = new Map<number, number>();
+    for (const { listed } of candidates) {
+      const marker = parseVolunteerMarker(listed.body);
+      if (!marker || !(await verifyVolunteerMarker(listed.number, marker))) continue;
+      const selected = selectedLanguages(listed.body);
+      if (!claimableLanguages(selected, activeMarker(marker)).length) continue;
+      const own = (marker.submissions || []).filter((submission) =>
+        (submission.status === "submitted" || submission.status === "accepted") &&
+        submission.verified_contributor.toLowerCase() === identity.contributor.toLowerCase() &&
+        selected.includes(submission.language),
+      );
+      const mostRecent = own.map((submission) => Date.parse(submission.submitted_at))
+        .filter(Number.isFinite).reduce((latest, timestamp) => Math.max(latest, timestamp), 0);
+      if (mostRecent) affinity.set(listed.number, mostRecent);
+    }
+    candidates.sort((left, right) =>
+      (affinity.get(right.listed.number) || 0) - (affinity.get(left.listed.number) || 0));
     // Resolve candidates in issue-priority batches. Do not inspect later issues
     // until every earlier candidate has either been ruled out or attempted.
     const resolved = new Map<string, Awaited<ReturnType<typeof resolveModel>> | null>();
@@ -376,24 +396,7 @@ export default async function handler(req: Request): Promise<Response> {
             throw new BrokerError(409, "GitHub ownership fence lost during claim.");
           }
           const reconciled = await reconcilePublicAssignments(after, afterMarker, () => mutex.assertOwned());
-          if (!hasIssueAssignee(reconciled.issue, identity.contributor)) {
-            try {
-              await ensureVolunteerComment(identity, snapshot.number, async () => {
-                await mutex.assertOwned();
-                const live = await fetchIssue(snapshot.number);
-                const liveMarker = parseVolunteerMarker(live.body);
-                if (live.state !== "open" || !liveMarker || !(await verifyVolunteerMarker(snapshot.number, liveMarker)) ||
-                    !liveMarker.leases.some((item) => item.lease_id === lease.lease_id &&
-                      item.contributor.toLowerCase() === identity.contributor.toLowerCase() &&
-                      item.ownership_mode === "public" && Date.parse(item.expires_at) > Date.now())) {
-                  throw new BrokerError(409, "Volunteer lease is no longer eligible for a comment.");
-                }
-              });
-            } catch (error) {
-              if (error instanceof BrokerError && error.code === "github_grant_invalid") throw error;
-              // Public assignment remains the best-effort projection when the claimant is ineligible.
-            }
-          }
+
         } catch (error) {
           // Never restore a stale body: another lease may have been added while
           // GitHub was unavailable. Remove only our reservation when still present.

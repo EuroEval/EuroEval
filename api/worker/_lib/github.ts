@@ -82,11 +82,6 @@ export async function reconcilePublicAssignments(
       desired.set(lease.contributor.toLowerCase(), lease.contributor);
     }
   }
-  for (const submission of marker.submissions || []) {
-    if (submission.ownership_mode === "public" && submission.status === "submitted") {
-      desired.set(submission.verified_contributor.toLowerCase(), submission.verified_contributor);
-    }
-  }
 
   const tracked = new Map((marker.public_assignees || []).map((login) => [login.toLowerCase(), login]));
   let current = issue;

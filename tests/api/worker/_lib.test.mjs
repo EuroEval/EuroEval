@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { assertAssignable, expectedScope, extractModelId, parsePromotionRecords, parseVolunteerMarker, PROMOTION_RESERVATION_TTL, renderVolunteerMarker, replaceVolunteerMarker, requireAssignee, selectedLanguages, volunteerAssigneesMatch } from "../../../api/worker/_lib.ts";
 import { validateRecord } from "../../../api/worker/_lib/eee.ts";
-import { fitsGpu, resolveModel, selectedGpu } from "../../../api/worker/_lib/model.ts";
+import { fitsGpu, languageGroup, resolveModel, selectedGpu } from "../../../api/worker/_lib/model.ts";
+import { GROUPS } from "../../../api/worker/_lib/protocol.ts";
 import { putLease, reclaimExpiredLease, releaseResultReservations, reserveResultIdentity } from "../../../api/worker/_lib/redis.ts";
 import { bindPromotionDecision, completePromotionReservation, promotionIdentityKey, reservePromotionReservation } from "../../../api/worker/_lib/promotion.ts";
 import { withRedisRestBridge } from "./redis-bridge.mjs";
@@ -156,6 +157,65 @@ test("submission markers require verified server-derived counts", () => {
   assert.equal(parseVolunteerMarker(invalid), null);
 });
 
+test("resolves only registered language variants to lease groups", () => {
+  for (const [group, languages] of Object.entries(GROUPS)) {
+    for (const language of languages) assert.equal(languageGroup(language), group);
+  }
+  for (const [variant, language] of [["nb", "no"], ["nn", "no"], ["pt-pt", "pt"], ["pt-br", "pt"]]) {
+    assert.equal(languageGroup(variant), languageGroup(language));
+  }
+  for (const language of ["pt-xx", "pt-pt-extra", "no-xx", "en-xx", "unknown", ""]) {
+    assert.equal(languageGroup(language), null);
+  }
+});
+
+test("validates registered language variants without changing result bytes", () => {
+  const base = {
+    schema_version: "0.2.1",
+    model_info: { id: "org/model", revision: "deadbeef" },
+    eval_library: { name: "euroeval", version: "0.2.1", additional_details: {
+      dataset: "dataset", task: "task", raw_results: "[]", few_shot: true,
+      validation_split: null, num_failed_instances: 0,
+    } },
+    evaluation_results: [{ evaluation_name: "accuracy", source_data: { dataset_name: "dataset" },
+      metric_config: { lower_is_better: false, min_score: 0, max_score: 100 },
+      score_details: { score: 85 } }],
+  };
+  const expectedIdentity = validateRecord({ ...base, eval_library: { ...base.eval_library,
+    additional_details: { ...base.eval_library.additional_details, languages: ["pt"] },
+  } }, { modelId: "org/model", revision: "deadbeef", language: "pt" }).identity;
+  for (const [language, variants] of [["pt", ["pt", "pt-pt"]], ["pt", ["pt", "pt-br"]],
+    ["pt", ["pt-pt"]], ["pt", ["pt-br"]], ["no", ["no", "nb"]], ["no", ["no", "nn"]],
+    ["no", ["nb"]], ["no", ["nn"]]]) {
+    for (const languages of [variants, JSON.stringify(variants)]) {
+      const record = { ...base, eval_library: { ...base.eval_library, additional_details: {
+        ...base.eval_library.additional_details, language: variants.at(-1), languages,
+      } } };
+      const bytes = JSON.stringify(record);
+      const checked = validateRecord(record, { modelId: "org/model", revision: "deadbeef", language });
+      assert.equal(checked.failed, 0);
+      assert.equal(checked.identity, expectedIdentity);
+      assert.equal(JSON.stringify(record), bytes);
+    }
+  }
+  for (const [language, languages] of [["pt", ["pt", "pt-xx"]], ["pt", ["pt", "nb"]],
+    ["no", ["no", "pt-pt"]], ["pt-xx", ["pt-xx"]], ["unknown", ["unknown"]],
+    ["pt", []], ["pt", ["pt", 42]]]) {
+    const record = { ...base, eval_library: { ...base.eval_library, additional_details: {
+      ...base.eval_library.additional_details, languages,
+    } } };
+    assert.throws(() => validateRecord(record, {
+      modelId: "org/model", revision: "deadbeef", language,
+    }), /non-empty subset/);
+  }
+  const inconsistent = { ...base, eval_library: { ...base.eval_library, additional_details: {
+    ...base.eval_library.additional_details, language: "pt-br", languages: '["pt","pt-pt"]',
+  } } };
+  assert.throws(() => validateRecord(inconsistent, {
+    modelId: "org/model", revision: "deadbeef", language: "pt",
+  }), /inconsistent with languages/);
+});
+
 test("validates canonical model identity and score bounds", () => {
   const record = {
     schema_version: "0.2.1",
@@ -164,6 +224,26 @@ test("validates canonical model identity and score bounds", () => {
     evaluation_results: [{ evaluation_name: "accuracy", source_data: { dataset_name: "dataset" }, metric_config: { lower_is_better: false, min_score: 0, max_score: 100 }, score_details: { score: 85 } }],
   };
   assert.equal(validateRecord(record, { modelId: "org/model", revision: "deadbeef", language: "da" }).failed, 0);
+  const norwegianExpected = { modelId: "org/model", revision: "deadbeef", language: "no" };
+  for (const languages of ['["no"]', '["nb","no"]', ["nn", "no"], '["nb","nn","no"]']) {
+    const norwegianRecord = {
+      ...record,
+      eval_library: { ...record.eval_library, additional_details: {
+        ...record.eval_library.additional_details, language: "no", languages,
+      } },
+    };
+    assert.equal(validateRecord(norwegianRecord, norwegianExpected).failed, 0);
+  }
+  for (const languages of ['["en"]', '["nb","en"]']) {
+    const invalidRecord = { ...record, eval_library: { ...record.eval_library, additional_details: {
+      ...record.eval_library.additional_details, language: "no", languages,
+    } } };
+    assert.throws(() => validateRecord(invalidRecord, norwegianExpected), /non-empty subset/);
+  }
+  const inconsistentNorwegianRecord = { ...record, eval_library: { ...record.eval_library, additional_details: {
+    ...record.eval_library.additional_details, language: "nb", languages: '["nn","no"]',
+  } } };
+  assert.throws(() => validateRecord(inconsistentNorwegianRecord, norwegianExpected), /inconsistent with languages/);
   const legacyRecord = { ...record, model_info: { id: "org/model" } };
   assert.throws(() => validateRecord(legacyRecord, {
     modelId: "org/model", revision: "deadbeef", language: "da",
