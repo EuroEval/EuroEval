@@ -920,6 +920,8 @@ class Benchmarker:
             name="encoder-canary-metadata",
             pretty_name="Encoder canary metadata",
             labels=LA.default_labels,
+            # Metadata loading must not depend on a localised task template.
+            prompt_label_mapping="auto",
             unofficial=True,
         )
 

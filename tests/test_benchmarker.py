@@ -15,6 +15,10 @@ from unittest.mock import MagicMock
 import pytest
 import torch
 from requests.exceptions import RequestException
+from tokenizers import Tokenizer
+from tokenizers.models import WordLevel
+from tokenizers.pre_tokenizers import Whitespace
+from transformers import PreTrainedTokenizerFast
 
 from euroeval.benchmarker import Benchmarker, adjust_logging_level, clear_model_cache_fn
 from euroeval.data_models import (
@@ -25,11 +29,18 @@ from euroeval.data_models import (
     ModelConfig,
     Task,
 )
-from euroeval.enums import InferenceBackend, ModelType, ShotMode, TaskGroup
+from euroeval.enums import (
+    GenerativeType,
+    InferenceBackend,
+    ModelType,
+    ShotMode,
+    TaskGroup,
+)
 from euroeval.exceptions import HuggingFaceHubDown, NeedsExtraInstalled
-from euroeval.languages import DANISH
+from euroeval.languages import DANISH, get_all_languages
 from euroeval.result_cache import get_record
 from euroeval.tasks import CONTAMINATION_DETECTION, NER, SENT
+from euroeval.tokenisation_utils import get_first_label_token_mapping
 
 
 class TestClearCacheFn:
@@ -1917,6 +1928,121 @@ def test_served_model_reaches_benchmark_config_factory(
     configured_benchmarker.benchmark(model="dummy", served_model="override-v1")
 
     assert observed == ["claes-v1", "override-v1"]
+
+
+@pytest.mark.parametrize(
+    "language_code", sorted({item.code for item in get_all_languages().values()})
+)
+@pytest.mark.parametrize("model_type", [ModelType.ENCODER, ModelType.GENERATIVE])
+def test_standalone_canary_metadata_labels(
+    benchmarker: Benchmarker,
+    benchmark_config: BenchmarkConfig,
+    model_config: ModelConfig,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    language_code: str,
+    model_type: ModelType,
+) -> None:
+    """Standalone canaries have complete metadata labels in every language.
+
+    Args:
+        benchmarker:
+            Shared benchmarker fixture.
+        benchmark_config:
+            Configuration for the evaluation run.
+        model_config:
+            Model configuration supplied by the fixture.
+        monkeypatch:
+            Pytest fixture for replacing model and corpus loading.
+        tmp_path:
+            Isolated output directory.
+        language_code:
+            Registered language being evaluated.
+        model_type:
+            Model family whose metadata is loaded.
+    """
+    languages = [get_all_languages()[language_code]]
+    canary_dataset = DatasetConfig(
+        task=CONTAMINATION_DETECTION, languages=languages, name="contamination-canary"
+    )
+    run_config = replace(
+        benchmark_config,
+        languages=languages,
+        datasets=[canary_dataset],
+        force=True,
+        save_results=False,
+    )
+    run_model = replace(
+        model_config,
+        model_id=f"metadata-model-{language_code}",
+        revision="main",
+        model_type=model_type,
+        fresh=False,
+    )
+    metadata_model = MagicMock(
+        num_params=123,
+        model_max_length=512,
+        vocab_size=3,
+        generative_type=(
+            GenerativeType.BASE if model_type is ModelType.GENERATIVE else None
+        ),
+    )
+    tokeniser_backend = Tokenizer(
+        WordLevel(vocab={"[UNK]": 0, "correct": 1, "incorrect": 2}, unk_token="[UNK]")
+    )
+    tokeniser_backend.pre_tokenizer = Whitespace()
+    tokeniser = PreTrainedTokenizerFast(tokenizer_object=tokeniser_backend)
+
+    def load_metadata(
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> MagicMock:
+        """Exercise the real label-token preparation without loading weights.
+
+        Args:
+            model_config:
+                Model configuration being loaded.
+            dataset_config:
+                Actual metadata configuration selected by the public benchmark call.
+            benchmark_config:
+                Configuration for the metadata load.
+
+        Returns:
+            Weight-free metadata model.
+        """
+        _ = benchmark_config
+        mapping = get_first_label_token_mapping(
+            dataset_config=dataset_config,
+            model_config=model_config,
+            tokeniser=tokeniser,
+            generative_type=GenerativeType.BASE,
+            log_metadata=False,
+        )
+        assert mapping == {"correct": "correct", "incorrect": "incorrect"}
+        return metadata_model
+
+    load_model_mock = MagicMock(side_effect=load_metadata)
+    monkeypatch.setattr(benchmarker, "results_path", tmp_path / "results.jsonl")
+    monkeypatch.setattr(
+        benchmarker, "_build_benchmark_config", lambda **kwargs: run_config
+    )
+    monkeypatch.setattr(
+        benchmarker, "_fetch_model_configs", lambda *args, **kwargs: [run_model]
+    )
+    monkeypatch.setattr("euroeval.benchmarker.load_model", load_model_mock)
+    monkeypatch.setattr(
+        "euroeval.benchmarker.load_canary_prompts",
+        MagicMock(side_effect=FileNotFoundError("Synthetic fixture corpus")),
+    )
+
+    results = benchmarker.benchmark(model=run_model.model_id)
+
+    assert len(results) == 1
+    assert results[0].task == CONTAMINATION_DETECTION.name
+    assert results[0].languages == [language_code]
+    assert results[0].num_model_parameters == metadata_model.num_params
+    assert load_model_mock.call_count == 1
 
 
 def test_zero_shot_canary_standalone_reuses_loaded_model_metadata(
