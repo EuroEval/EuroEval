@@ -62,7 +62,7 @@ test("queue completion requires every selected language in a verified submission
         const rendered = scenario.malformed ? "<!-- euroeval-volunteer-worker:v1 broken -->" : renderVolunteerMarker(marker);
         const body = `${scenario.body ?? group}${scenario.extra ?? ""}\n${rendered}`;
         globalThis.fetch = async (url) => {
-          if (String(url).startsWith("https://redis.test")) return Response.json({ result: 1 });
+          if (new URL(String(url)).origin === "https://redis.test") return Response.json({ result: 1 });
           assert.match(String(url), /^https:\/\/api\.github\.com\/repos\/EuroEval\/EuroEval\/issues\?/);
           return Response.json([{ ...issue(body), number: 42 }]);
         };
