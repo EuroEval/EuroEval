@@ -19,10 +19,15 @@ from euroeval.data_models import (
     ModelConfig,
 )
 from euroeval.enums import ShotMode
+from euroeval.exceptions import InvalidBenchmark, InvalidModel
 
 
-@pytest.mark.parametrize("failure", [None, RuntimeError, KeyboardInterrupt, SystemExit])
+@pytest.mark.parametrize(
+    "failure",
+    [None, InvalidBenchmark, InvalidModel, RuntimeError, KeyboardInterrupt, SystemExit],
+)
 @pytest.mark.parametrize("cleanup_fails", [False, True])
+@pytest.mark.parametrize("raise_errors", [False, True])
 def test_benchmark_closes_owned_model(
     benchmark_config: BenchmarkConfig,
     dataset_config: DatasetConfig,
@@ -31,6 +36,8 @@ def test_benchmark_closes_owned_model(
     tmp_path: Path,
     failure: type[BaseException] | None,
     cleanup_fails: bool,
+    raise_errors: bool,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Keep a model across datasets, then close it even while a traceback retains it.
 
@@ -42,6 +49,8 @@ def test_benchmark_closes_owned_model(
         tmp_path: Temporary directory fixture.
         failure: Error raised by the second dataset, if any.
         cleanup_fails: Whether owned model teardown also fails.
+        raise_errors: Whether the public run should propagate domain errors.
+        caplog: Captured diagnostic messages.
     """
     benchmarker = Benchmarker(save_results=False, progress_bar=False)
     config = replace(
@@ -49,11 +58,13 @@ def test_benchmark_closes_owned_model(
         datasets=[dataset_config],
         force=True,
         save_results=False,
-        raise_errors=True,
+        raise_errors=raise_errors,
         clear_model_cache=False,
     )
     model = MagicMock()
     model.close.side_effect = RuntimeError("cleanup failed") if cleanup_fails else None
+    next_config = replace(model_config, model_id="next-model")
+    next_model = MagicMock()
     result = BenchmarkResult(
         dataset=dataset_config.name,
         task=dataset_config.task.name,
@@ -71,52 +82,72 @@ def test_benchmark_closes_owned_model(
     )
     calls = 0
 
-    def score(**kwargs: object) -> BenchmarkResult:
-        """Simulate dataset scoring while retaining the shared model.
+    def score(**kwargs: object) -> BenchmarkResult | InvalidBenchmark | InvalidModel:
+        """Simulate scoring and the normal domain-error return interface.
 
         Args:
             **kwargs: Dataset scoring arguments.
 
         Returns:
-            A completed dataset result.
+            A completed result or a handled evaluation error.
         """
         nonlocal calls
         calls += 1
-        assert kwargs["model"] is model
-        model.close.assert_not_called()
+        current_model = model if calls <= 2 else next_model
+        current_config = model_config if calls <= 2 else next_config
+        assert kwargs["model"] is current_model
+        current_model.close.assert_not_called()
         if calls == 2 and failure is not None:
-            raise failure("scoring interrupted")
-        return result
+            error = failure("scoring interrupted")
+            if isinstance(error, (InvalidBenchmark, InvalidModel)):
+                return error
+            raise error
+        return result.model_copy(update={"model": current_config.model_id})
 
     monkeypatch.setattr(benchmarker, "results_path", tmp_path / "results.jsonl")
     monkeypatch.setattr(benchmarker, "_build_benchmark_config", lambda **kwargs: config)
     monkeypatch.setattr(
-        benchmarker, "_fetch_model_configs", lambda *args: [model_config]
+        benchmarker, "_fetch_model_configs", lambda *args: [model_config, next_config]
     )
     monkeypatch.setattr(
         benchmarker,
         "_create_model_dataset_mapping",
-        lambda *args: {model_config: [dataset_config]},
+        lambda *args: {model_config: [dataset_config], next_config: [dataset_config]},
     )
+    pending = [(ShotMode.FEW_SHOT, dataset_config)] * 2
     monkeypatch.setattr(
         benchmarker,
         "_prepare_pending_benchmarks",
-        lambda **kwargs: (model, [(ShotMode.FEW_SHOT, dataset_config)] * 2, [], None),
+        MagicMock(
+            side_effect=[(model, pending, [], None), (next_model, pending, [], None)]
+        ),
     )
     monkeypatch.setattr(benchmarker, "_benchmark_single", score)
     monkeypatch.setattr(
         benchmarker, "_check_adapter_requirements", lambda **kwargs: None
     )
-    if failure is not None:
+    handled_failure = failure in (InvalidBenchmark, InvalidModel) and not raise_errors
+    if failure is not None and not handled_failure:
         with pytest.raises(failure, match="scoring interrupted"):
-            benchmarker.benchmark(model=model_config.model_id)
-    elif cleanup_fails:
-        with pytest.raises(RuntimeError, match="cleanup failed"):
-            benchmarker.benchmark(model=model_config.model_id)
+            benchmarker.benchmark(model=[model_config.model_id, next_config.model_id])
+        assert calls == 2
+        next_model.close.assert_not_called()
+    elif failure is None and cleanup_fails and raise_errors:
+        with pytest.raises(InvalidModel, match="cleanup failed") as captured:
+            benchmarker.benchmark(model=[model_config.model_id, next_config.model_id])
+        assert isinstance(captured.value.__cause__, RuntimeError)
+        assert calls == 2
+        next_model.close.assert_not_called()
     else:
-        benchmarker.benchmark(model=model_config.model_id)
-    assert calls == 2
+        results = benchmarker.benchmark(
+            model=[model_config.model_id, next_config.model_id]
+        )
+        assert len(results) == (3 if handled_failure else 4)
+        assert calls == 4
+        next_model.close.assert_called_once_with()
     model.close.assert_called_once_with()
+    if cleanup_fails and not (failure is None and raise_errors):
+        assert "cleanup failed" in caplog.text
 
 
 def test_vllm_close_before_engine_initialisation() -> None:

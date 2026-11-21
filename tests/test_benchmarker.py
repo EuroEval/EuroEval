@@ -39,7 +39,7 @@ from euroeval.enums import (
 from euroeval.exceptions import HuggingFaceHubDown, NeedsExtraInstalled
 from euroeval.languages import DANISH, get_all_languages
 from euroeval.result_cache import get_record
-from euroeval.tasks import CONTAMINATION_DETECTION, NER, SENT
+from euroeval.tasks import CONTAMINATION_DETECTION, NER, SENT, get_all_tasks
 from euroeval.tokenisation_utils import get_first_label_token_mapping
 
 
@@ -1943,7 +1943,7 @@ def test_standalone_canary_metadata_labels(
     language_code: str,
     model_type: ModelType,
 ) -> None:
-    """Standalone canaries have complete metadata labels in every language.
+    """Standalone canaries use neutral metadata loading in every language.
 
     Args:
         benchmarker:
@@ -1988,7 +1988,7 @@ def test_standalone_canary_metadata_labels(
         ),
     )
     tokeniser_backend = Tokenizer(
-        WordLevel(vocab={"[UNK]": 0, "correct": 1, "incorrect": 2}, unk_token="[UNK]")
+        WordLevel(vocab={"[UNK]": 0, "0": 1, "1": 2}, unk_token="[UNK]")
     )
     tokeniser_backend.pre_tokenizer = Whitespace()
     tokeniser = PreTrainedTokenizerFast(tokenizer_object=tokeniser_backend)
@@ -1998,7 +1998,7 @@ def test_standalone_canary_metadata_labels(
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> MagicMock:
-        """Exercise the real label-token preparation without loading weights.
+        """Exercise metadata-only task preparation without loading weights.
 
         Args:
             model_config:
@@ -2019,7 +2019,17 @@ def test_standalone_canary_metadata_labels(
             generative_type=GenerativeType.BASE,
             log_metadata=False,
         )
-        assert mapping == {"correct": "correct", "incorrect": "incorrect"}
+        assert mapping is False
+        assert dataset_config.task.name == "model-metadata"
+        assert dataset_config.task.name not in get_all_tasks()
+        assert dataset_config.task.task_group is TaskGroup.SEQUENCE_CLASSIFICATION
+        assert dataset_config.task.metrics == []
+        assert dataset_config.task.template_dict == {}
+        assert dataset_config.labels == ["0", "1"]
+        assert dataset_config.id2label == {0: "0", 1: "1"}
+        assert dataset_config.prompt_label_mapping == {"0": "0", "1": "1"}
+        assert dataset_config.languages == languages
+        assert dataset_config.unofficial
         return metadata_model
 
     load_model_mock = MagicMock(side_effect=load_metadata)

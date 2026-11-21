@@ -20,9 +20,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - Release owned inference engines after successful or interrupted benchmarks and
-  scoring failures, preserving the original evaluation error during teardown.
-- Fix standalone contamination-canary metadata loading for languages without a
-  linguistic-acceptability prompt template.
+  scoring failures, preserving the original evaluation error and respecting the
+  configured error-handling policy during teardown.
+- Load standalone contamination-canary metadata using an internal neutral task
+  without depending on language-specific benchmark prompts.
 - Count logical parameters from Hugging Face model metadata when packed safetensors
   tensors make shard-storage counts lower than the actual model size.
 - Retry transient Hugging Face Hub failures when checking model availability, and
