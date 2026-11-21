@@ -672,6 +672,9 @@ def test_only_one_model_is_live_during_preparation(
 
         generative_type = GenerativeType.INSTRUCTION_TUNED
 
+        def close(self) -> None:
+            """Release the synthetic model's external resources."""
+
     loaded_model_refs: list[weakref.ReferenceType[HeavyModel]] = []
     load_calls = 0
 
