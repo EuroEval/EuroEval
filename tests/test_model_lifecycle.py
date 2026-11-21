@@ -1,5 +1,6 @@
 """Regression tests for owned model resources and writable tokenizer data."""
 
+import logging
 import os
 import subprocess
 import sys
@@ -37,7 +38,6 @@ def test_benchmark_closes_owned_model(
     failure: type[BaseException] | None,
     cleanup_fails: bool,
     raise_errors: bool,
-    caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Keep a model across datasets, then close it even while a traceback retains it.
 
@@ -50,8 +50,9 @@ def test_benchmark_closes_owned_model(
         failure: Error raised by the second dataset, if any.
         cleanup_fails: Whether owned model teardown also fails.
         raise_errors: Whether the public run should propagate domain errors.
-        caplog: Captured diagnostic messages.
     """
+    logged = MagicMock()
+    monkeypatch.setattr("euroeval.benchmarker.log", logged)
     benchmarker = Benchmarker(save_results=False, progress_bar=False)
     config = replace(
         benchmark_config,
@@ -147,7 +148,11 @@ def test_benchmark_closes_owned_model(
         next_model.close.assert_called_once_with()
     model.close.assert_called_once_with()
     if cleanup_fails and not (failure is None and raise_errors):
-        assert "cleanup failed" in caplog.text
+        assert any(
+            "cleanup failed" in call.args[0]
+            and call.kwargs.get("level") == logging.ERROR
+            for call in logged.call_args_list
+        )
 
 
 def test_vllm_close_before_engine_initialisation() -> None:
