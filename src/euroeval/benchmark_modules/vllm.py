@@ -285,16 +285,32 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
 
     def __del__(self) -> None:
-        """Clean up the model and tokeniser."""
-        try:
-            if importlib.util.find_spec("vllm") is not None:
-                clear_vllm()
-        except ImportError:
-            pass
-        if hasattr(self, "_model"):
+        """Release remaining owned resources during garbage collection."""
+        with contextlib.suppress(Exception):
+            self.close()
+
+    def close(self) -> None:
+        """Shut down this model's executor without touching unrelated engines.
+
+        Ownership remains attached when shutdown fails so callers can retry. The
+        engine can remain referenced by an exception traceback after scoring fails.
+        """
+        model = getattr(self, "_model", None)
+        if model is not None:
+            engine = getattr(model, "llm_engine", None)
+            executor = getattr(engine, "engine_core", None)
+            if executor is None:
+                executor = getattr(engine, "model_executor", None)
+            shutdown = getattr(executor, "shutdown", None)
+            if shutdown is not None:
+                shutdown()
             del self._model
         if hasattr(self, "_tokeniser"):
             del self._tokeniser
+        if hasattr(self, "buffer"):
+            self.buffer.clear()
+        if model is not None:
+            clear_memory()
 
     def collect_canary_completions(self, prompts: c.Sequence[str]) -> list[str]:
         """Generate deterministic raw continuations using the loaded vLLM engine.
@@ -1481,16 +1497,6 @@ def _safe_batch_decode(
         ]
 
 
-def clear_vllm() -> None:
-    """Clear the GPU memory used by the vLLM model, enabling re-initialisation."""
-    with contextlib.suppress(ValueError):
-        destroy_model_parallel()
-        destroy_distributed_environment()
-    with contextlib.suppress(AssertionError):
-        torch.distributed.destroy_process_group()
-    clear_memory()
-
-
 def compute_token_budget(
     model_max_length: int, max_generated_tokens: int
 ) -> tuple[int, int]:
@@ -2461,6 +2467,16 @@ def _get_rope_parameters_override(
         level=logging.DEBUG,
     )
     return rope_parameters
+
+
+def clear_vllm() -> None:
+    """Clear the GPU memory used by the vLLM model, enabling re-initialisation."""
+    with contextlib.suppress(ValueError):
+        destroy_model_parallel()
+        destroy_distributed_environment()
+    with contextlib.suppress(AssertionError):
+        torch.distributed.destroy_process_group()
+    clear_memory()
 
 
 def get_vllm_tokenisation_params(

@@ -58,6 +58,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     TORCHINDUCTOR_CACHE_DIR=/cache/torch/inductor \
     TORCH_EXTENSIONS_DIR=/cache/torch/extensions \
     CUDA_CACHE_PATH=/cache/nvidia \
+    NLTK_DATA=/cache \
     HOME=/home/worker \
     PATH=/opt/euroeval/.venv/bin:/usr/local/cuda/bin:$PATH
 

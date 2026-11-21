@@ -6,6 +6,7 @@ import datetime as dt
 import logging
 import os
 import re
+import sys
 import typing as t
 from dataclasses import replace
 from pathlib import Path
@@ -715,9 +716,20 @@ class Benchmarker:
                     if should_break:
                         break
             finally:
+                benchmark_failed = sys.exc_info()[0] is not None
                 num_finished += model_finished
                 num_skipped += model_skipped
                 num_errored += model_errored
+                if loaded_model is not None:
+                    try:
+                        loaded_model.close()
+                    except Exception:
+                        if not benchmark_failed:
+                            raise
+                        log(
+                            "Failed to release owned model resources.",
+                            level=logging.ERROR,
+                        )
                 loaded_model = None
                 if benchmark_config.clear_model_cache:
                     clear_model_cache_fn(cache_dir=benchmark_config.cache_dir)
