@@ -6,6 +6,7 @@ import datetime as dt
 import logging
 import os
 import re
+import sys
 import typing as t
 from dataclasses import replace
 from pathlib import Path
@@ -30,9 +31,17 @@ from .data_models import (
     BenchmarkConfigParams,
     BenchmarkResult,
     DatasetConfig,
+    Task,
     get_package_version,
 )
-from .enums import Device, GenerativeType, InferenceBackend, ModelType, ShotMode
+from .enums import (
+    Device,
+    GenerativeType,
+    InferenceBackend,
+    ModelType,
+    ShotMode,
+    TaskGroup,
+)
 from .exceptions import (
     HuggingFaceHubDown,
     InvalidBenchmark,
@@ -55,7 +64,7 @@ from .shot_modes import (
     result_identity_values,
 )
 from .speed_benchmark import benchmark_speed
-from .tasks import LA, SPEED
+from .tasks import SPEED
 from .types import ShotModeRequest
 from .utils import enforce_reproducibility, get_hf_token, internet_connection_available
 
@@ -88,7 +97,7 @@ def _verified_model_metadata(model_id: str) -> dict[str, bool]:
 
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
-    from .data_models import BenchmarkConfig, ModelConfig, Task
+    from .data_models import BenchmarkConfig, ModelConfig
 
 
 class Benchmarker:
@@ -715,9 +724,21 @@ class Benchmarker:
                     if should_break:
                         break
             finally:
+                benchmark_failed = sys.exc_info()[0] is not None
                 num_finished += model_finished
                 num_skipped += model_skipped
                 num_errored += model_errored
+                if loaded_model is not None:
+                    try:
+                        loaded_model.close()
+                    except Exception as error:
+                        cleanup_error = InvalidModel(
+                            "Failed to release owned model resources for "
+                            f"{model_config.model_id!r}: {error}"
+                        )
+                        if not benchmark_failed and benchmark_config.raise_errors:
+                            raise cleanup_error from error
+                        log(cleanup_error.message, level=logging.ERROR)
                 loaded_model = None
                 if benchmark_config.clear_model_cache:
                     clear_model_cache_fn(cache_dir=benchmark_config.cache_dir)
@@ -905,21 +926,31 @@ class Benchmarker:
     def _canary_metadata_dataset(
         self, *, benchmark_config: "BenchmarkConfig"
     ) -> DatasetConfig:
-        """Build a supported task config for standalone encoder metadata loading.
+        """Build a neutral configuration for standalone canary metadata loading.
 
         Args:
             benchmark_config:
-                The benchmark configuration used to select a compatible task.
+                The benchmark configuration used to select the model's languages.
 
         Returns:
-            A regular encoder-compatible dataset configuration.
+            An internal, unscored configuration compatible with model loaders.
         """
+        metadata_task = Task(
+            name="model-metadata",
+            task_group=TaskGroup.SEQUENCE_CLASSIFICATION,
+            template_dict={},
+            metrics=[],
+            default_num_few_shot_examples=0,
+            default_max_generated_tokens=1,
+            # Preserve the two-output encoder head used by metadata loading.
+            default_labels=["0", "1"],
+        )
         return DatasetConfig(
-            task=LA,
+            task=metadata_task,
             languages=benchmark_config.languages,
-            name="encoder-canary-metadata",
-            pretty_name="Encoder canary metadata",
-            labels=LA.default_labels,
+            name="canary-model-metadata",
+            pretty_name="Canary model metadata",
+            prompt_label_mapping="auto",
             unofficial=True,
         )
 

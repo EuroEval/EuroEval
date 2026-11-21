@@ -1,10 +1,85 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { creditLogins, publicQueueEvaluators, verifiedPublicLogins } from "../../api/hall-of-fame.ts";
+import handler, { creditLogins, publicQueueEvaluators, verifiedPublicLogins } from "../../api/hall-of-fame.ts";
 import { signVolunteerMarker } from "../../api/worker/_lib/protocol.ts";
 import { renderVolunteerMarker } from "../../api/worker/_lib/markers.ts";
 
 const issue = (body, assignees = []) => ({ title: "[MODEL EVALUATION REQUEST] org/model", body, assignee: assignees[0] || null, assignees });
+
+test("queue completion requires every selected language in a verified submission", async (t) => {
+  const names = ["VOLUNTEER_MARKER_SECRET", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"];
+  const previous = new Map(names.map((name) => [name, process.env[name]]));
+  const originalFetch = globalThis.fetch;
+  process.env.VOLUNTEER_MARKER_SECRET = "test-secret";
+  process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "test-token";
+  const group = "- [x] Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)";
+  const languages = ["da", "fo", "is", "no", "sv"];
+  const cases = [
+    ...languages.map((language) => ({
+      name: `only ${language} does not complete the group`, languages: [language], complete: false,
+    })),
+    { name: "all submitted languages complete the group", languages, complete: true },
+    ...languages.map((language) => ({
+      name: `accepted ${language} counts alongside submitted results`, languages,
+      accepted: language, complete: true,
+    })),
+    ...languages.map((language) => ({
+      name: `missing ${language} leaves the group incomplete`,
+      languages: languages.filter((other) => other !== language), complete: false,
+    })),
+    ...languages.map((language) => ({
+      name: `rejected ${language} does not count`, languages, rejected: language, complete: false,
+    })),
+    { name: "an active lease is not a submission", languages: [], active: true, complete: false },
+    { name: "all selected groups must be complete", languages, extra: "\n- [x] Greek", complete: false },
+    { name: "no selected languages is not complete", languages, body: "", complete: false },
+    { name: "unsigned completion is not trusted", languages, unsigned: true, complete: false },
+    { name: "a forged signature is not trusted", languages, forged: true, complete: false },
+    { name: "a malformed marker is not trusted", languages, malformed: true, complete: false },
+  ];
+  try {
+    for (const scenario of cases) {
+      await t.test(scenario.name, async () => {
+        let marker = await signVolunteerMarker(42, {
+          protocol_version: "volunteer-worker/v1",
+          coordinator: "sentinel",
+          submission: "submitted",
+          leases: scenario.active ? [{ lease_id: "active", language: "da", worker: "worker", contributor: "Alice", expires_at: new Date(Date.now() + 60_000).toISOString(), ownership_mode: "public" }] : [],
+          submissions: scenario.languages.map((language) => ({
+            submission_id: `submission-${language}`,
+            language,
+            manifest_path: `manifests/${language}.json`,
+            submitted_at: "2025-01-01T00:00:00Z",
+            verified_contributor: "Alice",
+            result_count: 1,
+            status: language === scenario.rejected ? "rejected" : language === scenario.accepted ? "accepted" : "submitted",
+            ownership_mode: "public",
+          })),
+        });
+        if (scenario.unsigned) delete marker.signature;
+        if (scenario.forged) marker.signature = "forged";
+        const rendered = scenario.malformed ? "<!-- euroeval-volunteer-worker:v1 broken -->" : renderVolunteerMarker(marker);
+        const body = `${scenario.body ?? group}${scenario.extra ?? ""}\n${rendered}`;
+        globalThis.fetch = async (url) => {
+          if (new URL(String(url)).origin === "https://redis.test") return Response.json({ result: 1 });
+          assert.match(String(url), /^https:\/\/api\.github\.com\/repos\/EuroEval\/EuroEval\/issues\?/);
+          return Response.json([{ ...issue(body), number: 42 }]);
+        };
+        const response = await handler(new Request("https://euroeval.test/api/hall-of-fame?projection=queue"));
+        assert.equal(response.status, 200);
+        const entries = await response.json();
+        assert.equal(entries.find((entry) => entry.number === 42)?.allLanguagesComplete ?? false, scenario.complete);
+      });
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+    for (const [name, value] of previous) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  }
+});
 
 test("Hall-of-Fame credits current assignees regardless of markers", () => {
   const body = '<!-- euroeval-volunteer-worker:v1 broken -->';

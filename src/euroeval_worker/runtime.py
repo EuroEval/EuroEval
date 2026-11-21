@@ -11,6 +11,7 @@ import os
 import threading
 import time
 import typing as t
+import urllib.error
 from pathlib import Path
 
 from euroeval.canary_evidence import CANARY_CORPUS_PATH_ENV
@@ -42,6 +43,10 @@ class AuthenticationIdentityError(BrokerError):
             f"reauthentication returned GitHub login {actual!r}; expected {expected!r}",
             status=403,
         )
+
+
+class EvaluationFailure(Exception):
+    """An exception raised by the evaluator itself."""
 
 
 class Heartbeat:
@@ -180,6 +185,8 @@ class Worker:
     _max_submission_attempts = 3
     _max_claim_attempts = 5
     _max_retry_delay = 30.0
+    _max_evaluation_failures = 3
+    _continuous_backoff_cap = 300.0
 
     def __init__(
         self,
@@ -214,6 +221,7 @@ class Worker:
         self._credential = ""
         self._login = ""
         self._auth_lock = threading.Lock()
+        self._recovery_failures = 0
 
     def run(self, once: bool = False) -> None:
         """Run until interrupted, or process one broker response with ``once``.
@@ -229,6 +237,12 @@ class Worker:
                         If a resumed lease is presented to a different contributor.
                     LeaseLost:
                         If broker ownership is lost.
+                    OSError:
+                        If a broker network operation fails in once mode.
+                    TimeoutError:
+                        If a broker network operation times out in once mode.
+                    RuntimeError:
+                        If active worker state is inconsistent.
         """
         self._credential, self._login = authenticate(
             client=self.client, state=self.state
@@ -240,8 +254,7 @@ class Worker:
                     active.github_login or "", self._login
                 )
             if active is not None and active.finalised_submission_id is not None:
-                self.state.clear_active()
-                if once:
+                if self._clear_finalised_lease(once=once):
                     return
                 continue
             if active is not None and not _lease_is_valid(active.lease):
@@ -250,35 +263,28 @@ class Worker:
                 )
                 self.state.archive_active()
                 active = None
+            if active is not None and active.release_pending:
+                if self._release_exhausted_evaluation(active=active, once=once):
+                    return
+                continue
             discovered = self._discover_hardware()
             if active is not None:
-                selected = _gpu_for_lease(discovered.gpus, active.lease)
-                hardware = self._hardware_with_selected(discovered, selected)
-                try:
-                    self._process_lease(
-                        credential=self._credential,
-                        lease=active.lease,
-                        hardware=hardware,
-                        active=active,
-                    )
-                except (BrokerError, LeaseLost) as error:
-                    if _lease_lost(error):
-                        self.state.archive_active()
-                    raise
-                if once:
+                if self._run_active_lease(
+                    active=active, hardware=discovered, once=once
+                ):
                     return
                 continue
 
             hardware = self._prepare_hardware(discovered)
-            credential, response = self._claim_with_reauthentication(
-                credential=self._credential, hardware=hardware
-            )
+            claim = self._claim_continuously(hardware=hardware, once=once)
+            if claim is None:
+                continue
+            credential, response = claim
             self._credential = credential
+            self._recovery_failures = 0
             if response.lease is None:
-                logger.info("No volunteer evaluation work is currently available")
-                if once:
+                if self._wait_for_work(once=once):
                     return
-                time.sleep(30)
                 continue
             selected = select_gpu(hardware.gpus)
             lease = _lease_for_gpu(response.lease, selected)
@@ -289,12 +295,66 @@ class Worker:
                     hardware=hardware,
                     active=None,
                 )
-            except (BrokerError, LeaseLost) as error:
+            except EvaluationFailure as error:
+                if once:
+                    raise error.__cause__ or error
+                failed = self.state.load_active()
+                if failed is None:
+                    raise RuntimeError(
+                        "failed evaluation lost its active lease"
+                    ) from error
+                self._recover_evaluation_failure(active=failed, error=error, once=False)
+                continue
+            except (BrokerError, LeaseLost, OSError, TimeoutError) as error:
                 if _lease_lost(error):
                     self.state.archive_active()
+                    if not once:
+                        time.sleep(30)
+                        continue
+                if not once and _recoverable_broker_error(error):
+                    logger.warning(
+                        "Recoverable broker failure; retrying", exc_info=True
+                    )
+                    time.sleep(self._continuous_backoff_cap)
+                    continue
                 raise
             if once:
                 return
+
+    def _claim_continuously(
+        self, *, hardware: HardwareReport, once: bool
+    ) -> tuple[str, Claim] | None:
+        """Claim work, retrying exhausted transient failures in continuous mode.
+
+        Args:
+            hardware:
+                Prepared hardware report to send with the claim.
+            once:
+                Whether the caller requested single-operation behaviour.
+
+        Returns:
+            The credential and claim, or ``None`` after scheduling a retry.
+
+        Raises:
+            BrokerError:
+                If claiming fails permanently or in once mode.
+            OSError:
+                If claim transport fails in once mode.
+            TimeoutError:
+                If claim transport times out in once mode.
+        """
+        try:
+            result = self._claim_with_reauthentication(
+                credential=self._credential, hardware=hardware
+            )
+        except (BrokerError, OSError, TimeoutError) as error:
+            if once or not _recoverable_broker_error(error):
+                raise
+            logger.warning("Broker claim retries exhausted; retrying", exc_info=True)
+            self._sleep_recovery_backoff()
+            return None
+        self._recovery_failures = 0
+        return result
 
     def _claim_with_reauthentication(
         self, credential: str, hardware: HardwareReport
@@ -349,6 +409,26 @@ class Worker:
             transient_attempts += 1
             time.sleep(delay)
 
+    def _sleep_recovery_backoff(self) -> None:
+        """Sleep with bounded exponential delay after a retryable failure."""
+        exponent = min(self._recovery_failures, 4)
+        delay = min(300.0, 30.0 * 2**exponent)
+        self._recovery_failures = exponent + 1
+        time.sleep(delay)
+
+    def _clear_finalised_lease(self, *, once: bool) -> bool:
+        """Clear durable completion state and signal once-mode completion.
+
+        Args:
+            once:
+                Whether the caller requested single-operation behaviour.
+
+        Returns:
+            Whether the worker should return from once mode.
+        """
+        self.state.clear_active()
+        return once
+
     def _discover_hardware(self) -> HardwareReport:
         """Discover hardware against the worker's writable state filesystem.
 
@@ -358,6 +438,19 @@ class Worker:
         if self.hardware_factory is discover_hardware:
             return discover_hardware(state_dir=self.state.directory)
         return self.hardware_factory()
+
+    def _prepare_hardware(self, hardware: HardwareReport) -> HardwareReport:
+        """Attach a deterministic single-GPU selection to a hardware report.
+
+        Args:
+                    hardware:
+                        Hardware.
+
+        Returns:
+                    The report with the configured utilisation and selected GPU.
+        """
+        selected = select_gpu(hardware.gpus)
+        return self._hardware_with_selected(hardware, selected)
 
     def _hardware_with_selected(
         self, hardware: HardwareReport, selected: Gpu
@@ -379,19 +472,6 @@ class Worker:
             selected_gpu_index=selected.index,
             selected_gpu_uuid=selected.uuid,
         )
-
-    def _prepare_hardware(self, hardware: HardwareReport) -> HardwareReport:
-        """Attach a deterministic single-GPU selection to a hardware report.
-
-        Args:
-                    hardware:
-                        Hardware.
-
-        Returns:
-                    The report with the configured utilisation and selected GPU.
-        """
-        selected = select_gpu(hardware.gpus)
-        return self._hardware_with_selected(hardware, selected)
 
     def _process_lease(
         self,
@@ -424,6 +504,8 @@ class Worker:
                 If no usable GPU is available for evaluation.
             SafetyError:
                 If the lease's model fails the safety preflight.
+            EvaluationFailure:
+                If the evaluator raises an exception.
         """
         expected_login = active.github_login or self._login if active else self._login
         if active is None:
@@ -434,6 +516,8 @@ class Worker:
                 records=active.records,
                 github_login=expected_login,
                 finalised_submission_id=active.finalised_submission_id,
+                evaluation_failures=active.evaluation_failures,
+                release_pending=active.release_pending,
             )
         heartbeat_parameters = inspect.signature(Heartbeat).parameters
         if "persist" in heartbeat_parameters:
@@ -523,7 +607,12 @@ class Worker:
                     evaluate = t.cast(
                         c.Callable[..., list[EEERecord]], self.evaluator.evaluate
                     )
-                    evaluated = evaluate(**evaluate_kwargs)
+                    try:
+                        evaluated = evaluate(**evaluate_kwargs)
+                    except (KeyboardInterrupt, SystemExit):
+                        raise
+                    except Exception as error:
+                        raise EvaluationFailure("evaluation failed") from error
                 heartbeat.check()
                 try:
                     records = self._durable_records(active=active, evaluated=evaluated)
@@ -774,6 +863,152 @@ class Worker:
             logger.warning("Result submission failed; retrying idempotently")
             time.sleep(_retry_delay(attempt, retry_after, self._max_retry_delay))
 
+    def _recover_evaluation_failure(
+        self, *, active: ActiveLease, error: EvaluationFailure, once: bool
+    ) -> None:
+        """Persist a failed evaluation and apply continuous-mode backoff.
+
+        Args:
+            active:
+                Active lease whose evaluator failed.
+            error:
+                Evaluation failure, retaining the evaluator exception as its cause.
+            once:
+                Whether the caller requested single-operation behaviour.
+
+        """
+        if once:
+            raise error.__cause__ or error
+        updated = self.state.record_evaluation_failure(
+            lease_id=active.lease.lease_id, max_failures=self._max_evaluation_failures
+        )
+        failures = updated.evaluation_failures
+        logger.error(
+            "Evaluation failed for lease %s (attempt %d/%d)",
+            active.lease.lease_id,
+            failures,
+            self._max_evaluation_failures,
+            exc_info=(
+                type(error.__cause__),
+                error.__cause__,
+                error.__cause__.__traceback__,
+            )
+            if error.__cause__ is not None
+            else None,
+        )
+        time.sleep(
+            300
+            if failures >= self._max_evaluation_failures
+            else min(300.0, 30.0 * 2 ** (failures - 1))
+        )
+
+    def _release_exhausted_evaluation(self, *, active: ActiveLease, once: bool) -> bool:
+        """Release an exhausted failed job, retaining intent on retryable failure.
+
+        Args:
+            active:
+                Failed lease whose bounded evaluation retries are exhausted.
+            once:
+                Whether the caller requested single-operation behaviour.
+
+        Returns:
+            Whether the worker should return from once mode.
+
+        Raises:
+            BrokerError:
+                If release fails permanently or in once mode.
+            OSError:
+                If release transport fails in once mode.
+            TimeoutError:
+                If release transport times out in once mode.
+        """
+        try:
+            self.client.release(
+                credential=self._credential,
+                lease_id=active.lease.lease_id,
+                reason="evaluation_failed",
+            )
+        except (BrokerError, OSError, TimeoutError) as error:
+            if once or not _recoverable_broker_error(error):
+                raise
+            logger.warning(
+                "Failed to release exhausted evaluation lease", exc_info=True
+            )
+            self._sleep_recovery_backoff()
+            return False
+        self.state.archive_active()
+        if not once:
+            time.sleep(300)
+        return once
+
+    def _run_active_lease(
+        self, *, active: ActiveLease, hardware: HardwareReport, once: bool
+    ) -> bool:
+        """Process a resumed lease and return whether once-mode is complete.
+
+        Args:
+            active:
+                Persisted lease to resume.
+            hardware:
+                Newly discovered hardware.
+            once:
+                Whether to stop after this operation.
+
+        Returns:
+            Whether the worker should return from its run loop.
+
+        Raises:
+            BrokerError:
+                If a non-recoverable broker operation fails.
+            LeaseLost:
+                If lease ownership is lost in once mode.
+            OSError:
+                If broker transport fails in once mode.
+            TimeoutError:
+                If broker transport times out in once mode.
+        """
+        selected = _gpu_for_lease(hardware.gpus, active.lease)
+        pinned = self._hardware_with_selected(hardware, selected)
+        try:
+            self._process_lease(
+                credential=self._credential,
+                lease=active.lease,
+                hardware=pinned,
+                active=active,
+            )
+        except EvaluationFailure as error:
+            self._recover_evaluation_failure(active=active, error=error, once=once)
+            return False
+        except (BrokerError, LeaseLost, OSError, TimeoutError) as error:
+            if _lease_lost(error):
+                self.state.archive_active()
+                if not once:
+                    time.sleep(30)
+                    return False
+            if not once and _recoverable_broker_error(error):
+                logger.warning("Recoverable broker failure; retrying", exc_info=True)
+                self._sleep_recovery_backoff()
+                return False
+            raise
+        self._recovery_failures = 0
+        return once
+
+    def _wait_for_work(self, *, once: bool) -> bool:
+        """Wait after an empty claim, or signal completion in once mode.
+
+        Args:
+            once:
+                Whether the caller requested single-operation behaviour.
+
+        Returns:
+            Whether the worker should return from once mode.
+        """
+        logger.info("No volunteer evaluation work is currently available")
+        if once:
+            return True
+        time.sleep(30)
+        return False
+
 
 class LeaseLost(RuntimeError):
     """Raised when the broker stops accepting heartbeats."""
@@ -958,6 +1193,23 @@ def _pin_gpu(gpu: Gpu) -> c.Iterator[None]:
             os.environ.pop("CUDA_VISIBLE_DEVICES", None)
         else:
             os.environ["CUDA_VISIBLE_DEVICES"] = original
+
+
+def _recoverable_broker_error(error: BaseException) -> bool:
+    """Identify broker failures safe for an unattended retry.
+
+    Args:
+        error:
+            Failure returned by the broker or its transport.
+
+    Returns:
+        Whether the failure is a transient broker/network condition.
+    """
+    if isinstance(error, BrokerError):
+        return (
+            _submission_transient(error) or error.code == "ISSUE_BUSY"
+        ) and not _lease_lost(error)
+    return isinstance(error, (urllib.error.URLError, TimeoutError))
 
 
 def _submission_transient(error: BrokerError) -> bool:

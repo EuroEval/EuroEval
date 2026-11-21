@@ -4,6 +4,14 @@ import { BrokerError, ConfigurationError, GROUPS } from "./protocol.js";
 import type { ModelMetadataEvidence } from "./protocol.js";
 import { fetchWithRetry } from "./http.js";
 
+// Registered EuroEval variants retain their record codes but share a lease group.
+const LANGUAGE_PARENTS: Readonly<Record<string, string>> = {
+  nb: "no",
+  nn: "no",
+  "pt-pt": "pt",
+  "pt-br": "pt",
+};
+
 export type ModelType = "encoder" | "generative";
 
 export interface ResolvedModel {
@@ -183,7 +191,8 @@ function modelTypeFor(
 }
 
 export function languageGroup(language: string): string | null {
-  return Object.entries(GROUPS).find(([, codes]) => codes.includes(language))?.[0] || null;
+  const canonicalLanguage = LANGUAGE_PARENTS[language] ?? language;
+  return Object.entries(GROUPS).find(([, codes]) => codes.includes(canonicalLanguage))?.[0] || null;
 }
 
 type ScopeEntry = { euroeval_version: string; model_type: ModelType; language: string; language_group: string; allowed_identity_suffix_sets: string[][]; task_groups: string[]; warnings?: string[] };

@@ -2,8 +2,8 @@ declare const process: { env: Record<string, string | undefined> };
 
 import {
   BrokerError, ConfigurationError, PROTOCOL_VERSION, addIssueLabel, acquireRenewableIssueMutex,
-  brokerErrorBody, commentIssue, completePromotionReservation, fetchIssue, getPromotionReservation,
-  issueComments, json, method, parsePromotionRecords,
+  brokerErrorBody, completePromotionReservation, fetchIssue, getPromotionReservation,
+  isReadyForReview, json, method, parsePromotionRecords,
   parseVolunteerMarker, patchIssue, promotionSecret, readJson,
   releaseResultReservations,
   removeIssueLabel, replaceVolunteerMarker, requireProtocol,
@@ -15,7 +15,6 @@ import type {
 } from "./_lib.js";
 
 export const config = { runtime: "edge" };
-export const PROMOTION_MARKER = "euroeval-volunteer-promotion:v1";
 
 export interface PromotionPlan {
   marker: VolunteerLeaseMarker;
@@ -58,7 +57,7 @@ export function promotionPlan(
   const releaseContributor = outcome === "rejected" && !contributorRetained ?
     current.verified_contributor : null;
   return {
-    marker: next, complete, removeReviewLabel: !submitted,
+    marker: next, complete, removeReviewLabel: !isReadyForReview(next, selected),
     releaseContributor,
   };
 }
@@ -145,6 +144,9 @@ export default async function handler(req: Request): Promise<Response> {
       if (plan.removeReviewLabel) {
         await mutex.assertOwned();
         await removeIssueLabel(issueNumber, reviewLabel);
+      } else if (!fencedIssue.labels?.some((item) => item.name === reviewLabel)) {
+        await mutex.assertOwned();
+        await addIssueLabel(issueNumber, reviewLabel);
       }
       const promotedSubmission = marker.submissions?.find((item) => item.submission_id === submissionId);
       if (plan.releaseContributor && promotedSubmission?.ownership_mode !== "public") {
@@ -159,12 +161,6 @@ export default async function handler(req: Request): Promise<Response> {
             throw new BrokerError(409, "Promotion assignment fence lost.");
           }
         }
-      }
-      const comments = await issueComments(issueNumber);
-      if (!comments.some((item) => item.body?.includes(`${PROMOTION_MARKER} ${submissionId}`))) {
-        const current = plan.marker.submissions?.find((item) => item.submission_id === submissionId);
-        await mutex.assertOwned();
-        await commentIssue(issueNumber, `<!-- ${PROMOTION_MARKER} ${submissionId} -->\nCommunity submission **${submissionId}** was **${outcome}**.\n\nManifest: \`${current?.manifest_path}\``);
       }
       await terminalReservation(reservation);
       return json(200, { protocol_version: PROTOCOL_VERSION, status: outcome, submission_id: submissionId,

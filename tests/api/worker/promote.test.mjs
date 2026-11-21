@@ -62,6 +62,15 @@ test("rejection preserves audit and makes language claimable", () => {
   assert.deepEqual(claimableLanguages(["da"], plan.marker), ["da"]);
 });
 
+test("rejection removes review readiness even while another language awaits review", () => {
+  const plan = promotionPlan(
+    marker([submission("one", "da", "alice", 4), submission("two", "de", "bob", 3)]),
+    ["da", "de"], "one", "rejected",
+  );
+  assert.equal(plan.marker.submission, "submitted");
+  assert.equal(plan.removeReviewLabel, true);
+});
+
 test("submitted and accepted languages cannot be reclaimed", () => {
   const value = marker([
     submission("one", "da", "alice", 4),
@@ -88,9 +97,11 @@ test("repeated rejection is safe after cleanup interruption", async () => {
   });
   const records = [{ identity: JSON.stringify(["org/model", "dataset", false, true]), canonical_path: "org_model/dataset__test__fewshot.json", digest: "a".repeat(64) }];
   const decisionDigest = "d".repeat(64);
-  const issueMarker = await signVolunteerMarker(12, marker([submission("one", "el", "alice", 4)]));
+  const issueMarker = await signVolunteerMarker(12, marker([
+    submission("one", "el", "alice", 4), submission("two", "hu", "bob", 3),
+  ]));
   let issue = { number: 12, title: "[MODEL EVALUATION REQUEST] org/model",
-    body: `- [x] Greek\n\n<!-- euroeval-volunteer-worker:v1 ${JSON.stringify(issueMarker)} -->`, state: "open",
+    body: `- [x] Greek\n- [x] Hungarian\n\n<!-- euroeval-volunteer-worker:v1 ${JSON.stringify(issueMarker)} -->`, state: "open",
     assignees: [{ login: "coordinator" }], labels: [{ name: "community-review-ready" }] };
   const comments = [];
   const values = new Map([["euroeval:worker:promotion:12:one", JSON.stringify({
@@ -134,8 +145,10 @@ test("repeated rejection is safe after cleanup interruption", async () => {
     assert.equal(second.status, 200, await second.text());
     assert.equal(cleanupCalls, 3); // first call retries the interrupted atomic EVAL
     assert.equal(JSON.parse(values.get("euroeval:worker:promotion:12:one")).status, "terminal");
-    assert.match(issue.body, /"submission":"rejected"/);
-    assert.equal(comments.length, 1);
+    assert.match(issue.body, /"submission":"submitted"/);
+    assert.match(issue.body, /"status":"rejected"/);
+    assert.equal(issue.labels.some(({ name }) => name === "community-review-ready"), false);
+    assert.equal(comments.length, 0);
   } finally {
     globalThis.fetch = originalFetch;
     process.env = originalEnv;
@@ -384,7 +397,7 @@ test("handler finishes GitHub labels, credit, ownership, and notification", asyn
     assert.doesNotMatch(issue.body, /euroeval-volunteer-credit:v1/);
     assert.deepEqual(issue.labels, [{ name: "results-ready" }]);
     assert.deepEqual(issue.assignees, [{ login: "coordinator" }]);
-    assert.match(comments[0].body, /submission \*\*one\*\*/);
+    assert.equal(comments.length, 0);
   } finally {
     globalThis.fetch = originalFetch;
     process.env = originalEnv;
