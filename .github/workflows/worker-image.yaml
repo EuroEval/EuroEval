@@ -12,6 +12,17 @@ on:
       - "src/euroeval_worker/**"
       - "src/scripts/worker_release_inventory.py"
       - "src/scripts/release_volunteer_worker.py"
+      - "src/scripts/deploy_vercel_frontend.py"
+      - "src/scripts/prepare_vercel_worktree.py"
+      - "src/scripts/build_vercel_frontend.py"
+      - "src/scripts/verify_vercel_functions.py"
+      - "src/scripts/worker-release-policy.json"
+      - "src/scripts/run_volunteer_worker.py"
+      - "VOLUNTEER_WORKER.md"
+      - "VOLUNTEER_WORKER_OPERATIONS.md"
+      - ".github/workflows/worker-release.yaml"
+      - ".github/workflows/ci.yaml"
+      - "Makefile"
   push:
     branches:
       - main
@@ -25,6 +36,17 @@ on:
       - "src/euroeval_worker/**"
       - "src/scripts/worker_release_inventory.py"
       - "src/scripts/release_volunteer_worker.py"
+      - "src/scripts/deploy_vercel_frontend.py"
+      - "src/scripts/prepare_vercel_worktree.py"
+      - "src/scripts/build_vercel_frontend.py"
+      - "src/scripts/verify_vercel_functions.py"
+      - "src/scripts/worker-release-policy.json"
+      - "src/scripts/run_volunteer_worker.py"
+      - "VOLUNTEER_WORKER.md"
+      - "VOLUNTEER_WORKER_OPERATIONS.md"
+      - ".github/workflows/worker-release.yaml"
+      - ".github/workflows/ci.yaml"
+      - "Makefile"
   workflow_dispatch:
 
 permissions:
