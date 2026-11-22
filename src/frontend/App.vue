@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Analytics } from "@vercel/analytics/vue";
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 import TopHeader from "@/components/TopHeader.vue";
@@ -98,6 +99,7 @@ useHead(() => {
 </script>
 
 <template>
+  <Analytics />
   <div class="app" :class="{ embed: isEmbed }">
     <TopHeader v-if="!isEmbed" :has-sidebar="hasSidebar" />
     <SectionTabs v-if="!isEmbed" :active-id="activeSection.id" />
