@@ -9,6 +9,7 @@ import {
   CANARY_GENERATION_VERSION,
   CANARY_NORMALISER_VERSION,
   CANARY_PROTOCOL_VERSION,
+  fetchCanaryCorpus,
   reserveCanary,
   validateCanaryEvidence,
 } from "../../../api/worker/_lib/canary.ts";
@@ -121,6 +122,66 @@ test("leases require collection without a separate evidence reservation", async 
   assert.equal("reservation_id" in decoder, false);
   assert.equal(encoder.status, "required");
   assert.equal(encoder.reason, "encoder");
+});
+
+test("canary corpus retrieval prefers its dedicated token", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalDedicated = process.env.HF_CANARY_TOKEN;
+  const originalLegacy = process.env.HF_TOKEN;
+  let authorization;
+  process.env.HF_CANARY_TOKEN = "dedicated-test-token";
+  process.env.HF_TOKEN = "legacy-test-token";
+  globalThis.fetch = async (_url, options) => {
+    authorization = options.headers.authorization;
+    return new Response("not found", { status: 404 });
+  };
+  try {
+    await assert.rejects(fetchCanaryCorpus(), /HTTP 404/);
+    assert.equal(authorization, "Bearer dedicated-test-token");
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalDedicated === undefined) delete process.env.HF_CANARY_TOKEN;
+    else process.env.HF_CANARY_TOKEN = originalDedicated;
+    if (originalLegacy === undefined) delete process.env.HF_TOKEN;
+    else process.env.HF_TOKEN = originalLegacy;
+  }
+});
+
+test("canary corpus retrieval falls back to the legacy token", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalDedicated = process.env.HF_CANARY_TOKEN;
+  const originalLegacy = process.env.HF_TOKEN;
+  let authorization;
+  delete process.env.HF_CANARY_TOKEN;
+  process.env.HF_TOKEN = "legacy-test-token";
+  globalThis.fetch = async (_url, options) => {
+    authorization = options.headers.authorization;
+    return new Response("not found", { status: 404 });
+  };
+  try {
+    await assert.rejects(fetchCanaryCorpus(), /HTTP 404/);
+    assert.equal(authorization, "Bearer legacy-test-token");
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalDedicated === undefined) delete process.env.HF_CANARY_TOKEN;
+    else process.env.HF_CANARY_TOKEN = originalDedicated;
+    if (originalLegacy === undefined) delete process.env.HF_TOKEN;
+    else process.env.HF_TOKEN = originalLegacy;
+  }
+});
+
+test("canary corpus retrieval still rejects content with a mismatched digest", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalDedicated = process.env.HF_CANARY_TOKEN;
+  process.env.HF_CANARY_TOKEN = "dedicated-test-token";
+  globalThis.fetch = async () => new Response("{}\\n", { status: 200 });
+  try {
+    await assert.rejects(fetchCanaryCorpus(), /does not match its frozen digest/);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalDedicated === undefined) delete process.env.HF_CANARY_TOKEN;
+    else process.env.HF_CANARY_TOKEN = originalDedicated;
+  }
 });
 
 test("canary corpus endpoint rejects unsupported methods before authentication", async () => {

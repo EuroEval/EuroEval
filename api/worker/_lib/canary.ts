@@ -3,6 +3,7 @@ import {
   BrokerError,
   ConfigurationError,
   env,
+  optionalEnv,
   sha256,
 } from "./protocol.js";
 
@@ -45,7 +46,7 @@ export async function reserveCanary(
 
 export async function fetchCanaryCorpus(): Promise<string> {
   if (canaryCorpus !== null) return canaryCorpus;
-  const token = env("HF_TOKEN");
+  const token = optionalEnv("HF_CANARY_TOKEN", "") || env("HF_TOKEN");
   const url = `https://huggingface.co/datasets/${CANARY_CORPUS_ID}/resolve/${CANARY_CORPUS_REVISION}/test.jsonl`;
   const response = await fetchWithRetry(url, {
     headers: { authorization: `Bearer ${token}`, accept: "application/x-ndjson" },
