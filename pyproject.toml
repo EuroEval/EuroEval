@@ -147,7 +147,9 @@ override-dependencies = [
   # vLLM 0.27.1 has an incompatible global head_dim guard in Transformers 5.15.
   "transformers[mistral-common]>=5.14.0,<5.15.0",
   "python-dotenv>=1.2.2",
-  "numpy>=2.5.1",
+  # vLLM's Numba 0.65 pin cannot import with the required NumPy 2.5 runtime.
+  "numba>=0.68.1,<0.69",
+  "numpy>=2.5.1,<2.6",
   # Kev's upper torch bound conflicts with the project-wide vLLM resolution.
   # Kev-0.8B inference was smoke-tested on MPS with torch 2.13.0.
   "torch>=2.6.0",
