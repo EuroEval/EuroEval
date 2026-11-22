@@ -5,6 +5,7 @@ import contextlib
 import dataclasses
 import datetime
 import hashlib
+import importlib.metadata
 import inspect
 import logging
 import os
@@ -176,7 +177,7 @@ class Heartbeat:
         """Stop and join the heartbeat loop."""
         self._stop.set()
         if self._started:
-            self._thread.join(timeout=2)
+            self._thread.join()
 
 
 class Worker:
@@ -226,8 +227,43 @@ class Worker:
         self._auth_lock = threading.Lock()
         self._recovery_failures = 0
         self.image_digest = image_digest
+        self._launcher_managed = False
 
-    def run(  # noqa: PLR0912
+    def run(self, once: bool = False, launcher_managed: bool = False) -> int | None:
+        """Run the worker with the managed process handoff contract.
+
+        Args:
+            once (optional):
+                Process at most one response in legacy mode.
+            launcher_managed (optional):
+                Return a process status after one completed lease or idle claim.
+
+        Returns:
+            Managed process status, or the legacy result.
+
+        Raises:
+            ValueError:
+                If legacy execution receives invalid configuration.
+        """
+        self._launcher_managed = launcher_managed
+        if not launcher_managed:
+            return self._run(once=once)
+        try:
+            if not self.image_digest:
+                raise ValueError("managed mode requires --image-digest")
+            return self._run(once=once, launcher_managed=True)
+        except KeyboardInterrupt:
+            return 130
+        except BrokerError as error:
+            if error.status == 426 and error.code == "worker_update_required":
+                return 75
+            logger.exception("Managed worker failed")
+            return 1
+        except Exception:
+            logger.exception("Managed worker failed")
+            return 1
+
+    def _run(  # noqa: PLR0912
         self, once: bool = False, launcher_managed: bool = False
     ) -> int | None:
         """Run until interrupted, or process one broker response with ``once``.
@@ -268,16 +304,19 @@ class Worker:
                 raise AuthenticationIdentityError(
                     active.github_login or "", self._login
                 )
-            if active is not None and active.finalised_submission_id is not None:
-                if self._clear_finalised_lease(once=once):
-                    return 0 if launcher_managed else None
-                continue
             if (
                 active is not None
-                and launcher_managed
-                and active.managed_image_digest != self.image_digest
+                and (launcher_managed or active.managed_image_digest is not None)
+                and (
+                    active.managed_image_digest != self.image_digest
+                    or active.lease.image_digest != self.image_digest
+                )
             ):
                 raise RuntimeError("active lease belongs to a different managed image")
+            if active is not None and active.finalised_submission_id is not None:
+                if self._clear_finalised_lease(once=once or launcher_managed):
+                    return 0 if launcher_managed else None
+                continue
             if active is not None and not _lease_is_valid(active.lease):
                 logger.warning(
                     "Discarding expired local lease %s", active.lease.lease_id
@@ -403,6 +442,16 @@ class Worker:
         transient_attempts = 0
         while True:
             try:
+                if self._launcher_managed:
+                    claim = t.cast(c.Callable[..., Claim], self.client.claim)
+                    parameters = inspect.signature(claim).parameters
+                    if "image_digest" in parameters:
+                        return credential, claim(
+                            credential=credential,
+                            hardware=hardware,
+                            image_digest=self.image_digest,
+                            euroeval_version=importlib.metadata.version("euroeval"),
+                        )
                 return credential, self.client.claim(
                     credential=credential, hardware=hardware
                 )
@@ -534,7 +583,15 @@ class Worker:
         """
         expected_login = active.github_login or self._login if active else self._login
         if active is None:
-            self.state.save_active(lease=lease, github_login=expected_login or None)
+            if self._launcher_managed and lease.image_digest != self.image_digest:
+                raise RuntimeError("claimed lease belongs to a different managed image")
+            self.state.save_active(
+                lease=lease,
+                github_login=expected_login or None,
+                managed_image_digest=self.image_digest
+                if self._launcher_managed
+                else None,
+            )
         elif active.github_login is None and expected_login:
             self.state.save_active(
                 lease=active.lease,
@@ -543,6 +600,7 @@ class Worker:
                 finalised_submission_id=active.finalised_submission_id,
                 evaluation_failures=active.evaluation_failures,
                 release_pending=active.release_pending,
+                managed_image_digest=active.managed_image_digest,
             )
         heartbeat_parameters = inspect.signature(Heartbeat).parameters
         if "persist" in heartbeat_parameters:
@@ -660,6 +718,7 @@ class Worker:
             submission_id = self._finalise(
                 credential=self._credential, lease_id=lease.lease_id
             )
+            heartbeat.stop()
             self.state.save_submission_id(submission_id)
             self.state.mark_finalised(submission_id)
             self.last_submission_id = submission_id
@@ -1016,7 +1075,7 @@ class Worker:
                 return False
             raise
         self._recovery_failures = 0
-        return once
+        return once or self._launcher_managed
 
     def _wait_for_work(self, *, once: bool) -> bool:
         """Wait after an empty claim, or signal completion in once mode.

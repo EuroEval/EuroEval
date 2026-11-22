@@ -309,6 +309,9 @@ class StateStore:
             records=active.records,
             github_login=active.github_login,
             finalised_submission_id=submission_id,
+            evaluation_failures=active.evaluation_failures,
+            release_pending=active.release_pending,
+            managed_image_digest=active.managed_image_digest,
         )
 
     def load_active(self) -> ActiveLease | None:
@@ -351,6 +354,11 @@ class StateStore:
                 or not finalised_submission_id
             ):
                 raise ValueError("finalised_submission_id is malformed")
+            managed_image_digest = raw.get("managed_image_digest")
+            if managed_image_digest is not None and (
+                not isinstance(managed_image_digest, str) or not managed_image_digest
+            ):
+                raise ValueError("managed_image_digest is malformed")
             return ActiveLease(
                 lease=lease,
                 records=records,
@@ -358,7 +366,7 @@ class StateStore:
                 finalised_submission_id=finalised_submission_id,
                 evaluation_failures=evaluation_failures,
                 release_pending=release_pending,
-                managed_image_digest=raw.get("managed_image_digest"),
+                managed_image_digest=managed_image_digest,
             )
         except (
             OSError,
@@ -398,8 +406,18 @@ class StateStore:
                 Whether an exhausted failed job must be released before claiming.
             managed_image_digest (optional):
                 Managed container image digest associated with the lease.
+
+        Raises:
+            RuntimeError:
+                If an existing lease's managed provenance would change.
         """
         with self._lock:
+            previous = self.load_active()
+            if previous is not None and previous.lease.lease_id == lease.lease_id:
+                if managed_image_digest is None:
+                    managed_image_digest = previous.managed_image_digest
+                elif previous.managed_image_digest not in (None, managed_image_digest):
+                    raise RuntimeError("cannot change active managed image provenance")
             self._atomic_write(
                 self.active_path,
                 _active_dict(
@@ -475,6 +493,7 @@ class StateStore:
                 github_login=active.github_login,
                 finalised_submission_id=active.finalised_submission_id,
                 evaluation_failures=active.evaluation_failures + 1,
+                managed_image_digest=active.managed_image_digest,
                 release_pending=(
                     active.release_pending
                     or active.evaluation_failures + 1 >= max_failures
@@ -653,11 +672,15 @@ def _pending_from_dict(value: object) -> PendingRecord:
     return PendingRecord(record_json, digest, acknowledged)
 
 
-def default_state_dir() -> Path:
+def default_state_dir(*, readonly: bool = False) -> Path:
     """Select a writable container cache, then the user's cache directory.
 
+    Args:
+        readonly (optional):
+            Select an existing location without probing or creating directories.
+
     Returns:
-        A writable state directory.
+        A state directory.
 
     Raises:
         RuntimeError:
@@ -666,6 +689,10 @@ def default_state_dir() -> Path:
     configured = os.environ.get("EUROEVAL_WORKER_CACHE")
     candidates = [Path(configured)] if configured else []
     candidates.extend([Path("/cache"), Path.home() / ".cache" / "euroeval-worker"])
+    if readonly and configured:
+        return Path(configured)
+    if readonly:
+        return next((path for path in candidates if path.exists()), candidates[0])
     for candidate in candidates:
         try:
             candidate.mkdir(parents=True, exist_ok=True)

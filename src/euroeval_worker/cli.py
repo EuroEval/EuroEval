@@ -26,7 +26,7 @@ def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s"
     )
-    if arguments.gpu_health_check:
+    if arguments.gpu_health_check and not arguments.inspect_state:
         return _run_gpu_health_check()
     from .broker import BrokerClient, BrokerError  # noqa: PLC0415
     from .hardware import NoGpuError  # noqa: PLC0415
@@ -35,7 +35,9 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         state_dir = (
-            Path(arguments.state_dir) if arguments.state_dir else default_state_dir()
+            Path(arguments.state_dir)
+            if arguments.state_dir
+            else default_state_dir(readonly=arguments.inspect_state)
         )
         state = StateStore(directory=state_dir)
         if arguments.inspect_state:
@@ -56,12 +58,15 @@ def main(argv: list[str] | None = None) -> int:
                 )
             )
             return 0
-        Worker(
-            client=BrokerClient(server=arguments.server),
-            state=state,
-            gpu_memory_utilisation=arguments.gpu_memory_utilisation,
-            image_digest=arguments.image_digest,
-        ).run(once=arguments.once, launcher_managed=arguments.launcher_managed) or 0
+        return (
+            Worker(
+                client=BrokerClient(server=arguments.server),
+                state=state,
+                gpu_memory_utilisation=arguments.gpu_memory_utilisation,
+                image_digest=arguments.image_digest,
+            ).run(once=arguments.once, launcher_managed=arguments.launcher_managed)
+            or 0
+        )
     except KeyboardInterrupt:
         logger.info("Worker stopped")
         if arguments.launcher_managed:
@@ -77,7 +82,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     except NoGpuError as error:
         logger.error("%s", error)
-        return 2
+        return 1 if arguments.launcher_managed else 2
     except Exception:
         logger.exception("Worker stopped after an error")
         return 1

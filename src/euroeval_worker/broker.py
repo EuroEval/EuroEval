@@ -52,7 +52,14 @@ class BrokerClient:
         self._request = request or _http_request
         self.worker_version = worker_version
 
-    def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+    def claim(
+        self,
+        credential: str,
+        hardware: HardwareReport,
+        *,
+        image_digest: str | None = None,
+        euroeval_version: str | None = None,
+    ) -> Claim:
         """Claim one available lease, if any.
 
         Args:
@@ -60,6 +67,10 @@ class BrokerClient:
                 Bearer credential for the worker.
             hardware:
                 Hardware details to include with the claim request.
+            image_digest (optional):
+                Actual managed image index digest.
+            euroeval_version (optional):
+                Actual installed evaluation package version.
 
         Returns:
             The claimed lease, or an empty claim when no work is available.
@@ -70,6 +81,10 @@ class BrokerClient:
             "capabilities": ["canonical_coverage_v1"],
             "hardware": _hardware_dict(hardware),
         }
+        if image_digest is not None:
+            payload["capabilities"] = ["canonical_coverage_v1", "managed_image_v1"]
+            payload["image_digest"] = image_digest
+            payload["euroeval_version"] = euroeval_version
         result = self._post("claim", payload, credential=credential)
         if result.get("status") == "no_work":
             return Claim(lease=None)

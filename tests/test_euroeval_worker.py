@@ -3,9 +3,11 @@
 import dataclasses
 import email.message
 import http.client
+import importlib.metadata
 import io
 import json
 import os
+import threading
 import typing as t
 import urllib.error
 import urllib.request
@@ -17,7 +19,7 @@ from euroeval.benchmark_config_factory import prepare_dataset_configs
 from euroeval.data_models import DatasetConfig
 from euroeval.enums import ShotMode
 from euroeval.languages import get_all_languages
-from euroeval_worker import evaluator, hardware, runtime
+from euroeval_worker import cli, evaluator, hardware, runtime
 from euroeval_worker.auth import authenticate
 from euroeval_worker.broker import BrokerClient, BrokerError
 from euroeval_worker.hardware import NoGpuError, discover_gpus, discover_hardware
@@ -264,6 +266,51 @@ def test_broker_client_drives_canonical_http_lifecycle(
     assert result_payload["digest"] == record.digest
     assert "secret-credential" not in json.dumps(calls)
     assert "secret-credential" not in caplog.text
+
+
+@pytest.mark.parametrize(
+    "body", [b'{"code":"worker_update_required","credential":"secret"}', b"not json"]
+)
+def test_broker_error_preserves_optional_safe_metadata(
+    monkeypatch: pytest.MonkeyPatch, body: bytes
+) -> None:
+    """Expose structured HTTP status without requiring valid JSON error bodies.
+
+    Args:
+        monkeypatch:
+            Dependency replacement fixture.
+        body:
+            Simulated error response bytes.
+    """
+
+    def reject(request: urllib.request.Request, timeout: int) -> None:
+        """Reject a claim with an optional structured error body.
+
+        Args:
+            request:
+                HTTP request.
+            timeout:
+                Network timeout.
+
+        Raises:
+            urllib.error.HTTPError:
+                Always, to simulate the broker rejection.
+        """
+        raise urllib.error.HTTPError(
+            request.full_url, 426, "update", email.message.Message(), io.BytesIO(body)
+        )
+
+    monkeypatch.setattr(urllib.request, "urlopen", reject)
+    client = BrokerClient(server="https://example.test")
+    with pytest.raises(BrokerError) as caught:
+        client.claim(credential="cred", hardware=HARDWARE)
+    assert caught.value.status == 426
+    assert caught.value.code == (
+        "worker_update_required" if body.startswith(b"{") else None
+    )
+    assert "secret" not in str(caught.value.body)
+    assert BrokerError("legacy fake error").status is None
+    assert BrokerError("legacy fake error").code is None
 
 
 def test_broker_normalises_legacy_scope_and_rejects_malformed_alternatives() -> None:
@@ -631,6 +678,37 @@ def test_canary_corpus_outage_does_not_block_results(
     assert broker.submissions == 1
     assert broker.finalised
     assert not broker.releases
+
+
+@pytest.mark.parametrize("status", [0, 10, 75, 130, 1])
+def test_cli_propagates_worker_status(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, status: int
+) -> None:
+    """Pass the actual managed result through the CLI.
+
+    Args:
+        monkeypatch:
+            Dependency replacement fixture.
+        tmp_path:
+            State directory.
+        status:
+            Worker result to propagate.
+    """
+    monkeypatch.setattr(
+        runtime.Worker, "run", lambda self, once, launcher_managed: status
+    )
+    assert (
+        cli.main(
+            [
+                "--launcher-managed",
+                "--image-digest",
+                LEASE.image_digest,
+                "--state-dir",
+                str(tmp_path),
+            ]
+        )
+        == status
+    )
 
 
 def test_continuous_worker_recovers_after_submission_retries_from_saved_records(
@@ -1592,6 +1670,48 @@ def test_gb10_n_a_memory_uses_verified_cuda_fallback(
     assert measured == ["GPU-test"]
 
 
+@pytest.mark.parametrize("managed", [False, True])
+def test_inspect_worker_state_is_readonly(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], managed: bool
+) -> None:
+    """Inspect legacy and managed state without authentication or mutation.
+
+    Args:
+        tmp_path:
+            State directory.
+        capsys:
+            Captured CLI output.
+        managed:
+            Whether persisted state contains managed provenance.
+    """
+    state = StateStore(directory=tmp_path)
+    state.save_active(
+        lease=LEASE, managed_image_digest=LEASE.image_digest if managed else None
+    )
+    if not managed:
+        raw = json.loads(state.active_path.read_text())
+        del raw["managed_image_digest"]
+        state.active_path.write_text(json.dumps(raw))
+    before = {
+        path: (path.read_bytes(), path.stat().st_mtime_ns)
+        for path in tmp_path.rglob("*")
+        if path.is_file()
+    }
+    assert cli.main(["--inspect-state", "--state-dir", str(tmp_path)]) == 0
+    assert json.loads(capsys.readouterr().out) == {
+        "schema_version": "volunteer-worker-state/v1",
+        "active": True,
+        "finalised": False,
+        "managed_image_digest": LEASE.image_digest if managed else None,
+        "lease_image_digest": LEASE.image_digest,
+    }
+    assert before == {
+        path: (path.read_bytes(), path.stat().st_mtime_ns)
+        for path in tmp_path.rglob("*")
+        if path.is_file()
+    }
+
+
 def test_interruption_resumes_pre_evaluation_lease(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -1759,6 +1879,282 @@ def test_lease_loss_releases_without_finalising(
     assert broker.releases == []
     assert not broker.finalised
     assert list((tmp_path / "archive").glob("*.json"))
+
+
+@pytest.mark.parametrize(
+    "outcome,expected", [("idle", 10), ("update", 75), ("fatal", 1)]
+)
+def test_managed_claim_handshake_and_status(
+    tmp_path: Path, outcome: str, expected: int
+) -> None:
+    """Advertise installed facts and stop before evaluation on idle or rejection.
+
+    Args:
+        tmp_path:
+            State directory.
+        outcome:
+            Simulated claim outcome.
+        expected:
+            Managed process status.
+    """
+    state = StateStore(directory=tmp_path)
+    state.save_auth(credential="cred", github_login="login")
+    claims: list[dict[str, object]] = []
+
+    def request(
+        method: str,
+        url: str,
+        headers: dict[str, str],
+        payload: dict[str, object] | None,
+    ) -> dict[str, object]:
+        """Inspect a managed claim and return its simulated outcome.
+
+        Args:
+            method:
+                HTTP method.
+            url:
+                Claim endpoint.
+            headers:
+                Request headers.
+            payload:
+                Managed claim payload.
+
+        Returns:
+            An idle response.
+
+        Raises:
+            BrokerError:
+                For the selected structured rejection.
+        """
+        assert url.endswith("claim")
+        assert payload is not None
+        claims.append(payload)
+        assert "managed_image_v1" in payload["capabilities"]
+        assert payload["image_digest"] == LEASE.image_digest
+        assert payload["euroeval_version"] == importlib.metadata.version("euroeval")
+        assert payload["worker_version"]
+        hardware_payload = payload["hardware"]
+        assert isinstance(hardware_payload, dict)
+        assert hardware_payload["architecture"] == HARDWARE.architecture
+        if outcome != "idle":
+            raise BrokerError(
+                "rejected",
+                status=426 if outcome == "update" else 400,
+                code="worker_update_required",
+            )
+        return {"protocol_version": "volunteer-worker/v1", "status": "no_work"}
+
+    worker = runtime.Worker(
+        client=BrokerClient(server="https://example.test", request=request),
+        state=state,
+        hardware_factory=lambda: HARDWARE,
+        image_digest=LEASE.image_digest,
+    )
+    assert worker.run(launcher_managed=True) == expected
+    assert len(claims) == 1
+    assert state.load_active() is None
+
+
+def test_managed_fresh_lease_stops_heartbeat_before_clearing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Hand off only after finalisation, heartbeat join and durable state clearing.
+
+    Args:
+        monkeypatch:
+            Dependency replacement fixture.
+        tmp_path:
+            State directory.
+    """
+    monkeypatch.setattr(runtime, "check_model_safety", lambda **kwargs: None)
+    monkeypatch.setattr(runtime.time, "sleep", lambda seconds: None)
+
+    class HandoffStore(StateStore):
+        """Assert completion ordering at the public storage seam."""
+
+        def clear_active(self) -> None:
+            """Clear only a finalised lease with no running heartbeat."""
+            active = self.load_active()
+            assert active is not None
+            assert active.finalised_submission_id == "submission-1"
+            assert active.managed_image_digest == LEASE.image_digest
+            assert not any(
+                thread.name == "worker-heartbeat" and thread.is_alive()
+                for thread in threading.enumerate()
+            )
+            super().clear_active()
+
+    state = HandoffStore(directory=tmp_path)
+    state.save_auth(credential="cred", github_login="login")
+    broker = Broker()
+    worker = runtime.Worker(
+        client=broker,
+        state=state,
+        evaluator=OneRecordEvaluator(),
+        hardware_factory=lambda: HARDWARE,
+        image_digest=LEASE.image_digest,
+    )
+    assert worker.run(launcher_managed=True) == 0
+    assert broker.claims == 1
+    assert broker.finalised
+    assert state.load_active() is None
+
+
+@pytest.mark.parametrize("failure_stage", ["upload", "finalise", None])
+@pytest.mark.parametrize("network_loss", [False, True])
+def test_managed_handoff_resumes_exact_records(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    failure_stage: str | None,
+    network_loss: bool,
+) -> None:
+    """Preserve provenance and acknowledgements through response loss and handoff.
+
+    Args:
+        monkeypatch:
+            Dependency replacement fixture.
+        tmp_path:
+            Private state directory.
+        failure_stage:
+            Operation whose response is lost before a process restart.
+        network_loss:
+            Whether response loss is a retryable transport error or an interrupt.
+    """
+    monkeypatch.setattr(runtime.time, "sleep", lambda seconds: None)
+    state = StateStore(directory=tmp_path)
+    state.save_auth(credential="cred", github_login="login")
+    records = tuple(
+        PendingRecord.from_record(EEERecord({"id": item})) for item in (1, 2)
+    )
+    state.save_active(
+        lease=LEASE,
+        records=records,
+        github_login="login",
+        managed_image_digest=LEASE.image_digest,
+    )
+    uploads: list[str] = []
+    failed = False
+
+    def request(
+        method: str,
+        url: str,
+        headers: dict[str, str],
+        payload: dict[str, object] | None,
+    ) -> dict[str, object]:
+        """Emulate idempotent broker endpoints and one interrupted response.
+
+        Args:
+            method:
+                HTTP method.
+            url:
+                Endpoint URL.
+            headers:
+                Request headers.
+            payload:
+                Exact result envelope.
+
+        Returns:
+            Broker protocol response.
+
+        Raises:
+            KeyboardInterrupt:
+                When the selected response is interrupted.
+            BrokerError:
+                When the selected response is lost over the transport.
+        """
+        nonlocal failed
+        assert payload is not None
+        assert not url.endswith("claim")
+        if url.endswith("result"):
+            uploads.append(str(payload["record_json"]))
+            if failure_stage == "upload" and len(uploads) == 2 and not failed:
+                failed = True
+                if network_loss:
+                    raise BrokerError("response lost", status=503)
+                raise KeyboardInterrupt
+        if url.endswith("finalise") and failure_stage == "finalise" and not failed:
+            failed = True
+            if network_loss:
+                raise BrokerError("response lost", status=503)
+            raise KeyboardInterrupt
+        return {
+            "protocol_version": "volunteer-worker/v1",
+            "submission_id": "submission-1",
+        }
+
+    client = BrokerClient(server="https://example.test", request=request)
+    worker = runtime.Worker(
+        client=client,
+        state=state,
+        hardware_factory=lambda: HARDWARE,
+        image_digest=LEASE.image_digest,
+    )
+    if failure_stage is not None and not network_loss:
+        assert worker.run(launcher_managed=True) == 130
+        active = state.load_active()
+        assert active is not None
+        assert active.managed_image_digest == LEASE.image_digest
+        assert tuple(record.record_json for record in active.records) == tuple(
+            record.record_json for record in records
+        )
+        assert tuple(record.digest for record in active.records) == tuple(
+            record.digest for record in records
+        )
+        assert active.records[0].acknowledged
+    assert worker.run(launcher_managed=True) == 0
+    assert state.load_active() is None
+    assert not any(
+        thread.name == "worker-heartbeat" and thread.is_alive()
+        for thread in threading.enumerate()
+    )
+    assert uploads.count(records[0].record_json) == 1
+
+
+@pytest.mark.parametrize("finalised", [False, True])
+def test_managed_provenance_survives_all_state_writes(
+    tmp_path: Path, finalised: bool
+) -> None:
+    """Keep immutable provenance across renew, failure, record and completion writes.
+
+    Args:
+        tmp_path:
+            State directory.
+        finalised:
+            Whether to persist completion before rejecting an image mismatch.
+    """
+    state = StateStore(directory=tmp_path)
+    state.save_auth(credential="cred", github_login="login")
+    state.save_active(
+        lease=LEASE, github_login="login", managed_image_digest=LEASE.image_digest
+    )
+    state.renew_active(
+        lease=dataclasses.replace(LEASE, expires_at="2099-02-01T00:00:00Z")
+    )
+    state.record_evaluation_failure(lease_id=LEASE.lease_id, max_failures=3)
+    state.save_records(records=(PendingRecord.from_record(EEERecord({"id": 1})),))
+    active = state.load_active()
+    assert active is not None
+    state.save_active(
+        lease=active.lease,
+        records=active.records,
+        github_login="login",
+        evaluation_failures=active.evaluation_failures,
+    )
+    if finalised:
+        state.mark_finalised(submission_id="submission-1")
+    before = state.active_path.read_bytes()
+    active = state.load_active()
+    assert active is not None
+    assert active.managed_image_digest == LEASE.image_digest
+    assert active.evaluation_failures == 1
+    worker = runtime.Worker(
+        client=Broker(),
+        state=state,
+        image_digest="sha256:other",
+        hardware_factory=lambda: HARDWARE,
+    )
+    assert worker.run(launcher_managed=True) == 1
+    assert state.active_path.read_bytes() == before
 
 
 def test_no_gpu_exits_before_claim(
