@@ -6,7 +6,6 @@ separate from installation: both the workflow variable and reviewed policy gate 
 
 from __future__ import annotations
 
-import argparse
 import hashlib
 import io
 import json
@@ -22,6 +21,7 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
+import click
 from packaging.version import Version
 
 REPOSITORY = "EuroEval/EuroEval"
@@ -29,6 +29,7 @@ IMAGE = "ghcr.io/euroeval/euroeval-worker"
 ARCHES = ("amd64", "arm64")
 POLICY = Path("src/scripts/worker-release-policy.json")
 STATE = Path(".vercel/worker-release-state.json")
+MAX_PROOF_BYTES = 262144
 POLICIES = ("api/worker/scope-policy.json", "api/worker/_lib/scope-policy.generated.ts")
 
 
@@ -41,79 +42,173 @@ def main(argv: list[str] | None = None) -> int:
     Returns:
         Process exit status.
     """
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "command", choices=("stage", "prepare", "predeploy", "finish", "finalize")
-    )
-    parser.add_argument("--release-tag", default="")
-    parser.add_argument("--deployment", default="")
-    args = parser.parse_args(argv)
     try:
-        policy = json.loads(POLICY.read_text())
-        if (
-            not policy.get("enabled")
-            or os.environ.get("WORKER_RELEASE_ENABLED") != "true"
-        ):
-            return 0
-        for key, variable in (
-            ("acceptance", "WORKER_RELEASE_ACCEPTANCE_JSON"),
-            ("baseline", "WORKER_RELEASE_BASELINE_JSON"),
-        ):
-            if os.environ.get(variable):
-                policy[key] = json.loads(os.environ[variable])
-        github, registry = GitHub(), Registry()
-        if args.command == "stage":
-            stage(github, registry, policy, source())
-        elif args.command == "prepare":
-            # No approved pending release must leave the normal deploy unchanged.
-            plan = github.pending()
-            if plan and digest(registry.manifest("latest")[0]) != plan["image_digest"]:
-                project = json.loads(Path(".vercel/project.json").read_text())
-                require(
-                    project["projectId"] == policy["project_id"]
-                    and project["orgId"] == policy["team_id"],
-                    "local Vercel project linkage differs from release policy",
-                )
-                prepare(github, registry, Vercel(policy), policy, source())
-        elif args.command == "predeploy":
-            if STATE.exists():
-                state = json.loads(STATE.read_text())
-                if state["status"] != "finalization-dispatched":
-                    require(state["status"] == "prepared", "preparation incomplete")
-                    vercel = Vercel(policy)
-                    require(
-                        public_config(vercel.config()) == state["prepared_config"],
-                        "config changed before deployment",
-                    )
-                    require(
-                        vercel.production()["id"] == state["previous_deployment"],
-                        "alias changed before deployment",
-                    )
-                    require(
-                        github.head() == state["plan"]["source_sha"],
-                        "main advanced before deployment",
-                    )
-                    require(
-                        all(
-                            state["plan"][key] == value
-                            for key, value in source().items()
-                        ),
-                        "local source changed before deployment",
-                    )
-        elif args.command == "finish":
-            if STATE.exists():
-                finish(github, Vercel(policy))
-        else:
-            finalize(
-                github, registry, Vercel(policy), args.release_tag, args.deployment
-            )
-    except (ValueError, KeyError, OSError, TypeError):
-        logging.error(
-            "Worker release stopped; inspect nonsecret recovery state. "
-            "Remote response bodies suppressed."
-        )
-        return 1
-    return 0
+        return cli.main(args=argv, standalone_mode=False) or 0
+    except click.ClickException as exc:
+        exc.show()
+        return exc.exit_code
+    except click.exceptions.Exit as exc:
+        return exc.exit_code
+
+
+class GitHubAdapter(t.Protocol):
+    """Injectable GitHub observations and narrowly scoped effects."""
+
+    def artifact(self, run: dict, name: str) -> dict:
+        """Read a unique unexpired artifact from the selected attempt.
+
+        Args:
+            run: Observed trusted run.
+            name: Attempt-qualified artifact name.
+
+        Returns:
+            JSON metadata from the artifact.
+        """
+        ...
+
+    def dispatch(self, plan: dict, deployment: str) -> None:
+        """Request finalization after the ordinary local deploy succeeds.
+
+        Args:
+            plan: Staged plan.
+            deployment: Observed READY deployment identity.
+        """
+        ...
+
+    def head(self) -> str:
+        """Return the current trusted main commit."""
+        ...
+
+    def pending(self) -> dict | None:
+        """Read the newest immutable public staged plan, if any.
+
+        Returns:
+            The public staged plan, or None.
+        """
+        ...
+
+    def proof_asset(self, asset_id: int) -> bytes:
+        """Read exact retained proof bytes from the fixed repository.
+
+        Args:
+            asset_id: Positive release asset identity.
+
+        Returns:
+            Bounded raw JSON bytes.
+        """
+        ...
+
+    def publish(self, plan: dict) -> None:
+        """Publish only public JSON, never image or leaderboard archives.
+
+        Args:
+            plan: Immutable staged plan.
+        """
+        ...
+
+    def runs(self, workflow: str, sha: str) -> list[dict]:
+        """Observe exact-SHA runs for one trusted workflow.
+
+        Args:
+            workflow: Workflow filename.
+            sha: Full source identity.
+
+        Returns:
+            Workflow runs.
+        """
+        ...
+
+
+class RegistryAdapter(t.Protocol):
+    """Injectable Registry observations and narrowly scoped effects."""
+
+    def identities(self, indexes: dict[str, str]) -> tuple[list[dict], dict]:
+        """Resolve platform/config identities and preserve all attestations.
+
+        Args:
+            indexes: Architecture to original build index digest.
+
+        Returns:
+            Complete descriptor union and platform/config identities.
+        """
+        ...
+
+    def manifest(self, reference: str) -> tuple[bytes, dict]:
+        """Fetch and verify exact bytes anonymously from the fixed repository.
+
+        Args:
+            reference: Digest or repository-local tag.
+
+        Returns:
+            Original bytes and parsed manifest.
+        """
+        ...
+
+    def put(self, tag: str, raw: bytes) -> str:
+        """Publish exact index bytes through oras, retaining every descriptor.
+
+        Args:
+            tag: Destination tag.
+            raw: Serialized OCI index.
+
+        Returns:
+            Published digest.
+
+        Raises:
+            HTTPError: On registry errors other than an absent immutable tag.
+        """
+        ...
+
+
+class VercelAdapter(t.Protocol):
+    """Injectable Vercel observations and narrowly scoped effects."""
+
+    def config(self) -> list[dict]:
+        """Observe environment metadata; never persist secret values.
+
+        Returns:
+            Observed environment entries.
+        """
+        ...
+
+    def discovery(self, arch: str) -> dict:
+        """Read public architecture-specific broker discovery anonymously.
+
+        Args:
+            arch: Requested architecture.
+
+        Returns:
+            Public broker metadata.
+        """
+        ...
+
+    def production(self) -> dict:
+        """Observe alias and its actual READY production deployment.
+
+        Returns:
+            The verified deployment metadata.
+        """
+        ...
+
+    def resolve_deployment(self, hostname: str) -> dict:
+        """Resolve the CLI's immutable deployment URL.
+
+        Args:
+            hostname: Deployment hostname.
+
+        Returns:
+            Deployment metadata.
+        """
+        ...
+
+    def update(self, entry: dict, value: str) -> None:
+        """Update only an existing exact-Production plain variable.
+
+        Args:
+            entry: Observed metadata.
+            value: New public value.
+        """
+        ...
 
 
 class GitHub:
@@ -215,6 +310,35 @@ class GitHub:
                 return json.loads(raw)
         return None
 
+    def proof_asset(self, asset_id: int) -> bytes:
+        """Retrieve bounded retained evidence only from the fixed repository.
+
+        Args:
+            asset_id: Positive GitHub release asset identity, never a URL.
+
+        Returns:
+            Exact retained JSON bytes.
+        """
+        require(type(asset_id) is int and asset_id > 0, "invalid proof asset id")
+        metadata = self.api(f"releases/assets/{asset_id}")
+        require(
+            metadata.get("id") == asset_id
+            and type(metadata.get("size")) is int
+            and 0 < metadata["size"] <= MAX_PROOF_BYTES,
+            "invalid proof asset size",
+        )
+        raw = command(
+            [
+                "gh",
+                "api",
+                "-H",
+                "Accept: application/octet-stream",
+                f"repos/{REPOSITORY}/releases/assets/{asset_id}",
+            ]
+        )
+        require(len(raw) == metadata["size"], "proof asset size changed")
+        return raw
+
     def publish(self, plan: dict) -> None:
         """Publish only public JSON, never image or leaderboard archives.
 
@@ -271,6 +395,93 @@ def command(args: list[str], data: bytes | None = None) -> bytes:
     result = subprocess.run(args, input=data, capture_output=True, check=False)
     require(result.returncode == 0, f"{args[0]} operation failed (output redacted)")
     return result.stdout
+
+
+@click.command()
+@click.argument(
+    "operation",
+    type=click.Choice(("stage", "prepare", "predeploy", "finish", "finalize")),
+)
+@click.option("--release-tag", default="")
+@click.option("--deployment", default="")
+def cli(operation: str, release_tag: str, deployment: str) -> int:
+    """Run gated release operations with existing injectable adapter seams.
+
+    Args:
+        operation: Release phase.
+        release_tag: Immutable staged release tag.
+        deployment: Observed deployment identity.
+
+    Returns:
+        Process exit status (also reflected by Click).
+
+    Raises:
+        click.ClickException: When release observations fail validation.
+    """
+    try:
+        policy = json.loads(POLICY.read_text())
+        if (
+            not policy.get("enabled")
+            or os.environ.get("WORKER_RELEASE_ENABLED") != "true"
+        ):
+            return 0
+        for key, variable in (
+            ("acceptance", "WORKER_RELEASE_ACCEPTANCE_JSON"),
+            ("baseline", "WORKER_RELEASE_BASELINE_JSON"),
+        ):
+            if os.environ.get(variable):
+                policy[key] = json.loads(os.environ[variable])
+        github, registry = GitHub(), Registry()
+        if operation == "stage":
+            stage(github, registry, policy, source())
+        elif operation == "prepare":
+            # No approved pending release must leave the normal deploy unchanged.
+            plan = github.pending()
+            if plan and digest(registry.manifest("latest")[0]) != plan["image_digest"]:
+                project = json.loads(Path(".vercel/project.json").read_text())
+                require(
+                    project["projectId"] == policy["project_id"]
+                    and project["orgId"] == policy["team_id"],
+                    "local Vercel project linkage differs from release policy",
+                )
+                prepare(github, registry, Vercel(policy), policy, source())
+        elif operation == "predeploy":
+            if STATE.exists():
+                state = json.loads(STATE.read_text())
+                if state["status"] != "finalization-dispatched":
+                    require(state["status"] == "prepared", "preparation incomplete")
+                    vercel = Vercel(policy)
+                    require(
+                        public_config(vercel.config()) == state["prepared_config"],
+                        "config changed before deployment",
+                    )
+                    require(
+                        vercel.production()["id"] == state["previous_deployment"],
+                        "alias changed before deployment",
+                    )
+                    require(
+                        github.head() == state["plan"]["source_sha"],
+                        "main advanced before deployment",
+                    )
+                    require(
+                        all(
+                            state["plan"][key] == value
+                            for key, value in source().items()
+                        ),
+                        "local source changed before deployment",
+                    )
+        elif operation == "finish":
+            if STATE.exists():
+                finish(github, Vercel(policy))
+        else:
+            finalize(github, registry, Vercel(policy), release_tag, deployment)
+    except (ValueError, KeyError, OSError, TypeError):
+        logging.error(
+            "Worker release stopped; inspect nonsecret recovery state. "
+            "Remote response bodies suppressed."
+        )
+        raise click.ClickException("Worker release validation failed") from None
+    return 0
 
 
 def require(condition: object, message: str) -> None:
@@ -534,6 +745,80 @@ class Vercel:
         )
 
 
+def finalize(
+    github: GitHubAdapter,
+    registry: RegistryAdapter,
+    vercel: VercelAdapter,
+    tag: str,
+    deployment: str,
+) -> None:
+    """Promote latest only after independently observing deployed production.
+
+    Args:
+        github: Trusted GitHub adapter.
+        registry: OCI adapter.
+        vercel: VercelAdapter adapter.
+        tag: Expected immutable stage tag.
+        deployment: Local deployment identity.
+
+    Raises:
+        ValueError: When no staged plan exists.
+    """
+    plan = github.pending()
+    if plan is None:
+        raise ValueError("no pending plan")
+    require(
+        plan["tag"] == tag and github.head() == plan["source_sha"],
+        "stale or replayed plan",
+    )
+    for workflow, run_id, attempt in (
+        ("ci.yaml", plan["ci_run_id"], plan["ci_run_attempt"]),
+        ("worker-image.yaml", plan["run_id"], plan["run_attempt"]),
+    ):
+        observations = github.runs(workflow, plan["source_sha"])
+        require(observations, "release workflow observations missing")
+        run = max(
+            observations, key=lambda item: (item["run_number"], item["run_attempt"])
+        )
+        eligible(run, plan["source_sha"], workflow)
+        require(
+            run["id"] == run_id and run["run_attempt"] == attempt,
+            "workflow was superseded after staging",
+        )
+    raw, index = registry.manifest(plan["image_digest"])
+    require(index["manifests"] == plan["descriptors"], "descriptor union changed")
+    descriptors, identities = registry.identities(plan["indexes"])
+    require(
+        descriptors == plan["descriptors"] and identities == plan["identities"],
+        "platform/config identity changed",
+    )
+    latest, _ = registry.manifest("latest")
+    require(
+        digest(latest) == plan["previous_digest"],
+        "latest changed or finalization replayed",
+    )
+    validate_acceptance(
+        github=github, records=plan["acceptance"], basis=plan["acceptance_basis"]
+    )
+    verify_production(vercel, plan, deployment)
+    require(github.head() == plan["source_sha"], "main advanced before promotion")
+    require(vercel.production()["id"] == deployment, "alias changed before promotion")
+    require(
+        digest(registry.manifest("latest")[0]) == plan["previous_digest"],
+        "latest raced finalization",
+    )
+    registry.put("latest", raw)
+    observed, index = registry.manifest("latest")
+    require(
+        digest(observed) == plan["image_digest"] and index["manifests"] == descriptors,
+        "anonymous latest descriptor verification failed",
+    )
+    require(
+        registry.identities(plan["indexes"])[1] == identities,
+        "anonymous config verification failed",
+    )
+
+
 def eligible(run: dict, sha: str, workflow: str) -> None:
     """Validate server-observed workflow provenance, not caller booleans.
 
@@ -556,6 +841,212 @@ def eligible(run: dict, sha: str, workflow: str) -> None:
     )
 
 
+def validate_acceptance(github: GitHubAdapter, records: dict, basis: dict) -> None:
+    """Consume both reviewed retained proofs before release effects.
+
+    Per-architecture records: record_id, reviewer, accepted=true, index_digest,
+    proof_asset_id (positive GitHub release asset ID), proof_sha256.
+    Baseline fields: accepted_architectures, acceptance (same records), source_sha,
+    indexes, identities, run_id, run_attempt, runtime_fingerprint, guide_sha256,
+    inventories. These are ORIGINAL accepted build identities, not new candidate
+    identities. Operator review is not remote hardware attestation.
+
+    Args:
+        github: Fixed-repository byte retrieval adapter.
+        records: Protected decisions by native architecture.
+        basis: Original observed build and runtime metadata.
+    """
+    require(set(records) == set(ARCHES), "both retained physical proofs required")
+    require(re.fullmatch(r"[0-9a-f]{40}", basis["source_sha"]), "invalid proof source")
+    for key in ("run_id", "run_attempt"):
+        require(type(basis[key]) is int and basis[key] > 0, "invalid image run")
+    for arch in ARCHES:
+        record = records[arch]
+        require(
+            record.get("accepted") is True
+            and isinstance(record.get("record_id"), str)
+            and record["record_id"]
+            and isinstance(record.get("reviewer"), str)
+            and record["reviewer"]
+            and record.get("index_digest") == basis["indexes"][arch]
+            and type(record.get("proof_asset_id")) is int
+            and record["proof_asset_id"] > 0,
+            "reviewed retained physical acceptance required",
+        )
+        expected = {
+            "source_sha": basis["source_sha"],
+            "architecture": arch,
+            "platform": {"os": "linux", "architecture": arch},
+            "index_digest": basis["indexes"][arch],
+            "manifest_digest": basis["identities"][arch]["manifest"],
+            "config_digest": basis["identities"][arch]["config"],
+            "run_id": basis["run_id"],
+            "run_attempt": basis["run_attempt"],
+            "runtime_fingerprint": basis["runtime_fingerprint"],
+            "guide_sha256": basis["guide_sha256"],
+            "inventory": basis["inventories"][arch],
+        }
+        validate_physical_proof(
+            raw=github.proof_asset(record["proof_asset_id"]),
+            sha256=record.get("proof_sha256", ""),
+            expected=expected,
+        )
+
+
+def validate_physical_proof(raw: bytes, sha256: str, expected: dict) -> dict:
+    """Validate retained observations of a REAL documented GPU evaluation.
+
+    Exact JSON schema: expected identity fields (source_sha, architecture,
+    platform (linux/native architecture), index_digest, manifest_digest,
+    config_digest, run_id, run_attempt,
+    runtime_fingerprint, guide_sha256, inventory), plus schema=1,
+    test_kind=manual-pinned-docker|launcher, documented_command (executed guide
+    command, <=4096 chars), guide_exact=true, clean_docker_gpu_host=true,
+    evaluation_completed=true, exit_code=0, transcript_asset_id (positive fixed
+    repository release asset ID), transcript_sha256. Digests use sha256:64hex.
+    Inventory is complete CPU-only python/dpkg metadata. Transcript reference is
+    a NONSECRET REDACTED summary: NEVER device codes, credentials/private corpus.
+    Diagnostic matmul is not evaluation completion. Operator review of these
+    observations is not unforgeable hardware provenance.
+
+    Args:
+        raw: Exact retained bytes, at most 256 KiB.
+        sha256: Protected exact-byte digest.
+        expected: Original observed identities and complete inventory.
+
+    Returns:
+        Validated decoded proof.
+    """
+    require(
+        isinstance(raw, bytes) and 0 < len(raw) <= MAX_PROOF_BYTES,
+        "physical proof size invalid",
+    )
+    require(
+        re.fullmatch(r"sha256:[0-9a-f]{64}", sha256) and digest(raw) == sha256,
+        "physical proof digest mismatch",
+    )
+    identity_keys = {
+        "source_sha",
+        "architecture",
+        "platform",
+        "index_digest",
+        "manifest_digest",
+        "config_digest",
+        "run_id",
+        "run_attempt",
+        "runtime_fingerprint",
+        "guide_sha256",
+        "inventory",
+    }
+    require(set(expected) == identity_keys, "expected proof schema mismatch")
+    proof = json.loads(raw)
+    keys = {
+        "schema",
+        "test_kind",
+        "documented_command",
+        "guide_exact",
+        "clean_docker_gpu_host",
+        "evaluation_completed",
+        "exit_code",
+        "transcript_asset_id",
+        "transcript_sha256",
+    }
+    require(
+        isinstance(proof, dict) and set(proof) == set(expected) | keys,
+        "physical proof schema mismatch",
+    )
+    require(
+        all(proof[k] == v for k, v in expected.items()),
+        "physical proof identity mismatch",
+    )
+    for key in (
+        "index_digest",
+        "manifest_digest",
+        "config_digest",
+        "runtime_fingerprint",
+        "guide_sha256",
+        "transcript_sha256",
+    ):
+        require(
+            isinstance(proof[key], str)
+            and re.fullmatch(r"sha256:[0-9a-f]{64}", proof[key]),
+            "invalid physical proof content identity",
+        )
+    require(proof["architecture"] in ARCHES, "invalid native architecture")
+    require(
+        isinstance(proof["source_sha"], str)
+        and re.fullmatch(r"[0-9a-f]{40}", proof["source_sha"]),
+        "invalid source",
+    )
+    for key in ("run_id", "run_attempt"):
+        require(type(proof[key]) is int and proof[key] > 0, "invalid image run")
+    require(
+        isinstance(proof["inventory"], dict)
+        and set(proof["inventory"]) == {"python", "dpkg"}
+        and all(isinstance(v, list) and v for v in proof["inventory"].values()),
+        "complete CPU inventory required",
+    )
+    require(
+        type(proof["schema"]) is int
+        and proof["schema"] == 1
+        and proof["test_kind"] in ("manual-pinned-docker", "launcher")
+        and isinstance(proof["documented_command"], str)
+        and 0 < len(proof["documented_command"]) <= 4096
+        and proof["guide_exact"] is True
+        and proof["clean_docker_gpu_host"] is True
+        and proof["evaluation_completed"] is True
+        and type(proof["exit_code"]) is int
+        and proof["exit_code"] == 0
+        and type(proof["transcript_asset_id"]) is int
+        and proof["transcript_asset_id"] > 0,
+        "successful documented physical evaluation required",
+    )
+    return proof
+
+
+def verify_production(vercel: VercelAdapter, plan: dict, deployment: str) -> None:
+    """Require READY alias identity and both exact public discovery records.
+
+    Args:
+        vercel: VercelAdapter adapter.
+        plan: Staged plan.
+        deployment: Expected deployment id.
+    """
+    require(vercel.production()["id"] == deployment, "production alias changed")
+    entries = vercel.config()
+    for key, value in release_values(plan).items():
+        matches = [
+            e for e in entries if e["key"] == key and "production" in e["target"]
+        ]
+        require(
+            len(matches) == 1
+            and matches[0]["target"] == ["production"]
+            and matches[0]["type"] == "plain"
+            and matches[0]["value"] == value,
+            "production configuration differs from staged plan",
+        )
+    for arch in ARCHES:
+        info = vercel.discovery(arch)
+        expected = {
+            k: plan[k]
+            for k in (
+                "protocol_version",
+                "launcher_protocol_version",
+                "image_repository",
+                "image_digest",
+                "image_reference",
+                "worker_version",
+                "euroeval_version",
+            )
+        }
+        require(
+            all(info.get(k) == v for k, v in expected.items())
+            and info.get("architecture") == arch,
+            "production broker differs from staged plan",
+        )
+    require(vercel.production()["id"] == deployment, "production alias raced discovery")
+
+
 def release_values(plan: dict) -> dict[str, str]:
     """Return the only permitted production configuration mutations.
 
@@ -571,6 +1062,43 @@ def release_values(plan: dict) -> dict[str, str]:
         "VOLUNTEER_WORKER_VERSION": plan["worker_version"],
         "EUROEVAL_VERSION": plan["euroeval_version"],
     }
+
+
+def finish(
+    github: GitHubAdapter, vercel: VercelAdapter, state_path: Path = STATE
+) -> None:
+    """Dispatch finalization only after a verified normal local deployment.
+
+    Args:
+        github: GitHubAdapter adapter.
+        vercel: VercelAdapter adapter.
+        state_path: Existing recovery journal.
+    """
+    if not state_path.exists():
+        return
+    state = json.loads(state_path.read_text())
+    if state["status"] == "finalization-dispatched":
+        return
+    require(
+        state["status"] == "prepared",
+        "incomplete preparation; manual recovery required",
+    )
+    require(
+        public_config(vercel.config()) == state["prepared_config"],
+        "config changed since prepare",
+    )
+    require(state.get("deployment_url"), "local deployment receipt missing")
+    deployment = vercel.resolve_deployment(state["deployment_url"])["id"]
+    require(deployment != state["previous_deployment"], "no new deployment")
+    validate_acceptance(
+        github=github,
+        records=state["plan"]["acceptance"],
+        basis=state["plan"]["acceptance_basis"],
+    )
+    verify_production(vercel, state["plan"], deployment)
+    github.dispatch(state["plan"], deployment)
+    state["status"] = "finalization-dispatched"
+    state_path.write_text(json.dumps(state))
 
 
 def public_config(entries: list[dict]) -> dict:
@@ -598,6 +1126,121 @@ def public_config(entries: list[dict]) -> dict:
         )
         for e in entries
     }
+
+
+def prepare(
+    github: GitHubAdapter,
+    registry: RegistryAdapter,
+    vercel: VercelAdapter,
+    policy: dict,
+    local: dict,
+    state_path: Path = STATE,
+) -> dict | None:
+    """Prepare narrowly scoped production config before the normal local build.
+
+    Args:
+        github: GitHubAdapter adapter.
+        registry: OCI adapter.
+        vercel: Existing authenticated Vercel adapter.
+        policy: Reviewed activation policy.
+        local: Observed local source.
+        state_path: Nonsecret recovery journal.
+
+    Returns:
+        Prepared plan or no pending release.
+    """
+    if not policy.get("enabled"):
+        return None
+    plan = github.pending()
+    if not plan:
+        return None
+    latest, _ = registry.manifest("latest")
+    if digest(latest) == plan["image_digest"]:
+        return None
+    if state_path.exists():
+        old = json.loads(state_path.read_text())
+        if old["status"] == "finalization-dispatched" and old["plan"][
+            "image_digest"
+        ] == digest(latest):
+            archive = state_path.with_name(old["plan"]["tag"] + ".json")
+            state_path.rename(archive)
+    require(
+        not state_path.exists(), "unresolved release journal; manual recovery required"
+    )
+    require(digest(latest) == plan["previous_digest"], "previous release changed")
+    require(
+        all(local[k] == plan[k] for k in local),
+        "local versions/source/policy differ from staged plan",
+    )
+    require(github.head() == plan["source_sha"], "main advanced")
+    validate_acceptance(
+        github=github, records=plan["acceptance"], basis=plan["acceptance_basis"]
+    )
+    protected_records = policy.get("baseline", {}).get("acceptance", {})
+    candidate_records = policy.get("acceptance", {}).get(plan["source_sha"], {})
+    require(
+        plan["acceptance"] in (protected_records, candidate_records),
+        "protected acceptance changed",
+    )
+    before = vercel.production()["id"]
+    entries = vercel.config()
+    values = release_values(plan)
+    selected = {}
+    for key in values:
+        matches = [
+            e for e in entries if e["key"] == key and "production" in e["target"]
+        ]
+        require(
+            len(matches) == 1
+            and matches[0]["type"] == "plain"
+            and matches[0]["target"] == ["production"],
+            "missing exact Production plain release variable",
+        )
+        selected[key] = matches[0]
+    require(
+        all(
+            selected[key]["value"] == plan["previous_digest"]
+            for key in (
+                "VOLUNTEER_WORKER_IMAGE_DIGEST",
+                "VOLUNTEER_WORKER_IMAGE_DIGEST_ARM64",
+            )
+        ),
+        "production is not on the expected previous release",
+    )
+    state = {
+        "plan": plan,
+        "previous_deployment": before,
+        "before_config": public_config(entries),
+        "status": "preparing",
+    }
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    state_path.write_text(json.dumps(state))
+    for key, value in values.items():
+        if selected[key]["value"] == value:
+            continue
+        require(
+            github.head() == plan["source_sha"] and vercel.production()["id"] == before,
+            "source or alias changed during prepare",
+        )
+        require(
+            public_config(vercel.config()) == public_config(entries),
+            "intervening config mutation",
+        )
+        vercel.update(selected[key], value)
+        observed = vercel.config()
+        expected = public_config(entries)
+        actual = public_config(observed)
+        identity = selected[key]["id"]
+        expected[identity]["value"] = value
+        expected[identity]["updatedAt"] = actual[identity]["updatedAt"]
+        require(
+            actual == expected,
+            "unexpected config mutation during update; manual recovery required",
+        )
+        entries = observed
+    state.update(status="prepared", prepared_config=public_config(entries))
+    state_path.write_text(json.dumps(state))
+    return plan
 
 
 def source() -> dict:
@@ -632,6 +1275,7 @@ def source() -> dict:
                 "--untracked-files=no",
                 "--",
                 "Dockerfile.worker",
+                "VOLUNTEER_WORKER.md",
                 "pyproject.toml",
                 "uv.lock",
                 "src/euroeval",
@@ -673,105 +1317,8 @@ def source() -> dict:
         "worker_version": worker[1],
         "policy_hash": digest(b"".join(Path(p).read_bytes() for p in POLICIES)),
         "runtime_fingerprint": digest(runtime),
+        "guide_sha256": digest(Path("VOLUNTEER_WORKER.md").read_bytes()),
     }
-
-
-class GitHubAdapter(t.Protocol):
-    """Injectable GitHub observations and narrowly scoped effects."""
-
-    def artifact(self, run: dict, name: str) -> dict:
-        """Read a unique unexpired artifact from the selected attempt.
-
-        Args:
-            run: Observed trusted run.
-            name: Attempt-qualified artifact name.
-
-        Returns:
-            JSON metadata from the artifact.
-        """
-        ...
-
-    def dispatch(self, plan: dict, deployment: str) -> None:
-        """Request finalization after the ordinary local deploy succeeds.
-
-        Args:
-            plan: Staged plan.
-            deployment: Observed READY deployment identity.
-        """
-        ...
-
-    def head(self) -> str:
-        """Return the current trusted main commit."""
-        ...
-
-    def pending(self) -> dict | None:
-        """Read the newest immutable public staged plan, if any.
-
-        Returns:
-            The public staged plan, or None.
-        """
-        ...
-
-    def publish(self, plan: dict) -> None:
-        """Publish only public JSON, never image or leaderboard archives.
-
-        Args:
-            plan: Immutable staged plan.
-        """
-        ...
-
-    def runs(self, workflow: str, sha: str) -> list[dict]:
-        """Observe exact-SHA runs for one trusted workflow.
-
-        Args:
-            workflow: Workflow filename.
-            sha: Full source identity.
-
-        Returns:
-            Workflow runs.
-        """
-        ...
-
-
-class RegistryAdapter(t.Protocol):
-    """Injectable Registry observations and narrowly scoped effects."""
-
-    def identities(self, indexes: dict[str, str]) -> tuple[list[dict], dict]:
-        """Resolve platform/config identities and preserve all attestations.
-
-        Args:
-            indexes: Architecture to original build index digest.
-
-        Returns:
-            Complete descriptor union and platform/config identities.
-        """
-        ...
-
-    def manifest(self, reference: str) -> tuple[bytes, dict]:
-        """Fetch and verify exact bytes anonymously from the fixed repository.
-
-        Args:
-            reference: Digest or repository-local tag.
-
-        Returns:
-            Original bytes and parsed manifest.
-        """
-        ...
-
-    def put(self, tag: str, raw: bytes) -> str:
-        """Publish exact index bytes through oras, retaining every descriptor.
-
-        Args:
-            tag: Destination tag.
-            raw: Serialized OCI index.
-
-        Returns:
-            Published digest.
-
-        Raises:
-            HTTPError: On registry errors other than an absent immutable tag.
-        """
-        ...
 
 
 def stage(
@@ -831,32 +1378,30 @@ def stage(
         indexes[arch] = item["index_digest"]
         inventories[arch] = item["inventory"]
         artifacts[arch] = item["artifact_id"]
+    descriptors, identities = registry.identities(indexes)
+    candidate = {
+        "source_sha": sha,
+        "indexes": indexes,
+        "identities": identities,
+        "run_id": run["id"],
+        "run_attempt": run["run_attempt"],
+        "runtime_fingerprint": local["runtime_fingerprint"],
+        "guide_sha256": local["guide_sha256"],
+        "inventories": inventories,
+    }
     baseline = policy.get("baseline", {})
-    physical = policy.get("acceptance", {}).get(sha, {})
     fast = (
         baseline.get("accepted_architectures") == list(ARCHES)
-        and all(
-            baseline.get("acceptance", {}).get(arch, {}).get("record_id")
-            and baseline.get("acceptance", {}).get(arch, {}).get("reviewer")
-            and baseline.get("acceptance", {}).get(arch, {}).get("index_digest")
-            and baseline.get("acceptance", {}).get(arch, {}).get("accepted") is True
-            for arch in ARCHES
-        )
         and baseline.get("runtime_fingerprint") == local["runtime_fingerprint"]
         and baseline.get("inventories") == inventories
     )
-    if not fast:
-        for arch in ARCHES:
-            record = physical.get(arch, {})
-            require(
-                record.get("index_digest") == indexes[arch]
-                and record.get("record_id")
-                and record.get("reviewer")
-                and record.get("accepted") is True,
-                "candidate-specific physical acceptance required "
-                "for both architectures",
-            )
-    descriptors, identities = registry.identities(indexes)
+    basis = baseline if fast else candidate
+    acceptance = (
+        baseline.get("acceptance", {})
+        if fast
+        else policy.get("acceptance", {}).get(sha, {})
+    )
+    validate_acceptance(github=github, records=acceptance, basis=basis)
     raw = json.dumps(
         {
             "schemaVersion": 2,
@@ -895,312 +1440,11 @@ def stage(
         "ci_run_attempt": runs["ci.yaml"]["run_attempt"],
         "previous_digest": digest(latest),
         "inventories": inventories,
+        "acceptance": acceptance,
+        "acceptance_basis": {k: basis[k] for k in candidate},
     }
     require(github.head() == sha, "main advanced before metadata publication")
     github.publish(plan)
-    return plan
-
-
-class VercelAdapter(t.Protocol):
-    """Injectable Vercel observations and narrowly scoped effects."""
-
-    def config(self) -> list[dict]:
-        """Observe environment metadata; never persist secret values.
-
-        Returns:
-            Observed environment entries.
-        """
-        ...
-
-    def discovery(self, arch: str) -> dict:
-        """Read public architecture-specific broker discovery anonymously.
-
-        Args:
-            arch: Requested architecture.
-
-        Returns:
-            Public broker metadata.
-        """
-        ...
-
-    def production(self) -> dict:
-        """Observe alias and its actual READY production deployment.
-
-        Returns:
-            The verified deployment metadata.
-        """
-        ...
-
-    def resolve_deployment(self, hostname: str) -> dict:
-        """Resolve the CLI's immutable deployment URL.
-
-        Args:
-            hostname: Deployment hostname.
-
-        Returns:
-            Deployment metadata.
-        """
-        ...
-
-    def update(self, entry: dict, value: str) -> None:
-        """Update only an existing exact-Production plain variable.
-
-        Args:
-            entry: Observed metadata.
-            value: New public value.
-        """
-        ...
-
-
-def finalize(
-    github: GitHubAdapter,
-    registry: RegistryAdapter,
-    vercel: VercelAdapter,
-    tag: str,
-    deployment: str,
-) -> None:
-    """Promote latest only after independently observing deployed production.
-
-    Args:
-        github: Trusted GitHub adapter.
-        registry: OCI adapter.
-        vercel: VercelAdapter adapter.
-        tag: Expected immutable stage tag.
-        deployment: Local deployment identity.
-
-    Raises:
-        ValueError: When no staged plan exists.
-    """
-    plan = github.pending()
-    if plan is None:
-        raise ValueError("no pending plan")
-    require(
-        plan["tag"] == tag and github.head() == plan["source_sha"],
-        "stale or replayed plan",
-    )
-    for workflow, run_id, attempt in (
-        ("ci.yaml", plan["ci_run_id"], plan["ci_run_attempt"]),
-        ("worker-image.yaml", plan["run_id"], plan["run_attempt"]),
-    ):
-        observations = github.runs(workflow, plan["source_sha"])
-        require(observations, "release workflow observations missing")
-        run = max(
-            observations, key=lambda item: (item["run_number"], item["run_attempt"])
-        )
-        eligible(run, plan["source_sha"], workflow)
-        require(
-            run["id"] == run_id and run["run_attempt"] == attempt,
-            "workflow was superseded after staging",
-        )
-    raw, index = registry.manifest(plan["image_digest"])
-    require(index["manifests"] == plan["descriptors"], "descriptor union changed")
-    descriptors, identities = registry.identities(plan["indexes"])
-    require(
-        descriptors == plan["descriptors"] and identities == plan["identities"],
-        "platform/config identity changed",
-    )
-    latest, _ = registry.manifest("latest")
-    require(
-        digest(latest) == plan["previous_digest"],
-        "latest changed or finalization replayed",
-    )
-    verify_production(vercel, plan, deployment)
-    require(github.head() == plan["source_sha"], "main advanced before promotion")
-    require(vercel.production()["id"] == deployment, "alias changed before promotion")
-    require(
-        digest(registry.manifest("latest")[0]) == plan["previous_digest"],
-        "latest raced finalization",
-    )
-    registry.put("latest", raw)
-    observed, index = registry.manifest("latest")
-    require(
-        digest(observed) == plan["image_digest"] and index["manifests"] == descriptors,
-        "anonymous latest descriptor verification failed",
-    )
-    require(
-        registry.identities(plan["indexes"])[1] == identities,
-        "anonymous config verification failed",
-    )
-
-
-def verify_production(vercel: VercelAdapter, plan: dict, deployment: str) -> None:
-    """Require READY alias identity and both exact public discovery records.
-
-    Args:
-        vercel: VercelAdapter adapter.
-        plan: Staged plan.
-        deployment: Expected deployment id.
-    """
-    require(vercel.production()["id"] == deployment, "production alias changed")
-    entries = vercel.config()
-    for key, value in release_values(plan).items():
-        matches = [
-            e for e in entries if e["key"] == key and "production" in e["target"]
-        ]
-        require(
-            len(matches) == 1
-            and matches[0]["target"] == ["production"]
-            and matches[0]["type"] == "plain"
-            and matches[0]["value"] == value,
-            "production configuration differs from staged plan",
-        )
-    for arch in ARCHES:
-        info = vercel.discovery(arch)
-        expected = {
-            k: plan[k]
-            for k in (
-                "protocol_version",
-                "launcher_protocol_version",
-                "image_repository",
-                "image_digest",
-                "image_reference",
-                "worker_version",
-                "euroeval_version",
-            )
-        }
-        require(
-            all(info.get(k) == v for k, v in expected.items())
-            and info.get("architecture") == arch,
-            "production broker differs from staged plan",
-        )
-    require(vercel.production()["id"] == deployment, "production alias raced discovery")
-
-
-def finish(
-    github: GitHubAdapter, vercel: VercelAdapter, state_path: Path = STATE
-) -> None:
-    """Dispatch finalization only after a verified normal local deployment.
-
-    Args:
-        github: GitHubAdapter adapter.
-        vercel: VercelAdapter adapter.
-        state_path: Existing recovery journal.
-    """
-    if not state_path.exists():
-        return
-    state = json.loads(state_path.read_text())
-    if state["status"] == "finalization-dispatched":
-        return
-    require(
-        state["status"] == "prepared",
-        "incomplete preparation; manual recovery required",
-    )
-    require(
-        public_config(vercel.config()) == state["prepared_config"],
-        "config changed since prepare",
-    )
-    require(state.get("deployment_url"), "local deployment receipt missing")
-    deployment = vercel.resolve_deployment(state["deployment_url"])["id"]
-    require(deployment != state["previous_deployment"], "no new deployment")
-    verify_production(vercel, state["plan"], deployment)
-    github.dispatch(state["plan"], deployment)
-    state["status"] = "finalization-dispatched"
-    state_path.write_text(json.dumps(state))
-
-
-def prepare(
-    github: GitHubAdapter,
-    registry: RegistryAdapter,
-    vercel: VercelAdapter,
-    policy: dict,
-    local: dict,
-    state_path: Path = STATE,
-) -> dict | None:
-    """Prepare narrowly scoped production config before the normal local build.
-
-    Args:
-        github: GitHubAdapter adapter.
-        registry: OCI adapter.
-        vercel: Existing authenticated Vercel adapter.
-        policy: Reviewed activation policy.
-        local: Observed local source.
-        state_path: Nonsecret recovery journal.
-
-    Returns:
-        Prepared plan or no pending release.
-    """
-    if not policy.get("enabled"):
-        return None
-    plan = github.pending()
-    if not plan:
-        return None
-    latest, _ = registry.manifest("latest")
-    if digest(latest) == plan["image_digest"]:
-        return None
-    if state_path.exists():
-        old = json.loads(state_path.read_text())
-        if old["status"] == "finalization-dispatched" and old["plan"][
-            "image_digest"
-        ] == digest(latest):
-            archive = state_path.with_name(old["plan"]["tag"] + ".json")
-            state_path.rename(archive)
-    require(
-        not state_path.exists(), "unresolved release journal; manual recovery required"
-    )
-    require(digest(latest) == plan["previous_digest"], "previous release changed")
-    require(
-        all(local[k] == plan[k] for k in local),
-        "local versions/source/policy differ from staged plan",
-    )
-    require(github.head() == plan["source_sha"], "main advanced")
-    before = vercel.production()["id"]
-    entries = vercel.config()
-    values = release_values(plan)
-    selected = {}
-    for key in values:
-        matches = [
-            e for e in entries if e["key"] == key and "production" in e["target"]
-        ]
-        require(
-            len(matches) == 1
-            and matches[0]["type"] == "plain"
-            and matches[0]["target"] == ["production"],
-            "missing exact Production plain release variable",
-        )
-        selected[key] = matches[0]
-    require(
-        all(
-            selected[key]["value"] == plan["previous_digest"]
-            for key in (
-                "VOLUNTEER_WORKER_IMAGE_DIGEST",
-                "VOLUNTEER_WORKER_IMAGE_DIGEST_ARM64",
-            )
-        ),
-        "production is not on the expected previous release",
-    )
-    state = {
-        "plan": plan,
-        "previous_deployment": before,
-        "before_config": public_config(entries),
-        "status": "preparing",
-    }
-    state_path.parent.mkdir(parents=True, exist_ok=True)
-    state_path.write_text(json.dumps(state))
-    for key, value in values.items():
-        if selected[key]["value"] == value:
-            continue
-        require(
-            github.head() == plan["source_sha"] and vercel.production()["id"] == before,
-            "source or alias changed during prepare",
-        )
-        require(
-            public_config(vercel.config()) == public_config(entries),
-            "intervening config mutation",
-        )
-        vercel.update(selected[key], value)
-        observed = vercel.config()
-        expected = public_config(entries)
-        actual = public_config(observed)
-        identity = selected[key]["id"]
-        expected[identity]["value"] = value
-        expected[identity]["updatedAt"] = actual[identity]["updatedAt"]
-        require(
-            actual == expected,
-            "unexpected config mutation during update; manual recovery required",
-        )
-        entries = observed
-    state.update(status="prepared", prepared_config=public_config(entries))
-    state_path.write_text(json.dumps(state))
     return plan
 
 

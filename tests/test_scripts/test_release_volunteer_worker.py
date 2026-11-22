@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 import pytest
+from click.testing import CliRunner
 
 from scripts import deploy_vercel_frontend, worker_release_inventory
 from scripts import release_volunteer_worker as release
@@ -38,9 +39,10 @@ def inputs() -> tuple:
         "euroeval_version": "2.0.0",
         "worker_version": "1.0.1",
         "policy_hash": "policy",
-        "runtime_fingerprint": "runtime",
+        "runtime_fingerprint": release.digest(b"runtime"),
+        "guide_sha256": release.digest(b"guide"),
     }
-    policy = {
+    policy: dict = {
         "enabled": True,
         "acceptance": {
             SHA: {
@@ -49,11 +51,42 @@ def inputs() -> tuple:
                     "accepted": True,
                     "record_id": "physical-log",
                     "reviewer": "maintainer",
+                    "proof_asset_id": 0,
+                    "proof_sha256": "",
                 }
                 for a in release.ARCHES
             }
         },
     }
+    for number, arch in enumerate(release.ARCHES, start=1):
+        item = github.artifact({"id": 12}, arch)
+        proof = {
+            "schema": 1,
+            "source_sha": SHA,
+            "architecture": arch,
+            "platform": {"os": "linux", "architecture": arch},
+            "index_digest": item["index_digest"],
+            "manifest_digest": item["index_digest"],
+            "config_digest": "sha256:" + "4" * 64,
+            "run_id": 12,
+            "run_attempt": 2,
+            "runtime_fingerprint": local["runtime_fingerprint"],
+            "guide_sha256": local["guide_sha256"],
+            "inventory": item["inventory"],
+            "test_kind": "manual-pinned-docker",
+            "documented_command": "synthetic unit fixture, NOT physical evidence",
+            "guide_exact": True,
+            "clean_docker_gpu_host": True,
+            "evaluation_completed": True,
+            "exit_code": 0,
+            "transcript_asset_id": 100 + number,
+            "transcript_sha256": release.digest(b"redacted synthetic summary"),
+        }
+        raw = json.dumps(proof).encode()
+        github.proofs[number] = raw
+        policy["acceptance"][SHA][arch].update(
+            proof_asset_id=number, proof_sha256=release.digest(raw)
+        )
     return github, registry, policy, local
 
 
@@ -67,6 +100,7 @@ class FakeGitHub:
         self.run_overrides = {}
         self.bad_artifact = False
         self.dispatched = []
+        self.proofs = {}
 
     def artifact(self, run: dict, name: str) -> dict:
         """Observe attempt-bound inventory metadata.
@@ -113,6 +147,17 @@ class FakeGitHub:
             Current staged plan.
         """
         return self.plan
+
+    def proof_asset(self, asset_id: int) -> bytes:
+        """Return synthetic retained bytes, never physical hardware evidence.
+
+        Args:
+            asset_id: Fixture identity.
+
+        Returns:
+            Exact fixture bytes.
+        """
+        return self.proofs[asset_id]
 
     def publish(self, plan: dict) -> None:
         """Record public JSON only.
@@ -213,11 +258,16 @@ class FakeRegistry:
 def test_baseline_requires_actual_inventory_equality() -> None:
     """Mutable apt changes invalidate dataset-configuration-only reuse."""
     github, registry, policy, local = inputs()
+    first = release.stage(github, registry, policy, local)
+    assert first is not None
     accepted = policy.pop("acceptance")[SHA]
+    github.plan = None
+    registry.writes.clear()
     inventories = {
         a: github.artifact({"id": 12}, a)["inventory"] for a in release.ARCHES
     }
     policy["baseline"] = {
+        **first["acceptance_basis"],
         "accepted_architectures": list(release.ARCHES),
         "acceptance": accepted,
         "runtime_fingerprint": local["runtime_fingerprint"],
@@ -228,6 +278,75 @@ def test_baseline_requires_actual_inventory_equality() -> None:
         release.stage(github, registry, policy, local)
     policy["baseline"]["inventories"]["arm64"]["dpkg"] = ["libc=1"]
     assert release.stage(github, registry, policy, local)
+
+
+def test_baseline_reuses_original_source_and_proof_references() -> None:
+    """Unchanged runtime can reuse old source proofs, never relabel them as new."""
+    github, registry, policy, local = inputs()
+    old = release.stage(github, registry, policy, local)
+    assert old is not None
+    policy["baseline"] = {
+        **old["acceptance_basis"],
+        "accepted_architectures": list(release.ARCHES),
+        "acceptance": old["acceptance"],
+    }
+    policy["acceptance"] = {}
+    github.plan = None
+    github.sha = "b" * 40
+    local["source_sha"] = github.sha
+    # Artifact adapter still reports old SHA, so override only observed source.
+    original = github.artifact
+
+    def artifact(run: dict, name: str) -> dict:
+        """Observe the new build's unchanged runtime.
+
+        Args:
+            run: Image run.
+            name: Inventory name.
+
+        Returns:
+            New source inventory metadata.
+        """
+        return original(run, name) | {"source_sha": github.sha}
+
+    github.artifact = artifact
+    new = release.stage(github, registry, policy, local)
+    assert new is not None
+    assert new["acceptance"] == old["acceptance"]
+    assert new["acceptance_basis"]["source_sha"] == SHA
+    assert new["source_sha"] != SHA
+
+
+def test_click_and_legacy_main_disabled_and_invalid(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Both public CLI seams stay inert when disabled and report usage failures."""
+    monkeypatch.delenv("WORKER_RELEASE_ENABLED", raising=False)
+    runner = CliRunner()
+    for phase in ("stage", "prepare", "predeploy", "finish", "finalize"):
+        assert runner.invoke(release.cli, [phase]).exit_code == 0
+        assert release.main([phase]) == 0
+    assert runner.invoke(release.cli, ["invalid"]).exit_code == 2
+    assert release.main(["invalid"]) == 2
+    assert release.main(["--help"]) == 0
+
+
+def test_click_enabled_uses_adapter_seams(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Click and legacy invocation reach the same injected stage implementation."""
+    github, registry, policy, local = inputs()
+    policy_path = tmp_path / "policy.json"
+    policy_path.write_text(json.dumps(policy))
+    monkeypatch.setattr(release, "POLICY", policy_path)
+    monkeypatch.setattr(release, "GitHub", lambda: github)
+    monkeypatch.setattr(release, "Registry", lambda: registry)
+    monkeypatch.setattr(release, "source", lambda: local)
+    monkeypatch.setenv("WORKER_RELEASE_ENABLED", "true")
+    assert CliRunner().invoke(release.cli, ["stage"]).exit_code == 0
+    assert github.plan is not None
+    assert release.main(["stage"]) == 0
+    assert len(registry.writes) == 1
 
 
 def test_complete_two_phase_release(
@@ -591,6 +710,130 @@ def test_prepare_rejects_shared_or_secret_release_variable(tmp_path: Path) -> No
             github, registry, vercel, policy, local, tmp_path / "state.json"
         )
     assert vercel.entries == before
+
+
+def test_proof_asset_adapter_uses_fixed_repository(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Proof retrieval never follows a supplied download URL or accepts URL IDs."""
+    raw = b'{"synthetic":true}'
+    paths = []
+    commands = []
+
+    def api(self: release.GitHub, path: str, data: dict | None = None) -> dict:
+        """Observe a fixed-repository asset.
+
+        Args:
+            self: GitHub adapter.
+            path: Repository-relative request.
+            data: Optional request data.
+
+        Returns:
+            Asset metadata with an ignored hostile URL.
+        """
+        paths.append(path)
+        return {
+            "id": 42,
+            "size": len(raw),
+            "browser_download_url": "https://evil.invalid",
+        }
+
+    def execute(args: list[str], data: bytes | None = None) -> bytes:
+        """Capture fixed-repository byte retrieval.
+
+        Args:
+            args: Public tool arguments.
+            data: Optional stdin.
+
+        Returns:
+            Synthetic proof bytes.
+        """
+        commands.append(args)
+        return raw
+
+    monkeypatch.setattr(release.GitHub, "api", api)
+    monkeypatch.setattr(release, "command", execute)
+    assert release.GitHub().proof_asset(42) == raw
+    assert paths == ["releases/assets/42"]
+    assert commands[0][-1] == "repos/EuroEval/EuroEval/releases/assets/42"
+    with pytest.raises(ValueError):
+        release.GitHub().proof_asset(0)
+    assert len(commands) == 1
+
+
+def test_proof_rechecked_before_config_write(tmp_path: Path) -> None:
+    """A retained proof altered after staging fails before any production write."""
+    github, registry, policy, local = inputs()
+    plan = release.stage(github, registry, policy, local)
+    assert plan is not None
+    vercel = FakeVercel(plan)
+    before = vercel.config()
+    github.proofs[1] += b" "
+    with pytest.raises(ValueError):
+        release.prepare(
+            github, registry, vercel, policy, local, tmp_path / "state.json"
+        )
+    assert vercel.config() == before
+    assert not (tmp_path / "state.json").exists()
+
+
+@pytest.mark.parametrize("mutation", ["missing", "tampered", "oversized", "schema"])
+def test_retained_proof_bytes_fail_closed(mutation: str) -> None:
+    """Missing, altered, oversized and unexpected proof schemas cannot publish."""
+    github, registry, policy, local = inputs()
+    record = policy["acceptance"][SHA]["amd64"]
+    if mutation == "missing":
+        del record["proof_asset_id"]
+    elif mutation == "tampered":
+        github.proofs[1] += b" "
+    else:
+        proof = json.loads(github.proofs[1])
+        proof["unexpected"] = "x" * (
+            release.MAX_PROOF_BYTES if mutation == "oversized" else 1
+        )
+        github.proofs[1] = json.dumps(proof).encode()
+        record["proof_sha256"] = release.digest(github.proofs[1])
+    with pytest.raises(ValueError):
+        release.stage(github, registry, policy, local)
+    assert not registry.writes
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("source_sha", "b" * 40),
+        ("architecture", "arm64"),
+        ("platform", {"os": "linux", "architecture": "arm64"}),
+        ("index_digest", "sha256:" + "9" * 64),
+        ("manifest_digest", "sha256:" + "9" * 64),
+        ("config_digest", "sha256:" + "9" * 64),
+        ("run_id", 99),
+        ("run_attempt", 1),
+        ("runtime_fingerprint", "sha256:" + "9" * 64),
+        ("guide_sha256", "sha256:" + "9" * 64),
+        ("evaluation_completed", False),
+        ("exit_code", 1),
+        ("guide_exact", False),
+        ("clean_docker_gpu_host", False),
+        ("test_kind", "diagnostic-matmul"),
+        ("inventory", {"python": [], "dpkg": []}),
+    ],
+)
+def test_retained_proof_identity_and_completion_rejected(
+    field: str, value: object
+) -> None:
+    """Even correctly rehashed proofs cannot contradict reviewed build identities."""
+    github, registry, policy, local = inputs()
+    proof = json.loads(github.proofs[1])
+    proof[field] = value
+    github.proofs[1] = json.dumps(proof).encode()
+    policy["acceptance"][SHA]["amd64"]["proof_sha256"] = release.digest(
+        github.proofs[1]
+    )
+    with pytest.raises(ValueError):
+        release.stage(github, registry, policy, local)
+    assert not registry.writes
+    assert github.plan is None
 
 
 @pytest.mark.parametrize(
