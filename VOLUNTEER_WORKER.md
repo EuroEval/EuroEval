@@ -71,16 +71,6 @@ claiming new work. Repeated update-required responses also stop after bounded re
 Ctrl-C forwards cancellation only to the owned container and waits; it never restarts
 following cancellation. Re-run the same command later to contribute again.
 
-### Migration from manual Docker
-
-Stop your old worker yourself before switching; the launcher refuses any other container
-using the cache, including stopped containers. Preserve the cache volume. Unfinished
-launcher-managed work resumes with its original journalled image before upgrading.
-Legacy unfinished work without exact provenance is refused: finish/resume it using the
-original manual image and cache first, then switch after completion. Do not delete
-credentials, records, journals, or old images to bypass a refusal. `docker start` reuses
-an old container and does **not** update its image.
-
 ### Manual Docker alternative
 
 Manual Docker remains available (update/restart responsibility stays with you):
