@@ -1,9 +1,13 @@
 """Deploy a prebuilt frontend with narrowly scoped upload retries."""
 
+import json
 import logging
+import os
+import re
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 LOGGER = logging.getLogger(__name__)
 DEPLOY_COMMAND = [
@@ -35,6 +39,14 @@ def main(argv: list[str] | None = None) -> int:
     for attempt in range(MAX_ATTEMPTS):
         error_output, status, upload_seen, deployment_created = _run_deploy()
         if status == 0:
+            try:
+                record_release_deployment(output=error_output)
+            except (OSError, ValueError, KeyError):
+                LOGGER.error(
+                    "Deploy succeeded but worker release receipt is unavailable; "
+                    "finalization withheld."
+                )
+                return 1
             return 0
         if deployment_created or not upload_seen:
             return status
@@ -84,15 +96,23 @@ def _run_deploy() -> tuple[str, int, bool, bool]:
     output_tail = ""
     upload_seen = False
     deployment_created = False
+    deployment_url = ""
     if process.stdout is not None:
         for line in process.stdout:
             sys.stdout.write(line)
             sys.stdout.flush()
             output_tail = (output_tail + line)[-1024:]
+            urls = re.findall(r"https://[A-Za-z0-9.-]+\.vercel\.app", line)
+            if urls and (
+                "production:" in line.lower() or line.strip().startswith("https://")
+            ):
+                deployment_url = urls[-1]
             upload_seen = upload_seen or "Uploading [" in line
             deployment_created = deployment_created or _indicates_created_deployment(
                 line=line
             )
+    if deployment_url:
+        output_tail += "\nWorker release deployment receipt: " + deployment_url
     return output_tail, process.wait(), upload_seen, deployment_created
 
 
@@ -120,6 +140,38 @@ def _indicates_created_deployment(line: str) -> bool:
             ".vercel.app",
         )
     )
+
+
+def record_release_deployment(
+    output: str,
+    state_path: Path = Path(".vercel/worker-release-state.json"),
+    policy_path: Path = Path("src/scripts/worker-release-policy.json"),
+) -> None:
+    """Record the CLI's actual immutable deployment URL, not just the current alias.
+
+    Args:
+        output: Captured deploy output containing an immutable deployment URL.
+        state_path: Optional nonsecret release journal location.
+        policy_path: Optional reviewed activation policy location.
+
+    Raises:
+        ValueError: If a prepared release has no unambiguous deployment receipt.
+    """
+    if os.environ.get("WORKER_RELEASE_ENABLED") != "true" or not state_path.exists():
+        return
+    if not json.loads(policy_path.read_text()).get("enabled"):
+        return
+    state = json.loads(state_path.read_text())
+    if state["status"] != "prepared":
+        return
+    urls = re.findall(
+        r"Worker release deployment receipt: (https://[A-Za-z0-9.-]+\.vercel\.app)",
+        output,
+    )
+    if len(urls) != 1:
+        raise ValueError("actual deployment URL receipt missing")
+    state["deployment_url"] = urls[0].removeprefix("https://")
+    state_path.write_text(json.dumps(state))
 
 
 if __name__ == "__main__":

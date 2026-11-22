@@ -1,6 +1,8 @@
 name: CI
 
 on:
+  push:
+    branches: [main]
   pull_request:
     types:
       - opened
@@ -11,12 +13,12 @@ on:
       - main
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.head_ref || github.sha }}
+  cancel-in-progress: false
 
 jobs:
   code-check:
-    if: github.event.pull_request.draft == false
+    if: github.event_name == 'push' || github.event.pull_request.draft == false
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -36,7 +38,7 @@ jobs:
         uses: pre-commit/action@v3.0.1
 
   pytest-linux:
-    if: github.event.pull_request.draft == false
+    if: github.event_name == 'push' || github.event.pull_request.draft == false
     permissions:
       contents: read
     strategy:
