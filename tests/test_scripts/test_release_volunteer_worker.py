@@ -30,12 +30,20 @@ def candidate() -> dict[str, object]:
     """Return complete fake trusted workflow evidence."""
     digest = "sha256:" + "a" * 64
     return {
-        "trusted_main_ci": True,
-        "candidate_complete": True,
-        "candidate_accepted": True,
-        "baseline_accepted": True,
-        "runtime_inventory_matches": True,
-        "source_whitelisted": True,
+        "physical_acceptance": {
+            architecture: {
+                "accepted": True,
+                "source_sha": "1" * 40,
+                "record_id": f"acceptance-{architecture}",
+            }
+            for architecture in ("amd64", "arm64")
+        },
+        "repository": "EuroEval/EuroEval",
+        "workflow_run_conclusion": "success",
+        "ci_run_conclusion": "success",
+        "run_sha": "1" * 40,
+        "artifact_run_id": 123,
+        "run_id": 123,
         "event": "push",
         "branch": "main",
         "sha": "1" * 40,

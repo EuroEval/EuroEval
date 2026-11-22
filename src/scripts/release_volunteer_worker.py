@@ -131,20 +131,31 @@ def validate_stage_evidence(evidence: dict[str, object]) -> dict[str, object]:
     Raises:
         ValueError: If provenance, acceptance, baseline, or platform evidence fails.
     """
-    required_true = (
-        "trusted_main_ci",
-        "candidate_complete",
-        "candidate_accepted",
-        "baseline_accepted",
-        "runtime_inventory_matches",
-        "source_whitelisted",
-    )
-    if any(evidence.get(field) is not True for field in required_true):
-        raise ValueError(
-            "trusted candidate, accepted baseline, or runtime evidence missing"
-        )
+    # Acceptance records describe physical tests, not caller assertions. They are
+    # deliberately explicit per architecture; absent records always hold release.
+    acceptance = evidence.get("physical_acceptance")
+    if not isinstance(acceptance, dict) or set(acceptance) != ARCHITECTURES:
+        raise ValueError("physical acceptance records for both architectures required")
+    if any(
+        not isinstance(record, dict)
+        or record.get("accepted") is not True
+        or record.get("source_sha") != evidence.get("sha")
+        or not isinstance(record.get("record_id"), str)
+        for record in acceptance.values()
+    ):
+        raise ValueError("candidate-specific physical acceptance is missing")
     if evidence.get("event") != "push" or evidence.get("branch") != "main":
         raise ValueError("only trusted main push evidence is eligible")
+    if evidence.get("repository") != "EuroEval/EuroEval":
+        raise ValueError("candidate repository is not trusted")
+    if evidence.get("workflow_run_conclusion") != "success":
+        raise ValueError("candidate workflow run must have completed successfully")
+    if evidence.get("ci_run_conclusion") != "success":
+        raise ValueError("matching CI run must have completed successfully")
+    if evidence.get("run_sha") != evidence.get("sha"):
+        raise ValueError("candidate run SHA does not match source SHA")
+    if evidence.get("artifact_run_id") != evidence.get("run_id"):
+        raise ValueError("candidate artifact is not from the selected workflow run")
     sha = evidence.get("sha")
     attempt = evidence.get("run_attempt")
     digest = evidence.get("index_digest")
