@@ -78,6 +78,18 @@ def test_ci_cancels_superseded_runs() -> None:
     assert "cancel-in-progress: false" in release_guard
 
 
+def test_inventory_setup_disables_unused_uv_cache() -> None:
+    """PRs skip inventory dependencies, so saving an empty uv cache must be disabled."""
+    contents = WORKFLOW.read_text(encoding="utf-8")
+    setup = (
+        "uses: astral-sh/setup-uv@v6\n"
+        "        with:\n"
+        '          python-version: "3.12"\n'
+        "          enable-cache: false"
+    )
+    assert contents.count(setup) == 2
+
+
 def test_inventory_steps_declare_isolated_dependencies() -> None:
     """Both native inventory steps install Click outside the project environment."""
     contents = WORKFLOW.read_text(encoding="utf-8")
