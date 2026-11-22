@@ -233,9 +233,9 @@ class _Lifecycle:
             if status in (0, 10) and (self.args.once or self.args.gpu_health_check):
                 return 0
             state = self.inspect(current)
-            if state["active"] and not state["finalised"]:
+            if state["active"]:
                 raise ValueError(
-                    "Worker returned a handoff with active work; restart to "
+                    "Worker returned a handoff with uncleared active state; restart to "
                     "resume the journalled image"
                 )
             if status == 75:
@@ -370,19 +370,20 @@ class _Lifecycle:
         return data["image"]
 
     def resume(self, state: dict[str, Any], prior: str | None) -> str | None:
-        """Require consistent exact provenance before resuming unfinished work.
+        """Require exact provenance until active state has been cleared.
 
         Args:
             state: Read-only cache summary.
             prior: Host journal image.
 
         Returns:
-            Original image for unfinished work, otherwise None.
+            Original image for any active state, otherwise None.
 
         Raises:
             ValueError: If the operation cannot proceed safely.
         """
-        if not state["active"] or state["finalised"]:
+        # Finalised leases still undergo runtime provenance checks before cleanup.
+        if not state["active"]:
             return None
         managed = state.get("managed_image_digest")
         lease = state.get("lease_image_digest")
@@ -492,7 +493,6 @@ class _Lifecycle:
                 _digest(image),
                 "--gpu-memory-utilisation",
                 str(self.args.gpu_memory_utilisation),
-                "--once",
                 check=False,
             )
             if self.cancelled:

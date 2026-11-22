@@ -11,6 +11,10 @@ from typing import Any, cast
 import pytest
 import run_volunteer_worker as launcher
 
+from euroeval_worker import cli, runtime
+from euroeval_worker.broker import BrokerClient
+from euroeval_worker.state import StateStore
+
 A = "sha256:" + "a" * 64
 B = "sha256:" + "b" * 64
 REPO = "ghcr.io/euroeval/euroeval-worker"
@@ -254,6 +258,51 @@ def test_fail_closed(tmp_path: Path, failure: str) -> None:
     assert len(host.sleeps) == 4
 
 
+def test_finalised_handoff_requires_clear(tmp_path: Path) -> None:
+    """A handoff with uncleared finalised state cannot overwrite provenance.
+
+    Args:
+        tmp_path: Temporary host journal directory.
+    """
+    host = FakeHost()
+    host.change_after_work = True
+
+    def command(args: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        """Simulate a handoff interrupted between finalisation and state clear.
+
+        Args:
+            args: Docker command.
+            kwargs: Subprocess options.
+
+        Returns:
+            Fake Docker result with finalised active state retained.
+        """
+        result = host.command(args, **kwargs)
+        if "--launcher-managed" in args:
+            host.state.update(
+                active=True,
+                finalised=True,
+                managed_image_digest=A,
+                lease_image_digest=A,
+            )
+        return result
+
+    host.directory = tmp_path
+    assert (
+        launcher.main(
+            ["--launcher-state-dir", str(tmp_path)],
+            command=command,
+            http_get=host.http,
+            sleep=host.sleeps.append,
+        )
+        == 1
+    )
+    assert host.work == [REPO + "@" + A]
+    assert (
+        json.loads(next(tmp_path.glob("*.json")).read_text())["image"] == host.work[0]
+    )
+
+
 def test_first_pull_once_and_journal(tmp_path: Path) -> None:
     """First startup pulls an exact pin and journals before a one-job handoff."""
     host = FakeHost()
@@ -303,18 +352,84 @@ def test_journal_configuration_disagreement(tmp_path: Path) -> None:
     assert json.loads(journal.read_text()) == data
 
 
+@pytest.mark.parametrize("once", [False, True])
+def test_launcher_native_runtime_contract(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, once: bool
+) -> None:
+    """Real native CLI/run accepts launcher arguments before reaching safe auth.
+
+    Args:
+        tmp_path: Temporary host journal directory.
+        monkeypatch: Authentication replacement seam.
+        once: Whether the host should request a single handoff.
+    """
+    host = FakeHost()
+    authenticated: list[Path] = []
+
+    def stop_at_auth(*, client: BrokerClient, state: StateStore) -> None:
+        """Record authentication entry and stop before any external activity.
+
+        Args:
+            client: Real native broker client, never called.
+            state: Real native state store, never read or written.
+
+        Raises:
+            KeyboardInterrupt: Safe sentinel handled by the real managed runtime.
+        """
+        assert client.server == "https://euroeval.com/api/worker"
+        authenticated.append(state.directory)
+        raise KeyboardInterrupt
+
+    def command(args: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        """Send the actual container argv through the real native CLI/runtime.
+
+        Args:
+            args: Docker invocation from the launcher.
+            kwargs: Subprocess options.
+
+        Returns:
+            Native worker status or fake Docker metadata.
+        """
+        if "--launcher-managed" not in args:
+            return host.command(args, **kwargs)
+        image_index = next(
+            index for index, item in enumerate(args) if item.startswith(REPO + "@")
+        )
+        worker_args = args[image_index + 1 :]
+        assert "--once" not in worker_args
+        assert worker_args[worker_args.index("--image-digest") + 1] == A
+        return subprocess.CompletedProcess(args, cli.main(argv=worker_args), "")
+
+    monkeypatch.setattr(runtime, "authenticate", stop_at_auth)
+    assert (
+        launcher.main(
+            ["--launcher-state-dir", str(tmp_path), *(["--once"] if once else [])],
+            command=command,
+            http_get=host.http,
+            sleep=host.sleeps.append,
+        )
+        == 130
+    )
+    assert authenticated == [Path("/cache")]
+
+
+@pytest.mark.parametrize("finalised", [False, True])
 @pytest.mark.parametrize("managed", [None, B])
 def test_legacy_and_inconsistent_cache_refused(
-    tmp_path: Path, managed: str | None
+    tmp_path: Path, managed: str | None, finalised: bool
 ) -> None:
     """Neither missing provenance nor disagreeing cache permits a new claim."""
     host = FakeHost()
     host.codes = [130]
     assert host.run(tmp_path) == 130
-    host.state.update(active=True, managed_image_digest=managed)
+    host.state.update(active=True, finalised=finalised, managed_image_digest=managed)
     host.work.clear()
+    journal = next(tmp_path.glob("*.json"))
+    original = journal.read_bytes()
+    host.approved = B
     assert host.run(tmp_path) == 1
     assert not host.work
+    assert journal.read_bytes() == original
 
 
 def test_manual_pin_cannot_advance(tmp_path: Path) -> None:
@@ -370,6 +485,34 @@ def test_repeated_update_is_bounded(tmp_path: Path) -> None:
     assert len(host.sleeps) == 4
 
 
+def test_resume_finalised_original_until_clear(tmp_path: Path) -> None:
+    """Finalised active state retains its original image/journal until cleanup.
+
+    Args:
+        tmp_path: Temporary host journal directory.
+    """
+    host = FakeHost()
+    host.codes = [130]
+    assert host.run(tmp_path, "--once") == 130
+    host.state.update(finalised=True, lease_image_digest=A)
+    journal = next(tmp_path.glob("*.json"))
+    original = journal.read_bytes()
+    host.approved = B
+
+    # A second interruption before clear must not advance image or journal.
+    host.codes = [130]
+    assert host.run(tmp_path, "--once") == 130
+    assert host.state["active"] and host.state["finalised"]
+    assert journal.read_bytes() == original
+    assert host.work == [REPO + "@" + A] * 2
+
+    # FakeHost checks the journal at every launch, then clears active on success.
+    host.codes = [0, 1]
+    assert host.run(tmp_path) == 1
+    assert host.work == [REPO + "@" + A] * 3 + [REPO + "@" + B]
+    assert json.loads(journal.read_text())["image"] == REPO + "@" + B
+
+
 def test_resume_original_before_upgrade(tmp_path: Path) -> None:
     """Interrupted managed work resumes its original image despite newer approval."""
     host = FakeHost()
@@ -391,9 +534,10 @@ def test_signal_only_owned_container(tmp_path: Path) -> None:
     assert kill[-1].startswith("euroeval-worker-")
 
 
-def test_unknown_legacy_without_journal(tmp_path: Path) -> None:
+@pytest.mark.parametrize("finalised", [False, True])
+def test_unknown_legacy_without_journal(tmp_path: Path, finalised: bool) -> None:
     """Legacy active state needs manual migration, not guessed provenance."""
     host = FakeHost()
-    host.state.update(active=True)
+    host.state.update(active=True, finalised=finalised)
     assert host.run(tmp_path) == 1
     assert not host.work
