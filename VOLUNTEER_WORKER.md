@@ -40,11 +40,17 @@ NVIDIA Container Toolkit before continuing.
 
 ### 2. Start the worker
 
-From a checkout of this repository, run the host launcher once:
+Download the standalone launcher and run it. No repository clone or Python package
+installation is needed:
 
 ```sh
-python3 src/scripts/run_volunteer_worker.py
+curl -fsSL --output euroeval-worker.py \
+  https://github.com/EuroEval/EuroEval/raw/main/src/scripts/run_volunteer_worker.py
+
+python3 euroeval-worker.py
 ```
+
+Keep `euroeval-worker.py` and run the same Python command whenever you want to contribute.
 
 Leave it running: it discovers the public approved release at startup and between jobs,
 pulls that exact immutable image, and starts a fresh container for each safe handoff. No
