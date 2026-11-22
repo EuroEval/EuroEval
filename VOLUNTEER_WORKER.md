@@ -15,8 +15,9 @@ directly to the public leaderboard.
 
 You need a Linux x86_64/amd64 or ARM64/aarch64 computer with an NVIDIA GPU, an NVIDIA
 [driver](https://www.nvidia.com/en-us/drivers/) compatible with the image's CUDA 13
-stack, [Docker Engine](https://docs.docker.com/engine/install/), Python 3 (standard
-library only), and the [NVIDIA Container Toolkit][toolkit]. NVIDIA DGX Spark/GB10 is
+stack, [Docker Engine](https://docs.docker.com/engine/install/),
+[uv](https://docs.astral.sh/uv/getting-started/installation/), `curl`, and the
+[NVIDIA Container Toolkit][toolkit]. NVIDIA DGX Spark/GB10 is
 supported. The published `latest` image selects the correct architecture automatically;
 no separate ARM command is needed.
 
@@ -40,23 +41,32 @@ NVIDIA Container Toolkit before continuing.
 
 ### 2. Start the worker
 
-Run the standalone launcher with one command. No repository clone, saved script or
-Python package installation is needed:
+Install uv first using its [official installation instructions][uv-install] (for
+example, the official standalone installer), then reopen your terminal if needed so
+`uv` is on your PATH. uv supplies Python 3.12 and installs the launcher's only
+third-party dependency, Click 8.1.8, in an isolated environment; no project installation
+is needed.
+
+Run the standalone launcher with one command. No repository clone or saved script is
+needed:
 
 ```sh
 curl -fsSL \
   https://github.com/EuroEval/EuroEval/raw/main/src/scripts/run_volunteer_worker.py |
-  python3 -
+  uv run --no-project --python 3.12 --with 'click==8.1.8' python -
 ```
 
 Leave it running: it discovers the public approved release at startup and between jobs,
 pulls that exact immutable image, and starts a fresh container for each safe handoff. No
-Docker socket is mounted inside the worker. No package installation is needed for the
-launcher. Docker access must already work as your host user.
+Docker socket is mounted inside the worker. Docker access must already work as your
+host user. The launcher uses Click on the host; evaluation and GitHub device sign-in
+run inside the image, not in the host Python environment.
 
-Append launcher options after `python3 -`. For example, `python3 - --once` finishes
-at most one evaluation (or exits when idle). `--gpu-health-check` runs the worker GPU
-diagnostic once without claiming work. Use
+[uv-install]: https://docs.astral.sh/uv/getting-started/installation/
+
+Append launcher options after the final `python -`. For example, `python - --once`
+finishes at most one evaluation (or exits when idle). `--gpu-health-check` runs the
+worker GPU diagnostic once without claiming work. Use
 `--gpus 'device=0'` to select a GPU, or `--gpu-memory-utilisation 0.8` to limit offered
 GPU memory, or `--context NAME` for another Docker context. Architecture is detected
 from Docker; `--architecture arm64` additionally requires an ARM64 Docker host.
@@ -137,6 +147,13 @@ Replace `ghcr.io/euroeval/euroeval-worker:latest` in the manual Docker command w
 `ghcr.io/euroeval/euroeval-worker@sha256:...`, using that exact digest. Record it for
 later runs. Do not select the first entry from an existing image's `RepoDigests`: a
 cached image can also have older digest references for the same platform image.
+
+You can also use a specific immutable image reference supplied by a maintainer directly
+in the manual Docker command, without pulling `latest` first. This permits validation
+of a candidate image before managed release promotion; it does not mean that candidate
+is already `latest` or broker-approved for the launcher. Use the same documented Docker
+settings and sign-in flow above. After promotion, a fresh run of the recommended
+launcher command validates the managed path separately.
 
 A pin does not freeze the broker's supported worker version. If the broker requests a
 worker update, pull the newly promoted image and replace the old pin.

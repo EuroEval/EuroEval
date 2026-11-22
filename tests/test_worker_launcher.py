@@ -4,12 +4,15 @@ import fcntl
 import json
 import signal
 import subprocess
+import time
+import urllib.request
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any, cast
 
 import pytest
 import run_volunteer_worker as launcher
+from click.testing import CliRunner
 
 from euroeval_worker import cli, runtime
 from euroeval_worker.broker import BrokerClient
@@ -213,6 +216,143 @@ def test_cache_container_conflict(tmp_path: Path) -> None:
     assert host.run(tmp_path) == 1
     assert not host.work
     assert not any("kill" in args for args in host.calls)
+
+
+@pytest.mark.parametrize("option", ["--help", "-h"])
+def test_click_help(option: str) -> None:
+    """Public Click help lists every supported launcher option and alias.
+
+    Args:
+        option: Help spelling.
+    """
+    result = CliRunner().invoke(launcher.cli, [option])
+    assert result.exit_code == 0
+    for name in (
+        "--once",
+        "--gpu-health-check",
+        "--server",
+        "--image",
+        "--context",
+        "--architecture",
+        "--gpus",
+        "--volume",
+        "--state-dir",
+        "--launcher-state-dir",
+        "--gpu-memory-utilisation",
+        "--gpu-memory-utilization",
+    ):
+        assert name in result.output
+    assert launcher.main([option]) == 0
+
+
+@pytest.mark.parametrize(
+    "status,expected", [(0, 0), (10, 0), (1, 1), (42, 42), (130, 130)]
+)
+@pytest.mark.parametrize(
+    "alias", ["--gpu-memory-utilisation", "--gpu-memory-utilization"]
+)
+def test_click_lifecycle_options(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    status: int,
+    expected: int,
+    alias: str,
+) -> None:
+    """CliRunner exercises real lifecycle, option forwarding and worker statuses.
+
+    Args:
+        tmp_path: Temporary host journal directory.
+        monkeypatch: Public subprocess, network and sleep replacements.
+        status: Container status.
+        expected: Public command status.
+        alias: GPU memory option spelling.
+    """
+    host = FakeHost()
+    host.directory = tmp_path
+    host.codes = [status]
+    monkeypatch.setattr(subprocess, "run", host.command)
+    monkeypatch.setattr(urllib.request, "urlopen", host.http)
+    monkeypatch.setattr(time, "sleep", host.sleeps.append)
+    result = CliRunner().invoke(
+        launcher.cli,
+        [
+            "--once",
+            "--launcher-state-dir",
+            str(tmp_path),
+            "--context",
+            "remote",
+            "--architecture",
+            "amd64",
+            "--gpus",
+            "device=0",
+            "--volume",
+            "my-cache",
+            "--state-dir",
+            "/cache/state",
+            "--server",
+            "https://euroeval.com/api/worker",
+            "--image",
+            REPO + "@" + A,
+            alias,
+            "0.5",
+        ],
+    )
+    assert result.exit_code == expected, result.output
+    assert host.work == [REPO + "@" + A]
+    assert all(args[:3] == ["docker", "--context", "remote"] for args in host.calls)
+    worker = next(args for args in host.calls if "--launcher-managed" in args)
+    assert "my-cache:/cache" in worker
+    assert worker[worker.index("--state-dir") + 1] == "/cache/state"
+    assert worker[worker.index("--gpu-memory-utilisation") + 1] == "0.5"
+    assert worker[worker.index("--gpus") + 1] == "device=0"
+    assert "--privileged" not in worker
+    assert not any("docker.sock" in item for item in worker)
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        ["--volume", "/host/path"],
+        ["--state-dir", "/tmp"],
+        ["--state-dir", "/cache/../tmp"],
+        ["--gpu-memory-utilisation", "0"],
+        ["--gpu-memory-utilisation", "1.1"],
+        ["--gpu-memory-utilisation", "nan"],
+        ["--image", REPO + ":latest"],
+    ],
+)
+def test_click_safety_refusal(options: list[str]) -> None:
+    """Semantic safety refusals retain status one, before Docker or networking.
+
+    Args:
+        options: Unsafe launcher options.
+    """
+    result = CliRunner().invoke(launcher.cli, options)
+    assert result.exit_code == 1
+    assert launcher.main(options) == 1
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        ["--unknown"],
+        ["--architecture", "riscv"],
+        ["--server", "https://untrusted.invalid"],
+        ["--gpus"],
+        ["--gpu-memory-utilisation", "invalid"],
+        ["unexpected"],
+    ],
+)
+def test_click_usage_errors(options: list[str]) -> None:
+    """Both public entry points refuse invalid syntax with status two.
+
+    Args:
+        options: Invalid command arguments.
+    """
+    result = CliRunner().invoke(launcher.cli, options)
+    assert result.exit_code == 2
+    assert "Error:" in result.output
+    assert launcher.main(options) == 2
 
 
 def test_context_and_gpu_options(tmp_path: Path) -> None:
