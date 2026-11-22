@@ -10,6 +10,8 @@ on:
       - "uv.lock"
       - "src/euroeval/**"
       - "src/euroeval_worker/**"
+      - "src/scripts/worker_release_inventory.py"
+      - "src/scripts/release_volunteer_worker.py"
   push:
     branches:
       - main
@@ -21,6 +23,8 @@ on:
       - "uv.lock"
       - "src/euroeval/**"
       - "src/euroeval_worker/**"
+      - "src/scripts/worker_release_inventory.py"
+      - "src/scripts/release_volunteer_worker.py"
   workflow_dispatch:
 
 permissions:
@@ -183,8 +187,33 @@ jobs:
         if: success() && github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
-          name: volunteer-worker-image-metadata
+          name: volunteer-worker-image-metadata-${{ github.run_id }}-${{ github.run_attempt }}
           path: worker-image-metadata.json
+          if-no-files-found: error
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+
+      - name: Collect CPU-only runtime inventory
+        if: success() && github.event_name != 'pull_request'
+        env:
+          PYTHONPATH: src
+        run: >-
+          uv run --no-project --with packaging python -m scripts.worker_release_inventory
+          --architecture amd64
+          --index-digest '${{ steps.build.outputs.digest }}'
+          --source-sha '${{ github.sha }}'
+          --run-id '${{ github.run_id }}'
+          --run-attempt '${{ github.run_attempt }}'
+          --output worker-release-amd64.json
+
+      - name: Upload release inventory
+        if: success() && github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: worker-release-amd64-${{ github.run_id }}-${{ github.run_attempt }}
+          path: worker-release-amd64.json
           if-no-files-found: error
 
   spark-arm64-candidate:
@@ -322,6 +351,31 @@ jobs:
         if: success() && github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
-          name: volunteer-worker-spark-arm64-image-metadata
+          name: volunteer-worker-spark-arm64-image-metadata-${{ github.run_id }}-${{ github.run_attempt }}
           path: worker-image-spark-arm64-metadata.json
+          if-no-files-found: error
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+
+      - name: Collect CPU-only runtime inventory
+        if: success() && github.event_name != 'pull_request'
+        env:
+          PYTHONPATH: src
+        run: >-
+          uv run --no-project --with packaging python -m scripts.worker_release_inventory
+          --architecture arm64
+          --index-digest '${{ steps.spark-build.outputs.digest }}'
+          --source-sha '${{ github.sha }}'
+          --run-id '${{ github.run_id }}'
+          --run-attempt '${{ github.run_attempt }}'
+          --output worker-release-arm64.json
+
+      - name: Upload release inventory
+        if: success() && github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: worker-release-arm64-${{ github.run_id }}-${{ github.run_attempt }}
+          path: worker-release-arm64.json
           if-no-files-found: error
