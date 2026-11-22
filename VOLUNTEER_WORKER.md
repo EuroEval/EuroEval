@@ -2,8 +2,8 @@
 
 This guide is for volunteers who want to contribute GPU time. You do not need to set
 project environment variables or provide GitHub, Hugging Face, or Upstash credentials.
-EuroEval maintainers should use the
-[volunteer worker operations guide](VOLUNTEER_WORKER_OPERATIONS.md) instead.
+EuroEval maintainers should use the [volunteer worker operations
+guide](VOLUNTEER_WORKER_OPERATIONS.md) instead.
 
 A worker claims one compatible model/language evaluation at a time, downloads the pinned
 model and datasets, and uploads records to private staging. The broker skips results
@@ -15,9 +15,10 @@ directly to the public leaderboard.
 
 You need a Linux x86_64/amd64 or ARM64/aarch64 computer with an NVIDIA GPU, an NVIDIA
 [driver](https://www.nvidia.com/en-us/drivers/) compatible with the image's CUDA 13
-stack, [Docker Engine](https://docs.docker.com/engine/install/), and the [NVIDIA
-Container Toolkit][toolkit]. NVIDIA DGX Spark/GB10 is supported. The published `latest`
-image selects the correct architecture automatically; no separate ARM command is needed.
+stack, [Docker Engine](https://docs.docker.com/engine/install/), Python 3 (standard
+library only), and the [NVIDIA Container Toolkit][toolkit]. NVIDIA DGX Spark/GB10 is
+supported. The published `latest` image selects the correct architecture automatically;
+no separate ARM command is needed.
 
 [toolkit]: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/
 
@@ -39,7 +40,46 @@ NVIDIA Container Toolkit before continuing.
 
 ### 2. Start the worker
 
-Copy and run this block once:
+From a checkout of this repository, run the host launcher once:
+
+```sh
+python3 src/scripts/run_volunteer_worker.py
+```
+
+Leave it running: it discovers the public approved release at startup and between jobs,
+pulls that exact immutable image, and starts a fresh container for each safe handoff. No
+Docker socket is mounted inside the worker. No package installation is needed for the
+launcher. Docker access must already work as your host user.
+
+Append `--once` to finish at most one evaluation (or exit when idle).
+`--gpu-health-check` runs the worker GPU diagnostic once without claiming work. Use
+`--gpus 'device=0'` to select a GPU, or `--gpu-memory-utilisation 0.8` to limit offered
+GPU memory, or `--context NAME` for another Docker context. Architecture is detected
+from Docker; `--architecture arm64` additionally requires an ARM64 Docker host.
+`--volume NAME` selects a named cache volume. Keep the default `--launcher-state-dir`
+host journal alongside that cache; it contains only image/configuration metadata, not
+credentials.
+
+The launcher preserves the image's non-root user, read-only root, capability drop,
+no-new-privileges, temporary filesystem, shared memory and persistent cache settings.
+Discovery and pull failures retry with visible bounded backoff, then stop without
+claiming new work. Repeated update-required responses also stop after bounded retries.
+Ctrl-C forwards cancellation only to the owned container and waits; it never restarts
+following cancellation. Re-run the same command later to contribute again.
+
+### Migration from manual Docker
+
+Stop your old worker yourself before switching; the launcher refuses any other container
+using the cache, including stopped containers. Preserve the cache volume. Unfinished
+launcher-managed work resumes with its original journalled image before upgrading.
+Legacy unfinished work without exact provenance is refused: finish/resume it using the
+original manual image and cache first, then switch after completion. Do not delete
+credentials, records, journals, or old images to bypass a refusal. `docker start` reuses
+an old container and does **not** update its image.
+
+### Manual Docker alternative
+
+Manual Docker remains available (update/restart responsibility stays with you):
 
 ```sh
 docker volume create euroeval-worker-cache
@@ -70,17 +110,23 @@ the server; the worker receives only a revocable broker credential.
 
 The worker then evaluates compatible queued work until you press Ctrl-C. If no work is
 available, it waits and checks again. To claim at most one evaluation, append `--once`
-after the image argument.
+to the launcher command (or after the image argument for manual Docker).
 
 The named Docker volume preserves authentication, model downloads, and unfinished work
-between runs. To contribute again later, run the same `docker run` command; you normally
-will not need to authenticate again.
+between runs. To contribute again later, run the same launcher command (or manual
+`docker run` command); you normally will not need to authenticate again.
 
 Do not add `--privileged`, host networking, the Docker socket, a home-directory mount,
 or project credentials. The worker never needs your `HF_TOKEN`, GitHub token, or Upstash
 credentials.
 
 ### Optional: pin the exact image version
+
+For the launcher, use `--image ghcr.io/euroeval/euroeval-worker@sha256:...`. The pin
+must match the broker-approved manifest-index digest for your architecture. If it no
+longer matches, the launcher stops with guidance rather than advancing silently.
+Original managed work still resumes before any upgrade. The following describes manual
+Docker pinning:
 
 Pull the current image and note the `sha256:...` value on its `Digest:` line:
 
@@ -141,9 +187,10 @@ re-evaluated; an incomplete dataset can be rerun.
 
 A `No volunteer evaluation work` message means no compatible, uncovered work is
 currently available. `No NVIDIA GPU` means that the host runtime did not expose a usable
-GPU. Transient claim failures are retried with backoff. For an HTTP `426` worker update
-request, pull `latest` again and restart with the same cache volume; do not delete your
-saved state.
+GPU. Transient claim failures are retried with backoff. The launcher handles safe update
+handoffs automatically. For an HTTP `426` worker update request in manual Docker mode,
+pull `latest` again and restart with the same cache volume; do not delete your saved
+state.
 
 ## Data and credential handling
 
