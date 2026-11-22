@@ -9,3 +9,4 @@ export * from "./model.js";
 export * from "./promotion.js";
 export * from "./publication.js";
 export * from "./user-grants.js";
+export * from "./worker-release.js";

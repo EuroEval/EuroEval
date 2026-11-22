@@ -13,6 +13,7 @@ import {
 } from "./_lib.js";
 import type { Lease, VolunteerLeaseMarker } from "./_lib.js";
 import { narrowCoverage } from "./_lib/coverage.js";
+import { approvedWorkerRelease, normalizeArchitecture } from "./_lib/worker-release.js";
 
 // Reserved only as a Redis mutex key; never used for a GitHub API request.
 const GLOBAL_CLAIM_MUTEX = Number.MAX_SAFE_INTEGER;
@@ -164,16 +165,19 @@ export default async function handler(req: Request): Promise<Response> {
     if (typeof body.worker_version !== "string" || !body.worker_version.trim()) throw new BrokerError(400, "worker_version is required.");
     markerSecret();
     const architecture = body.hardware.architecture;
-    let arm64ImageDigest: string | undefined;
-    if (architecture === "arm64" || architecture === "aarch64") {
-      try { arm64ImageDigest = env("VOLUNTEER_WORKER_IMAGE_DIGEST_ARM64"); }
-      catch (error) { if (!(error instanceof ConfigurationError)) throw error; }
-    }
-    const imageDigest = arm64ImageDigest || env("VOLUNTEER_WORKER_IMAGE_DIGEST");
-    const euroevalVersion = env("EUROEVAL_VERSION").replace(/\.dev$/, ".dev0");
+    const release = approvedWorkerRelease(architecture);
+    const imageDigest = release.image_digest;
+    const euroevalVersion = release.euroeval_version;
     validateScopePolicyVersion(euroevalVersion);
     const requiredWorkerVersion = env("VOLUNTEER_WORKER_VERSION");
     if (body.worker_version !== requiredWorkerVersion) throw new BrokerError(422, "Unsupported worker version.");
+    if (Array.isArray(body.capabilities) && body.capabilities.includes("managed_image_v1")) {
+      const reportedArchitecture = normalizeArchitecture(architecture);
+      if (body.image_digest !== imageDigest || body.euroeval_version !== euroevalVersion ||
+          reportedArchitecture !== release.architecture) {
+        throw new BrokerError(426, "Worker update required; refresh the approved worker image and retry.", "worker_update_required");
+      }
+    }
     const requestedLanguage = typeof body.language === "string" ? body.language : null;
     const issues = await listOpenIssues(signal);
     const selectedHardwareGpu = selectedGpu(body.hardware);
