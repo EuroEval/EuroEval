@@ -1075,7 +1075,7 @@ does not expose Docker controls. Never claim an untested isolation setting. Use
 `FULL_LOG=1` to expose engine root causes. JIT/config caches must remain under `/cache`;
 do not make the root writable or `/tmp` executable to hide a cache failure.
 
-### Two-phase release automation (installed, disabled)
+### Two-phase release automation (configured capability, operationally off)
 
 Automation is **off by default**. Installation is not authorisation to activate it,
 create credentials, run hardware canaries, or change production. No historical
@@ -1129,37 +1129,91 @@ index writes use `oras manifest push`. CLI errors suppress remote response bodie
 
 #### One-time activation, only after separate authorisation
 
-- Review `src/scripts/worker-release-policy.json`, supplying the exact Vercel
-  `project_id`, `team_id` and production `alias`. Commit `enabled: true` only when
-  separately authorised. This policy change requires fresh current-main candidates.
-- Configure the protected GitHub environment `volunteer-worker-release`, required
-  reviewers/main-only deployment rules, and a narrowly scoped `VERCEL_TOKEN` for
-  read-only production observation in finalization. Package publication uses the
-  workflow GitHub token with `contents:write` and `packages:write`.
-- Install `gh`, `oras` and the existing Vercel CLI locally; use existing `gh` and
-  Vercel logins. The adapter reads the Vercel CLI auth file on Linux/macOS or
-  `VERCEL_TOKEN` from the environment. Never put tokens in command arguments or logs.
-- Review physical acceptance logs for **both** native architectures of the exact
-  candidate indexes. Set protected environment variable
-  `WORKER_RELEASE_ACCEPTANCE_JSON` to an object keyed by full source SHA, then by
-  `amd64`/`arm64`. Each record requires `index_digest`, `accepted: true`, `record_id`
-  (the retained physical evidence reference), and `reviewer`. The committed default
-  is empty. These reviewed records are deliberately external to the source commit:
-  adding an acceptance commit must not invalidate the SHA being accepted.
-- Optionally review `WORKER_RELEASE_BASELINE_JSON`: it requires
-  `accepted_architectures: ["amd64", "arm64"]`, explicit `acceptance` records with
-  the same fields above for both baseline indexes, `runtime_fingerprint`, and actual
-  per-architecture `inventories` copied from the accepted plan. A dataset-configuration
-  change can reuse acceptance only if the source runtime fingerprint **and** complete
-  installed Python/dependency and dpkg inventories match exactly. Mutable apt changes
-  invalidate reuse. CUDA, dependency, runtime or other fingerprint changes require
-  new candidate-specific physical acceptance for both architectures. CPU inventory
-  queries do not run inference and are not physical acceptance.
-- Set repository variable `WORKER_RELEASE_ENABLED=true` only after these safeguards
-  are approved. Local opt-in also requires `WORKER_RELEASE_ENABLED=true` in the
-  deployment shell. The protected acceptance/baseline variables are only needed by
-  staging; local hooks consume the published approved plan. A manual `stage` workflow
-  dispatch can retry after acceptance review without rebuilding an accepted candidate.
+- The checked-in policy enables the **capability**, not the operation. Verified
+  linkage is project `prj_ILGcAQ9jaNsYVN3V7qsZuft3AQ0C`, team
+  `team_kAFROnkIpFZaiTBzhIck1mhw`, production alias `euroeval.com` (verified true).
+  Source `acceptance` and `baseline` stay empty: reviewed decisions live externally
+  so committing acceptance cannot invalidate the accepted source SHA.
+- Configure protected GitHub environment `volunteer-worker-release` with **main-only**
+  deployment rules. Do not add an extra human environment approval per release: the
+  gate is reviewed, tested runtime evidence. Leave repository variable
+  `WORKER_RELEASE_ENABLED` absent until setup and proofs are approved. Workflows still
+  require its exact value `true`; local markers cannot arm CI. Stage/finalize are
+  serialized without cancellation. No frontend build or CSV transfer happens in CI.
+- The current Vercel project PAT permission is **read/write**, not read-only. A
+  dedicated expiring project-scoped token requires owner permission to create and
+  install as protected `VERCEL_TOKEN`; do not copy a broad owner key into Actions.
+  The finalizer uses it for observation. GHCR/release writes use the workflow's
+  `GITHUB_TOKEN` with `contents:write` and `packages:write`, never broad owner tokens.
+- Install `gh`, `oras`, and the Vercel CLI locally using existing logins. The adapter
+  reads Vercel's CLI auth file or inherited `VERCEL_TOKEN`; never put credentials in
+  command arguments, transcripts, markers, or logs. Activation does not read `.env`.
+- Obtain actual native amd64 **and** physical DGX Spark arm64 acceptance following
+  **VOLUNTEER_WORKER.md exactly on a clean Docker GPU host**. No fancy environment,
+  injected credentials, custom test startup, or workaround qualifies. Use the guide's
+  manual pinned Docker alternative for the first candidate before broker approval,
+  keeping all documented Docker settings and interactive device sign-in. Complete a
+  real evaluation; diagnostic matmul or health checks are not substitutes. Sparkie
+  is busy: this setup grants no permission to touch it or run any GPU work.
+- Retain proof JSON as release assets in fixed repository `EuroEval/EuroEval`, with
+  raw-byte `sha256:64lowercasehex` hashes (not reserialized hashes). Each exact
+  `validate_physical_proof` schema has these identity fields:
+  `source_sha` (40 lowercase hex), `architecture` (`amd64` or `arm64`),
+  `platform` (`{"os":"linux","architecture":"<native architecture>"}`),
+  `index_digest`, `manifest_digest`, `config_digest`, `run_id`, `run_attempt`,
+  `runtime_fingerprint`, `guide_sha256`, and `inventory` (complete nonempty `python`
+  and `dpkg` lists). Add **only** `schema: 1`,
+  `test_kind: "manual-pinned-docker"` or `"launcher"`, `documented_command` (the
+  executed guide command, 1–4096 characters), `guide_exact: true`,
+  `clean_docker_gpu_host: true`, `evaluation_completed: true`, `exit_code: 0`,
+  `transcript_asset_id` (positive fixed-repository release asset ID), and
+  `transcript_sha256`. Run IDs/attempts are positive integers; all digest fields use
+  `sha256:64lowercasehex`. Transcripts must be **NONSECRET REDACTED** summaries, never
+  device codes, credentials, or private corpus. Retain and review their exact bytes
+  against the recorded hash too. These are operator observations, not remote hardware
+  attestation. Never fabricate acceptance flags, observations, or baselines.
+- Set protected environment variable `WORKER_RELEASE_ACCEPTANCE_JSON` to an object
+  keyed by full original source SHA, then `amd64`/`arm64`. Each architecture record
+  requires `record_id` (nonempty retained evidence reference), `reviewer` (nonempty),
+  `accepted: true`, `index_digest`, `proof_asset_id` (positive fixed-repository release
+  asset ID), and `proof_sha256` (raw proof bytes). `validate_acceptance` retrieves
+  those assets and compares every original observed identity before effects.
+- Optional `WORKER_RELEASE_BASELINE_JSON` requires `accepted_architectures`
+  (`["amd64", "arm64"]`), `acceptance` (same reviewed per-architecture records),
+  `source_sha`, `indexes`, `identities` (per-architecture `manifest`/`config`),
+  `run_id`, `run_attempt`, `runtime_fingerprint`, `guide_sha256`, and `inventories`.
+  Preserve the **original accepted build identities**, never replace them with new
+  candidate IDs. Reuse requires identical runtime fingerprint and complete installed
+  Python/dependency and dpkg inventories. Mutable apt changes invalidate reuse;
+  runtime/CUDA/dependency changes require fresh physical acceptance on both platforms.
+- After owner-authorized setup/proofs, set repository `WORKER_RELEASE_ENABLED=true`
+  and configure local activation **once**, in the correctly linked checkout:
+
+  ```sh
+  uv run python src/scripts/release_volunteer_worker.py configure-local
+  ```
+
+  This writes only `.vercel/worker-release-activation.json`: exact keys `schema: 1`,
+  `project_id`, `team_id`, `alias`, bound to checked-in policy and
+  `.vercel/project.json`. No secret or accepted flag belongs here. Missing marker
+  means hooks and receipt recording are inert; malformed/stale markers fail closed.
+  All hooks and deploy receipt recording use public `load_activation`. Explicit
+  `WORKER_RELEASE_ENABLED=false` overrides the marker; CI ignores it. To opt out:
+
+  ```sh
+  uv run python src/scripts/release_volunteer_worker.py disable-local
+  ```
+
+- Per release: trusted push CI/image candidates → reviewed evidence → `stage` →
+  **normal local `make frontend`** → automatic `finish` dispatch → protected finalizer
+  → `latest`. No prefix/export is needed for each local deploy; local hooks consume
+  the trusted staged plan, not protected acceptance variables. Stage may be retried
+  with workflow dispatch after review. Stage/prepare do **not** require the old
+  public `/api/worker/release-info` endpoint. Finish/finalize require the **new**
+  deployed endpoint and actual CLI receipt. After promotion, use a fresh recommended
+  curl launcher from VOLUNTEER_WORKER.md on a clean GPU host to validate the managed
+  path separately. Volunteer result approve/reject decisions remain a separate
+  explicit permission step using the unchanged fenced review commands above.
 
 #### Recovery without automatic rollback
 

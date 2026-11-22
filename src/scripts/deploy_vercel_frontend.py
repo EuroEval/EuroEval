@@ -2,12 +2,16 @@
 
 import json
 import logging
-import os
 import re
 import subprocess
 import sys
 import time
 from pathlib import Path
+
+if __package__:
+    from .release_volunteer_worker import load_activation
+else:
+    from release_volunteer_worker import load_activation
 
 LOGGER = logging.getLogger(__name__)
 DEPLOY_COMMAND = [
@@ -157,9 +161,7 @@ def record_release_deployment(
     Raises:
         ValueError: If a prepared release has no unambiguous deployment receipt.
     """
-    if os.environ.get("WORKER_RELEASE_ENABLED") != "true" or not state_path.exists():
-        return
-    if not json.loads(policy_path.read_text()).get("enabled"):
+    if load_activation(policy_path=policy_path) is None or not state_path.exists():
         return
     state = json.loads(state_path.read_text())
     if state["status"] != "prepared":

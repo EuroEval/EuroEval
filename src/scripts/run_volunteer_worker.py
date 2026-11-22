@@ -1,8 +1,7 @@
-"""Host-only, standard-library launcher for immutable EuroEval worker images."""
+"""Host-only, standalone Click launcher for immutable EuroEval worker images."""
 
 from __future__ import annotations
 
-import argparse
 import fcntl
 import hashlib
 import json
@@ -16,9 +15,12 @@ import time
 import urllib.request
 import uuid
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 from types import FrameType
 from typing import Any, TypeVar
+
+import click
 
 T = TypeVar("T")
 
@@ -44,12 +46,150 @@ def main(
         sleep: Backoff seam.
 
     Returns:
-        Zero for a completed --once handoff/idle, 130 for cancellation, or failure.
+        Zero for a completed --once handoff/idle or help, 2 for CLI errors,
+        130 for cancellation, 1 for refusal, or the worker's failure status.
+    """
+    try:
+        return cli.main(
+            args=list(argv) if argv is not None else None,
+            prog_name="run_volunteer_worker",
+            standalone_mode=False,
+            obj=_Dependencies(command=command, http_get=http_get, sleep=sleep),
+        )
+    except click.ClickException as error:
+        error.show()
+        return error.exit_code
+    except (click.Abort, KeyboardInterrupt):
+        return 130
+
+
+@dataclass(frozen=True)
+class _Dependencies:
+    """Execution adapters for the CLI and programmatic entry point."""
+
+    command: Callable[..., Any] = field(default_factory=lambda: subprocess.run)
+    http_get: Callable[..., Any] = field(default_factory=lambda: urllib.request.urlopen)
+    sleep: Callable[[float], None] = field(default_factory=lambda: time.sleep)
+
+
+@click.command(context_settings={"help_option_names": ["-h", "--help"]})
+@click.option(
+    "--once", is_flag=True, help="Finish at most one evaluation or idle handoff."
+)
+@click.option(
+    "--gpu-health-check",
+    is_flag=True,
+    help="Run the GPU diagnostic once without claiming work.",
+)
+@click.option(
+    "--server",
+    type=click.Choice(["https://euroeval.com/api/worker"]),
+    default="https://euroeval.com/api/worker",
+    show_default=True,
+)
+@click.option("--image", help="Manual official repository@sha256:index pin.")
+@click.option("--context", help="Docker context (defaults to current context).")
+@click.option(
+    "--architecture",
+    type=click.Choice(["amd64", "arm64"]),
+    help="Require this Docker host architecture.",
+)
+@click.option("--gpus", default="all", show_default=True, help="Docker GPU selection.")
+@click.option("--volume", default="euroeval-worker-cache", show_default=True)
+@click.option("--state-dir", default="/cache", show_default=True)
+@click.option(
+    "--launcher-state-dir",
+    default="~/.cache/euroeval-worker-launcher",
+    show_default=True,
+)
+@click.option(
+    "--gpu-memory-utilisation",
+    "--gpu-memory-utilization",
+    type=float,
+    default=0.8,
+    show_default=True,
+)
+@click.pass_context
+def cli(
+    ctx: click.Context,
+    once: bool,
+    gpu_health_check: bool,
+    server: str,
+    image: str | None,
+    context: str | None,
+    architecture: str | None,
+    gpus: str,
+    volume: str,
+    state_dir: str,
+    launcher_state_dir: str,
+    gpu_memory_utilisation: float,
+) -> None:
+    """Launch immutable EuroEval worker images from the Docker host.
+
+    Args:
+        ctx: Click context, optionally holding execution adapters.
+        once: Stop after one successful or idle handoff.
+        gpu_health_check: Run only the worker GPU diagnostic.
+        server: Official broker URL.
+        image: Optional approved immutable image pin.
+        context: Optional Docker context.
+        architecture: Required Docker host architecture, if supplied.
+        gpus: Docker GPU selection.
+        volume: Named persistent cache volume.
+        state_dir: Worker state directory below /cache.
+        launcher_state_dir: Nonsecret host journal directory.
+        gpu_memory_utilisation: Fraction of GPU memory offered.
+    """
+    dependencies = ctx.obj if isinstance(ctx.obj, _Dependencies) else _Dependencies()
+    config = LauncherConfig(
+        once=once,
+        gpu_health_check=gpu_health_check,
+        server=server,
+        image=image,
+        context=context,
+        architecture=architecture,
+        gpus=gpus,
+        volume=volume,
+        state_dir=state_dir,
+        launcher_state_dir=launcher_state_dir,
+        gpu_memory_utilisation=gpu_memory_utilisation,
+    )
+    ctx.exit(_run(config, dependencies))
+
+
+@dataclass(frozen=True)
+class LauncherConfig:
+    """Typed host options with the standalone command's defaults."""
+
+    once: bool = False
+    gpu_health_check: bool = False
+    server: str = "https://euroeval.com/api/worker"
+    image: str | None = None
+    context: str | None = None
+    architecture: str | None = None
+    gpus: str = "all"
+    volume: str = "euroeval-worker-cache"
+    state_dir: str = "/cache"
+    launcher_state_dir: str = "~/.cache/euroeval-worker-launcher"
+    gpu_memory_utilisation: float = 0.8
+
+
+def _run(args: LauncherConfig, dependencies: _Dependencies) -> int:
+    """Run the host lifecycle with typed configuration and execution adapters.
+
+    Args:
+        args: Parsed host configuration.
+        dependencies: Docker, discovery and backoff adapters.
+
+    Returns:
+        Worker status, 1 on refusal, or 130 on cancellation.
 
     Raises:
-        ValueError: If the operation cannot proceed safely.
+        ValueError: If the operation cannot proceed safely (handled as status 1).
     """
-    args = _parser().parse_args(argv)
+    command = dependencies.command
+    http_get = dependencies.http_get
+    sleep = dependencies.sleep
     try:
         if not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9_.-]*", args.volume):
             raise ValueError("--volume must be a named Docker volume")
@@ -120,7 +260,7 @@ class _Lifecycle:
 
     def __init__(
         self,
-        args: argparse.Namespace,
+        args: LauncherConfig,
         docker: list[str],
         arch: str,
         journal: Path,
@@ -529,49 +669,6 @@ def _digest(image: object) -> str:
     ):
         raise ValueError("Image must be an official immutable digest reference")
     return image.split("@", 1)[1]
-
-
-def _parser() -> argparse.ArgumentParser:
-    """Build the small host CLI.
-
-    Returns:
-        CLI parser.
-    """
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--once", action="store_true")
-    parser.add_argument(
-        "--gpu-health-check",
-        action="store_true",
-        help="Run the worker GPU diagnostic once without claiming work",
-    )
-    parser.add_argument(
-        "--server",
-        choices=("https://euroeval.com/api/worker",),
-        default="https://euroeval.com/api/worker",
-    )
-    parser.add_argument("--image", help="Manual official repository@sha256:index pin")
-    parser.add_argument(
-        "--context", help="Docker context (defaults to current context)"
-    )
-    parser.add_argument(
-        "--architecture",
-        choices=("amd64", "arm64"),
-        help="Require this Docker host architecture",
-    )
-    parser.add_argument(
-        "--gpus", default="all", help="Docker GPU selection, e.g. device=0"
-    )
-    parser.add_argument("--volume", default="euroeval-worker-cache")
-    parser.add_argument(
-        "--state-dir", default="/cache", help="Worker state location in the cache"
-    )
-    parser.add_argument(
-        "--launcher-state-dir", default="~/.cache/euroeval-worker-launcher"
-    )
-    parser.add_argument(
-        "--gpu-memory-utilisation", "--gpu-memory-utilization", type=float, default=0.8
-    )
-    return parser
 
 
 if __name__ == "__main__":
