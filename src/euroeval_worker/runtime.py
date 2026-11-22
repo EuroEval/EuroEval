@@ -272,6 +272,12 @@ class Worker:
                 if self._clear_finalised_lease(once=once):
                     return 0 if launcher_managed else None
                 continue
+            if (
+                active is not None
+                and launcher_managed
+                and active.managed_image_digest != self.image_digest
+            ):
+                raise RuntimeError("active lease belongs to a different managed image")
             if active is not None and not _lease_is_valid(active.lease):
                 logger.warning(
                     "Discarding expired local lease %s", active.lease.lease_id
@@ -298,8 +304,10 @@ class Worker:
             self._credential = credential
             self._recovery_failures = 0
             if response.lease is None:
+                if launcher_managed:
+                    return 10
                 if self._wait_for_work(once=once):
-                    return 10 if launcher_managed else None
+                    return None
                 continue
             selected = select_gpu(hardware.gpus)
             lease = _lease_for_gpu(response.lease, selected)
