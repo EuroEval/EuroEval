@@ -1,8 +1,8 @@
-import { BrokerError, ConfigurationError, brokerErrorBody, env, json } from "./_lib.js";
+import { BrokerError, ConfigurationError, brokerErrorBody, json } from "./_lib.js";
 import { approvedWorkerRelease, IMAGE_REPOSITORY, normalizeArchitecture } from "./_lib/worker-release.js";
 export const config = { runtime: "edge" };
 export default function handler(req: Request): Response {
-  if (req.method !== "GET") return json(405, { error: "Method not allowed" }, { allow: "GET" });
+  if (req.method !== "GET") return json(405, { error: "Method not allowed" }, { allow: "GET", "cache-control": "no-store" });
   try {
     const architecture = new URL(req.url).searchParams.get("architecture");
     if (!architecture) throw new BrokerError(400, "architecture is required.");
