@@ -33,7 +33,7 @@ print(json.dumps({
 """
 
 
-@click.command()
+@click.command(help=__doc__)
 @click.option("--architecture", required=True)
 @click.option("--index-digest", required=True)
 @click.option("--source-sha", required=True)

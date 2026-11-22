@@ -59,6 +59,35 @@ def test_anonymous_verification_uses_standard_docker_client() -> None:
     assert 'rm -rf "$PREVIOUS_DOCKER_CONFIG"' in step
 
 
+def test_ci_cancels_superseded_runs() -> None:
+    """Cancel obsolete PR and branch checks without cancelling release promotion."""
+    contents = (ROOT / ".github/workflows/ci.yaml").read_text(encoding="utf-8")
+    guard = contents.split("\nconcurrency:\n", maxsplit=1)[1].split(
+        "\njobs:", maxsplit=1
+    )[0]
+    assert "group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}" in guard
+    assert "cancel-in-progress: true" in guard
+
+    release = (ROOT / ".github/workflows/worker-release.yaml").read_text(
+        encoding="utf-8"
+    )
+    release_guard = release.split("\nconcurrency:\n", maxsplit=1)[1].split(
+        "\njobs:", maxsplit=1
+    )[0]
+    assert "group: volunteer-worker-release" in release_guard
+    assert "cancel-in-progress: false" in release_guard
+
+
+def test_inventory_steps_declare_isolated_dependencies() -> None:
+    """Both native inventory steps install Click outside the project environment."""
+    contents = WORKFLOW.read_text(encoding="utf-8")
+    invocation = (
+        "uv run --no-project --with packaging --with click "
+        "python -m scripts.worker_release_inventory"
+    )
+    assert contents.count(invocation) == 2
+
+
 def test_metadata_and_upload_are_gated_after_verification() -> None:
     """Metadata cannot be written or uploaded after a failed verification."""
     contents = WORKFLOW.read_text(encoding="utf-8")

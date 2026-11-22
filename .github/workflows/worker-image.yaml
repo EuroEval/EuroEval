@@ -200,7 +200,7 @@ jobs:
         env:
           PYTHONPATH: src
         run: >-
-          uv run --no-project --with packaging python -m scripts.worker_release_inventory
+          uv run --no-project --with packaging --with click python -m scripts.worker_release_inventory
           --architecture amd64
           --index-digest '${{ steps.build.outputs.digest }}'
           --source-sha '${{ github.sha }}'
@@ -364,7 +364,7 @@ jobs:
         env:
           PYTHONPATH: src
         run: >-
-          uv run --no-project --with packaging python -m scripts.worker_release_inventory
+          uv run --no-project --with packaging --with click python -m scripts.worker_release_inventory
           --architecture arm64
           --index-digest '${{ steps.spark-build.outputs.digest }}'
           --source-sha '${{ github.sha }}'

@@ -81,6 +81,7 @@ def test_cli_help_lists_workflow_options(inventory_args: list[str]) -> None:
     assert result.exit_code == 0
     for option in inventory_args[::2]:
         assert option in result.output
+    assert "Missing inventories fail closed" in " ".join(result.output.split())
     mock.assert_not_called()
 
 
@@ -116,7 +117,8 @@ def test_cli_rejects_unknown_option(inventory_args: list[str], tmp_path: Path) -
             worker_release_inventory.main, [*inventory_args, "--unknown"]
         )
     assert result.exit_code == 2
-    assert "No such option: --unknown" in result.output
+    assert "No such option" in result.output
+    assert "--unknown" in result.output
     mock.assert_not_called()
     assert not (tmp_path / "inventory.json").exists()
 
