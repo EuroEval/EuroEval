@@ -14,6 +14,63 @@ from scripts.worker_release_inventory import collect
 SHA = "a" * 40
 
 
+@pytest.fixture
+def activation_checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Create a nonsecret linked checkout, without credentials or adapters.
+
+    Args:
+        tmp_path: Isolated checkout directory.
+        monkeypatch: Environment and working-directory isolation.
+
+    Returns:
+        Local activation marker path.
+    """
+    policy = json.loads(release.POLICY.read_text())
+    monkeypatch.chdir(tmp_path)
+    for key in ("WORKER_RELEASE_ENABLED", "CI", "GITHUB_ACTIONS"):
+        monkeypatch.delenv(key, raising=False)
+    release.POLICY.parent.mkdir(parents=True)
+    release.POLICY.write_text(json.dumps(policy))
+    release.PROJECT.parent.mkdir()
+    release.PROJECT.write_text(
+        json.dumps({"projectId": policy["project_id"], "orgId": policy["team_id"]})
+    )
+    return release.ACTIVATION
+
+
+@pytest.mark.parametrize("contents", ["not-json", "[]", "null", "{}"])
+def test_activation_malformed(activation_checkout: Path, contents: str) -> None:
+    """Malformed local state fails closed before adapter creation."""
+    activation_checkout.write_text(contents)
+    with pytest.raises(ValueError):
+        release.load_activation()
+
+
+@pytest.mark.parametrize("field", ["projectId", "orgId"])
+def test_activation_rejects_relinked_project(
+    activation_checkout: Path, field: str
+) -> None:
+    """Setup and subsequent hooks both refuse a different Vercel linkage."""
+    assert release.main(["configure-local"]) == 0
+    project = json.loads(release.PROJECT.read_text())
+    project[field] = "wrong"
+    release.PROJECT.write_text(json.dumps(project))
+    assert release.main(["configure-local"]) == 1
+    with pytest.raises(ValueError):
+        release.load_activation()
+
+
+@pytest.mark.parametrize("field", ["project_id", "team_id", "alias", "schema"])
+def test_activation_rejects_wrong_marker(activation_checkout: Path, field: str) -> None:
+    """Marker identity and schema cannot drift from reviewed project policy."""
+    assert release.main(["configure-local"]) == 0
+    marker = json.loads(activation_checkout.read_text())
+    marker[field] = "wrong"
+    activation_checkout.write_text(json.dumps(marker))
+    with pytest.raises(ValueError):
+        release.load_activation()
+
+
 def test_artifact_and_empty_acceptance_refused() -> None:
     """Cross-source artifacts and unreviewed default acceptance fail closed."""
     github, registry, policy, local = inputs()
@@ -360,7 +417,8 @@ def test_complete_two_phase_release(
     assert plan["descriptors"] == registry.descriptors
     vercel = FakeVercel(plan)
     journal = tmp_path / "state.json"
-    release.prepare(github, registry, vercel, policy, local, journal)
+    local_policy = {**policy, "acceptance": {}, "baseline": {}}
+    release.prepare(github, registry, vercel, local_policy, local, journal)
     assert "DO-NOT-PERSIST" not in journal.read_text()
     values = {e["key"]: e["value"] for e in vercel.entries}
     assert values["HF_CANARY_TOKEN"] == "DO-NOT-PERSIST"
@@ -375,7 +433,8 @@ def test_complete_two_phase_release(
     vercel.deployment = "new-ready"
     monkeypatch.setenv("WORKER_RELEASE_ENABLED", "true")
     receipt_policy = tmp_path / "receipt-policy.json"
-    receipt_policy.write_text(json.dumps({"enabled": True}))
+    receipt_policy.write_text(json.dumps(policy))
+    monkeypatch.setenv("CI", "true")
     deploy_vercel_frontend.record_release_deployment(
         output="Worker release deployment receipt: https://local-release.vercel.app",
         state_path=journal,
@@ -475,6 +534,19 @@ class FakeVercel:
             if e["id"] == entry["id"]:
                 e["value"] = value
                 e["updatedAt"] += 1
+
+
+def test_configure_disable_local(activation_checkout: Path) -> None:
+    """One-time setup arms local hooks only, and disable is idempotent."""
+    assert release.load_activation() is None
+    assert release.main(["configure-local"]) == 0
+    marker = json.loads(activation_checkout.read_text())
+    assert set(marker) == {"schema", "project_id", "team_id", "alias"}
+    assert release.load_activation() is not None
+    assert release.load_activation(ci_only=True) is None
+    assert release.main(["disable-local"]) == 0
+    assert release.main(["disable-local"]) == 0
+    assert release.load_activation() is None
 
 
 def test_disabled_hooks_never_construct_adapters(
@@ -593,6 +665,17 @@ def test_inventory_uses_only_cpu_metadata(monkeypatch: pytest.MonkeyPatch) -> No
     assert "--gpus" not in args and "import torch" not in args[-1]
 
 
+@pytest.mark.parametrize("flag", ["CI", "GITHUB_ACTIONS", "WORKER_RELEASE_ENABLED"])
+def test_local_marker_cannot_override_external_disable(
+    activation_checkout: Path, monkeypatch: pytest.MonkeyPatch, flag: str
+) -> None:
+    """CI requires explicit true and explicit false overrides a valid marker."""
+    assert release.main(["configure-local"]) == 0
+    monkeypatch.setenv(flag, "false" if flag == "WORKER_RELEASE_ENABLED" else "true")
+    assert release.load_activation() is None
+    assert release.load_activation(ci_only=True) is None
+
+
 def test_no_benchmark_data_transport() -> None:
     """Release tooling and workflow contain no benchmark archive mechanism."""
     workflow = Path(".github/workflows/worker-release.yaml").read_text()
@@ -601,6 +684,29 @@ def test_no_benchmark_data_transport() -> None:
     assert (
         "csv" not in Path("src/scripts/release_volunteer_worker.py").read_text().lower()
     )
+
+
+def test_no_marker_hooks_do_not_construct_adapters(
+    activation_checkout: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The installed configured capability alone has no operational authority."""
+
+    def forbidden() -> None:
+        """Reject adapter construction in disabled hooks."""
+        pytest.fail("disabled hook constructed an adapter")
+
+    monkeypatch.setattr(release, "GitHub", forbidden)
+    monkeypatch.setattr(release, "Registry", forbidden)
+    monkeypatch.setattr(release, "Vercel", forbidden)
+    for operation in ("stage", "prepare", "predeploy", "finish", "finalize"):
+        assert release.main([operation]) == 0
+    assert release.main(["configure-local"]) == 0
+    monkeypatch.setenv("WORKER_RELEASE_ENABLED", "false")
+    for operation in ("stage", "prepare", "predeploy", "finish", "finalize"):
+        assert release.main([operation]) == 0
+    release.STATE.write_text("malformed ignored journal")
+    deploy_vercel_frontend.record_release_deployment(output="")
+    assert release.STATE.read_text() == "malformed ignored journal"
 
 
 def test_no_pending_release_is_a_noop(tmp_path: Path) -> None:
@@ -658,6 +764,28 @@ def test_original_registry_indexes_keep_every_attestation() -> None:
     assert identities["arm64"]["config"] == "arm64-child-config"
 
 
+def test_plain_frontend_receipt_path(
+    activation_checkout: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The normal deploy helper main records receipts with no per-release export."""
+    assert release.main(["configure-local"]) == 0
+    release.STATE.write_text(json.dumps({"status": "prepared"}))
+    monkeypatch.setattr(
+        deploy_vercel_frontend,
+        "_run_deploy",
+        lambda: (
+            "Worker release deployment receipt: https://actual.vercel.app",
+            0,
+            True,
+            True,
+        ),
+    )
+    assert deploy_vercel_frontend.main([]) == 0
+    assert (
+        json.loads(release.STATE.read_text())["deployment_url"] == "actual.vercel.app"
+    )
+
+
 def test_plain_misconfigured_secret_is_not_retained() -> None:
     """Even an incorrectly plain unrelated token is excluded from recovery values."""
     entry = {
@@ -692,6 +820,7 @@ def test_predeploy_intervening_alias_stops_before_deploy(
     monkeypatch.setattr(release, "Registry", lambda: registry)
     monkeypatch.setattr(release, "Vercel", lambda _: vercel)
     monkeypatch.setenv("WORKER_RELEASE_ENABLED", "true")
+    monkeypatch.setenv("CI", "true")
     assert release.main(["predeploy"]) == 1
     assert not github.dispatched
     assert "latest" not in registry.writes
@@ -834,6 +963,42 @@ def test_retained_proof_identity_and_completion_rejected(
         release.stage(github, registry, policy, local)
     assert not registry.writes
     assert github.plan is None
+
+
+def test_source_checks_release_control_dirty_paths(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Dirty release-control inputs stop staging without treating CSVs as inputs."""
+
+    def observed(args: list[str], data: bytes | None = None) -> bytes:
+        """Return only local command observations and inspect dirty-check scope.
+
+        Args:
+            args: Requested command arguments.
+            data: Unused command input.
+
+        Returns:
+            A simulated dirty checkout response.
+        """
+        del data
+        if args[:2] == ["git", "status"]:
+            for path in (
+                "src/scripts/run_volunteer_worker.py",
+                "src/scripts/release_volunteer_worker.py",
+                "src/scripts/deploy_vercel_frontend.py",
+                "src/scripts/worker-release-policy.json",
+                ".github/workflows/worker-image.yaml",
+                ".github/workflows/worker-release.yaml",
+                "VOLUNTEER_WORKER_OPERATIONS.md",
+            ):
+                assert path in args
+            assert not any("csv" in path or path == ".vercel" for path in args)
+            return b" M src/scripts/deploy_vercel_frontend.py"
+        return b""
+
+    monkeypatch.setattr(release, "command", observed)
+    with pytest.raises(ValueError, match="tracked modifications"):
+        release.source()
 
 
 @pytest.mark.parametrize(

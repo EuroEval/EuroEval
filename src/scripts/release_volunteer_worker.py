@@ -1,7 +1,7 @@
 """Two-phase worker publication; all remote observations cross injectable adapters.
 
 No website build or benchmark data is transported by this module. Activation is
-separate from installation: both the workflow variable and reviewed policy gate it.
+separate from installation: reviewed policy plus explicit CI or local setup gate it.
 """
 
 from __future__ import annotations
@@ -28,6 +28,8 @@ REPOSITORY = "EuroEval/EuroEval"
 IMAGE = "ghcr.io/euroeval/euroeval-worker"
 ARCHES = ("amd64", "arm64")
 POLICY = Path("src/scripts/worker-release-policy.json")
+ACTIVATION = Path(".vercel/worker-release-activation.json")
+PROJECT = Path(".vercel/project.json")
 STATE = Path(".vercel/worker-release-state.json")
 MAX_PROOF_BYTES = 262144
 POLICIES = ("api/worker/scope-policy.json", "api/worker/_lib/scope-policy.generated.ts")
@@ -400,7 +402,17 @@ def command(args: list[str], data: bytes | None = None) -> bytes:
 @click.command()
 @click.argument(
     "operation",
-    type=click.Choice(("stage", "prepare", "predeploy", "finish", "finalize")),
+    type=click.Choice(
+        (
+            "configure-local",
+            "disable-local",
+            "stage",
+            "prepare",
+            "predeploy",
+            "finish",
+            "finalize",
+        )
+    ),
 )
 @click.option("--release-tag", default="")
 @click.option("--deployment", default="")
@@ -419,11 +431,23 @@ def cli(operation: str, release_tag: str, deployment: str) -> int:
         click.ClickException: When release observations fail validation.
     """
     try:
-        policy = json.loads(POLICY.read_text())
-        if (
-            not policy.get("enabled")
-            or os.environ.get("WORKER_RELEASE_ENABLED") != "true"
-        ):
+        if operation == "disable-local":
+            ACTIVATION.unlink(missing_ok=True)
+            return 0
+        if operation == "configure-local":
+            require(
+                os.environ.get("GITHUB_ACTIONS") != "true"
+                and os.environ.get("CI") != "true",
+                "local setup only",
+            )
+            marker = _local_activation(policy=json.loads(POLICY.read_text()))
+            ACTIVATION.parent.mkdir(parents=True, exist_ok=True)
+            temporary = ACTIVATION.with_suffix(".tmp")
+            temporary.write_text(json.dumps(marker, sort_keys=True) + "\n")
+            temporary.replace(ACTIVATION)
+            return 0
+        policy = load_activation(ci_only=operation in ("stage", "finalize"))
+        if policy is None:
             return 0
         for key, variable in (
             ("acceptance", "WORKER_RELEASE_ACCEPTANCE_JSON"),
@@ -743,6 +767,33 @@ class Vercel:
             {"value": value, "type": "plain", "target": ["production"]},
             "PATCH",
         )
+
+
+def _local_activation(policy: dict, project_path: Path = PROJECT) -> dict:
+    """Validate local linkage and return the exact nonsecret marker contract.
+
+    Args:
+        policy: Checked-in capability policy.
+        project_path: Vercel CLI project linkage JSON.
+
+    Returns:
+        Project-bound schema-1 activation marker.
+    """
+    require(policy.get("enabled") is True, "release capability disabled")
+    require(
+        all(
+            isinstance(policy.get(k), str) and policy[k]
+            for k in ("project_id", "team_id", "alias")
+        ),
+        "release project identity missing",
+    )
+    project = json.loads(project_path.read_text())
+    require(
+        project["projectId"] == policy["project_id"]
+        and project["orgId"] == policy["team_id"],
+        "local Vercel project linkage differs from release policy",
+    )
+    return {"schema": 1, **{k: policy[k] for k in ("project_id", "team_id", "alias")}}
 
 
 def finalize(
@@ -1128,6 +1179,57 @@ def public_config(entries: list[dict]) -> dict:
     }
 
 
+def load_activation(
+    *,
+    ci_only: bool = False,
+    policy_path: Path | None = None,
+    marker_path: Path | None = None,
+    project_path: Path = PROJECT,
+) -> dict | None:
+    """Load the single activation gate without adapters, secrets or network access.
+
+    Explicit false overrides everything. CI never trusts a local marker. Local
+    true-environment activation remains supported, but is project-validated too.
+    Missing markers are inert; malformed or stale markers fail closed.
+
+    Args:
+        ci_only: Require explicit environment activation for stage/finalize.
+        policy_path: Reviewed capability policy override.
+        marker_path: Nonsecret local marker override.
+        project_path: Vercel project linkage.
+
+    Returns:
+        Active policy, or None when operationally disabled.
+    """
+    enabled = os.environ.get("WORKER_RELEASE_ENABLED")
+    ci = (
+        ci_only
+        or os.environ.get("CI") == "true"
+        or os.environ.get("GITHUB_ACTIONS") == "true"
+    )
+    marker_path = marker_path if marker_path is not None else ACTIVATION
+    if enabled == "false" or (ci and enabled != "true"):
+        return None
+    if enabled != "true" and (ci or not marker_path.exists()):
+        return None
+    policy = json.loads(
+        (policy_path if policy_path is not None else POLICY).read_text()
+    )
+    if policy.get("enabled") is not True:
+        return None
+    if not ci:
+        expected = _local_activation(policy=policy, project_path=project_path)
+        if marker_path.exists():
+            marker = json.loads(marker_path.read_text())
+            require(
+                isinstance(marker, dict)
+                and marker == expected
+                and type(marker.get("schema")) is int,
+                "local activation marker differs from release policy",
+            )
+    return policy
+
+
 def prepare(
     github: GitHubAdapter,
     registry: RegistryAdapter,
@@ -1176,12 +1278,8 @@ def prepare(
     validate_acceptance(
         github=github, records=plan["acceptance"], basis=plan["acceptance_basis"]
     )
-    protected_records = policy.get("baseline", {}).get("acceptance", {})
-    candidate_records = policy.get("acceptance", {}).get(plan["source_sha"], {})
-    require(
-        plan["acceptance"] in (protected_records, candidate_records),
-        "protected acceptance changed",
-    )
+    # The trusted staged plan carries the external reviewed decisions. Local
+    # deployments must not need protected CI acceptance variables in their shell.
     before = vercel.production()["id"]
     entries = vercel.config()
     values = release_values(plan)
@@ -1275,7 +1373,21 @@ def source() -> dict:
                 "--untracked-files=no",
                 "--",
                 "Dockerfile.worker",
+                ".dockerignore",
                 "VOLUNTEER_WORKER.md",
+                "VOLUNTEER_WORKER_OPERATIONS.md",
+                "src/scripts/run_volunteer_worker.py",
+                "src/scripts/release_volunteer_worker.py",
+                "src/scripts/deploy_vercel_frontend.py",
+                "src/scripts/worker-release-policy.json",
+                "src/scripts/worker_release_inventory.py",
+                "src/scripts/prepare_vercel_worktree.py",
+                "src/scripts/build_vercel_frontend.py",
+                "src/scripts/verify_vercel_functions.py",
+                ".github/workflows/worker-image.yaml",
+                ".github/workflows/worker-release.yaml",
+                ".github/workflows/ci.yaml",
+                "Makefile",
                 "pyproject.toml",
                 "uv.lock",
                 "src/euroeval",

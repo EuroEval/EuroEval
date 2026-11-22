@@ -1,5 +1,6 @@
 """Static safety checks for the worker image publication workflow."""
 
+import json
 import tomllib
 from pathlib import Path
 
@@ -78,6 +79,23 @@ def test_ci_cancels_superseded_runs() -> None:
     assert "cancel-in-progress: false" in release_guard
 
 
+def test_configured_capability_keeps_external_activation_off() -> None:
+    """Policy identities are configured without source acceptance or CI opt-in."""
+    policy = json.loads((ROOT / "src/scripts/worker-release-policy.json").read_text())
+    assert policy == {
+        "enabled": True,
+        "project_id": "prj_ILGcAQ9jaNsYVN3V7qsZuft3AQ0C",
+        "team_id": "team_kAFROnkIpFZaiTBzhIck1mhw",
+        "alias": "euroeval.com",
+        "acceptance": {},
+        "baseline": {},
+    }
+    workflow = (ROOT / ".github/workflows/worker-release.yaml").read_text()
+    assert "vars.WORKER_RELEASE_ENABLED == 'true'" in workflow
+    assert "cancel-in-progress: false" in workflow
+    assert "make frontend" not in workflow
+
+
 def test_inventory_setup_disables_unused_uv_cache() -> None:
     """PRs skip inventory dependencies, so saving an empty uv cache must be disabled."""
     contents = WORKFLOW.read_text(encoding="utf-8")
@@ -110,6 +128,20 @@ def test_metadata_and_upload_are_gated_after_verification() -> None:
     assert verification < metadata < upload
     assert "if: success() && github.event_name != 'pull_request'" in contents[metadata:]
     assert "if: success() && github.event_name != 'pull_request'" in contents[upload:]
+
+
+def test_release_control_changes_build_fresh_push_and_pr_candidates() -> None:
+    """Release control and launcher changes must produce exact-SHA inventories."""
+    contents = WORKFLOW.read_text()
+    for path in (
+        "src/scripts/run_volunteer_worker.py",
+        "VOLUNTEER_WORKER.md",
+        "VOLUNTEER_WORKER_OPERATIONS.md",
+        "src/scripts/release_volunteer_worker.py",
+        "src/scripts/deploy_vercel_frontend.py",
+        "src/scripts/worker-release-policy.json",
+    ):
+        assert contents.count(f'- "{path}"') == 2
 
 
 def test_same_commit_publications_are_serialised() -> None:
