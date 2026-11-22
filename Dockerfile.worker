@@ -81,5 +81,8 @@ RUN useradd --create-home --uid 10001 --shell /usr/sbin/nologin worker && \
 
 USER worker
 
+# Reject locked numerical dependencies that resolve but cannot import together.
+RUN numba --help
+
 ENTRYPOINT ["euroeval-worker"]
 CMD []
