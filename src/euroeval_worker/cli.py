@@ -49,7 +49,9 @@ def main(argv: list[str] | None = None) -> int:
                         "managed_image_digest": getattr(
                             active, "managed_image_digest", None
                         ),
-                        "lease_image_digest": None,
+                        "lease_image_digest": (
+                            active.lease.image_digest if active else None
+                        ),
                     }
                 )
             )
@@ -59,7 +61,7 @@ def main(argv: list[str] | None = None) -> int:
             state=state,
             gpu_memory_utilisation=arguments.gpu_memory_utilisation,
             image_digest=arguments.image_digest,
-        ).run(once=arguments.once, launcher_managed=arguments.launcher_managed)
+        ).run(once=arguments.once, launcher_managed=arguments.launcher_managed) or 0
     except KeyboardInterrupt:
         logger.info("Worker stopped")
         if arguments.launcher_managed:

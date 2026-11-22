@@ -202,6 +202,7 @@ class ActiveLease:
     finalised_submission_id: str | None = None
     evaluation_failures: int = 0
     release_pending: bool = False
+    managed_image_digest: str | None = None
 
 
 class StateStore:
@@ -357,6 +358,7 @@ class StateStore:
                 finalised_submission_id=finalised_submission_id,
                 evaluation_failures=evaluation_failures,
                 release_pending=release_pending,
+                managed_image_digest=raw.get("managed_image_digest"),
             )
         except (
             OSError,
@@ -377,6 +379,7 @@ class StateStore:
         finalised_submission_id: str | None = None,
         evaluation_failures: int = 0,
         release_pending: bool = False,
+        managed_image_digest: str | None = None,
     ) -> None:
         """Atomically save a lease before evaluation or submission starts.
 
@@ -393,6 +396,8 @@ class StateStore:
                 Number of failed evaluator attempts retained across restarts.
             release_pending (optional):
                 Whether an exhausted failed job must be released before claiming.
+            managed_image_digest (optional):
+                Managed container image digest associated with the lease.
         """
         with self._lock:
             self._atomic_write(
@@ -405,6 +410,7 @@ class StateStore:
                         finalised_submission_id=finalised_submission_id,
                         evaluation_failures=evaluation_failures,
                         release_pending=release_pending,
+                        managed_image_digest=managed_image_digest,
                     )
                 ),
             )
@@ -502,6 +508,7 @@ class StateStore:
                         finalised_submission_id=active.finalised_submission_id,
                         evaluation_failures=active.evaluation_failures,
                         release_pending=active.release_pending,
+                        managed_image_digest=active.managed_image_digest,
                     )
                 ),
             )
@@ -578,6 +585,7 @@ class StateStore:
                 finalised_submission_id=active.finalised_submission_id,
                 evaluation_failures=active.evaluation_failures,
                 release_pending=active.release_pending,
+                managed_image_digest=active.managed_image_digest,
             )
 
     def save_submission_id(self, submission_id: str) -> None:
@@ -608,6 +616,7 @@ def _active_dict(active: ActiveLease) -> JsonObject:
         "finalised_submission_id": active.finalised_submission_id,
         "evaluation_failures": active.evaluation_failures,
         "release_pending": active.release_pending,
+        "managed_image_digest": active.managed_image_digest,
     }
 
 
