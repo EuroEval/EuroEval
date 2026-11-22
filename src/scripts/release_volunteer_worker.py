@@ -1407,6 +1407,7 @@ def source() -> dict:
             [
                 "git",
                 "ls-files",
+                "src/scripts/run_volunteer_worker.py",
                 "Dockerfile.worker",
                 ".dockerignore",
                 "pyproject.toml",
@@ -1505,6 +1506,7 @@ def stage(
     fast = (
         baseline.get("accepted_architectures") == list(ARCHES)
         and baseline.get("runtime_fingerprint") == local["runtime_fingerprint"]
+        and baseline.get("guide_sha256") == local["guide_sha256"]
         and baseline.get("inventories") == inventories
     )
     basis = baseline if fast else candidate

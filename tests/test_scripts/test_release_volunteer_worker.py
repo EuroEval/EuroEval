@@ -38,6 +38,53 @@ def activation_checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path
     return release.ACTIVATION
 
 
+@pytest.fixture
+def source_checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Provide committed source observations without running tools or using Git.
+
+    Args:
+        tmp_path: Isolated source directory.
+        monkeypatch: Working-directory and command isolation.
+    """
+    files = {
+        "pyproject.toml": '[project]\nversion = "2.0.0"\n',
+        "src/euroeval_worker/__init__.py": '__version__ = "1.0.1"\n',
+        "src/scripts/run_volunteer_worker.py": "# original launcher\n",
+        "VOLUNTEER_WORKER.md": "Original guide\n",
+        "src/euroeval/dataset_configs/example.py": "# original dataset\n",
+        **dict.fromkeys(release.POLICIES, "{}\n"),
+    }
+    monkeypatch.chdir(tmp_path)
+    for name, content in files.items():
+        path = Path(name)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content)
+
+    def observed(args: list[str], data: bytes | None = None) -> bytes:
+        """Emulate committed Git paths, restricting listings to requested inputs.
+
+        Args:
+            args: Requested command arguments.
+            data: Unused command input.
+
+        Returns:
+            Local source observations; policy generation is a no-op.
+        """
+        del data
+        if args[:2] == ["git", "ls-files"]:
+            return "\n".join(
+                name
+                for name in sorted(files)
+                if any(name == p or name.startswith(p + "/") for p in args[2:])
+            ).encode()
+        if args[:2] == ["git", "rev-parse"]:
+            return SHA.encode()
+        assert args[:2] in (["git", "status"], ["uv", "run"])
+        return b""
+
+    monkeypatch.setattr(release, "command", observed)
+
+
 @pytest.mark.parametrize("contents", ["not-json", "[]", "null", "{}"])
 def test_activation_malformed(activation_checkout: Path, contents: str) -> None:
     """Malformed local state fails closed before adapter creation."""
@@ -310,6 +357,78 @@ class FakeRegistry:
         self.storage[tag] = raw
         self.storage[release.digest(raw)] = raw
         return release.digest(raw)
+
+
+@pytest.mark.usefixtures("source_checkout")
+@pytest.mark.parametrize(
+    "path,changed_field",
+    [
+        ("VOLUNTEER_WORKER.md", "guide_sha256"),
+        ("src/scripts/run_volunteer_worker.py", "runtime_fingerprint"),
+        ("src/euroeval/dataset_configs/example.py", None),
+    ],
+)
+def test_baseline_binds_observed_guide_and_launcher(
+    path: str, changed_field: str | None
+) -> None:
+    """Only dataset edits reuse proof; new guide/launcher needs fresh acceptance.
+
+    Args:
+        path: Source input changed in the next candidate.
+        changed_field: Metadata that must change, or None for a dataset-only edit.
+    """
+    github, registry, policy, local = inputs()
+    local.update(release.source())
+    for asset_id, raw in github.proofs.items():
+        proof = json.loads(raw) | {
+            key: local[key] for key in ("runtime_fingerprint", "guide_sha256")
+        }
+        raw = json.dumps(proof).encode()
+        github.proofs[asset_id] = raw
+        policy["acceptance"][SHA][proof["architecture"]]["proof_sha256"] = (
+            release.digest(raw)
+        )
+    old = release.stage(github, registry, policy, local)
+    assert old is not None
+    policy["baseline"] = {
+        **old["acceptance_basis"],
+        "accepted_architectures": list(release.ARCHES),
+        "acceptance": copy.deepcopy(old["acceptance"]),
+    }
+    policy["acceptance"] = {}
+    github.plan = None
+    registry.writes.clear()
+    Path(path).write_text("# committed candidate change\n")
+    candidate = release.source()
+    for key in ("runtime_fingerprint", "guide_sha256"):
+        assert (candidate[key] != local[key]) == (key == changed_field)
+
+    if changed_field is None:
+        new = release.stage(github, registry, policy, candidate)
+        assert new is not None
+        assert new["acceptance_basis"] == old["acceptance_basis"]
+        return
+
+    with pytest.raises(ValueError, match="both retained physical proofs required"):
+        release.stage(github, registry, policy, candidate)
+    assert not registry.writes
+    assert github.plan is None
+
+    # Fresh candidate-specific reviewed proofs remain valid for changed inputs.
+    policy["acceptance"][SHA] = copy.deepcopy(old["acceptance"])
+    for asset_id, raw in github.proofs.items():
+        proof = json.loads(raw) | {
+            key: candidate[key] for key in ("runtime_fingerprint", "guide_sha256")
+        }
+        raw = json.dumps(proof).encode()
+        github.proofs[asset_id] = raw
+        policy["acceptance"][SHA][proof["architecture"]]["proof_sha256"] = (
+            release.digest(raw)
+        )
+    new = release.stage(github, registry, policy, candidate)
+    assert new is not None
+    assert new["acceptance_basis"][changed_field] == candidate[changed_field]
+    assert new["acceptance_basis"] != old["acceptance_basis"]
 
 
 def test_baseline_requires_actual_inventory_equality() -> None:
