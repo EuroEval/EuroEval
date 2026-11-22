@@ -171,17 +171,22 @@ def test_missing_node_package_metadata_fails(tmp_path: Path) -> None:
         module.verify_vercel_functions(functions_directory=tmp_path)
 
 
-def test_missing_route_fails(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "missing_route", ["api/worker/result", "api/worker/release-info"]
+)
+def test_missing_route_fails(tmp_path: Path, missing_route: str) -> None:
     """A missing expected function aborts verification.
 
     Args:
         tmp_path:
             Temporary directory for files created by the test.
+        missing_route:
+            Expected route omitted from the build output.
     """
     runtimes = {
         route: runtime
         for route, runtime in module.EXPECTED_RUNTIMES.items()
-        if route != "api/worker/result"
+        if route != missing_route
     }
     _write_output(tmp_path, runtimes)
 

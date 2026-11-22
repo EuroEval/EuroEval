@@ -1,7 +1,7 @@
 import {
   BrokerError, ConfigurationError, GROUPS, PROTOCOL_VERSION, VM_MARKER_RE, VOLUNTEER_MARKER_RE,
   acquireRenewableIssueMutex, authenticate, brokerErrorBody,
-  claimableLanguages, env, expectedScope, validateScopePolicyVersion,
+  claimableLanguages, env, optionalEnv, expectedScope, validateScopePolicyVersion,
   extractModelId, enforceRateLimit, fitsGpu, fetchIssue, json, languageGroup, leaseTtl, selectedGpu,
   listOpenIssues, method,
   patchIssue, putLease, randomToken, readJson, deleteLease, unassignIssue, hasIssueAssignee,
@@ -13,6 +13,7 @@ import {
 } from "./_lib.js";
 import type { Lease, VolunteerLeaseMarker } from "./_lib.js";
 import { narrowCoverage } from "./_lib/coverage.js";
+import { approvedWorkerRelease, canonicalWorkerVersion, normalizeArchitecture } from "./_lib/worker-release.js";
 
 // Reserved only as a Redis mutex key; never used for a GitHub API request.
 const GLOBAL_CLAIM_MUTEX = Number.MAX_SAFE_INTEGER;
@@ -161,19 +162,37 @@ export default async function handler(req: Request): Promise<Response> {
     const identity = await authenticate(req); await enforceRateLimit(`euroeval:worker:limit:claim:${identity.hash}`, 120, 3600);
     const body = await readJson(req, 32 * 1024); requireProtocol(body);
     if (!validHardware(body.hardware)) throw new BrokerError(400, "hardware must contain well-formed GPUs and free disk.");
-    if (typeof body.worker_version !== "string" || !body.worker_version.trim()) throw new BrokerError(400, "worker_version is required.");
-    markerSecret();
-    const architecture = body.hardware.architecture;
-    let arm64ImageDigest: string | undefined;
-    if (architecture === "arm64" || architecture === "aarch64") {
-      try { arm64ImageDigest = env("VOLUNTEER_WORKER_IMAGE_DIGEST_ARM64"); }
-      catch (error) { if (!(error instanceof ConfigurationError)) throw error; }
+    const managed = Array.isArray(body.capabilities) && body.capabilities.includes("managed_image_v1");
+    if (!managed && (typeof body.worker_version !== "string" || !body.worker_version.trim())) {
+      throw new BrokerError(400, "worker_version is required.");
     }
-    const imageDigest = arm64ImageDigest || env("VOLUNTEER_WORKER_IMAGE_DIGEST");
-    const euroevalVersion = env("EUROEVAL_VERSION").replace(/\.dev$/, ".dev0");
-    validateScopePolicyVersion(euroevalVersion);
-    const requiredWorkerVersion = env("VOLUNTEER_WORKER_VERSION");
-    if (body.worker_version !== requiredWorkerVersion) throw new BrokerError(422, "Unsupported worker version.");
+    markerSecret();
+    const architecture = body.hardware.architecture as string;
+    let imageDigest: string;
+    let euroevalVersion: string;
+    if (managed) {
+      if (!normalizeArchitecture(architecture)) {
+        throw new BrokerError(426, "Worker update required; unsupported image architecture.", "worker_update_required");
+      }
+      const release = approvedWorkerRelease(architecture);
+      imageDigest = release.image_digest;
+      euroevalVersion = release.euroeval_version;
+      if (body.image_digest !== imageDigest ||
+          canonicalWorkerVersion(body.euroeval_version) !== canonicalWorkerVersion(euroevalVersion) ||
+          canonicalWorkerVersion(body.worker_version) !== canonicalWorkerVersion(release.worker_version)) {
+        throw new BrokerError(426, "Worker update required; refresh the approved worker image and retry.", "worker_update_required");
+      }
+    } else {
+      // Legacy workers have no image attestation. Preserve their original digest
+      // selection (including the default for unknown architectures) and version checks.
+      const armDigest = normalizeArchitecture(architecture) === "arm64"
+        ? optionalEnv("VOLUNTEER_WORKER_IMAGE_DIGEST_ARM64", "") : "";
+      imageDigest = armDigest || env("VOLUNTEER_WORKER_IMAGE_DIGEST");
+      euroevalVersion = env("EUROEVAL_VERSION").replace(/\.dev$/, ".dev0");
+      validateScopePolicyVersion(euroevalVersion);
+      if (body.worker_version !== env("VOLUNTEER_WORKER_VERSION")) throw new BrokerError(422, "Unsupported worker version.");
+    }
+    if (managed) validateScopePolicyVersion(euroevalVersion);
     const requestedLanguage = typeof body.language === "string" ? body.language : null;
     const issues = await listOpenIssues(signal);
     const selectedHardwareGpu = selectedGpu(body.hardware);
@@ -335,7 +354,7 @@ export default async function handler(req: Request): Promise<Response> {
           issue_number: snapshot.number, language, worker: identity.hash.slice(0, 24), contributor: identity.contributor,
           model_id: model.id, model_revision: model.revision, euroeval_version: euroevalVersion,
           image_digest: imageDigest,
-          worker_version: body.worker_version,
+          worker_version: body.worker_version as string,
           gpu_memory_utilisation: body.hardware.gpu_memory_utilisation as number,
           selected_gpu_index: body.hardware.selected_gpu_index as number,
           selected_gpu_uuid: body.hardware.selected_gpu_uuid as string,

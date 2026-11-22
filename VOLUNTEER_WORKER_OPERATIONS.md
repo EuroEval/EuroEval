@@ -1075,101 +1075,112 @@ does not expose Docker controls. Never claim an untested isolation setting. Use
 `FULL_LOG=1` to expose engine root causes. JIT/config caches must remain under `/cache`;
 do not make the root writable or `/tmp` executable to hide a cache failure.
 
-### Multi-platform promotion
+### Two-phase release automation (installed, disabled)
 
-After both physical canaries pass and promotion is explicitly authorised, combine the
-original candidate indexes, preserving all platform and attestation descriptors. This
-needs Bash, `jq`, Docker Buildx, and a maintainer PAT with `write:packages`. The
-temporary Docker configs retain only plugin paths, not existing credentials; the empty
-GHCR credential-helper entry keeps this login in the disposable config.
+Automation is **off by default**. Installation is not authorisation to activate it,
+create credentials, run hardware canaries, or change production. No historical
+`cc065...` or `e5...` candidate is implicitly accepted by these defaults. Empty
+acceptance and baseline records fail closed.
 
-```bash
-PROMOTION_EVIDENCE="$(mktemp -d /tmp/euroeval-image-promotion.XXXXXX)"
-(
-set -euo pipefail
-umask 077
-IMAGE=ghcr.io/euroeval/euroeval-worker
-AMD64_DIGEST=sha256:REPLACE_WITH_ACCEPTED_AMD64_CANDIDATE
-ARM64_DIGEST=sha256:REPLACE_WITH_ACCEPTED_ARM64_CANDIDATE
-[[ "$AMD64_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
-[[ "$ARM64_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
-AMD64="$IMAGE@$AMD64_DIGEST"
-ARM64="$IMAGE@$ARM64_DIGEST"
-ORIGINAL_CONFIG="${DOCKER_CONFIG:-$HOME/.docker}"
-TEMP="$(mktemp -d)"
-trap 'rm -rf "$TEMP"' EXIT
-mkdir "$TEMP/auth" "$TEMP/anonymous"
-if test -f "$ORIGINAL_CONFIG/config.json"; then
-  jq --arg plugins "$ORIGINAL_CONFIG/cli-plugins" '
-    {cliPluginsExtraDirs: ((.cliPluginsExtraDirs // []) + [$plugins]),
-     credHelpers: {"ghcr.io": ""}}
-  ' "$ORIGINAL_CONFIG/config.json" > "$TEMP/auth/config.json"
-else
-  printf '%s\n' '{"credHelpers":{"ghcr.io":""}}' > "$TEMP/auth/config.json"
-fi
-cp "$TEMP/auth/config.json" "$TEMP/anonymous/config.json"
-unset BUILDX_BUILDER DOCKER_AUTH_CONFIG
-export DOCKER_CONFIG="$TEMP/anonymous"
-docker buildx imagetools inspect "$IMAGE:latest" \
-  --format '{{json .Manifest}}' > "$TEMP/previous.json"
-docker buildx imagetools inspect "$AMD64" --raw > "$TEMP/amd64.json"
-docker buildx imagetools inspect "$ARM64" --raw > "$TEMP/arm64.json"
-docker buildx imagetools create --dry-run --tag "$IMAGE:latest" \
-  "$AMD64" "$ARM64" > "$TEMP/planned.json"
-jq -e -s '
-  ([.[0].manifests[], .[1].manifests[]] | sort_by(.digest)) ==
-  (.[2].manifests | sort_by(.digest))
-' "$TEMP/amd64.json" "$TEMP/arm64.json" "$TEMP/planned.json" > /dev/null
-PREVIOUS_DIGEST="$(jq -r .digest "$TEMP/previous.json")"
-printf 'Keep rollback digest: %s\n' "$PREVIOUS_DIGEST"
-export DOCKER_CONFIG="$TEMP/auth"
-read -r -p "GitHub username: " GHCR_USER
-read -r -s -p "GHCR PAT (write:packages): " GHCR_PAT
-printf '\n'
-printf '%s' "$GHCR_PAT" | docker login ghcr.io \
-  --username "$GHCR_USER" --password-stdin
-unset GHCR_PAT
-docker buildx imagetools create --tag "$IMAGE:latest" "$AMD64" "$ARM64"
-rm -rf "$TEMP/auth"
-export DOCKER_CONFIG="$TEMP/anonymous"
-docker buildx imagetools inspect "$IMAGE:latest" \
-  --format '{{json .Manifest}}' > "$TEMP/promoted.json"
-jq -e -s '.[0].manifests == .[1].manifests' \
-  "$TEMP/planned.json" "$TEMP/promoted.json" > /dev/null
-PROMOTED_DIGEST="$(jq -er .digest "$TEMP/promoted.json")"
-[[ "$PROMOTED_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
-docker buildx imagetools inspect "$IMAGE@$PROMOTED_DIGEST" --raw \
-  > "$TEMP/immutable.json"
-jq -e -s '.[0].manifests == .[1].manifests' \
-  "$TEMP/promoted.json" "$TEMP/immutable.json" > /dev/null
-printf 'Verified promoted index: %s@%s\n' "$IMAGE" "$PROMOTED_DIGEST"
-cp "$TEMP/previous.json" "$TEMP/amd64.json" "$TEMP/arm64.json" \
-  "$TEMP/planned.json" "$TEMP/promoted.json" "$TEMP/immutable.json" \
-  "$PROMOTION_EVIDENCE/"
-)
-PROMOTED_DIGEST="$(jq -er .digest "$PROMOTION_EVIDENCE/promoted.json")"
-printf 'Promotion evidence: %s\n' "$PROMOTION_EVIDENCE"
-```
+The implemented commands in `src/scripts/release_volunteer_worker.py` are `stage`,
+`prepare`, `predeploy`, `finish`, and `finalize --release-tag TAG --deployment ID`.
+They use injectable GitHub, registry and Vercel observation adapters, not supplied
+success booleans. GitHub observations come from `gh api` in the fixed
+`EuroEval/EuroEval` repository; registry reads are anonymous and content-verified;
+index writes use `oras manifest push`. CLI errors suppress remote response bodies.
 
-The block retains public manifests under the printed evidence directory, removes its
-private login configuration, and restores the caller's Docker environment on exit. Keep
-those manifests and the previous digest with the release evidence. Verify the union
-contains exactly the accepted Linux amd64 and ARM64 platform images, plus their
-unchanged attestations. Anonymously pull the promoted index on each architecture and
-compare its selected platform image/config identity with the physical acceptance record.
+1. Trusted main CI and native candidate builds may finish in either order. The release
+   workflow serialises both completion triggers without cancellation, looks up both
+   successful push runs for the exact current main SHA, and binds inventories to the
+   image run ID, attempt, artifact ID and artifact archive digest. Fork/PR runs,
+   mismatched artifacts, stale source, and incomplete attempts are refused. Only
+   small public image metadata/inventory artifacts are downloaded.
+2. `stage` combines the **original** approved indexes, retaining every platform and
+   attestation descriptor. It records platform manifest/config identities and the
+   previous immutable release digest. It publishes an immutable
+   `worker-release-SHA-RUN-ATTEMPT` index/tag and a GitHub prerelease containing only
+   `release.json`. It does not move `latest`, build the website, or change production.
+3. The ordinary **local** `make frontend` schedule is unchanged: prepare the worktree,
+   prepare approved release configuration, refresh Production configuration/build,
+   verify functions, predeploy recheck, deploy, then dispatch finalization. It uses
+   existing local CSVs. There is no CSV archive, upload, storage or download mechanism
+   and no CI website rebuild. With automation disabled, hooks do not contact remote
+   services. With no approved pending release, they perform no configuration writes.
+4. `prepare` checks source versions and generated policy hashes, expected previous
+   release, main HEAD, existing project linkage, alias identity and config metadata.
+   Only four existing exact-Production **plain** entries may change:
+   `VOLUNTEER_WORKER_IMAGE_DIGEST`, `VOLUNTEER_WORKER_IMAGE_DIGEST_ARM64`,
+   `VOLUNTEER_WORKER_VERSION`, and `EUROEVAL_VERSION`. Both digest values receive the
+   **same combined index**. All secrets, including `HF_CANARY_TOKEN`, and unrelated
+   variables remain untouched. Shared Production/Preview or encrypted release entries
+   must be repaired manually before opting in. The existing build helper still
+   restores tracked generated policy bytes in its `finally` block.
+5. The deploy helper records the CLI's actual immutable deployment URL in the
+   nonsecret journal. `finish` resolves that receipt independently and dispatches only
+   after its new READY production alias and anonymous discovery
+   match the staged plan for **both** `architecture=amd64` and `architecture=arm64`.
+   Each `/api/worker/release-info` response must match `protocol_version`,
+   `launcher_protocol_version`, `architecture`, `image_repository`, `image_digest`,
+   `image_reference`, `worker_version`, and `euroeval_version` exactly.
+6. The GitHub finalizer independently rechecks READY deployment/project/alias identity,
+   both discovery records, current main, expected previous `latest`, original indexes,
+   all descriptors and platform/config identities. Only then does it move `latest` and
+   verify the resulting index anonymously. Replays and alias changes are refused.
 
-The combined index's digest is new even though the platform images are unchanged. Set
-**both** Production image variables to `PROMOTED_DIGEST`, not to the individual
-candidate-index digests. Redeploy and verify READY status, the production alias,
-configuration, safe route probes, and anonymous `latest` resolution. Publishing or
-moving a tag alone is not completion of a rollout.
+#### One-time activation, only after separate authorisation
 
-For rollback, first inspect active leases and pause new workers. Restore the previous
-accepted `latest` index, restore the corresponding architecture-specific Production
-values and compatible versions/policies, redeploy, and repeat verification. Keep old
-accepted indexes available; never rebuild or relabel a different image as an old digest.
-Do not switch to a mutable CUDA base or install a host driver inside the image to fix a
-failed build or canary.
+- Review `src/scripts/worker-release-policy.json`, supplying the exact Vercel
+  `project_id`, `team_id` and production `alias`. Commit `enabled: true` only when
+  separately authorised. This policy change requires fresh current-main candidates.
+- Configure the protected GitHub environment `volunteer-worker-release`, required
+  reviewers/main-only deployment rules, and a narrowly scoped `VERCEL_TOKEN` for
+  read-only production observation in finalization. Package publication uses the
+  workflow GitHub token with `contents:write` and `packages:write`.
+- Install `gh`, `oras` and the existing Vercel CLI locally; use existing `gh` and
+  Vercel logins. The adapter reads the Vercel CLI auth file on Linux/macOS or
+  `VERCEL_TOKEN` from the environment. Never put tokens in command arguments or logs.
+- Review physical acceptance logs for **both** native architectures of the exact
+  candidate indexes. Set protected environment variable
+  `WORKER_RELEASE_ACCEPTANCE_JSON` to an object keyed by full source SHA, then by
+  `amd64`/`arm64`. Each record requires `index_digest`, `accepted: true`, `record_id`
+  (the retained physical evidence reference), and `reviewer`. The committed default
+  is empty. These reviewed records are deliberately external to the source commit:
+  adding an acceptance commit must not invalidate the SHA being accepted.
+- Optionally review `WORKER_RELEASE_BASELINE_JSON`: it requires
+  `accepted_architectures: ["amd64", "arm64"]`, explicit `acceptance` records with
+  the same fields above for both baseline indexes, `runtime_fingerprint`, and actual
+  per-architecture `inventories` copied from the accepted plan. A dataset-configuration
+  change can reuse acceptance only if the source runtime fingerprint **and** complete
+  installed Python/dependency and dpkg inventories match exactly. Mutable apt changes
+  invalidate reuse. CUDA, dependency, runtime or other fingerprint changes require
+  new candidate-specific physical acceptance for both architectures. CPU inventory
+  queries do not run inference and are not physical acceptance.
+- Set repository variable `WORKER_RELEASE_ENABLED=true` only after these safeguards
+  are approved. Local opt-in also requires `WORKER_RELEASE_ENABLED=true` in the
+  deployment shell. The protected acceptance/baseline variables are only needed by
+  staging; local hooks consume the published approved plan. A manual `stage` workflow
+  dispatch can retry after acceptance review without rebuilding an accepted candidate.
+
+#### Recovery without automatic rollback
+
+The local `.vercel/worker-release-state.json` journal retains only public plan/config
+metadata, old plain values and previous deployment identity, never secret values.
+A preparation/build/predeploy/deployment failure leaves this journal for inspection
+and never dispatches finalization. No helper automatically restarts or pauses workers,
+rolls back an alias/config, or retries an ambiguous deployment. Intervening config or
+alias changes stop the sequence. After finalization the next prepared release archives
+that journal alongside the previous immutable release metadata.
+
+Keep the previous accepted index and its immutable staged release available. For a
+failure after configuration preparation, inspect the journal and the actual current
+Production config/alias before any action. With separate authorisation, restore only
+those public release values that are still known to belong to the failed attempt,
+build/deploy the compatible old policy/version locally, and verify both architectures.
+Do not overwrite intervening changes or alter secrets. If deployment succeeded but
+finalization failed, retain the accepted immutable production digest, investigate the
+reported source/alias/descriptor disagreement, and explicitly retry finalization only
+while the staged plan remains current and the previous `latest` still matches. Never
+rebuild or relabel a different image as an old digest.
 
 ## Ongoing maintenance and monitoring
 
@@ -1180,7 +1191,8 @@ failed build or canary.
 - Update the worker package/image and `VOLUNTEER_WORKER_VERSION` independently when the
   worker protocol changes (the current worker version is `1.0.0`).
 - Run the API tests (`npm run test:api`) and the relevant Python tests/checks.
-- Publish, anonymously verify, canary, and manually promote the new immutable image.
+- Publish and anonymously verify candidates; review both physical acceptance records.
+- Stage the approved release, then deploy locally before finalizing `latest`.
 - Update both image variables to the accepted multi-platform index, align versions and
   policies, verify Vercel public/sensitive types, deploy, and repeat readiness and safe
   route probes. Confirm the production alias actually serves the new deployment.

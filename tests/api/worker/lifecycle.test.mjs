@@ -1379,6 +1379,34 @@ test("claim persists record-revision compatibility from client capabilities", as
     const modernLease = JSON.parse(values.get(`euroeval:worker:lease:${issueNumber}:da`));
     assert.equal(modernLease.lease_id, modern.lease_id);
     assert.equal(modernLease.record_revision_required, true);
+
+    // Exercise the managed handshake through a real claim transaction, not just no_work.
+    const amdDigest = `sha256:${"a".repeat(64)}`;
+    const armDigest = `sha256:${"b".repeat(64)}`;
+    process.env.VOLUNTEER_WORKER_IMAGE_DIGEST = amdDigest;
+    process.env.VOLUNTEER_WORKER_IMAGE_DIGEST_ARM64 = armDigest;
+    let previous = modern;
+    for (const [architecture, imageDigest] of [["x86_64", amdDigest], ["aarch64", armDigest]]) {
+      values.delete(`euroeval:worker:lease:${issueNumber}:da`);
+      values.delete(`euroeval:worker:lease-id:${previous.lease_id}`);
+      issue.body = `### Model ID\n\norg/model\n\n- [x] ${language}\n`;
+      const request = makeRequest(["canonical_coverage_v1", "managed_image_v1"]);
+      const payload = await request.json();
+      payload.hardware.architecture = architecture;
+      payload.image_digest = imageDigest;
+      payload.euroeval_version = "1.0.0";
+      const response = await claim(new Request(request.url, { method: "POST", headers: request.headers,
+        body: JSON.stringify(payload) }));
+      assert.equal(response.status, 200, await response.clone().text());
+      const managed = await response.json();
+      assert.equal(managed.issue_number, issueNumber);
+      assert.equal(managed.image_digest, imageDigest);
+      const stored = JSON.parse(values.get(`euroeval:worker:lease:${issueNumber}:da`));
+      assert.equal(stored.lease_id, managed.lease_id);
+      assert.equal(stored.image_digest, imageDigest);
+      assert.equal(stored.record_revision_required, true);
+      previous = managed;
+    }
   } finally {
     globalThis.fetch = originalFetch;
     process.env = originalEnv;
