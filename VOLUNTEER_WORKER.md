@@ -71,27 +71,10 @@ claiming new work. Repeated update-required responses also stop after bounded re
 Ctrl-C forwards cancellation only to the owned container and waits; it never restarts
 following cancellation. Re-run the same command later to contribute again.
 
-### Manual Docker alternative
+### 3. Sign in and contribute
 
-Manual Docker remains available (update/restart responsibility stays with you):
-
-```sh
-docker volume create euroeval-worker-cache
-
-docker run --rm -it \
-  --pull=always \
-  --name euroeval-worker \
-  --gpus all \
-  --read-only \
-  --tmpfs /tmp:rw,noexec,nosuid,size=2g \
-  --shm-size=2g \
-  --cap-drop=ALL \
-  --security-opt=no-new-privileges \
-  --pids-limit=512 \
-  -e NVIDIA_DRIVER_CAPABILITIES=compute,utility \
-  -v euroeval-worker-cache:/cache \
-  ghcr.io/euroeval/euroeval-worker:latest
-```
+The launcher and the manual Docker alternative below run the same worker image. GitHub
+sign-in, account permissions and evaluation behavior are the same for both.
 
 On the first run, open the GitHub URL printed in the terminal, enter the short code, and
 authorise the shared **EuroEval Volunteer Worker** GitHub App. Complete any GitHub
@@ -114,6 +97,28 @@ Do not add `--privileged`, host networking, the Docker socket, a home-directory 
 or project credentials. The worker never needs your `HF_TOKEN`, GitHub token, or Upstash
 credentials.
 
+### Manual Docker alternative
+
+Manual Docker remains available (update/restart responsibility stays with you):
+
+```sh
+docker volume create euroeval-worker-cache
+
+docker run --rm -it \
+  --pull=always \
+  --name euroeval-worker \
+  --gpus all \
+  --read-only \
+  --tmpfs /tmp:rw,noexec,nosuid,size=2g \
+  --shm-size=2g \
+  --cap-drop=ALL \
+  --security-opt=no-new-privileges \
+  --pids-limit=512 \
+  -e NVIDIA_DRIVER_CAPABILITIES=compute,utility \
+  -v euroeval-worker-cache:/cache \
+  ghcr.io/euroeval/euroeval-worker:latest
+```
+
 ### Optional: pin the exact image version
 
 For the launcher, use `--image ghcr.io/euroeval/euroeval-worker@sha256:...`. The pin
@@ -128,7 +133,7 @@ Pull the current image and note the `sha256:...` value on its `Digest:` line:
 docker pull ghcr.io/euroeval/euroeval-worker:latest
 ```
 
-Replace the final `ghcr.io/euroeval/euroeval-worker:latest` argument in step 2 with
+Replace `ghcr.io/euroeval/euroeval-worker:latest` in the manual Docker command with
 `ghcr.io/euroeval/euroeval-worker@sha256:...`, using that exact digest. Record it for
 later runs. Do not select the first entry from an existing image's `RepoDigests`: a
 cached image can also have older digest references for the same platform image.
