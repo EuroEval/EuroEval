@@ -40,25 +40,23 @@ NVIDIA Container Toolkit before continuing.
 
 ### 2. Start the worker
 
-Download the standalone launcher and run it. No repository clone or Python package
-installation is needed:
+Run the standalone launcher with one command. No repository clone, saved script or
+Python package installation is needed:
 
 ```sh
-curl -fsSL --output euroeval-worker.py \
-  https://github.com/EuroEval/EuroEval/raw/main/src/scripts/run_volunteer_worker.py
-
-python3 euroeval-worker.py
+curl -fsSL \
+  https://github.com/EuroEval/EuroEval/raw/main/src/scripts/run_volunteer_worker.py |
+  python3 -
 ```
-
-Keep `euroeval-worker.py` and run the same Python command whenever you want to contribute.
 
 Leave it running: it discovers the public approved release at startup and between jobs,
 pulls that exact immutable image, and starts a fresh container for each safe handoff. No
 Docker socket is mounted inside the worker. No package installation is needed for the
 launcher. Docker access must already work as your host user.
 
-Append `--once` to finish at most one evaluation (or exit when idle).
-`--gpu-health-check` runs the worker GPU diagnostic once without claiming work. Use
+Append launcher options after `python3 -`. For example, `python3 - --once` finishes
+at most one evaluation (or exits when idle). `--gpu-health-check` runs the worker GPU
+diagnostic once without claiming work. Use
 `--gpus 'device=0'` to select a GPU, or `--gpu-memory-utilisation 0.8` to limit offered
 GPU memory, or `--context NAME` for another Docker context. Architecture is detected
 from Docker; `--architecture arm64` additionally requires an ARM64 Docker host.
