@@ -195,6 +195,7 @@ class Worker:
         evaluator: Evaluator | None = None,
         gpu_memory_utilisation: float = 0.8,
         hardware_factory: c.Callable[[], HardwareReport] | None = None,
+        image_digest: str | None = None,
     ) -> None:
         """Initialise a worker.
 
@@ -209,6 +210,8 @@ class Worker:
                 Fraction of GPU memory offered to the evaluator. Defaults to 0.8.
             hardware_factory (optional):
                 Hardware discovery function. Defaults to ``discover_hardware``.
+            image_digest (optional):
+                Host-managed image index digest.
         """
         self.client = client
         self.state = state
@@ -222,15 +225,25 @@ class Worker:
         self._login = ""
         self._auth_lock = threading.Lock()
         self._recovery_failures = 0
+        self.image_digest = image_digest
 
-    def run(self, once: bool = False) -> None:
+    def run(  # noqa: PLR0912
+        self, once: bool = False, launcher_managed: bool = False
+    ) -> int | None:
         """Run until interrupted, or process one broker response with ``once``.
 
         Args:
                     once (optional):
                         Once.
+                    launcher_managed (optional):
+                        Return managed-host exit codes.
+
+        Returns:
+                    Managed exit code, or None in legacy mode.
 
         Raises:
+                    ValueError:
+                        If managed mode is combined with once mode.
                     BrokerError:
                         If the broker rejects an operation.
                     AuthenticationIdentityError:
@@ -244,6 +257,8 @@ class Worker:
                     RuntimeError:
                         If active worker state is inconsistent.
         """
+        if launcher_managed and once:
+            raise ValueError("--launcher-managed cannot be combined with --once")
         self._credential, self._login = authenticate(
             client=self.client, state=self.state
         )
@@ -255,7 +270,7 @@ class Worker:
                 )
             if active is not None and active.finalised_submission_id is not None:
                 if self._clear_finalised_lease(once=once):
-                    return
+                    return 0 if launcher_managed else None
                 continue
             if active is not None and not _lease_is_valid(active.lease):
                 logger.warning(
@@ -272,7 +287,7 @@ class Worker:
                 if self._run_active_lease(
                     active=active, hardware=discovered, once=once
                 ):
-                    return
+                    return 0 if launcher_managed else None
                 continue
 
             hardware = self._prepare_hardware(discovered)
@@ -284,7 +299,7 @@ class Worker:
             self._recovery_failures = 0
             if response.lease is None:
                 if self._wait_for_work(once=once):
-                    return
+                    return 10 if launcher_managed else None
                 continue
             selected = select_gpu(hardware.gpus)
             lease = _lease_for_gpu(response.lease, selected)
@@ -320,6 +335,8 @@ class Worker:
                 raise
             if once:
                 return
+            if launcher_managed:
+                return 0
 
     def _claim_continuously(
         self, *, hardware: HardwareReport, once: bool
