@@ -1,9 +1,21 @@
-"""Collect CPU-only runtime inventories from an immutable native candidate image."""
+"""Capture actual worker runtimes for maintainer release compatibility gates.
 
-import argparse
+The CPU-only inventory steps in .github/workflows/worker-image.yaml query installed
+Python package and dpkg versions inside each native, immutable candidate image via
+Docker, without GPU access or model evaluation. The JSON artifact binds that inventory
+to its architecture, image index digest, source SHA, and workflow run/attempt.
+
+Release gates compare this actual runtime against the baseline as well as comparing
+source and lock files: mutable apt repositories can change installed versions without
+source changes. Missing inventories fail closed at release time. This is maintainer
+release tooling, not the volunteer startup script.
+"""
+
 import json
 import re
 from pathlib import Path
+
+import click
 
 from scripts.release_volunteer_worker import IMAGE, command, require
 
@@ -21,18 +33,41 @@ print(json.dumps({
 """
 
 
-def main() -> None:
-    """Write attempt-qualified candidate metadata for the image workflow."""
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--architecture", required=True)
-    parser.add_argument("--index-digest", required=True)
-    parser.add_argument("--source-sha", required=True)
-    parser.add_argument("--run-id", type=int, required=True)
-    parser.add_argument("--run-attempt", type=int, required=True)
-    parser.add_argument("--output", type=Path, required=True)
-    args = vars(parser.parse_args())
-    output = args.pop("output")
-    output.write_text(json.dumps(collect(**args), sort_keys=True))
+@click.command()
+@click.option("--architecture", required=True)
+@click.option("--index-digest", required=True)
+@click.option("--source-sha", required=True)
+@click.option("--run-id", type=int, required=True)
+@click.option("--run-attempt", type=int, required=True)
+@click.option(
+    "--output", type=click.Path(path_type=Path, dir_okay=False), required=True
+)
+def main(
+    architecture: str,
+    index_digest: str,
+    source_sha: str,
+    run_id: int,
+    run_attempt: int,
+    output: Path,
+) -> None:
+    """Write attempt-qualified candidate metadata for the image workflow.
+
+    Args:
+        architecture: Native build architecture.
+        index_digest: Original attestation-bearing candidate index.
+        source_sha: Full trusted source SHA.
+        run_id: GitHub workflow run identity.
+        run_attempt: Exact workflow attempt.
+        output: Destination JSON artifact.
+    """
+    inventory = collect(
+        architecture=architecture,
+        index_digest=index_digest,
+        source_sha=source_sha,
+        run_id=run_id,
+        run_attempt=run_attempt,
+    )
+    output.write_text(json.dumps(inventory, sort_keys=True))
 
 
 def collect(
