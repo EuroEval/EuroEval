@@ -498,6 +498,58 @@ def test_github_artifact_observation_checks_archive_identity(
     ]
 
 
+def test_github_pending_selects_newest_publication(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Select the latest published staged plan from an unordered release list."""
+    observations = [
+        {
+            "tag_name": "worker-release-older",
+            "draft": False,
+            "published_at": "2026-11-23T11:08:43Z",
+            "assets": [{"name": "release.json", "id": 1}],
+        },
+        {
+            "tag_name": "worker-release-draft",
+            "draft": True,
+            "published_at": None,
+            "assets": [{"name": "release.json", "id": 3}],
+        },
+        {
+            "tag_name": "worker-release-newer",
+            "draft": False,
+            "published_at": "2026-11-23T21:26:15Z",
+            "assets": [{"name": "release.json", "id": 2}],
+        },
+    ]
+    plans = {
+        "1": {"source_sha": "a" * 40},
+        "2": {"source_sha": "b" * 40},
+        "3": {"source_sha": "c" * 40},
+    }
+
+    def execute(args: list[str], data: bytes | None = None) -> bytes:
+        """Serve release listings and immutable plan assets through the CLI seam.
+
+        Args:
+            args: Requested GitHub CLI operation.
+            data: Optional stdin.
+
+        Returns:
+            The public metadata returned by the requested GitHub endpoint.
+        """
+        endpoint = args[-1].partition("?")[0]
+        value = (
+            observations
+            if endpoint.endswith("/releases")
+            else plans[endpoint.rsplit("/", maxsplit=1)[-1]]
+        )
+        return json.dumps(value).encode()
+
+    monkeypatch.setattr(release, "command", execute)
+    assert release.GitHub().pending() == plans["2"]
+
+
 def test_incomplete_workflow_waits_without_effects() -> None:
     """Either completion order waits for the other workflow without publishing."""
     github, registry, policy, local = inputs()

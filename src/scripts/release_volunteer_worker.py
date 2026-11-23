@@ -253,7 +253,9 @@ class GitHub:
             The public staged plan, or None.
         """
         releases = self.api("releases?per_page=100")["items"]
-        for release in releases:
+        for release in sorted(
+            releases, key=lambda item: item["published_at"] or "", reverse=True
+        ):
             if (
                 release["tag_name"].startswith("worker-release-")
                 and not release["draft"]
