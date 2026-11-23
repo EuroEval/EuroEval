@@ -501,9 +501,10 @@ def test_ci_cannot_deploy_or_promote(
 
 
 def test_click_and_legacy_main_disabled_and_invalid(
-    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Both public CLI seams stay inert when disabled and report usage failures."""
+    monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("WORKER_RELEASE_ENABLED", raising=False)
     runner = CliRunner()
     for phase in ("stage", "prepare", "predeploy", "finish"):
@@ -681,9 +682,10 @@ def test_configure_disable_local(activation_checkout: Path) -> None:
 
 
 def test_disabled_hooks_never_construct_adapters(
-    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Default installation is inert and needs no credentials or pending release."""
+    monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("WORKER_RELEASE_ENABLED", raising=False)
     for name in ("stage", "prepare", "predeploy", "finish"):
         assert release.main([name]) == 0
