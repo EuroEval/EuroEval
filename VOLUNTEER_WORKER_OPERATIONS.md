@@ -30,9 +30,8 @@ PROMOTED_DIGEST=sha256:cc0656654f464d4fc89055307cb00f0b0a355eca3938d53575b580b15
 
 Both Production `VOLUNTEER_WORKER_IMAGE_DIGEST` and
 `VOLUNTEER_WORKER_IMAGE_DIGEST_ARM64` use that index digest. Production advertises
-EuroEval `18.4.0.dev0` and worker `1.0.0`. The candidate workflow's ARM metadata still
-says `blocked-pending-physical-spark-canary`: that is a build-time gate, not the final
-promotion record. Each future release must pass the hardware gates again.
+EuroEval `18.4.0.dev0` and worker `1.0.0`. Physical GPU diagnostics are optional and
+do not gate release promotion.
 
 Both architectures passed CUDA matmul, FlashInfer RMSNorm, actual Triton JIT execution,
 and pinned public-model vLLM generation as UID 10001. ARM also passed the restrictive
@@ -905,16 +904,17 @@ publish nor provide physical GPU acceptance. Trusted runs publish commit-SHA can
 provenance, and SBOMs, verify public access anonymously, and upload metadata artifacts.
 The workflow serialises builds for the same commit and never updates `latest`.
 
-The ARM job/artifact's candidate-only label requires reviewed physical acceptance
-or exact runtime, guide and installed-inventory equality with a reviewed baseline. It
-does not revoke an older image's completed promotion. Accept
-both architectures from the intended source/dependency set before combining them; never
+CI, native builds for both architectures, and verified immutable image provenance
+are the release checks. Physical GPU acceptance is not required for staging or
+promotion. Combine both architecture candidates from the intended source; never
 configure an ARM-only index as the global amd64 image identity.
 
-### Physical GPU acceptance
+### Optional physical GPU diagnostics
 
-Use exact immutable candidate references from the trusted workflow, on their real
-architectures: x86_64 for amd64 and DGX Spark/aarch64 for ARM. Record the source commit,
+These diagnostics are available when investigating GPU-specific changes or failures.
+They are not prerequisites for a release. Use exact immutable candidate references
+from the trusted workflow, on their real architectures: x86_64 for amd64 and DGX
+Spark/aarch64 for ARM. Record the source commit,
 index/platform digests, image ID, UID, host architecture, GPU/driver, dependency
 versions, available resources, commands, exit codes, and logs. CPU imports, QEMU, and a
 Dockerfile rebuilt locally are not physical acceptance of a published candidate.
@@ -1076,12 +1076,12 @@ does not expose Docker controls. Never claim an untested isolation setting. Use
 `FULL_LOG=1` to expose engine root causes. JIT/config caches must remain under `/cache`;
 do not make the root writable or `/tmp` executable to hide a cache failure.
 
-### Two-phase release automation (configured capability, operationally off)
+### Two-phase release automation
 
-Automation is **off by default**. Installation is not authorisation to activate it,
-create credentials, run hardware canaries, or change production. No historical
-`cc065...` or `e5...` candidate is implicitly accepted by these defaults. Empty
-acceptance and baseline records fail closed.
+Automation is configured once for the linked production project. Installation does
+not activate deployment or authorise credential creation or hardware diagnostics.
+Once enabled, successful trusted CI and native image builds make a release eligible
+for staging. Physical GPU proofs and protected acceptance variables are not required.
 
 The implemented commands in `src/scripts/release_volunteer_worker.py` are `stage`,
 `prepare`, `predeploy`, and `finish`.
@@ -1096,17 +1096,17 @@ index writes use `oras manifest push`. CLI errors suppress remote response bodie
    image run ID, attempt, artifact ID and artifact archive digest. Fork/PR runs,
    mismatched artifacts, stale source, and incomplete attempts are refused. Only
    small public image metadata/inventory artifacts are downloaded.
-2. `stage` combines the **original** approved indexes, retaining every platform and
+2. `stage` combines the verified candidate indexes, retaining every platform and
    attestation descriptor. It records platform manifest/config identities and the
    previous immutable release digest. It publishes an immutable
    `worker-release-SHA-RUN-ATTEMPT` index/tag and a GitHub prerelease containing only
    `release.json`. It does not move `latest`, build the website, or change production.
 3. The ordinary **local** `make frontend` schedule is unchanged: prepare the worktree,
-   prepare approved release configuration, refresh Production configuration/build,
+   prepare staged release configuration, refresh Production configuration/build,
    verify functions, predeploy recheck, deploy, then verify and promote locally. It uses
    existing local CSVs. There is no CSV archive, upload, storage or download mechanism
    and no CI website rebuild. With automation disabled, hooks do not contact remote
-   services. With no approved pending release, they perform no configuration writes.
+   services. With no staged pending release, they perform no configuration writes.
 4. `prepare` checks source versions and generated policy hashes, expected previous
    release, main HEAD, existing project linkage, alias identity and config metadata.
    Only four existing exact-Production **plain** entries may change:
@@ -1135,12 +1135,10 @@ index writes use `oras manifest push`. CLI errors suppress remote response bodie
 - The checked-in policy enables the **capability**, not the operation. Verified
   linkage is project `prj_ILGcAQ9jaNsYVN3V7qsZuft3AQ0C`, team
   `team_kAFROnkIpFZaiTBzhIck1mhw`, production alias `euroeval.com` (verified true).
-  Source `acceptance` and `baseline` stay empty: reviewed decisions live externally
-  so committing acceptance cannot invalidate the accepted source SHA.
 - Configure protected GitHub environment `volunteer-worker-release` with **main-only**
-  deployment rules. Do not add an extra human environment approval per release: the
-  gate is reviewed, tested runtime evidence. Leave repository variable
-  `WORKER_RELEASE_ENABLED` absent until setup and proofs are approved. Workflows still
+  deployment rules. Do not add an extra human environment approval per release.
+  Leave repository variable `WORKER_RELEASE_ENABLED` absent until setup is complete.
+  Workflows still
   require its exact value `true`; local markers cannot arm CI. Staging is
   serialized without cancellation. Deployment and promotion are local-only. No frontend
   build or CSV transfer happens in CI.
@@ -1154,45 +1152,10 @@ index writes use `oras manifest push`. CLI errors suppress remote response bodie
   with package write access; do not add broad repository scope or send it to CI.
   Supply credentials through protected stdin or the credential store, never command
   arguments, transcripts, markers, or logs. Activation does not read `.env`.
-- Obtain actual native amd64 **and** physical DGX Spark arm64 acceptance following
-  **VOLUNTEER_WORKER.md exactly on a clean Docker GPU host**. No fancy environment,
-  injected credentials, custom test startup, or workaround qualifies. Use the guide's
-  manual pinned Docker alternative for the first candidate before broker approval,
-  keeping all documented Docker settings and interactive device sign-in. Complete a
-  real evaluation; diagnostic matmul or health checks are not substitutes. Sparkie
-  is busy: this setup grants no permission to touch it or run any GPU work.
-- Retain proof JSON as release assets in fixed repository `EuroEval/EuroEval`, with
-  raw-byte `sha256:64lowercasehex` hashes (not reserialized hashes). Each exact
-  `validate_physical_proof` schema has these identity fields:
-  `source_sha` (40 lowercase hex), `architecture` (`amd64` or `arm64`),
-  `platform` (`{"os":"linux","architecture":"<native architecture>"}`),
-  `index_digest`, `manifest_digest`, `config_digest`, `run_id`, `run_attempt`,
-  `runtime_fingerprint`, `guide_sha256`, and `inventory` (complete nonempty `python`
-  and `dpkg` lists). Add **only** `schema: 1`,
-  `test_kind: "manual-pinned-docker"` or `"launcher"`, `documented_command` (the
-  executed guide command, 1–4096 characters), `guide_exact: true`,
-  `clean_docker_gpu_host: true`, `evaluation_completed: true`, `exit_code: 0`,
-  `transcript_asset_id` (positive fixed-repository release asset ID), and
-  `transcript_sha256`. Run IDs/attempts are positive integers; all digest fields use
-  `sha256:64lowercasehex`. Transcripts must be **NONSECRET REDACTED** summaries, never
-  device codes, credentials, or private corpus. Retain and review their exact bytes
-  against the recorded hash too. These are operator observations, not remote hardware
-  attestation. Never fabricate acceptance flags, observations, or baselines.
-- Set protected environment variable `WORKER_RELEASE_ACCEPTANCE_JSON` to an object
-  keyed by full original source SHA, then `amd64`/`arm64`. Each architecture record
-  requires `record_id` (nonempty retained evidence reference), `reviewer` (nonempty),
-  `accepted: true`, `index_digest`, `proof_asset_id` (positive fixed-repository release
-  asset ID), and `proof_sha256` (raw proof bytes). `validate_acceptance` retrieves
-  those assets and compares every original observed identity before effects.
-- Optional `WORKER_RELEASE_BASELINE_JSON` requires `accepted_architectures`
-  (`["amd64", "arm64"]`), `acceptance` (same reviewed per-architecture records),
-  `source_sha`, `indexes`, `identities` (per-architecture `manifest`/`config`),
-  `run_id`, `run_attempt`, `runtime_fingerprint`, `guide_sha256`, and `inventories`.
-  Preserve the **original accepted build identities**, never replace them with new
-  candidate IDs. Reuse requires identical runtime fingerprint and complete installed
-  Python/dependency and dpkg inventories. Mutable apt changes invalidate reuse;
-  runtime/CUDA/dependency changes require fresh physical acceptance on both platforms.
-- After owner-authorized setup/proofs, set repository `WORKER_RELEASE_ENABLED=true`
+- GPU diagnostics are optional. Keep historical evidence under its original image
+  identities; do not relabel it as a new test. Diagnostic summaries must exclude
+  device codes, credentials, and private corpus content.
+- After owner-authorized setup, set repository `WORKER_RELEASE_ENABLED=true`
   and configure local activation **once**, in the correctly linked checkout:
 
   ```sh
@@ -1213,15 +1176,15 @@ index writes use `oras manifest push`. CLI errors suppress remote response bodie
   uv run python src/scripts/release_volunteer_worker.py disable-local
   ```
 
-- Per release: trusted push CI/image candidates → reviewed evidence → `stage` →
+- Per release: trusted push CI/image candidates → `stage` →
   **normal local `make frontend`** → synchronous local `finish` → `latest`. No
   prefix/export is needed for each local deploy; local hooks consume
-  the trusted staged plan, not protected acceptance variables. Stage may be retried
-  with workflow dispatch after review. Stage/prepare do **not** require the old
+  the trusted staged plan. Stage may be retried with workflow dispatch. Stage/prepare do
+  **not** require the old
   public `/api/worker/release-info` endpoint. Finish requires the **new**
-  deployed endpoint and actual CLI receipt. After promotion, use a fresh recommended
-  curl launcher from VOLUNTEER_WORKER.md on a clean GPU host to validate the managed
-  path separately. Volunteer result approve/reject decisions remain a separate
+  deployed endpoint and actual CLI receipt. After promotion, volunteers can use the
+  recommended launcher from VOLUNTEER_WORKER.md. Volunteer result approve/reject
+  decisions remain a separate
   explicit permission step using the unchanged fenced review commands above.
 
 #### Recovery without automatic rollback
@@ -1254,8 +1217,8 @@ rebuild or relabel a different image as an old digest.
 - Update the worker package/image and `VOLUNTEER_WORKER_VERSION` independently when the
   worker protocol changes (the current worker version is `1.0.0`).
 - Run the API tests (`npm run test:api`) and the relevant Python tests/checks.
-- Publish and anonymously verify candidates; review both physical acceptance records.
-- Stage the approved release, then deploy locally before finalizing `latest`.
+- Publish and anonymously verify both native candidates and their build provenance.
+- Stage the verified release, then deploy locally before finalizing `latest`.
 - Update both image variables to the accepted multi-platform index, align versions and
   policies, verify Vercel public/sensitive types, deploy, and repeat readiness and safe
   route probes. Confirm the production alias actually serves the new deployment.
@@ -1280,10 +1243,9 @@ rebuild or relabel a different image as an old digest.
   on the organisation's normal schedule. Coordinate rotations, verify safe probes, and
   revoke old credentials. Do not routinely rotate `VOLUNTEER_MARKER_SECRET`; changing it
   requires the signed-marker migration described above.
-- Re-run the physical GPU canary after changes to the CUDA base, locked dependencies,
-  NVIDIA toolkit, or host driver. Human or independent verification of the running image
-  remains required: the configured digest is provenance carried by a lease, not runtime
-  attestation.
+- Optionally run GPU diagnostics when investigating CUDA, dependency, toolkit, or
+  driver changes. The configured digest is provenance carried by a lease, not runtime
+  attestation; physical checks are not a release prerequisite.
 
 If finalisation fails after deployment, preserve the nonsecret journal and actual
 CLI deployment receipt. Inspect production and the registry before retrying

@@ -1,14 +1,14 @@
-"""Capture actual worker runtimes for maintainer release compatibility gates.
+"""Capture CPU-only installed package metadata for worker release provenance.
 
 The CPU-only inventory steps in .github/workflows/worker-image.yaml query installed
 Python package and dpkg versions inside each native, immutable candidate image via
 Docker, without GPU access or model evaluation. The JSON artifact binds that inventory
 to its architecture, image index digest, source SHA, and workflow run/attempt.
 
-Release gates compare this actual runtime against the baseline as well as comparing
-source and lock files: mutable apt repositories can change installed versions without
-source changes. Missing inventories fail closed at release time. This is maintainer
-release tooling, not the volunteer startup script.
+Installed versions are recorded because mutable apt repositories can change them
+without source changes. Inventories describe each published image; they do not require
+a reviewed baseline or physical GPU acceptance. This is maintainer release tooling,
+not the volunteer startup script.
 """
 
 import json

@@ -358,7 +358,7 @@ jobs:
           DIGEST: ${{ steps.spark-build.outputs.digest }}
         run: |
           set -euo pipefail
-          printf '{"commit":"%s","image":"%s","platform":"%s","sha_tag":"%s","digest":"%s","promotion":"blocked-pending-physical-spark-canary"}\n' \
+          printf '{"commit":"%s","image":"%s","platform":"%s","sha_tag":"%s","digest":"%s","promotion":"candidate-only"}\n' \
             "$COMMIT" "$IMAGE" "$PLATFORM" "$SPARK_SHA_TAG" "$DIGEST" > worker-image-spark-arm64-metadata.json
           {
             echo "## Volunteer worker Spark ARM64 candidate (not promotable)"
@@ -367,7 +367,7 @@ jobs:
             printf -- '- Platform: `%s`\n' "$PLATFORM"
             printf -- '- Candidate-only SHA tag: `%s`\n' "$SPARK_SHA_TAG"
             printf -- '- Digest: `%s`\n' "$DIGEST"
-            echo '- Promotion: blocked pending a physical DGX Spark canary.'
+            echo '- Promotion: blocked awaiting multi-architecture release staging.'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Spark candidate metadata

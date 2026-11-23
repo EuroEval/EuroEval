@@ -81,7 +81,6 @@ def test_cli_help_lists_workflow_options(inventory_args: list[str]) -> None:
     assert result.exit_code == 0
     for option in inventory_args[::2]:
         assert option in result.output
-    assert "Missing inventories fail closed" in " ".join(result.output.split())
     mock.assert_not_called()
 
 

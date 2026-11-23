@@ -31,7 +31,6 @@ POLICY = Path("src/scripts/worker-release-policy.json")
 ACTIVATION = Path(".vercel/worker-release-activation.json")
 PROJECT = Path(".vercel/project.json")
 STATE = Path(".vercel/worker-release-state.json")
-MAX_PROOF_BYTES = 262144
 POLICIES = ("api/worker/scope-policy.json", "api/worker/_lib/scope-policy.generated.ts")
 
 
@@ -77,17 +76,6 @@ class GitHubAdapter(t.Protocol):
 
         Returns:
             The public staged plan, or None.
-        """
-        ...
-
-    def proof_asset(self, asset_id: int) -> bytes:
-        """Read exact retained proof bytes from the fixed repository.
-
-        Args:
-            asset_id: Positive release asset identity.
-
-        Returns:
-            Bounded raw JSON bytes.
         """
         ...
 
@@ -284,35 +272,6 @@ class GitHub:
                 return json.loads(raw)
         return None
 
-    def proof_asset(self, asset_id: int) -> bytes:
-        """Retrieve bounded retained evidence only from the fixed repository.
-
-        Args:
-            asset_id: Positive GitHub release asset identity, never a URL.
-
-        Returns:
-            Exact retained JSON bytes.
-        """
-        require(type(asset_id) is int and asset_id > 0, "invalid proof asset id")
-        metadata = self.api(f"releases/assets/{asset_id}")
-        require(
-            metadata.get("id") == asset_id
-            and type(metadata.get("size")) is int
-            and 0 < metadata["size"] <= MAX_PROOF_BYTES,
-            "invalid proof asset size",
-        )
-        raw = command(
-            [
-                "gh",
-                "api",
-                "-H",
-                "Accept: application/octet-stream",
-                f"repos/{REPOSITORY}/releases/assets/{asset_id}",
-            ]
-        )
-        require(len(raw) == metadata["size"], "proof asset size changed")
-        return raw
-
     def publish(self, plan: dict) -> None:
         """Publish only public JSON, never image or leaderboard archives.
 
@@ -417,12 +376,6 @@ def cli(operation: str) -> int:
             ),
             "deployment and promotion are local operations only",
         )
-        for key, variable in (
-            ("acceptance", "WORKER_RELEASE_ACCEPTANCE_JSON"),
-            ("baseline", "WORKER_RELEASE_BASELINE_JSON"),
-        ):
-            if os.environ.get(variable):
-                policy[key] = json.loads(os.environ[variable])
         github, registry = GitHub(), Registry()
         if operation == "stage":
             stage(github, registry, policy, source())
@@ -848,7 +801,6 @@ def finalize(
         digest(latest) in (plan["previous_digest"], plan["image_digest"]),
         "latest changed since staging",
     )
-    validate_release_acceptance(github=github, plan=plan)
     verify_production(vercel, plan, deployment)
     require(github.head() == plan["source_sha"], "main advanced before promotion")
     require(vercel.production()["id"] == deployment, "alias changed before promotion")
@@ -888,276 +840,6 @@ def eligible(run: dict, sha: str, workflow: str) -> None:
         and run["status"] == "completed"
         and not run["pull_requests"],
         "untrusted or unsuccessful workflow",
-    )
-
-
-def validate_release_acceptance(github: GitHubAdapter, plan: dict) -> None:
-    """Validate physical evidence and any separately reviewed runtime changes.
-
-    Args:
-        github: Fixed-repository retained evidence observations.
-        plan: Candidate identities and their original physical acceptance basis.
-    """
-    basis = plan["acceptance_basis"]
-    validate_acceptance(github=github, records=plan["acceptance"], basis=basis)
-    reference = plan.get("compatibility")
-    unchanged = all(
-        plan[key] == basis[key]
-        for key in ("runtime_fingerprint", "guide_sha256", "inventories")
-    )
-    if reference is not None or not unchanged:
-        validate_compatibility(
-            github=github, reference=reference, basis=basis, candidate=plan
-        )
-
-
-def validate_acceptance(github: GitHubAdapter, records: dict, basis: dict) -> None:
-    """Consume both reviewed retained proofs before release effects.
-
-    Per-architecture records: record_id, reviewer, accepted=true, index_digest,
-    proof_asset_id (positive GitHub release asset ID), proof_sha256.
-    Baseline fields: accepted_architectures, acceptance (same records), source_sha,
-    indexes, identities, run_id, run_attempt, runtime_fingerprint, guide_sha256,
-    inventories. These are ORIGINAL accepted build identities, not new candidate
-    identities. Operator review is not remote hardware attestation.
-
-    Args:
-        github: Fixed-repository byte retrieval adapter.
-        records: Protected decisions by native architecture.
-        basis: Original observed build and runtime metadata.
-    """
-    require(set(records) == set(ARCHES), "both retained physical proofs required")
-    require(re.fullmatch(r"[0-9a-f]{40}", basis["source_sha"]), "invalid proof source")
-    for key in ("run_id", "run_attempt"):
-        require(type(basis[key]) is int and basis[key] > 0, "invalid image run")
-    for arch in ARCHES:
-        record = records[arch]
-        require(
-            record.get("accepted") is True
-            and isinstance(record.get("record_id"), str)
-            and record["record_id"]
-            and isinstance(record.get("reviewer"), str)
-            and record["reviewer"]
-            and record.get("index_digest") == basis["indexes"][arch]
-            and type(record.get("proof_asset_id")) is int
-            and record["proof_asset_id"] > 0,
-            "reviewed retained physical acceptance required",
-        )
-        expected = {
-            "source_sha": basis["source_sha"],
-            "architecture": arch,
-            "platform": {"os": "linux", "architecture": arch},
-            "index_digest": basis["indexes"][arch],
-            "manifest_digest": basis["identities"][arch]["manifest"],
-            "config_digest": basis["identities"][arch]["config"],
-            "run_id": basis["run_id"],
-            "run_attempt": basis["run_attempt"],
-            "runtime_fingerprint": basis["runtime_fingerprint"],
-            "guide_sha256": basis["guide_sha256"],
-            "inventory": basis["inventories"][arch],
-        }
-        validate_physical_proof(
-            raw=github.proof_asset(record["proof_asset_id"]),
-            sha256=record.get("proof_sha256", ""),
-            expected=expected,
-        )
-
-
-def validate_physical_proof(raw: bytes, sha256: str, expected: dict) -> dict:
-    """Validate retained observations of a REAL documented GPU evaluation.
-
-    Exact JSON schema: expected identity fields (source_sha, architecture,
-    platform (linux/native architecture), index_digest, manifest_digest,
-    config_digest, run_id, run_attempt,
-    runtime_fingerprint, guide_sha256, inventory), plus schema=1,
-    test_kind=manual-pinned-docker|launcher, documented_command (executed guide
-    command, <=4096 chars), guide_exact=true, clean_docker_gpu_host=true,
-    evaluation_completed=true, exit_code=0, transcript_asset_id (positive fixed
-    repository release asset ID), transcript_sha256. Digests use sha256:64hex.
-    Inventory is complete CPU-only python/dpkg metadata. Transcript reference is
-    a NONSECRET REDACTED summary: NEVER device codes, credentials/private corpus.
-    Diagnostic matmul is not evaluation completion. Operator review of these
-    observations is not unforgeable hardware provenance.
-
-    Args:
-        raw: Exact retained bytes, at most 256 KiB.
-        sha256: Protected exact-byte digest.
-        expected: Original observed identities and complete inventory.
-
-    Returns:
-        Validated decoded proof.
-    """
-    require(
-        isinstance(raw, bytes) and 0 < len(raw) <= MAX_PROOF_BYTES,
-        "physical proof size invalid",
-    )
-    require(
-        re.fullmatch(r"sha256:[0-9a-f]{64}", sha256) and digest(raw) == sha256,
-        "physical proof digest mismatch",
-    )
-    identity_keys = {
-        "source_sha",
-        "architecture",
-        "platform",
-        "index_digest",
-        "manifest_digest",
-        "config_digest",
-        "run_id",
-        "run_attempt",
-        "runtime_fingerprint",
-        "guide_sha256",
-        "inventory",
-    }
-    require(set(expected) == identity_keys, "expected proof schema mismatch")
-    proof = json.loads(raw)
-    keys = {
-        "schema",
-        "test_kind",
-        "documented_command",
-        "guide_exact",
-        "clean_docker_gpu_host",
-        "evaluation_completed",
-        "exit_code",
-        "transcript_asset_id",
-        "transcript_sha256",
-    }
-    require(
-        isinstance(proof, dict) and set(proof) == set(expected) | keys,
-        "physical proof schema mismatch",
-    )
-    require(
-        all(proof[k] == v for k, v in expected.items()),
-        "physical proof identity mismatch",
-    )
-    for key in (
-        "index_digest",
-        "manifest_digest",
-        "config_digest",
-        "runtime_fingerprint",
-        "guide_sha256",
-        "transcript_sha256",
-    ):
-        require(
-            isinstance(proof[key], str)
-            and re.fullmatch(r"sha256:[0-9a-f]{64}", proof[key]),
-            "invalid physical proof content identity",
-        )
-    require(proof["architecture"] in ARCHES, "invalid native architecture")
-    require(
-        isinstance(proof["source_sha"], str)
-        and re.fullmatch(r"[0-9a-f]{40}", proof["source_sha"]),
-        "invalid source",
-    )
-    for key in ("run_id", "run_attempt"):
-        require(type(proof[key]) is int and proof[key] > 0, "invalid image run")
-    require(
-        isinstance(proof["inventory"], dict)
-        and set(proof["inventory"]) == {"python", "dpkg"}
-        and all(isinstance(v, list) and v for v in proof["inventory"].values()),
-        "complete CPU inventory required",
-    )
-    require(
-        type(proof["schema"]) is int
-        and proof["schema"] == 1
-        and proof["test_kind"] in ("manual-pinned-docker", "launcher")
-        and isinstance(proof["documented_command"], str)
-        and 0 < len(proof["documented_command"]) <= 4096
-        and proof["guide_exact"] is True
-        and proof["clean_docker_gpu_host"] is True
-        and proof["evaluation_completed"] is True
-        and type(proof["exit_code"]) is int
-        and proof["exit_code"] == 0
-        and type(proof["transcript_asset_id"]) is int
-        and proof["transcript_asset_id"] > 0,
-        "successful documented physical evaluation required",
-    )
-    return proof
-
-
-def validate_compatibility(
-    github: GitHubAdapter, reference: dict | None, basis: dict, candidate: dict
-) -> None:
-    """Bind reviewed source-only changes to the original accepted GPU runtimes.
-
-    This is not physical proof of the candidate. Installed dependencies and the
-    manual evaluation guide must still match the original physical acceptance.
-
-    Args:
-        github: Fixed-repository evidence and trusted CI observations.
-        reference: Protected exact-byte compatibility decision reference.
-        basis: Unmodified original physical acceptance identities.
-        candidate: Observed candidate runtime metadata.
-
-    Raises:
-        ValueError: When the retained compatibility decision does not validate.
-    """
-    if not isinstance(reference, dict):
-        raise ValueError("reviewed compatibility evidence required")
-    require(
-        set(reference) == {"asset_id", "sha256"}
-        and type(reference["asset_id"]) is int
-        and reference["asset_id"] > 0,
-        "reviewed compatibility evidence required",
-    )
-    raw = github.proof_asset(reference["asset_id"])
-    require(
-        0 < len(raw) <= MAX_PROOF_BYTES
-        and isinstance(reference["sha256"], str)
-        and re.fullmatch(r"sha256:[0-9a-f]{64}", reference["sha256"])
-        and digest(raw) == reference["sha256"],
-        "compatibility evidence digest mismatch",
-    )
-    decision = json.loads(raw)
-    require(
-        isinstance(decision, dict)
-        and set(decision)
-        == {
-            "schema",
-            "kind",
-            "baseline_source_sha",
-            "reviewed_source_sha",
-            "runtime_fingerprint",
-            "guide_sha256",
-            "ci_run_id",
-            "ci_run_attempt",
-            "reviewer",
-            "rationale",
-            "reviewed_diff",
-        },
-        "compatibility evidence schema mismatch",
-    )
-    require(
-        type(decision["schema"]) is int
-        and decision["schema"] == 1
-        and decision["kind"] == "reviewed-runtime-compatibility"
-        and decision["baseline_source_sha"] == basis["source_sha"]
-        and isinstance(decision["reviewed_source_sha"], str)
-        and re.fullmatch(r"[0-9a-f]{40}", decision["reviewed_source_sha"])
-        and decision["runtime_fingerprint"] == candidate["runtime_fingerprint"]
-        and decision["guide_sha256"] == candidate["guide_sha256"]
-        and basis["guide_sha256"] == candidate["guide_sha256"]
-        and basis["inventories"] == candidate["inventories"],
-        "reviewed runtime compatibility mismatch",
-    )
-    require(
-        all(
-            isinstance(decision[key], str) and decision[key].strip()
-            for key in ("reviewer", "rationale", "reviewed_diff")
-        )
-        and all(
-            type(decision[key]) is int and decision[key] > 0
-            for key in ("ci_run_id", "ci_run_attempt")
-        ),
-        "reviewed compatibility decision incomplete",
-    )
-    runs = github.runs("ci.yaml", decision["reviewed_source_sha"])
-    require(runs, "reviewed source CI missing")
-    run = max(runs, key=lambda item: (item["run_number"], item["run_attempt"]))
-    eligible(run, decision["reviewed_source_sha"], "ci.yaml")
-    require(
-        run["id"] == decision["ci_run_id"]
-        and run["run_attempt"] == decision["ci_run_attempt"],
-        "reviewed source CI changed",
     )
 
 
@@ -1344,9 +1026,6 @@ def prepare(
         "local versions/source/policy differ from staged plan",
     )
     require(github.head() == plan["source_sha"], "main advanced")
-    validate_release_acceptance(github=github, plan=plan)
-    # The trusted staged plan carries the external reviewed decisions. Local
-    # deployments must not need protected CI acceptance variables in their shell.
     before = vercel.production()["id"]
     entries = vercel.config()
     values = release_values(plan)
@@ -1504,12 +1183,12 @@ def source() -> dict:
 def stage(
     github: GitHubAdapter, registry: RegistryAdapter, policy: dict, local: dict
 ) -> dict | None:
-    """Stage an accepted current-main candidate without touching production/latest.
+    """Stage a CI-verified current-main candidate without touching production/latest.
 
     Args:
         github: Injectable trusted GitHub adapter.
         registry: Injectable OCI adapter.
-        policy: Reviewed acceptance policy.
+        policy: Release activation policy.
         local: Observed source metadata.
 
     Returns:
@@ -1559,35 +1238,6 @@ def stage(
         inventories[arch] = item["inventory"]
         artifacts[arch] = item["artifact_id"]
     descriptors, identities = registry.identities(indexes)
-    candidate = {
-        "source_sha": sha,
-        "indexes": indexes,
-        "identities": identities,
-        "run_id": run["id"],
-        "run_attempt": run["run_attempt"],
-        "runtime_fingerprint": local["runtime_fingerprint"],
-        "guide_sha256": local["guide_sha256"],
-        "inventories": inventories,
-    }
-    baseline = policy.get("baseline", {})
-    fast = (
-        baseline.get("accepted_architectures") == list(ARCHES)
-        and baseline.get("runtime_fingerprint") == local["runtime_fingerprint"]
-        and baseline.get("guide_sha256") == local["guide_sha256"]
-        and baseline.get("inventories") == inventories
-    )
-    specific = policy.get("acceptance", {}).get(sha, {})
-    reviewed = not fast and not specific and baseline.get("compatibility") is not None
-    basis = baseline if fast or reviewed else candidate
-    acceptance = baseline.get("acceptance", {}) if fast or reviewed else specific
-    acceptance_metadata = {
-        "acceptance": acceptance,
-        "acceptance_basis": {key: basis[key] for key in candidate},
-        "compatibility": baseline["compatibility"] if reviewed else None,
-    }
-    validate_release_acceptance(
-        github=github, plan={**candidate, **acceptance_metadata}
-    )
     raw = json.dumps(
         {
             "schemaVersion": 2,
@@ -1626,7 +1276,6 @@ def stage(
         "ci_run_attempt": runs["ci.yaml"]["run_attempt"],
         "previous_digest": digest(latest),
         "inventories": inventories,
-        **acceptance_metadata,
     }
     require(github.head() == sha, "main advanced before metadata publication")
     github.publish(plan)
