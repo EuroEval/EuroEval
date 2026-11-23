@@ -98,6 +98,7 @@ def _run_deploy() -> tuple[str, int, bool, bool]:
         bufsize=1,
     )
     output_tail = ""
+    receipt_output = ""
     upload_seen = False
     deployment_created = False
     deployment_url = ""
@@ -106,6 +107,7 @@ def _run_deploy() -> tuple[str, int, bool, bool]:
             sys.stdout.write(line)
             sys.stdout.flush()
             output_tail = (output_tail + line)[-1024:]
+            receipt_output = (receipt_output + line)[-16384:]
             urls = re.findall(r"https://[A-Za-z0-9.-]+\.vercel\.app", line)
             if urls and (
                 "production:" in line.lower() or line.strip().startswith("https://")
@@ -115,6 +117,7 @@ def _run_deploy() -> tuple[str, int, bool, bool]:
             deployment_created = deployment_created or _indicates_created_deployment(
                 line=line
             )
+    deployment_url = _structured_deployment_url(output=receipt_output) or deployment_url
     if deployment_url:
         output_tail += "\nWorker release deployment receipt: " + deployment_url
     return output_tail, process.wait(), upload_seen, deployment_created
@@ -144,6 +147,37 @@ def _indicates_created_deployment(line: str) -> bool:
             ".vercel.app",
         )
     )
+
+
+def _structured_deployment_url(output: str) -> str:
+    """Read the immutable production receipt from structured Vercel CLI output.
+
+    Args:
+        output:
+            Bounded output containing the CLI's JSON response and progress lines.
+
+    Returns:
+        The READY production URL, or an empty string without a valid receipt.
+    """
+    for match in re.finditer(r"(?m)^\s*\{", output):
+        try:
+            value, _ = json.JSONDecoder().raw_decode(output[match.end() - 1 :])
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(value, dict) or value.get("status") != "ok":
+            continue
+        deployment = value.get("deployment")
+        if not isinstance(deployment, dict):
+            continue
+        url = deployment.get("url")
+        if (
+            deployment.get("readyState") == "READY"
+            and deployment.get("target") == "production"
+            and isinstance(url, str)
+            and re.fullmatch(r"https://[A-Za-z0-9.-]+\.vercel\.app", url)
+        ):
+            return url
+    return ""
 
 
 def record_release_deployment(
