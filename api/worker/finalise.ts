@@ -2,18 +2,37 @@ declare const process: { env: Record<string, string | undefined> };
 
 import {
   BrokerError, ConfigurationError, expectedScope, PROTOCOL_VERSION, addIssueLabel, removeIssueLabel, acquireRenewableIssueMutex,
-  authenticate, brokerErrorBody, deleteLease, enforceRateLimit, extractModelId,
-  fetchIssue, getLeaseById, isReadyForReview, json, method, patchIssue, parseVolunteerMarker,
+  approvedLeaseExecution, authenticate, brokerErrorBody, deleteLease, enforceRateLimit, extractModelId,
+  fetchIssue, getLeaseById, ggufArtifactKey, isReadyForReview, json, method, patchIssue, parseVolunteerMarker,
   readJson, redis, redisGet, requireLeaseOwnership, requireAssignee, requireProtocol,
   selectedLanguages, replaceVolunteerMarker, reconcilePublicAssignments,
   signVolunteerMarker, verifyVolunteerMarker,
 } from "./_lib.js";
 import { uploadStaging } from "./_lib/eee.js";
-import type { Lease, LeaseScope, VolunteerLeaseMarker } from "./_lib.js";
+import type { GgufArtifact, Lease, LeaseExecution, LeaseScope, VolunteerLeaseMarker } from "./_lib.js";
 
 export const config = { runtime: "nodejs" };
 
-type ResultEntry = { digest: string; identity: string; path: string; failed?: number; warnings?: string[] };
+type ResultEntry = { digest: string; identity: string; path: string; failed?: number; warnings?: string[]; artifact?: GgufArtifact };
+
+/** Provenance recorded for external-server manifests: no runtime image attestation exists. */
+export const EXTERNAL_IMAGE_DIGEST_PROVENANCE = "native-external-server-not-runtime-attested" as const;
+
+/**
+ * Verify every uploaded result entry carries exactly the lease's approved
+ * GGUF artifact (or none at all for a CUDA lease), including replays.
+ */
+function requireEntryArtifacts(entries: ResultEntry[], execution: LeaseExecution | null): void {
+  for (const entry of entries) {
+    if (execution) {
+      if (!entry.artifact || ggufArtifactKey(entry.artifact) !== ggufArtifactKey(execution.artifact)) {
+        throw new BrokerError(422, "An uploaded result does not carry the lease's approved GGUF artifact.");
+      }
+    } else if (entry.artifact) {
+      throw new BrokerError(422, "An uploaded result carries a GGUF artifact under a CUDA lease.");
+    }
+  }
+}
 
 /** Reconcile the review label from authenticated whole-request completion state. */
 async function reconcileReviewLabel(issue: Awaited<ReturnType<typeof fetchIssue>>, marker: VolunteerLeaseMarker): Promise<void> {
@@ -102,7 +121,7 @@ export function validateResultScope(entries: ResultEntry[], lease: Lease): strin
   if (!allowed) throw new ConfigurationError("Lease has no trusted expected scope.");
   const scope = lease.expected_scope;
   if ("original_identity_suffix_sets" in scope && scope.original_identity_suffix_sets) {
-    const trusted = expectedScope(lease.euroeval_version, lease.model_type, lease.language);
+    const trusted = expectedScope(lease.euroeval_version, lease.model_type, lease.language, lease.execution !== undefined);
     const original = scope.original_identity_suffix_sets;
     const sameAlternatives = (left: string[][], right: string[][]): boolean =>
       left.length === right.length && left.every((items) => right.some((other) =>
@@ -145,6 +164,7 @@ export async function fetch(req: Request): Promise<Response> {
       if (!old.lease || old.lease.contributor.toLowerCase() !== identity.contributor.toLowerCase()) {
         throw new BrokerError(409, "Lease is absent or belongs to another contributor.");
       }
+      requireEntryArtifacts(old.entries || [], approvedLeaseExecution(old.lease));
       const mutex = await acquireRenewableIssueMutex(old.lease.issue_number);
       if (!mutex) throw new BrokerError(503, "Issue is busy; retry finalisation.", "issue_busy");
       try {
@@ -169,11 +189,15 @@ export async function fetch(req: Request): Promise<Response> {
     if (!active && old?.status !== "manifest_uploaded") throw new BrokerError(409, "Lease is absent, expired, or belongs to another worker.");
     if (Date.parse(lease.expires_at) <= Date.now()) throw new BrokerError(409, "Lease is absent, expired, or belongs to another worker.");
     await requireLeaseOwnership(await fetchIssue(lease.issue_number), lease);
+    // The stored execution is re-approved here; every record artifact
+    // descriptor is verified again before finalisation, not only at upload.
+    const execution = approvedLeaseExecution(lease);
     let receipt: Receipt = old || { status: "validating", submission_id: lease.lease_id, lease, entries: [], manifest_path: `volunteer/manifests/${lease.lease_id}.json` };
     if (receipt.status !== "manifest_uploaded") {
       const raw = await redis("SMEMBERS", `euroeval:worker:results:${lease.lease_id}`);
       const entries = resultEntries(raw);
       const matchedScope = validateResultScope(entries, lease);
+      requireEntryArtifacts(entries, execution);
       receipt.entries = entries; receipt.matched_identity_suffixes = matchedScope; receipt.status = "validating";
       const failedInstances = entries.reduce((total, entry) => total + (entry.failed || 0), 0);
       await redis("SET", statusKey, JSON.stringify(receipt), "EX", String(30 * 24 * 60 * 60));
@@ -184,7 +208,9 @@ export async function fetch(req: Request): Promise<Response> {
         verified_contributor: identity.contributor, model: { id: lease.model_id, revision: lease.model_revision },
         language: lease.language, model_type: lease.model_type, language_group: lease.expected_scope.language_group,
         euroeval_version: lease.euroeval_version, worker_version: lease.worker_version, image_digest: lease.image_digest,
-        image_digest_provenance: "configured-required-not-runtime-attested", gpu_memory_utilisation: lease.gpu_memory_utilisation,
+        image_digest_provenance: execution ? EXTERNAL_IMAGE_DIGEST_PROVENANCE : "configured-required-not-runtime-attested",
+        ...(execution ? { execution } : {}),
+        gpu_memory_utilisation: lease.gpu_memory_utilisation,
         selected_gpu_index: lease.selected_gpu_index, selected_gpu_uuid: lease.selected_gpu_uuid,
         expected_scope: lease.expected_scope, matched_identity_suffixes: receipt.matched_identity_suffixes,
         contamination_canary: lease.contamination_canary || null, results: entries,
@@ -195,6 +221,9 @@ export async function fetch(req: Request): Promise<Response> {
       await requireLeaseOwnership(await fetchIssue(lease.issue_number), lease);
       receipt.status = "manifest_uploaded";
       await redis("SET", statusKey, JSON.stringify(receipt), "EX", String(30 * 24 * 60 * 60));
+    } else {
+      // A resumed manifest upload still re-verifies every stored record artifact.
+      requireEntryArtifacts(receipt.entries, execution);
     }
     if (Date.parse(lease.expires_at) <= Date.now()) throw new BrokerError(409, "Lease is absent, expired, or belongs to another worker.");
     const mutex = await acquireRenewableIssueMutex(lease.issue_number); if (!mutex) throw new BrokerError(503, "Issue is busy; retry finalisation.", "issue_busy");

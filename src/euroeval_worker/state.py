@@ -13,10 +13,12 @@ from pathlib import Path
 from .types import (
     CanaryInstruction,
     EEERecord,
+    ExternalExecution,
     JsonObject,
     Lease,
     ModelEvidence,
     _expected_scope,
+    execution_from_dict,
 )
 
 logger = logging.getLogger(__name__)
@@ -57,6 +59,15 @@ def _lease_from_state(value: object) -> Lease:
     model_type = value["model_type"]
     if model_type not in {"encoder", "generative"}:
         raise ValueError("model_type is malformed")
+    execution: ExternalExecution | None = execution_from_dict(
+        value=value.get("execution")
+    )
+    image_digest = value["image_digest"]
+    if execution is not None:
+        if image_digest is not None:
+            raise ValueError("external lease must persist image_digest null")
+    elif not isinstance(image_digest, str) or not image_digest:
+        raise ValueError("image_digest is malformed")
     selected_gpu_uuid = value.get("selected_gpu_uuid")
     if selected_gpu_uuid is not None and (
         not isinstance(selected_gpu_uuid, str) or not selected_gpu_uuid
@@ -67,6 +78,10 @@ def _lease_from_state(value: object) -> Lease:
         isinstance(selected_gpu_index, bool) or not isinstance(selected_gpu_index, int)
     ):
         raise ValueError("selected_gpu_index is malformed")
+    if execution is not None and (
+        selected_gpu_uuid is not None or selected_gpu_index is not None
+    ):
+        raise ValueError("external lease must not persist a selected GPU")
     gpu_memory_utilisation = value.get("gpu_memory_utilisation", 0.8)
     if (
         isinstance(gpu_memory_utilisation, bool)
@@ -102,13 +117,13 @@ def _lease_from_state(value: object) -> Lease:
         model_revision=value["model_revision"],
         language=value["language"],
         euroeval_version=value["euroeval_version"],
-        image_digest=value["image_digest"],
+        image_digest=image_digest,
         worker_version=value["worker_version"],
         gpu_memory_utilisation=float(gpu_memory_utilisation),
         expires_at=value["expires_at"],
         model_type=model_type,
-        selected_gpu_uuid=selected_gpu_uuid,
-        selected_gpu_index=selected_gpu_index,
+        selected_gpu_uuid=selected_gpu_uuid if execution is None else None,
+        selected_gpu_index=selected_gpu_index if execution is None else None,
         model_metadata=ModelEvidence(
             pipeline_tag=pipeline_tag,
             architectures=tuple(architectures),
@@ -117,6 +132,7 @@ def _lease_from_state(value: object) -> Lease:
         ),
         expected_scope=expected_scope,
         contamination_canary=_canary_instruction(value.get("contamination_canary")),
+        execution=execution,
     )
 
 
@@ -203,6 +219,7 @@ class ActiveLease:
     evaluation_failures: int = 0
     release_pending: bool = False
     managed_image_digest: str | None = None
+    execution_fingerprint: str | None = None
 
 
 class StateStore:
@@ -312,6 +329,7 @@ class StateStore:
             evaluation_failures=active.evaluation_failures,
             release_pending=active.release_pending,
             managed_image_digest=active.managed_image_digest,
+            execution_fingerprint=active.execution_fingerprint,
         )
 
     def load_active(self) -> ActiveLease | None:
@@ -359,6 +377,16 @@ class StateStore:
                 not isinstance(managed_image_digest, str) or not managed_image_digest
             ):
                 raise ValueError("managed_image_digest is malformed")
+            execution_fingerprint = raw.get("execution_fingerprint")
+            if execution_fingerprint is not None and (
+                not isinstance(execution_fingerprint, str)
+                or len(execution_fingerprint) != 64
+                or any(
+                    character not in "0123456789abcdef"
+                    for character in execution_fingerprint
+                )
+            ):
+                raise ValueError("execution_fingerprint is malformed")
             return ActiveLease(
                 lease=lease,
                 records=records,
@@ -367,6 +395,7 @@ class StateStore:
                 evaluation_failures=evaluation_failures,
                 release_pending=release_pending,
                 managed_image_digest=managed_image_digest,
+                execution_fingerprint=execution_fingerprint,
             )
         except (
             OSError,
@@ -388,6 +417,7 @@ class StateStore:
         evaluation_failures: int = 0,
         release_pending: bool = False,
         managed_image_digest: str | None = None,
+        execution_fingerprint: str | None = None,
     ) -> None:
         """Atomically save a lease before evaluation or submission starts.
 
@@ -406,10 +436,14 @@ class StateStore:
                 Whether an exhausted failed job must be released before claiming.
             managed_image_digest (optional):
                 Managed container image digest associated with the lease.
+            execution_fingerprint (optional):
+                Stable external endpoint/artifact fingerprint associated with
+                the lease; preserved across mutations of the same lease.
 
         Raises:
             RuntimeError:
-                If an existing lease's managed provenance would change.
+                If an existing lease's managed provenance or external
+                fingerprint would change.
         """
         with self._lock:
             previous = self.load_active()
@@ -418,6 +452,15 @@ class StateStore:
                     managed_image_digest = previous.managed_image_digest
                 elif previous.managed_image_digest not in (None, managed_image_digest):
                     raise RuntimeError("cannot change active managed image provenance")
+                if execution_fingerprint is None:
+                    execution_fingerprint = previous.execution_fingerprint
+                elif previous.execution_fingerprint not in (
+                    None,
+                    execution_fingerprint,
+                ):
+                    raise RuntimeError(
+                        "cannot change active external execution fingerprint"
+                    )
             self._atomic_write(
                 self.active_path,
                 _active_dict(
@@ -429,6 +472,7 @@ class StateStore:
                         evaluation_failures=evaluation_failures,
                         release_pending=release_pending,
                         managed_image_digest=managed_image_digest,
+                        execution_fingerprint=execution_fingerprint,
                     )
                 ),
             )
@@ -494,6 +538,7 @@ class StateStore:
                 finalised_submission_id=active.finalised_submission_id,
                 evaluation_failures=active.evaluation_failures + 1,
                 managed_image_digest=active.managed_image_digest,
+                execution_fingerprint=active.execution_fingerprint,
                 release_pending=(
                     active.release_pending
                     or active.evaluation_failures + 1 >= max_failures
@@ -528,6 +573,7 @@ class StateStore:
                         evaluation_failures=active.evaluation_failures,
                         release_pending=active.release_pending,
                         managed_image_digest=active.managed_image_digest,
+                        execution_fingerprint=active.execution_fingerprint,
                     )
                 ),
             )
@@ -605,6 +651,7 @@ class StateStore:
                 evaluation_failures=active.evaluation_failures,
                 release_pending=active.release_pending,
                 managed_image_digest=active.managed_image_digest,
+                execution_fingerprint=active.execution_fingerprint,
             )
 
     def save_submission_id(self, submission_id: str) -> None:
@@ -636,6 +683,7 @@ def _active_dict(active: ActiveLease) -> JsonObject:
         "evaluation_failures": active.evaluation_failures,
         "release_pending": active.release_pending,
         "managed_image_digest": active.managed_image_digest,
+        "execution_fingerprint": active.execution_fingerprint,
     }
 
 

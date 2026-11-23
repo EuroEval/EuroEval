@@ -702,7 +702,7 @@ def test_cli_propagates_worker_status(
             [
                 "--launcher-managed",
                 "--image-digest",
-                LEASE.image_digest,
+                str(LEASE.image_digest),
                 "--state-dir",
                 str(tmp_path),
             ]
@@ -1704,6 +1704,7 @@ def test_inspect_worker_state_is_readonly(
         "finalised": False,
         "managed_image_digest": LEASE.image_digest if managed else None,
         "lease_image_digest": LEASE.image_digest,
+        "execution_fingerprint": None,
     }
     assert before == {
         path: (path.read_bytes(), path.stat().st_mtime_ns)

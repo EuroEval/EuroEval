@@ -26,6 +26,7 @@ from euroeval_worker.review import (
     ReviewError,
     VolunteerReviewer,
     inspect_with_broker,
+    load_gguf_bindings,
 )
 from euroeval_worker.review_transaction import renew_with_broker
 from leaderboards.canonical_publication import BucketApi as CanonicalBucketApi
@@ -35,6 +36,16 @@ from leaderboards.eee_validation import validate_eee_record
 STAGING = "EuroEval/private-volunteer-staging"
 RESULTS = "EuroEval/results"
 SUBMISSION = "submission-one"
+
+GGUF_ARTIFACT: dict[str, object] = {
+    "repo_id": "LiquidAI/LFM3-1.7B-GGUF",
+    "revision": "cd0c74c575b5c416f3011b5b4c298077f26ca8c2",
+    "filename": "LFM3-1.7B-Q8_0.gguf",
+    "sha256": "8f6b24182258205e9e01e21f1f24a1f208c1e8115578825d202ce39976af20b6",
+    "source_repo_id": "LiquidAI/LFM3-1.7B",
+    "source_revision": "1da06bec6a819da10b54c67e5c90972b46d81871",
+}
+GGUF_BINDINGS: dict[str, object] = {"version": 1, "artifacts": [GGUF_ARTIFACT]}
 
 
 def test_acceptance_renews_before_each_upload() -> None:
@@ -399,6 +410,7 @@ def _reviewer(
         renewer=renewer,
         binder=binder,
         scope_policy=scope_policy,
+        gguf_bindings=GGUF_BINDINGS,
         publisher=CanonicalPublisher(
             api=t.cast(CanonicalBucketApi, api),
             token="token",
@@ -2398,7 +2410,10 @@ def test_status_failure_preserves_unreceipted_decision(
     monkeypatch.setenv("VOLUNTEER_BROKER_PROMOTION_STATUS_URL", "https://broker/status")
     monkeypatch.setattr(urllib.request, "urlopen", unavailable)
     fresh_reviewer = VolunteerReviewer(
-        store=reviewer.store, results_bucket=RESULTS, scope_policy=reviewer.scope_policy
+        store=reviewer.store,
+        results_bucket=RESULTS,
+        scope_policy=reviewer.scope_policy,
+        gguf_bindings=reviewer.gguf_bindings,
     )
     snapshot = dict(api.files)
     uploads = list(api.uploads)
@@ -2481,6 +2496,7 @@ def test_terminal_response_loss_recovers_with_durable_digest(
         store=template.store,
         results_bucket=RESULTS,
         scope_policy=template.scope_policy,
+        gguf_bindings=template.gguf_bindings,
         publisher=template.publisher,
     )
     requests: list[tuple[str, dict[str, object]]] = []
@@ -2639,7 +2655,10 @@ def test_terminal_response_loss_recovers_with_durable_digest(
     monkeypatch.delenv("CANONICAL_PUBLICATION_SECRET", raising=False)
     monkeypatch.delenv("CANONICAL_PUBLICATION_URL", raising=False)
     fresh_reviewer = VolunteerReviewer(
-        store=template.store, results_bucket=RESULTS, scope_policy=template.scope_policy
+        store=template.store,
+        results_bucket=RESULTS,
+        scope_policy=template.scope_policy,
+        gguf_bindings=template.gguf_bindings,
     )
     assert fresh_reviewer.list_pending_submissions() == []
     assert api.uploads == initial_uploads
@@ -2670,3 +2689,366 @@ def test_terminal_response_loss_recovers_with_durable_digest(
     assert fresh_reviewer.list_pending_submissions() == []
     assert len(requests) == request_count
     assert api.uploads == uploads
+
+
+EXTERNAL_PROVENANCE = "native-external-server-not-runtime-attested"
+
+
+def test_cuda_manifest_record_carrying_an_artifact_is_rejected() -> None:
+    """A CUDA manifest cannot accept records that claim an external artifact."""
+    api, reviewer, _ = _reviewer()
+    manifest = _manifest(api)
+    record_path = t.cast(list[dict[str, object]], manifest["results"])[0]["path"]
+    content = json.loads(api.files[(STAGING, t.cast(str, record_path))])
+    model_info = t.cast(dict[str, object], content["model_info"])
+    details = t.cast(dict[str, object], model_info.setdefault("additional_details", {}))
+    details["gguf_artifact"] = dict(GGUF_ARTIFACT)
+    staged = json.dumps(content, ensure_ascii=False).encode("utf-8")
+    digest = hashlib.sha256(staged).hexdigest()
+    new_path = f"volunteer/submissions/{SUBMISSION}/results/{digest}.json"
+    api.files[(STAGING, new_path)] = staged
+    results = t.cast(list[dict[str, object]], manifest["results"])
+    results[0]["path"] = new_path
+    results[0]["digest"] = digest
+    _store_manifest(api, manifest)
+
+    with pytest.raises(ReviewError, match="non-external manifest"):
+        reviewer.show(SUBMISSION)
+
+
+def test_cuda_review_does_not_load_gguf_approval(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Installed CUDA review works without the new GGUF configuration."""
+
+    def unavailable() -> dict[str, object]:
+        """Simulate an installed package with no repository binding file.
+
+        Raises:
+            ReviewError: The package has no GGUF approval configuration.
+        """
+        raise ReviewError("no GGUF configuration installed")
+
+    monkeypatch.setattr(review_transaction, "load_gguf_bindings", unavailable)
+    _, reviewer, _ = _reviewer()
+    reviewer.show(SUBMISSION)
+
+
+def test_external_manifest_is_reviewed_against_the_approved_binding() -> None:
+    """A valid external submission validates and reports external provenance."""
+    api, reviewer, calls = _external_reviewer(record_count=2)
+
+    report = reviewer.show(submission_id=SUBMISSION)
+
+    assert report.model_id == GGUF_ARTIFACT["repo_id"]
+    assert report.model_revision == GGUF_ARTIFACT["revision"]
+    assert report.provenance["image_digest"] is None
+    assert report.provenance["image_digest_provenance"] == EXTERNAL_PROVENANCE
+    assert report.provenance["execution"] == {
+        "kind": "external_server",
+        "artifact": GGUF_ARTIFACT,
+    }
+    assert "selected_gpu_uuid" not in report.provenance
+    assert any("GGUF" in check for check in report.checks)
+    reviewer.decide(submission_id=SUBMISSION, outcome="accepted", reviewer="maintainer")
+    assert calls == [(12, SUBMISSION, "accepted")]
+    assert [key for key in api.files if key[0] == RESULTS]
+
+
+def _external_reviewer(
+    record_count: int = 1,
+    *,
+    record_mutation: t.Callable[[dict[str, object]], None] | None = None,
+    manifest_mutation: t.Callable[[dict[str, object]], None] | None = None,
+    gguf_bindings: dict[str, object] | None = None,
+) -> tuple[FakeHfApi, VolunteerReviewer, list[tuple[int, str, str]]]:
+    """Build a reviewer with one staged external-server submission.
+
+    Args:
+        record_count (optional):
+            Number of staged records. Defaults to 1.
+        record_mutation (optional):
+            Mutation applied to every record before it is staged.
+        manifest_mutation (optional):
+            Mutation applied to the manifest after it is built.
+        gguf_bindings (optional):
+            Approved bindings for the reviewer; defaults to ``GGUF_BINDINGS``.
+
+    Returns:
+        The fake API, reviewer, and broker call log.
+    """
+    api = FakeHfApi()
+    model_id = t.cast(str, GGUF_ARTIFACT["repo_id"])
+    revision = t.cast(str, GGUF_ARTIFACT["revision"])
+    entries: list[dict[str, object]] = []
+    suffixes: list[str] = []
+    for index in range(record_count):
+        record = _record(dataset=f"dataset-{index}")
+        model_info = t.cast(dict[str, object], record["model_info"])
+        model_info["id"] = model_id
+        model_info["name"] = model_id
+        model_info["revision"] = revision
+        details = t.cast(dict[str, object], model_info["additional_details"])
+        details["gguf_artifact"] = dict(GGUF_ARTIFACT)
+        if record_mutation is not None:
+            record_mutation(record)
+        content = json.dumps(record, ensure_ascii=False).encode("utf-8")
+        digest = hashlib.sha256(content).hexdigest()
+        path = f"volunteer/submissions/{SUBMISSION}/results/{digest}.json"
+        api.files[(STAGING, path)] = content
+        identity = [model_id, f"dataset-{index}", False, False]
+        entries.append(
+            {
+                "digest": digest,
+                "identity": json.dumps(identity, separators=(",", ":")),
+                "path": path,
+                "warnings": [],
+                "artifact": dict(GGUF_ARTIFACT),
+            }
+        )
+        suffixes.append(json.dumps(identity[1:], separators=(",", ":")))
+    manifest: dict[str, object] = {
+        "protocol_version": "volunteer-worker/v1",
+        "submission_id": SUBMISSION,
+        "issue_number": 12,
+        "verified_contributor": "alice",
+        "model": {"id": model_id, "revision": revision},
+        "language": "da",
+        "language_group": "da",
+        "euroeval_version": "18.1.0.dev0",
+        "model_type": "generative",
+        "worker_version": "1.0.0",
+        "image_digest": None,
+        "image_digest_provenance": EXTERNAL_PROVENANCE,
+        "execution": {"kind": "external_server", "artifact": dict(GGUF_ARTIFACT)},
+        "created_at": "2026-09-06T10:00:00Z",
+        "expected_scope": {
+            "policy_version": "volunteer-scope/18.1.0.dev0",
+            "language_group": "da",
+            "allowed_identity_suffix_sets": [suffixes],
+            "task_groups": [
+                "multiple_choice_classification",
+                "question_answering",
+                "sequence_classification",
+                "text_to_text",
+                "token_classification",
+            ],
+            "warnings": [],
+        },
+        "results": entries,
+        "automated_checks": {
+            "result_count": record_count,
+            "identities_unique": True,
+            "failed_instances": 0,
+            "warnings": [],
+        },
+    }
+    if manifest_mutation is not None:
+        manifest_mutation(manifest)
+    _store_manifest(api, manifest)
+    calls: list[tuple[int, str, str]] = []
+    store = BucketStore(
+        api=t.cast(BucketApi, api), token="token", staging_bucket=STAGING
+    )
+    scope_policy: dict[str, object] = {
+        "policy_version": "volunteer-scope/18.1.0.dev0",
+        "policies": [
+            {
+                "euroeval_version": "18.1.0.dev0",
+                "model_type": "generative",
+                "language": "da",
+                "language_group": "da",
+                "allowed_identity_suffix_sets": [suffixes],
+                "task_groups": [
+                    "multiple_choice_classification",
+                    "question_answering",
+                    "sequence_classification",
+                    "text_to_text",
+                    "token_classification",
+                ],
+                "warnings": [],
+            }
+        ],
+    }
+    reviewer = VolunteerReviewer(
+        store=store,
+        results_bucket=RESULTS,
+        promoter=lambda issue, submission, outcome: calls.append(
+            (issue, submission, outcome)
+        ),
+        scope_policy=scope_policy,
+        gguf_bindings=gguf_bindings if gguf_bindings is not None else GGUF_BINDINGS,
+        publisher=CanonicalPublisher(
+            api=t.cast(CanonicalBucketApi, api),
+            token="token",
+            bucket=RESULTS,
+            lock=FakePublicationLock(),
+        ),
+    )
+    return api, reviewer, calls
+
+
+def test_external_manifest_model_identity_must_equal_the_binding() -> None:
+    """The manifest model id/revision must be the artifact repo/revision."""
+
+    def mutate(manifest: dict[str, object]) -> None:
+        model = t.cast(dict[str, object], manifest["model"])
+        model["id"] = "LiquidAI/LFM3-1.7B"
+
+    _, reviewer, _ = _external_reviewer(manifest_mutation=mutate)
+    with pytest.raises(ReviewError, match="does not match the approved artifact"):
+        reviewer.show(SUBMISSION)
+
+
+def test_external_manifest_needs_the_configured_bindings_not_a_copy() -> None:
+    """An explicit reviewer binding parameter is the independent approval source."""
+    other: dict[str, object] = {
+        "version": 1,
+        "artifacts": [{**GGUF_ARTIFACT, "sha256": "d" * 64}],
+    }
+    _, reviewer, _ = _external_reviewer(gguf_bindings=other)
+    with pytest.raises(ReviewError, match="not an approved GGUF binding"):
+        reviewer.show(SUBMISSION)
+
+
+@pytest.mark.parametrize(
+    "mutation, match",
+    [
+        (
+            lambda manifest: manifest.update(image_digest="sha256:image"),
+            "image_digest null",
+        ),
+        (
+            lambda manifest: manifest.update(
+                image_digest_provenance="configured-required-not-runtime-attested"
+            ),
+            "image_digest_provenance",
+        ),
+        (
+            lambda manifest: manifest.update(selected_gpu_uuid="gpu-0"),
+            "must not select a GPU",
+        ),
+        (
+            lambda manifest: manifest.update(selected_gpu_index=0),
+            "must not select a GPU",
+        ),
+        (
+            lambda manifest: manifest.update(execution={"kind": "cuda_server"}),
+            "execution is malformed",
+        ),
+    ],
+)
+def test_external_manifest_rejects_contradictory_metadata(
+    mutation: t.Callable[[dict[str, object]], None], match: str
+) -> None:
+    """External manifests must not contradict the external execution mode.
+
+    Args:
+        mutation: Manifest mutation supplied to the test.
+        match: Expected error fragment.
+    """
+    _, reviewer, _ = _external_reviewer(manifest_mutation=mutation)
+    with pytest.raises(ReviewError, match=match):
+        reviewer.show(SUBMISSION)
+
+
+def test_external_manifest_requires_the_exact_approved_binding() -> None:
+    """Any artifact field drift makes the manifest unapproved."""
+
+    def mutate(manifest: dict[str, object]) -> None:
+        execution = t.cast(dict[str, object], manifest["execution"])
+        artifact = t.cast(dict[str, object], execution["artifact"])
+        artifact["sha256"] = "c" * 64
+
+    api, reviewer, _ = _external_reviewer(manifest_mutation=mutate)
+    with pytest.raises(ReviewError, match="not an approved GGUF binding"):
+        reviewer.show(SUBMISSION)
+    assert not [key for key in api.files if key[0] == RESULTS]
+
+
+def test_external_review_cannot_accept_a_base_only_scope() -> None:
+    """A smaller generic alternative cannot complete instruction evaluation."""
+    _, reviewer, _ = _external_reviewer()
+    policies = t.cast(list[dict[str, object]], reviewer.scope_policy["policies"])
+    original = t.cast(list[list[str]], policies[0]["allowed_identity_suffix_sets"])[0]
+    policies[0]["allowed_identity_suffix_sets"] = [
+        original,
+        [
+            *original,
+            json.dumps(["missing-instruction", False, False], separators=(",", ":")),
+        ],
+    ]
+    with pytest.raises(ReviewError, match="scope"):
+        reviewer.show(SUBMISSION)
+
+
+def test_external_review_compares_the_artifact_in_every_result() -> None:
+    """Every staged record must carry the exact approved artifact descriptor."""
+
+    def drop_artifact(record: dict[str, object]) -> None:
+        model_info = t.cast(dict[str, object], record["model_info"])
+        details = t.cast(dict[str, object], model_info["additional_details"])
+        del details["gguf_artifact"]
+
+    _, reviewer, _ = _external_reviewer(record_count=2, record_mutation=drop_artifact)
+    with pytest.raises(ReviewError, match="GGUF artifact is malformed"):
+        reviewer.show(SUBMISSION)
+
+    def wrong_artifact(record: dict[str, object]) -> None:
+        model_info = t.cast(dict[str, object], record["model_info"])
+        details = t.cast(dict[str, object], model_info["additional_details"])
+        artifact = t.cast(dict[str, object], details["gguf_artifact"])
+        artifact["filename"] = "LFM3-1.7B-Q4_0.gguf"
+
+    _, reviewer, _ = _external_reviewer(record_count=2, record_mutation=wrong_artifact)
+    with pytest.raises(ReviewError, match="does not match the approved lease binding"):
+        reviewer.show(SUBMISSION)
+
+
+def test_external_review_rejects_arbitrary_model_name() -> None:
+    """The leaderboard name must agree with the approved artifact identity."""
+
+    def rename(record: dict[str, object]) -> None:
+        """Corrupt the display identity while retaining the approved id."""
+        model = t.cast(dict[str, object], record["model_info"])
+        model["name"] = "wrong-model"
+
+    _, reviewer, _ = _external_reviewer(record_mutation=rename)
+    with pytest.raises(ReviewError, match="id and name"):
+        reviewer.show(SUBMISSION)
+
+
+def test_load_gguf_bindings_configuration_seams(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The env override wins; the default reads the checked-in binding file.
+
+    Args:
+        monkeypatch: Fixture for environment variables.
+    """
+    monkeypatch.setenv("VOLUNTEER_GGUF_BINDINGS_JSON", json.dumps(GGUF_BINDINGS))
+    assert load_gguf_bindings() == GGUF_BINDINGS
+    monkeypatch.delenv("VOLUNTEER_GGUF_BINDINGS_JSON")
+    checked_in = (
+        Path(review_transaction.__file__).parents[2]
+        / "api"
+        / "worker"
+        / "gguf-bindings.json"
+    )
+    assert load_gguf_bindings() == json.loads(checked_in.read_bytes())
+    assert load_gguf_bindings()["artifacts"] == [GGUF_ARTIFACT]
+
+
+def test_malformed_approved_bindings_never_skip_approval() -> None:
+    """A malformed bindings document fails review instead of skipping approval."""
+    bad_bindings: list[dict[str, object]] = [
+        {"version": 2, "artifacts": [GGUF_ARTIFACT]},
+        {"version": 1, "artifacts": []},
+        {"version": 1, "artifacts": [{**GGUF_ARTIFACT, "sha256": "not-hex"}]},
+        {"version": 1, "artifacts": [GGUF_ARTIFACT, dict(GGUF_ARTIFACT)]},
+        {"artifacts": [GGUF_ARTIFACT]},
+    ]
+    for bad in bad_bindings:
+        _, reviewer, _ = _external_reviewer(gguf_bindings=bad)
+        with pytest.raises(ReviewError, match="GGUF bindings"):
+            reviewer.show(SUBMISSION)

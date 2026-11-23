@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "artifacts": [
+    {
+      "repo_id": "LiquidAI/LFM3-1.7B-GGUF",
+      "revision": "cd0c74c575b5c416f3011b5b4c298077f26ca8c2",
+      "filename": "LFM3-1.7B-Q8_0.gguf",
+      "sha256": "8f6b24182258205e9e01e21f1f24a1f208c1e8115578825d202ce39976af20b6",
+      "source_repo_id": "LiquidAI/LFM3-1.7B",
+      "source_revision": "1da06bec6a819da10b54c67e5c90972b46d81871"
+    }
+  ]
+}

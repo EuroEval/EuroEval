@@ -37,7 +37,7 @@ from .review_transaction import (
     renew_with_broker,
     reserve_with_broker,
 )
-from .review_validation import load_scope_policy
+from .review_validation import load_gguf_bindings, load_scope_policy
 
 __all__ = [
     "BucketApi",
@@ -57,6 +57,7 @@ __all__ = [
     "ReviewReport",
     "ValidatedRecord",
     "VolunteerReviewer",
+    "load_gguf_bindings",
     "load_scope_policy",
     "bind_with_broker",
     "inspect_with_broker",
@@ -69,6 +70,11 @@ __all__ = [
 
 def reviewer_from_environment() -> VolunteerReviewer:
     """Build the configured maintainer reviewer service.
+
+    External-server manifests are approved against
+    ``VOLUNTEER_GGUF_BINDINGS_JSON`` when set, otherwise the checked-in
+    ``api/worker/gguf-bindings.json``; pass ``gguf_bindings`` explicitly to
+    ``VolunteerReviewer`` to configure a different source.
 
     Returns:
         A reviewer connected to the configured staging and canonical buckets.

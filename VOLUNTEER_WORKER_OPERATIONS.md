@@ -509,6 +509,12 @@ changed:
   `EuroEval/results`. Coverage lookup currently targets `EuroEval/results` in code. A
   different bucket requires a reviewed coverage migration as well as aligned writer
   configuration; changing an environment variable alone is insufficient.
+- `VOLUNTEER_EXTERNAL_WORKERS_ENABLED` — external-server (native GGUF) worker gate;
+  default `false`. This change documents the flag only; no deployment is performed.
+  When a maintainer deliberately activates it (a separate release action), the broker
+  accepts claims advertising `external_generation_v1` only when their artifact
+  descriptor exactly matches the checked-in `api/worker/gguf-bindings.json`. Already
+  accepted external leases are never stranded when the gate is turned back off.
 
 `VOLUNTEER_COORDINATOR_URL`, `VOLUNTEER_BROKER_RESERVATION_URL`, and
 `VOLUNTEER_BROKER_PROMOTION_URL` are local queue/review settings, not required Vercel
@@ -895,6 +901,45 @@ immediately. Check decision state before rerunning. Noninteractive runs print ma
 review commands and continue without automatic decisions. Missing/unavailable optional
 staging can continue with canonical results; confirmed public staging fails closed.
 Never turn a preflight failure into an automatic retry or rejection.
+
+### External-server (GGUF) submissions
+
+Native external-server workers run the evaluation client on the contributor's host
+against their own inference server and claim the approved GGUF artifact's queue entry.
+Their manifests carry an `execution` object
+(`{"kind": "external_server", "artifact": {...}}`) with the six-field artifact
+descriptor. Review validates them independently and strictly:
+
+- The manifest `execution` is strict-decoded and must match, field for field, exactly
+  one entry of the approved bindings. The reviewed source of truth is the checked-in
+  `api/worker/gguf-bindings.json`; the broker embeds the same document and a test
+  asserts they stay synchronized, so there is no second uncontrolled copy.
+- The manifest `model.id`/`model.revision` must equal the approved artifact's
+  `repo_id`/`revision`. Canonical coverage and issue completion key on that GGUF
+  artifact identity only; such a submission never covers or completes the upstream
+  source checkpoint's issue, and no automatic conversion matching exists. A second
+  quantization requires its own approved binding and queue entry; it cannot reuse the
+  pilot's identity.
+- The manifest `image_digest` must be `null` with
+  `image_digest_provenance` exactly `native-external-server-not-runtime-attested`,
+  and no GPU may be selected; no CUDA digest or GPU is fabricated for native workers.
+- Every result record must carry the identical artifact descriptor in
+  `model_info.additional_details.gguf_artifact`; a missing, malformed, or differing
+  descriptor in any record fails the whole submission.
+- The native endpoint, served alias, and context length are local worker
+  configuration and are not sent to the broker, so no effective server engine, version,
+  or settings attestation is claimed. Review evidence is the approved artifact binding
+  plus the client inference-engine record; absent server version information stays
+  explicitly declared/unknown and is never invented.
+
+The reviewer resolves the approved bindings from `VOLUNTEER_GGUF_BINDINGS_JSON` when
+set, otherwise from the checked-in `api/worker/gguf-bindings.json` resolved relative to
+the installed package file (never the working directory). An installed reviewer package
+whose site-packages layout lacks `api/` must set `VOLUNTEER_GGUF_BINDINGS_JSON` to that
+same JSON, or pass `gguf_bindings=` to `VolunteerReviewer` explicitly. A malformed
+bindings document fails review; approval is never silently skipped. If Vercel sets
+`VOLUNTEER_GGUF_BINDINGS_JSON`, the review shell must use the exact same value, just
+like `VOLUNTEER_SCOPE_POLICY_JSON`.
 
 ## Image publishing and canary
 

@@ -2,16 +2,18 @@ import {
   BrokerError, ConfigurationError, GROUPS, PROTOCOL_VERSION, VM_MARKER_RE, VOLUNTEER_MARKER_RE,
   acquireRenewableIssueMutex, authenticate, brokerErrorBody,
   claimableLanguages, env, optionalEnv, expectedScope, validateScopePolicyVersion,
+  decodeLeaseExecution, externalWorkersEnabled, findApprovedGgufArtifact, ggufBindings,
   extractModelId, enforceRateLimit, fitsGpu, fetchIssue, json, languageGroup, leaseTtl, selectedGpu,
   listOpenIssues, method,
   patchIssue, putLease, randomToken, readJson, deleteLease, unassignIssue, hasIssueAssignee,
   reconcilePublicAssignments,
   getLeaseForIssue, reclaimExpiredLease,
-  modelMayFit, parseVolunteerMarker, resolveModel, selectedLanguages, volunteerAssigneesMatch,
+  modelMayFit, parseVolunteerMarker, resolveExternalModel, resolveModel, selectedLanguages,
+  verifyGgufArtifact, volunteerAssigneesMatch,
   requireProtocol, signVolunteerMarker, verifyVolunteerMarker, markerSecret, replaceVolunteerMarker,
   reserveCanary,
 } from "./_lib.js";
-import type { Lease, VolunteerLeaseMarker } from "./_lib.js";
+import type { Lease, ResolvedExternalModel, VolunteerLeaseMarker } from "./_lib.js";
 import { narrowCoverage } from "./_lib/coverage.js";
 import { approvedWorkerRelease, canonicalWorkerVersion, normalizeArchitecture } from "./_lib/worker-release.js";
 
@@ -152,6 +154,34 @@ function validHardware(value: unknown): value is Record<string, unknown> {
   }) && selectedGpu(hardware) !== null;
 }
 
+/**
+ * Native external-server hardware: host facts only. The GPU list must be
+ * empty and no GPU may be selected. Memory utilisation remains the existing
+ * common lease field and is never a measured GPU memory value.
+ */
+function validNativeHardware(value: unknown): value is Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const hardware = value as Record<string, unknown>;
+  const utilisation = hardware.gpu_memory_utilisation;
+  if (typeof hardware.architecture !== "string" || !hardware.architecture.trim() ||
+      typeof hardware.os !== "string" || !hardware.os.trim() ||
+      !Number.isSafeInteger(hardware.ram_bytes) || (hardware.ram_bytes as number) < 0 ||
+      !Number.isSafeInteger(hardware.free_disk_bytes) || (hardware.free_disk_bytes as number) < 0 ||
+      !Array.isArray(hardware.gpus) || hardware.gpus.length !== 0 ||
+      (hardware.selected_gpu_index !== undefined && hardware.selected_gpu_index !== null) ||
+      (hardware.selected_gpu_uuid !== undefined && hardware.selected_gpu_uuid !== null)) return false;
+  if (utilisation !== undefined && utilisation !== null &&
+      (typeof utilisation !== "number" || !Number.isFinite(utilisation) || utilisation <= 0 || utilisation > 1)) return false;
+  return true;
+}
+
+/** The common memory-utilisation field for a native claim; never a GPU measurement. */
+function nativeGpuMemoryUtilisation(hardware: Record<string, unknown>): number {
+  const utilisation = hardware.gpu_memory_utilisation;
+  return typeof utilisation === "number" && Number.isFinite(utilisation) && utilisation > 0 && utilisation <= 1
+    ? utilisation : 0.8;
+}
+
 export default async function handler(req: Request): Promise<Response> {
   const rejected = method(req); if (rejected) return rejected;
   const requestStarted = Date.now();
@@ -161,16 +191,56 @@ export default async function handler(req: Request): Promise<Response> {
   try {
     const identity = await authenticate(req); await enforceRateLimit(`euroeval:worker:limit:claim:${identity.hash}`, 120, 3600);
     const body = await readJson(req, 32 * 1024); requireProtocol(body);
-    if (!validHardware(body.hardware)) throw new BrokerError(400, "hardware must contain well-formed GPUs and free disk.");
-    const managed = Array.isArray(body.capabilities) && body.capabilities.includes("managed_image_v1");
+    // An optional execution object selects external-server mode; its absence
+    // is the historical CUDA mode with the existing GPU hardware contract.
+    const execution = decodeLeaseExecution(body.execution);
+    if (execution && !externalWorkersEnabled()) {
+      throw new BrokerError(404, "External worker claims are not enabled.");
+    }
+    const approvedArtifact = execution ? findApprovedGgufArtifact(ggufBindings(), execution.artifact) : null;
+    if (execution && !approvedArtifact) {
+      throw new BrokerError(422, "The claimed GGUF artifact is not approved.");
+    }
+    const capabilities = Array.isArray(body.capabilities) ? body.capabilities : [];
+    const managed = capabilities.includes("managed_image_v1");
+    if (execution) {
+      if (!capabilities.includes("external_generation_v1") || !capabilities.includes("canonical_coverage_v1")) {
+        throw new BrokerError(400, "External claims require the external_generation_v1 and canonical_coverage_v1 capabilities.");
+      }
+      if (managed) throw new BrokerError(400, "managed_image_v1 is not valid for an external claim.");
+      if (body.image_digest !== undefined && body.image_digest !== null) {
+        throw new BrokerError(400, "image_digest must be null for an external claim.");
+      }
+      if (typeof body.worker_version !== "string" || !body.worker_version.trim()) {
+        throw new BrokerError(400, "worker_version is required.");
+      }
+      if (body.worker_version !== env("VOLUNTEER_WORKER_VERSION")) {
+        throw new BrokerError(422, "Unsupported worker version.");
+      }
+      if (typeof body.euroeval_version !== "string" || !body.euroeval_version.trim() ||
+          canonicalWorkerVersion(body.euroeval_version) !== canonicalWorkerVersion(env("EUROEVAL_VERSION"))) {
+        throw new BrokerError(422, "Unsupported EuroEval version.");
+      }
+      if (!validNativeHardware(body.hardware)) {
+        throw new BrokerError(400, "hardware must contain well-formed native host facts and no GPUs.");
+      }
+    } else if (!validHardware(body.hardware)) {
+      throw new BrokerError(400, "hardware must contain well-formed GPUs and free disk.");
+    }
     if (!managed && (typeof body.worker_version !== "string" || !body.worker_version.trim())) {
       throw new BrokerError(400, "worker_version is required.");
     }
     markerSecret();
     const architecture = body.hardware.architecture as string;
-    let imageDigest: string;
+    let imageDigest: string | null;
     let euroevalVersion: string;
-    if (managed) {
+    if (execution) {
+      // Native external workers have no approved container image; the legacy
+      // CUDA digest fallback must never apply to them.
+      imageDigest = null;
+      euroevalVersion = env("EUROEVAL_VERSION").replace(/\.dev$/, ".dev0");
+      validateScopePolicyVersion(euroevalVersion);
+    } else if (managed) {
       if (!normalizeArchitecture(architecture)) {
         throw new BrokerError(426, "Worker update required; unsupported image architecture.", "worker_update_required");
       }
@@ -202,7 +272,12 @@ export default async function handler(req: Request): Promise<Response> {
       return modelId && languages.length && !(requestedLanguage && !languages.includes(requestedLanguage)) &&
         !(listed.body && VM_MARKER_RE.test(listed.body)) && volunteerAssigneesMatch(
           listed.assignees, parseVolunteerMarker(listed.body), Date.now(), true, true,
-        ) ? [{ listed, modelId }] : [];
+        ) &&
+        // An external claim may only lease the approved artifact's own
+        // repository issue; the upstream source model's issue is never an
+        // equivalent conversion match.
+        !(approvedArtifact && modelId.toLowerCase() !== approvedArtifact.repo_id.toLowerCase())
+        ? [{ listed, modelId }] : [];
     });
     // Continue work associated with this authenticated contributor before
     // unrelated queue items, but only from a verified signed marker and only
@@ -226,7 +301,7 @@ export default async function handler(req: Request): Promise<Response> {
       (affinity.get(right.listed.number) || 0) - (affinity.get(left.listed.number) || 0));
     // Resolve candidates in issue-priority batches. Do not inspect later issues
     // until every earlier candidate has either been ruled out or attempted.
-    const resolved = new Map<string, Awaited<ReturnType<typeof resolveModel>> | null>();
+    const resolved = new Map<string, Awaited<ReturnType<typeof resolveModel>> | ResolvedExternalModel | null>();
     const mayFit = new Map<string, boolean | null>();
     let incompleteDiscovery = false;
     let claimMutexBusy = false;
@@ -245,7 +320,16 @@ export default async function handler(req: Request): Promise<Response> {
       const batchModels = [...new Set(batch.map(({ modelId }) => modelId))]
         .filter((modelId) => !mayFit.has(modelId));
       const outcomes = await Promise.all(batchModels.map(async (modelId) => {
-        try { return [modelId, await modelMayFit(modelId, body.hardware as Record<string, unknown>, selectedHardwareGpu, signal)] as const; }
+        try {
+          // External claims replace the CUDA weight/disk fit probe with an
+          // anonymous verification of the approved artifact at its pinned
+          // Hugging Face revision.
+          if (approvedArtifact) {
+            await verifyGgufArtifact(approvedArtifact, signal);
+            return [modelId, true] as const;
+          }
+          return [modelId, await modelMayFit(modelId, body.hardware as Record<string, unknown>, selectedHardwareGpu, signal)] as const;
+        }
         catch (error) {
           if (error instanceof BrokerError && error.status === 422) return [modelId, false] as const;
           return [modelId, null] as const;
@@ -260,7 +344,11 @@ export default async function handler(req: Request): Promise<Response> {
       checkDiscoveryDeadline();
       if (!mayFit.get(modelId)) continue;
       if (!resolved.has(modelId)) {
-        try { resolved.set(modelId, await resolveModel(modelId, signal)); }
+        try {
+          resolved.set(modelId, approvedArtifact
+            ? await resolveExternalModel(approvedArtifact, signal)
+            : await resolveModel(modelId, signal));
+        }
         catch (error) {
           if (error instanceof BrokerError && error.status === 422) resolved.set(modelId, null);
           else throw new BrokerError(503, "Model discovery is temporarily unavailable; retry claim.");
@@ -268,7 +356,9 @@ export default async function handler(req: Request): Promise<Response> {
       }
       checkDiscoveryDeadline();
       const model = resolved.get(modelId);
-      if (!model || !fitsGpu(model, body.hardware, selectedHardwareGpu)) continue;
+      if (!model) continue;
+      // External claims skip CUDA GPU fit; the artifact check above replaced it.
+      if (!approvedArtifact && !fitsGpu(model as Awaited<ReturnType<typeof resolveModel>>, body.hardware, selectedHardwareGpu)) continue;
       // Serialize final fresh metadata, cross-issue scan, and claim transaction.
       const globalMutex = await acquireRenewableIssueMutex(GLOBAL_CLAIM_MUTEX);
       if (!globalMutex) { claimMutexBusy = true; continue; }
@@ -335,7 +425,7 @@ export default async function handler(req: Request): Promise<Response> {
         // identity and ownership are rechecked against fresh GitHub state above.
         const group = languageGroup(language); if (!group || !GROUPS[group]) continue;
         let trusted;
-        try { trusted = expectedScope(euroevalVersion, model.model_type, language); }
+        try { trusted = expectedScope(euroevalVersion, model.model_type, language, execution !== null); }
         catch (error) { if (error instanceof BrokerError && error.status === 422) continue; throw error; }
         const coverage = await narrowCoverage(trusted, model.id, model.revision, euroevalVersion);
         if (!coverage.allowed_identity_suffix_sets.length) continue;
@@ -350,17 +440,16 @@ export default async function handler(req: Request): Promise<Response> {
         const contaminationCanary = await reserveCanary(
           model.id, model.revision, model.model_type, leaseId,
         );
-        const lease: Lease = {
+        const leaseBase = {
           issue_number: snapshot.number, language, worker: identity.hash.slice(0, 24), contributor: identity.contributor,
           model_id: model.id, model_revision: model.revision, euroeval_version: euroevalVersion,
-          image_digest: imageDigest,
           worker_version: body.worker_version as string,
-          gpu_memory_utilisation: body.hardware.gpu_memory_utilisation as number,
-          selected_gpu_index: body.hardware.selected_gpu_index as number,
-          selected_gpu_uuid: body.hardware.selected_gpu_uuid as string,
+          gpu_memory_utilisation: execution
+            ? nativeGpuMemoryUtilisation(body.hardware)
+            : body.hardware.gpu_memory_utilisation as number,
           expires_at: expiresAt,
           lease_id: leaseId,
-          ownership_mode: "public",
+          ownership_mode: "public" as const,
           record_revision_required: recordRevisionRequired,
           model_type: model.model_type,
           model_metadata: model.model_metadata,
@@ -375,6 +464,21 @@ export default async function handler(req: Request): Promise<Response> {
             warnings: trusted.warnings || [],
           },
         };
+        let lease: Lease;
+        if (execution) {
+          // An external lease carries the approved descriptor, a null image
+          // digest and no selected GPU fields.
+          lease = { ...leaseBase, execution, image_digest: null };
+        } else if (typeof imageDigest === "string") {
+          lease = {
+            ...leaseBase,
+            image_digest: imageDigest,
+            selected_gpu_index: body.hardware.selected_gpu_index as number,
+            selected_gpu_uuid: body.hardware.selected_gpu_uuid as string,
+          };
+        } else {
+          throw new ConfigurationError("A CUDA claim resolved no image digest.");
+        }
         if (Date.now() >= deadline - 4_000) {
           throw new BrokerError(503, "Claim transaction budget exhausted; retry claim.");
         }
@@ -444,8 +548,14 @@ export default async function handler(req: Request): Promise<Response> {
         return json(200, {
           protocol_version: PROTOCOL_VERSION, lease_id: lease.lease_id, issue_number: lease.issue_number,
           language, model_id: model.id, model_revision: model.revision, euroeval_version: euroevalVersion,
-          image_digest: imageDigest, worker_version: lease.worker_version, expires_at: expiresAt,
-          selected_gpu_index: lease.selected_gpu_index, selected_gpu_uuid: lease.selected_gpu_uuid,
+          ...(execution
+            ? { execution, image_digest: null }
+            : {
+              image_digest: lease.image_digest,
+              selected_gpu_index: lease.selected_gpu_index,
+              selected_gpu_uuid: lease.selected_gpu_uuid,
+            }),
+          worker_version: lease.worker_version, expires_at: expiresAt,
           model_type: lease.model_type, model_metadata: lease.model_metadata,
           expected_scope: lease.expected_scope,
           contamination_canary: lease.contamination_canary,

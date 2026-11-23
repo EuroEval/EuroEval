@@ -1,7 +1,7 @@
 import generatedScopePolicy from "./scope-policy.generated.js";
 declare const process: { env: Record<string, string | undefined> };
 import { BrokerError, ConfigurationError, GROUPS } from "./protocol.js";
-import type { ModelMetadataEvidence } from "./protocol.js";
+import type { GgufArtifact, ModelMetadataEvidence } from "./protocol.js";
 import { fetchWithRetry } from "./http.js";
 
 // Registered EuroEval variants retain their record codes but share a lease group.
@@ -116,6 +116,20 @@ export async function resolveModel(modelId: string, signal?: AbortSignal): Promi
       !Number.isSafeInteger(file.size) || file.size < 0)) {
     throw new BrokerError(422, "Hugging Face did not provide complete model file sizes for a fit estimate.");
   }
+  const { model_type: modelType, model_metadata: modelMetadata } =
+    classifyModelConfig(info.pipeline_tag, config);
+  return { id: modelId, revision: info.sha, config, weight_bytes: weightBytes,
+    repo_bytes: repoBytes, model_type: modelType, model_metadata: modelMetadata };
+}
+
+/**
+ * Classify a model from its pipeline tag and config.json fields. Shared by the
+ * CUDA safetensors resolution and the external source-metadata read, which
+ * pins the same immutable revision instead of resolving latest.
+ */
+function classifyModelConfig(
+  pipelineTag: string, config: Record<string, unknown>,
+): { model_type: ModelType; model_metadata: ModelMetadataEvidence } {
   if (typeof config.model_type !== "string" || !config.model_type.trim()) {
     throw new BrokerError(422, "The model config omitted model_type.");
   }
@@ -128,16 +142,123 @@ export async function resolveModel(modelId: string, signal?: AbortSignal): Promi
   if (encoderDecoder !== undefined && typeof encoderDecoder !== "boolean") {
     throw new BrokerError(422, "The model config has an invalid encoder-decoder flag.");
   }
-  const modelType = modelTypeFor(info.pipeline_tag, encoderDecoder);
+  const modelType = modelTypeFor(pipelineTag, encoderDecoder);
   if (!modelType) throw new BrokerError(422, "The model has contradictory capability metadata.");
   const modelMetadata = {
-    pipeline_tag: info.pipeline_tag,
+    pipeline_tag: pipelineTag,
     architectures: [...architectures] as string[],
     model_type: modelType,
     is_encoder_decoder: encoderDecoder === undefined ? null : encoderDecoder,
   } satisfies ModelMetadataEvidence;
-  return { id: modelId, revision: info.sha, config, weight_bytes: weightBytes,
-    repo_bytes: repoBytes, model_type: modelType, model_metadata: modelMetadata };
+  return { model_type: modelType, model_metadata: modelMetadata };
+}
+
+/** A resolved external-server model: the GGUF artifact repo is the model identity. */
+export interface ResolvedExternalModel {
+  id: string;
+  revision: string;
+  artifact: GgufArtifact;
+  model_type: ModelType;
+  model_metadata: ModelMetadataEvidence;
+}
+
+/**
+ * Anonymously verify one approved GGUF artifact at its pinned Hugging Face
+ * revision: the repository must be public and ungated, resolve to exactly that
+ * revision, and contain the approved file as an LFS object whose SHA-256
+ * matches the approved hash.
+ */
+export async function verifyGgufArtifact(artifact: GgufArtifact, signal?: AbortSignal): Promise<void> {
+  const encoded = artifact.repo_id.split("/").map(encodeURIComponent).join("/");
+  const response = await fetchModel(
+    `https://huggingface.co/api/models/${encoded}/revision/${encodeURIComponent(artifact.revision)}?blobs=true`, signal,
+  );
+  if (!response.ok) throw new BrokerError(response.status >= 500 || response.status === 429 ? 503 : 422,
+    `Hugging Face artifact ${artifact.repo_id} could not be verified at its pinned revision.`);
+  const info = await response.json() as {
+    id?: string; sha?: string; private?: boolean; gated?: boolean | string;
+    siblings?: Array<{ rfilename?: string; lfs?: { sha256?: unknown } }>;
+  };
+  if (typeof info.id !== "string" || info.id.toLowerCase() !== artifact.repo_id.toLowerCase() ||
+      typeof info.private !== "boolean" || typeof info.gated !== "boolean" && info.gated !== "false" ||
+      !Array.isArray(info.siblings) || info.siblings.some((file) =>
+        !file || typeof file.rfilename !== "string" || !file.rfilename)) {
+    throw new BrokerError(422, "Hugging Face returned incomplete artifact metadata.");
+  }
+  if (info.private || info.gated === true) {
+    throw new BrokerError(422, "The GGUF artifact must be public and ungated.");
+  }
+  if (info.sha !== artifact.revision) {
+    throw new BrokerError(422, "Hugging Face did not resolve the approved artifact revision.");
+  }
+  const file = info.siblings.find((sibling) => sibling.rfilename === artifact.filename);
+  if (!file) {
+    throw new BrokerError(422, "The approved GGUF file is not present at the pinned artifact revision.");
+  }
+  const oid = file.lfs?.sha256;
+  if (typeof oid !== "string" || !/^[0-9a-f]{64}$/.test(oid)) {
+    throw new BrokerError(422, "The approved GGUF file is not a pinned LFS object at the artifact revision.");
+  }
+  if (oid !== artifact.sha256) {
+    throw new BrokerError(422, "The approved GGUF file hash does not match its pinned Hugging Face LFS object.");
+  }
+}
+
+/**
+ * Read the pinned upstream source repository's JSON metadata only: repo info
+ * and config.json at the approved immutable source revision. No Python is
+ * downloaded or executed and no safetensors are inspected; the result is used
+ * solely to classify the model for scope selection. The source repo may
+ * contain custom code, which is never executed here.
+ */
+export async function resolveSourceModelMetadata(
+  sourceRepoId: string, sourceRevision: string, signal?: AbortSignal,
+): Promise<{ model_type: ModelType; model_metadata: ModelMetadataEvidence }> {
+  const encoded = sourceRepoId.split("/").map(encodeURIComponent).join("/");
+  const infoResponse = await fetchModel(
+    `https://huggingface.co/api/models/${encoded}/revision/${encodeURIComponent(sourceRevision)}`, signal,
+  );
+  if (!infoResponse.ok) throw new BrokerError(infoResponse.status >= 500 || infoResponse.status === 429 ? 503 : 422,
+    `Hugging Face source model ${sourceRepoId} could not be resolved at its pinned revision.`);
+  const info = await infoResponse.json() as {
+    id?: string; sha?: string; private?: boolean; gated?: boolean | string; pipeline_tag?: unknown;
+  };
+  if (typeof info.id !== "string" || info.id.toLowerCase() !== sourceRepoId.toLowerCase() ||
+      typeof info.private !== "boolean" || typeof info.gated !== "boolean" && info.gated !== "false" ||
+      typeof info.pipeline_tag !== "string" || !info.pipeline_tag.trim()) {
+    throw new BrokerError(422, "Hugging Face returned incomplete pinned source metadata.");
+  }
+  if (info.private || info.gated === true) {
+    throw new BrokerError(422, "The source model must be public and ungated.");
+  }
+  if (info.sha !== sourceRevision) {
+    throw new BrokerError(422, "Hugging Face did not resolve the approved source revision.");
+  }
+  const configResponse = await fetchModel(
+    `https://huggingface.co/${encoded}/raw/${encodeURIComponent(sourceRevision)}/config.json`, signal,
+  );
+  if (!configResponse.ok) throw new BrokerError(configResponse.status >= 500 || configResponse.status === 429 ? 503 : 422,
+    "The source model config could not be read at its pinned revision.");
+  const config = await configResponse.json() as Record<string, unknown>;
+  return classifyModelConfig(info.pipeline_tag, config);
+}
+
+/**
+ * Resolve an approved GGUF artifact into the claim's model identity. The
+ * external model id and revision are the GGUF repository and its pinned
+ * revision; task classification comes from the pinned source metadata only.
+ */
+export async function resolveExternalModel(
+  artifact: GgufArtifact, signal?: AbortSignal,
+): Promise<ResolvedExternalModel> {
+  const source = await resolveSourceModelMetadata(artifact.source_repo_id, artifact.source_revision, signal);
+  return {
+    id: artifact.repo_id,
+    revision: artifact.revision,
+    artifact,
+    model_type: source.model_type,
+    model_metadata: source.model_metadata,
+  };
 }
 
 export function selectedGpu(hardware: Record<string, unknown>): Record<string, unknown> | null {
@@ -233,7 +354,7 @@ export function validateScopePolicyVersion(euroevalVersion: string): void {
   }
 }
 
-export function expectedScope(euroevalVersion: string, modelType: ModelType, language: string): TrustedScope {
+export function expectedScope(euroevalVersion: string, modelType: ModelType, language: string, instructionOnly = false): TrustedScope {
   euroevalVersion = canonicalEuroevalVersion(euroevalVersion);
   const group = languageGroup(language);
   if (!group) throw new BrokerError(422, "The leased language has no trusted language group.");
@@ -260,6 +381,10 @@ export function expectedScope(euroevalVersion: string, modelType: ModelType, lan
   return {
     euroeval_version: match.euroeval_version, model_type: match.model_type, language: match.language,
     language_group: match.language_group, policy_version: policy.policy_version,
-    allowed_identity_suffix_sets: alternatives, task_groups: [...match.task_groups], warnings: match.warnings || [],
+    allowed_identity_suffix_sets: instructionOnly ? [alternatives.reduce((best, candidate) => {
+      const zeroShots = (items: string[]): number => items.filter((item) => JSON.parse(item)[2] !== true).length;
+      return zeroShots(candidate) > zeroShots(best) ||
+        zeroShots(candidate) === zeroShots(best) && candidate.length > best.length ? candidate : best;
+    })] : alternatives, task_groups: [...match.task_groups], warnings: match.warnings || [],
   };
 }

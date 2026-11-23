@@ -41,6 +41,7 @@ from .review_validation import (
     _manifest_summary,
     _raise_on_identity_collisions,
     _validate_manifest,
+    load_gguf_bindings,
     load_scope_policy,
 )
 from .types import PROTOCOL_VERSION
@@ -134,6 +135,7 @@ class VolunteerReviewer:
         binder: BrokerBinder | None = None,
         now: t.Callable[[], dt.datetime] | None = None,
         scope_policy: JsonObject | None = None,
+        gguf_bindings: JsonObject | None = None,
         publisher: CanonicalPublisher | None = None,
         publisher_factory: c.Callable[[], CanonicalPublisher] | None = None,
         status_checker: BrokerStatusChecker | None = None,
@@ -160,6 +162,13 @@ class VolunteerReviewer:
                 Now.
             scope_policy (optional):
                 Scope policy.
+            gguf_bindings (optional):
+                Maintainer-configured approved GGUF artifact bindings. Loaded lazily
+                for external manifests
+                to ``load_gguf_bindings()``, which reads
+                ``VOLUNTEER_GGUF_BINDINGS_JSON`` or the checked-in
+                ``api/worker/gguf-bindings.json``; external manifests are
+                approved only against exactly this configuration.
             publisher (optional):
                 Canonical publisher used to open publication sessions.
             publisher_factory (optional):
@@ -179,6 +188,7 @@ class VolunteerReviewer:
         )
         self.now = now
         self.scope_policy = scope_policy or load_scope_policy()
+        self.gguf_bindings = gguf_bindings
         self.publisher = publisher
         self.publisher_factory = publisher_factory
 
@@ -926,7 +936,16 @@ class VolunteerReviewer:
         if manifest.get("submission_id") != submission_id:
             raise ReviewError("Manifest submission_id does not match its durable path")
         report = _validate_manifest(
-            manifest=manifest, store=self.store, scope_policy=self.scope_policy
+            manifest=manifest,
+            store=self.store,
+            scope_policy=self.scope_policy,
+            gguf_bindings=(
+                self.gguf_bindings
+                if self.gguf_bindings is not None
+                else load_gguf_bindings()
+                if manifest.get("execution") is not None
+                else {}
+            ),
         )
         observations = self._canonical_plan(report=report)
         fingerprint = _plan_fingerprint(report=report, observations=observations)

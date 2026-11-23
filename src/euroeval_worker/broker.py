@@ -1,8 +1,10 @@
 """HTTP client for the v1 volunteer-worker broker protocol."""
 
 import collections.abc as c
+import dataclasses
 import email.utils
 import http.client
+import importlib.metadata
 import json
 import logging
 import time
@@ -17,6 +19,7 @@ from .types import (
     AuthStart,
     Claim,
     EEERecord,
+    ExternalExecution,
     HardwareReport,
     Lease,
     auth_poll_from_dict,
@@ -59,6 +62,7 @@ class BrokerClient:
         *,
         image_digest: str | None = None,
         euroeval_version: str | None = None,
+        execution: ExternalExecution | None = None,
     ) -> Claim:
         """Claim one available lease, if any.
 
@@ -71,6 +75,11 @@ class BrokerClient:
                 Actual managed image index digest.
             euroeval_version (optional):
                 Actual installed evaluation package version.
+            execution (optional):
+                External-server execution discriminator. When given, the claim
+                advertises ``external_generation_v1`` with the artifact
+                descriptor and carries no image or GPU fields; its absence is
+                the historical CUDA mode.
 
         Returns:
             The claimed lease, or an empty claim when no work is available.
@@ -81,7 +90,18 @@ class BrokerClient:
             "capabilities": ["canonical_coverage_v1"],
             "hardware": _hardware_dict(hardware),
         }
-        if image_digest is not None:
+        if execution is not None:
+            payload["capabilities"] = [
+                "canonical_coverage_v1",
+                "external_generation_v1",
+            ]
+            payload["execution"] = dataclasses.asdict(execution)
+            payload["euroeval_version"] = (
+                euroeval_version
+                if euroeval_version is not None
+                else importlib.metadata.version("euroeval")
+            )
+        elif image_digest is not None:
             payload["capabilities"] = ["canonical_coverage_v1", "managed_image_v1"]
             payload["image_digest"] = image_digest
             payload["euroeval_version"] = euroeval_version
@@ -286,6 +306,8 @@ class BrokerClient:
             "record_json": result.record_json,
             "digest": result.digest,
         }
+        if lease.execution is not None:
+            payload["execution"] = dataclasses.asdict(lease.execution)
         self._post("result", payload, credential=credential)
 
 
@@ -389,7 +411,7 @@ def _hardware_dict(hardware: HardwareReport) -> JsonObject:
     Returns:
         JSON-compatible mapping of hardware details.
     """
-    return {
+    payload: JsonObject = {
         "architecture": hardware.architecture,
         "ram_bytes": hardware.ram_bytes,
         "free_disk_bytes": hardware.free_disk_bytes,
@@ -411,6 +433,9 @@ def _hardware_dict(hardware: HardwareReport) -> JsonObject:
             for gpu in hardware.gpus
         ],
     }
+    if hardware.os is not None:
+        payload["os"] = hardware.os
+    return payload
 
 
 class BrokerProtocol(t.Protocol):

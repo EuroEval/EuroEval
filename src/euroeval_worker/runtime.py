@@ -20,7 +20,17 @@ from euroeval.canary_evidence import CANARY_CORPUS_PATH_ENV
 from .auth import authenticate
 from .broker import BrokerError, BrokerProtocol
 from .evaluator import EuroEvalEvaluator, Evaluator
-from .hardware import NoGpuError, discover_hardware, select_gpu
+from .external import (
+    ExternalServerConfig,
+    preflight_external_server,
+    verify_gguf_artifact,
+)
+from .hardware import (
+    NoGpuError,
+    discover_hardware,
+    discover_native_hardware,
+    select_gpu,
+)
 from .safety import SafetyError, check_model_safety
 from .state import ActiveLease, PendingRecord, StateStore
 from .types import Claim, EEERecord, Gpu, HardwareReport, Lease
@@ -197,6 +207,7 @@ class Worker:
         gpu_memory_utilisation: float = 0.8,
         hardware_factory: c.Callable[[], HardwareReport] | None = None,
         image_digest: str | None = None,
+        external: ExternalServerConfig | None = None,
     ) -> None:
         """Initialise a worker.
 
@@ -210,17 +221,32 @@ class Worker:
             gpu_memory_utilisation (optional):
                 Fraction of GPU memory offered to the evaluator. Defaults to 0.8.
             hardware_factory (optional):
-                Hardware discovery function. Defaults to ``discover_hardware``.
+                Hardware discovery function. Defaults to ``discover_hardware``,
+                or native host discovery in external-server mode.
             image_digest (optional):
                 Host-managed image index digest.
+            external (optional):
+                Frozen external-server configuration selecting native
+                external mode; incompatible with a managed image digest.
+
+        Raises:
+            ValueError:
+                If external mode is combined with a managed image digest.
         """
+        if external is not None and image_digest is not None:
+            raise ValueError("external-server mode cannot use a managed image digest")
         self.client = client
         self.state = state
         self.gpu_memory_utilisation = gpu_memory_utilisation
+        self.external = external
         self.evaluator = evaluator or EuroEvalEvaluator(
-            cache_dir=state.directory, gpu_memory_utilisation=gpu_memory_utilisation
+            cache_dir=state.directory,
+            gpu_memory_utilisation=gpu_memory_utilisation,
+            external=external,
         )
-        self.hardware_factory = hardware_factory or discover_hardware
+        self.hardware_factory = hardware_factory or (
+            discover_native_hardware if external is not None else discover_hardware
+        )
         self.last_submission_id: str | None = None
         self._credential = ""
         self._login = ""
@@ -246,6 +272,8 @@ class Worker:
                 If legacy execution receives invalid configuration.
         """
         self._launcher_managed = launcher_managed
+        if self.external is not None and launcher_managed:
+            raise ValueError("external-server mode cannot be launcher-managed")
         if not launcher_managed:
             return self._run(once=once)
         try:
@@ -335,21 +363,17 @@ class Worker:
                     return 0 if launcher_managed else None
                 continue
 
-            hardware = self._prepare_hardware(discovered)
-            claim = self._claim_continuously(hardware=hardware, once=once)
-            if claim is None:
+            claimed = self._claim_fresh_work(discovered=discovered, once=once)
+            if claimed is None:
                 continue
-            credential, response = claim
-            self._credential = credential
-            self._recovery_failures = 0
+            hardware, response = claimed
             if response.lease is None:
                 if launcher_managed:
                     return 10
                 if self._wait_for_work(once=once):
                     return None
                 continue
-            selected = select_gpu(hardware.gpus)
-            lease = _lease_for_gpu(response.lease, selected)
+            lease = self._select_fresh_lease(response=response, hardware=hardware)
             try:
                 self._process_lease(
                     credential=self._credential,
@@ -384,6 +408,32 @@ class Worker:
                 return
             if launcher_managed:
                 return 0
+
+    def _claim_fresh_work(
+        self, *, discovered: HardwareReport, once: bool
+    ) -> tuple[HardwareReport, Claim] | None:
+        """Run the external preflight and claim new work.
+
+        Args:
+            discovered:
+                Freshly discovered hardware.
+            once:
+                Whether the caller requested single-operation behaviour.
+
+        Returns:
+            The prepared hardware and broker claim, or ``None`` when the loop
+            should retry after a recoverable claim failure.
+        """
+        if self.external is not None:
+            self._external_preflight()
+        hardware = self._prepare_hardware(discovered)
+        claim = self._claim_continuously(hardware=hardware, once=once)
+        if claim is None:
+            return None
+        credential, response = claim
+        self._credential = credential
+        self._recovery_failures = 0
+        return hardware, response
 
     def _claim_continuously(
         self, *, hardware: HardwareReport, once: bool
@@ -452,6 +502,16 @@ class Worker:
                             image_digest=self.image_digest,
                             euroeval_version=importlib.metadata.version("euroeval"),
                         )
+                if self.external is not None:
+                    claim = t.cast(c.Callable[..., Claim], self.client.claim)
+                    parameters = inspect.signature(claim).parameters
+                    if "execution" in parameters:
+                        return credential, claim(
+                            credential=credential,
+                            hardware=hardware,
+                            execution=self.external.execution,
+                            euroeval_version=importlib.metadata.version("euroeval"),
+                        )
                 return credential, self.client.claim(
                     credential=credential, hardware=hardware
                 )
@@ -490,28 +550,13 @@ class Worker:
         self._recovery_failures = exponent + 1
         time.sleep(delay)
 
-    def _clear_finalised_lease(self, *, once: bool) -> bool:
-        """Clear durable completion state and signal once-mode completion.
-
-        Args:
-            once:
-                Whether the caller requested single-operation behaviour.
-
-        Returns:
-            Whether the worker should return from once mode.
-        """
-        self.state.clear_active()
-        return once
-
-    def _discover_hardware(self) -> HardwareReport:
-        """Discover hardware against the worker's writable state filesystem.
-
-        Returns:
-            A report measured on the state and model-cache filesystem.
-        """
-        if self.hardware_factory is discover_hardware:
-            return discover_hardware(state_dir=self.state.directory)
-        return self.hardware_factory()
+    def _external_preflight(self) -> None:
+        """Verify the GGUF bytes and probe the endpoint before claiming work."""
+        assert self.external is not None  # noqa: S101
+        verify_gguf_artifact(
+            gguf_file=self.external.gguf_path, artifact=self.external.execution.artifact
+        )
+        preflight_external_server(self.external)
 
     def _prepare_hardware(self, hardware: HardwareReport) -> HardwareReport:
         """Attach a deterministic single-GPU selection to a hardware report.
@@ -521,8 +566,13 @@ class Worker:
                         Hardware.
 
         Returns:
-                    The report with the configured utilisation and selected GPU.
+                    The report with the configured utilisation and, in CUDA mode,
+                    the selected GPU.
         """
+        if self.external is not None:
+            return dataclasses.replace(
+                hardware, gpu_memory_utilisation=self.gpu_memory_utilisation
+            )
         selected = select_gpu(hardware.gpus)
         return self._hardware_with_selected(hardware, selected)
 
@@ -546,6 +596,34 @@ class Worker:
             selected_gpu_index=selected.index,
             selected_gpu_uuid=selected.uuid,
         )
+
+    def _clear_finalised_lease(self, *, once: bool) -> bool:
+        """Clear durable completion state and signal once-mode completion.
+
+        Args:
+            once:
+                Whether the caller requested single-operation behaviour.
+
+        Returns:
+            Whether the worker should return from once mode.
+        """
+        self.state.clear_active()
+        return once
+
+    def _discover_hardware(self) -> HardwareReport:
+        """Discover hardware against the worker's writable state filesystem.
+
+        Returns:
+            A report measured on the state and model-cache filesystem. External
+            mode uses native host discovery without any NVIDIA call.
+        """
+        if self.external is not None:
+            if self.hardware_factory is discover_native_hardware:
+                return discover_native_hardware(state_dir=self.state.directory)
+            return self.hardware_factory()
+        if self.hardware_factory is discover_hardware:
+            return discover_hardware(state_dir=self.state.directory)
+        return self.hardware_factory()
 
     def _process_lease(
         self,
@@ -574,24 +652,14 @@ class Worker:
                 snapshot.
             SystemExit:
                 If the process is asked to exit during lease processing.
-            NoGpuError:
-                If no usable GPU is available for evaluation.
-            SafetyError:
-                If the lease's model fails the safety preflight.
             EvaluationFailure:
                 If the evaluator raises an exception.
         """
+        if self.external is not None:
+            self._verify_external_for_lease(lease=lease, active=active)
         expected_login = active.github_login or self._login if active else self._login
         if active is None:
-            if self._launcher_managed and lease.image_digest != self.image_digest:
-                raise RuntimeError("claimed lease belongs to a different managed image")
-            self.state.save_active(
-                lease=lease,
-                github_login=expected_login or None,
-                managed_image_digest=self.image_digest
-                if self._launcher_managed
-                else None,
-            )
+            self._save_initial_active(lease=lease, expected_login=expected_login)
         elif active.github_login is None and expected_login:
             self.state.save_active(
                 lease=active.lease,
@@ -618,64 +686,22 @@ class Worker:
                 client=self.client, credential=credential, lease=lease
             )
         completed = False
-        selected_gpu = _gpu_for_lease(hardware.gpus, lease)
+        selected_gpu = (
+            None if self.external is not None else _gpu_for_lease(hardware.gpus, lease)
+        )
         try:
             evaluation_complete = active is not None and bool(active.records)
             if evaluation_complete:
                 records = active.records
                 heartbeat.start()
             else:
-                try:
-                    safety_parameters = inspect.signature(check_model_safety).parameters
-                    safety_kwargs: dict[str, object] = {
-                        "lease": lease,
-                        "gpus": (selected_gpu,),
-                        "free_disk_bytes": hardware.free_disk_bytes,
-                    }
-                    if "gpu_memory_utilisation" in safety_parameters:
-                        safety_kwargs["gpu_memory_utilisation"] = (
-                            lease.gpu_memory_utilisation
-                        )
-                    if "selected_gpu" in safety_parameters:
-                        safety_kwargs["selected_gpu"] = selected_gpu
-                    safety_check = t.cast(c.Callable[..., object], check_model_safety)
-                    safety_check(**safety_kwargs)
-                except SafetyError:
-                    self.client.release(
-                        credential=self._credential,
-                        lease_id=lease.lease_id,
-                        reason="unsafe_model",
-                    )
-                    self.state.archive_active()
-                    raise
-                try:
-                    fresh_hardware = self._discover_hardware()
-                    fresh_gpu = _gpu_for_lease(fresh_hardware.gpus, lease)
-                    if (
-                        fresh_gpu.total_memory_bytes <= 0
-                        or fresh_gpu.free_memory_bytes <= 0
-                    ):
-                        raise NoGpuError("leased GPU has no usable memory measurement")
-                    effective_utilisation = min(
-                        self.gpu_memory_utilisation,
-                        self.gpu_memory_utilisation
-                        * fresh_gpu.free_memory_bytes
-                        / fresh_gpu.total_memory_bytes,
-                    )
-                except Exception as error:  # noqa: BLE001 - measurement must fail closed
-                    self.client.release(
-                        credential=self._credential,
-                        lease_id=lease.lease_id,
-                        reason="gpu_unavailable",
-                    )
-                    self.state.archive_active()
-                    raise NoGpuError(
-                        f"cannot safely evaluate on the leased GPU: {error}"
-                    ) from error
+                effective_utilisation = self._cuda_fit_or_default(
+                    lease=lease, hardware=hardware, selected_gpu=selected_gpu
+                )
                 heartbeat.start()
                 output = self.state.directory / "results" / f"{lease.lease_id}.jsonl"
                 corpus_path = self._canary_corpus_path(lease=lease)
-                with _pin_gpu(selected_gpu), _pin_canary_corpus(corpus_path):
+                with _evaluation_pins(selected_gpu, corpus_path):
                     evaluate_parameters = inspect.signature(
                         self.evaluator.evaluate
                     ).parameters
@@ -778,6 +804,76 @@ class Worker:
             )
             return unavailable
 
+    def _cuda_fit_or_default(
+        self, *, lease: Lease, hardware: HardwareReport, selected_gpu: Gpu | None
+    ) -> float:
+        """Run the CUDA safety and weight-fit preflight before evaluation.
+
+        External-server mode skips the vLLM/safetensors weight-fit and GPU
+        memory measurement entirely and keeps the configured utilisation.
+
+        Args:
+            lease:
+                Lease being processed.
+            hardware:
+                Hardware report for the claim.
+            selected_gpu:
+                The leased GPU in CUDA mode; ``None`` in external mode.
+
+        Returns:
+            The effective GPU memory utilisation for the evaluator.
+
+        Raises:
+            SafetyError:
+                If the lease's model fails the safety preflight.
+            NoGpuError:
+                If no usable GPU memory measurement is available.
+        """
+        if self.external is not None:
+            return self.gpu_memory_utilisation
+        try:
+            safety_parameters = inspect.signature(check_model_safety).parameters
+            safety_kwargs: dict[str, object] = {
+                "lease": lease,
+                "gpus": (selected_gpu,),
+                "free_disk_bytes": hardware.free_disk_bytes,
+            }
+            if "gpu_memory_utilisation" in safety_parameters:
+                safety_kwargs["gpu_memory_utilisation"] = lease.gpu_memory_utilisation
+            if "selected_gpu" in safety_parameters:
+                safety_kwargs["selected_gpu"] = selected_gpu
+            safety_check = t.cast(c.Callable[..., object], check_model_safety)
+            safety_check(**safety_kwargs)
+        except SafetyError:
+            self.client.release(
+                credential=self._credential,
+                lease_id=lease.lease_id,
+                reason="unsafe_model",
+            )
+            self.state.archive_active()
+            raise
+        try:
+            fresh_hardware = self._discover_hardware()
+            fresh_gpu = _gpu_for_lease(fresh_hardware.gpus, lease)
+            if fresh_gpu.total_memory_bytes <= 0 or fresh_gpu.free_memory_bytes <= 0:
+                raise NoGpuError("leased GPU has no usable memory measurement")
+            return min(
+                self.gpu_memory_utilisation,
+                self.gpu_memory_utilisation
+                * fresh_gpu.free_memory_bytes
+                / fresh_gpu.total_memory_bytes,
+            )
+        except Exception as error:  # noqa: BLE001 - measurement must fail closed
+            self.client.release(
+                credential=self._credential,
+                lease_id=lease.lease_id,
+                reason="gpu_unavailable",
+            )
+            self.state.archive_active()
+            raise NoGpuError(
+                f"cannot safely evaluate on the leased GPU: {error}"
+            ) from error
+
     def _durable_records(
         self, active: ActiveLease | None, evaluated: list[EEERecord]
     ) -> tuple[PendingRecord, ...]:
@@ -874,6 +970,30 @@ class Worker:
             self._credential = credential
             return credential
 
+    def _save_initial_active(self, *, lease: Lease, expected_login: str) -> None:
+        """Persist a freshly claimed lease with its provenance fields.
+
+        Args:
+            lease:
+                The newly claimed lease.
+            expected_login:
+                Verified contributor login.
+
+        Raises:
+            RuntimeError:
+                If a managed lease belongs to a different image.
+        """
+        if self._launcher_managed and lease.image_digest != self.image_digest:
+            raise RuntimeError("claimed lease belongs to a different managed image")
+        self.state.save_active(
+            lease=lease,
+            github_login=expected_login or None,
+            managed_image_digest=self.image_digest if self._launcher_managed else None,
+            execution_fingerprint=(
+                self.external.fingerprint if self.external is not None else None
+            ),
+        )
+
     def _submit_records(
         self,
         credential: str,
@@ -946,6 +1066,40 @@ class Worker:
                 retry_after = None
             logger.warning("Result submission failed; retrying idempotently")
             time.sleep(_retry_delay(attempt, retry_after, self._max_retry_delay))
+
+    def _verify_external_for_lease(
+        self, *, lease: Lease, active: ActiveLease | None
+    ) -> None:
+        """Re-verify config, artifact and file bytes before evaluation or upload.
+
+        Args:
+                    lease:
+                        Lease being processed.
+                    active:
+                        Persisted active lease when resuming, otherwise ``None``.
+
+        Raises:
+                    RuntimeError:
+                        If the lease execution or persisted fingerprint drifted from
+                        the configured external server.
+        """
+        assert self.external is not None  # noqa: S101
+        if lease.execution is None or lease.execution != self.external.execution:
+            raise RuntimeError(
+                "lease execution does not match the configured external artifact"
+            )
+        if active is not None and active.execution_fingerprint != (
+            self.external.fingerprint
+        ):
+            raise RuntimeError(
+                "external configuration changed since the lease was persisted; "
+                "refusing to upload"
+            )
+        verify_gguf_artifact(
+            gguf_file=self.external.gguf_path, artifact=self.external.execution.artifact
+        )
+        if active is not None and not active.records:
+            preflight_external_server(self.external)
 
     def _recover_evaluation_failure(
         self, *, active: ActiveLease, error: EvaluationFailure, once: bool
@@ -1051,8 +1205,12 @@ class Worker:
             TimeoutError:
                 If broker transport times out in once mode.
         """
-        selected = _gpu_for_lease(hardware.gpus, active.lease)
-        pinned = self._hardware_with_selected(hardware, selected)
+        self._check_external_active(active=active)
+        if self.external is None:
+            selected = _gpu_for_lease(hardware.gpus, active.lease)
+            pinned = self._hardware_with_selected(hardware, selected)
+        else:
+            pinned = hardware
         try:
             self._process_lease(
                 credential=self._credential,
@@ -1076,6 +1234,93 @@ class Worker:
             raise
         self._recovery_failures = 0
         return once or self._launcher_managed
+
+    def _check_external_active(self, *, active: ActiveLease) -> None:
+        """Reject a resumed lease whose execution mode or config drifted.
+
+        Args:
+                    active:
+                        Persisted active lease.
+
+        Raises:
+                    RuntimeError:
+                        If the lease/client mode mismatches, the approved artifact
+                        differs, or the persisted fingerprint no longer matches
+                        the configured endpoint, alias, artifact, context or type.
+        """
+        if self.external is None:
+            if active.lease.execution is not None:
+                raise RuntimeError(
+                    "active lease requires external-server execution but the "
+                    "worker runs in CUDA mode"
+                )
+            return
+        if active.lease.execution is None or active.lease.execution != (
+            self.external.execution
+        ):
+            raise RuntimeError(
+                "active lease does not match the configured external artifact"
+            )
+        if active.execution_fingerprint != self.external.fingerprint:
+            raise RuntimeError(
+                "external configuration changed since the lease was persisted; "
+                "refusing to resume or upload"
+            )
+
+    def _select_fresh_lease(
+        self, *, response: Claim, hardware: HardwareReport
+    ) -> Lease:
+        """Validate and bind a freshly claimed lease to this worker's mode.
+
+        Args:
+            response:
+                Broker claim response carrying a lease.
+            hardware:
+                Prepared hardware report.
+
+        Returns:
+            The lease ready for processing.
+
+        Raises:
+            RuntimeError:
+                If the claim carried no lease or the external artifact mismatches.
+        """
+        lease = response.lease
+        if lease is None:
+            raise RuntimeError("claim response carried no lease")
+        if self.external is not None:
+            self._check_claimed_external(lease=lease)
+            return lease
+        selected = select_gpu(hardware.gpus)
+        return _lease_for_gpu(lease, selected)
+
+    def _check_claimed_external(self, *, lease: Lease) -> None:
+        """Reject a freshly claimed lease that does not match external mode.
+
+        Args:
+                    lease:
+                        Broker-issued lease.
+
+        Raises:
+                    RuntimeError:
+                        If the lease/client mode mismatches or the approved
+                        artifact differs; the lease is released first.
+        """
+        if self.external is None:
+            if lease.execution is not None:
+                raise RuntimeError(
+                    "broker returned an external-server lease to a CUDA worker"
+                )
+            return
+        if lease.execution is None or lease.execution != self.external.execution:
+            self.client.release(
+                credential=self._credential,
+                lease_id=lease.lease_id,
+                reason="external_artifact_mismatch",
+            )
+            raise RuntimeError(
+                "claimed lease does not match the approved external artifact"
+            )
 
     def _wait_for_work(self, *, once: bool) -> bool:
         """Wait after an empty claim, or signal completion in once mode.
@@ -1143,6 +1388,74 @@ def _transient(error: BrokerError) -> bool:
         ``True`` when the status is absent, 429, or at least 500; otherwise ``False``.
     """
     return error.status is None or error.status == 429 or error.status >= 500
+
+
+@contextlib.contextmanager
+def _evaluation_pins(
+    selected_gpu: Gpu | None, corpus_path: Path | None
+) -> c.Iterator[None]:
+    """Pin the leased GPU and canary corpus for one evaluation.
+
+    Args:
+        selected_gpu:
+            GPU to expose through ``CUDA_VISIBLE_DEVICES``; ``None`` in
+            external-server mode, which never pins CUDA.
+        corpus_path:
+            Canary corpus path to pin, when required.
+
+    Yields:
+        Values produced by this iterator.
+    """
+    with contextlib.ExitStack() as stack:
+        if selected_gpu is not None:
+            stack.enter_context(_pin_gpu(selected_gpu))
+        stack.enter_context(_pin_canary_corpus(corpus_path))
+        yield
+
+
+@contextlib.contextmanager
+def _pin_canary_corpus(path: Path | None) -> c.Iterator[None]:
+    """Pin canary corpus.
+
+    Args:
+        path:
+            Path.
+
+    Yields:
+        Values produced by this iterator.
+    """
+    previous = os.environ.get(CANARY_CORPUS_PATH_ENV)
+    if path is not None:
+        os.environ[CANARY_CORPUS_PATH_ENV] = str(path)
+    try:
+        yield
+    finally:
+        if previous is None:
+            os.environ.pop(CANARY_CORPUS_PATH_ENV, None)
+        else:
+            os.environ[CANARY_CORPUS_PATH_ENV] = previous
+
+
+@contextlib.contextmanager
+def _pin_gpu(gpu: Gpu) -> c.Iterator[None]:
+    """Expose only ``gpu`` to CUDA for the duration of one evaluation.
+
+    Args:
+        gpu:
+            Gpu.
+
+    Yields:
+        Values produced by this iterator.
+    """
+    original = os.environ.get("CUDA_VISIBLE_DEVICES")
+    os.environ["CUDA_VISIBLE_DEVICES"] = gpu.uuid
+    try:
+        yield
+    finally:
+        if original is None:
+            os.environ.pop("CUDA_VISIBLE_DEVICES", None)
+        else:
+            os.environ["CUDA_VISIBLE_DEVICES"] = original
 
 
 def _gpu_for_lease(gpus: c.Iterable[Gpu], lease: Lease) -> Gpu:
@@ -1232,51 +1545,6 @@ def _lease_lost(error: BaseException) -> bool:
         and error.status == 409
         and error.code == "lease_assignment_lost"
     )
-
-
-@contextlib.contextmanager
-def _pin_canary_corpus(path: Path | None) -> c.Iterator[None]:
-    """Pin canary corpus.
-
-    Args:
-        path:
-            Path.
-
-    Yields:
-        Values produced by this iterator.
-    """
-    previous = os.environ.get(CANARY_CORPUS_PATH_ENV)
-    if path is not None:
-        os.environ[CANARY_CORPUS_PATH_ENV] = str(path)
-    try:
-        yield
-    finally:
-        if previous is None:
-            os.environ.pop(CANARY_CORPUS_PATH_ENV, None)
-        else:
-            os.environ[CANARY_CORPUS_PATH_ENV] = previous
-
-
-@contextlib.contextmanager
-def _pin_gpu(gpu: Gpu) -> c.Iterator[None]:
-    """Expose only ``gpu`` to CUDA for the duration of one evaluation.
-
-    Args:
-        gpu:
-            Gpu.
-
-    Yields:
-        Values produced by this iterator.
-    """
-    original = os.environ.get("CUDA_VISIBLE_DEVICES")
-    os.environ["CUDA_VISIBLE_DEVICES"] = gpu.uuid
-    try:
-        yield
-    finally:
-        if original is None:
-            os.environ.pop("CUDA_VISIBLE_DEVICES", None)
-        else:
-            os.environ["CUDA_VISIBLE_DEVICES"] = original
 
 
 def _recoverable_broker_error(error: BaseException) -> bool:

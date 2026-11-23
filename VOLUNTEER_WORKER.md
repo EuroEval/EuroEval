@@ -158,6 +158,102 @@ launcher command validates the managed path separately.
 A pin does not freeze the broker's supported worker version. If the broker requests a
 worker update, pull the newly promoted image and replace the old pin.
 
+## Native external-server mode (macOS, build-ready)
+
+A native macOS worker can evaluate through a locally running OpenAI-compatible
+inference server instead of an NVIDIA container. This mode is **build-ready but not
+production-activated**: the broker feature gate `VOLUNTEER_EXTERNAL_WORKERS_ENABLED`
+remains off by default, and turning it on is a separate maintainer release action, not
+a side effect of installing or running this code. Until then, external claims receive
+`404 External worker claims are not enabled`.
+
+The pilot binds exactly one approved GGUF artifact. The artifact repository is queued
+as **its own model entry**; the worker never claims the upstream BF16 checkpoint's
+issue, and there is no automatic matching between queued checkpoints and GGUF
+conversions. A different quantization of the same model is a different artifact and is
+not covered by this pilot; it would need its own maintainer-approved binding and queue
+entry. One approved filename/hash is bound per artifact repository revision, and a
+binding can never change file or hash while keeping the same result identity.
+
+### 1. Install the worker (base package only)
+
+From a checkout containing this feature, install the base package **without** the
+generative CUDA extra. External mode uses HTTP inference and never initializes
+vLLM/CUDA:
+
+```sh
+uv venv .venv && . .venv/bin/activate
+uv pip install -e .
+```
+
+### 2. Install llama.cpp v1 and the pinned GGUF file
+
+Build or install [llama.cpp v1.0.0](https://github.com/ggml-org/llama.cpp/releases/tag/v1.0.0)
+locally (Metal on Apple Silicon), then download only the pinned file from the official
+artifact repository `LiquidAI/LFM3-1.7B-GGUF` at revision
+`cd0c74c575b5c416f3011b5b4c298077f26ca8c2` and verify its SHA-256 against the approved
+binding before starting anything:
+
+```sh
+curl -L -o LFM3-1.7B-Q8_0.gguf \
+  "https://huggingface.co/LiquidAI/LFM3-1.7B-GGUF/resolve/cd0c74c575b5c416f3011b5b4c298077f26ca8c2/LFM3-1.7B-Q8_0.gguf"
+echo "8f6b24182258205e9e01e21f1f24a1f208c1e8115578825d202ce39976af20b6  LFM3-1.7B-Q8_0.gguf" | shasum -a 256 -c -
+```
+
+### 3. Start the inference server yourself
+
+The worker never starts, supervises, or stops the server. Use the observed llama.cpp
+v1 server recipe:
+
+```sh
+llama-server -m /path/LFM3-1.7B-Q8_0.gguf \
+  --alias lfm3-q8 --host 127.0.0.1 --port 8080 \
+  --ctx-size 8192 --parallel 1 --reasoning off
+```
+
+Keep the server running with unchanged settings for the whole lease. Do not reload or
+swap the model, change the context size, or restart the server between resume attempts:
+the worker stores an endpoint/alias/artifact/context/type fingerprint in its state
+directory and refuses to resume evaluation or upload when it changed. Shut the server
+down only after the worker has finished (`--once` exits after at most one lease) or
+after the lease expired and was released.
+
+### 4. Run the worker once against the endpoint
+
+```sh
+euroeval-worker --once --state-dir ~/.euroeval-worker-state \
+  --api-base http://127.0.0.1:8080/v1 \
+  --served-model lfm3-q8 \
+  --gguf-file /path/LFM3-1.7B-Q8_0.gguf \
+  --gguf-binding /path/to/gguf-bindings.json \
+  --max-context-length 8192 \
+  --generative-type instruction_tuned
+```
+
+For an authenticated inference server, add `--api-key-env MY_SERVER_KEY` after setting
+that environment variable locally. The key is never persisted or logged.
+
+Supplying any of `--api-base`, `--served-model`, `--gguf-file`, `--gguf-binding`,
+`--max-context-length`, or `--generative-type` requires all of them; partial input
+fails. `--gguf-binding` is a JSON file with either one six-field artifact descriptor
+or the `{"version": 1, "artifacts": [...]}` envelope — use the checked-in
+`api/worker/gguf-bindings.json` from a repository clone or an exact copy of it. The
+worker hashes the local file, requires it to match exactly one approved binding by
+filename and SHA-256, runs one bounded preflight completion against the served alias,
+and only then claims work. The endpoint, alias, context length, and any API key stay
+local configuration: they are never sent to the broker, so the broker cannot and does
+not attest the server engine, version, or effective settings — its evidence is the
+approved artifact descriptor plus the client's inference-engine record. If the actual
+server engine/version is not available in the submission metadata, it is reported as
+declared/unknown, never invented. External claims skip NVIDIA discovery, CUDA pinning,
+and the container image checks; they report only host facts (OS, architecture, RAM,
+free disk) and never fabricate a GPU or image digest.
+
+Use `--once` for the pilot and keep `--state-dir` on a private disk: it holds the
+broker credential and the resume fingerprint, never the endpoint API key. Re-run the
+same command to resume unfinished work before lease expiry; after expiry the broker
+may lease the language again and the old local state is archived.
+
 ## How volunteer evaluation works
 
 1. The worker completes the broker-mediated GitHub App device flow. Any GitHub account

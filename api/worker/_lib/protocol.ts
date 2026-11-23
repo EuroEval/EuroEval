@@ -85,6 +85,25 @@ export interface ModelMetadataEvidence {
   is_encoder_decoder: boolean | null;
 }
 
+/** One broker-approved GGUF artifact binding (see gguf-bindings.json). */
+export interface GgufArtifact {
+  repo_id: string;
+  revision: string;
+  filename: string;
+  sha256: string;
+  source_repo_id: string;
+  source_revision: string;
+}
+
+/** External-server execution: the server runs one approved GGUF artifact. */
+export interface ExternalServerExecution {
+  kind: "external_server";
+  artifact: GgufArtifact;
+}
+
+/** Lease execution discriminator; an omitted discriminator is CUDA mode. */
+export type LeaseExecution = ExternalServerExecution;
+
 export type LeaseScopeBase = {
   policy_version: string;
   language_group: string;
@@ -102,7 +121,7 @@ export type LeaseScope = LeaseScopeBase & ({
   allowed_identity_suffix_sets?: never;
 });
 
-export interface Lease {
+type LeaseBase = {
   issue_number: number;
   language: string;
   worker: string;
@@ -110,11 +129,8 @@ export interface Lease {
   model_id: string;
   model_revision: string;
   euroeval_version: string;
-  image_digest: string;
   worker_version: string;
   gpu_memory_utilisation: number;
-  selected_gpu_index: number;
-  selected_gpu_uuid: string;
   expires_at: string;
   lease_id: string;
   /** Missing means the historical GitHub-assignee ownership contract. */
@@ -128,7 +144,26 @@ export interface Lease {
   model_metadata: ModelMetadataEvidence;
   contamination_canary?: import("./canary.js").CanaryLease;
   expected_scope: LeaseScope;
-}
+};
+
+/**
+ * Broker-issued lease. The optional `execution` discriminator selects the
+ * execution mode: omitted means the historical CUDA mode, which requires a
+ * nonempty image digest and a selected GPU; `external_server` carries the
+ * broker-approved artifact and must have a null image digest and no selected
+ * GPU.
+ */
+export type Lease = LeaseBase & ({
+  execution?: undefined;
+  image_digest: string;
+  selected_gpu_index: number;
+  selected_gpu_uuid: string;
+} | {
+  execution: LeaseExecution;
+  image_digest: null;
+  selected_gpu_index?: null;
+  selected_gpu_uuid?: null;
+});
 
 export class ConfigurationError extends Error {}
 export class BrokerError extends Error {

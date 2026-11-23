@@ -320,3 +320,27 @@ def select_gpu(gpus: c.Iterable[Gpu]) -> Gpu:
     if not usable:
         raise NoGpuError("nvidia-smi returned no GPU with usable free memory")
     return min(usable, key=lambda gpu: (-gpu.free_memory_bytes, gpu.index, gpu.uuid))
+
+
+def discover_native_hardware(*, state_dir: Path | None = None) -> HardwareReport:
+    """Discover native host facts without any NVIDIA call.
+
+    Args:
+        state_dir (optional):
+            Worker state and model-cache directory. Defaults to the current
+            working directory for backwards compatibility.
+
+    Returns:
+        A GPU-less hardware report with the host OS, RAM and disk, suitable
+        for an external-server claim.
+    """
+    return HardwareReport(
+        architecture=platform.machine(),
+        ram_bytes=_ram_bytes(),
+        free_disk_bytes=shutil.disk_usage(state_dir or Path.cwd()).free,
+        driver_version=None,
+        cuda_version=None,
+        pytorch_version=None,
+        gpus=(),
+        os=platform.system(),
+    )

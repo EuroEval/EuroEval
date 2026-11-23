@@ -1,8 +1,10 @@
 """Typed protocol objects shared by the worker and its broker."""
 
+import collections.abc as c
 import dataclasses
 import hashlib
 import json
+import re
 import typing as t
 
 PROTOCOL_VERSION = "volunteer-worker/v1"
@@ -143,7 +145,37 @@ class Gpu:
 
 @dataclasses.dataclass(frozen=True)
 class HardwareReport:
-    """Hardware and software facts sent when claiming work."""
+    """Hardware and software facts sent when claiming work.
+
+    Native external-server mode reports host facts without any GPU, so
+    ``gpus`` may be empty and ``os`` carries the host operating-system name;
+    CUDA discovery and validation are unchanged.
+
+    Attributes:
+        architecture:
+            Machine architecture, e.g. ``arm64``.
+        ram_bytes:
+            Physical RAM in bytes.
+        free_disk_bytes:
+            Free disk bytes on the worker state filesystem.
+        driver_version:
+            NVIDIA driver version, or ``None`` in native mode.
+        cuda_version:
+            CUDA version, or ``None`` in native mode.
+        pytorch_version:
+            Installed PyTorch version, or ``None``.
+        gpus:
+            Discovered NVIDIA GPUs; empty for native external-server mode.
+        gpu_memory_utilisation:
+            Maximum proportion of GPU memory available to the evaluator; in
+            native mode this is a common lease field, never a GPU measurement.
+        selected_gpu_index:
+            Process-visible index of the selected GPU, when available.
+        selected_gpu_uuid:
+            Stable identifier of the selected GPU, when available.
+        os:
+            Host operating-system name, emitted for native claims.
+    """
 
     architecture: str
     ram_bytes: int
@@ -151,184 +183,21 @@ class HardwareReport:
     driver_version: str | None
     cuda_version: str | None
     pytorch_version: str | None
-    gpus: tuple["Gpu", ...]
+    gpus: tuple["Gpu", ...] = ()
     gpu_memory_utilisation: float = 0.8
     selected_gpu_index: int | None = None
     selected_gpu_uuid: str | None = None
-
-
-def _reject_constant(value: str) -> None:
-    """Reject constant.
-
-    Args:
-            value:
-                Input value being decoded, validated, or serialised.
-
-    Raises:
-    ValueError:
-            If the input does not have the required structure or value.
-            The input is malformed or cannot be converted to the required value.
-    """
-    raise ValueError(f"non-finite JSON constant {value!r} is not allowed")
+    os: str | None = None
 
 
 @dataclasses.dataclass(frozen=True)
-class AuthPoll:
-    """Result of one device-flow poll."""
+class ModelEvidence:
+    """Immutable Hub metadata copied into a broker-issued lease."""
 
-    pending: bool
-    credential: str | None = None
-    github_login: str | None = None
-    retry_after: int | None = None
-
-
-def auth_poll_from_dict(data: dict[str, object]) -> AuthPoll:
-    """Decode an auth/poll response.
-
-    Args:
-            data:
-                Broker response mapping to decode.
-
-    Returns:
-            The typed poll response.
-    """
-    _protocol(data)
-    pending = data.get("status") == "pending" or bool(data.get("pending", False))
-    return AuthPoll(
-        pending=pending,
-        credential=_optional_string(data, "credential"),
-        github_login=_optional_string(data, "github_login"),
-        retry_after=_optional_positive_integer(data, "retry_after"),
-    )
-
-
-def _optional_positive_integer(data: dict[str, object], key: str) -> int | None:
-    """Optional positive integer.
-
-    Args:
-        data:
-            Broker response object or persisted JSON fields.
-        key:
-            Tuple index or broker response field name, as applicable.
-
-    Returns:
-        Positive integer field value, clamped to at least one, or ``None`` when absent.
-    """
-    value = data.get(key)
-    if value is None:
-        return None
-    parsed = _integer(data, key)
-    return max(1, parsed)
-
-
-def _integer(data: dict[str, object], key: str, default: int | None = None) -> int:
-    """Integer.
-
-    Args:
-            data:
-                Broker response mapping to decode.
-            key:
-                Field name to retrieve from the response object.
-            default (optional):
-                Fallback used when the response mapping omits the field.
-
-    Returns:
-            Integer converted from the named field or its default.
-
-    Raises:
-    ValueError:
-            If the input does not have the required structure or value.
-            The input is malformed or cannot be converted to the required value.
-    """
-    value = data.get(key, default)
-    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
-        raise ValueError(f"broker response field {key!r} must be an integer")
-    return int(value)
-
-
-def _optional_string(data: dict[str, object], key: str) -> str | None:
-    """Optional string.
-
-    Args:
-        data:
-            Broker response object or persisted JSON fields.
-        key:
-            Tuple index or broker response field name, as applicable.
-
-    Returns:
-        String value for the named field, or ``None`` when absent or not a string.
-    """
-    value = data.get(key)
-    return value if isinstance(value, str) else None
-
-
-def _protocol(data: dict[str, object]) -> None:
-    """Reject responses from a different broker protocol.
-
-    Args:
-            data:
-                Broker response mapping to decode.
-
-    Raises:
-            ValueError:
-                If the response protocol is unsupported.
-    """
-    if data.get("protocol_version") != PROTOCOL_VERSION:
-        raise ValueError("broker response has an unsupported protocol_version")
-
-
-@dataclasses.dataclass(frozen=True)
-class AuthStart:
-    """Device-flow details returned by the broker."""
-
-    session_id: str
-    user_code: str
-    verification_uri: str
-    expires_in: int
-    interval: int
-
-
-def auth_start_from_dict(data: dict[str, object]) -> AuthStart:
-    """Decode an auth/start response.
-
-    Args:
-            data:
-                Broker response mapping to decode.
-
-    Returns:
-            The typed device-flow response.
-    """
-    _protocol(data)
-    return AuthStart(
-        session_id=_string(data, "session_id"),
-        user_code=_string(data, "user_code"),
-        verification_uri=_string(data, "verification_uri"),
-        expires_in=_integer(data, "expires_in", 0),
-        interval=_integer(data, "interval", 5),
-    )
-
-
-def _string(data: dict[str, object], key: str) -> str:
-    """String.
-
-    Args:
-            data:
-                Broker response mapping to decode.
-            key:
-                Field name to retrieve from the response object.
-
-    Returns:
-            Non-empty string from the named broker response field.
-
-    Raises:
-    ValueError:
-            If the input does not have the required structure or value.
-            The input is malformed or cannot be converted to the required value.
-    """
-    value = data.get(key)
-    if not isinstance(value, str) or not value:
-        raise ValueError(f"broker response field {key!r} must be a non-empty string")
-    return value
+    pipeline_tag: str
+    architectures: tuple[str, ...]
+    model_type: str
+    is_encoder_decoder: bool | None = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -547,129 +416,187 @@ def _identity_suffix_sets(value: object) -> tuple[tuple[str, ...], ...]:
     return tuple(alternatives)
 
 
-@dataclasses.dataclass(frozen=True)
-class ModelEvidence:
-    """Immutable Hub metadata copied into a broker-issued lease."""
+def _reject_constant(value: str) -> None:
+    """Reject constant.
 
-    pipeline_tag: str
-    architectures: tuple[str, ...]
-    model_type: str
-    is_encoder_decoder: bool | None = None
+    Args:
+            value:
+                Input value being decoded, validated, or serialised.
 
-
-@dataclasses.dataclass(frozen=True)
-class Lease:
-    """One broker-issued evaluation lease.
-
-    Attributes:
-        lease_id:
-            Unique broker-issued lease identifier.
-        issue_number:
-            GitHub issue containing the queued evaluation request.
-        model_id:
-            Hugging Face model repository identifier.
-        model_revision:
-            Immutable model revision to evaluate.
-        language:
-            Language code assigned to the lease.
-        euroeval_version:
-            EuroEval version required by the broker.
-        image_digest:
-            Digest of the authorised worker image.
-        expires_at:
-            ISO-formatted lease expiry time.
-        model_type:
-            Broad model type authorised by the broker.
-        worker_version:
-            Worker protocol implementation version.
-        gpu_memory_utilisation:
-            Maximum proportion of GPU memory available to the evaluator.
-        selected_gpu_uuid:
-            Stable identifier of the selected GPU, when available.
-        selected_gpu_index:
-            Process-visible index of the selected GPU, when available.
-        model_metadata:
-            Immutable model metadata verified by the broker.
-        expected_scope:
-            Exact result-identity alternatives authorised for this lease.
+    Raises:
+    ValueError:
+            If the input does not have the required structure or value.
+            The input is malformed or cannot be converted to the required value.
     """
-
-    lease_id: str
-    issue_number: int
-    model_id: str
-    model_revision: str
-    language: str
-    euroeval_version: str
-    image_digest: str
-    expires_at: str
-    model_type: str
-    worker_version: str = "legacy-worker"
-    gpu_memory_utilisation: float = 0.8
-    selected_gpu_uuid: str | None = None
-    selected_gpu_index: int | None = None
-    model_metadata: ModelEvidence | None = None
-    expected_scope: ExpectedScope | None = None
-    contamination_canary: CanaryInstruction | None = None
+    raise ValueError(f"non-finite JSON constant {value!r} is not allowed")
 
 
 @dataclasses.dataclass(frozen=True)
-class Claim:
-    """Broker claim response."""
+class AuthPoll:
+    """Result of one device-flow poll."""
 
-    lease: Lease | None
+    pending: bool
+    credential: str | None = None
+    github_login: str | None = None
+    retry_after: int | None = None
 
 
-def lease_from_dict(data: dict[str, object]) -> Lease:
-    """Decode a lease response.
+def auth_poll_from_dict(data: dict[str, object]) -> AuthPoll:
+    """Decode an auth/poll response.
+
+    Args:
+            data:
+                Broker response mapping to decode.
+
+    Returns:
+            The typed poll response.
+    """
+    _protocol(data)
+    pending = data.get("status") == "pending" or bool(data.get("pending", False))
+    return AuthPoll(
+        pending=pending,
+        credential=_optional_string(data, "credential"),
+        github_login=_optional_string(data, "github_login"),
+        retry_after=_optional_positive_integer(data, "retry_after"),
+    )
+
+
+def _optional_positive_integer(data: dict[str, object], key: str) -> int | None:
+    """Optional positive integer.
 
     Args:
         data:
-            JSON-compatible broker lease response.
+            Broker response object or persisted JSON fields.
+        key:
+            Tuple index or broker response field name, as applicable.
 
     Returns:
-        The typed lease.
+        Positive integer field value, clamped to at least one, or ``None`` when absent.
+    """
+    value = data.get(key)
+    if value is None:
+        return None
+    parsed = _integer(data, key)
+    return max(1, parsed)
+
+
+def _integer(data: dict[str, object], key: str, default: int | None = None) -> int:
+    """Integer.
+
+    Args:
+            data:
+                Broker response mapping to decode.
+            key:
+                Field name to retrieve from the response object.
+            default (optional):
+                Fallback used when the response mapping omits the field.
+
+    Returns:
+            Integer converted from the named field or its default.
 
     Raises:
-        ValueError:
-            If the broker response is malformed or has an invalid fit value.
+    ValueError:
+            If the input does not have the required structure or value.
+            The input is malformed or cannot be converted to the required value.
+    """
+    value = data.get(key, default)
+    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+        raise ValueError(f"broker response field {key!r} must be an integer")
+    return int(value)
+
+
+def _optional_string(data: dict[str, object], key: str) -> str | None:
+    """Optional string.
+
+    Args:
+        data:
+            Broker response object or persisted JSON fields.
+        key:
+            Tuple index or broker response field name, as applicable.
+
+    Returns:
+        String value for the named field, or ``None`` when absent or not a string.
+    """
+    value = data.get(key)
+    return value if isinstance(value, str) else None
+
+
+def _protocol(data: dict[str, object]) -> None:
+    """Reject responses from a different broker protocol.
+
+    Args:
+            data:
+                Broker response mapping to decode.
+
+    Raises:
+            ValueError:
+                If the response protocol is unsupported.
+    """
+    if data.get("protocol_version") != PROTOCOL_VERSION:
+        raise ValueError("broker response has an unsupported protocol_version")
+
+
+@dataclasses.dataclass(frozen=True)
+class AuthStart:
+    """Device-flow details returned by the broker."""
+
+    session_id: str
+    user_code: str
+    verification_uri: str
+    expires_in: int
+    interval: int
+
+
+def auth_start_from_dict(data: dict[str, object]) -> AuthStart:
+    """Decode an auth/start response.
+
+    Args:
+            data:
+                Broker response mapping to decode.
+
+    Returns:
+            The typed device-flow response.
     """
     _protocol(data)
-    selected_gpu_uuid = data.get("selected_gpu_uuid")
-    if selected_gpu_uuid is not None and (
-        not isinstance(selected_gpu_uuid, str) or not selected_gpu_uuid
-    ):
-        raise ValueError("broker response field 'selected_gpu_uuid' must be a string")
-    gpu_memory_utilisation = _number(data, "gpu_memory_utilisation", 0.8)
-    if not 0 < gpu_memory_utilisation <= 1:
-        raise ValueError(
-            "broker response gpu_memory_utilisation must be between 0 and 1"
-        )
-    model_type = _string(data, "model_type")
-    if model_type not in {"encoder", "generative"}:
-        raise ValueError("broker response model_type is unsupported")
-    model_metadata = _model_evidence(data.get("model_metadata"))
-    if model_metadata.model_type != model_type:
-        raise ValueError("broker response model metadata contradicts model_type")
-    expected_scope = _expected_scope(value=data.get("expected_scope"))
-    contamination_canary = _canary_instruction(data.get("contamination_canary"))
-    return Lease(
-        lease_id=_string(data, "lease_id"),
-        issue_number=_integer(data, "issue_number"),
-        model_id=_string(data, "model_id"),
-        model_revision=_string(data, "model_revision"),
-        language=_string(data, "language"),
-        euroeval_version=_string(data, "euroeval_version"),
-        image_digest=_string(data, "image_digest"),
-        worker_version=_string(data, "worker_version"),
-        gpu_memory_utilisation=gpu_memory_utilisation,
-        expires_at=_string(data, "expires_at"),
-        model_type=model_type,
-        selected_gpu_uuid=selected_gpu_uuid,
-        selected_gpu_index=_optional_integer(data, "selected_gpu_index"),
-        model_metadata=model_metadata,
-        expected_scope=expected_scope,
-        contamination_canary=contamination_canary,
+    return AuthStart(
+        session_id=_string(data, "session_id"),
+        user_code=_string(data, "user_code"),
+        verification_uri=_string(data, "verification_uri"),
+        expires_in=_integer(data, "expires_in", 0),
+        interval=_integer(data, "interval", 5),
     )
+
+
+def _string(data: dict[str, object], key: str) -> str:
+    """String.
+
+    Args:
+            data:
+                Broker response mapping to decode.
+            key:
+                Field name to retrieve from the response object.
+
+    Returns:
+            Non-empty string from the named broker response field.
+
+    Raises:
+    ValueError:
+            If the input does not have the required structure or value.
+            The input is malformed or cannot be converted to the required value.
+    """
+    value = data.get(key)
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"broker response field {key!r} must be a non-empty string")
+    return value
+
+
+_GGUF_REVISION_PATTERN = re.compile(r"[0-9a-f]{40}")
+_GGUF_SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
+_REPO_ID_PATTERN = re.compile(
+    r"[A-Za-z0-9](?:[A-Za-z0-9_.-]*[A-Za-z0-9])?"
+    r"/[A-Za-z0-9](?:[A-Za-z0-9_.-]*[A-Za-z0-9])?"
+)
+_GGUF_FILENAME_PATTERN = re.compile(r"[A-Za-z0-9_][A-Za-z0-9._+-]*\.gguf")
 
 
 def _model_evidence(value: object) -> ModelEvidence:
@@ -759,3 +686,362 @@ def _optional_integer(data: dict[str, object], key: str) -> int | None:
     if isinstance(value, bool) or not isinstance(value, (int, float, str)):
         raise ValueError(f"broker response field {key!r} must be an integer")
     return int(value)
+
+
+@dataclasses.dataclass(frozen=True)
+class GgufArtifact:
+    """One broker-approved GGUF artifact binding.
+
+    Attributes:
+        repo_id:
+            Hugging Face repository holding the approved GGUF artifact.
+        revision:
+            Immutable 40-hex revision of the artifact repository.
+        filename:
+            Single safe ``.gguf`` basename approved for that revision.
+        sha256:
+            64-hex SHA-256 digest of the approved file bytes.
+        source_repo_id:
+            Upstream checkpoint repository the artifact was converted from.
+        source_revision:
+            Immutable 40-hex revision of the upstream checkpoint.
+    """
+
+    repo_id: str
+    revision: str
+    filename: str
+    sha256: str
+    source_repo_id: str
+    source_revision: str
+
+
+@dataclasses.dataclass(frozen=True)
+class ExternalExecution:
+    """External-server execution variant of a lease.
+
+    Attributes:
+        kind:
+            Execution-kind discriminator; only ``external_server`` exists in v1.
+        artifact:
+            The broker-approved GGUF artifact the external server must serve.
+    """
+
+    kind: t.Literal["external_server"]
+    artifact: GgufArtifact
+
+
+@dataclasses.dataclass(frozen=True)
+class Lease:
+    """One broker-issued evaluation lease.
+
+    Attributes:
+        lease_id:
+            Unique broker-issued lease identifier.
+        issue_number:
+            GitHub issue containing the queued evaluation request.
+        model_id:
+            Hugging Face model repository identifier.
+        model_revision:
+            Immutable model revision to evaluate.
+        language:
+            Language code assigned to the lease.
+        euroeval_version:
+            EuroEval version required by the broker.
+        image_digest:
+            Digest of the authorised worker image; ``None`` only for
+            external-server leases, which never carry a CUDA image.
+        expires_at:
+            ISO-formatted lease expiry time.
+        model_type:
+            Broad model type authorised by the broker.
+        worker_version:
+            Worker protocol implementation version.
+        gpu_memory_utilisation:
+            Maximum proportion of GPU memory available to the evaluator.
+        selected_gpu_uuid:
+            Stable identifier of the selected GPU, when available.
+        selected_gpu_index:
+            Process-visible index of the selected GPU, when available.
+        model_metadata:
+            Immutable model metadata verified by the broker.
+        expected_scope:
+            Exact result-identity alternatives authorised for this lease.
+        execution:
+            Optional execution discriminator; ``None`` is the historical CUDA
+            mode, while ``ExternalExecution`` binds an external server to one
+            broker-approved GGUF artifact.
+    """
+
+    lease_id: str
+    issue_number: int
+    model_id: str
+    model_revision: str
+    language: str
+    euroeval_version: str
+    image_digest: str | None
+    expires_at: str
+    model_type: str
+    worker_version: str = "legacy-worker"
+    gpu_memory_utilisation: float = 0.8
+    selected_gpu_uuid: str | None = None
+    selected_gpu_index: int | None = None
+    model_metadata: ModelEvidence | None = None
+    expected_scope: ExpectedScope | None = None
+    contamination_canary: CanaryInstruction | None = None
+    execution: ExternalExecution | None = None
+
+
+@dataclasses.dataclass(frozen=True)
+class Claim:
+    """Broker claim response."""
+
+    lease: Lease | None
+
+
+def lease_from_dict(data: dict[str, object]) -> Lease:
+    """Decode a lease response.
+
+    An absent ``execution`` object is the historical CUDA mode and requires a
+    nonempty ``image_digest`` with the existing selected-GPU rules. An
+    ``external_server`` execution requires ``image_digest`` to be null and no
+    selected GPU.
+
+    Args:
+        data:
+            JSON-compatible broker lease response.
+
+    Returns:
+        The typed lease.
+
+    Raises:
+        ValueError:
+            If the broker response is malformed, has an invalid fit value, or
+            contradicts its execution mode.
+    """
+    _protocol(data)
+    execution = execution_from_dict(value=data.get("execution"))
+    raw_image_digest = data.get("image_digest")
+    raw_selected_gpu_uuid = data.get("selected_gpu_uuid")
+    if execution is not None:
+        if raw_image_digest is not None:
+            raise ValueError(
+                "broker response external execution must carry image_digest null"
+            )
+        if (
+            raw_selected_gpu_uuid is not None
+            or data.get("selected_gpu_index") is not None
+        ):
+            raise ValueError("broker response external execution must not select a GPU")
+        image_digest = None
+        selected_gpu_uuid = None
+        selected_gpu_index: int | None = None
+    else:
+        image_digest = _string(data, "image_digest")
+        if raw_selected_gpu_uuid is not None and (
+            not isinstance(raw_selected_gpu_uuid, str) or not raw_selected_gpu_uuid
+        ):
+            raise ValueError(
+                "broker response field 'selected_gpu_uuid' must be a string"
+            )
+        selected_gpu_uuid = raw_selected_gpu_uuid
+        selected_gpu_index = _optional_integer(data, "selected_gpu_index")
+    gpu_memory_utilisation = _number(data, "gpu_memory_utilisation", 0.8)
+    if not 0 < gpu_memory_utilisation <= 1:
+        raise ValueError(
+            "broker response gpu_memory_utilisation must be between 0 and 1"
+        )
+    model_type = _string(data, "model_type")
+    if model_type not in {"encoder", "generative"}:
+        raise ValueError("broker response model_type is unsupported")
+    model_metadata = _model_evidence(data.get("model_metadata"))
+    if model_metadata.model_type != model_type:
+        raise ValueError("broker response model metadata contradicts model_type")
+    expected_scope = _expected_scope(value=data.get("expected_scope"))
+    contamination_canary = _canary_instruction(data.get("contamination_canary"))
+    return Lease(
+        lease_id=_string(data, "lease_id"),
+        issue_number=_integer(data, "issue_number"),
+        model_id=_string(data, "model_id"),
+        model_revision=_string(data, "model_revision"),
+        language=_string(data, "language"),
+        euroeval_version=_string(data, "euroeval_version"),
+        image_digest=image_digest,
+        worker_version=_string(data, "worker_version"),
+        gpu_memory_utilisation=gpu_memory_utilisation,
+        expires_at=_string(data, "expires_at"),
+        model_type=model_type,
+        selected_gpu_uuid=selected_gpu_uuid,
+        selected_gpu_index=selected_gpu_index,
+        model_metadata=model_metadata,
+        expected_scope=expected_scope,
+        contamination_canary=contamination_canary,
+        execution=execution,
+    )
+
+
+def execution_from_dict(value: object) -> ExternalExecution | None:
+    """Decode the optional lease execution discriminator.
+
+    Args:
+        value:
+            JSON-compatible ``execution`` field; ``None`` when absent.
+
+    Returns:
+        The decoded execution, or ``None`` when the field is absent, which is
+        the historical CUDA mode.
+
+    Raises:
+        ValueError:
+            If the execution object has an unknown kind or a malformed artifact.
+    """
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError("broker response execution is malformed")
+    return external_execution_from_dict(data=value)
+
+
+def external_execution_from_dict(data: dict[str, object]) -> ExternalExecution:
+    """Strictly decode an ``external_server`` execution object.
+
+    Args:
+        data:
+            JSON-compatible execution object with exactly ``kind`` and
+            ``artifact`` fields.
+
+    Returns:
+        The validated external execution.
+
+    Raises:
+        ValueError:
+            If the kind is not ``external_server`` or the artifact is malformed.
+    """
+    if not isinstance(data, dict) or set(data) != {"kind", "artifact"}:
+        raise ValueError("execution object must contain exactly 'kind' and 'artifact'")
+    if data.get("kind") != "external_server":
+        raise ValueError("execution kind is unsupported")
+    artifact = data.get("artifact")
+    if not isinstance(artifact, dict):
+        raise ValueError("execution artifact is required")
+    return ExternalExecution(
+        kind="external_server", artifact=gguf_artifact_from_dict(data=artifact)
+    )
+
+
+def gguf_artifact_from_dict(data: c.Mapping[str, object]) -> GgufArtifact:
+    """Strictly decode one approved GGUF artifact descriptor.
+
+    Args:
+        data:
+            JSON-compatible artifact object with exactly the six contract fields.
+
+    Returns:
+        The validated artifact.
+
+    Raises:
+        ValueError:
+            If a field is missing, unexpected, or malformed; unsafe filenames
+            and non-hex revisions or hashes are rejected.
+    """
+    fields = {
+        "repo_id",
+        "revision",
+        "filename",
+        "sha256",
+        "source_repo_id",
+        "source_revision",
+    }
+    if not isinstance(data, c.Mapping) or set(data) != fields:
+        raise ValueError("gguf artifact must contain exactly the contract fields")
+    return GgufArtifact(
+        repo_id=_gguf_repo_id(data=data, key="repo_id"),
+        revision=_hex_field(
+            data=data, key="revision", pattern=_GGUF_REVISION_PATTERN, length=40
+        ),
+        filename=_safe_gguf_filename(data=data, key="filename"),
+        sha256=_hex_field(
+            data=data, key="sha256", pattern=_GGUF_SHA256_PATTERN, length=64
+        ),
+        source_repo_id=_gguf_repo_id(data=data, key="source_repo_id"),
+        source_revision=_hex_field(
+            data=data, key="source_revision", pattern=_GGUF_REVISION_PATTERN, length=40
+        ),
+    )
+
+
+def _gguf_repo_id(data: c.Mapping[str, object], key: str) -> str:
+    """Validate one ``org/name`` repository identifier.
+
+    Args:
+        data:
+            Artifact object being decoded.
+        key:
+            Field name to retrieve.
+
+    Returns:
+        The validated repository identifier.
+
+    Raises:
+        ValueError:
+            If the field is not a well-formed ``org/name`` identifier.
+    """
+    value = data.get(key)
+    if not isinstance(value, str) or not _REPO_ID_PATTERN.fullmatch(value):
+        raise ValueError(
+            f"gguf artifact field {key!r} must be an 'org/name' repository id"
+        )
+    return value
+
+
+def _hex_field(
+    data: c.Mapping[str, object], key: str, pattern: re.Pattern[str], length: int
+) -> str:
+    """Validate one fixed-length lowercase hex field.
+
+    Args:
+        data:
+            Artifact object being decoded.
+        key:
+            Field name to retrieve.
+        pattern:
+            Full-match pattern for the field value.
+        length:
+            Expected hex character count, used in the error message.
+
+    Returns:
+        The validated hex string.
+
+    Raises:
+        ValueError:
+            If the field is not a string of ``length`` lowercase hex characters.
+    """
+    value = data.get(key)
+    if not isinstance(value, str) or not pattern.fullmatch(value):
+        raise ValueError(
+            f"gguf artifact field {key!r} must be {length} lowercase hex characters"
+        )
+    return value
+
+
+def _safe_gguf_filename(data: c.Mapping[str, object], key: str) -> str:
+    """Validate one single safe ``.gguf`` basename.
+
+    Args:
+        data:
+            Artifact object being decoded.
+        key:
+            Field name to retrieve.
+
+    Returns:
+        The validated filename.
+
+    Raises:
+        ValueError:
+            If the field is not a single safe ``.gguf`` basename.
+    """
+    value = data.get(key)
+    if not isinstance(value, str) or not _GGUF_FILENAME_PATTERN.fullmatch(value):
+        raise ValueError(
+            f"gguf artifact field {key!r} must be a single safe .gguf basename"
+        )
+    return value

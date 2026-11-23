@@ -23,13 +23,26 @@ from leaderboards.result_identity import (
 
 from .review_models import JsonObject, ReviewError, ReviewReport, ValidatedRecord
 from .review_storage import BucketStore, _digest
-from .types import PROTOCOL_VERSION
+from .types import (
+    PROTOCOL_VERSION,
+    ExternalExecution,
+    GgufArtifact,
+    execution_from_dict,
+    gguf_artifact_from_dict,
+)
 
 _VERSION_SUFFIX_RE = re.compile(r"\.dev\d*$")
 
+#: Provenance the broker records for external-server manifests: no runtime
+#: image attestation exists for a native worker, and none is fabricated.
+EXTERNAL_IMAGE_DIGEST_PROVENANCE = "native-external-server-not-runtime-attested"
+
 
 def _validate_manifest(
-    manifest: JsonObject, store: BucketStore, scope_policy: JsonObject
+    manifest: JsonObject,
+    store: BucketStore,
+    scope_policy: JsonObject,
+    gguf_bindings: JsonObject,
 ) -> ReviewReport:
     """Validate one manifest and select the exact alternative it matches.
 
@@ -40,6 +53,9 @@ def _validate_manifest(
             Storage backend containing staged result bytes.
         scope_policy:
             Maintainer-trusted volunteer scope policy.
+        gguf_bindings:
+            Maintainer-configured approved GGUF artifact bindings used to
+            independently approve external-server manifests.
 
     Returns:
         Independently validated review evidence.
@@ -60,7 +76,19 @@ def _validate_manifest(
     model_type = _required_string(manifest, "model_type")
     if model_type not in {"encoder", "generative"}:
         raise ReviewError("Manifest model_type is unsupported")
-    for field in ("worker_version", "image_digest", "created_at"):
+    execution = _manifest_execution(manifest=manifest)
+    if execution is not None:
+        _validate_external_manifest(
+            manifest=manifest,
+            model_id=model_id,
+            revision=revision,
+            execution=execution,
+            gguf_bindings=gguf_bindings,
+        )
+    else:
+        # Historical CUDA manifests keep their original string-digest contract.
+        _required_string(manifest, "image_digest")
+    for field in ("worker_version", "created_at"):
         _required_string(manifest, field)
     expected_scope = _required_object(manifest, "expected_scope")
     _required_string(expected_scope, "policy_version")
@@ -86,6 +114,7 @@ def _validate_manifest(
             language=language,
             euroeval_version=euroeval_version,
             model_type=model_type,
+            execution=execution,
         )
         for entry in raw_results
     )
@@ -170,11 +199,27 @@ def _validate_manifest(
             "language_group",
             "worker_version",
             "image_digest",
+            "image_digest_provenance",
+            "execution",
+            "gpu_memory_utilisation",
+            "selected_gpu_index",
+            "selected_gpu_uuid",
             "hardware",
             "created_at",
         )
         if key in manifest
     }
+    checks = [
+        "manifest protocol and schema",
+        "exact UTF-8 SHA256 digests",
+        "EEE schema and metadata",
+        "canonical identities and expected scope",
+        "model, language, and version consistency",
+    ]
+    if execution is not None:
+        checks.append(
+            "approved external GGUF artifact binding and per-record descriptors"
+        )
     return ReviewReport(
         submission_id=submission_id,
         issue_number=issue_number,
@@ -189,13 +234,7 @@ def _validate_manifest(
         canonical_observations=(),
         plan_fingerprint="",
         warnings=tuple(warnings),
-        checks=(
-            "manifest protocol and schema",
-            "exact UTF-8 SHA256 digests",
-            "EEE schema and metadata",
-            "canonical identities and expected scope",
-            "model, language, and version consistency",
-        ),
+        checks=tuple(checks),
     )
 
 
@@ -464,6 +503,29 @@ def _identity_suffix_sets(
     return tuple(alternatives)
 
 
+def _manifest_execution(manifest: JsonObject) -> ExternalExecution | None:
+    """Strictly decode the manifest execution discriminator.
+
+    An absent or null ``execution`` is the historical CUDA mode.
+
+    Args:
+        manifest: Candidate volunteer submission manifest.
+
+    Returns:
+        The decoded external execution, or ``None`` for CUDA mode.
+
+    Raises:
+        ReviewError: If the execution object is present but malformed.
+    """
+    raw = manifest.get("execution")
+    if raw is None:
+        return None
+    try:
+        return execution_from_dict(value=raw)
+    except ValueError as error:
+        raise ReviewError(f"Manifest execution is malformed: {error}") from error
+
+
 def _manifest_summary(manifest: JsonObject) -> tuple[str, int, str, str]:
     """Extract the submission summary fields from a manifest.
 
@@ -633,6 +695,99 @@ def _validate_covered_records(
             )
 
 
+def _validate_external_manifest(
+    *,
+    manifest: JsonObject,
+    model_id: str,
+    revision: str,
+    execution: ExternalExecution,
+    gguf_bindings: JsonObject,
+) -> None:
+    """Validate an external-server manifest against the approved binding.
+
+    The manifest must carry the exactly approved artifact, the artifact's own
+    repository/revision as model identity, a null image digest with the
+    explicit external provenance, and no GPU selection.
+
+    Args:
+        manifest: Candidate volunteer submission manifest.
+        model_id: Manifest model identifier.
+        revision: Manifest model revision.
+        execution: Decoded manifest execution discriminator.
+        gguf_bindings: Maintainer-configured approved GGUF bindings.
+
+    Raises:
+        ReviewError: If the execution is unapproved or contradicts the
+            manifest's identity, image, provenance, or GPU fields.
+    """
+    approved = _approved_gguf_artifact(
+        bindings=gguf_bindings, artifact=execution.artifact
+    )
+    if approved is None:
+        raise ReviewError("Manifest execution artifact is not an approved GGUF binding")
+    if model_id != approved.repo_id or revision != approved.revision:
+        raise ReviewError(
+            "Manifest model identity does not match the approved artifact binding"
+        )
+    if "image_digest" not in manifest or manifest["image_digest"] is not None:
+        raise ReviewError("External manifest must carry image_digest null")
+    if manifest.get("image_digest_provenance") != EXTERNAL_IMAGE_DIGEST_PROVENANCE:
+        raise ReviewError(
+            "External manifest image_digest_provenance must be "
+            f"{EXTERNAL_IMAGE_DIGEST_PROVENANCE!r}"
+        )
+    if (
+        manifest.get("selected_gpu_index") is not None
+        or manifest.get("selected_gpu_uuid") is not None
+    ):
+        raise ReviewError("External manifest must not select a GPU")
+
+
+def _approved_gguf_artifact(
+    bindings: JsonObject, artifact: GgufArtifact
+) -> GgufArtifact | None:
+    """Look up one artifact in the approved bindings by exact field equality.
+
+    The binding envelope itself is strictly validated on every call, so a
+    malformed configuration can never silently skip independent approval.
+
+    Args:
+        bindings: Maintainer-configured GGUF binding document.
+        artifact: Candidate artifact descriptor.
+
+    Returns:
+        The matching approved artifact, or ``None`` when nothing matches.
+
+    Raises:
+        ReviewError: If the bindings document is malformed or duplicated.
+    """
+    if set(bindings) != {"version", "artifacts"} or bindings.get("version") != 1:
+        raise ReviewError("Approved GGUF bindings must be version 1 with artifacts")
+    artifacts = bindings.get("artifacts")
+    if not isinstance(artifacts, list) or not artifacts:
+        raise ReviewError(
+            "Approved GGUF bindings must contain a nonempty artifacts list"
+        )
+    decoded: list[GgufArtifact] = []
+    seen: set[tuple[str, str]] = set()
+    for item in artifacts:
+        try:
+            candidate = gguf_artifact_from_dict(data=item)
+        except (TypeError, ValueError) as error:
+            raise ReviewError(
+                f"Approved GGUF bindings contain a malformed artifact: {error}"
+            ) from error
+        key = (candidate.repo_id, candidate.revision)
+        if key in seen:
+            raise ReviewError("Approved GGUF bindings contain a duplicate artifact")
+        seen.add(key)
+        decoded.append(candidate)
+    for candidate in decoded:
+        if candidate == artifact:
+            return candidate
+    return None
+
+
 def _validate_result_entry(
     entry: object,
     store: BucketStore,
@@ -642,6 +797,7 @@ def _validate_result_entry(
     language: str,
     euroeval_version: str,
     model_type: str,
+    execution: ExternalExecution | None = None,
 ) -> ValidatedRecord:
     """Verify one staged result entry and construct its validated record.
 
@@ -654,6 +810,9 @@ def _validate_result_entry(
         language: Expected evaluation language.
         euroeval_version: Expected EuroEval version.
         model_type: Expected model category.
+        execution (optional):
+            Decoded manifest execution; every external record must carry the
+            exact approved artifact descriptor.
 
     Returns:
         Validated identity, paths, exact content, digest, scores, and warnings.
@@ -701,6 +860,14 @@ def _validate_result_entry(
     model_info = t.cast(JsonObject, record.get("model_info", {}))
     model_details = model_info.get("additional_details")
     metadata = model_details if isinstance(model_details, dict) else {}
+    if execution is not None and (
+        model_info.get("id") != execution.artifact.repo_id
+        or model_info.get("name") != execution.artifact.repo_id
+    ):
+        raise ReviewError(
+            f"External record id and name differ from the artifact in {path}"
+        )
+    _validate_record_artifact(record_metadata=metadata, execution=execution, path=path)
     missing_metadata = [
         field
         for field in ("commercially_licensed", "open", "trained_from_scratch")
@@ -840,6 +1007,45 @@ def _finite(value: float) -> bool:
         ``True`` unless ``value`` is NaN or positive/negative infinity.
     """
     return value != float("inf") and value != float("-inf") and value == value
+
+
+def _validate_record_artifact(
+    *, record_metadata: JsonObject, execution: ExternalExecution | None, path: str
+) -> None:
+    """Compare one record's GGUF artifact descriptor with the manifest execution.
+
+    Every record of an external submission must carry exactly the approved
+    artifact in ``model_info.additional_details.gguf_artifact``; a CUDA record
+    must not carry one at all.
+
+    Args:
+        record_metadata: The record's ``model_info.additional_details`` object.
+        execution: Decoded manifest execution, or ``None`` for CUDA mode.
+        path: Staged path included in validation errors.
+
+    Raises:
+        ReviewError: If the descriptor is missing, malformed, or mismatched.
+    """
+    raw_artifact = record_metadata.get("gguf_artifact")
+    if execution is None:
+        if raw_artifact is not None:
+            raise ReviewError(
+                "Record carries a GGUF artifact under a non-external manifest "
+                f"in {path}"
+            )
+        return
+    if not isinstance(raw_artifact, dict):
+        raise ReviewError(f"Record GGUF artifact is malformed in {path}")
+    try:
+        artifact = gguf_artifact_from_dict(data=raw_artifact)
+    except ValueError as error:
+        raise ReviewError(
+            f"Record GGUF artifact is malformed in {path}: {error}"
+        ) from error
+    if artifact != execution.artifact:
+        raise ReviewError(
+            f"Record GGUF artifact does not match the approved lease binding in {path}"
+        )
 
 
 def _validate_record_contract(
@@ -995,6 +1201,22 @@ def _validate_scope_policy(
     ):
         raise ReviewError("Manifest language_group differs from trusted policy")
     trusted_sets = _identity_suffix_sets(value=trusted, context="Trusted policy")
+    if manifest.get("execution") is not None:
+
+        def instruction_rank(identities: c.Sequence[str]) -> tuple[int, int]:
+            """Rank full instruction scope before any coverage is removed.
+
+            Args:
+                identities: Complete trusted identity alternative.
+
+            Returns:
+                Zero-shot identity count and total size, in priority order.
+            """
+            return sum(json.loads(item)[2] is not True for item in identities), len(
+                identities
+            )
+
+        trusted_sets = (max(trusted_sets, key=instruction_rank),)
     expected_sets = _identity_suffix_sets(
         value=expected_scope, context="Manifest expected scope", allow_legacy=True
     )
@@ -1060,6 +1282,31 @@ def _validate_coverage_partition(
     }
     if frozenset() in missing or {frozenset(item) for item in remaining} != missing:
         raise ReviewError("Coverage scope is not an exact covered/missing partition")
+
+
+def load_gguf_bindings() -> JsonObject:
+    """Load the approved GGUF bindings from configuration or the checked-in file.
+
+    ``VOLUNTEER_GGUF_BINDINGS_JSON`` is the explicit seam for installed reviewer
+    packages, whose site-packages layout does not contain ``api/``; it takes
+    precedence over the checked-in ``api/worker/gguf-bindings.json`` resolved
+    relative to this file, never relative to the working directory.
+
+    Returns:
+        The approved GGUF bindings document.
+
+    Raises:
+        ReviewError:
+            If the configured bindings are not valid JSON or the checked-in
+            file is missing.
+    """
+    configured = os.environ.get("VOLUNTEER_GGUF_BINDINGS_JSON")
+    if configured is not None:
+        return _load_object(content=configured.encode("utf-8"), context="GGUF bindings")
+    path = Path(__file__).parents[2] / "api" / "worker" / "gguf-bindings.json"
+    if not path.is_file():
+        raise ReviewError(f"Approved GGUF bindings are missing: {path}")
+    return _load_object(content=path.read_bytes(), context=str(path))
 
 
 def load_scope_policy() -> JsonObject:

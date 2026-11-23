@@ -1,13 +1,14 @@
 import { uploadFile } from "@huggingface/hub";
-import { BrokerError, ConfigurationError, env } from "./protocol.js";
+import { BrokerError, ConfigurationError, env, type LeaseExecution } from "./protocol.js";
 import { fetchWithRetry } from "./http.js";
+import { decodeGgufArtifact, ggufArtifactKey } from "./gguf.js";
 import { languageGroup } from "./model.js";
 import {
   CANARY_RESULT_DATASET,
   validateCanaryEvidence,
 } from "./canary.js";
 
-export function validateRecord(record: unknown, expected: { modelId: string; revision: string; language: string; euroevalVersion?: string; modelType?: "encoder" | "generative"; requireRevision?: boolean }): { identity: string; failed: number; warnings: string[] } {
+export function validateRecord(record: unknown, expected: { modelId: string; revision: string; language: string; euroevalVersion?: string; modelType?: "encoder" | "generative"; requireRevision?: boolean; execution?: LeaseExecution | null }): { identity: string; failed: number; warnings: string[] } {
   if (!record || typeof record !== "object" || Array.isArray(record)) throw new BrokerError(422, "record must be an EEE JSON object.");
   const value = record as Record<string, any>;
   const modelInfo = value.model_info as Record<string, any> | undefined;
@@ -20,6 +21,22 @@ export function validateRecord(record: unknown, expected: { modelId: string; rev
   if (missingRevision && expected.requireRevision !== false ||
       !missingRevision && modelInfo.revision !== expected.revision) {
     throw new BrokerError(422, "record model_info.revision is missing or does not match the lease.");
+  }
+  const modelDetails = modelInfo.additional_details as Record<string, unknown> | undefined;
+  if (expected.execution) {
+    if (modelInfo.id !== expected.modelId || modelInfo.name !== expected.modelId) {
+      throw new BrokerError(422, "external record id and name must equal the approved artifact repository.");
+    }
+    // An external-server record must carry the exact lease artifact descriptor.
+    let recordArtifact;
+    try { recordArtifact = decodeGgufArtifact(modelDetails?.gguf_artifact); } catch {
+      throw new BrokerError(422, "record model_info.additional_details.gguf_artifact must be one well-formed GGUF artifact descriptor.");
+    }
+    if (ggufArtifactKey(recordArtifact) !== ggufArtifactKey(expected.execution.artifact)) {
+      throw new BrokerError(422, "record GGUF artifact descriptor does not exactly match the lease execution.");
+    }
+  } else if (modelDetails && typeof modelDetails === "object" && "gguf_artifact" in modelDetails) {
+    throw new BrokerError(422, "record GGUF artifact descriptor is not valid for a CUDA lease.");
   }
   if (library.name !== "euroeval" || typeof library.version !== "string" || !library.version || expected.euroevalVersion && library.version.replace(/\.dev\d*$/, "") !== expected.euroevalVersion.replace(/\.dev\d*$/, "")) throw new BrokerError(422, "record has an invalid eval_library name or version.");
   const details = library.additional_details as Record<string, any> | undefined;

@@ -6,6 +6,7 @@ export * from "./auth.js";
 export * from "./canary.js";
 export * from "./markers.js";
 export * from "./model.js";
+export * from "./gguf.js";
 export * from "./promotion.js";
 export * from "./publication.js";
 export * from "./user-grants.js";
