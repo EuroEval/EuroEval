@@ -905,8 +905,9 @@ publish nor provide physical GPU acceptance. Trusted runs publish commit-SHA can
 provenance, and SBOMs, verify public access anonymously, and upload metadata artifacts.
 The workflow serialises builds for the same commit and never updates `latest`.
 
-The ARM job/artifact's candidate-only label means each newly built candidate needs
-physical acceptance. It does not revoke an older image's completed promotion. Accept
+The ARM job/artifact's candidate-only label requires reviewed physical acceptance
+or exact runtime, guide and installed-inventory equality with a reviewed baseline. It
+does not revoke an older image's completed promotion. Accept
 both architectures from the intended source/dependency set before combining them; never
 configure an ARM-only index as the global amd64 image identity.
 
@@ -1083,7 +1084,7 @@ create credentials, run hardware canaries, or change production. No historical
 acceptance and baseline records fail closed.
 
 The implemented commands in `src/scripts/release_volunteer_worker.py` are `stage`,
-`prepare`, `predeploy`, `finish`, and `finalize --release-tag TAG --deployment ID`.
+`prepare`, `predeploy`, and `finish`.
 They use injectable GitHub, registry and Vercel observation adapters, not supplied
 success booleans. GitHub observations come from `gh api` in the fixed
 `EuroEval/EuroEval` repository; registry reads are anonymous and content-verified;
@@ -1102,7 +1103,7 @@ index writes use `oras manifest push`. CLI errors suppress remote response bodie
    `release.json`. It does not move `latest`, build the website, or change production.
 3. The ordinary **local** `make frontend` schedule is unchanged: prepare the worktree,
    prepare approved release configuration, refresh Production configuration/build,
-   verify functions, predeploy recheck, deploy, then dispatch finalization. It uses
+   verify functions, predeploy recheck, deploy, then verify and promote locally. It uses
    existing local CSVs. There is no CSV archive, upload, storage or download mechanism
    and no CI website rebuild. With automation disabled, hooks do not contact remote
    services. With no approved pending release, they perform no configuration writes.
@@ -1116,16 +1117,18 @@ index writes use `oras manifest push`. CLI errors suppress remote response bodie
    must be repaired manually before opting in. The existing build helper still
    restores tracked generated policy bytes in its `finally` block.
 5. The deploy helper records the CLI's actual immutable deployment URL in the
-   nonsecret journal. `finish` resolves that receipt independently and dispatches only
+   nonsecret journal. `finish` resolves that receipt independently and promotes only
    after its new READY production alias and anonymous discovery
    match the staged plan for **both** `architecture=amd64` and `architecture=arm64`.
    Each `/api/worker/release-info` response must match `protocol_version`,
    `launcher_protocol_version`, `architecture`, `image_repository`, `image_digest`,
    `image_reference`, `worker_version`, and `euroeval_version` exactly.
-6. The GitHub finalizer independently rechecks READY deployment/project/alias identity,
+6. The local finalizer independently rechecks READY deployment/project/alias identity,
    both discovery records, current main, expected previous `latest`, original indexes,
    all descriptors and platform/config identities. Only then does it move `latest` and
-   verify the resulting index anonymously. Replays and alias changes are refused.
+   verify the resulting index anonymously. Alias changes are refused. A retry after
+   an ambiguous publication revalidates every observation and does not push again if
+   `latest` already matches. Completion is journalled only after verification.
 
 #### One-time activation, only after separate authorisation
 
@@ -1138,16 +1141,19 @@ index writes use `oras manifest push`. CLI errors suppress remote response bodie
   deployment rules. Do not add an extra human environment approval per release: the
   gate is reviewed, tested runtime evidence. Leave repository variable
   `WORKER_RELEASE_ENABLED` absent until setup and proofs are approved. Workflows still
-  require its exact value `true`; local markers cannot arm CI. Stage/finalize are
-  serialized without cancellation. No frontend build or CSV transfer happens in CI.
-- The current Vercel project PAT permission is **read/write**, not read-only. A
-  dedicated expiring project-scoped token requires owner permission to create and
-  install as protected `VERCEL_TOKEN`; do not copy a broad owner key into Actions.
-  The finalizer uses it for observation. GHCR/release writes use the workflow's
-  `GITHUB_TOKEN` with `contents:write` and `packages:write`, never broad owner tokens.
-- Install `gh`, `oras`, and the Vercel CLI locally using existing logins. The adapter
-  reads Vercel's CLI auth file or inherited `VERCEL_TOKEN`; never put credentials in
-  command arguments, transcripts, markers, or logs. Activation does not read `.env`.
+  require its exact value `true`; local markers cannot arm CI. Staging is
+  serialized without cancellation. Deployment and promotion are local-only. No frontend
+  build or CSV transfer happens in CI.
+- Actions only stages candidates using its built-in `GITHUB_TOKEN` with
+  `contents:write`, `packages:write`, and `actions:read`. No Vercel credential or
+  broad owner token belongs in Actions. The finalizer uses the existing local
+  Vercel login; no extra Vercel token or renewal schedule is needed.
+- Install `gh`, `oras`, and the Vercel CLI locally using existing logins. Reuse
+  working local GHCR authentication. If registry login is missing, authenticate
+  `oras login ghcr.io --username USER --password-stdin` using a locally held token
+  with package write access; do not add broad repository scope or send it to CI.
+  Supply credentials through protected stdin or the credential store, never command
+  arguments, transcripts, markers, or logs. Activation does not read `.env`.
 - Obtain actual native amd64 **and** physical DGX Spark arm64 acceptance following
   **VOLUNTEER_WORKER.md exactly on a clean Docker GPU host**. No fancy environment,
   injected credentials, custom test startup, or workaround qualifies. Use the guide's
@@ -1190,10 +1196,13 @@ index writes use `oras manifest push`. CLI errors suppress remote response bodie
   and configure local activation **once**, in the correctly linked checkout:
 
   ```sh
+  uv run python src/scripts/prepare_vercel_worktree.py
   uv run python src/scripts/release_volunteer_worker.py configure-local
   ```
 
-  This writes only `.vercel/worker-release-activation.json`: exact keys `schema: 1`,
+  Prepare the checkout-local `.vercel` directory before creating the marker; this
+  avoids replacing it during the normal build. `configure-local` writes only
+  `.vercel/worker-release-activation.json`: exact keys `schema: 1`,
   `project_id`, `team_id`, `alias`, bound to checked-in policy and
   `.vercel/project.json`. No secret or accepted flag belongs here. Missing marker
   means hooks and receipt recording are inert; malformed/stale markers fail closed.
@@ -1205,11 +1214,11 @@ index writes use `oras manifest push`. CLI errors suppress remote response bodie
   ```
 
 - Per release: trusted push CI/image candidates → reviewed evidence → `stage` →
-  **normal local `make frontend`** → automatic `finish` dispatch → protected finalizer
-  → `latest`. No prefix/export is needed for each local deploy; local hooks consume
+  **normal local `make frontend`** → synchronous local `finish` → `latest`. No
+  prefix/export is needed for each local deploy; local hooks consume
   the trusted staged plan, not protected acceptance variables. Stage may be retried
   with workflow dispatch after review. Stage/prepare do **not** require the old
-  public `/api/worker/release-info` endpoint. Finish/finalize require the **new**
+  public `/api/worker/release-info` endpoint. Finish requires the **new**
   deployed endpoint and actual CLI receipt. After promotion, use a fresh recommended
   curl launcher from VOLUNTEER_WORKER.md on a clean GPU host to validate the managed
   path separately. Volunteer result approve/reject decisions remain a separate
@@ -1220,7 +1229,7 @@ index writes use `oras manifest push`. CLI errors suppress remote response bodie
 The local `.vercel/worker-release-state.json` journal retains only public plan/config
 metadata, old plain values and previous deployment identity, never secret values.
 A preparation/build/predeploy/deployment failure leaves this journal for inspection
-and never dispatches finalization. No helper automatically restarts or pauses workers,
+and never finalizes a release. No helper automatically restarts or pauses workers,
 rolls back an alias/config, or retries an ambiguous deployment. Intervening config or
 alias changes stop the sequence. After finalization the next prepared release archives
 that journal alongside the previous immutable release metadata.
@@ -1275,3 +1284,9 @@ rebuild or relabel a different image as an old digest.
   NVIDIA toolkit, or host driver. Human or independent verification of the running image
   remains required: the configured digest is provenance carried by a lease, not runtime
   attestation.
+
+If finalisation fails after deployment, preserve the nonsecret journal and actual
+CLI deployment receipt. Inspect production and the registry before retrying
+`uv run python src/scripts/release_volunteer_worker.py finish`. Do not redeploy
+blindly: recovery revalidates the existing deployment and handles an already
+successful registry write without repeating it.

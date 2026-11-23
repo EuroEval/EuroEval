@@ -6,20 +6,11 @@ on:
     types: [completed]
     branches: [main]
   workflow_dispatch:
-    inputs:
-      phase:
-        type: choice
-        options: [stage, finalize]
-        default: stage
-      release_tag:
-        type: string
-      deployment:
-        type: string
 
 permissions:
   contents: read
 
-# Serialize stage/finalize, including completions arriving in either order.
+# Serialize staging, including trusted completions arriving in either order.
 concurrency:
   group: volunteer-worker-release
   cancel-in-progress: false
@@ -53,21 +44,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: printf '%s' "$GH_TOKEN" | oras login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
       - name: Stage accepted current-main release
-        if: github.event_name == 'workflow_run' || inputs.phase == 'stage'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WORKER_RELEASE_ENABLED: ${{ vars.WORKER_RELEASE_ENABLED }}
           WORKER_RELEASE_ACCEPTANCE_JSON: ${{ vars.WORKER_RELEASE_ACCEPTANCE_JSON }}
           WORKER_RELEASE_BASELINE_JSON: ${{ vars.WORKER_RELEASE_BASELINE_JSON }}
         run: uv run python src/scripts/release_volunteer_worker.py stage
-      - name: Finalize independently verified production
-        if: github.event_name == 'workflow_dispatch' && inputs.phase == 'finalize'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          WORKER_RELEASE_ENABLED: ${{ vars.WORKER_RELEASE_ENABLED }}
-          RELEASE_TAG: ${{ inputs.release_tag }}
-          DEPLOYMENT: ${{ inputs.deployment }}
-        run: >-
-          uv run python src/scripts/release_volunteer_worker.py finalize
-          --release-tag "$RELEASE_TAG" --deployment "$DEPLOYMENT"

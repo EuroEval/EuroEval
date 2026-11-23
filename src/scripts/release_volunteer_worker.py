@@ -68,15 +68,6 @@ class GitHubAdapter(t.Protocol):
         """
         ...
 
-    def dispatch(self, plan: dict, deployment: str) -> None:
-        """Request finalization after the ordinary local deploy succeeds.
-
-        Args:
-            plan: Staged plan.
-            deployment: Observed READY deployment identity.
-        """
-        ...
-
     def head(self) -> str:
         """Return the current trusted main commit."""
         ...
@@ -263,25 +254,6 @@ class GitHub:
         value = json.loads(raw) if raw else {}
         return value if isinstance(value, dict) else {"items": value}
 
-    def dispatch(self, plan: dict, deployment: str) -> None:
-        """Request finalization after the ordinary local deploy succeeds.
-
-        Args:
-            plan: Staged plan.
-            deployment: Observed READY deployment identity.
-        """
-        self.api(
-            "actions/workflows/worker-release.yaml/dispatches",
-            {
-                "ref": "main",
-                "inputs": {
-                    "phase": "finalize",
-                    "release_tag": plan["tag"],
-                    "deployment": deployment,
-                },
-            },
-        )
-
     def head(self) -> str:
         """Return the current trusted main commit."""
         return self.api("commits/main")["sha"]
@@ -403,26 +375,14 @@ def command(args: list[str], data: bytes | None = None) -> bytes:
 @click.argument(
     "operation",
     type=click.Choice(
-        (
-            "configure-local",
-            "disable-local",
-            "stage",
-            "prepare",
-            "predeploy",
-            "finish",
-            "finalize",
-        )
+        ("configure-local", "disable-local", "stage", "prepare", "predeploy", "finish")
     ),
 )
-@click.option("--release-tag", default="")
-@click.option("--deployment", default="")
-def cli(operation: str, release_tag: str, deployment: str) -> int:
+def cli(operation: str) -> int:
     """Run gated release operations with existing injectable adapter seams.
 
     Args:
         operation: Release phase.
-        release_tag: Immutable staged release tag.
-        deployment: Observed deployment identity.
 
     Returns:
         Process exit status (also reflected by Click).
@@ -446,9 +406,17 @@ def cli(operation: str, release_tag: str, deployment: str) -> int:
             temporary.write_text(json.dumps(marker, sort_keys=True) + "\n")
             temporary.replace(ACTIVATION)
             return 0
-        policy = load_activation(ci_only=operation in ("stage", "finalize"))
+        policy = load_activation(ci_only=operation == "stage")
         if policy is None:
             return 0
+        require(
+            operation == "stage"
+            or (
+                os.environ.get("GITHUB_ACTIONS") != "true"
+                and os.environ.get("CI") != "true"
+            ),
+            "deployment and promotion are local operations only",
+        )
         for key, variable in (
             ("acceptance", "WORKER_RELEASE_ACCEPTANCE_JSON"),
             ("baseline", "WORKER_RELEASE_BASELINE_JSON"),
@@ -472,7 +440,7 @@ def cli(operation: str, release_tag: str, deployment: str) -> int:
         elif operation == "predeploy":
             if STATE.exists():
                 state = json.loads(STATE.read_text())
-                if state["status"] != "finalization-dispatched":
+                if state["status"] != "completed":
                     require(state["status"] == "prepared", "preparation incomplete")
                     vercel = Vercel(policy)
                     require(
@@ -496,9 +464,7 @@ def cli(operation: str, release_tag: str, deployment: str) -> int:
                     )
         elif operation == "finish":
             if STATE.exists():
-                finish(github, Vercel(policy))
-        else:
-            finalize(github, registry, Vercel(policy), release_tag, deployment)
+                finish(github, registry, Vercel(policy), source())
     except (ValueError, KeyError, OSError, TypeError):
         logging.error(
             "Worker release stopped; inspect nonsecret recovery state. "
@@ -631,10 +597,10 @@ class Registry:
 
 
 class Vercel:
-    """Use the existing local Vercel login or protected environment token."""
+    """Use the existing local Vercel login."""
 
     def __init__(self, policy: dict) -> None:
-        """Load authentication without printing it.
+        """Bind requests to the reviewed project using the existing CLI login.
 
         Args:
             policy: Reviewed project and alias identities.
@@ -646,14 +612,6 @@ class Vercel:
             "invalid reviewed Vercel identities",
         )
         self.policy = policy
-        self.token = os.environ.get("VERCEL_TOKEN")
-        for path in (
-            Path.home() / ".local/share/com.vercel.cli/auth.json",
-            Path.home() / "Library/Application Support/com.vercel.cli/auth.json",
-        ):
-            if not self.token and path.exists():
-                self.token = json.loads(path.read_text())["token"]
-        require(self.token, "existing Vercel login required")
 
     def config(self) -> list[dict]:
         """Observe environment metadata; never persist secret values.
@@ -673,28 +631,21 @@ class Vercel:
 
         Returns:
             Parsed response.
-
-        Raises:
-            ValueError: On a redacted HTTP failure.
         """
         separator = "&" if "?" in path else "?"
-        request = urllib.request.Request(
-            "https://api.vercel.com"
-            + path
-            + separator
-            + "teamId="
-            + self.policy["team_id"],
-            data=json.dumps(data).encode() if data is not None else None,
-            method=method,
-            headers={
-                "Authorization": f"Bearer {self.token}",
-                "Content-Type": "application/json",
-            },
+        args = [
+            "vercel",
+            "api",
+            path + separator + "teamId=" + self.policy["team_id"],
+            "--method",
+            method,
+            "--raw",
+        ]
+        if data is not None:
+            args.extend(["--input", "-"])
+        return json.loads(
+            command(args, json.dumps(data).encode() if data is not None else None)
         )
-        try:
-            return json.loads(urllib.request.urlopen(request, timeout=30).read())
-        except urllib.error.HTTPError as error:
-            raise ValueError(f"Vercel HTTP {error.code} (body redacted)") from None
 
     def discovery(self, arch: str) -> dict:
         """Read public architecture-specific broker discovery anonymously.
@@ -796,6 +747,55 @@ def _local_activation(policy: dict, project_path: Path = PROJECT) -> dict:
     return {"schema": 1, **{k: policy[k] for k in ("project_id", "team_id", "alias")}}
 
 
+def finish(
+    github: GitHubAdapter,
+    registry: RegistryAdapter,
+    vercel: VercelAdapter,
+    local: dict,
+    state_path: Path = STATE,
+) -> None:
+    """Verify the normal local deployment and synchronously promote its image.
+
+    Args:
+        github: Trusted repository observations.
+        registry: Registry observations and publication.
+        vercel: Existing local Vercel login.
+        local: Observed committed checkout identity.
+        state_path: Existing nonsecret recovery journal.
+    """
+    if not state_path.exists():
+        return
+    state = json.loads(state_path.read_text())
+    if state["status"] == "completed":
+        return
+    require(
+        state["status"] == "prepared",
+        "incomplete preparation; manual recovery required",
+    )
+    plan = state["plan"]
+    require(github.pending() == plan, "staged plan changed since prepare")
+    require(
+        all(plan[key] == value for key, value in local.items()),
+        "local source changed since prepare",
+    )
+    require(
+        public_config(vercel.config()) == state["prepared_config"],
+        "config changed since prepare",
+    )
+    require(state.get("deployment_url"), "local deployment receipt missing")
+    deployment = vercel.resolve_deployment(state["deployment_url"])["id"]
+    require(deployment != state["previous_deployment"], "no new deployment")
+    finalize(
+        github=github,
+        registry=registry,
+        vercel=vercel,
+        tag=plan["tag"],
+        deployment=deployment,
+    )
+    state["status"] = "completed"
+    state_path.write_text(json.dumps(state))
+
+
 def finalize(
     github: GitHubAdapter,
     registry: RegistryAdapter,
@@ -845,8 +845,8 @@ def finalize(
     )
     latest, _ = registry.manifest("latest")
     require(
-        digest(latest) == plan["previous_digest"],
-        "latest changed or finalization replayed",
+        digest(latest) in (plan["previous_digest"], plan["image_digest"]),
+        "latest changed since staging",
     )
     validate_acceptance(
         github=github, records=plan["acceptance"], basis=plan["acceptance_basis"]
@@ -855,10 +855,11 @@ def finalize(
     require(github.head() == plan["source_sha"], "main advanced before promotion")
     require(vercel.production()["id"] == deployment, "alias changed before promotion")
     require(
-        digest(registry.manifest("latest")[0]) == plan["previous_digest"],
+        digest(registry.manifest("latest")[0]) == digest(latest),
         "latest raced finalization",
     )
-    registry.put("latest", raw)
+    if digest(latest) != plan["image_digest"]:
+        registry.put("latest", raw)
     observed, index = registry.manifest("latest")
     require(
         digest(observed) == plan["image_digest"] and index["manifests"] == descriptors,
@@ -1115,43 +1116,6 @@ def release_values(plan: dict) -> dict[str, str]:
     }
 
 
-def finish(
-    github: GitHubAdapter, vercel: VercelAdapter, state_path: Path = STATE
-) -> None:
-    """Dispatch finalization only after a verified normal local deployment.
-
-    Args:
-        github: GitHubAdapter adapter.
-        vercel: VercelAdapter adapter.
-        state_path: Existing recovery journal.
-    """
-    if not state_path.exists():
-        return
-    state = json.loads(state_path.read_text())
-    if state["status"] == "finalization-dispatched":
-        return
-    require(
-        state["status"] == "prepared",
-        "incomplete preparation; manual recovery required",
-    )
-    require(
-        public_config(vercel.config()) == state["prepared_config"],
-        "config changed since prepare",
-    )
-    require(state.get("deployment_url"), "local deployment receipt missing")
-    deployment = vercel.resolve_deployment(state["deployment_url"])["id"]
-    require(deployment != state["previous_deployment"], "no new deployment")
-    validate_acceptance(
-        github=github,
-        records=state["plan"]["acceptance"],
-        basis=state["plan"]["acceptance_basis"],
-    )
-    verify_production(vercel, state["plan"], deployment)
-    github.dispatch(state["plan"], deployment)
-    state["status"] = "finalization-dispatched"
-    state_path.write_text(json.dumps(state))
-
-
 def public_config(entries: list[dict]) -> dict:
     """Fingerprint metadata and plain values without retaining any secrets.
 
@@ -1193,7 +1157,7 @@ def load_activation(
     Missing markers are inert; malformed or stale markers fail closed.
 
     Args:
-        ci_only: Require explicit environment activation for stage/finalize.
+        ci_only: Require explicit environment activation for staging.
         policy_path: Reviewed capability policy override.
         marker_path: Nonsecret local marker override.
         project_path: Vercel project linkage.
@@ -1261,9 +1225,9 @@ def prepare(
         return None
     if state_path.exists():
         old = json.loads(state_path.read_text())
-        if old["status"] == "finalization-dispatched" and old["plan"][
-            "image_digest"
-        ] == digest(latest):
+        if old["status"] == "completed" and old["plan"]["image_digest"] == digest(
+            latest
+        ):
             archive = state_path.with_name(old["plan"]["tag"] + ".json")
             state_path.rename(archive)
     require(
