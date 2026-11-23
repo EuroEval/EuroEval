@@ -43,10 +43,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: printf '%s' "$GH_TOKEN" | oras login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-      - name: Stage accepted current-main release
+      - name: Stage verified current-main release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WORKER_RELEASE_ENABLED: ${{ vars.WORKER_RELEASE_ENABLED }}
-          WORKER_RELEASE_ACCEPTANCE_JSON: ${{ vars.WORKER_RELEASE_ACCEPTANCE_JSON }}
-          WORKER_RELEASE_BASELINE_JSON: ${{ vars.WORKER_RELEASE_BASELINE_JSON }}
         run: uv run python src/scripts/release_volunteer_worker.py stage

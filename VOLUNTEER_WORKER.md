@@ -152,8 +152,8 @@ You can also use a specific immutable image reference supplied by a maintainer d
 in the manual Docker command, without pulling `latest` first. This permits validation
 of a candidate image before managed release promotion; it does not mean that candidate
 is already `latest` or broker-approved for the launcher. Use the same documented Docker
-settings and sign-in flow above. After promotion, a fresh run of the recommended
-launcher command validates the managed path separately.
+settings and sign-in flow above. After promotion, the recommended launcher command
+uses the managed path.
 
 A pin does not freeze the broker's supported worker version. If the broker requests a
 worker update, pull the newly promoted image and replace the old pin.

@@ -38,53 +38,6 @@ def activation_checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path
     return release.ACTIVATION
 
 
-@pytest.fixture
-def source_checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Provide committed source observations without running tools or using Git.
-
-    Args:
-        tmp_path: Isolated source directory.
-        monkeypatch: Working-directory and command isolation.
-    """
-    files = {
-        "pyproject.toml": '[project]\nversion = "2.0.0"\n',
-        "src/euroeval_worker/__init__.py": '__version__ = "1.0.1"\n',
-        "src/scripts/run_volunteer_worker.py": "# original launcher\n",
-        "VOLUNTEER_WORKER.md": "Original guide\n",
-        "src/euroeval/dataset_configs/example.py": "# original dataset\n",
-        **dict.fromkeys(release.POLICIES, "{}\n"),
-    }
-    monkeypatch.chdir(tmp_path)
-    for name, content in files.items():
-        path = Path(name)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(content)
-
-    def observed(args: list[str], data: bytes | None = None) -> bytes:
-        """Emulate committed Git paths, restricting listings to requested inputs.
-
-        Args:
-            args: Requested command arguments.
-            data: Unused command input.
-
-        Returns:
-            Local source observations; policy generation is a no-op.
-        """
-        del data
-        if args[:2] == ["git", "ls-files"]:
-            return "\n".join(
-                name
-                for name in sorted(files)
-                if any(name == p or name.startswith(p + "/") for p in args[2:])
-            ).encode()
-        if args[:2] == ["git", "rev-parse"]:
-            return SHA.encode()
-        assert args[:2] in (["git", "status"], ["uv", "run"])
-        return b""
-
-    monkeypatch.setattr(release, "command", observed)
-
-
 @pytest.mark.parametrize("contents", ["not-json", "[]", "null", "{}"])
 def test_activation_malformed(activation_checkout: Path, contents: str) -> None:
     """Malformed local state fails closed before adapter creation."""
@@ -118,373 +71,6 @@ def test_activation_rejects_wrong_marker(activation_checkout: Path, field: str) 
         release.load_activation()
 
 
-def test_artifact_and_empty_acceptance_refused() -> None:
-    """Cross-source artifacts and unreviewed default acceptance fail closed."""
-    github, registry, policy, local = inputs()
-    github.bad_artifact = True
-    with pytest.raises(ValueError):
-        release.stage(github, registry, policy, local)
-    github.bad_artifact = False
-    policy["acceptance"] = {}
-    with pytest.raises(ValueError):
-        release.stage(github, registry, policy, local)
-    assert not registry.writes
-
-
-def inputs() -> tuple:
-    """Create a reviewed candidate-specific physical acceptance fixture.
-
-    Returns:
-        Injectable adapters, policy and local source observations.
-    """
-    github, registry = FakeGitHub(), FakeRegistry()
-    local = {
-        "source_sha": SHA,
-        "euroeval_version": "2.0.0",
-        "worker_version": "1.0.1",
-        "policy_hash": "policy",
-        "runtime_fingerprint": release.digest(b"runtime"),
-        "guide_sha256": release.digest(b"guide"),
-    }
-    policy: dict = {
-        "enabled": True,
-        "acceptance": {
-            SHA: {
-                a: {
-                    "index_digest": "sha256:" + ("1" if a == "amd64" else "2") * 64,
-                    "accepted": True,
-                    "record_id": "physical-log",
-                    "reviewer": "maintainer",
-                    "proof_asset_id": 0,
-                    "proof_sha256": "",
-                }
-                for a in release.ARCHES
-            }
-        },
-    }
-    for number, arch in enumerate(release.ARCHES, start=1):
-        item = github.artifact({"id": 12}, arch)
-        proof = {
-            "schema": 1,
-            "source_sha": SHA,
-            "architecture": arch,
-            "platform": {"os": "linux", "architecture": arch},
-            "index_digest": item["index_digest"],
-            "manifest_digest": item["index_digest"],
-            "config_digest": "sha256:" + "4" * 64,
-            "run_id": 12,
-            "run_attempt": 2,
-            "runtime_fingerprint": local["runtime_fingerprint"],
-            "guide_sha256": local["guide_sha256"],
-            "inventory": item["inventory"],
-            "test_kind": "manual-pinned-docker",
-            "documented_command": "synthetic unit fixture, NOT physical evidence",
-            "guide_exact": True,
-            "clean_docker_gpu_host": True,
-            "evaluation_completed": True,
-            "exit_code": 0,
-            "transcript_asset_id": 100 + number,
-            "transcript_sha256": release.digest(b"redacted synthetic summary"),
-        }
-        raw = json.dumps(proof).encode()
-        github.proofs[number] = raw
-        policy["acceptance"][SHA][arch].update(
-            proof_asset_id=number, proof_sha256=release.digest(raw)
-        )
-    return github, registry, policy, local
-
-
-class FakeGitHub:
-    """In-memory GitHub observations and publication effects."""
-
-    def __init__(self) -> None:
-        """Start with two successful trusted workflows and no pending release."""
-        self.plan = None
-        self.sha = SHA
-        self.run_overrides = {}
-        self.bad_artifact = False
-        self.proofs = {}
-
-    def artifact(self, run: dict, name: str) -> dict:
-        """Observe attempt-bound inventory metadata.
-
-        Args:
-            run: Selected run.
-            name: Requested artifact name.
-
-        Returns:
-            Candidate artifact contents.
-        """
-        arch = "arm64" if "arm64" in name else "amd64"
-        return {
-            "source_sha": "b" * 40 if self.bad_artifact else SHA,
-            "run_id": run["id"],
-            "run_attempt": 2,
-            "architecture": arch,
-            "index_digest": "sha256:" + ("1" if arch == "amd64" else "2") * 64,
-            "artifact_id": arch,
-            "inventory": {"python": [["torch", "2"]], "dpkg": ["libc=1"]},
-        }
-
-    def head(self) -> str:
-        """Observe main.
-
-        Returns:
-            Current main SHA.
-        """
-        return self.sha
-
-    def pending(self) -> dict | None:
-        """Observe pending plan.
-
-        Returns:
-            Current staged plan.
-        """
-        return self.plan
-
-    def proof_asset(self, asset_id: int) -> bytes:
-        """Return synthetic retained bytes, never physical hardware evidence.
-
-        Args:
-            asset_id: Fixture identity.
-
-        Returns:
-            Exact fixture bytes.
-        """
-        return self.proofs[asset_id]
-
-    def publish(self, plan: dict) -> None:
-        """Record public JSON only.
-
-        Args:
-            plan: Published plan.
-        """
-        self.plan = plan
-
-    def runs(self, workflow: str, sha: str) -> list[dict]:
-        """Observe successful workflow provenance.
-
-        Args:
-            workflow: Workflow filename.
-            sha: Requested commit.
-
-        Returns:
-            Fake workflow observations.
-        """
-        return [
-            dict(
-                id=12,
-                run_number=3,
-                run_attempt=2,
-                head_sha=sha,
-                head_branch="main",
-                event="push",
-                head_repository={"full_name": release.REPOSITORY},
-                repository={"full_name": release.REPOSITORY},
-                path=f".github/workflows/{workflow}",
-                conclusion="success",
-                status="completed",
-                pull_requests=[],
-                **{},
-            )
-            | self.run_overrides
-        ]
-
-
-class FakeRegistry:
-    """In-memory OCI indexes retaining arbitrary attestation descriptors."""
-
-    def __init__(self) -> None:
-        """Seed the prior immutable release."""
-        self.raw = b'{"schemaVersion":2,"manifests":[]}'
-        self.storage = {"latest": self.raw}
-        self.writes = []
-        self.descriptors = [
-            {
-                "digest": "sha256:" + "3" * 64,
-                "platform": {"architecture": "unknown", "os": "unknown"},
-                "annotations": {"vnd.docker.reference.type": "attestation-manifest"},
-            }
-        ]
-
-    def identities(self, indexes: dict) -> tuple[list, dict]:
-        """Return complete descriptors and config identities.
-
-        Args:
-            indexes: Original candidate index identities.
-
-        Returns:
-            Descriptor union and config mapping.
-        """
-        return copy.deepcopy(self.descriptors), {
-            a: {"manifest": indexes[a], "config": "sha256:" + "4" * 64}
-            for a in release.ARCHES
-        }
-
-    def manifest(self, reference: str) -> tuple[bytes, dict]:
-        """Read a fake immutable manifest.
-
-        Args:
-            reference: Tag or digest.
-
-        Returns:
-            Bytes and decoded manifest.
-        """
-        raw = self.storage[reference]
-        return raw, json.loads(raw)
-
-    def put(self, tag: str, raw: bytes) -> str:
-        """Record an index publication.
-
-        Args:
-            tag: Destination.
-            raw: Exact original bytes.
-
-        Returns:
-            Content digest.
-        """
-        self.writes.append(tag)
-        self.storage[tag] = raw
-        self.storage[release.digest(raw)] = raw
-        return release.digest(raw)
-
-
-@pytest.mark.usefixtures("source_checkout")
-@pytest.mark.parametrize(
-    "path,changed_field",
-    [
-        ("VOLUNTEER_WORKER.md", "guide_sha256"),
-        ("src/scripts/run_volunteer_worker.py", "runtime_fingerprint"),
-        ("src/euroeval/dataset_configs/example.py", None),
-        ("src/scripts/release_volunteer_worker.py", None),
-        ("VOLUNTEER_WORKER_OPERATIONS.md", None),
-    ],
-)
-def test_baseline_binds_observed_guide_and_launcher(
-    path: str, changed_field: str | None
-) -> None:
-    """Release controls reuse unchanged runtime proof; guide/launcher changes do not.
-
-    Args:
-        path: Source input changed in the next candidate.
-        changed_field: Metadata that must change, or None for a dataset-only edit.
-    """
-    github, registry, policy, local = inputs()
-    local.update(release.source())
-    for asset_id, raw in github.proofs.items():
-        proof = json.loads(raw) | {
-            key: local[key] for key in ("runtime_fingerprint", "guide_sha256")
-        }
-        raw = json.dumps(proof).encode()
-        github.proofs[asset_id] = raw
-        policy["acceptance"][SHA][proof["architecture"]]["proof_sha256"] = (
-            release.digest(raw)
-        )
-    old = release.stage(github, registry, policy, local)
-    assert old is not None
-    policy["baseline"] = {
-        **old["acceptance_basis"],
-        "accepted_architectures": list(release.ARCHES),
-        "acceptance": copy.deepcopy(old["acceptance"]),
-    }
-    policy["acceptance"] = {}
-    github.plan = None
-    registry.writes.clear()
-    Path(path).write_text("# committed candidate change\n")
-    candidate = release.source()
-    for key in ("runtime_fingerprint", "guide_sha256"):
-        assert (candidate[key] != local[key]) == (key == changed_field)
-
-    if changed_field is None:
-        new = release.stage(github, registry, policy, candidate)
-        assert new is not None
-        assert new["acceptance_basis"] == old["acceptance_basis"]
-        return
-
-    with pytest.raises(ValueError, match="both retained physical proofs required"):
-        release.stage(github, registry, policy, candidate)
-    assert not registry.writes
-    assert github.plan is None
-
-    # Fresh candidate-specific reviewed proofs remain valid for changed inputs.
-    policy["acceptance"][SHA] = copy.deepcopy(old["acceptance"])
-    for asset_id, raw in github.proofs.items():
-        proof = json.loads(raw) | {
-            key: candidate[key] for key in ("runtime_fingerprint", "guide_sha256")
-        }
-        raw = json.dumps(proof).encode()
-        github.proofs[asset_id] = raw
-        policy["acceptance"][SHA][proof["architecture"]]["proof_sha256"] = (
-            release.digest(raw)
-        )
-    new = release.stage(github, registry, policy, candidate)
-    assert new is not None
-    assert new["acceptance_basis"][changed_field] == candidate[changed_field]
-    assert new["acceptance_basis"] != old["acceptance_basis"]
-
-
-def test_baseline_requires_actual_inventory_equality() -> None:
-    """Mutable apt changes invalidate dataset-configuration-only reuse."""
-    github, registry, policy, local = inputs()
-    first = release.stage(github, registry, policy, local)
-    assert first is not None
-    accepted = policy.pop("acceptance")[SHA]
-    github.plan = None
-    registry.writes.clear()
-    inventories = {
-        a: github.artifact({"id": 12}, a)["inventory"] for a in release.ARCHES
-    }
-    policy["baseline"] = {
-        **first["acceptance_basis"],
-        "accepted_architectures": list(release.ARCHES),
-        "acceptance": accepted,
-        "runtime_fingerprint": local["runtime_fingerprint"],
-        "inventories": inventories,
-    }
-    policy["baseline"]["inventories"]["arm64"]["dpkg"] = ["libc=changed"]
-    with pytest.raises(ValueError):
-        release.stage(github, registry, policy, local)
-    policy["baseline"]["inventories"]["arm64"]["dpkg"] = ["libc=1"]
-    assert release.stage(github, registry, policy, local)
-
-
-def test_baseline_reuses_original_source_and_proof_references() -> None:
-    """Unchanged runtime can reuse old source proofs, never relabel them as new."""
-    github, registry, policy, local = inputs()
-    old = release.stage(github, registry, policy, local)
-    assert old is not None
-    policy["baseline"] = {
-        **old["acceptance_basis"],
-        "accepted_architectures": list(release.ARCHES),
-        "acceptance": old["acceptance"],
-    }
-    policy["acceptance"] = {}
-    github.plan = None
-    github.sha = "b" * 40
-    local["source_sha"] = github.sha
-    # Artifact adapter still reports old SHA, so override only observed source.
-    original = github.artifact
-
-    def artifact(run: dict, name: str) -> dict:
-        """Observe the new build's unchanged runtime.
-
-        Args:
-            run: Image run.
-            name: Inventory name.
-
-        Returns:
-            New source inventory metadata.
-        """
-        return original(run, name) | {"source_sha": github.sha}
-
-    github.artifact = artifact
-    new = release.stage(github, registry, policy, local)
-    assert new is not None
-    assert new["acceptance"] == old["acceptance"]
-    assert new["acceptance_basis"]["source_sha"] == SHA
-    assert new["source_sha"] != SHA
-
-
 @pytest.mark.parametrize("operation", ["prepare", "predeploy", "finish"])
 def test_ci_cannot_deploy_or_promote(
     monkeypatch: pytest.MonkeyPatch, operation: str
@@ -516,24 +102,6 @@ def test_click_and_legacy_main_disabled_and_invalid(
     assert release.main(["--help"]) == 0
 
 
-def test_click_enabled_uses_adapter_seams(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Click and legacy invocation reach the same injected stage implementation."""
-    github, registry, policy, local = inputs()
-    policy_path = tmp_path / "policy.json"
-    policy_path.write_text(json.dumps(policy))
-    monkeypatch.setattr(release, "POLICY", policy_path)
-    monkeypatch.setattr(release, "GitHub", lambda: github)
-    monkeypatch.setattr(release, "Registry", lambda: registry)
-    monkeypatch.setattr(release, "source", lambda: local)
-    monkeypatch.setenv("WORKER_RELEASE_ENABLED", "true")
-    assert CliRunner().invoke(release.cli, ["stage"]).exit_code == 0
-    assert github.plan is not None
-    assert release.main(["stage"]) == 0
-    assert len(registry.writes) == 1
-
-
 def test_complete_two_phase_release(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -545,7 +113,7 @@ def test_complete_two_phase_release(
     assert plan["descriptors"] == registry.descriptors
     vercel = FakeVercel(plan)
     journal = tmp_path / "state.json"
-    local_policy = {**policy, "acceptance": {}, "baseline": {}}
+    local_policy = policy
     release.prepare(github, registry, vercel, local_policy, local, journal)
     assert "DO-NOT-PERSIST" not in journal.read_text()
     values = {e["key"]: e["value"] for e in vercel.entries}
@@ -668,6 +236,168 @@ class FakeVercel:
                 e["updatedAt"] += 1
 
 
+def inputs() -> tuple:
+    """Create successful trusted CI and native image observations.
+
+    Returns:
+        Injectable adapters, policy and local source observations.
+    """
+    github, registry = FakeGitHub(), FakeRegistry()
+    local = {
+        "source_sha": SHA,
+        "euroeval_version": "2.0.0",
+        "worker_version": "1.0.1",
+        "policy_hash": "policy",
+        "runtime_fingerprint": release.digest(b"runtime"),
+        "guide_sha256": release.digest(b"guide"),
+    }
+    policy = {"enabled": True}
+    return github, registry, policy, local
+
+
+class FakeGitHub:
+    """In-memory GitHub observations and publication effects."""
+
+    def __init__(self) -> None:
+        """Start with two successful trusted workflows and no pending release."""
+        self.plan = None
+        self.sha = SHA
+        self.run_overrides = {}
+        self.bad_artifact = False
+
+    def artifact(self, run: dict, name: str) -> dict:
+        """Observe attempt-bound inventory metadata.
+
+        Args:
+            run: Selected run.
+            name: Requested artifact name.
+
+        Returns:
+            Candidate artifact contents.
+        """
+        arch = "arm64" if "arm64" in name else "amd64"
+        return {
+            "source_sha": "b" * 40 if self.bad_artifact else SHA,
+            "run_id": run["id"],
+            "run_attempt": 2,
+            "architecture": arch,
+            "index_digest": "sha256:" + ("1" if arch == "amd64" else "2") * 64,
+            "artifact_id": arch,
+            "inventory": {"python": [["torch", "2"]], "dpkg": ["libc=1"]},
+        }
+
+    def head(self) -> str:
+        """Observe main.
+
+        Returns:
+            Current main SHA.
+        """
+        return self.sha
+
+    def pending(self) -> dict | None:
+        """Observe pending plan.
+
+        Returns:
+            Current staged plan.
+        """
+        return self.plan
+
+    def publish(self, plan: dict) -> None:
+        """Record public JSON only.
+
+        Args:
+            plan: Published plan.
+        """
+        self.plan = plan
+
+    def runs(self, workflow: str, sha: str) -> list[dict]:
+        """Observe successful workflow provenance.
+
+        Args:
+            workflow: Workflow filename.
+            sha: Requested commit.
+
+        Returns:
+            Fake workflow observations.
+        """
+        return [
+            dict(
+                id=12,
+                run_number=3,
+                run_attempt=2,
+                head_sha=sha,
+                head_branch="main",
+                event="push",
+                head_repository={"full_name": release.REPOSITORY},
+                repository={"full_name": release.REPOSITORY},
+                path=f".github/workflows/{workflow}",
+                conclusion="success",
+                status="completed",
+                pull_requests=[],
+                **{},
+            )
+            | self.run_overrides
+        ]
+
+
+class FakeRegistry:
+    """In-memory OCI indexes retaining arbitrary attestation descriptors."""
+
+    def __init__(self) -> None:
+        """Seed the prior immutable release."""
+        self.raw = b'{"schemaVersion":2,"manifests":[]}'
+        self.storage = {"latest": self.raw}
+        self.writes = []
+        self.descriptors = [
+            {
+                "digest": "sha256:" + "3" * 64,
+                "platform": {"architecture": "unknown", "os": "unknown"},
+                "annotations": {"vnd.docker.reference.type": "attestation-manifest"},
+            }
+        ]
+
+    def identities(self, indexes: dict) -> tuple[list, dict]:
+        """Return complete descriptors and config identities.
+
+        Args:
+            indexes: Original candidate index identities.
+
+        Returns:
+            Descriptor union and config mapping.
+        """
+        return copy.deepcopy(self.descriptors), {
+            a: {"manifest": indexes[a], "config": "sha256:" + "4" * 64}
+            for a in release.ARCHES
+        }
+
+    def manifest(self, reference: str) -> tuple[bytes, dict]:
+        """Read a fake immutable manifest.
+
+        Args:
+            reference: Tag or digest.
+
+        Returns:
+            Bytes and decoded manifest.
+        """
+        raw = self.storage[reference]
+        return raw, json.loads(raw)
+
+    def put(self, tag: str, raw: bytes) -> str:
+        """Record an index publication.
+
+        Args:
+            tag: Destination.
+            raw: Exact original bytes.
+
+        Returns:
+            Content digest.
+        """
+        self.writes.append(tag)
+        self.storage[tag] = raw
+        self.storage[release.digest(raw)] = raw
+        return release.digest(raw)
+
+
 def test_configure_disable_local(activation_checkout: Path) -> None:
     """One-time setup arms local hooks only, and disable is idempotent."""
     assert release.load_activation() is None
@@ -679,6 +409,15 @@ def test_configure_disable_local(activation_checkout: Path) -> None:
     assert release.main(["disable-local"]) == 0
     assert release.main(["disable-local"]) == 0
     assert release.load_activation() is None
+
+
+def test_cross_source_artifact_refused() -> None:
+    """Cross-source artifacts cannot be staged or published."""
+    github, registry, policy, local = inputs()
+    github.bad_artifact = True
+    with pytest.raises(ValueError):
+        release.stage(github, registry, policy, local)
+    assert not registry.writes
 
 
 def test_disabled_hooks_never_construct_adapters(
@@ -846,8 +585,7 @@ def test_local_finish_recovers_ambiguous_promotion(
 
 
 @pytest.mark.parametrize(
-    "mutation",
-    ["receipt", "source", "attempt", "proof", "config", "arm", "alias", "latest"],
+    "mutation", ["receipt", "source", "attempt", "config", "arm", "alias", "latest"]
 )
 def test_local_finish_refuses_changed_evidence(tmp_path: Path, mutation: str) -> None:
     """Local promotion requires the actual receipt and unchanged release evidence.
@@ -871,8 +609,6 @@ def test_local_finish_refuses_changed_evidence(tmp_path: Path, mutation: str) ->
         local = local | {"source_sha": "b" * 40}
     elif mutation == "attempt":
         github.run_overrides = {"run_attempt": 3}
-    elif mutation == "proof":
-        github.proofs[1] = b"changed"
     elif mutation == "config":
         vercel.entries[0]["value"] = "changed"
     elif mutation == "arm":
@@ -1063,128 +799,24 @@ def test_prepare_rejects_shared_or_secret_release_variable(tmp_path: Path) -> No
     assert vercel.entries == before
 
 
-def test_proof_asset_adapter_uses_fixed_repository(
-    monkeypatch: pytest.MonkeyPatch,
+def test_release_cli_requires_no_gpu_approval(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Proof retrieval never follows a supplied download URL or accepts URL IDs."""
-    raw = b'{"synthetic":true}'
-    paths = []
-    commands = []
-
-    def api(self: release.GitHub, path: str, data: dict | None = None) -> dict:
-        """Observe a fixed-repository asset.
-
-        Args:
-            self: GitHub adapter.
-            path: Repository-relative request.
-            data: Optional request data.
-
-        Returns:
-            Asset metadata with an ignored hostile URL.
-        """
-        paths.append(path)
-        return {
-            "id": 42,
-            "size": len(raw),
-            "browser_download_url": "https://evil.invalid",
-        }
-
-    def execute(args: list[str], data: bytes | None = None) -> bytes:
-        """Capture fixed-repository byte retrieval.
-
-        Args:
-            args: Public tool arguments.
-            data: Optional stdin.
-
-        Returns:
-            Synthetic proof bytes.
-        """
-        commands.append(args)
-        return raw
-
-    monkeypatch.setattr(release.GitHub, "api", api)
-    monkeypatch.setattr(release, "command", execute)
-    assert release.GitHub().proof_asset(42) == raw
-    assert paths == ["releases/assets/42"]
-    assert commands[0][-1] == "repos/EuroEval/EuroEval/releases/assets/42"
-    with pytest.raises(ValueError):
-        release.GitHub().proof_asset(0)
-    assert len(commands) == 1
-
-
-def test_proof_rechecked_before_config_write(tmp_path: Path) -> None:
-    """A retained proof altered after staging fails before any production write."""
+    """Public CLI staging needs no GPU proofs or retired approval settings."""
     github, registry, policy, local = inputs()
-    plan = release.stage(github, registry, policy, local)
-    assert plan is not None
-    vercel = FakeVercel(plan)
-    before = vercel.config()
-    github.proofs[1] += b" "
-    with pytest.raises(ValueError):
-        release.prepare(
-            github, registry, vercel, policy, local, tmp_path / "state.json"
-        )
-    assert vercel.config() == before
-    assert not (tmp_path / "state.json").exists()
-
-
-@pytest.mark.parametrize("mutation", ["missing", "tampered", "oversized", "schema"])
-def test_retained_proof_bytes_fail_closed(mutation: str) -> None:
-    """Missing, altered, oversized and unexpected proof schemas cannot publish."""
-    github, registry, policy, local = inputs()
-    record = policy["acceptance"][SHA]["amd64"]
-    if mutation == "missing":
-        del record["proof_asset_id"]
-    elif mutation == "tampered":
-        github.proofs[1] += b" "
-    else:
-        proof = json.loads(github.proofs[1])
-        proof["unexpected"] = "x" * (
-            release.MAX_PROOF_BYTES if mutation == "oversized" else 1
-        )
-        github.proofs[1] = json.dumps(proof).encode()
-        record["proof_sha256"] = release.digest(github.proofs[1])
-    with pytest.raises(ValueError):
-        release.stage(github, registry, policy, local)
-    assert not registry.writes
-
-
-@pytest.mark.parametrize(
-    ("field", "value"),
-    [
-        ("source_sha", "b" * 40),
-        ("architecture", "arm64"),
-        ("platform", {"os": "linux", "architecture": "arm64"}),
-        ("index_digest", "sha256:" + "9" * 64),
-        ("manifest_digest", "sha256:" + "9" * 64),
-        ("config_digest", "sha256:" + "9" * 64),
-        ("run_id", 99),
-        ("run_attempt", 1),
-        ("runtime_fingerprint", "sha256:" + "9" * 64),
-        ("guide_sha256", "sha256:" + "9" * 64),
-        ("evaluation_completed", False),
-        ("exit_code", 1),
-        ("guide_exact", False),
-        ("clean_docker_gpu_host", False),
-        ("test_kind", "diagnostic-matmul"),
-        ("inventory", {"python": [], "dpkg": []}),
-    ],
-)
-def test_retained_proof_identity_and_completion_rejected(
-    field: str, value: object
-) -> None:
-    """Even correctly rehashed proofs cannot contradict reviewed build identities."""
-    github, registry, policy, local = inputs()
-    proof = json.loads(github.proofs[1])
-    proof[field] = value
-    github.proofs[1] = json.dumps(proof).encode()
-    policy["acceptance"][SHA]["amd64"]["proof_sha256"] = release.digest(
-        github.proofs[1]
-    )
-    with pytest.raises(ValueError):
-        release.stage(github, registry, policy, local)
-    assert not registry.writes
-    assert github.plan is None
+    policy_path = tmp_path / "policy.json"
+    policy_path.write_text(json.dumps(policy))
+    monkeypatch.setattr(release, "POLICY", policy_path)
+    monkeypatch.setattr(release, "GitHub", lambda: github)
+    monkeypatch.setattr(release, "Registry", lambda: registry)
+    monkeypatch.setattr(release, "source", lambda: local)
+    monkeypatch.setenv("WORKER_RELEASE_ENABLED", "true")
+    monkeypatch.setenv("WORKER_RELEASE_ACCEPTANCE_JSON", "retired-invalid-json")
+    monkeypatch.setenv("WORKER_RELEASE_BASELINE_JSON", "retired-invalid-json")
+    assert CliRunner().invoke(release.cli, ["stage"]).exit_code == 0
+    assert github.plan is not None
+    assert release.main(["stage"]) == 0
+    assert len(registry.writes) == 1
 
 
 def test_source_checks_release_control_dirty_paths(
