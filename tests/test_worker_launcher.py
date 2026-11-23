@@ -84,6 +84,17 @@ class FakeHost:
         elif "--inspect-state" in args:
             assert "--gpus" not in args
             assert any(item.endswith(":/cache:ro") for item in args)
+            # Torch imports need tempfile even when inspection never uses the GPU.
+            mounts = [
+                args[i + 1] for i, item in enumerate(args[:-1]) if item == "--tmpfs"
+            ]
+            if "--read-only" in args and not any(
+                mount.startswith("/tmp:") and "rw" in mount.split(":", 1)[1].split(",")
+                for mount in mounts
+            ):
+                raise subprocess.CalledProcessError(
+                    1, args, stderr="No usable temporary directory found"
+                )
             output = json.dumps(self.state)
         elif "--launcher-managed" in args:
             image = next(item for item in args if item.startswith(REPO + "@"))

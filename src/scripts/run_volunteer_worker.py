@@ -454,6 +454,8 @@ class _Lifecycle:
             "run",
             "--rm",
             "--read-only",
+            "--tmpfs",
+            "/tmp:rw,noexec,nosuid,size=64m",
             "--cap-drop=ALL",
             "--security-opt=no-new-privileges",
             "-e",
