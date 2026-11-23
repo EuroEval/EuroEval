@@ -1187,6 +1187,132 @@ def test_retained_proof_identity_and_completion_rejected(
     assert github.plan is None
 
 
+def test_reviewed_compatibility_preserves_physical_provenance(tmp_path: Path) -> None:
+    """Reviewed source-only changes promote without relabelling old GPU proofs."""
+    github, registry, policy, local, old = compatibility_inputs()
+    plan = release.stage(github, registry, policy, local)
+    assert plan is not None
+    assert plan["acceptance"] == old["acceptance"]
+    assert plan["acceptance_basis"] == old["acceptance_basis"]
+    assert plan["source_sha"] != plan["acceptance_basis"]["source_sha"]
+    assert (
+        plan["runtime_fingerprint"] != plan["acceptance_basis"]["runtime_fingerprint"]
+    )
+    assert plan["compatibility"] == policy["baseline"]["compatibility"]
+    vercel = FakeVercel(plan)
+    release.prepare(github, registry, vercel, policy, local, tmp_path / "state.json")
+    assert "latest" not in registry.writes
+    vercel.deployment = "new-ready"
+    release.finalize(github, registry, vercel, plan["tag"], "new-ready")
+    assert registry.writes[-1] == "latest"
+
+
+def compatibility_inputs() -> tuple:
+    """Create historical physical evidence and a separate reviewed source change.
+
+    Returns:
+        Adapters, protected policy, new source and original accepted plan.
+    """
+    github, registry, policy, local = inputs()
+    old = release.stage(github, registry, policy, local)
+    assert old is not None
+    policy["baseline"] = {
+        **old["acceptance_basis"],
+        "accepted_architectures": list(release.ARCHES),
+        "acceptance": old["acceptance"],
+    }
+    policy["acceptance"] = {}
+    github.plan = None
+    github.sha = "b" * 40
+    local = {
+        **local,
+        "source_sha": github.sha,
+        "runtime_fingerprint": release.digest(b"reviewed parser change"),
+    }
+    original = github.artifact
+
+    def artifact(run: dict, name: str) -> dict:
+        """Observe the new source with unchanged installed dependencies.
+
+        Args:
+            run: Image workflow observation.
+            name: Inventory artifact name.
+
+        Returns:
+            Candidate inventory with its actual source identity.
+        """
+        return original(run, name) | {"source_sha": github.sha}
+
+    github.artifact = artifact
+    decision = {
+        "schema": 1,
+        "kind": "reviewed-runtime-compatibility",
+        "baseline_source_sha": old["source_sha"],
+        "reviewed_source_sha": github.sha,
+        "runtime_fingerprint": local["runtime_fingerprint"],
+        "guide_sha256": local["guide_sha256"],
+        "ci_run_id": 12,
+        "ci_run_attempt": 2,
+        "reviewer": "maintainer",
+        "rationale": "Reviewed parser correction; GPU dependencies unchanged.",
+        "reviewed_diff": "Synthetic source diff, not physical evidence.",
+    }
+    github.proofs[3] = json.dumps(decision).encode()
+    policy["baseline"]["compatibility"] = {
+        "asset_id": 3,
+        "sha256": release.digest(github.proofs[3]),
+    }
+    return github, registry, policy, local, old
+
+
+@pytest.mark.parametrize("phase", ["prepare", "promote"])
+def test_reviewed_compatibility_rechecked_before_effects(
+    tmp_path: Path, phase: str
+) -> None:
+    """Altered retained review bytes stop configuration writes and promotion."""
+    github, registry, policy, local, _ = compatibility_inputs()
+    plan = release.stage(github, registry, policy, local)
+    assert plan is not None
+    vercel = FakeVercel(plan)
+    journal = tmp_path / "state.json"
+    if phase == "promote":
+        release.prepare(github, registry, vercel, policy, local, journal)
+        vercel.deployment = "new-ready"
+    github.proofs[3] += b" "
+    before = json.dumps(vercel.entries)
+    with pytest.raises(ValueError):
+        if phase == "prepare":
+            release.prepare(github, registry, vercel, policy, local, journal)
+        else:
+            release.finalize(github, registry, vercel, plan["tag"], "new-ready")
+    assert json.dumps(vercel.entries) == before
+    assert "latest" not in registry.writes
+
+
+@pytest.mark.parametrize("mutation", ["runtime", "guide", "inventory", "bytes", "ci"])
+def test_reviewed_compatibility_rejects_unreviewed_changes(mutation: str) -> None:
+    """Compatibility never covers another runtime, dependency drift or evidence."""
+    github, registry, policy, local, _ = compatibility_inputs()
+    if mutation == "runtime":
+        local["runtime_fingerprint"] = release.digest(b"unreviewed change")
+    elif mutation == "guide":
+        local["guide_sha256"] = release.digest(b"different documented command")
+    elif mutation == "inventory":
+        policy["baseline"]["inventories"]["amd64"]["dpkg"] = ["libc=0"]
+    elif mutation == "bytes":
+        github.proofs[3] += b" "
+    else:
+        decision = json.loads(github.proofs[3])
+        decision["ci_run_attempt"] = 99
+        github.proofs[3] = json.dumps(decision).encode()
+        policy["baseline"]["compatibility"]["sha256"] = release.digest(github.proofs[3])
+    before = list(registry.writes)
+    with pytest.raises(ValueError):
+        release.stage(github, registry, policy, local)
+    assert registry.writes == before
+    assert github.pending() is None
+
+
 def test_source_checks_release_control_dirty_paths(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

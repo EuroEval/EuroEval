@@ -848,9 +848,7 @@ def finalize(
         digest(latest) in (plan["previous_digest"], plan["image_digest"]),
         "latest changed since staging",
     )
-    validate_acceptance(
-        github=github, records=plan["acceptance"], basis=plan["acceptance_basis"]
-    )
+    validate_release_acceptance(github=github, plan=plan)
     verify_production(vercel, plan, deployment)
     require(github.head() == plan["source_sha"], "main advanced before promotion")
     require(vercel.production()["id"] == deployment, "alias changed before promotion")
@@ -891,6 +889,26 @@ def eligible(run: dict, sha: str, workflow: str) -> None:
         and not run["pull_requests"],
         "untrusted or unsuccessful workflow",
     )
+
+
+def validate_release_acceptance(github: GitHubAdapter, plan: dict) -> None:
+    """Validate physical evidence and any separately reviewed runtime changes.
+
+    Args:
+        github: Fixed-repository retained evidence observations.
+        plan: Candidate identities and their original physical acceptance basis.
+    """
+    basis = plan["acceptance_basis"]
+    validate_acceptance(github=github, records=plan["acceptance"], basis=basis)
+    reference = plan.get("compatibility")
+    unchanged = all(
+        plan[key] == basis[key]
+        for key in ("runtime_fingerprint", "guide_sha256", "inventories")
+    )
+    if reference is not None or not unchanged:
+        validate_compatibility(
+            github=github, reference=reference, basis=basis, candidate=plan
+        )
 
 
 def validate_acceptance(github: GitHubAdapter, records: dict, basis: dict) -> None:
@@ -1054,6 +1072,93 @@ def validate_physical_proof(raw: bytes, sha256: str, expected: dict) -> dict:
         "successful documented physical evaluation required",
     )
     return proof
+
+
+def validate_compatibility(
+    github: GitHubAdapter, reference: dict | None, basis: dict, candidate: dict
+) -> None:
+    """Bind reviewed source-only changes to the original accepted GPU runtimes.
+
+    This is not physical proof of the candidate. Installed dependencies and the
+    manual evaluation guide must still match the original physical acceptance.
+
+    Args:
+        github: Fixed-repository evidence and trusted CI observations.
+        reference: Protected exact-byte compatibility decision reference.
+        basis: Unmodified original physical acceptance identities.
+        candidate: Observed candidate runtime metadata.
+
+    Raises:
+        ValueError: When the retained compatibility decision does not validate.
+    """
+    if not isinstance(reference, dict):
+        raise ValueError("reviewed compatibility evidence required")
+    require(
+        set(reference) == {"asset_id", "sha256"}
+        and type(reference["asset_id"]) is int
+        and reference["asset_id"] > 0,
+        "reviewed compatibility evidence required",
+    )
+    raw = github.proof_asset(reference["asset_id"])
+    require(
+        0 < len(raw) <= MAX_PROOF_BYTES
+        and isinstance(reference["sha256"], str)
+        and re.fullmatch(r"sha256:[0-9a-f]{64}", reference["sha256"])
+        and digest(raw) == reference["sha256"],
+        "compatibility evidence digest mismatch",
+    )
+    decision = json.loads(raw)
+    require(
+        isinstance(decision, dict)
+        and set(decision)
+        == {
+            "schema",
+            "kind",
+            "baseline_source_sha",
+            "reviewed_source_sha",
+            "runtime_fingerprint",
+            "guide_sha256",
+            "ci_run_id",
+            "ci_run_attempt",
+            "reviewer",
+            "rationale",
+            "reviewed_diff",
+        },
+        "compatibility evidence schema mismatch",
+    )
+    require(
+        type(decision["schema"]) is int
+        and decision["schema"] == 1
+        and decision["kind"] == "reviewed-runtime-compatibility"
+        and decision["baseline_source_sha"] == basis["source_sha"]
+        and isinstance(decision["reviewed_source_sha"], str)
+        and re.fullmatch(r"[0-9a-f]{40}", decision["reviewed_source_sha"])
+        and decision["runtime_fingerprint"] == candidate["runtime_fingerprint"]
+        and decision["guide_sha256"] == candidate["guide_sha256"]
+        and basis["guide_sha256"] == candidate["guide_sha256"]
+        and basis["inventories"] == candidate["inventories"],
+        "reviewed runtime compatibility mismatch",
+    )
+    require(
+        all(
+            isinstance(decision[key], str) and decision[key].strip()
+            for key in ("reviewer", "rationale", "reviewed_diff")
+        )
+        and all(
+            type(decision[key]) is int and decision[key] > 0
+            for key in ("ci_run_id", "ci_run_attempt")
+        ),
+        "reviewed compatibility decision incomplete",
+    )
+    runs = github.runs("ci.yaml", decision["reviewed_source_sha"])
+    require(runs, "reviewed source CI missing")
+    run = max(runs, key=lambda item: (item["run_number"], item["run_attempt"]))
+    eligible(run, decision["reviewed_source_sha"], "ci.yaml")
+    require(
+        run["id"] == decision["ci_run_id"]
+        and run["run_attempt"] == decision["ci_run_attempt"],
+        "reviewed source CI changed",
+    )
 
 
 def verify_production(vercel: VercelAdapter, plan: dict, deployment: str) -> None:
@@ -1239,9 +1344,7 @@ def prepare(
         "local versions/source/policy differ from staged plan",
     )
     require(github.head() == plan["source_sha"], "main advanced")
-    validate_acceptance(
-        github=github, records=plan["acceptance"], basis=plan["acceptance_basis"]
-    )
+    validate_release_acceptance(github=github, plan=plan)
     # The trusted staged plan carries the external reviewed decisions. Local
     # deployments must not need protected CI acceptance variables in their shell.
     before = vercel.production()["id"]
@@ -1473,13 +1576,18 @@ def stage(
         and baseline.get("guide_sha256") == local["guide_sha256"]
         and baseline.get("inventories") == inventories
     )
-    basis = baseline if fast else candidate
-    acceptance = (
-        baseline.get("acceptance", {})
-        if fast
-        else policy.get("acceptance", {}).get(sha, {})
+    specific = policy.get("acceptance", {}).get(sha, {})
+    reviewed = not fast and not specific and baseline.get("compatibility") is not None
+    basis = baseline if fast or reviewed else candidate
+    acceptance = baseline.get("acceptance", {}) if fast or reviewed else specific
+    acceptance_metadata = {
+        "acceptance": acceptance,
+        "acceptance_basis": {key: basis[key] for key in candidate},
+        "compatibility": baseline["compatibility"] if reviewed else None,
+    }
+    validate_release_acceptance(
+        github=github, plan={**candidate, **acceptance_metadata}
     )
-    validate_acceptance(github=github, records=acceptance, basis=basis)
     raw = json.dumps(
         {
             "schemaVersion": 2,
@@ -1518,8 +1626,7 @@ def stage(
         "ci_run_attempt": runs["ci.yaml"]["run_attempt"],
         "previous_digest": digest(latest),
         "inventories": inventories,
-        "acceptance": acceptance,
-        "acceptance_basis": {k: basis[k] for k in candidate},
+        **acceptance_metadata,
     }
     require(github.head() == sha, "main advanced before metadata publication")
     github.publish(plan)
