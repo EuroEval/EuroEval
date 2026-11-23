@@ -203,7 +203,6 @@ class FakeGitHub:
         self.sha = SHA
         self.run_overrides = {}
         self.bad_artifact = False
-        self.dispatched = []
         self.proofs = {}
 
     def artifact(self, run: dict, name: str) -> dict:
@@ -226,15 +225,6 @@ class FakeGitHub:
             "artifact_id": arch,
             "inventory": {"python": [["torch", "2"]], "dpkg": ["libc=1"]},
         }
-
-    def dispatch(self, plan: dict, deployment: str) -> None:
-        """Record a finalization request.
-
-        Args:
-            plan: Published plan.
-            deployment: Verified deployment id.
-        """
-        self.dispatched.append((plan["tag"], deployment))
 
     def head(self) -> str:
         """Observe main.
@@ -366,12 +356,14 @@ class FakeRegistry:
         ("VOLUNTEER_WORKER.md", "guide_sha256"),
         ("src/scripts/run_volunteer_worker.py", "runtime_fingerprint"),
         ("src/euroeval/dataset_configs/example.py", None),
+        ("src/scripts/release_volunteer_worker.py", None),
+        ("VOLUNTEER_WORKER_OPERATIONS.md", None),
     ],
 )
 def test_baseline_binds_observed_guide_and_launcher(
     path: str, changed_field: str | None
 ) -> None:
-    """Only dataset edits reuse proof; new guide/launcher needs fresh acceptance.
+    """Release controls reuse unchanged runtime proof; guide/launcher changes do not.
 
     Args:
         path: Source input changed in the next candidate.
@@ -493,17 +485,33 @@ def test_baseline_reuses_original_source_and_proof_references() -> None:
     assert new["source_sha"] != SHA
 
 
+@pytest.mark.parametrize("operation", ["prepare", "predeploy", "finish"])
+def test_ci_cannot_deploy_or_promote(
+    monkeypatch: pytest.MonkeyPatch, operation: str
+) -> None:
+    """Active CI cannot invoke local production operations or construct adapters.
+
+    Args:
+        monkeypatch: Patch activation without credentials.
+        operation: Local release operation attempted by CI.
+    """
+    monkeypatch.setenv("CI", "true")
+    monkeypatch.setattr(release, "load_activation", lambda **_: {"enabled": True})
+    assert release.main([operation]) == 1
+
+
 def test_click_and_legacy_main_disabled_and_invalid(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Both public CLI seams stay inert when disabled and report usage failures."""
     monkeypatch.delenv("WORKER_RELEASE_ENABLED", raising=False)
     runner = CliRunner()
-    for phase in ("stage", "prepare", "predeploy", "finish", "finalize"):
+    for phase in ("stage", "prepare", "predeploy", "finish"):
         assert runner.invoke(release.cli, [phase]).exit_code == 0
         assert release.main([phase]) == 0
     assert runner.invoke(release.cli, ["invalid"]).exit_code == 2
     assert release.main(["invalid"]) == 2
+    assert release.main(["finalize"]) == 2
     assert release.main(["--help"]) == 0
 
 
@@ -547,8 +555,8 @@ def test_complete_two_phase_release(
         == plan["image_digest"]
     )
     with pytest.raises(ValueError):
-        release.finish(github, vercel, journal)
-    assert not github.dispatched
+        release.finish(github, registry, vercel, local, journal)
+    assert "latest" not in registry.writes
     vercel.deployment = "new-ready"
     monkeypatch.setenv("WORKER_RELEASE_ENABLED", "true")
     receipt_policy = tmp_path / "receipt-policy.json"
@@ -559,12 +567,11 @@ def test_complete_two_phase_release(
         state_path=journal,
         policy_path=receipt_policy,
     )
-    release.finish(github, vercel, journal)
-    assert github.dispatched
-    release.finalize(github, registry, vercel, plan["tag"], "new-ready")
+    release.finish(github, registry, vercel, local, journal)
     assert registry.writes[-1] == "latest"
-    with pytest.raises(ValueError):
-        release.finalize(github, registry, vercel, plan["tag"], "new-ready")
+    assert json.loads(journal.read_text())["status"] == "completed"
+    release.finish(github, registry, vercel, local, journal)
+    assert registry.writes.count("latest") == 1
 
 
 class FakeVercel:
@@ -635,11 +642,16 @@ class FakeVercel:
         """Resolve the actual local deploy receipt independently of the alias.
 
         Args:
-            hostname: Immutable deployment URL.
+            hostname: Immutable deployment hostname.
 
         Returns:
             Local deployment identity.
+
+        Raises:
+            ValueError: When the receipt is not a valid deployment hostname.
         """
+        if hostname != "local-release.vercel.app":
+            raise ValueError("invalid deployment hostname")
         return {"id": "new-ready"}
 
     def update(self, entry: dict, value: str) -> None:
@@ -673,7 +685,7 @@ def test_disabled_hooks_never_construct_adapters(
 ) -> None:
     """Default installation is inert and needs no credentials or pending release."""
     monkeypatch.delenv("WORKER_RELEASE_ENABLED", raising=False)
-    for name in ("stage", "prepare", "predeploy", "finish", "finalize"):
+    for name in ("stage", "prepare", "predeploy", "finish"):
         assert release.main([name]) == 0
 
 
@@ -784,6 +796,96 @@ def test_inventory_uses_only_cpu_metadata(monkeypatch: pytest.MonkeyPatch) -> No
     assert "--gpus" not in args and "import torch" not in args[-1]
 
 
+@pytest.mark.parametrize("write_succeeded", [False, True])
+def test_local_finish_recovers_ambiguous_promotion(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, write_succeeded: bool
+) -> None:
+    """Retry revalidates production and never blindly repeats a successful push.
+
+    Args:
+        tmp_path: Temporary journal directory.
+        monkeypatch: Patch registry publication failure.
+        write_succeeded: Whether the remote write occurred before losing its response.
+    """
+    github, registry, policy, local = inputs()
+    plan = release.stage(github, registry, policy, local)
+    assert plan is not None
+    vercel = FakeVercel(plan)
+    journal = tmp_path / "state.json"
+    release.prepare(github, registry, vercel, policy, local, journal)
+    state = json.loads(journal.read_text())
+    state["deployment_url"] = "local-release.vercel.app"
+    journal.write_text(json.dumps(state))
+    vercel.deployment = "new-ready"
+    original = registry.put
+
+    def fail_publication(tag: str, raw: bytes) -> str:
+        """Lose the publication response, optionally after the remote write.
+
+        Args:
+            tag: Registry destination.
+            raw: Published bytes.
+
+        Raises:
+            OSError: When the publication response is lost.
+        """
+        if write_succeeded:
+            original(tag=tag, raw=raw)
+        raise OSError("publication response lost")
+
+    monkeypatch.setattr(registry, "put", fail_publication)
+    with pytest.raises(OSError):
+        release.finish(github, registry, vercel, local, journal)
+    assert json.loads(journal.read_text())["status"] == "prepared"
+    monkeypatch.setattr(registry, "put", original)
+    release.finish(github, registry, vercel, local, journal)
+    assert registry.writes.count("latest") == 1
+    assert json.loads(journal.read_text())["status"] == "completed"
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ["receipt", "source", "attempt", "proof", "config", "arm", "alias", "latest"],
+)
+def test_local_finish_refuses_changed_evidence(tmp_path: Path, mutation: str) -> None:
+    """Local promotion requires the actual receipt and unchanged release evidence.
+
+    Args:
+        tmp_path: Temporary journal directory.
+        mutation: Required observation changed after deployment.
+    """
+    github, registry, policy, local = inputs()
+    plan = release.stage(github, registry, policy, local)
+    assert plan is not None
+    vercel = FakeVercel(plan)
+    journal = tmp_path / "state.json"
+    release.prepare(github, registry, vercel, policy, local, journal)
+    state = json.loads(journal.read_text())
+    state["deployment_url"] = "local-release.vercel.app"
+    vercel.deployment = "new-ready"
+    if mutation == "receipt":
+        del state["deployment_url"]
+    elif mutation == "source":
+        local = local | {"source_sha": "b" * 40}
+    elif mutation == "attempt":
+        github.run_overrides = {"run_attempt": 3}
+    elif mutation == "proof":
+        github.proofs[1] = b"changed"
+    elif mutation == "config":
+        vercel.entries[0]["value"] = "changed"
+    elif mutation == "arm":
+        vercel.bad_arch = True
+    elif mutation == "alias":
+        vercel.alias_race = True
+    else:
+        registry.storage["latest"] = b'{"schemaVersion":2,"manifests":[{}]}'
+    journal.write_text(json.dumps(state))
+    with pytest.raises(ValueError):
+        release.finish(github, registry, vercel, local, journal)
+    assert "latest" not in registry.writes
+    assert json.loads(journal.read_text())["status"] == "prepared"
+
+
 @pytest.mark.parametrize("flag", ["CI", "GITHUB_ACTIONS", "WORKER_RELEASE_ENABLED"])
 def test_local_marker_cannot_override_external_disable(
     activation_checkout: Path, monkeypatch: pytest.MonkeyPatch, flag: str
@@ -817,11 +919,11 @@ def test_no_marker_hooks_do_not_construct_adapters(
     monkeypatch.setattr(release, "GitHub", forbidden)
     monkeypatch.setattr(release, "Registry", forbidden)
     monkeypatch.setattr(release, "Vercel", forbidden)
-    for operation in ("stage", "prepare", "predeploy", "finish", "finalize"):
+    for operation in ("stage", "prepare", "predeploy", "finish"):
         assert release.main([operation]) == 0
     assert release.main(["configure-local"]) == 0
     monkeypatch.setenv("WORKER_RELEASE_ENABLED", "false")
-    for operation in ("stage", "prepare", "predeploy", "finish", "finalize"):
+    for operation in ("stage", "prepare", "predeploy", "finish"):
         assert release.main([operation]) == 0
     release.STATE.write_text("malformed ignored journal")
     deploy_vercel_frontend.record_release_deployment(output="")
@@ -838,8 +940,8 @@ def test_no_pending_release_is_a_noop(tmp_path: Path) -> None:
         )
         is None
     )
-    release.finish(github, vercel, tmp_path / "state.json")
-    assert not github.dispatched
+    release.finish(github, registry, vercel, local, tmp_path / "state.json")
+    assert "latest" not in registry.writes
 
 
 def test_original_registry_indexes_keep_every_attestation() -> None:
@@ -923,7 +1025,7 @@ def test_plain_misconfigured_secret_is_not_retained() -> None:
 def test_predeploy_intervening_alias_stops_before_deploy(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The real CLI predeploy hook refuses a changed alias and never dispatches."""
+    """The real CLI predeploy hook refuses a changed alias before deployment."""
     github, registry, policy, local = inputs()
     plan = release.stage(github, registry, policy, local)
     assert plan is not None
@@ -939,9 +1041,8 @@ def test_predeploy_intervening_alias_stops_before_deploy(
     monkeypatch.setattr(release, "Registry", lambda: registry)
     monkeypatch.setattr(release, "Vercel", lambda _: vercel)
     monkeypatch.setenv("WORKER_RELEASE_ENABLED", "true")
-    monkeypatch.setenv("CI", "true")
+    monkeypatch.delenv("CI", raising=False)
     assert release.main(["predeploy"]) == 1
-    assert not github.dispatched
     assert "latest" not in registry.writes
 
 
@@ -1138,3 +1239,46 @@ def test_untrusted_workflow_refused(override: dict) -> None:
     with pytest.raises(ValueError):
         release.stage(github, registry, policy, local)
     assert not registry.writes
+
+
+@pytest.mark.parametrize("project", ["expected", "other"])
+def test_vercel_cli_observes_actual_ready_project(
+    monkeypatch: pytest.MonkeyPatch, project: str
+) -> None:
+    """Authenticated CLI observations must bind the production alias to its project.
+
+    Args:
+        monkeypatch: Replace only the external authenticated CLI transport.
+        project: Observed deployment project.
+    """
+
+    def response(args: list[str], data: bytes | None = None) -> bytes:
+        """Return the actual Vercel endpoint response contracts.
+
+        Args:
+            args: CLI request.
+            data: Optional request body.
+
+        Returns:
+            JSON response bytes.
+        """
+        if args[2].startswith("/v4/aliases/"):
+            return json.dumps({"deployment": {"id": "dpl-test"}}).encode()
+        return json.dumps(
+            {
+                "id": "dpl-test",
+                "projectId": project,
+                "readyState": "READY",
+                "target": "production",
+            }
+        ).encode()
+
+    monkeypatch.setattr(release, "command", response)
+    adapter = release.Vercel(
+        {"alias": "example.com", "team_id": "team", "project_id": "expected"}
+    )
+    if project == "other":
+        with pytest.raises(ValueError):
+            adapter.production()
+    else:
+        assert adapter.production()["id"] == "dpl-test"
