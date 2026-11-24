@@ -1373,9 +1373,20 @@ def test_list_pending_submissions_filters_terminal_decisions(outcome: str) -> No
     ]
 
     _store_decision(api=api, decision=_decision_for(reviewer=reviewer, outcome=outcome))
+    api.tree_prefixes.clear()
 
     assert reviewer.list_pending_submissions() == []
+    decision_listings = [
+        prefix
+        for prefix in api.tree_prefixes
+        if prefix.startswith("volunteer/decisions")
+    ]
+    assert decision_listings == ["volunteer/decisions"]
     assert len(reviewer.list_submissions()) == 1
+
+    api.tree_prefixes.clear()
+    reviewer.show(submission_id=SUBMISSION)
+    assert f"volunteer/decisions/{SUBMISSION}" in api.tree_prefixes
 
 
 def test_malformed_decision_remains_pending() -> None:

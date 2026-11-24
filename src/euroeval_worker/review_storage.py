@@ -126,7 +126,7 @@ class BucketStore:
                 )
             except (EntryNotFoundError, FileNotFoundError) as error:
                 raise ReviewError(
-                    f"Bucket object is missing: {bucket}/{paths[0]}"
+                    f"Requested bucket object is missing in download batch: {bucket}"
                 ) from error
             result: dict[str, bytes] = {}
             for path, target in targets:
