@@ -1292,7 +1292,9 @@ def test_inventory_batches_manifests_and_lists_decisions_once() -> None:
     )
     manifest = json.loads(api.files[(STAGING, manifest_path)])
     manifest["submission_id"] = "submission-two"
-    _store_manifest(api, manifest)
+    api.files[(STAGING, "volunteer/manifests/submission-two.json")] = json.dumps(
+        manifest
+    ).encode()
     api.download_batches.clear()
     api.tree_prefixes.clear()
 
@@ -1309,7 +1311,9 @@ def test_inventory_batches_manifests_and_lists_decisions_once() -> None:
     assert api.tree_prefixes.count("volunteer/decisions") == 1
 
     manifest["submission_id"] = "submission-three"
-    _store_manifest(api, manifest)
+    api.files[(STAGING, "volunteer/manifests/submission-three.json")] = json.dumps(
+        manifest
+    ).encode()
     api.download_batches.clear()
     api.tree_prefixes.clear()
     assert {summary[0] for summary in reviewer.list_pending_submissions()} == {
