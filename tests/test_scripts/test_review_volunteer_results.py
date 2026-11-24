@@ -162,6 +162,7 @@ def test_model_actions_cover_all_languages(
     report: ReviewReport,
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,
+    capsys: pytest.CaptureFixture[str],
     action: str,
 ) -> None:
     """One model decision covers every pending language, with no IDs in the box."""
@@ -203,6 +204,10 @@ def test_model_actions_cover_all_languages(
     assert "da, ro" in "\n".join(lines)
     assert "submission with spaces" not in "\n".join(lines)
     assert "#12" not in "\n".join(lines)
+    progress_output = capsys.readouterr().err
+    assert "Loading model" in progress_output
+    assert "1/2" in progress_output
+    assert "2/2" in progress_output
 
 
 def test_muted_status_colours_and_opt_out(monkeypatch: pytest.MonkeyPatch) -> None:

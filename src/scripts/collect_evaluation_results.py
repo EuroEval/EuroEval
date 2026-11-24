@@ -52,6 +52,7 @@ from review_volunteer_results import (
     show_and_render,
 )
 from review_volunteer_results import main as run_review_command
+from tqdm.auto import tqdm
 
 from euroeval_worker.review import (
     PublicStagingError,
@@ -532,8 +533,13 @@ def preflight_volunteer_review() -> bool:
         return False
     for group in groups:
         try:
-            logger.info("Loading next model (%s submitted languages).", len(group))
-            reports = [reviewer.show(submission_id=sid) for sid in group]
+            reports: list[ReviewReport] = []
+            with tqdm(
+                total=len(group), desc="Loading model", unit="language", mininterval=0
+            ) as progress:
+                for submission_id in group:
+                    reports.append(reviewer.show(submission_id=submission_id))
+                    progress.update(1)
             if len({r.model_id for r in reports}) != 1:
                 logger.error("Model changed; inspect the submissions again.")
                 review_error = True
