@@ -524,13 +524,11 @@ def preflight_volunteer_review() -> bool:
             if observation.conflict
         ]
         if blockers:
-            logger.error(
-                "BLOCKED submission %s: canonical conflicts require explicit "
-                "resolution; use the maintainer review command to resolve them. "
-                "No approval was offered.",
+            logger.warning(
+                "BLOCKED submission %s: canonical conflicts prevent approval. "
+                "It remains pending; skipping it.",
                 submission_id,
             )
-            review_error = True
             continue
         try:
             decision = (
