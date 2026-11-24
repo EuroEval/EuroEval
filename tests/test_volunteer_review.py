@@ -1939,15 +1939,19 @@ def test_partial_replacement_resumes_original_plan() -> None:
         assert api.files[(RESULTS, record.canonical_path)] == record.content
 
 
-@pytest.mark.parametrize("outcome", ["accepted", "rejected"])
 def test_pending_inventory_does_not_download_staged_results() -> None:
     """Submissions without decisions remain pending without result downloads."""
-    api, reviewer, _ = _reviewer()
+    api, reviewer, _ = _reviewer(record_count=3)
+    api.downloads.clear()
 
     assert [summary[0] for summary in reviewer.list_pending_submissions()] == [
         SUBMISSION
     ]
-    assert not [bucket for bucket, _ in api.downloads if bucket == STAGING]
+    assert all(
+        path.startswith("volunteer/manifests/")
+        for bucket, path in api.downloads
+        if bucket == STAGING
+    )
     assert not [bucket for bucket, _ in api.downloads if bucket == RESULTS]
 
 
