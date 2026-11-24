@@ -74,10 +74,22 @@ jobs:
         env:
           IMAGE: ${{ steps.meta.outputs.tags }}
         run: |
+          set -euo pipefail
           test "$(docker image inspect "$IMAGE" --format '{{.Config.User}}')" = "worker"
           test "$(docker run --rm --entrypoint id "$IMAGE" -u)" = "10001"
           docker run --rm --entrypoint nvcc "$IMAGE" --version
           docker run --rm "$IMAGE" --version
+          CACHE="$(mktemp -d)"
+          chmod 0555 "$CACHE"
+          trap 'chmod 0700 "$CACHE"; rmdir "$CACHE"' EXIT
+          docker run --rm --network=none --read-only \
+            --tmpfs /tmp:rw,noexec,nosuid,size=64m \
+            --cap-drop=ALL --security-opt=no-new-privileges \
+            -e NVIDIA_VISIBLE_DEVICES=void \
+            --mount "type=bind,source=$CACHE,target=/cache,readonly" \
+            "$IMAGE" --state-dir /cache --inspect-state |
+            jq -e '.schema_version == "volunteer-worker-state/v1"
+              and .active == false and .finalised == false'
 
   arm64:
     name: Build arm64 worker image
@@ -122,10 +134,22 @@ jobs:
         env:
           IMAGE: ${{ steps.meta.outputs.tags }}
         run: |
+          set -euo pipefail
           test "$(docker image inspect "$IMAGE" --format '{{.Config.User}}')" = "worker"
           test "$(docker run --rm --entrypoint id "$IMAGE" -u)" = "10001"
           docker run --rm --entrypoint nvcc "$IMAGE" --version
           docker run --rm "$IMAGE" --version
+          CACHE="$(mktemp -d)"
+          chmod 0555 "$CACHE"
+          trap 'chmod 0700 "$CACHE"; rmdir "$CACHE"' EXIT
+          docker run --rm --network=none --read-only \
+            --tmpfs /tmp:rw,noexec,nosuid,size=64m \
+            --cap-drop=ALL --security-opt=no-new-privileges \
+            -e NVIDIA_VISIBLE_DEVICES=void \
+            --mount "type=bind,source=$CACHE,target=/cache,readonly" \
+            "$IMAGE" --state-dir /cache --inspect-state |
+            jq -e '.schema_version == "volunteer-worker-state/v1"
+              and .active == false and .finalised == false'
 
   publish:
     name: Publish multi-architecture image

@@ -30,7 +30,6 @@ def main(argv: list[str] | None = None) -> int:
         return _run_gpu_health_check()
     from .broker import BrokerClient, BrokerError  # noqa: PLC0415
     from .hardware import NoGpuError  # noqa: PLC0415
-    from .runtime import Worker  # noqa: PLC0415
     from .state import StateStore, default_state_dir  # noqa: PLC0415
 
     try:
@@ -58,6 +57,9 @@ def main(argv: list[str] | None = None) -> int:
                 )
             )
             return 0
+        # Runtime imports initialise PyTorch caches; inspection must stay read-only.
+        from .runtime import Worker  # noqa: PLC0415
+
         return (
             Worker(
                 client=BrokerClient(server=arguments.server),
