@@ -911,8 +911,21 @@ class VolunteerReviewer:
         """Independently load and validate a staged submission.
 
         Args:
-                    submission_id:
-                        Submission id.
+            submission_id: Submission ID.
+
+        Returns:
+            The validated submission report.
+        """
+        return self._show(submission_id=submission_id)
+
+    def _show(
+        self, submission_id: str, decision_paths: list[str] | None = None
+    ) -> ReviewReport:
+        """Independently load and validate a staged submission.
+
+        Args:
+            submission_id: Submission ID.
+            decision_paths (optional): Decision paths already listed for this call.
 
         Returns:
                     The validated submission report.
@@ -937,7 +950,10 @@ class VolunteerReviewer:
         )
         try:
             decisions = _existing_decisions(
-                store=self.store, report=report, outcome=None
+                store=self.store,
+                report=report,
+                outcome=None,
+                decision_paths=decision_paths,
             )
             if decisions:
                 decision = _load_object(
@@ -1146,9 +1162,14 @@ class VolunteerReviewer:
                 else self.store.list_decisions(submission_id)
             ):
                 return False
-            report = self.show(submission_id=submission_id)
+            report = self._show(
+                submission_id=submission_id, decision_paths=decision_paths
+            )
             decisions = _existing_decisions(
-                store=self.store, report=report, outcome=None
+                store=self.store,
+                report=report,
+                outcome=None,
+                decision_paths=decision_paths,
             )
         except ReviewError as error:
             logger.warning(
@@ -1359,7 +1380,10 @@ def _decision_path(submission_id: str, digest: str) -> str:
 
 
 def _existing_decisions(
-    store: BucketStore, report: ReviewReport, outcome: str | None
+    store: BucketStore,
+    report: ReviewReport,
+    outcome: str | None,
+    decision_paths: list[str] | None = None,
 ) -> list[tuple[str, bytes, str]]:
     """Load and validate every durable decision for a submission.
 
@@ -1370,6 +1394,7 @@ def _existing_decisions(
                 Report.
             outcome:
                 Outcome.
+            decision_paths (optional): Previously listed paths, or fresh discovery.
 
     Returns:
             Validated paths, bytes, and SHA256 digests.
@@ -1379,7 +1404,12 @@ def _existing_decisions(
                 If an artifact is malformed, conflicting, or misplaced.
     """
     decisions: list[tuple[str, bytes, str]] = []
-    for path in store.list_decisions(report.submission_id):
+    paths = (
+        decision_paths
+        if decision_paths is not None
+        else store.list_decisions(report.submission_id)
+    )
+    for path in paths:
         content = store.read(store.staging_bucket, path)
         decision = _load_object(content=content, context=path)
         _validate_existing_decision(

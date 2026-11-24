@@ -1306,7 +1306,7 @@ def test_inventory_batches_manifests_and_lists_decisions_once() -> None:
     ]
     assert len(manifest_batches) == 1
     assert len(manifest_batches[0]) == 2
-    assert api.tree_prefixes.count("volunteer/decisions/") == 1
+    assert api.tree_prefixes.count("volunteer/decisions") == 1
 
     manifest["submission_id"] = "submission-three"
     _store_manifest(api, manifest)
@@ -1317,7 +1317,7 @@ def test_inventory_batches_manifests_and_lists_decisions_once() -> None:
         "submission-two",
         "submission-three",
     }
-    assert api.tree_prefixes.count("volunteer/decisions/") == 1
+    assert api.tree_prefixes.count("volunteer/decisions") == 1
 
 
 def test_legacy_decision_cannot_adopt_a_new_replacement_plan() -> None:
