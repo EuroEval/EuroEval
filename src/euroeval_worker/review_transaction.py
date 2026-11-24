@@ -1140,6 +1140,34 @@ class VolunteerReviewer:
         with publisher.session() as session:
             yield session
 
+    def group_submissions_by_model(self, submission_ids: list[str]) -> list[list[str]]:
+        """Group submission IDs using manifest headers, without loading result evidence.
+
+        Args:
+            submission_ids: Pending submissions to organise for interactive review.
+
+        Returns:
+            Groups in first-seen model order, preserving submission order.
+
+        Raises:
+            ReviewError: If a manifest header has an invalid identity or model.
+        """
+        paths = [f"{_MANIFEST_PREFIX}/{sid}.json" for sid in submission_ids]
+        contents = self.store.read_many(bucket=self.store.staging_bucket, paths=paths)
+        groups: dict[str, list[str]] = {}
+        for submission_id, path in zip(submission_ids, paths, strict=True):
+            manifest = _load_object(content=contents[path], context=path)
+            model = manifest.get("model")
+            model_id = model.get("id") if isinstance(model, dict) else None
+            if (
+                manifest.get("submission_id") != submission_id
+                or not isinstance(model_id, str)
+                or not model_id.strip()
+            ):
+                raise ReviewError("Manifest header has an invalid submission or model")
+            groups.setdefault(model_id, []).append(submission_id)
+        return list(groups.values())
+
     def list_pending_submissions(self) -> list[tuple[str, int, str, str]]:
         """Return durable manifests without one terminal decision artifact.
 

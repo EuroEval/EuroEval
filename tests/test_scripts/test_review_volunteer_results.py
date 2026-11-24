@@ -103,6 +103,9 @@ def test_conflicting_preflight_can_be_left_pending(
 ) -> None:
     """Conflicts offer a review action rather than silently skipping."""
     reviewer = Mock(spec=VolunteerReviewer)
+    reviewer.group_submissions_by_model.side_effect = lambda submission_ids: [
+        submission_ids
+    ]
     reviewer.list_pending_submissions.return_value = [
         (report.submission_id, report.issue_number, report.contributor, report.language)
     ]
@@ -166,6 +169,9 @@ def test_model_actions_cover_all_languages(
     second = dataclasses.replace(first, submission_id="second-language", language="ro")
     reports = {r.submission_id: r for r in [first, second]}
     reviewer = Mock(spec=VolunteerReviewer)
+    reviewer.group_submissions_by_model.side_effect = lambda submission_ids: [
+        submission_ids
+    ]
     reviewer.show.side_effect = lambda **kw: reports[kw["submission_id"]]
     reviewer.list_pending_submissions.return_value = [
         (r.submission_id, 12, "alice", r.language) for r in reports.values()
@@ -256,6 +262,9 @@ def test_review_actions(
         plan_fingerprint="selected-fingerprint",
     )
     reviewer = Mock(spec=VolunteerReviewer)
+    reviewer.group_submissions_by_model.side_effect = lambda submission_ids: [
+        submission_ids
+    ]
     reviewer.list_pending_submissions.return_value = [
         (report.submission_id, 12, "alice", "da")
     ]
@@ -291,6 +300,39 @@ def test_review_actions(
         decision.assert_not_called()
 
 
+def test_stopping_first_model_does_not_inspect_later_models(
+    report: ReviewReport,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Stopping review leaves a later model's unavailable evidence untouched."""
+    reviewer = Mock(spec=VolunteerReviewer)
+    reviewer.list_pending_submissions.return_value = [
+        (report.submission_id, 12, "alice", "da"),
+        ("unavailable-model", 13, "alice", "ro"),
+    ]
+    reviewer.group_submissions_by_model.return_value = [
+        [report.submission_id],
+        ["unavailable-model"],
+    ]
+    reviewer.show.side_effect = [report, RuntimeError("Evidence unavailable")]
+    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
+    monkeypatch.setenv("HF_TOKEN", "test-token")
+    monkeypatch.setenv("GITHUB_ACTOR", "maintainer")
+    monkeypatch.setattr(
+        collect_evaluation_results, "reviewer_from_environment", lambda: reviewer
+    )
+    monkeypatch.setattr(
+        collect_evaluation_results, "_stdin_is_interactive", lambda: True
+    )
+    monkeypatch.setattr("builtins.input", Mock(side_effect=["y", "q"]))
+    decision = Mock()
+    monkeypatch.setattr(collect_evaluation_results, "run_review_command", decision)
+    assert collect_evaluation_results.preflight_volunteer_review() is False
+    assert not any(r.levelno >= logging.ERROR for r in caplog.records)
+    decision.assert_not_called()
+
+
 @pytest.mark.parametrize("long_values", [False, True])
 def test_summary_fits_five_lines(
     report: ReviewReport, caplog: pytest.LogCaptureFixture, long_values: bool
@@ -299,6 +341,9 @@ def test_summary_fits_five_lines(
     if long_values:
         report = dataclasses.replace(report, model_id="model" * 100)
     reviewer = Mock(spec=VolunteerReviewer)
+    reviewer.group_submissions_by_model.side_effect = lambda submission_ids: [
+        submission_ids
+    ]
     reviewer.show.return_value = report
     caplog.set_level("INFO")
     review_volunteer_results.show_and_render(
@@ -321,6 +366,9 @@ def test_verbose_cli_retains_audit_evidence(
 ) -> None:
     """The public CLI exposes digests, checks and provenance on request."""
     reviewer = Mock(spec=VolunteerReviewer)
+    reviewer.group_submissions_by_model.side_effect = lambda submission_ids: [
+        submission_ids
+    ]
     reviewer.show.return_value = report
     monkeypatch.setattr(
         review_volunteer_results, "reviewer_from_environment", lambda: reviewer

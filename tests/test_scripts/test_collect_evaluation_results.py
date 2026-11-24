@@ -513,6 +513,17 @@ class PreflightReviewer:
         """
         raise AssertionError("preflight must not decide")
 
+    def group_submissions_by_model(self, submission_ids: list[str]) -> list[list[str]]:
+        """Group this fixture's distinct models without inspecting their records.
+
+        Args:
+            submission_ids: Pending submissions.
+
+        Returns:
+            One group for each distinct model in this fixture.
+        """
+        return [[sid] for sid in submission_ids]
+
     def list_pending_submissions(self) -> list[tuple[str, int, str, str]]:
         """Return one deliberately oddly quoted submission ID.
 

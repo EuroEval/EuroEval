@@ -52,7 +52,6 @@ from review_volunteer_results import (
     show_and_render,
 )
 from review_volunteer_results import main as run_review_command
-from tqdm.auto import tqdm
 
 from euroeval_worker.review import (
     PublicStagingError,
@@ -523,25 +522,23 @@ def preflight_volunteer_review() -> bool:
         return False
 
     review_error = False
-    groups: dict[str, list[ReviewReport]] = {}
     try:
-        with tqdm(
-            submission_ids, desc="Preparing model reviews", unit="submission"
-        ) as progress:
-            for submission_id in progress:
-                try:
-                    report = reviewer.show(submission_id=submission_id)
-                    groups.setdefault(report.model_id, []).append(report)
-                    progress.set_postfix_str(report.language)
-                except Exception:
-                    logger.exception("Could not inspect submission %s.", submission_id)
-                    review_error = True
+        groups = reviewer.group_submissions_by_model(submission_ids=submission_ids)
     except (EOFError, KeyboardInterrupt):
-        logger.warning("Review preparation cancelled; nothing collected.")
+        logger.warning("Review cancelled; nothing collected.")
         return False
-    for reports in groups.values():
-        render_model_review(reports=reports)
+    except Exception:
+        logger.exception("Could not group pending submissions; collection stopped.")
+        return False
+    for group in groups:
         try:
+            logger.info("Loading next model (%s submitted languages).", len(group))
+            reports = [reviewer.show(submission_id=sid) for sid in group]
+            if len({r.model_id for r in reports}) != 1:
+                logger.error("Model changed; inspect the submissions again.")
+                review_error = True
+                continue
+            render_model_review(reports=reports)
             commands = _review_model_commands(
                 reviewer=reviewer, reviewer_login=reviewer_login, reports=reports
             )

@@ -1204,6 +1204,43 @@ def test_failure_count_manifest_claim_must_match_staged_record() -> None:
         reviewer.show(SUBMISSION)
 
 
+def test_grouping_uses_only_headers_before_model_review() -> None:
+    """Grouping works without downloading or validating any staged result bytes."""
+    api, reviewer, _ = _reviewer()
+    manifest = _manifest(api=api)
+    other = dict(manifest, submission_id="other-language", language="ro")
+    third = dict(manifest, submission_id="other-model", model={"id": "another/model"})
+    api.files[(STAGING, "volunteer/manifests/other-language.json")] = json.dumps(
+        other
+    ).encode()
+    api.files[(STAGING, "volunteer/manifests/other-model.json")] = json.dumps(
+        third
+    ).encode()
+    for key in list(api.files):
+        if "/results/" in key[1]:
+            del api.files[key]
+    api.download_batches.clear()
+    assert reviewer.group_submissions_by_model(
+        submission_ids=[SUBMISSION, "other-model", "other-language"]
+    ) == [[SUBMISSION, "other-language"], ["other-model"]]
+    assert all(
+        "/manifests/" in path for batch in api.download_batches for _, path in batch
+    )
+
+
+def _manifest(api: FakeHfApi) -> dict[str, object]:
+    """Manifest for this test.
+
+    Args:
+        api:
+            Api supplied to the test.
+
+    Returns:
+        The value returned by the test helper.
+    """
+    return json.loads(api.files[(STAGING, f"volunteer/manifests/{SUBMISSION}.json")])
+
+
 @pytest.mark.parametrize(
     ("body", "expected"),
     [
@@ -1446,19 +1483,6 @@ def test_inventory_verifies_in_batches_of_at_most_ten() -> None:
     api.download_batches.clear()
     assert len(reviewer.list_pending_submissions()) == 25
     assert [len(batch) for batch in api.download_batches] == [10, 10, 5]
-
-
-def _manifest(api: FakeHfApi) -> dict[str, object]:
-    """Manifest for this test.
-
-    Args:
-        api:
-            Api supplied to the test.
-
-    Returns:
-        The value returned by the test helper.
-    """
-    return json.loads(api.files[(STAGING, f"volunteer/manifests/{SUBMISSION}.json")])
 
 
 def test_legacy_decision_cannot_adopt_a_new_replacement_plan() -> None:
