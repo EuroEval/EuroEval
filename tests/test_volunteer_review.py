@@ -75,6 +75,7 @@ class FakeHfApi:
         self.fail_decision_upload = False
         self.fail_predecessor_upload = False
         self.result_uploads = 0
+        self.downloads: list[tuple[str, str]] = []
         self.decision_upload_barrier: threading.Barrier | None = None
 
     def batch_bucket_files(
@@ -160,6 +161,7 @@ class FakeHfApi:
                 If a requested object is absent.
         """
         for remote, local in files:
+            self.downloads.append((bucket_id, remote))
             content = self.files.get((bucket_id, remote))
             if content is None:
                 if raise_on_missing_files:
@@ -1935,6 +1937,22 @@ def test_partial_replacement_resumes_original_plan() -> None:
             == old
         )
         assert api.files[(RESULTS, record.canonical_path)] == record.content
+
+
+def test_pending_inventory_does_not_download_staged_results() -> None:
+    """Submissions without decisions remain pending without result downloads."""
+    api, reviewer, _ = _reviewer(record_count=3)
+    api.downloads.clear()
+
+    assert [summary[0] for summary in reviewer.list_pending_submissions()] == [
+        SUBMISSION
+    ]
+    assert all(
+        path.startswith("volunteer/manifests/")
+        for bucket, path in api.downloads
+        if bucket == STAGING
+    )
+    assert not [bucket for bucket, _ in api.downloads if bucket == RESULTS]
 
 
 @pytest.mark.parametrize(

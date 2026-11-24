@@ -1124,6 +1124,8 @@ class VolunteerReviewer:
             exists; ``False`` for missing or invalid terminal state.
         """
         try:
+            if not self.store.list_decisions(submission_id):
+                return False
             report = self.show(submission_id=submission_id)
             decisions = _existing_decisions(
                 store=self.store, report=report, outcome=None
