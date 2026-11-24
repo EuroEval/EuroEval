@@ -7,6 +7,7 @@ import logging
 from unittest.mock import Mock
 
 import pytest
+from click import style
 from click.testing import CliRunner
 
 from euroeval_worker.review import VolunteerReviewer
@@ -305,6 +306,96 @@ def test_review_actions(
         decision.assert_not_called()
 
 
+@pytest.mark.parametrize("no_colour", [False, True])
+@pytest.mark.parametrize("expected_count", [1, 2])
+@pytest.mark.parametrize("failed", [0, 10])
+def test_review_colours_are_visible_before_deciding(
+    report: ReviewReport,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    no_colour: bool,
+    failed: int,
+    expected_count: int,
+) -> None:
+    """The summary and action menu show muted statuses before any decision occurs."""
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    monkeypatch.setattr(collect_evaluation_results.sys.stderr, "isatty", lambda: True)
+    monkeypatch.setattr(score_extraction, "dataset_sources", lambda: {"task": "source"})
+    monkeypatch.setattr(
+        score_extraction, "get_split_sizes", lambda source: {"test": 100, "val": 100}
+    )
+    data = {
+        "eval_library": {"additional_details": {"raw_results": "[{}]"}},
+        "evaluation_results": [
+            {"score_details": {"details": {"num_failed_instances": str(failed)}}}
+        ],
+    }
+    record = dataclasses.replace(report.records[0], content=json.dumps(data).encode())
+    report = dataclasses.replace(report, records=(record,), canonical_observations=())
+    if expected_count == 2:
+        report = dataclasses.replace(
+            report,
+            expected_identities=(
+                *report.expected_identities,
+                ("model", "other-task", True, True),
+            ),
+        )
+    reviewer = Mock(spec=VolunteerReviewer)
+    reviewer.list_pending_submissions.return_value = [
+        (report.submission_id, 12, "alice", "da")
+    ]
+    reviewer.group_submissions_by_model.return_value = [[report.submission_id]]
+    reviewer.show.return_value = report
+    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
+    monkeypatch.setenv("HF_TOKEN", "test-token")
+    monkeypatch.setenv("GITHUB_ACTOR", "maintainer")
+    monkeypatch.setattr(
+        collect_evaluation_results, "reviewer_from_environment", lambda: reviewer
+    )
+    monkeypatch.setattr(
+        collect_evaluation_results, "_stdin_is_interactive", lambda: True
+    )
+    prompt = Mock(side_effect=["y", "s"])
+    monkeypatch.setattr("builtins.input", prompt)
+    stream = io.StringIO()
+    handler = logging.StreamHandler(stream)
+    root = logging.getLogger()
+    root.addHandler(handler)
+    caplog.set_level("INFO")
+    try:
+        collect_evaluation_results.configure_colours(no_colour=no_colour)
+        assert collect_evaluation_results.preflight_volunteer_review()
+        menu = prompt.call_args.args[0]
+        if no_colour:
+            assert "\x1b[" not in stream.getvalue()
+            assert "\x1b[" not in menu
+        else:
+            assert ("\x1b[31m" if failed else "\x1b[32m") in stream.getvalue()
+            assert (
+                style(
+                    f"1/{expected_count} dataset results",
+                    fg="green" if expected_count == 1 else "red",
+                    dim=True,
+                )
+                in stream.getvalue()
+            )
+            assert (
+                style(
+                    f"{int(failed > 0)} datasets with ≥10% failures",
+                    fg="red" if failed else "green",
+                    dim=True,
+                )
+                in stream.getvalue()
+            )
+            assert "\x1b[32m" in menu and "\x1b[31m" in menu
+            assert "\x1b[2m" in menu
+            assert "\x1b[91m" not in menu and "\x1b[92m" not in menu
+        reviewer.decide.assert_not_called()
+    finally:
+        root.removeHandler(handler)
+        collect_evaluation_results.configure_colours(no_colour=True)
+
+
 def test_stopping_first_model_does_not_inspect_later_models(
     report: ReviewReport,
     monkeypatch: pytest.MonkeyPatch,
@@ -357,7 +448,7 @@ def test_summary_fits_five_lines(
     lines = [record.getMessage() for record in caplog.records]
     assert len(lines) == 5
     assert all(len(line) <= 120 for line in lines)
-    assert "1 dataset results" in caplog.text
+    assert "1/1 dataset results" in caplog.text
     assert "Approve replaces 1" in caplog.text
     assert "submitted-digest" not in caplog.text
     assert "test_f1" not in caplog.text

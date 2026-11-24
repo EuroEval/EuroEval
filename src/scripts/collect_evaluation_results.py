@@ -50,6 +50,7 @@ from review_volunteer_results import (
     configure_colours,
     render_model_review,
     show_and_render,
+    style_status,
 )
 from review_volunteer_results import main as run_review_command
 from tqdm.auto import tqdm
@@ -654,8 +655,11 @@ def _review_model_commands(
     while True:
         action = (
             input(
-                "All languages: [a] Approve submitted / replace existing  "
-                "[r] Reject / keep existing  [d] Details  [s] Skip  [q] Stop: "
+                "All languages: "
+                + style_status("[a] Approve submitted / replace existing", success=True)
+                + "  "
+                + style_status("[r] Reject / keep existing", success=False)
+                + "  [d] Details  [s] Skip  [q] Stop: "
             )
             .strip()
             .lower()

@@ -185,6 +185,8 @@ def render_model_review(reports: list[ReviewReport]) -> None:
     languages = ", ".join(sorted({r.language for r in reports}))
     contributors = ", ".join(sorted({r.contributor for r in reports}))
     versions = ", ".join(sorted({r.euroeval_version for r in reports}))
+    expected = sum(len(report.expected_identities) for report in reports)
+    dataset_text = f"{len(records)}/{expected} dataset results"
     failure_text = f"{len(flagged)} datasets with ≥10% failures"
     if unknown:
         failure_text += f" ({len(unknown)} unknown)"
@@ -195,7 +197,7 @@ def render_model_review(reports: list[ReviewReport]) -> None:
     )
     lines = [
         f"{reports[0].model_id} | Languages: {languages}",
-        f"{contributors} | EuroEval {versions} | {len(records)} dataset results",
+        f"{contributors} | EuroEval {versions} | {dataset_text}",
         f"{failure_text} | {existing}",
     ]
     width = max(36, min(120, shutil.get_terminal_size().columns)) - 4
@@ -203,12 +205,32 @@ def render_model_review(reports: list[ReviewReport]) -> None:
     for line in lines:
         clipped = line if len(line) <= width else line[: width - 1] + "…"
         padded = f"{clipped:<{width}}"
-        if _USE_COLOUR and flagged and failure_text in padded:
+        if dataset_text in padded:
             padded = padded.replace(
-                failure_text, click.style(failure_text, fg="red", dim=True)
+                dataset_text,
+                style_status(dataset_text, success=len(records) == expected),
+            )
+        if failure_text in padded:
+            padded = padded.replace(
+                failure_text, style_status(failure_text, success=not flagged)
             )
         logger.info("│ %s │", padded)
     logger.info("└%s┘", "─" * (width + 2))
+
+
+def style_status(text: str, *, success: bool) -> str:
+    """Apply muted green or red when terminal colours are enabled.
+
+    Args:
+        text: Visible status or action text.
+        success: Use green for success, red for failure.
+
+    Returns:
+        Styled text, or unchanged text when colours are disabled.
+    """
+    if not _USE_COLOUR:
+        return text
+    return click.style(text, fg="green" if success else "red", dim=True)
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -313,9 +335,9 @@ class _ReviewFormatter(logging.Formatter):
         if not _USE_COLOUR:
             return message
         if record.levelno >= logging.ERROR:
-            return click.style(message, fg="red", dim=True)
+            return style_status(message, success=False)
         if getattr(record, "review_success", False):
-            return click.style(message, fg="green", dim=True)
+            return style_status(message, success=True)
         return message
 
 
