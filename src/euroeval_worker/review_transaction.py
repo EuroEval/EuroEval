@@ -911,8 +911,21 @@ class VolunteerReviewer:
         """Independently load and validate a staged submission.
 
         Args:
-                    submission_id:
-                        Submission id.
+            submission_id: Submission ID.
+
+        Returns:
+            The validated submission report.
+        """
+        return self._show(submission_id=submission_id)
+
+    def _show(
+        self, submission_id: str, decision_paths: list[str] | None = None
+    ) -> ReviewReport:
+        """Independently load and validate a staged submission.
+
+        Args:
+            submission_id: Submission ID.
+            decision_paths (optional): Decision paths already listed for this call.
 
         Returns:
                     The validated submission report.
@@ -937,7 +950,10 @@ class VolunteerReviewer:
         )
         try:
             decisions = _existing_decisions(
-                store=self.store, report=report, outcome=None
+                store=self.store,
+                report=report,
+                outcome=None,
+                decision_paths=decision_paths,
             )
             if decisions:
                 decision = _load_object(
@@ -1101,34 +1117,59 @@ class VolunteerReviewer:
             Submission ID, issue, contributor, and language summaries.
         """
         summaries = self._list_submission_summaries()
+        decision_paths = self.store.list_all_decisions()
+        decisions_by_submission: dict[str, list[str]] = {}
+        prefix = "volunteer/decisions/"
+        for path in decision_paths:
+            remainder = path[len(prefix) :]
+            submission_id = remainder.split("/", 1)[0].removesuffix(".json")
+            if submission_id:
+                decisions_by_submission.setdefault(submission_id, []).append(path)
         pending: list[tuple[str, int, str, str]] = []
         with tqdm(
             summaries, desc="Checking volunteer submissions", unit="submission"
         ) as progress:
             for summary in progress:
                 if not self._has_terminal_decision(
-                    submission_id=summary[0], issue_number=summary[1]
+                    submission_id=summary[0],
+                    issue_number=summary[1],
+                    decision_paths=decisions_by_submission.get(summary[0], []),
                 ):
                     pending.append(summary)
         return pending
 
-    def _has_terminal_decision(self, submission_id: str, issue_number: int) -> bool:
+    def _has_terminal_decision(
+        self,
+        submission_id: str,
+        issue_number: int,
+        decision_paths: list[str] | None = None,
+    ) -> bool:
         """Return whether decision objects resolve to one terminal outcome.
 
         Args:
             submission_id: Submission whose durable decision objects are checked.
             issue_number: Issue number expected in its validated manifest.
+            decision_paths (optional): Inventory paths already listed for this call.
 
         Returns:
             ``True`` if validation succeeds and at least one consistent decision
             exists; ``False`` for missing or invalid terminal state.
         """
         try:
-            if not self.store.list_decisions(submission_id):
+            if not (
+                decision_paths
+                if decision_paths is not None
+                else self.store.list_decisions(submission_id)
+            ):
                 return False
-            report = self.show(submission_id=submission_id)
+            report = self._show(
+                submission_id=submission_id, decision_paths=decision_paths
+            )
             decisions = _existing_decisions(
-                store=self.store, report=report, outcome=None
+                store=self.store,
+                report=report,
+                outcome=None,
+                decision_paths=decision_paths,
             )
         except ReviewError as error:
             logger.warning(
@@ -1188,15 +1229,13 @@ class VolunteerReviewer:
             Submission ID, issue, contributor, and language summaries.
         """
         paths = self.store.list_manifests()
+        contents = self.store.read_many(self.store.staging_bucket, paths)
         summaries: list[tuple[str, int, str, str]] = []
         with tqdm(
             paths, desc="Loading volunteer manifests", unit="manifest"
         ) as progress:
             for path in progress:
-                manifest = _load_object(
-                    content=self.store.read(self.store.staging_bucket, path),
-                    context=path,
-                )
+                manifest = _load_object(content=contents[path], context=path)
                 summaries.append(_manifest_summary(manifest))
         return summaries
 
@@ -1341,7 +1380,10 @@ def _decision_path(submission_id: str, digest: str) -> str:
 
 
 def _existing_decisions(
-    store: BucketStore, report: ReviewReport, outcome: str | None
+    store: BucketStore,
+    report: ReviewReport,
+    outcome: str | None,
+    decision_paths: list[str] | None = None,
 ) -> list[tuple[str, bytes, str]]:
     """Load and validate every durable decision for a submission.
 
@@ -1352,6 +1394,7 @@ def _existing_decisions(
                 Report.
             outcome:
                 Outcome.
+            decision_paths (optional): Previously listed paths, or fresh discovery.
 
     Returns:
             Validated paths, bytes, and SHA256 digests.
@@ -1361,7 +1404,12 @@ def _existing_decisions(
                 If an artifact is malformed, conflicting, or misplaced.
     """
     decisions: list[tuple[str, bytes, str]] = []
-    for path in store.list_decisions(report.submission_id):
+    paths = (
+        decision_paths
+        if decision_paths is not None
+        else store.list_decisions(report.submission_id)
+    )
+    for path in paths:
         content = store.read(store.staging_bucket, path)
         decision = _load_object(content=content, context=path)
         _validate_existing_decision(

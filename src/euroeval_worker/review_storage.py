@@ -6,6 +6,8 @@ import hashlib
 import tempfile
 from pathlib import Path
 
+from huggingface_hub.errors import EntryNotFoundError
+
 from .review_models import BucketApi, PublicStagingError, ReviewError
 
 _MANIFEST_PREFIX = "volunteer/manifests"
@@ -36,6 +38,26 @@ class BucketStore:
         info = self.api.bucket_info(staging_bucket, token=token)
         if not info.private:
             raise PublicStagingError("HF_STAGING_BUCKET must be private")
+
+    def list_all_decisions(self) -> list[str]:
+        """List all legacy and content-addressed decision objects once.
+
+        Returns:
+            Sorted decision object paths.
+        """
+        entries = self.api.list_bucket_tree(
+            self.staging_bucket,
+            prefix=_DECISION_PREFIX,
+            recursive=True,
+            token=self.token,
+        )
+        return sorted(
+            entry.path
+            for entry in entries
+            if getattr(entry, "type", None) == "file"
+            and entry.path.startswith(f"{_DECISION_PREFIX}/")
+            and entry.path.endswith(".json")
+        )
 
     def list_decisions(self, submission_id: str) -> list[str]:
         """List all legacy and content-addressed decision objects.
@@ -77,6 +99,42 @@ class BucketStore:
             for entry in entries
             if getattr(entry, "type", None) == "file" and entry.path.endswith(".json")
         )
+
+    def read_many(self, bucket: str, paths: list[str]) -> dict[str, bytes]:
+        """Download exact objects in one SDK call, rejecting unsafe destinations.
+
+        Args:
+            bucket: Bucket containing the objects.
+            paths: Exact bucket paths to download.
+
+        Returns:
+            Mapping from each requested path to its bytes.
+
+        Raises:
+            ReviewError: If any requested object is missing.
+        """
+        if not paths:
+            return {}
+        with tempfile.TemporaryDirectory(prefix="euroeval-review-") as directory:
+            root = Path(directory).resolve()
+            targets = [
+                (path, root / f"{index}.object") for index, path in enumerate(paths)
+            ]
+            try:
+                self.api.download_bucket_files(
+                    bucket, targets, raise_on_missing_files=True, token=self.token
+                )
+            except (EntryNotFoundError, FileNotFoundError) as error:
+                raise ReviewError(
+                    f"Requested bucket object is missing in download batch: {bucket}"
+                ) from error
+            result: dict[str, bytes] = {}
+            for path, target in targets:
+                resolved = target.resolve()
+                if root not in resolved.parents or not resolved.is_file():
+                    raise ReviewError(f"Bucket object is missing: {bucket}/{path}")
+                result[path] = resolved.read_bytes()
+            return result
 
     def read_optional(self, bucket: str, path: str) -> bytes | None:
         """Read an object when present.

@@ -76,6 +76,8 @@ class FakeHfApi:
         self.fail_predecessor_upload = False
         self.result_uploads = 0
         self.downloads: list[tuple[str, str]] = []
+        self.download_batches: list[list[tuple[str, str]]] = []
+        self.tree_prefixes: list[str] = []
         self.decision_upload_barrier: threading.Barrier | None = None
 
     def batch_bucket_files(
@@ -160,6 +162,7 @@ class FakeHfApi:
             FileNotFoundError:
                 If a requested object is absent.
         """
+        self.download_batches.append([(bucket_id, remote) for remote, _ in files])
         for remote, local in files:
             self.downloads.append((bucket_id, remote))
             content = self.files.get((bucket_id, remote))
@@ -229,6 +232,7 @@ class FakeHfApi:
         Returns:
             Matching in-memory file metadata.
         """
+        self.tree_prefixes.append(prefix)
         return [
             self._entry(path, content)
             for (stored_bucket, path), content in self.files.items()
@@ -1278,6 +1282,48 @@ def test_invalid_terminal_decisions_remain_pending(
     ]
 
 
+def test_inventory_batches_manifests_and_lists_decisions_once() -> None:
+    """Inventory fetches all manifests together and scans decisions once."""
+    api, reviewer, _ = _reviewer(record_count=1)
+    manifest_path = next(
+        path
+        for bucket, path in api.files
+        if bucket == STAGING and "/manifests/" in path
+    )
+    manifest = json.loads(api.files[(STAGING, manifest_path)])
+    manifest["submission_id"] = "submission-two"
+    api.files[(STAGING, "volunteer/manifests/submission-two.json")] = json.dumps(
+        manifest
+    ).encode()
+    api.download_batches.clear()
+    api.tree_prefixes.clear()
+
+    pending = reviewer.list_pending_submissions()
+
+    assert {summary[0] for summary in pending} == {SUBMISSION, "submission-two"}
+    manifest_batches = [
+        batch
+        for batch in api.download_batches
+        if batch and all("/manifests/" in path for _, path in batch)
+    ]
+    assert len(manifest_batches) == 1
+    assert len(manifest_batches[0]) == 2
+    assert api.tree_prefixes.count("volunteer/decisions") == 1
+
+    manifest["submission_id"] = "submission-three"
+    api.files[(STAGING, "volunteer/manifests/submission-three.json")] = json.dumps(
+        manifest
+    ).encode()
+    api.download_batches.clear()
+    api.tree_prefixes.clear()
+    assert {summary[0] for summary in reviewer.list_pending_submissions()} == {
+        SUBMISSION,
+        "submission-two",
+        "submission-three",
+    }
+    assert api.tree_prefixes.count("volunteer/decisions") == 1
+
+
 def test_legacy_decision_cannot_adopt_a_new_replacement_plan() -> None:
     """A legacy partial approval may resume insertion, not an unconfirmed overwrite."""
     api, reviewer, _ = _reviewer(record_count=2)
@@ -1331,9 +1377,20 @@ def test_list_pending_submissions_filters_terminal_decisions(outcome: str) -> No
     ]
 
     _store_decision(api=api, decision=_decision_for(reviewer=reviewer, outcome=outcome))
+    api.tree_prefixes.clear()
 
     assert reviewer.list_pending_submissions() == []
+    decision_listings = [
+        prefix
+        for prefix in api.tree_prefixes
+        if prefix.startswith("volunteer/decisions")
+    ]
+    assert decision_listings == ["volunteer/decisions"]
     assert len(reviewer.list_submissions()) == 1
+
+    api.tree_prefixes.clear()
+    reviewer.show(submission_id=SUBMISSION)
+    assert f"volunteer/decisions/{SUBMISSION}" in api.tree_prefixes
 
 
 def test_malformed_decision_remains_pending() -> None:
@@ -2034,6 +2091,20 @@ def test_processed_eee_validator_still_requires_all_precious_metadata() -> None:
     details.pop("commercially_licensed")
     with pytest.raises(ValueError, match="missing precious metadata"):
         validate_eee_record(record=record)
+
+
+def test_read_many_returns_exact_bytes_and_handles_empty_and_missing() -> None:
+    """Bulk reads preserve exact bytes and reject missing objects."""
+    api = FakeHfApi()
+    api.files[(STAGING, "one")] = b"\\x00exact\\xff"
+    store = BucketStore(
+        api=t.cast(BucketApi, api), token="token", staging_bucket=STAGING
+    )
+
+    assert store.read_many(bucket=STAGING, paths=["one"]) == {"one": b"\\x00exact\\xff"}
+    assert store.read_many(bucket=STAGING, paths=[]) == {}
+    with pytest.raises(ReviewError):
+        store.read_many(bucket=STAGING, paths=["missing"])
 
 
 def test_reject_is_idempotent_and_opposite_decision_fails() -> None:
