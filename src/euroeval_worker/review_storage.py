@@ -6,6 +6,8 @@ import hashlib
 import tempfile
 from pathlib import Path
 
+from huggingface_hub.errors import EntryNotFoundError
+
 from .review_models import BucketApi, PublicStagingError, ReviewError
 
 _MANIFEST_PREFIX = "volunteer/manifests"
@@ -118,9 +120,14 @@ class BucketStore:
             targets = [
                 (path, root / f"{index}.object") for index, path in enumerate(paths)
             ]
-            self.api.download_bucket_files(
-                bucket, targets, raise_on_missing_files=True, token=self.token
-            )
+            try:
+                self.api.download_bucket_files(
+                    bucket, targets, raise_on_missing_files=True, token=self.token
+                )
+            except (EntryNotFoundError, FileNotFoundError) as error:
+                raise ReviewError(
+                    f"Bucket object is missing: {bucket}/{paths[0]}"
+                ) from error
             result: dict[str, bytes] = {}
             for path, target in targets:
                 resolved = target.resolve()
