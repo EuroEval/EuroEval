@@ -165,110 +165,35 @@ def test_retry_does_not_run_build(
     assert all(args[0] == "deploy" for args in json.loads(calls_path.read_text()))
 
 
-@pytest.mark.parametrize("output_format", ["compact", "pretty", "text"])
-def test_success_records_actual_production_receipt(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, output_format: str
+def test_success_ignores_obsolete_release_state(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Record the immutable deployment, not its alias or suggested commands."""
-    calls_path = _fake_vercel(tmp_path=tmp_path, monkeypatch=monkeypatch)
-    state_path = _activate_release(tmp_path=tmp_path, monkeypatch=monkeypatch)
-    url = "https://euroeval-immutable.vercel.app"
-    response = {
-        "status": "ok",
-        "deployment": {
-            "id": "dpl_actual",
-            "url": url,
-            "productionUrl": "https://euroeval.com",
-            "readyState": "READY",
-            "target": "production",
-        },
-        "next": [{"command": "vercel inspect https://other.vercel.app"}],
-    }
-    output = (
-        f"Production: {url}"
-        if output_format == "text"
-        else json.dumps(response, indent=2 if output_format == "pretty" else None)
-    )
-    monkeypatch.setenv("SUCCESS_OUTPUT", f"Deploying...\n{output}\n" + "x" * 1200)
-
-    assert main([]) == 0
-    assert json.loads(state_path.read_text())["deployment_url"] == (
-        "euroeval-immutable.vercel.app"
-    )
-    assert len(json.loads(calls_path.read_text())) == 1
-
-
-def _activate_release(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Create a linked, opted-in checkout with a prepared release journal.
+    """Deploy without a receipt even when old activation files are malformed.
 
     Args:
         tmp_path:
-            Isolated checkout directory.
+            Temporary checkout directory.
         monkeypatch:
             Pytest environment fixture.
-
-    Returns:
-        Prepared release journal path.
     """
-    policy = {
-        "enabled": True,
-        "project_id": "prj_test",
-        "team_id": "team_test",
-        "alias": "euroeval.com",
-    }
-    policy_path = tmp_path / "src/scripts/worker-release-policy.json"
-    policy_path.parent.mkdir(parents=True)
-    policy_path.write_text(json.dumps(policy))
-    vercel_path = tmp_path / ".vercel"
-    vercel_path.mkdir()
-    (vercel_path / "project.json").write_text(
-        json.dumps({"projectId": "prj_test", "orgId": "team_test"})
-    )
-    (vercel_path / "worker-release-activation.json").write_text(
-        json.dumps(
-            {"schema": 1, **{k: policy[k] for k in ("project_id", "team_id", "alias")}}
-        )
-    )
-    state_path = vercel_path / "worker-release-state.json"
-    state_path.write_text(json.dumps({"status": "prepared"}))
+    calls_path = _fake_vercel(tmp_path=tmp_path, monkeypatch=monkeypatch)
     monkeypatch.chdir(tmp_path)
-    for key in ("CI", "GITHUB_ACTIONS", "WORKER_RELEASE_ENABLED"):
-        monkeypatch.delenv(key, raising=False)
-    return state_path
+    directory = tmp_path / ".vercel"
+    directory.mkdir()
+    for name in ("worker-release-activation.json", "worker-release-state.json"):
+        (directory / name).write_text("obsolete release state")
+
+    assert main([]) == 0
+    assert len(json.loads(calls_path.read_text())) == 1
+    assert all(
+        path.read_text() == "obsolete release state" for path in directory.iterdir()
+    )
 
 
 def test_success_runs_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Do not repeat a successful deployment."""
     calls_path = _fake_vercel(tmp_path=tmp_path, monkeypatch=monkeypatch)
     assert main([]) == 0
-    assert len(json.loads(calls_path.read_text())) == 1
-
-
-@pytest.mark.parametrize(
-    ("ready_state", "target"), [("BUILDING", "production"), ("READY", "preview")]
-)
-def test_unready_or_preview_receipt_is_not_recorded_or_retried(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, ready_state: str, target: str
-) -> None:
-    """Withhold finalisation without creating another deployment."""
-    calls_path = _fake_vercel(tmp_path=tmp_path, monkeypatch=monkeypatch)
-    state_path = _activate_release(tmp_path=tmp_path, monkeypatch=monkeypatch)
-    monkeypatch.setenv(
-        "SUCCESS_OUTPUT",
-        json.dumps(
-            {
-                "status": "ok",
-                "deployment": {
-                    "url": "https://euroeval-immutable.vercel.app",
-                    "readyState": ready_state,
-                    "target": target,
-                },
-            }
-        ),
-    )
-
-    assert main([]) == 1
-    assert "deployment_url" not in json.loads(state_path.read_text())
     assert len(json.loads(calls_path.read_text())) == 1
 
 

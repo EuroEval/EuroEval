@@ -79,7 +79,7 @@ test:  ## Run tests
 	@uv run pytest && uv run readme-cov && rm .coverage*
 
 frontend:  ## Build and deploy the frontend
-	@uv run python src/scripts/prepare_vercel_worktree.py && uv run python src/scripts/release_volunteer_worker.py prepare && uv run python src/scripts/build_vercel_frontend.py && uv run python src/scripts/verify_vercel_functions.py && uv run python src/scripts/release_volunteer_worker.py predeploy && uv run python src/scripts/deploy_vercel_frontend.py && uv run python src/scripts/release_volunteer_worker.py finish
+	@uv run python src/scripts/prepare_vercel_worktree.py && uv run python src/scripts/build_vercel_frontend.py && uv run python src/scripts/verify_vercel_functions.py && uv run python src/scripts/deploy_vercel_frontend.py
 
 sync-production-version:
 	@uv run python src/scripts/volunteer_worker_operations.py sync-production-version --version "$(version)"

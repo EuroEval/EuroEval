@@ -897,17 +897,14 @@ Never turn a preflight failure into an automatic retry or rejection.
 
 ## Image publishing and canary
 
-This is a per-release process. `.github/workflows/worker-image.yaml` builds separate
-native `linux/amd64` and `linux/arm64` candidates with locked dependencies and BuildKit
-caching. Pull requests smoke local images as UID 10001 without a GPU; they neither
-publish nor provide physical GPU acceptance. Trusted runs publish commit-SHA candidates,
-provenance, and SBOMs, verify public access anonymously, and upload metadata artifacts.
-The workflow serialises builds for the same commit and never updates `latest`.
+The image workflow builds native `linux/amd64` and `linux/arm64` images with locked
+dependencies and BuildKit caching. Pull requests smoke local images as UID 10001
+without a GPU and do not publish. Publishing runs combine both native images under
+`ghcr.io/euroeval/euroeval-worker:multiarch-sha-<full-commit-sha>` and show the digest
+in the job summary. CI does not move `latest` or deploy the website.
 
-CI, native builds for both architectures, and verified immutable image provenance
-are the release checks. Physical GPU acceptance is not required for staging or
-promotion. Combine both architecture candidates from the intended source; never
-configure an ARM-only index as the global amd64 image identity.
+There are no worker GitHub pre-releases, inventory artifacts, release activation
+markers, or release verification gates. Physical GPU diagnostics below are optional.
 
 ### Optional physical GPU diagnostics
 
@@ -1076,137 +1073,53 @@ does not expose Docker controls. Never claim an untested isolation setting. Use
 `FULL_LOG=1` to expose engine root causes. JIT/config caches must remain under `/cache`;
 do not make the root writable or `/tmp` executable to hide a cache failure.
 
-### Two-phase release automation
+### Local image deployment
 
-Automation is configured once for the linked production project. Installation does
-not activate deployment or authorise credential creation or hardware diagnostics.
-Once enabled, successful trusted CI and native image builds make a release eligible
-for staging. Physical GPU proofs and protected acceptance variables are not required.
+Select the combined image digest from the image workflow summary. Read its worker
+version with `docker run --rm IMAGE --version`. Read the installed EuroEval version
+without running a benchmark:
 
-The implemented commands in `src/scripts/release_volunteer_worker.py` are `stage`,
-`prepare`, `predeploy`, and `finish`.
-They use injectable GitHub, registry and Vercel observation adapters, not supplied
-success booleans. GitHub observations come from `gh api` in the fixed
-`EuroEval/EuroEval` repository; registry reads are anonymous and content-verified;
-index writes use `oras manifest push`. CLI errors suppress remote response bodies.
+```sh
+docker run --rm --entrypoint python IMAGE -c \
+  'from importlib.metadata import version; print(version("euroeval"))'
+```
 
-1. Trusted main CI and native candidate builds may finish in either order. The release
-   workflow serialises both completion triggers without cancellation, looks up both
-   successful push runs for the exact current main SHA, and binds inventories to the
-   image run ID, attempt, artifact ID and artifact archive digest. Fork/PR runs,
-   mismatched artifacts, stale source, and incomplete attempts are refused. Only
-   small public image metadata/inventory artifacts are downloaded.
-2. `stage` combines the verified candidate indexes, retaining every platform and
-   attestation descriptor. It records platform manifest/config identities and the
-   previous immutable release digest. It publishes an immutable
-   `worker-release-SHA-RUN-ATTEMPT` index/tag and a GitHub prerelease containing only
-   `release.json`. It does not move `latest`, build the website, or change production.
-3. The ordinary **local** `make frontend` schedule is unchanged: prepare the worktree,
-   prepare staged release configuration, refresh Production configuration/build,
-   verify functions, predeploy recheck, deploy, then verify and promote locally. It uses
-   existing local CSVs. There is no CSV archive, upload, storage or download mechanism
-   and no CI website rebuild. With automation disabled, hooks do not contact remote
-   services. With no staged pending release, they perform no configuration writes.
-4. `prepare` checks source versions and generated policy hashes, expected previous
-   release, main HEAD, existing project linkage, alias identity and config metadata.
-   Only four existing exact-Production **plain** entries may change:
-   `VOLUNTEER_WORKER_IMAGE_DIGEST`, `VOLUNTEER_WORKER_IMAGE_DIGEST_ARM64`,
-   `VOLUNTEER_WORKER_VERSION`, and `EUROEVAL_VERSION`. Both digest values receive the
-   **same combined index**. All secrets, including `HF_CANARY_TOKEN`, and unrelated
-   variables remain untouched. Shared Production/Preview or encrypted release entries
-   must be repaired manually before opting in. The existing build helper still
-   restores tracked generated policy bytes in its `finally` block.
-5. The deploy helper records the CLI's actual immutable deployment URL in the
-   nonsecret journal. `finish` resolves that receipt independently and promotes only
-   after its new READY production alias and anonymous discovery
-   match the staged plan for **both** `architecture=amd64` and `architecture=arm64`.
-   Each `/api/worker/release-info` response must match `protocol_version`,
-   `launcher_protocol_version`, `architecture`, `image_repository`, `image_digest`,
-   `image_reference`, `worker_version`, and `euroeval_version` exactly.
-6. The local finalizer independently rechecks READY deployment/project/alias identity,
-   both discovery records, current main, expected previous `latest`, original indexes,
-   all descriptors and platform/config identities. Only then does it move `latest` and
-   verify the resulting index anonymously. Alias changes are refused. A retry after
-   an ambiguous publication revalidates every observation and does not push again if
-   `latest` already matches. Completion is journalled only after verification.
+Both Production image variables must use the same combined index digest, not an
+architecture child digest.
 
-#### One-time activation, only after separate authorisation
+Using the existing local Vercel and GHCR logins, update only these public Production
+configuration values. Leave credentials and unrelated configuration untouched:
 
-- The checked-in policy enables the **capability**, not the operation. Verified
-  linkage is project `prj_ILGcAQ9jaNsYVN3V7qsZuft3AQ0C`, team
-  `team_kAFROnkIpFZaiTBzhIck1mhw`, production alias `euroeval.com` (verified true).
-- Configure protected GitHub environment `volunteer-worker-release` with **main-only**
-  deployment rules. Do not add an extra human environment approval per release.
-  Leave repository variable `WORKER_RELEASE_ENABLED` absent until setup is complete.
-  Workflows still
-  require its exact value `true`; local markers cannot arm CI. Staging is
-  serialized without cancellation. Deployment and promotion are local-only. No frontend
-  build or CSV transfer happens in CI.
-- Actions only stages candidates using its built-in `GITHUB_TOKEN` with
-  `contents:write`, `packages:write`, and `actions:read`. No Vercel credential or
-  broad owner token belongs in Actions. The finalizer uses the existing local
-  Vercel login; no extra Vercel token or renewal schedule is needed.
-- Install `gh`, `oras`, and the Vercel CLI locally using existing logins. Reuse
-  working local GHCR authentication. If registry login is missing, authenticate
-  `oras login ghcr.io --username USER --password-stdin` using a locally held token
-  with package write access; do not add broad repository scope or send it to CI.
-  Supply credentials through protected stdin or the credential store, never command
-  arguments, transcripts, markers, or logs. Activation does not read `.env`.
-- GPU diagnostics are optional. Keep historical evidence under its original image
-  identities; do not relabel it as a new test. Diagnostic summaries must exclude
-  device codes, credentials, and private corpus content.
-- After owner-authorized setup, set repository `WORKER_RELEASE_ENABLED=true`
-  and configure local activation **once**, in the correctly linked checkout:
+```sh
+(
+set -eu
+DIGEST=sha256:REPLACE_WITH_COMBINED_IMAGE_DIGEST
+WORKER_VERSION=REPLACE_WITH_WORKER_VERSION
+EUROEVAL_VERSION=REPLACE_WITH_EUROEVAL_VERSION
+printf '%s' "$DIGEST" | vercel env add VOLUNTEER_WORKER_IMAGE_DIGEST production \
+  --force --yes --type config
+printf '%s' "$DIGEST" | vercel env add VOLUNTEER_WORKER_IMAGE_DIGEST_ARM64 production \
+  --force --yes --type config
+printf '%s' "$WORKER_VERSION" | vercel env add VOLUNTEER_WORKER_VERSION production \
+  --force --yes --type config
+printf '%s' "$EUROEVAL_VERSION" | vercel env add EUROEVAL_VERSION production \
+  --force --yes --type config
+make frontend && docker buildx imagetools create \
+  --tag ghcr.io/euroeval/euroeval-worker:latest \
+  "ghcr.io/euroeval/euroeval-worker@$DIGEST"
+)
+```
 
-  ```sh
-  uv run python src/scripts/prepare_vercel_worktree.py
-  uv run python src/scripts/release_volunteer_worker.py configure-local
-  ```
+The normal local build refreshes Production configuration, generates matching scope
+policies, and restores tracked policy bytes afterward. It uses existing local CSVs;
+CI does not transport leaderboard data. Deployment does not require GitHub release
+records, CI-success observations, source-head approval, receipts, or a release journal.
+The commands stop on ordinary deployment failure rather than promoting `latest`.
 
-  Prepare the checkout-local `.vercel` directory before creating the marker; this
-  avoids replacing it during the normal build. `configure-local` writes only
-  `.vercel/worker-release-activation.json`: exact keys `schema: 1`,
-  `project_id`, `team_id`, `alias`, bound to checked-in policy and
-  `.vercel/project.json`. No secret or accepted flag belongs here. Missing marker
-  means hooks and receipt recording are inert; malformed/stale markers fail closed.
-  All hooks and deploy receipt recording use public `load_activation`. Explicit
-  `WORKER_RELEASE_ENABLED=false` overrides the marker; CI ignores it. To opt out:
-
-  ```sh
-  uv run python src/scripts/release_volunteer_worker.py disable-local
-  ```
-
-- Per release: trusted push CI/image candidates → `stage` →
-  **normal local `make frontend`** → synchronous local `finish` → `latest`. No
-  prefix/export is needed for each local deploy; local hooks consume
-  the trusted staged plan. Stage may be retried with workflow dispatch. Stage/prepare do
-  **not** require the old
-  public `/api/worker/release-info` endpoint. Finish requires the **new**
-  deployed endpoint and actual CLI receipt. After promotion, volunteers can use the
-  recommended launcher from VOLUNTEER_WORKER.md. Volunteer result approve/reject
-  decisions remain a separate
-  explicit permission step using the unchanged fenced review commands above.
-
-#### Recovery without automatic rollback
-
-The local `.vercel/worker-release-state.json` journal retains only public plan/config
-metadata, old plain values and previous deployment identity, never secret values.
-A preparation/build/predeploy/deployment failure leaves this journal for inspection
-and never finalizes a release. No helper automatically restarts or pauses workers,
-rolls back an alias/config, or retries an ambiguous deployment. Intervening config or
-alias changes stop the sequence. After finalization the next prepared release archives
-that journal alongside the previous immutable release metadata.
-
-Keep the previous accepted index and its immutable staged release available. For a
-failure after configuration preparation, inspect the journal and the actual current
-Production config/alias before any action. With separate authorisation, restore only
-those public release values that are still known to belong to the failed attempt,
-build/deploy the compatible old policy/version locally, and verify both architectures.
-Do not overwrite intervening changes or alter secrets. If deployment succeeded but
-finalization failed, retain the accepted immutable production digest, investigate the
-reported source/alias/descriptor disagreement, and explicitly retry finalization only
-while the staged plan remains current and the previous `latest` still matches. Never
-rebuild or relabel a different image as an old digest.
+Volunteers continue to discover the configured image through
+`/api/worker/release-info`; they do not consume GitHub releases. Runtime version
+matching, authentication, private dataset access, result validation, and explicit
+volunteer review decisions are unchanged.
 
 ## Ongoing maintenance and monitoring
 
@@ -1217,9 +1130,9 @@ rebuild or relabel a different image as an old digest.
 - Update the worker package/image and `VOLUNTEER_WORKER_VERSION` independently when the
   worker protocol changes (the current worker version is `1.0.0`).
 - Run the API tests (`npm run test:api`) and the relevant Python tests/checks.
-- Publish and anonymously verify both native candidates and their build provenance.
-- Stage the verified release, then deploy locally before finalizing `latest`.
-- Update both image variables to the accepted multi-platform index, align versions and
+- Build both native images and select their combined image digest.
+- Update Production configuration and deploy locally before updating `latest`.
+- Update both image variables to the selected multi-platform index, align versions and
   policies, verify Vercel public/sensitive types, deploy, and repeat readiness and safe
   route probes. Confirm the production alias actually serves the new deployment.
 - Keep the old image digest available for rollback, but do not leave the broker
@@ -1246,9 +1159,3 @@ rebuild or relabel a different image as an old digest.
 - Optionally run GPU diagnostics when investigating CUDA, dependency, toolkit, or
   driver changes. The configured digest is provenance carried by a lease, not runtime
   attestation; physical checks are not a release prerequisite.
-
-If finalisation fails after deployment, preserve the nonsecret journal and actual
-CLI deployment receipt. Inspect production and the registry before retrying
-`uv run python src/scripts/release_volunteer_worker.py finish`. Do not redeploy
-blindly: recovery revalidates the existing deployment and handles an already
-successful registry write without repeating it.
