@@ -16,6 +16,7 @@ from euroeval_worker.review import (
     VolunteerReviewer,
     reviewer_from_environment,
 )
+from leaderboards.contamination_canary import is_canary_record
 
 logger = logging.getLogger(__name__)
 
@@ -174,26 +175,27 @@ def _log_report(report: ReviewReport) -> None:
     logger.info("EuroEval version: %s", report.euroeval_version)
     if report.provenance:
         logger.info("Provenance: %s", report.provenance)
-    logger.info("Expected identities: %s", len(report.expected_identities))
-    for identity in report.expected_identities:
-        logger.info("  expected %s", identity)
-    logger.info("Actual identities: %s", len(report.records))
+    logger.info(
+        "Benchmark records: %s expected, %s submitted",
+        len(report.expected_identities),
+        sum(not _is_canary(record.identity) for record in report.records),
+    )
     for record in report.records:
         scores = ", ".join(f"{metric}={score:g}" for metric, score in record.scores)
-        logger.info(
-            "  actual   %s  sha256=%s  scores={%s}  warnings=%s",
-            record.identity,
-            record.digest,
-            scores,
-            ", ".join(record.warnings) or "none",
-        )
+        label = "Informational canary" if _is_canary(record.identity) else "Result"
+        logger.info("%s %s  scores={%s}", label, record.identity, scores)
+        if record.warnings:
+            logger.warning(
+                "WARNING %s: %s", record.identity, "; ".join(record.warnings)
+            )
     by_metric: dict[str, list[float]] = defaultdict(list)
     for record in report.records:
         for metric, score in record.scores:
             by_metric[metric].append(score)
     for metric, scores in sorted(by_metric.items()):
         logger.info("Score range %s: %g to %g", metric, min(scores), max(scores))
-    logger.info("Checks: %s", "; ".join(report.checks))
+    for check in report.checks:
+        logger.info("Check: %s", check)
     for observation in report.canonical_observations:
         if observation.replacement:
             staged = next(
@@ -238,7 +240,22 @@ def _log_report(report: ReviewReport) -> None:
                 observation.canonical_path,
                 observation.conflict,
             )
-    logger.info("Warnings: %s", "; ".join(report.warnings) or "none")
+    for warning in report.warnings:
+        logger.warning("WARNING: %s", warning)
+    if not report.warnings:
+        logger.info("Warnings: none")
+
+
+def _is_canary(record: object) -> bool:
+    """Return whether a validated record is an auxiliary canary result.
+
+    Args:
+        record: Validated staged record.
+
+    Returns:
+        Whether the record is a canary.
+    """
+    return is_canary_record(record=json.loads(record.content))
 
 
 if __name__ == "__main__":
