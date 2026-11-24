@@ -46,10 +46,21 @@ import click
 from dotenv import load_dotenv
 from huggingface_hub import BucketFile, HfApi
 from huggingface_hub.errors import HfHubHTTPError
+from review_volunteer_results import (
+    configure_colours,
+    render_model_review,
+    show_and_render,
+)
 from review_volunteer_results import main as run_review_command
-from review_volunteer_results import show_and_render
+from tqdm.auto import tqdm
 
-from euroeval_worker.review import PublicStagingError, reviewer_from_environment
+from euroeval_worker.review import (
+    PublicStagingError,
+    ReviewError,
+    ReviewReport,
+    VolunteerReviewer,
+    reviewer_from_environment,
+)
 from leaderboards.backup import backup_results
 from leaderboards.canonical_publication import BucketApi, CanonicalPublisher
 from leaderboards.constants import (
@@ -107,7 +118,8 @@ HF_LEADERBOARD_SPACE = "EuroEval/euroeval_leaderboard"
     show_default=True,
     help="Always regenerate leaderboards, even if no new results are found.",
 )
-def main(force: bool = False) -> None:
+@click.option("--no-colour", is_flag=True, help="Disable coloured terminal output.")
+def main(force: bool = False, no_colour: bool = False) -> None:
     """Harvest finished evaluations and regenerate leaderboards.
 
     Only issues with successfully harvested results are closed. Issues
@@ -118,7 +130,10 @@ def main(force: bool = False) -> None:
         force (optional):
             Whether to always regenerate leaderboards, even if no new results
             are found. Defaults to False.
+        no_colour (optional):
+            Disable colours throughout the review and child processes.
     """
+    configure_colours(no_colour=no_colour)
     check_required_env_vars()
     try:
         should_continue = preflight_volunteer_review()
@@ -508,53 +523,50 @@ def preflight_volunteer_review() -> bool:
         return False
 
     review_error = False
-    for submission_id in submission_ids:
+    groups: dict[str, list[ReviewReport]] = {}
+    try:
+        with tqdm(
+            submission_ids, desc="Preparing model reviews", unit="submission"
+        ) as progress:
+            for submission_id in progress:
+                try:
+                    report = reviewer.show(submission_id=submission_id)
+                    groups.setdefault(report.model_id, []).append(report)
+                    progress.set_postfix_str(report.language)
+                except Exception:
+                    logger.exception("Could not inspect submission %s.", submission_id)
+                    review_error = True
+    except (EOFError, KeyboardInterrupt):
+        logger.warning("Review preparation cancelled; nothing collected.")
+        return False
+    for reports in groups.values():
+        render_model_review(reports=reports)
         try:
-            displayed_report = show_and_render(
-                submission_id=submission_id, reviewer=reviewer
+            commands = _review_model_commands(
+                reviewer=reviewer, reviewer_login=reviewer_login, reports=reports
             )
-        except Exception:
-            logger.exception(
-                "Could not display submission %s; skipping it.", submission_id
-            )
-            review_error = True
-            continue
-        blockers = [
-            observation
-            for observation in displayed_report.canonical_observations
-            if observation.conflict
-        ]
-        if blockers:
-            logger.warning(
-                "BLOCKED submission %s: canonical conflicts prevent approval. "
-                "It remains pending; skipping it.",
-                submission_id,
-            )
-            continue
-        try:
-            decision = (
-                input(f"Approve submission {submission_id}? [y/N]: ").strip().lower()
-            )
+            completed = True
+            for command in commands:
+                if run_review_command([*command, "--quiet"]):
+                    logger.error(
+                        "Decision failed; model group may be partly processed. "
+                        "Check state before retrying."
+                    )
+                    review_error = True
+                    completed = False
+                    break
+            if commands and completed:
+                logger.info(
+                    "%s all submitted languages for %s.",
+                    "Approved" if "approve" in commands[0] else "Rejected",
+                    reports[0].model_id,
+                    extra={"review_success": True},
+                )
         except (EOFError, KeyboardInterrupt):
             logger.warning("Review cancelled; collection stopped before side effects.")
             return False
-        if decision not in {"y", "yes"}:
-            logger.info("Skipped submission %s; it remains pending.", submission_id)
-            continue
-        try:
-            command = ["--reviewer", reviewer_login, "approve", submission_id]
-            command.extend(["--plan-fingerprint", displayed_report.plan_fingerprint])
-            command.extend(["--reason", "Reviewed during collector preflight"])
-            status = run_review_command(command)
         except Exception:
-            logger.exception("Approval failed for submission %s.", submission_id)
-            review_error = True
-            continue
-        if status:
-            logger.error(
-                "Approval failed for submission %s; it was not reported as approved.",
-                submission_id,
-            )
+            logger.exception("Review failed; model group may be partly processed.")
             review_error = True
     if review_error:
         logger.error(
@@ -617,6 +629,127 @@ def _log_review_commands(submission_ids: list[str]) -> None:
     logger.warning("Review commands (do not run until evidence is inspected):")
     for command in commands:
         logger.warning("%s", shlex.join(command))
+
+
+def _review_model_commands(
+    reviewer: VolunteerReviewer, reviewer_login: str, reports: list[ReviewReport]
+) -> list[list[str]]:
+    """Confirm one action for all submitted languages of a model.
+
+    Args:
+        reviewer: Evidence loader; does not perform decisions here.
+        reviewer_login: Verified owner making the decision.
+        reports: Current validated evidence for the model group.
+
+    Returns:
+        Individually fenced terminal commands, or no commands when left pending.
+
+    Raises:
+        KeyboardInterrupt: If review stops.
+        ReviewError: If evidence changes before confirmation.
+    """
+    while True:
+        action = (
+            input(
+                "All languages: [a] Approve submitted / replace existing  "
+                "[r] Reject / keep existing  [d] Details  [s] Skip  [q] Stop: "
+            )
+            .strip()
+            .lower()
+        )
+        if action in {"q", "quit"}:
+            raise KeyboardInterrupt
+        if action in {"", "s", "skip", "n", "no"}:
+            return []
+        if action in {"d", "details"}:
+            reports = [
+                show_and_render(
+                    submission_id=r.submission_id, reviewer=reviewer, verbose=True
+                )
+                for r in reports
+            ]
+            continue
+        if action in {"r", "reject"}:
+            reason = input("Rejection reason (blank cancels): ").strip()
+            if not reason:
+                continue
+            confirm = (
+                input("Reject ALL submitted languages; keep existing results? [y/N]: ")
+                .strip()
+                .lower()
+            )
+            if confirm not in {"y", "yes"}:
+                continue
+            return [
+                [
+                    "--reviewer",
+                    reviewer_login,
+                    "reject",
+                    r.submission_id,
+                    "--reason",
+                    reason,
+                ]
+                for r in reports
+            ]
+        if action not in {"a", "approve", "y", "yes"}:
+            logger.info("Choose approve, reject, details, skip, or stop.")
+            continue
+        selected: list[ReviewReport] = []
+        replace = any(
+            o.conflict or o.replacement
+            for r in reports
+            for o in r.canonical_observations
+        )
+        for report in reports:
+            current = (
+                reviewer.show(submission_id=report.submission_id, replace_existing=True)
+                if replace
+                else report
+            )
+            if [(r.canonical_path, r.digest) for r in current.records] != [
+                (r.canonical_path, r.digest) for r in report.records
+            ] or [
+                (o.canonical_path, o.predecessor_digest)
+                for o in current.canonical_observations
+            ] != [
+                (o.canonical_path, o.predecessor_digest)
+                for o in report.canonical_observations
+            ]:
+                raise ReviewError("Results changed; inspect model details again")
+            selected.append(current)
+        if any(o.conflict for r in selected for o in r.canonical_observations):
+            logger.error("Stored data needs repair; inspect Details before approval.")
+            continue
+        if replace:
+            count = sum(
+                o.replacement for r in selected for o in r.canonical_observations
+            )
+            confirm = (
+                input(
+                    f"Approve ALL {len(selected)} language submissions, "
+                    f"replacing {count} "
+                    "stored results (originals archived)? [y/N]: "
+                )
+                .strip()
+                .lower()
+            )
+            if confirm not in {"y", "yes"}:
+                continue
+        commands = []
+        for report in selected:
+            command = ["--reviewer", reviewer_login, "approve", report.submission_id]
+            if replace:
+                command.append("--replace-existing")
+            command.extend(
+                [
+                    "--plan-fingerprint",
+                    report.plan_fingerprint,
+                    "--reason",
+                    "Reviewed during collector preflight",
+                ]
+            )
+            commands.append(command)
+        return commands
 
 
 def _reviewer_login() -> str | None:

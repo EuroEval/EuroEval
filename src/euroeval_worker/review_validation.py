@@ -76,10 +76,22 @@ def _validate_manifest(
     raw_results = manifest.get("results")
     if not isinstance(raw_results, list) or not raw_results:
         raise ReviewError("Manifest results must be a non-empty list")
+    paths: list[str] = []
+    for entry in raw_results:
+        if not isinstance(entry, dict):
+            raise ReviewError("Manifest result entry must be an object")
+        digest = _required_string(entry, "digest")
+        path = _required_string(entry, "path")
+        if not re.fullmatch(r"[0-9a-f]{64}", digest):
+            raise ReviewError(f"Invalid SHA256 digest in {path}")
+        if path != f"volunteer/submissions/{submission_id}/results/{digest}.json":
+            raise ReviewError("Staged result path is not canonical for this submission")
+        paths.append(path)
+    contents = store.read_many(bucket=store.staging_bucket, paths=paths)
     records = tuple(
         _validate_result_entry(
             entry=entry,
-            store=store,
+            content=contents[path],
             submission_id=submission_id,
             model_id=model_id,
             revision=revision,
@@ -87,7 +99,7 @@ def _validate_manifest(
             euroeval_version=euroeval_version,
             model_type=model_type,
         )
-        for entry in raw_results
+        for entry, path in zip(raw_results, paths, strict=True)
     )
     actual = tuple(record.identity for record in records)
     _raise_on_identity_collisions(actual)
@@ -635,7 +647,7 @@ def _validate_covered_records(
 
 def _validate_result_entry(
     entry: object,
-    store: BucketStore,
+    content: bytes,
     submission_id: str,
     model_id: str,
     revision: str,
@@ -647,7 +659,7 @@ def _validate_result_entry(
 
     Args:
         entry: Manifest entry containing path, digest, identity, and warnings.
-        store: Bucket storage used to fetch staged bytes.
+        content: Exact bytes fetched in the submission batch.
         submission_id: Submission owning the staged result.
         model_id: Expected model identifier.
         revision: Expected immutable model revision.
@@ -673,7 +685,6 @@ def _validate_result_entry(
         raise ReviewError(
             f"Staged result path is not canonical under {expected_prefix}"
         )
-    content = store.read(store.staging_bucket, path)
     if _digest(content) != digest:
         raise ReviewError(f"Staged bytes do not match SHA256 for {path}")
     record = _load_object(content=content, context=path)

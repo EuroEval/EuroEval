@@ -10,7 +10,7 @@ from unittest.mock import Mock, call
 
 import pytest
 
-from euroeval_worker.review import PublicStagingError, VolunteerReviewer
+from euroeval_worker.review import PublicStagingError
 from euroeval_worker.review_models import ReviewReport
 from leaderboards import canonical_publication, constants, result_loading
 from leaderboards.result_conflicts import ConflictDecision
@@ -536,7 +536,7 @@ class PreflightReviewer:
             submission_id=submission_id,
             issue_number=12,
             contributor="alice",
-            model_id="model",
+            model_id=f"model-{submission_id}",
             model_revision="revision",
             language="da",
             euroeval_version="1.0",
@@ -767,6 +767,7 @@ def test_preflight_mixed_decisions_review_in_order(
                 "fingerprint-submission-one",
                 "--reason",
                 "Reviewed during collector preflight",
+                "--quiet",
             ]
         )
     ]
@@ -854,17 +855,15 @@ def test_preflight_review_error_halts_after_inspecting_remaining_ids(
     monkeypatch.setattr("builtins.input", prompt)
     calls: list[list[str]] = []
     shown: list[str] = []
-    real_show_and_render = collect_evaluation_results.show_and_render
+    real_show = PreflightReviewer.show
 
-    def display(*, submission_id: str, reviewer: PreflightReviewer) -> object:
+    def display(self: PreflightReviewer, submission_id: str) -> object:
         shown.append(submission_id)
         if command_kind == "show" and submission_id == "first":
             if failure == "exception":
                 raise RuntimeError("injected display failure")
             raise RuntimeError("injected display failure")
-        return real_show_and_render(
-            submission_id=submission_id, reviewer=t.cast(VolunteerReviewer, reviewer)
-        )
+        return real_show(self, submission_id=submission_id)
 
     def run(command: list[str]) -> int:
         calls.append(command)
@@ -873,7 +872,7 @@ def test_preflight_review_error_halts_after_inspecting_remaining_ids(
             raise RuntimeError("injected approval failure")
         return 1 if failed else 0
 
-    monkeypatch.setattr(collect_evaluation_results, "show_and_render", display)
+    monkeypatch.setattr(PreflightReviewer, "show", display)
     monkeypatch.setattr(collect_evaluation_results, "run_review_command", run)
     assert collect_evaluation_results.preflight_volunteer_review() is False
     assert shown == ids
@@ -950,6 +949,7 @@ def test_preflight_yes_reviews_submission(
         "fingerprint-submission id'$(touch /tmp/nope)",
         "--reason",
         "Reviewed during collector preflight",
+        "--quiet",
     ]
 
 
@@ -1251,6 +1251,7 @@ def test_reviewer_login_actor_and_safe_gh_fallback(
             "fingerprint-one",
             "--reason",
             "Reviewed during collector preflight",
+            "--quiet",
         ]
     )
     subprocess_run.assert_not_called()
@@ -1273,6 +1274,7 @@ def test_reviewer_login_actor_and_safe_gh_fallback(
             "fingerprint-one",
             "--reason",
             "Reviewed during collector preflight",
+            "--quiet",
         ]
     )
 

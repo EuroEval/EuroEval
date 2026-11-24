@@ -100,42 +100,6 @@ class BucketStore:
             if getattr(entry, "type", None) == "file" and entry.path.endswith(".json")
         )
 
-    def read_many(self, bucket: str, paths: list[str]) -> dict[str, bytes]:
-        """Download exact objects in one SDK call, rejecting unsafe destinations.
-
-        Args:
-            bucket: Bucket containing the objects.
-            paths: Exact bucket paths to download.
-
-        Returns:
-            Mapping from each requested path to its bytes.
-
-        Raises:
-            ReviewError: If any requested object is missing.
-        """
-        if not paths:
-            return {}
-        with tempfile.TemporaryDirectory(prefix="euroeval-review-") as directory:
-            root = Path(directory).resolve()
-            targets = [
-                (path, root / f"{index}.object") for index, path in enumerate(paths)
-            ]
-            try:
-                self.api.download_bucket_files(
-                    bucket, targets, raise_on_missing_files=True, token=self.token
-                )
-            except (EntryNotFoundError, FileNotFoundError) as error:
-                raise ReviewError(
-                    f"Requested bucket object is missing in download batch: {bucket}"
-                ) from error
-            result: dict[str, bytes] = {}
-            for path, target in targets:
-                resolved = target.resolve()
-                if root not in resolved.parents or not resolved.is_file():
-                    raise ReviewError(f"Bucket object is missing: {bucket}/{path}")
-                result[path] = resolved.read_bytes()
-            return result
-
     def read_optional(self, bucket: str, path: str) -> bytes | None:
         """Read an object when present.
 
@@ -177,6 +141,67 @@ class BucketStore:
             if not target.is_file():
                 raise ReviewError(f"Bucket object is missing: {bucket}/{path}")
             return target.read_bytes()
+
+    def read_optional_many(
+        self, bucket: str, paths: list[str]
+    ) -> dict[str, bytes | None]:
+        """Fetch existing objects together, retaining missing destinations.
+
+        Args:
+            bucket: Bucket to inspect.
+            paths: Exact destination paths.
+
+        Returns:
+            Bytes for existing paths and None for absent paths.
+        """
+        if not paths:
+            return {}
+        entries = self.api.get_bucket_paths_info(bucket, paths, token=self.token)
+        present = {entry.path for entry in entries if entry.type == "file"}
+        contents = self.read_many(
+            bucket=bucket, paths=[p for p in paths if p in present]
+        )
+        return {path: contents.get(path) for path in paths}
+
+    def read_many(self, bucket: str, paths: list[str]) -> dict[str, bytes]:
+        """Download exact objects in one SDK call, rejecting unsafe destinations.
+
+        Args:
+            bucket: Bucket containing the objects.
+            paths: Exact bucket paths to download.
+
+        Returns:
+            Mapping from each requested path to its bytes.
+
+        Raises:
+            ReviewError: If any requested object is missing.
+        """
+        if not paths:
+            return {}
+        with tempfile.TemporaryDirectory(prefix="euroeval-review-") as directory:
+            root = Path(directory).resolve()
+            targets = [
+                (path, root / f"{index}.object") for index, path in enumerate(paths)
+            ]
+            try:
+                for start in range(0, len(targets), 10):
+                    self.api.download_bucket_files(
+                        bucket,
+                        targets[start : start + 10],
+                        raise_on_missing_files=True,
+                        token=self.token,
+                    )
+            except (EntryNotFoundError, FileNotFoundError) as error:
+                raise ReviewError(
+                    f"Requested bucket object is missing in download batch: {bucket}"
+                ) from error
+            result: dict[str, bytes] = {}
+            for path, target in targets:
+                resolved = target.resolve()
+                if root not in resolved.parents or not resolved.is_file():
+                    raise ReviewError(f"Bucket object is missing: {bucket}/{path}")
+                result[path] = resolved.read_bytes()
+            return result
 
     def write_verified(self, bucket: str, path: str, content: bytes) -> None:
         """Upload bytes and verify destination metadata and content.

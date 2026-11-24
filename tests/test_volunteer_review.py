@@ -716,7 +716,9 @@ def test_collected_canary_must_be_privately_scoreable_before_approval(
     monkeypatch.setattr(
         reviewer,
         "show",
-        lambda submission_id: dataclasses.replace(report, records=(canary,)),
+        lambda submission_id, replace_existing=False: dataclasses.replace(
+            report, records=(canary,)
+        ),
     )
     monkeypatch.setattr(
         review_transaction, "_has_collected_canary", lambda records: True
@@ -1093,6 +1095,93 @@ def test_expired_reservation_cannot_change_durable_decision() -> None:
     assert broker_calls == [(12, SUBMISSION, "accepted")]
 
 
+def test_explicit_choice_does_not_override_malformed_canonical() -> None:
+    """Choosing submitted results does not turn malformed storage into a valid plan."""
+    api, reviewer, _ = _reviewer()
+    record = reviewer.show(SUBMISSION).records[0]
+    api.files[(RESULTS, record.canonical_path)] = b"{}"
+    selected = reviewer.show(SUBMISSION, replace_existing=True)
+    assert selected.canonical_observations[0].conflict
+    with pytest.raises(ReviewError):
+        reviewer.decide(
+            SUBMISSION,
+            "accepted",
+            "maintainer",
+            replace_existing=True,
+            plan_fingerprint=selected.plan_fingerprint,
+        )
+
+
+def test_explicit_choice_rejects_changed_predecessor() -> None:
+    """An overwrite confirmation cannot authorise a different canonical predecessor."""
+    api, reviewer, calls = _reviewer()
+    record = reviewer.show(SUBMISSION).records[0]
+    stored = json.loads(record.content)
+    stored["evaluation_results"][0]["score_details"]["score"] = 1.0
+    api.files[(RESULTS, record.canonical_path)] = json.dumps(stored).encode()
+    selected = reviewer.show(SUBMISSION, replace_existing=True)
+    stored["evaluation_results"][0]["score_details"]["score"] = 2.0
+    changed = json.dumps(stored).encode()
+    api.files[(RESULTS, record.canonical_path)] = changed
+    with pytest.raises(ReviewError):
+        reviewer.decide(
+            SUBMISSION,
+            "accepted",
+            "maintainer",
+            replace_existing=True,
+            plan_fingerprint=selected.plan_fingerprint,
+        )
+    assert api.files[(RESULTS, record.canonical_path)] == changed
+    assert calls == []
+
+
+@pytest.mark.parametrize("interrupted", [False, True])
+def test_explicit_submitted_choice_archives_and_resumes(interrupted: bool) -> None:
+    """Explicit choices publish exact bytes and resume original plans."""
+    api, reviewer, _ = _reviewer(record_count=2)
+    initial = reviewer.show(submission_id=SUBMISSION)
+    originals: dict[str, bytes] = {}
+    for record in initial.records:
+        stored = json.loads(record.content)
+        stored["evaluation_results"][0]["score_details"]["score"] = 12.345
+        content = json.dumps(stored).encode()
+        originals[record.canonical_path] = content
+        api.files[(RESULTS, record.canonical_path)] = content
+    ordinary = reviewer.show(submission_id=SUBMISSION)
+    assert all(o.conflict for o in ordinary.canonical_observations)
+    selected = reviewer.show(submission_id=SUBMISSION, replace_existing=True)
+    assert all(
+        o.replacement and not o.conflict for o in selected.canonical_observations
+    )
+    with pytest.raises(ReviewError):
+        reviewer.decide(SUBMISSION, "accepted", "maintainer", replace_existing=True)
+    if interrupted:
+        api.fail_result_upload_number = 2
+        with pytest.raises(RuntimeError):
+            reviewer.decide(
+                SUBMISSION,
+                "accepted",
+                "maintainer",
+                replace_existing=True,
+                plan_fingerprint=selected.plan_fingerprint,
+            )
+        api.fail_result_upload_number = None
+    reviewer.decide(
+        SUBMISSION,
+        "accepted",
+        "maintainer",
+        replace_existing=True,
+        plan_fingerprint=selected.plan_fingerprint,
+    )
+    for record in initial.records:
+        assert api.files[(RESULTS, record.canonical_path)] == record.content
+        old = originals[record.canonical_path]
+        digest = hashlib.sha256(old).hexdigest()
+        archive = f"volunteer/predecessors/{SUBMISSION}/{digest}.json"
+        assert api.files[(STAGING, archive)] == old
+    assert reviewer.list_pending_submissions() == []
+
+
 def test_failed_samples_are_reported_but_do_not_block_approval() -> None:
     """Non-zero raw failures remain visible and do not block maintainer approval."""
     api, reviewer, _ = _reviewer(failed_instances=2)
@@ -1246,6 +1335,28 @@ def test_inspect_with_broker_validates_response_evidence(
         )
 
 
+def test_inspection_batches_staged_and_canonical_records() -> None:
+    """Checking several datasets uses bulk evidence downloads, not per-record calls."""
+    api, reviewer, _ = _reviewer(record_count=3)
+    initial = reviewer.show(SUBMISSION)
+    for record in initial.records:
+        api.files[(RESULTS, record.canonical_path)] = record.content
+    api.download_batches.clear()
+    reviewer.show(SUBMISSION)
+    staged = [
+        batch
+        for batch in api.download_batches
+        if any("/results/" in path for _, path in batch)
+    ]
+    canonical = [
+        batch
+        for batch in api.download_batches
+        if any(bucket == RESULTS for bucket, _ in batch)
+    ]
+    assert len(staged) == len(canonical) == 1
+    assert len(staged[0]) == len(canonical[0]) == 3
+
+
 @pytest.mark.parametrize(
     ("mutation", "path_digest"),
     [
@@ -1322,6 +1433,32 @@ def test_inventory_batches_manifests_and_lists_decisions_once() -> None:
         "submission-three",
     }
     assert api.tree_prefixes.count("volunteer/decisions") == 1
+
+
+def test_inventory_verifies_in_batches_of_at_most_ten() -> None:
+    """Large inventories use bounded downloads and preserve every pending submission."""
+    api, reviewer, _ = _reviewer()
+    manifest = _manifest(api=api)
+    for index in range(24):
+        clone = dict(manifest, submission_id=f"batch-submission-{index}")
+        path = f"volunteer/manifests/batch-submission-{index}.json"
+        api.files[(STAGING, path)] = json.dumps(clone).encode()
+    api.download_batches.clear()
+    assert len(reviewer.list_pending_submissions()) == 25
+    assert [len(batch) for batch in api.download_batches] == [10, 10, 5]
+
+
+def _manifest(api: FakeHfApi) -> dict[str, object]:
+    """Manifest for this test.
+
+    Args:
+        api:
+            Api supplied to the test.
+
+    Returns:
+        The value returned by the test helper.
+    """
+    return json.loads(api.files[(STAGING, f"volunteer/manifests/{SUBMISSION}.json")])
 
 
 def test_legacy_decision_cannot_adopt_a_new_replacement_plan() -> None:
@@ -1451,19 +1588,6 @@ def test_malformed_precious_metadata_blocks_acceptance_before_side_effects(
     assert not _decision_paths(api)
     assert broker_calls == []
     assert not [key for key in api.files if key[0] == RESULTS]
-
-
-def _manifest(api: FakeHfApi) -> dict[str, object]:
-    """Manifest for this test.
-
-    Args:
-        api:
-            Api supplied to the test.
-
-    Returns:
-        The value returned by the test helper.
-    """
-    return json.loads(api.files[(STAGING, f"volunteer/manifests/{SUBMISSION}.json")])
 
 
 @pytest.mark.parametrize("language_group", ["sv", 42, ["da"]])
