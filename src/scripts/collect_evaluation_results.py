@@ -519,6 +519,18 @@ def preflight_volunteer_review() -> bool:
             )
             review_error = True
             continue
+        blockers = [
+            observation
+            for observation in displayed_report.canonical_observations
+            if observation.conflict
+        ]
+        if blockers:
+            logger.warning(
+                "BLOCKED submission %s: canonical conflicts prevent approval. "
+                "It remains pending; skipping it.",
+                submission_id,
+            )
+            continue
         try:
             decision = (
                 input(f"Approve submission {submission_id}? [y/N]: ").strip().lower()

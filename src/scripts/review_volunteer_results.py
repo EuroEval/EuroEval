@@ -6,7 +6,7 @@ import argparse
 import json
 import logging
 import os
-from collections import defaultdict
+import shlex
 
 from dotenv import load_dotenv
 
@@ -16,6 +16,7 @@ from euroeval_worker.review import (
     VolunteerReviewer,
     reviewer_from_environment,
 )
+from euroeval_worker.review_models import ValidatedRecord
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +68,8 @@ def main(argv: list[str] | None = None) -> int:
                 )
             return 0
         if arguments.command == "show":
-            show_and_render(submission_id=arguments.submission_id, reviewer=service)
+            report = service.show(submission_id=arguments.submission_id)
+            _log_report(report, verbose=arguments.verbose)
             return 0
         outcome = "accepted" if arguments.command == "approve" else "rejected"
         report = service.decide(
@@ -87,6 +89,137 @@ def main(argv: list[str] | None = None) -> int:
     except ReviewError as error:
         logger.error("Review failed: %s", error)
         return 1
+
+
+def _log_report(report: ReviewReport, *, verbose: bool = False) -> None:
+    """Log a concise summary, or full validation detail when requested.
+
+    Args:
+        report: Validated volunteer submission report to display.
+        verbose: Whether to include record-level checks and provenance.
+    """
+    logger.info("Submission: %s", report.submission_id)
+    logger.info("Issue: %s", report.issue_number)
+    logger.info("Verified contributor: %s", report.contributor)
+    logger.info("Model: %s@%s", report.model_id, report.model_revision)
+    logger.info("Language: %s", report.language)
+    logger.info("EuroEval version: %s", report.euroeval_version)
+    logger.info(
+        "Benchmark records: %s expected, %s submitted",
+        len(report.expected_identities),
+        sum(not _is_canary(record) for record in report.records),
+    )
+    for record in report.records:
+        if _is_canary(record):
+            continue
+        scores = ", ".join(f"{metric}={score:g}" for metric, score in record.scores)
+        logger.info("Result %s  scores={%s}", record.identity, scores)
+    if verbose:
+        if report.provenance:
+            logger.info("Provenance: %s", report.provenance)
+        for check in report.checks:
+            logger.info("Check: %s", check)
+    for observation in report.canonical_observations:
+        if observation.replacement or observation.conflict:
+            staged = next(
+                record
+                for record in report.records
+                if record.canonical_path == observation.canonical_path
+            )
+            old = json.loads(observation.predecessor_content or b"{}")
+            library = old.get("eval_library", {})
+            old_version = (
+                library.get("version", "unknown")
+                if isinstance(library, dict)
+                else "unknown"
+            )
+            old_scores = {
+                item.get("evaluation_name", "unknown"): item.get(
+                    "score_details", {}
+                ).get("score")
+                for item in old.get("evaluation_results", [])
+                if isinstance(item, dict)
+                and isinstance(item.get("score_details"), dict)
+            }
+            logger.info(
+                "%s %s: stored version=%s scores=%s; submitted version=%s scores=%s",
+                "CONFLICT" if observation.conflict else "REPLACEMENT",
+                observation.identity[1],
+                old_version,
+                old_scores,
+                report.euroeval_version,
+                dict(staged.scores),
+            )
+    blocked = [item for item in report.canonical_observations if item.conflict]
+    for observation in blocked:
+        logger.error(
+            "BLOCKED %s: stored canonical result differs from submitted result; "
+            "there is no automatic winner and approval cannot override this with y.",
+            observation.canonical_path,
+        )
+    command = ["uv", "run", "python", "src/scripts/review_volunteer_results.py"]
+    if blocked:
+        logger.info(
+            "Status: BLOCKED (%s conflicts). Left pending; nothing approved.",
+            len(blocked),
+        )
+        logger.info(
+            "Inspect full evidence: %s",
+            shlex.join(command + ["show", report.submission_id, "--verbose"]),
+        )
+        logger.info(
+            "To keep existing results and discard this ENTIRE submission, review "
+            "the evidence first, then explicitly reject it: %s",
+            shlex.join(
+                command
+                + [
+                    "--reviewer",
+                    os.environ.get("GITHUB_ACTOR") or "<github-login>",
+                    "reject",
+                    report.submission_id,
+                    "--reason",
+                    "keep existing canonical results",
+                ]
+            ),
+        )
+        logger.info(
+            "Replacing existing results with this submission is not supported by "
+            "the review CLI. Leave it pending if you want the submitted results; "
+            "do not edit the bucket manually."
+        )
+    else:
+        logger.info(
+            "Status: no approval blockers. Approval still requires confirmation."
+        )
+    if verbose:
+        logger.info("Approval plan fingerprint: %s", report.plan_fingerprint)
+    warnings = set(report.warnings)
+    for record in report.records:
+        warnings.update(record.warnings)
+    if warnings:
+        logger.info("Non-blocking notices:")
+        for warning in sorted(warnings):
+            logger.info("  %s", warning)
+    if verbose:
+        for record in report.records:
+            logger.info("Record %s sha256=%s", record.identity, record.digest)
+    if not blocked and any(item.replacement for item in report.canonical_observations):
+        logger.info("Existing results selected for replacement will be archived.")
+
+
+def _is_canary(record: ValidatedRecord) -> bool:
+    """Return whether a staged record is an auxiliary canary result.
+
+    Args:
+        record: Validated staged record.
+
+    Returns:
+        Whether the record is a canary.
+    """
+    dataset = record.identity[1]
+    return dataset == "contamination-canary" or dataset.startswith(
+        "contamination-canary-"
+    )
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -113,6 +246,7 @@ def _parser() -> argparse.ArgumentParser:
     )
     show = subparsers.add_parser("show", help="Revalidate and summarise a submission.")
     show.add_argument("submission_id")
+    show.add_argument("--verbose", action="store_true", help="Show validation details.")
     for command in ("approve", "reject"):
         decision = subparsers.add_parser(
             command, help=f"Revalidate and {command} a submission."
@@ -144,101 +278,24 @@ def _service() -> VolunteerReviewer:
 
 
 def show_and_render(
-    submission_id: str, reviewer: VolunteerReviewer | None = None
+    submission_id: str,
+    reviewer: VolunteerReviewer | None = None,
+    *,
+    verbose: bool = False,
 ) -> ReviewReport:
     """Load, render, and return the exact report shown to a reviewer.
 
     Args:
         submission_id: Submission to display.
         reviewer (optional): Reviewer adapter; defaults to environment configuration.
+        verbose: Whether to include record-level validation details.
 
     Returns:
         The rendered report, including its confirmation fingerprint.
     """
     report = (reviewer or _service()).show(submission_id=submission_id)
-    _log_report(report)
+    _log_report(report, verbose=verbose)
     return report
-
-
-def _log_report(report: ReviewReport) -> None:
-    """Log the identity, records, score ranges, checks, and warnings in a review.
-
-    Args:
-        report: Validated volunteer submission report to display.
-    """
-    logger.info("Submission: %s", report.submission_id)
-    logger.info("Issue: %s", report.issue_number)
-    logger.info("Verified contributor: %s", report.contributor)
-    logger.info("Model: %s@%s", report.model_id, report.model_revision)
-    logger.info("Language: %s", report.language)
-    logger.info("EuroEval version: %s", report.euroeval_version)
-    if report.provenance:
-        logger.info("Provenance: %s", report.provenance)
-    logger.info("Expected identities: %s", len(report.expected_identities))
-    for identity in report.expected_identities:
-        logger.info("  expected %s", identity)
-    logger.info("Actual identities: %s", len(report.records))
-    for record in report.records:
-        scores = ", ".join(f"{metric}={score:g}" for metric, score in record.scores)
-        logger.info(
-            "  actual   %s  sha256=%s  scores={%s}  warnings=%s",
-            record.identity,
-            record.digest,
-            scores,
-            ", ".join(record.warnings) or "none",
-        )
-    by_metric: dict[str, list[float]] = defaultdict(list)
-    for record in report.records:
-        for metric, score in record.scores:
-            by_metric[metric].append(score)
-    for metric, scores in sorted(by_metric.items()):
-        logger.info("Score range %s: %g to %g", metric, min(scores), max(scores))
-    logger.info("Checks: %s", "; ".join(report.checks))
-    for observation in report.canonical_observations:
-        if observation.replacement:
-            staged = next(
-                record
-                for record in report.records
-                if record.canonical_path == observation.canonical_path
-            )
-            old = json.loads(observation.predecessor_content or b"{}")
-            library = old.get("eval_library", {})
-            old_version = (
-                library.get("version", "unknown")
-                if isinstance(library, dict)
-                else "unknown"
-            )
-            old_scores = {
-                item.get("evaluation_name", "unknown"): item.get(
-                    "score_details", {}
-                ).get("score")
-                for item in old.get("evaluation_results", [])
-                if isinstance(item, dict)
-                and isinstance(item.get("score_details"), dict)
-            }
-            logger.info(
-                "REPLACEMENT %s: previous sha256=%s version=%s scores=%s; staged "
-                "sha256=%s version=%s scores=%s; previous bytes will be archived",
-                observation.canonical_path,
-                observation.predecessor_digest,
-                old_version,
-                old_scores,
-                staged.digest,
-                report.euroeval_version,
-                dict(staged.scores),
-            )
-    logger.info("Approval plan fingerprint: %s", report.plan_fingerprint)
-    logger.warning(
-        "Canonical writes are NOT atomic across writers; run only one canonical writer."
-    )
-    for observation in report.canonical_observations:
-        if observation.conflict:
-            logger.error(
-                "APPROVAL BLOCKER %s: %s",
-                observation.canonical_path,
-                observation.conflict,
-            )
-    logger.info("Warnings: %s", "; ".join(report.warnings) or "none")
 
 
 if __name__ == "__main__":
