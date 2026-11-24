@@ -15,7 +15,7 @@ from euroeval_worker.review import (
     VolunteerReviewer,
     reviewer_from_environment,
 )
-from leaderboards.contamination_canary import is_canary_record
+from euroeval_worker.review_models import ValidatedRecord
 
 logger = logging.getLogger(__name__)
 
@@ -106,19 +106,18 @@ def _log_report(report: ReviewReport, *, verbose: bool = False) -> None:
     logger.info(
         "Benchmark records: %s expected, %s submitted",
         len(report.expected_identities),
-        sum(not _is_canary(record.identity) for record in report.records),
+        sum(not _is_canary(record) for record in report.records),
     )
+    for record in report.records:
+        if _is_canary(record):
+            continue
+        scores = ", ".join(f"{metric}={score:g}" for metric, score in record.scores)
+        logger.info("Result %s  scores={%s}", record.identity, scores)
+        for warning in record.warnings:
+            logger.warning("WARNING %s: %s", record.identity, warning)
     if verbose:
         if report.provenance:
             logger.info("Provenance: %s", report.provenance)
-        for record in report.records:
-            scores = ", ".join(f"{metric}={score:g}" for metric, score in record.scores)
-            label = "Informational canary" if _is_canary(record.identity) else "Result"
-            logger.info("%s %s  scores={%s}", label, record.identity, scores)
-            if record.warnings:
-                logger.warning(
-                    "WARNING %s: %s", record.identity, "; ".join(record.warnings)
-                )
         for check in report.checks:
             logger.info("Check: %s", check)
     for observation in report.canonical_observations:
@@ -144,49 +143,54 @@ def _log_report(report: ReviewReport, *, verbose: bool = False) -> None:
                 and isinstance(item.get("score_details"), dict)
             }
             logger.info(
-                "REPLACEMENT %s: previous sha256=%s version=%s scores=%s; staged "
-                "sha256=%s version=%s scores=%s; previous bytes will be archived",
+                "REPLACEMENT %s: stored version=%s scores=%s; "
+                "submitted version=%s scores=%s",
                 observation.canonical_path,
-                observation.predecessor_digest,
                 old_version,
                 old_scores,
-                staged.digest,
                 report.euroeval_version,
                 dict(staged.scores),
             )
-    logger.info("Approval plan fingerprint: %s", report.plan_fingerprint)
-    logger.warning(
-        "Canonical writes are NOT atomic across writers; run only one canonical writer."
-    )
-    for observation in report.canonical_observations:
-        if observation.conflict:
-            logger.error(
-                "APPROVAL BLOCKER %s: %s",
-                observation.canonical_path,
-                observation.conflict,
-            )
+    blocked = [item for item in report.canonical_observations if item.conflict]
+    for observation in blocked:
+        logger.error(
+            "BLOCKED %s: stored canonical result differs from submitted result; "
+            "there is no automatic winner and approval cannot override this with y.",
+            observation.canonical_path,
+        )
+    if blocked:
+        logger.error(
+            "Leave pending/skip, inspect with: show %s --verbose. To keep existing "
+            "results, explicitly reject the entire staged submission "
+            "(not one dataset): "
+            "review_volunteer_results.py reject %s --reason %s. Choosing incoming "
+            "results is not supported by this review CLI; it requires implementation, "
+            "not flags or manual bucket edits.",
+            report.submission_id,
+            report.submission_id,
+            json.dumps("keep existing canonical results"),
+        )
+    if verbose:
+        logger.info("Approval plan fingerprint: %s", report.plan_fingerprint)
     for warning in report.warnings:
         logger.warning("WARNING: %s", warning)
     if not report.warnings:
         logger.info("Warnings: none")
 
 
-def _is_canary(record: object) -> bool:
-    """Return whether a validated record is an auxiliary canary result.
+def _is_canary(record: ValidatedRecord) -> bool:
+    """Return whether a staged record is an auxiliary canary result.
 
     Args:
-        record: Validated staged record or result identity tuple.
+        record: Validated staged record.
 
     Returns:
         Whether the record is a canary.
     """
-    identity = getattr(record, "identity", record)
-    if isinstance(identity, tuple) and len(identity) >= 2:
-        return identity[1] == "contamination-canary" or identity[1].startswith(
-            "contamination-canary-"
-        )
-    content = getattr(record, "content", None)
-    return bool(content and is_canary_record(record=json.loads(content)))
+    dataset = record.identity[1]
+    return dataset == "contamination-canary" or dataset.startswith(
+        "contamination-canary-"
+    )
 
 
 def _parser() -> argparse.ArgumentParser:
