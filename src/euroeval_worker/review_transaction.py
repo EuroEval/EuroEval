@@ -13,6 +13,8 @@ import typing as t
 import urllib.request
 from contextlib import contextmanager
 
+from tqdm.auto import tqdm
+
 from euroeval.canary_evidence import evidence_from_dict
 from leaderboards import result_conflicts
 from leaderboards.canonical_publication import CanonicalPublisher, PublicationSession
@@ -1099,13 +1101,16 @@ class VolunteerReviewer:
             Submission ID, issue, contributor, and language summaries.
         """
         summaries = self._list_submission_summaries()
-        return [
-            summary
-            for summary in summaries
-            if not self._has_terminal_decision(
-                submission_id=summary[0], issue_number=summary[1]
-            )
-        ]
+        pending: list[tuple[str, int, str, str]] = []
+        with tqdm(
+            summaries, desc="Checking volunteer submissions", unit="submission"
+        ) as progress:
+            for summary in progress:
+                if not self._has_terminal_decision(
+                    submission_id=summary[0], issue_number=summary[1]
+                ):
+                    pending.append(summary)
+        return pending
 
     def _has_terminal_decision(self, submission_id: str, issue_number: int) -> bool:
         """Return whether decision objects resolve to one terminal outcome.
@@ -1182,12 +1187,17 @@ class VolunteerReviewer:
         Returns:
             Submission ID, issue, contributor, and language summaries.
         """
+        paths = self.store.list_manifests()
         summaries: list[tuple[str, int, str, str]] = []
-        for path in self.store.list_manifests():
-            manifest = _load_object(
-                content=self.store.read(self.store.staging_bucket, path), context=path
-            )
-            summaries.append(_manifest_summary(manifest))
+        with tqdm(
+            paths, desc="Loading volunteer manifests", unit="manifest"
+        ) as progress:
+            for path in progress:
+                manifest = _load_object(
+                    content=self.store.read(self.store.staging_bucket, path),
+                    context=path,
+                )
+                summaries.append(_manifest_summary(manifest))
         return summaries
 
     def list_submissions(self) -> list[tuple[str, int, str, str]]:

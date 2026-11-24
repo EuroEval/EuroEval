@@ -467,6 +467,7 @@ def preflight_volunteer_review() -> bool:
         return True
 
     try:
+        logger.info("Checking volunteer review submissions; this may take a while.")
         reviewer = reviewer_from_environment()
         pending = reviewer.list_pending_submissions()
     except PublicStagingError:
