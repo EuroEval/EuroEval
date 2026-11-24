@@ -6,6 +6,7 @@ import argparse
 import json
 import logging
 import os
+import shlex
 
 from dotenv import load_dotenv
 
@@ -113,15 +114,13 @@ def _log_report(report: ReviewReport, *, verbose: bool = False) -> None:
             continue
         scores = ", ".join(f"{metric}={score:g}" for metric, score in record.scores)
         logger.info("Result %s  scores={%s}", record.identity, scores)
-        for warning in record.warnings:
-            logger.warning("WARNING %s: %s", record.identity, warning)
     if verbose:
         if report.provenance:
             logger.info("Provenance: %s", report.provenance)
         for check in report.checks:
             logger.info("Check: %s", check)
     for observation in report.canonical_observations:
-        if observation.replacement:
+        if observation.replacement or observation.conflict:
             staged = next(
                 record
                 for record in report.records
@@ -143,9 +142,9 @@ def _log_report(report: ReviewReport, *, verbose: bool = False) -> None:
                 and isinstance(item.get("score_details"), dict)
             }
             logger.info(
-                "REPLACEMENT %s: stored version=%s scores=%s; "
-                "submitted version=%s scores=%s",
-                observation.canonical_path,
+                "%s %s: stored version=%s scores=%s; submitted version=%s scores=%s",
+                "CONFLICT" if observation.conflict else "REPLACEMENT",
+                observation.identity[1],
                 old_version,
                 old_scores,
                 report.euroeval_version,
@@ -158,24 +157,54 @@ def _log_report(report: ReviewReport, *, verbose: bool = False) -> None:
             "there is no automatic winner and approval cannot override this with y.",
             observation.canonical_path,
         )
+    command = ["uv", "run", "python", "src/scripts/review_volunteer_results.py"]
     if blocked:
-        logger.error(
-            "Leave pending/skip, inspect with: show %s --verbose. To keep existing "
-            "results, explicitly reject the entire staged submission "
-            "(not one dataset): "
-            "review_volunteer_results.py reject %s --reason %s. Choosing incoming "
-            "results is not supported by this review CLI; it requires implementation, "
-            "not flags or manual bucket edits.",
-            report.submission_id,
-            report.submission_id,
-            json.dumps("keep existing canonical results"),
+        logger.info(
+            "Status: BLOCKED (%s conflicts). Left pending; nothing approved.",
+            len(blocked),
+        )
+        logger.info(
+            "Inspect full evidence: %s",
+            shlex.join(command + ["show", report.submission_id, "--verbose"]),
+        )
+        logger.info(
+            "To keep existing results and discard this ENTIRE submission, review "
+            "the evidence first, then explicitly reject it: %s",
+            shlex.join(
+                command
+                + [
+                    "--reviewer",
+                    os.environ.get("GITHUB_ACTOR") or "<github-login>",
+                    "reject",
+                    report.submission_id,
+                    "--reason",
+                    "keep existing canonical results",
+                ]
+            ),
+        )
+        logger.info(
+            "Replacing existing results with this submission is not supported by "
+            "the review CLI. Leave it pending if you want the submitted results; "
+            "do not edit the bucket manually."
+        )
+    else:
+        logger.info(
+            "Status: no approval blockers. Approval still requires confirmation."
         )
     if verbose:
         logger.info("Approval plan fingerprint: %s", report.plan_fingerprint)
-    for warning in report.warnings:
-        logger.warning("WARNING: %s", warning)
-    if not report.warnings:
-        logger.info("Warnings: none")
+    warnings = set(report.warnings)
+    for record in report.records:
+        warnings.update(record.warnings)
+    if warnings:
+        logger.info("Non-blocking notices:")
+        for warning in sorted(warnings):
+            logger.info("  %s", warning)
+    if verbose:
+        for record in report.records:
+            logger.info("Record %s sha256=%s", record.identity, record.digest)
+    if not blocked and any(item.replacement for item in report.canonical_observations):
+        logger.info("Existing results selected for replacement will be archived.")
 
 
 def _is_canary(record: ValidatedRecord) -> bool:
