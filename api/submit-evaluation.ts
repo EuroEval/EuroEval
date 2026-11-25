@@ -133,24 +133,11 @@ export default async function handler(req: Request): Promise<Response> {
   const token = process.env.GITHUB_TOKEN;
   if (!token) return json(500, { error: "Server is missing GITHUB_TOKEN" });
 
-  const origin = req.headers.get("origin") ?? req.headers.get("referer") ?? "";
-  const isDev = /^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(origin);
-
-  if (!isDev) {
-    const ip =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      req.headers.get("x-real-ip") ||
-      "unknown";
-
-    const { success, reset } = await ratelimit.limit(ip);
-    if (!success) {
-      const retryAfter = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
-      return json(
-        429,
-        { error: "Too many submissions. Try again later." },
-        { "retry-after": String(retryAfter) },
-      );
-    }
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const { success, reset } = await ratelimit.limit(ip);
+  if (!success) {
+    const retryAfter = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
+    return json(429, { error: "Too many submissions. Try again later." }, { "retry-after": String(retryAfter) });
   }
 
   let payload: { model_id?: unknown; language_groups?: unknown };
