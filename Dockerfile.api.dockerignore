@@ -25,3 +25,10 @@
 **/.git/
 **/.vercel/
 **/.cache/
+
+**/.env
+**/.env.*
+**/auth.json
+**/*.pem
+**/*.key
+**/node_modules

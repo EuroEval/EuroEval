@@ -83,7 +83,11 @@ function json(status: number, body: unknown, extra?: HeadersInit): Response {
 }
 
 export default async function handler(req: Request): Promise<Response> {
-  if (req.method === "OPTIONS") return json(204, "");
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: {
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "GET, OPTIONS",
+    "access-control-allow-headers": "content-type",
+  } });
   if (req.method !== "GET") return json(405, { error: "Method not allowed" });
 
   const url = new URL(req.url);

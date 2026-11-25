@@ -2,11 +2,13 @@ import { access } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-const apiRoot = path.resolve(process.cwd(), "api") + path.sep;
+const sourceRoots = ["api", "src/frontend/services"].map((directory) =>
+  path.resolve(process.cwd(), directory) + path.sep,
+);
 
-function isWithinApi(file) {
+function isWithinSources(file) {
   const resolved = path.resolve(file);
-  return resolved.startsWith(apiRoot);
+  return sourceRoots.some((root) => resolved.startsWith(root));
 }
 
 export async function resolve(specifier, context, nextResolve) {
@@ -18,13 +20,13 @@ export async function resolve(specifier, context, nextResolve) {
   }
 
   const parent = fileURLToPath(context.parentURL);
-  if (!parent.endsWith(".ts") || !isWithinApi(parent)) {
+  if (!parent.endsWith(".ts") || !isWithinSources(parent)) {
     return nextResolve(specifier, context);
   }
 
   const target = fileURLToPath(new URL(specifier, context.parentURL));
   const typescriptTarget = `${target.slice(0, -3)}.ts`;
-  if (!isWithinApi(target) || !isWithinApi(typescriptTarget)) {
+  if (!isWithinSources(target) || !isWithinSources(typescriptTarget)) {
     return nextResolve(specifier, context);
   }
   try {

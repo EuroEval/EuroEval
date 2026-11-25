@@ -53,15 +53,15 @@ function buildIssueBody(modelId: string, groups: string[]): string {
 async function fetchEvaluatedGroups(
   reqUrl: string,
   modelId: string,
-): Promise<string[]> {
+): Promise<string[] | null> {
   const url = new URL("/evaluated-models.json", reqUrl).toString();
   try {
     const r = await fetch(url);
-    if (!r.ok) return [];
+    if (!r.ok) return null;
     const data = (await r.json()) as Record<string, string[]>;
     return data[modelId] ?? [];
   } catch {
-    return [];
+    return null;
   }
 }
 
@@ -127,7 +127,11 @@ async function createIssue(
 }
 
 export default async function handler(req: Request): Promise<Response> {
-  if (req.method === "OPTIONS") return json(204, "");
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: {
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "POST, OPTIONS",
+    "access-control-allow-headers": "content-type",
+  } });
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
 
   const token = process.env.GITHUB_TOKEN;
@@ -187,6 +191,7 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   const alreadyEvaluated = await fetchEvaluatedGroups(req.url, baseModelId);
+  if (alreadyEvaluated === null) return json(503, { error: "The evaluated-model index is unavailable. Try again later." });
   const remaining = (groups as string[]).filter(
     (g) => !alreadyEvaluated.includes(g),
   );

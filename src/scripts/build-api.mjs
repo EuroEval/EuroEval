@@ -3,6 +3,7 @@ import { promises as fs } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+await fs.rm(path.join(root, 'dist-api'), { recursive: true, force: true });
 const result = spawnSync(path.join(root, 'node_modules/.bin/tsc'), ['-p', 'tsconfig.api.json'], { cwd: root, stdio: 'inherit' });
 if (result.status !== 0) process.exit(result.status ?? 1);
 const csvDir = path.join(root, 'src/frontend/csv');
@@ -18,6 +19,7 @@ for (const file of expectedData) {
 }
 const { buildEvaluatedModelsIndex } = await import('./build-seo-files.mjs');
 const evaluatedIndex = await buildEvaluatedModelsIndex(csvDir);
+if (Object.keys(evaluatedIndex).length === 0) throw new Error('Evaluated-model index is empty; populated leaderboard CSVs are required.');
 const outputDir = path.join(root, 'dist-api');
 await fs.mkdir(outputDir, { recursive: true });
 await fs.writeFile(path.join(outputDir, 'evaluated-models.json'), JSON.stringify(evaluatedIndex), 'utf-8');

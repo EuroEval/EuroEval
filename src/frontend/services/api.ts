@@ -1,6 +1,6 @@
 const configuredOrigin = import.meta.env?.VITE_API_ORIGIN;
 
-function apiOrigin(): string | undefined {
+function apiOrigin(configuredOrigin: string | undefined): string | undefined {
   if (!configuredOrigin) return undefined;
   const url = new URL(configuredOrigin);
   if (!['http:', 'https:'].includes(url.protocol)) {
@@ -18,7 +18,7 @@ function apiOrigin(): string | undefined {
   return url.origin;
 }
 
-export function apiUrl(path: `/api/${string}`): string {
-  const origin = apiOrigin();
+export function apiUrl(path: `/api/${string}`, configured: string | undefined = configuredOrigin): string {
+  const origin = apiOrigin(configured);
   return origin ? new URL(path, origin).toString() : path;
 }
