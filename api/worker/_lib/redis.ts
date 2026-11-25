@@ -234,6 +234,25 @@ export async function releaseResultReservations(
     JSON.stringify(records), leaseId);
   return result === 1 || result === "1";
 }
+/** Release reasons that mean this worker cannot run the model at this revision. */
+export const DECLINE_REASONS: ReadonlySet<string> = new Set(["unsafe_model", "evaluation_failed"]);
+/** How long a worker's decline of a model revision suppresses re-leasing it. */
+export const DECLINE_TTL = 7 * 24 * 60 * 60;
+
+/** Key of a worker's decline of one model revision; ``worker`` is the lease's worker id. */
+export function declineKey(worker: string, modelId: string, revision: string): string {
+  return `euroeval:worker:declined:${worker}:${modelId}@${revision}`;
+}
+export async function recordDecline(lease: Lease, reason: unknown): Promise<void> {
+  if (typeof reason !== "string" || !DECLINE_REASONS.has(reason)) return;
+  await redisSet(declineKey(lease.worker, lease.model_id, lease.model_revision), reason, DECLINE_TTL);
+}
+export async function isDeclined(
+  worker: string, modelId: string, revision: string, signal?: AbortSignal,
+): Promise<boolean> {
+  const value = await redisRequest(["GET", declineKey(worker, modelId, revision)], signal);
+  return typeof value === "string";
+}
 export function leaseKey(leaseId: string): string {
 return `euroeval:worker:lease-id:${leaseId}`; }
 export async function getLeaseById(leaseId: string): Promise<Lease | null> { return redisGet<Lease>(leaseKey(leaseId)); }

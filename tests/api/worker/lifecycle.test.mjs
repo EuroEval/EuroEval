@@ -1213,6 +1213,90 @@ test("release re-signs while preserving history and other leases", async () => {
   }
 });
 
+for (const reason of ["unsafe_model", "evaluation_failed", "gpu_unavailable", undefined]) test(
+  `release ${reason === "unsafe_model" || reason === "evaluation_failed" ? "records" : "does not record"} a decline for reason ${reason}`,
+  async () => {
+    const originalFetch = globalThis.fetch;
+    const originalEnv = { ...process.env };
+    process.env.VOLUNTEER_MARKER_SECRET = "marker-secret";
+    process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
+    process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
+    process.env.GITHUB_TOKEN = "github-token";
+    const signed = await signVolunteerMarker(issueNumber, {
+      protocol_version: "volunteer-worker/v1", coordinator: "coordinator", submission: "active",
+      leases: [{ lease_id: lease.lease_id, language: lease.language, worker: lease.worker,
+        contributor: lease.contributor, expires_at: lease.expires_at }],
+    });
+    const issue = { number: issueNumber, body: markerBody(signed), state: "open", assignees: [{ login: "alice" }] };
+    const values = new Map();
+    values.set(`euroeval:worker:credential:${await sha256("credential")}`, JSON.stringify({ contributor: "alice" }));
+    values.set(`euroeval:worker:lease-id:${lease.lease_id}`, JSON.stringify(lease));
+    values.set(`euroeval:worker:lease:${issueNumber}:da`, JSON.stringify(lease));
+    const broker = mockBroker(issue, values);
+    const sets = [];
+    globalThis.fetch = async (input, init = {}) => {
+      if (String(input) === "https://redis.test") {
+        const command = JSON.parse(init.body);
+        if (command[0] === "SET") sets.push(command);
+      }
+      return broker(input, init);
+    };
+    try {
+      const response = await release(new Request("https://euroeval.test/api/worker/release", {
+        method: "POST", headers: { authorization: "Bearer credential", "content-type": "application/json" },
+        body: JSON.stringify({ protocol_version: "volunteer-worker/v1", lease_id: lease.lease_id, reason }),
+      }));
+      assert.equal(response.status, 200, await response.text());
+      const key = `euroeval:worker:declined:${lease.worker}:${lease.model_id}@${lease.model_revision}`;
+      const declines = sets.filter((command) => command[1] === key);
+      if (reason === "unsafe_model" || reason === "evaluation_failed") {
+        assert.deepEqual(declines, [["SET", key, reason, "EX", String(7 * 24 * 60 * 60)]]);
+      } else {
+        assert.deepEqual(declines, []);
+        assert.equal(sets.some((command) => String(command[1]).startsWith("euroeval:worker:declined:")), false);
+      }
+    } finally {
+      globalThis.fetch = originalFetch;
+      process.env = originalEnv;
+    }
+  },
+);
+
+for (const variant of ["foreign contributor", "expired lease"]) test(
+  `release records no decline for a ${variant}`,
+  async () => {
+    const originalFetch = globalThis.fetch;
+    const originalEnv = { ...process.env };
+    process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
+    process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
+    const stored = variant === "expired lease"
+      ? { ...lease, expires_at: new Date(Date.now() - 60_000).toISOString() }
+      : { ...lease, contributor: "mallory" };
+    const values = new Map();
+    values.set(`euroeval:worker:credential:${await sha256("credential")}`, JSON.stringify({ contributor: "alice" }));
+    values.set(`euroeval:worker:lease-id:${lease.lease_id}`, JSON.stringify(stored));
+    const sets = [];
+    globalThis.fetch = async (input, init = {}) => {
+      if (String(input) !== "https://redis.test") throw new Error(`Unexpected request: ${input}`);
+      const command = JSON.parse(init.body);
+      if (command[0] === "SET") sets.push(command);
+      return Response.json({ result: command[0] === "GET" ? values.get(command[1]) || null : 1 });
+    };
+    try {
+      const response = await release(new Request("https://euroeval.test/api/worker/release", {
+        method: "POST", headers: { authorization: "Bearer credential", "content-type": "application/json" },
+        body: JSON.stringify({ protocol_version: "volunteer-worker/v1", lease_id: lease.lease_id,
+          reason: "unsafe_model" }),
+      }));
+      assert.equal(response.status, 409, await response.text());
+      assert.equal(sets.some((command) => String(command[1]).startsWith("euroeval:worker:declined:")), false);
+    } finally {
+      globalThis.fetch = originalFetch;
+      process.env = originalEnv;
+    }
+  },
+);
+
 test("release unassigns legacy ownership despite matching public lease and submission", async () => {
   const originalFetch = globalThis.fetch;
   const originalEnv = { ...process.env };
@@ -1303,6 +1387,155 @@ test("release resumes after marker removal with retained ownership", async () =>
     assert.ok(redisCommands.some((command) => command[0] === "EVAL" &&
       String(command[1]).includes("released=true")));
     assert.deepEqual(parseVolunteerMarker(issue.body).leases.map((item) => item.lease_id), ["other"]);
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
+
+test("claim skips a model revision this worker declined but offers it to other workers", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  Object.assign(process.env, { VOLUNTEER_MARKER_SECRET: "marker-secret",
+    VOLUNTEER_WORKER_IMAGE_DIGEST: "sha256:image", EUROEVAL_VERSION: "1.0.0",
+    VOLUNTEER_WORKER_VERSION: "1.0.0", UPSTASH_REDIS_REST_URL: "https://redis.test",
+    UPSTASH_REDIS_REST_TOKEN: "redis-token", GITHUB_TOKEN: "github-token",
+    VOLUNTEER_SCOPE_POLICY_JSON: JSON.stringify({ policy_version: "test-policy", policies: [{
+      euroeval_version: "1.0.0", model_type: "encoder", language: "da", language_group: "da",
+      allowed_identity_suffix_sets: [['["dataset",true,true]']],
+      task_groups: ["sequence_classification"], warnings: [],
+    }] }) });
+  const language = "Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)";
+  const issue = { number: issueNumber, title: "[MODEL EVALUATION REQUEST] org/model",
+    body: `### Model ID\n\norg/model\n\n- [x] ${language}\n`, state: "open", assignees: [] };
+  const declinedHash = await sha256("declined-credential");
+  const values = new Map([
+    [`euroeval:worker:credential:${declinedHash}`, JSON.stringify({ contributor: "alice" })],
+    [`euroeval:worker:credential:${await sha256("other-credential")}`, JSON.stringify({ contributor: "alice" })],
+    [`euroeval:worker:declined:${declinedHash.slice(0, 24)}:org/model@${"a".repeat(40)}`, "unsafe_model"],
+  ]);
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input); const method = init.method || "GET";
+    if (url.includes("/buckets/EuroEval/results/resolve/")) return new Response(null, { status: 404 });
+    if (url === "https://redis.test") {
+      const command = JSON.parse(init.body);
+      if (command[0] === "GET") return Response.json({ result: values.get(command[1]) || null });
+      if (command[0] === "SMEMBERS") return Response.json({ result: [] });
+      if (command[0] === "SET") { values.set(command[1], command[2]); return Response.json({ result: "OK" }); }
+      if (command[0] === "EVAL" && command[1].includes("local issue=redis.call")) {
+        values.set(command[3], command[5]); values.set(command[4], command[5]);
+      }
+      return Response.json({ result: 1 });
+    }
+    if (url.includes("/repos/EuroEval/EuroEval/assignees/")) return new Response(null, { status: 204 });
+    if (url.includes("/repos/EuroEval/EuroEval/issues?")) return Response.json([issue]);
+    if (url.includes("huggingface.co/api/models/org/model")) return Response.json({ id: "org/model",
+      sha: "a".repeat(40), private: false, gated: false, pipeline_tag: "fill-mask",
+      siblings: [{ rfilename: "model.safetensors", size: 100 }, { rfilename: "config.json", size: 10 }] });
+    if (url.includes(`/org/model/raw/${"a".repeat(40)}/config.json`)) {
+      return Response.json({ model_type: "bert", architectures: ["BertModel"] });
+    }
+    if (url.endsWith(`/issues/${issueNumber}`) && method === "GET") return Response.json(issue);
+    if (url.endsWith(`/issues/${issueNumber}`) && method === "PATCH") {
+      issue.body = JSON.parse(init.body).body; return Response.json(issue);
+    }
+    throw new Error(`Unexpected request: ${method} ${url}`);
+  };
+  try {
+    const makeRequest = (credential) => new Request("https://euroeval.test/api/worker/claim", {
+      method: "POST", headers: { authorization: `Bearer ${credential}`, "content-type": "application/json" },
+      body: JSON.stringify({ protocol_version: "volunteer-worker/v1", worker_version: "1.0.0",
+        capabilities: ["canonical_coverage_v1"], hardware: { architecture: "arm64",
+          free_disk_bytes: 1_000_000, gpu_memory_utilisation: 0.8, selected_gpu_index: 0,
+          selected_gpu_uuid: "metal-0", gpus: [{ index: 0, name: "Apple M3 Max", uuid: "metal-0",
+            free_memory_bytes: 1_000_000, total_memory_bytes: 1_000_000 }] } }),
+    });
+    const declined = await claim(makeRequest("declined-credential"));
+    assert.equal(declined.status, 200, await declined.clone().text());
+    assert.equal((await declined.json()).status, "no_work");
+    assert.equal(values.has(`euroeval:worker:lease:${issueNumber}:da`), false);
+
+    const other = await claim(makeRequest("other-credential"));
+    assert.equal(other.status, 200, await other.clone().text());
+    const leased = await other.json();
+    assert.equal(leased.issue_number, issueNumber);
+    assert.equal(leased.image_digest, "unattested");
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
+
+test("claim fails closed when the decline lookup is unavailable", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  Object.assign(process.env, { VOLUNTEER_MARKER_SECRET: "marker-secret",
+    VOLUNTEER_WORKER_IMAGE_DIGEST: "sha256:image", EUROEVAL_VERSION: "1.0.0",
+    VOLUNTEER_WORKER_VERSION: "1.0.0", UPSTASH_REDIS_REST_URL: "https://redis.test",
+    UPSTASH_REDIS_REST_TOKEN: "redis-token", GITHUB_TOKEN: "github-token",
+    VOLUNTEER_SCOPE_POLICY_JSON: JSON.stringify({ policy_version: "test-policy", policies: [{
+      euroeval_version: "1.0.0", model_type: "encoder", language: "da", language_group: "da",
+      allowed_identity_suffix_sets: [['["dataset",true,true]']],
+      task_groups: ["sequence_classification"], warnings: [],
+    }] }) });
+  const language = "Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)";
+  const issue = { number: issueNumber, title: "[MODEL EVALUATION REQUEST] org/model",
+    body: `### Model ID\n\norg/model\n\n- [x] ${language}\n`, state: "open", assignees: [] };
+  const declinedHash = await sha256("declined-credential");
+  const values = new Map([
+    [`euroeval:worker:credential:${declinedHash}`, JSON.stringify({ contributor: "alice" })],
+    [`euroeval:worker:credential:${await sha256("other-credential")}`, JSON.stringify({ contributor: "alice" })],
+    [`euroeval:worker:declined:${declinedHash.slice(0, 24)}:org/model@${"a".repeat(40)}`, "unsafe_model"],
+  ]);
+  const declineLookups = [];
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input); const method = init.method || "GET";
+    if (url.includes("/buckets/EuroEval/results/resolve/")) return new Response(null, { status: 404 });
+    if (url === "https://redis.test") {
+      const command = JSON.parse(init.body);
+      if (command[0] === "GET" && String(command[1]).startsWith("euroeval:worker:declined:")) {
+        declineLookups.push(command[1]);
+        return new Response("unavailable", { status: 503 });
+      }
+      if (command[0] === "GET") return Response.json({ result: values.get(command[1]) || null });
+      if (command[0] === "SMEMBERS") return Response.json({ result: [] });
+      if (command[0] === "SET") { values.set(command[1], command[2]); return Response.json({ result: "OK" }); }
+      if (command[0] === "EVAL" && command[1].includes("local issue=redis.call")) {
+        values.set(command[3], command[5]); values.set(command[4], command[5]);
+      }
+      return Response.json({ result: 1 });
+    }
+    if (url.includes("/repos/EuroEval/EuroEval/assignees/")) return new Response(null, { status: 204 });
+    if (url.includes("/repos/EuroEval/EuroEval/issues?")) return Response.json([issue]);
+    if (url.includes("huggingface.co/api/models/org/model")) return Response.json({ id: "org/model",
+      sha: "a".repeat(40), private: false, gated: false, pipeline_tag: "fill-mask",
+      siblings: [{ rfilename: "model.safetensors", size: 100 }, { rfilename: "config.json", size: 10 }] });
+    if (url.includes(`/org/model/raw/${"a".repeat(40)}/config.json`)) {
+      return Response.json({ model_type: "bert", architectures: ["BertModel"] });
+    }
+    if (url.endsWith(`/issues/${issueNumber}`) && method === "GET") return Response.json(issue);
+    if (url.endsWith(`/issues/${issueNumber}`) && method === "PATCH") {
+      issue.body = JSON.parse(init.body).body; return Response.json(issue);
+    }
+    throw new Error(`Unexpected request: ${method} ${url}`);
+  };
+  try {
+    const makeRequest = (credential) => new Request("https://euroeval.test/api/worker/claim", {
+      method: "POST", headers: { authorization: `Bearer ${credential}`, "content-type": "application/json" },
+      body: JSON.stringify({ protocol_version: "volunteer-worker/v1", worker_version: "1.0.0",
+        capabilities: ["canonical_coverage_v1"], hardware: { architecture: "arm64",
+          free_disk_bytes: 1_000_000, gpu_memory_utilisation: 0.8, selected_gpu_index: 0,
+          selected_gpu_uuid: "metal-0", gpus: [{ index: 0, name: "Apple M3 Max", uuid: "metal-0",
+            free_memory_bytes: 1_000_000, total_memory_bytes: 1_000_000 }] } }),
+    });
+    const response = await claim(makeRequest("other-credential"));
+    assert.equal(response.status, 503, await response.clone().text());
+    const otherWorker = (await sha256("other-credential")).slice(0, 24);
+    assert.ok(declineLookups.includes(
+      `euroeval:worker:declined:${otherWorker}:org/model@${"a".repeat(40)}`,
+    ), "the claim must have reached the decline lookup");
+    assert.match((await response.json()).error, /Upstash returned HTTP 503/);
+    assert.equal(values.has(`euroeval:worker:lease:${issueNumber}:da`), false);
   } finally {
     globalThis.fetch = originalFetch;
     process.env = originalEnv;

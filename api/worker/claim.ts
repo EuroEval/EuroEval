@@ -9,7 +9,7 @@ import {
   getLeaseForIssue, reclaimExpiredLease,
   modelMayFit, parseVolunteerMarker, resolveModel, selectedLanguages, volunteerAssigneesMatch,
   requireProtocol, signVolunteerMarker, verifyVolunteerMarker, markerSecret, replaceVolunteerMarker,
-  reserveCanary,
+  reserveCanary, isDeclined,
 } from "./_lib.js";
 import type { Lease, VolunteerLeaseMarker } from "./_lib.js";
 import { narrowCoverage } from "./_lib/coverage.js";
@@ -197,6 +197,7 @@ export default async function handler(req: Request): Promise<Response> {
     const requestedLanguage = typeof body.language === "string" ? body.language : null;
     const issues = await listOpenIssues(signal);
     const selectedHardwareGpu = selectedGpu(body.hardware);
+    const workerId = identity.hash.slice(0, 24);
     const candidates = issues.flatMap((listed) => {
       const modelId = extractModelId(listed.title, listed.body);
       const languages = selectedLanguages(listed.body);
@@ -270,6 +271,8 @@ export default async function handler(req: Request): Promise<Response> {
       checkDiscoveryDeadline();
       const model = resolved.get(modelId);
       if (!model || !fitsGpu(model, body.hardware, selectedHardwareGpu)) continue;
+      // A worker that declined this model revision as unrunnable is not offered it again.
+      if (await isDeclined(workerId, model.id, model.revision, signal)) continue;
       // Serialize final fresh metadata, cross-issue scan, and claim transaction.
       const globalMutex = await acquireRenewableIssueMutex(GLOBAL_CLAIM_MUTEX);
       if (!globalMutex) { claimMutexBusy = true; continue; }
@@ -352,7 +355,7 @@ export default async function handler(req: Request): Promise<Response> {
           model.id, model.revision, model.model_type, leaseId,
         );
         const lease: Lease = {
-          issue_number: snapshot.number, language, worker: identity.hash.slice(0, 24), contributor: identity.contributor,
+          issue_number: snapshot.number, language, worker: workerId, contributor: identity.contributor,
           model_id: model.id, model_revision: model.revision, euroeval_version: euroevalVersion,
           image_digest: imageDigest,
           worker_version: body.worker_version as string,
