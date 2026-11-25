@@ -4,7 +4,7 @@ import { signVolunteerMarker, verifyVolunteerMarker } from "./protocol.js";
 import { parseVolunteerMarker, volunteerAssigneesMatch, replaceVolunteerMarker } from "./markers.js";
 import type { VolunteerLeaseMarker } from "./protocol.js";
 
-async function recoverExpiredOwnership(
+export async function recoverExpiredOwnership(
   issue: Awaited<ReturnType<typeof fetchIssue>>,
   marker: VolunteerLeaseMarker,
   mutex: NonNullable<Awaited<ReturnType<typeof acquireRenewableIssueMutex>>>,
@@ -19,6 +19,7 @@ async function recoverExpiredOwnership(
     const redisLease = await getLeaseForIssue(current.number, expiredLease.language);
     if (redisLease && (redisLease.lease_id !== expiredLease.lease_id ||
         redisLease.contributor.toLowerCase() !== contributor ||
+        !Number.isFinite(Date.parse(redisLease.expires_at)) ||
         Date.parse(redisLease.expires_at) > Date.now())) return null;
     if (!volunteerAssigneesMatch(current.assignees, currentMarker, Date.now(), true, true)) return null;
     const retained = currentMarker.leases.some(
@@ -55,7 +56,8 @@ async function recoverExpiredOwnership(
     await mutex.assertOwned();
     const signed = await signVolunteerMarker(current.number, {
       ...currentMarker,
-      submission: currentMarker.submissions?.length ? "submitted" : "active",
+      submission: ["accepted", "rejected"].includes(currentMarker.submission) ? currentMarker.submission
+        : currentMarker.submissions?.length ? "submitted" : "active",
       leases: currentMarker.leases.filter((lease) => lease.lease_id !== expiredLease.lease_id),
     });
     try {
@@ -79,6 +81,7 @@ async function recoverExpiredOwnership(
 
     const redisAfterRecovery = await getLeaseForIssue(current.number, expiredLease.language);
     if (redisAfterRecovery && (redisAfterRecovery.lease_id !== expiredLease.lease_id ||
+        !Number.isFinite(Date.parse(redisAfterRecovery.expires_at)) ||
         Date.parse(redisAfterRecovery.expires_at) > Date.now())) return null;
     if (redisAfterRecovery) {
       await mutex.assertOwned();
@@ -97,7 +100,9 @@ export async function recoverQueueOwnership(issueNumber: number) {
   try {
     const issue = await fetchIssue(issueNumber);
     const marker = parseVolunteerMarker(issue.body);
-    if (!marker || !(await verifyVolunteerMarker(issueNumber, marker))) return null;
-    return await recoverExpiredOwnership(issue, marker, mutex);
+    if (issue.state !== "open" || !marker || !(await verifyVolunteerMarker(issueNumber, marker))) return null;
+    const recovered = await recoverExpiredOwnership(issue, marker, mutex);
+    if (!recovered) return null;
+    return await reconcilePublicAssignments(recovered.issue, recovered.marker, () => mutex.assertOwned());
   } finally { await mutex.release(); }
 }

@@ -284,7 +284,7 @@ class Worker:
                 or self._login is None
                 or active.github_login != self._login
                 or (
-                    self._launcher_managed
+                    (self._launcher_managed or active.managed_image_digest is not None)
                     and (
                         active.managed_image_digest != self.image_digest
                         or active.lease.image_digest != self.image_digest
@@ -360,16 +360,18 @@ class Worker:
                 if self._clear_finalised_lease(once=once or launcher_managed):
                     return 0 if launcher_managed else None
                 continue
+            if active is not None and active.release_pending:
+                if self._release_exhausted_evaluation(
+                    active=active, once=once or launcher_managed
+                ):
+                    return 0 if launcher_managed else None
+                continue
             if active is not None and not _lease_is_valid(active.lease):
                 logger.warning(
                     "Discarding expired local lease %s", active.lease.lease_id
                 )
                 self.state.archive_active()
                 active = None
-            if active is not None and active.release_pending:
-                if self._release_exhausted_evaluation(active=active, once=once):
-                    return
-                continue
             discovered = self._discover_hardware()
             if active is not None:
                 if self._run_active_lease(
@@ -1049,6 +1051,9 @@ class Worker:
             TimeoutError:
                 If release transport times out in once mode.
         """
+        if not _lease_is_valid(active.lease):
+            self.state.archive_active()
+            return True
         try:
             self.client.release(
                 credential=self._credential,
