@@ -176,6 +176,23 @@ def _fake_metal_host(
     return calls
 
 
+def _unsafe_first_lease(lease: Lease, **_kwargs: object) -> None:
+    """Reject the first test lease as unsafe and accept any other lease.
+
+    Args:
+        lease:
+            Lease under the safety check.
+        **_kwargs:
+            Ignored safety-check arguments.
+
+    Raises:
+        SafetyError:
+            For the first test lease.
+    """
+    if lease.lease_id == LEASE.lease_id:
+        raise SafetyError("model backend compatibility was not verified")
+
+
 def test_auth_honours_slow_down_retry_after(tmp_path: Path) -> None:
     """Use the broker's slow-down interval rather than a tight polling loop.
 
@@ -1039,6 +1056,106 @@ def test_continuous_worker_retries_exhausted_release_and_claims_new_work(
     assert json.loads(archived[0].read_text())["evaluation_failures"] == 3
 
 
+def test_continuous_worker_skips_unsafe_model_and_claims_new_work(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Release a lease that fails the safety check, then evaluate the next lease.
+
+    Args:
+        monkeypatch:
+            Fixture replacing network dependencies and sleep.
+        tmp_path:
+            Private worker state directory.
+    """
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(runtime, "check_model_safety", _unsafe_first_lease)
+    broker = _second_lease_broker()
+    evaluated: list[str] = []
+
+    class RecordingEvaluator:
+        """Record which leases reach evaluation."""
+
+        def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
+            """Record the lease and return one result.
+
+            Args:
+                lease:
+                    Lease supplied to the test.
+                output_path:
+                    Path where evaluation results would be written.
+
+            Returns:
+                A single deterministic evaluation record.
+            """
+            evaluated.append(lease.lease_id)
+            return [EEERecord(record_json={"id": lease.lease_id})]
+
+    def stop_after_finalisation(delay: float) -> None:
+        """Stop the continuous loop once the second lease is finalised.
+
+        Args:
+            delay:
+                Requested sleep duration.
+
+        Raises:
+            KeyboardInterrupt:
+                Once the broker has finalised work.
+        """
+        if broker.finalised:
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(runtime.time, "sleep", stop_after_finalisation)
+    state = StateStore(directory=tmp_path)
+    with pytest.raises(KeyboardInterrupt):
+        runtime.Worker(
+            client=broker,
+            state=state,
+            evaluator=RecordingEvaluator(),
+            hardware_factory=lambda: HARDWARE,
+        ).run()
+    assert broker.releases == ["unsafe_model"]
+    assert evaluated == ["lease-2"]
+    assert broker.finalised
+    assert state.load_active() is None
+
+
+def _second_lease_broker() -> "Broker":
+    """Build a broker offering the first lease, a distinct second lease, then nothing.
+
+    Returns:
+        The broker fake.
+    """
+    second = dataclasses.replace(LEASE, lease_id="lease-2", issue_number=43)
+
+    class SecondLeaseBroker(Broker):
+        """Offer two distinct leases in sequence."""
+
+        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            """Offer the next lease in sequence.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                hardware:
+                    Hardware supplied to the test.
+
+            Returns:
+                The next lease, or no lease once both were offered.
+            """
+            self.claims += 1
+            return Claim(
+                lease=LEASE
+                if self.claims == 1
+                else second
+                if self.claims == 2
+                else None
+            )
+
+    return SecondLeaseBroker()
+
+
 def test_discover_hardware_does_not_import_torch_in_worker(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1744,6 +1861,101 @@ def test_metal_gpu_is_not_cuda_pinned_during_evaluation(
         worker.run(once=True)
     assert observed["cuda"] == "GPU-preexisting"
     assert os.environ["CUDA_VISIBLE_DEVICES"] == "GPU-preexisting"
+
+
+def test_resumed_unsafe_lease_does_not_stop_continuous_worker(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Keep a continuous worker running when a resumed lease fails the safety check.
+
+    Args:
+        monkeypatch:
+            Fixture replacing network dependencies and sleep.
+        tmp_path:
+            Private worker state directory.
+    """
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(runtime, "check_model_safety", _unsafe_first_lease)
+    state = StateStore(directory=tmp_path)
+    state.save_active(lease=LEASE, github_login="login")
+    broker = _second_lease_broker()
+    broker.claims = 1
+
+    def stop_after_finalisation(delay: float) -> None:
+        """Stop the continuous loop once the next lease is finalised.
+
+        Args:
+            delay:
+                Requested sleep duration.
+
+        Raises:
+            KeyboardInterrupt:
+                Once the broker has finalised work.
+        """
+        if broker.finalised:
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(runtime.time, "sleep", stop_after_finalisation)
+    with pytest.raises(KeyboardInterrupt):
+        runtime.Worker(
+            client=broker,
+            state=state,
+            evaluator=OneRecordEvaluator(),
+            hardware_factory=lambda: HARDWARE,
+        ).run()
+    assert broker.releases == ["unsafe_model"]
+    assert broker.finalised
+    assert state.load_active() is None
+
+
+@pytest.mark.parametrize("resumed", [False, True])
+@pytest.mark.parametrize("launcher_managed", [False, True])
+def test_unsafe_model_still_stops_once_and_launcher_managed_workers(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    launcher_managed: bool,
+    resumed: bool,
+) -> None:
+    """Preserve the existing exit behaviour outside plain continuous mode.
+
+    Args:
+        monkeypatch:
+            Fixture replacing network dependencies.
+        tmp_path:
+            Private worker state directory.
+        launcher_managed:
+            Whether the worker runs under the Docker launcher.
+        resumed:
+            Whether the unsafe lease is resumed from saved state.
+    """
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(runtime, "check_model_safety", _unsafe_first_lease)
+    state = StateStore(directory=tmp_path)
+    if resumed:
+        state.save_active(
+            lease=LEASE,
+            github_login="login",
+            managed_image_digest=LEASE.image_digest if launcher_managed else None,
+        )
+    broker = _second_lease_broker()
+    worker = runtime.Worker(
+        client=broker,
+        state=state,
+        evaluator=OneRecordEvaluator(),
+        hardware_factory=lambda: HARDWARE,
+        image_digest=LEASE.image_digest if launcher_managed else None,
+    )
+    if launcher_managed:
+        assert worker.run(launcher_managed=True) == 1
+    else:
+        with pytest.raises(SafetyError):
+            worker.run(once=True)
+    assert broker.releases == ["unsafe_model"]
+    assert broker.claims == (0 if resumed else 1)
 
 
 VM_STAT = (

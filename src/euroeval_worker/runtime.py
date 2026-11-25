@@ -351,12 +351,7 @@ class Worker:
             selected = select_gpu(hardware.gpus)
             lease = _lease_for_gpu(response.lease, selected)
             try:
-                self._process_lease(
-                    credential=self._credential,
-                    lease=lease,
-                    hardware=hardware,
-                    active=None,
-                )
+                self._process_fresh_lease(lease=lease, hardware=hardware, once=once)
             except EvaluationFailure as error:
                 if once:
                     raise error.__cause__ or error
@@ -546,6 +541,27 @@ class Worker:
             selected_gpu_index=selected.index,
             selected_gpu_uuid=selected.uuid,
         )
+
+    def _process_fresh_lease(
+        self, *, lease: Lease, hardware: HardwareReport, once: bool
+    ) -> None:
+        """Process a newly claimed lease, moving on if its model is unsafe.
+
+        Args:
+            lease:
+                Newly claimed lease.
+            hardware:
+                Prepared hardware report for the claim.
+            once:
+                Whether the caller requested single-operation behaviour.
+
+        """
+        try:
+            self._process_lease(
+                credential=self._credential, lease=lease, hardware=hardware, active=None
+            )
+        except SafetyError as error:
+            self._recover_safety_failure(error=error, once=once)
 
     def _process_lease(
         self,
@@ -947,6 +963,24 @@ class Worker:
             logger.warning("Result submission failed; retrying idempotently")
             time.sleep(_retry_delay(attempt, retry_after, self._max_retry_delay))
 
+    def _recover_safety_failure(self, *, error: SafetyError, once: bool) -> None:
+        """Move on after a model fails its safety preflight in continuous mode.
+
+        The preflight has already released and archived the lease. Single-operation
+        and launcher-managed runs keep raising, so their exit status is unchanged.
+
+        Args:
+            error:
+                The preflight failure.
+            once:
+                Whether the caller requested single-operation behaviour.
+
+        """
+        if once or self._launcher_managed:
+            raise error
+        logger.warning("Skipping work that failed the model safety check: %s", error)
+        self._sleep_recovery_backoff()
+
     def _recover_evaluation_failure(
         self, *, active: ActiveLease, error: EvaluationFailure, once: bool
     ) -> None:
@@ -1062,6 +1096,9 @@ class Worker:
             )
         except EvaluationFailure as error:
             self._recover_evaluation_failure(active=active, error=error, once=once)
+            return False
+        except SafetyError as error:
+            self._recover_safety_failure(error=error, once=once)
             return False
         except (BrokerError, LeaseLost, OSError, TimeoutError) as error:
             if _lease_lost(error):
