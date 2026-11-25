@@ -4,6 +4,8 @@ import dataclasses
 import io
 import json
 import logging
+from os import terminal_size
+from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
@@ -20,6 +22,19 @@ from leaderboards import score_extraction
 from src.scripts import collect_evaluation_results, review_volunteer_results
 
 
+@pytest.fixture(autouse=True)
+def local_review_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep review choices in a temporary local collection file.
+
+    Args:
+        tmp_path: Isolated directory.
+        monkeypatch: Fixture replacing the collector path.
+    """
+    monkeypatch.setattr(
+        collect_evaluation_results, "NEW_RESULTS_PATH", tmp_path / "new_results.jsonl"
+    )
+
+
 @pytest.fixture
 def report() -> ReviewReport:
     """Return a submission with a benchmark collision and auxiliary canary.
@@ -31,12 +46,23 @@ def report() -> ReviewReport:
     path = "model/task__val__fewshot.json"
     stored = json.dumps(
         {
-            "eval_library": {"version": "1.0"},
+            "model_info": {"id": "model"},
+            "eval_library": {
+                "version": "1.0",
+                "additional_details": {
+                    "dataset": "task",
+                    "validation_split": True,
+                    "few_shot": True,
+                },
+            },
             "evaluation_results": [
                 {"evaluation_name": "test_f1", "score_details": {"score": 40.0}}
             ],
         }
     ).encode()
+    submitted = json.loads(stored)
+    submitted["eval_library"]["version"] = "2.0"
+    submitted["evaluation_results"][0]["score_details"]["score"] = 50.0
     return ReviewReport(
         submission_id="submission with spaces",
         issue_number=12,
@@ -53,7 +79,7 @@ def report() -> ReviewReport:
                 digest="submitted-digest",
                 staged_path="staged",
                 canonical_path=path,
-                content=b"{}",
+                content=json.dumps(submitted).encode(),
                 scores=(("test_f1", 50.0),),
                 warnings=("Missing metadata",),
             ),
@@ -92,7 +118,9 @@ def test_collector_accepts_no_colour_flag(monkeypatch: pytest.MonkeyPatch) -> No
         collect_evaluation_results, "check_required_env_vars", lambda: None
     )
     monkeypatch.setattr(
-        collect_evaluation_results, "preflight_volunteer_review", lambda: False
+        collect_evaluation_results,
+        "preflight_volunteer_review",
+        lambda accepted_results=None: False,
     )
     result = CliRunner().invoke(collect_evaluation_results.main, ["--no-colour"])
     assert result.exit_code == 0
@@ -122,12 +150,9 @@ def test_conflicting_preflight_can_be_left_pending(
     )
     prompt = Mock(side_effect=["y", "s"])
     monkeypatch.setattr("builtins.input", prompt)
-    decision = Mock()
-    monkeypatch.setattr(collect_evaluation_results, "run_review_command", decision)
 
     assert collect_evaluation_results.preflight_volunteer_review() is True
     assert prompt.call_count == 2
-    decision.assert_not_called()
     reviewer.decide.assert_not_called()
 
 
@@ -158,57 +183,71 @@ def test_failure_summary_matches_leaderboard_threshold(
     assert "unknown" not in caplog.text
 
 
-@pytest.mark.parametrize("action", ["a", "r"])
-def test_model_actions_cover_all_languages(
+@pytest.mark.parametrize("action", ["a", "r", "s", "q", ""])
+def test_model_review_is_a_single_local_choice(
     report: ReviewReport,
     monkeypatch: pytest.MonkeyPatch,
-    caplog: pytest.LogCaptureFixture,
     capsys: pytest.CaptureFixture[str],
     action: str,
 ) -> None:
-    """One model decision covers every pending language, with no IDs in the box."""
-    first = dataclasses.replace(report, canonical_observations=())
-    second = dataclasses.replace(first, submission_id="second-language", language="ro")
-    reports = {r.submission_id: r for r in [first, second]}
+    """Accept appends loaded results; other choices leave the file alone."""
+    second_content = json.loads(report.records[0].content)
+    second_content["eval_library"]["additional_details"]["dataset"] = "task-ro"
+    second_content["evaluation_results"][0]["score_details"]["score"] = 60.0
+    second_record = dataclasses.replace(
+        report.records[0],
+        identity=("model", "task-ro", True, True),
+        content=json.dumps(second_content).encode(),
+        scores=(("test_f1", 60.0),),
+    )
+    second = dataclasses.replace(
+        report,
+        submission_id="second-language",
+        language="ro",
+        records=(second_record, *report.records[1:]),
+        canonical_observations=(),
+    )
+    reports = {r.submission_id: r for r in [report, second]}
     reviewer = Mock(spec=VolunteerReviewer)
-    reviewer.group_submissions_by_model.side_effect = lambda submission_ids: [
-        submission_ids
-    ]
-    reviewer.show.side_effect = lambda **kw: reports[kw["submission_id"]]
     reviewer.list_pending_submissions.return_value = [
         (r.submission_id, 12, "alice", r.language) for r in reports.values()
     ]
+    reviewer.group_submissions_by_model.return_value = [list(reports)]
+    reviewer.show.side_effect = lambda submission_id: reports[submission_id]
     monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
     monkeypatch.setenv("HF_TOKEN", "test-token")
-    monkeypatch.setenv("GITHUB_ACTOR", "maintainer")
     monkeypatch.setattr(
         collect_evaluation_results, "reviewer_from_environment", lambda: reviewer
     )
     monkeypatch.setattr(
         collect_evaluation_results, "_stdin_is_interactive", lambda: True
     )
-    answers = ["y", "a"] if action == "a" else ["y", "r", "reason", "y"]
-    monkeypatch.setattr("builtins.input", Mock(side_effect=answers))
-    decision = Mock(return_value=0)
-    monkeypatch.setattr(collect_evaluation_results, "run_review_command", decision)
-    caplog.set_level("INFO")
-    assert collect_evaluation_results.preflight_volunteer_review()
-    commands = [c.args[0] for c in decision.call_args_list]
-    assert {c[3] for c in commands} == set(reports)
-    assert all(("approve" if action == "a" else "reject") in c for c in commands)
-    lines = [
-        r.getMessage()
-        for r in caplog.records
-        if r.getMessage().startswith(("┌", "│", "└"))
-    ]
-    assert len(lines) == 5
-    assert "da, ro" in "\n".join(lines)
-    assert "submission with spaces" not in "\n".join(lines)
-    assert "#12" not in "\n".join(lines)
-    progress_output = capsys.readouterr().err
-    assert "Loading model" in progress_output
-    assert "1/2" in progress_output
-    assert "2/2" in progress_output
+    prompt = Mock(side_effect=["y", action])
+    monkeypatch.setattr("builtins.input", prompt)
+    path = collect_evaluation_results.NEW_RESULTS_PATH
+    path.write_text('{"existing":true}', encoding="utf-8")
+    accepted = {}
+    assert collect_evaluation_results.preflight_volunteer_review(
+        accepted_results=accepted
+    ) is (action != "q")
+    assert prompt.call_count == 2
+    reviewer.decide.assert_not_called()
+    if action == "a":
+        assert [json.loads(line) for line in path.read_text().splitlines()] == [
+            {"existing": True},
+            json.loads(report.records[0].content),
+            json.loads(second_record.content),
+        ]
+        assert accepted == {
+            r.identity: json.dumps(json.loads(r.content), separators=(",", ":"))
+            for r in [report.records[0], second_record]
+        }
+    else:
+        assert path.read_text() == '{"existing":true}'
+        assert not accepted
+    progress = capsys.readouterr().err
+    assert "Loading model" in progress and "2/2" in progress
+    assert "Checking replacement" not in progress and "Approving model" not in progress
 
 
 def test_muted_status_colours_and_opt_out(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -240,70 +279,83 @@ def test_muted_status_colours_and_opt_out(monkeypatch: pytest.MonkeyPatch) -> No
         root.removeHandler(handler)
 
 
-@pytest.mark.parametrize(
-    ("actions", "expected"),
-    [
-        (["a", "y"], "approve"),
-        (["r", "keep existing", "y"], "reject"),
-        (["d", "s"], None),
-        (["a", "n", "s"], None),
-        (["r", "", "s"], None),
-        (["r", "reason", "n", "s"], None),
-        (["q"], "stop"),
-    ],
-)
-def test_review_actions(
+@pytest.mark.parametrize("change", ["version", "score", "metadata", "raw"])
+def test_replacement_summary_explains_actual_changes(
     report: ReviewReport,
     monkeypatch: pytest.MonkeyPatch,
-    actions: list[str],
-    expected: str | None,
+    caplog: pytest.LogCaptureFixture,
+    change: str,
 ) -> None:
-    """Only confirmed decisions issue commands; details and skip are read-only."""
-    selected = dataclasses.replace(
+    """Review distinguishes version-only changes, score deltas and metadata loss."""
+    predecessor = report.canonical_observations[0].predecessor_content
+    assert predecessor is not None
+    old = json.loads(predecessor)
+    old["model_info"]["additional_details"] = {
+        "open": True,
+        "commercially_licensed": True,
+    }
+    new = json.loads(json.dumps(old))
+    if change == "version":
+        new["eval_library"]["version"] = "2.0"
+    elif change == "score":
+        new["evaluation_results"][0]["score_details"]["score"] = 50.0
+    elif change == "metadata":
+        new["model_info"]["additional_details"] = {
+            "open": False,
+            "trained_from_scratch": True,
+        }
+    else:
+        old["eval_library"]["additional_details"]["raw_results"] = "[{}]"
+        new["eval_library"]["additional_details"]["raw_results"] = '[{"test_f1":0.6}]'
+    report = dataclasses.replace(
         report,
-        canonical_observations=tuple(
-            dataclasses.replace(o, replacement=True, conflict=None)
-            for o in report.canonical_observations
+        records=(
+            dataclasses.replace(report.records[0], content=json.dumps(new).encode()),
         ),
-        plan_fingerprint="selected-fingerprint",
+        canonical_observations=(
+            dataclasses.replace(
+                report.canonical_observations[0],
+                predecessor_content=json.dumps(old).encode(),
+            ),
+        ),
     )
     reviewer = Mock(spec=VolunteerReviewer)
-    reviewer.group_submissions_by_model.side_effect = lambda submission_ids: [
-        submission_ids
-    ]
-    reviewer.list_pending_submissions.return_value = [
-        (report.submission_id, 12, "alice", "da")
-    ]
-    reviewer.show.side_effect = lambda **kw: (
-        selected if kw.get("replace_existing") else report
-    )
-    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
-    monkeypatch.setenv("HF_TOKEN", "test-token")
-    monkeypatch.setenv("GITHUB_ACTOR", "maintainer")
+    reviewer.show.return_value = report
     monkeypatch.setattr(
-        collect_evaluation_results, "reviewer_from_environment", lambda: reviewer
+        review_volunteer_results.shutil,
+        "get_terminal_size",
+        lambda fallback=(80, 24): terminal_size((240, 40)),
     )
-    monkeypatch.setattr(
-        collect_evaluation_results, "_stdin_is_interactive", lambda: True
+    caplog.set_level("INFO")
+    review_volunteer_results.show_and_render(
+        submission_id=report.submission_id, reviewer=reviewer, verbose=True
     )
-    prompt = Mock(side_effect=["y", *actions])
-    monkeypatch.setattr("builtins.input", prompt)
-    decision = Mock(return_value=0)
-    monkeypatch.setattr(collect_evaluation_results, "run_review_command", decision)
-    assert collect_evaluation_results.preflight_volunteer_review() is (
-        expected != "stop"
-    )
-    if expected in {"approve", "reject"}:
-        command = decision.call_args.args[0]
-        assert expected in command
-        assert report.submission_id in command
-        if expected == "approve":
-            assert "--replace-existing" in command
-            assert selected.plan_fingerprint in command
-        else:
-            assert "keep existing" in command
+    if change == "version":
+        assert "1 version-only" in caplog.text and "scores 0 changed" in caplog.text
+        assert "1.0→2.0" in caplog.text
+    elif change == "score":
+        assert "scores 1 changed" in caplog.text
+        assert "40.0 → 50.0" in caplog.text
+        assert "Δ+10" in caplog.text
+    elif change == "metadata":
+        assert "1 added, 1 removed, 1 changed" in caplog.text
+        assert (
+            "metadata removed model_info.additional_details.commercially_licensed"
+            in caplog.text
+        )
+        assert (
+            "metadata added model_info.additional_details.trained_from_scratch"
+            in caplog.text
+        )
+        assert "metadata changed model_info.additional_details.open" in caplog.text
     else:
-        decision.assert_not_called()
+        assert "other data 1" in caplog.text
+        assert "scores 0 changed" in caplog.text
+        assert (
+            "evaluation data changed: eval_library.additional_details.raw_results"
+            in caplog.text
+        )
+    reviewer.decide.assert_not_called()
 
 
 @pytest.mark.parametrize("no_colour", [False, True])
@@ -422,11 +474,8 @@ def test_stopping_first_model_does_not_inspect_later_models(
         collect_evaluation_results, "_stdin_is_interactive", lambda: True
     )
     monkeypatch.setattr("builtins.input", Mock(side_effect=["y", "q"]))
-    decision = Mock()
-    monkeypatch.setattr(collect_evaluation_results, "run_review_command", decision)
     assert collect_evaluation_results.preflight_volunteer_review() is False
     assert not any(r.levelno >= logging.ERROR for r in caplog.records)
-    decision.assert_not_called()
 
 
 @pytest.mark.parametrize("long_values", [False, True])
@@ -449,7 +498,7 @@ def test_summary_fits_five_lines(
     assert len(lines) == 5
     assert all(len(line) <= 120 for line in lines)
     assert "1/1 dataset results" in caplog.text
-    assert "Approve replaces 1" in caplog.text
+    assert "scores 1 changed" in caplog.text
     assert "submitted-digest" not in caplog.text
     assert "test_f1" not in caplog.text
     reviewer.decide.assert_not_called()

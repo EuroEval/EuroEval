@@ -6,17 +6,20 @@ import signal
 import typing as t
 from contextlib import nullcontext
 from pathlib import Path
-from unittest.mock import Mock, call
+from unittest.mock import Mock
 
 import pytest
 
-from euroeval_worker.review import PublicStagingError
-from euroeval_worker.review_models import ReviewReport
+from euroeval_worker.review import PublicStagingError, VolunteerReviewer
+from euroeval_worker.review_models import ReviewReport, ValidatedRecord
 from leaderboards import canonical_publication, constants, result_loading
 from leaderboards.result_conflicts import ConflictDecision
-from leaderboards.result_identity import UnresolvedResultConflictError
+from leaderboards.result_identity import (
+    UnresolvedResultConflictError,
+    identity_from_eee_record,
+    identity_to_path,
+)
 from src.scripts import collect_evaluation_results
-from tests.leaderboards.test_canonical_publication import MemoryLock
 
 
 class FakeHfApi:
@@ -104,34 +107,94 @@ def clear_bucket_adapter() -> None:
     FakeHfApi.objects.clear()
 
 
-def test_collector_abort_preserves_staging_and_local_results(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+@pytest.mark.parametrize("local_state", ["present", "missing", "outdated"])
+def test_accepted_incoming_result_is_published_without_another_prompt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, local_state: str
 ) -> None:
-    """An aborted conflict batch has no staging or result-file side effects."""
-    results_dir = tmp_path / "results"
-    record_path = results_dir / "foo_bar" / "task__test__zeroshot.json"
-    record_path.parent.mkdir(parents=True)
-    stored = _ranked_collector_record()
-    original_record = (json.dumps(stored, indent=2) + "\n").encode()
-    record_path.write_bytes(original_record)
-    staging = tmp_path / "new_results.jsonl"
-    staging.write_text("manual entry\n", encoding="utf-8")
-    incoming = json.loads(json.dumps(stored))
-    incoming["evaluation_results"][0]["score_details"]["score"] = 0.8
-    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
-    monkeypatch.setattr(collect_evaluation_results, "NEW_RESULTS_PATH", staging)
-    monkeypatch.setattr(
-        collect_evaluation_results,
-        "resolve_result_interactively",
-        lambda **_kwargs: (_ for _ in ()).throw(
-            UnresolvedResultConflictError("aborted")
+    """The ordinary upload honours the exact result accepted during local review."""
+    _enable_real_collector_publisher(monkeypatch=monkeypatch, tmp_path=tmp_path)
+    results = tmp_path / "results"
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results)
+    record = _ranked_collector_record(score=80.0)
+    identity = identity_from_eee_record(record)
+    path = identity_to_path(identity).as_posix()
+    old = json.dumps(record).encode()
+    destination = results / path
+    destination.parent.mkdir(parents=True)
+    if local_state != "missing":
+        destination.write_bytes(old)
+    if local_state == "outdated":
+        old = json.dumps(_ranked_collector_record(score=81.0, version="2.0.0")).encode()
+    FakeHfApi.objects[path] = old
+    selected = _ranked_collector_record(score=40.0)
+    accepted_line = json.dumps(selected, separators=(",", ":"))
+    other = json.dumps(_ranked_collector_record(score=90.0))
+    source = tmp_path / "new_results.jsonl"
+    monkeypatch.setattr(collect_evaluation_results, "NEW_RESULTS_PATH", source)
+    report = ReviewReport(
+        submission_id="accepted-submission",
+        issue_number=12,
+        contributor="alice",
+        model_id="foo/bar",
+        model_revision="revision",
+        language="da",
+        euroeval_version="1.0.0",
+        provenance={},
+        expected_identities=(identity,),
+        canonical_observations=(),
+        plan_fingerprint="reviewed-fingerprint",
+        warnings=(),
+        checks=(),
+        records=(
+            ValidatedRecord(
+                identity=identity,
+                digest=hashlib.sha256(accepted_line.encode()).hexdigest(),
+                staged_path="private-stage",
+                canonical_path=path,
+                content=accepted_line.encode(),
+                scores=(("accuracy", 40.0),),
+                warnings=(),
+            ),
         ),
     )
-    assert not collect_evaluation_results.upload_results_to_hf(
-        new_results_path=staging, pending_lines=[json.dumps(incoming)]
+    reviewer = Mock(spec=VolunteerReviewer)
+    reviewer.list_pending_submissions.return_value = [
+        (report.submission_id, 12, "alice", "da")
+    ]
+    reviewer.group_submissions_by_model.return_value = [[report.submission_id]]
+    reviewer.show.return_value = report
+    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
+    monkeypatch.setattr(
+        collect_evaluation_results, "reviewer_from_environment", lambda: reviewer
     )
-    assert staging.read_text(encoding="utf-8") == "manual entry\n"
-    assert record_path.read_bytes() == original_record
+    monkeypatch.setattr(
+        collect_evaluation_results, "_stdin_is_interactive", lambda: True
+    )
+    monkeypatch.setattr("builtins.input", Mock(side_effect=["y", "a"]))
+    accepted = {}
+    assert collect_evaluation_results.preflight_volunteer_review(
+        accepted_results=accepted
+    )
+    assert source.read_text() == accepted_line + "\n"
+    reviewer.decide.assert_not_called()
+    prompt = Mock(side_effect=AssertionError("accepted results must not prompt again"))
+    monkeypatch.setattr("builtins.input", prompt)
+    assert collect_evaluation_results.upload_results_to_hf(
+        new_results_path=source,
+        pending_lines=[other, accepted_line],
+        accepted_results=accepted,
+    )
+    assert json.loads(FakeHfApi.objects[path]) == selected
+    assert FakeHfApi.objects[f"_history/{hashlib.sha256(old).hexdigest()}.bin"] == old
+
+
+def _enable_real_collector_publisher(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Use the real publisher with isolated in-memory adapters."""
+    monkeypatch.setattr(collect_evaluation_results, "HfApi", FakeHfApi)
+    monkeypatch.setenv("HF_TOKEN", "test-token")
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
 
 
 def _ranked_collector_record(
@@ -162,6 +225,36 @@ def _ranked_collector_record(
             {"evaluation_name": "accuracy", "score_details": {"score": score}}
         ],
     }
+
+
+def test_collector_abort_preserves_staging_and_local_results(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """An aborted conflict batch has no staging or result-file side effects."""
+    results_dir = tmp_path / "results"
+    record_path = results_dir / "foo_bar" / "task__test__zeroshot.json"
+    record_path.parent.mkdir(parents=True)
+    stored = _ranked_collector_record()
+    original_record = (json.dumps(stored, indent=2) + "\n").encode()
+    record_path.write_bytes(original_record)
+    staging = tmp_path / "new_results.jsonl"
+    staging.write_text("manual entry\n", encoding="utf-8")
+    incoming = json.loads(json.dumps(stored))
+    incoming["evaluation_results"][0]["score_details"]["score"] = 0.8
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
+    monkeypatch.setattr(collect_evaluation_results, "NEW_RESULTS_PATH", staging)
+    monkeypatch.setattr(
+        collect_evaluation_results,
+        "resolve_result_interactively",
+        lambda **_kwargs: (_ for _ in ()).throw(
+            UnresolvedResultConflictError("aborted")
+        ),
+    )
+    assert not collect_evaluation_results.upload_results_to_hf(
+        new_results_path=staging, pending_lines=[json.dumps(incoming)]
+    )
+    assert staging.read_text(encoding="utf-8") == "manual entry\n"
+    assert record_path.read_bytes() == original_record
 
 
 def test_collector_captures_predecessors_without_second_tree_read(
@@ -206,20 +299,6 @@ def test_collector_captures_predecessors_without_second_tree_read(
     assert reads == 1
     history = f"_history/{hashlib.sha256(predecessor).hexdigest()}.bin"
     assert FakeHfApi.objects[history] == predecessor
-
-
-def _enable_real_collector_publisher(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """Use the real publisher with isolated in-memory adapters."""
-    monkeypatch.setattr(collect_evaluation_results, "HfApi", FakeHfApi)
-    monkeypatch.setattr(
-        canonical_publication.PublicationLock,
-        "from_environment",
-        classmethod(lambda cls, bucket="EuroEval/results": MemoryLock()),
-    )
-    monkeypatch.setenv("HF_TOKEN", "test-token")
-    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
 
 
 def test_collector_falls_back_to_exact_bytes_when_metadata_is_unavailable(
@@ -462,28 +541,83 @@ def test_harvested_conflict_abort_preserves_canonical_bytes(
     assert canonical.read_bytes() == original_bytes
 
 
-def test_initial_yes_does_not_approve_without_item_confirmation(
+def test_main_does_not_harvest_after_review_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Overview consent alone cannot approve the pending submission."""
+    """Failed promotion preflight stops main before any collection operation."""
+    monkeypatch.setattr(
+        collect_evaluation_results, "check_required_env_vars", lambda: None
+    )
+    monkeypatch.setattr(
+        collect_evaluation_results,
+        "preflight_volunteer_review",
+        lambda accepted_results=None: False,
+    )
+    fetch = Mock(side_effect=AssertionError("harvest started"))
+    monkeypatch.setattr(collect_evaluation_results, "_fetch_issues", fetch)
+    callback = collect_evaluation_results.main.callback
+    assert callback is not None
+    callback(force=False)
+    fetch.assert_not_called()
+
+
+def test_main_pauses_before_harvesting(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A review pause occurs before the first GitHub operation.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+    """
+    monkeypatch.setattr(
+        collect_evaluation_results, "check_required_env_vars", lambda: None
+    )
+    monkeypatch.setattr(
+        collect_evaluation_results,
+        "preflight_volunteer_review",
+        lambda accepted_results=None: False,
+    )
+    monkeypatch.setattr(
+        collect_evaluation_results,
+        "_fetch_issues",
+        Mock(side_effect=AssertionError("harvest started")),
+    )
+
+    callback = collect_evaluation_results.main.callback
+    assert callback is not None
+    assert callback(force=False) is None
+
+
+@pytest.mark.parametrize("answer", ["", "n", "no"])
+def test_preflight_default_or_no_continues_without_approval(
+    monkeypatch: pytest.MonkeyPatch, answer: str, caplog: pytest.LogCaptureFixture
+) -> None:
+    """No and the default answer continue without approving anything.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        answer:
+            Answer supplied to the test.
+        caplog:
+            Fixture for capturing log records during the test.
+    """
     monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
     monkeypatch.setenv("HF_TOKEN", "secret-token")
-    monkeypatch.setenv("GITHUB_ACTOR", "maintainer")
+    caplog.set_level("INFO", logger="collect_evaluation_results")
     monkeypatch.setattr(
         collect_evaluation_results,
         "reviewer_from_environment",
-        lambda: PreflightReviewer(["one"]),
+        lambda: PreflightReviewer(),
     )
     monkeypatch.setattr(
-        collect_evaluation_results, "_stdin_is_interactive", lambda: True
+        collect_evaluation_results,
+        "_stdin_is_interactive",
+        lambda accepted_results=None: True,
     )
-    answers = iter(["y", "n"])
-    monkeypatch.setattr("builtins.input", lambda _: next(answers))
-    command = Mock(return_value=0)
-    monkeypatch.setattr(collect_evaluation_results, "run_review_command", command)
+    monkeypatch.setattr("builtins.input", lambda prompt: answer)
 
     assert collect_evaluation_results.preflight_volunteer_review() is True
-    command.assert_not_called()
+    assert "no volunteer submission was approved automatically" in caplog.text
 
 
 class PreflightReviewer:
@@ -561,173 +695,6 @@ class PreflightReviewer:
         )
 
 
-def test_main_does_not_harvest_after_review_error(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Failed promotion preflight stops main before any collection operation."""
-    monkeypatch.setattr(
-        collect_evaluation_results, "check_required_env_vars", lambda: None
-    )
-    monkeypatch.setattr(
-        collect_evaluation_results, "preflight_volunteer_review", lambda: False
-    )
-    fetch = Mock(side_effect=AssertionError("harvest started"))
-    monkeypatch.setattr(collect_evaluation_results, "_fetch_issues", fetch)
-    callback = collect_evaluation_results.main.callback
-    assert callback is not None
-    callback(force=False)
-    fetch.assert_not_called()
-
-
-def test_main_pauses_before_harvesting(monkeypatch: pytest.MonkeyPatch) -> None:
-    """A review pause occurs before the first GitHub operation.
-
-    Args:
-        monkeypatch:
-            Pytest fixture for replacing dependencies during the test.
-    """
-    monkeypatch.setattr(
-        collect_evaluation_results, "check_required_env_vars", lambda: None
-    )
-    monkeypatch.setattr(
-        collect_evaluation_results, "preflight_volunteer_review", lambda: False
-    )
-    monkeypatch.setattr(
-        collect_evaluation_results,
-        "_fetch_issues",
-        Mock(side_effect=AssertionError("harvest started")),
-    )
-
-    callback = collect_evaluation_results.main.callback
-    assert callback is not None
-    assert callback(force=False) is None
-
-
-@pytest.mark.parametrize("failure", ["timeout", "oserror"])
-def test_missing_reviewer_login_stops_opted_in_review(
-    monkeypatch: pytest.MonkeyPatch, failure: str
-) -> None:
-    """A missing GitHub login cancels preflight without a decision command."""
-    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
-    monkeypatch.setenv("HF_TOKEN", "secret-token")
-    monkeypatch.delenv("GITHUB_ACTOR", raising=False)
-    monkeypatch.setattr(
-        collect_evaluation_results,
-        "reviewer_from_environment",
-        lambda: PreflightReviewer(["one"]),
-    )
-    monkeypatch.setattr(
-        collect_evaluation_results, "_stdin_is_interactive", lambda: True
-    )
-    monkeypatch.setattr("builtins.input", lambda _: "y")
-    error: Exception = (
-        collect_evaluation_results.subprocess.TimeoutExpired("gh", 10)
-        if failure == "timeout"
-        else OSError("gh unavailable")
-    )
-    gh = Mock(side_effect=error)
-    monkeypatch.setattr(collect_evaluation_results.subprocess, "run", gh)
-    command = Mock(side_effect=AssertionError("approval must not run"))
-    monkeypatch.setattr(collect_evaluation_results, "run_review_command", command)
-
-    assert collect_evaluation_results.preflight_volunteer_review() is False
-    assert gh.call_args.kwargs["timeout"] == 10
-    command.assert_not_called()
-
-
-@pytest.mark.parametrize("answer", ["", "n", "no"])
-def test_preflight_default_or_no_continues_without_approval(
-    monkeypatch: pytest.MonkeyPatch, answer: str, caplog: pytest.LogCaptureFixture
-) -> None:
-    """No and the default answer continue without approving anything.
-
-    Args:
-        monkeypatch:
-            Pytest fixture for replacing dependencies during the test.
-        answer:
-            Answer supplied to the test.
-        caplog:
-            Fixture for capturing log records during the test.
-    """
-    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
-    monkeypatch.setenv("HF_TOKEN", "secret-token")
-    caplog.set_level("INFO", logger="collect_evaluation_results")
-    monkeypatch.setattr(
-        collect_evaluation_results,
-        "reviewer_from_environment",
-        lambda: PreflightReviewer(),
-    )
-    monkeypatch.setattr(
-        collect_evaluation_results, "_stdin_is_interactive", lambda: True
-    )
-    monkeypatch.setattr("builtins.input", lambda prompt: answer)
-
-    assert collect_evaluation_results.preflight_volunteer_review() is True
-    assert "no volunteer submission was approved automatically" in caplog.text
-
-
-def test_preflight_eof_shows_commands_and_continues(
-    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
-) -> None:
-    """EOF cannot leave the collection command waiting for a response.
-
-    Args:
-        monkeypatch:
-            Pytest fixture for replacing dependencies during the test.
-        caplog:
-            Fixture for capturing log records during the test.
-    """
-    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
-    monkeypatch.setenv("HF_TOKEN", "secret-token")
-    monkeypatch.setattr(
-        collect_evaluation_results,
-        "reviewer_from_environment",
-        lambda: PreflightReviewer(),
-    )
-    monkeypatch.setattr(
-        collect_evaluation_results, "_stdin_is_interactive", lambda: True
-    )
-    monkeypatch.setattr("builtins.input", Mock(side_effect=EOFError))
-
-    assert collect_evaluation_results.preflight_volunteer_review() is False
-    assert "cancelled" in caplog.text.lower()
-
-
-@pytest.mark.parametrize("interrupt", [EOFError, KeyboardInterrupt])
-@pytest.mark.parametrize("prompt_number", [1, 2, 3])
-def test_preflight_interrupt_stops_without_harvesting(
-    monkeypatch: pytest.MonkeyPatch, interrupt: type[BaseException], prompt_number: int
-) -> None:
-    """Interrupts at the overview or any item prompt stop collection."""
-    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
-    monkeypatch.setenv("HF_TOKEN", "secret-token")
-    monkeypatch.setenv("GITHUB_ACTOR", "maintainer")
-    monkeypatch.setattr(
-        collect_evaluation_results,
-        "reviewer_from_environment",
-        lambda: PreflightReviewer(["first", "second"]),
-    )
-    monkeypatch.setattr(
-        collect_evaluation_results, "_stdin_is_interactive", lambda: True
-    )
-    inputs = iter(range(prompt_number - 1))
-    count = 0
-
-    def answer(_: str) -> str:
-        nonlocal count
-        count += 1
-        if count == prompt_number:
-            raise interrupt
-        next(inputs)
-        return "y"
-
-    monkeypatch.setattr("builtins.input", answer)
-    command = Mock(return_value=0)
-    monkeypatch.setattr(collect_evaluation_results, "run_review_command", command)
-    assert collect_evaluation_results.preflight_volunteer_review() is False
-    assert command.call_count == (1 if prompt_number == 3 else 0)
-
-
 def test_preflight_missing_staging_configuration_is_non_blocking(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -740,49 +707,6 @@ def test_preflight_missing_staging_configuration_is_non_blocking(
     monkeypatch.delenv("HF_STAGING_BUCKET", raising=False)
     monkeypatch.delenv("HF_TOKEN", raising=False)
     assert collect_evaluation_results.preflight_volunteer_review() is True
-
-
-def test_preflight_mixed_decisions_review_in_order(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Review commands retain each ID and only explicit yes approves."""
-    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
-    monkeypatch.setenv("HF_TOKEN", "secret-token")
-    monkeypatch.setenv("GITHUB_ACTOR", "maintainer")
-    ids = ["submission-one", "submission-two", "submission-three"]
-    monkeypatch.setattr(
-        collect_evaluation_results,
-        "reviewer_from_environment",
-        lambda: PreflightReviewer(ids),
-    )
-    monkeypatch.setattr(
-        collect_evaluation_results, "_stdin_is_interactive", lambda: True
-    )
-    answers = iter(["y", "y", "n", ""])
-    prompts: list[str] = []
-    monkeypatch.setattr(
-        "builtins.input", lambda prompt: prompts.append(prompt) or next(answers)
-    )
-    command = Mock(return_value=0)
-    monkeypatch.setattr(collect_evaluation_results, "run_review_command", command)
-
-    assert collect_evaluation_results.preflight_volunteer_review() is True
-    assert command.call_args_list == [
-        call(
-            [
-                "--reviewer",
-                "maintainer",
-                "approve",
-                "submission-one",
-                "--plan-fingerprint",
-                "fingerprint-submission-one",
-                "--reason",
-                "Reviewed during collector preflight",
-                "--quiet",
-            ]
-        )
-    ]
-    assert len(prompts) == 4
 
 
 def test_preflight_non_tty_and_api_failure_do_not_hang(
@@ -804,12 +728,13 @@ def test_preflight_non_tty_and_api_failure_do_not_hang(
         lambda: PreflightReviewer(),
     )
     monkeypatch.setattr(
-        collect_evaluation_results, "_stdin_is_interactive", lambda: False
+        collect_evaluation_results,
+        "_stdin_is_interactive",
+        lambda accepted_results=None: False,
     )
 
     assert collect_evaluation_results.preflight_volunteer_review() is True
     assert "not interactive" in caplog.text
-    assert "submission id'\"'\"'$(touch /tmp/nope)" in caplog.text
 
     monkeypatch.setattr(
         collect_evaluation_results,
@@ -839,129 +764,6 @@ def test_preflight_public_staging_fails_closed(monkeypatch: pytest.MonkeyPatch) 
 
     with pytest.raises(PublicStagingError):
         collect_evaluation_results.preflight_volunteer_review()
-
-
-@pytest.mark.parametrize("failure", ["status", "exception"])
-@pytest.mark.parametrize("command_kind", ["show", "approve"])
-def test_preflight_review_error_halts_after_inspecting_remaining_ids(
-    monkeypatch: pytest.MonkeyPatch,
-    failure: str,
-    command_kind: str,
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    """A failed command does not stop later review but blocks collection."""
-    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
-    monkeypatch.setenv("HF_TOKEN", "secret-token")
-    monkeypatch.setenv("GITHUB_ACTOR", "maintainer")
-    ids = ["first", "second", "third"]
-    monkeypatch.setattr(
-        collect_evaluation_results,
-        "reviewer_from_environment",
-        lambda: PreflightReviewer(ids),
-    )
-    monkeypatch.setattr(
-        collect_evaluation_results, "_stdin_is_interactive", lambda: True
-    )
-    prompt = Mock(return_value="y")
-    monkeypatch.setattr("builtins.input", prompt)
-    calls: list[list[str]] = []
-    shown: list[str] = []
-    real_show = PreflightReviewer.show
-
-    def display(self: PreflightReviewer, submission_id: str) -> object:
-        shown.append(submission_id)
-        if command_kind == "show" and submission_id == "first":
-            if failure == "exception":
-                raise RuntimeError("injected display failure")
-            raise RuntimeError("injected display failure")
-        return real_show(self, submission_id=submission_id)
-
-    def run(command: list[str]) -> int:
-        calls.append(command)
-        failed = command[0] == "--reviewer" and command[3] == "first"
-        if failed and failure == "exception":
-            raise RuntimeError("injected approval failure")
-        return 1 if failed else 0
-
-    monkeypatch.setattr(PreflightReviewer, "show", display)
-    monkeypatch.setattr(collect_evaluation_results, "run_review_command", run)
-    assert collect_evaluation_results.preflight_volunteer_review() is False
-    assert shown == ids
-    assert prompt.call_count == (3 if command_kind == "show" else 4)
-    assert "halting collection" in caplog.text
-
-
-def test_preflight_with_no_pending_reviews_continues_without_prompt(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """An empty pending inventory proceeds without prompting or CLI calls."""
-    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
-    monkeypatch.setenv("HF_TOKEN", "secret-token")
-
-    class EmptyReviewer(PreflightReviewer):
-        """Reviewer with no pending submissions."""
-
-        def list_pending_submissions(self) -> list[tuple[str, int, str, str]]:
-            """Return an empty inventory.
-
-            Returns:
-                An empty pending-submission inventory.
-            """
-            return []
-
-    monkeypatch.setattr(
-        collect_evaluation_results, "reviewer_from_environment", EmptyReviewer
-    )
-    prompt = Mock(side_effect=AssertionError("should not prompt"))
-    command = Mock(side_effect=AssertionError("should not run a command"))
-    monkeypatch.setattr("builtins.input", prompt)
-    monkeypatch.setattr(collect_evaluation_results, "run_review_command", command)
-
-    assert collect_evaluation_results.preflight_volunteer_review() is True
-    prompt.assert_not_called()
-    command.assert_not_called()
-
-
-def test_preflight_yes_reviews_submission(
-    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
-) -> None:
-    """Opt-in reviews and decides only after a separate approval response.
-
-    Args:
-        monkeypatch:
-            Pytest fixture for replacing dependencies during the test.
-        caplog:
-            Fixture for capturing log records during the test.
-    """
-    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
-    monkeypatch.setenv("HF_TOKEN", "secret-token")
-    monkeypatch.setenv("GITHUB_ACTOR", "maintainer; echo nope")
-    caplog.set_level("INFO", logger="collect_evaluation_results")
-    monkeypatch.setattr(
-        collect_evaluation_results,
-        "reviewer_from_environment",
-        lambda: PreflightReviewer(),
-    )
-    monkeypatch.setattr(
-        collect_evaluation_results, "_stdin_is_interactive", lambda: True
-    )
-    monkeypatch.setattr("builtins.input", lambda prompt: "y")
-    command = Mock(return_value=0)
-    monkeypatch.setattr(collect_evaluation_results, "run_review_command", command)
-
-    assert collect_evaluation_results.preflight_volunteer_review() is True
-    assert command.call_count == 1
-    assert command.call_args_list[0].args[0] == [
-        "--reviewer",
-        "maintainer; echo nope",
-        "approve",
-        "submission id'$(touch /tmp/nope)",
-        "--plan-fingerprint",
-        "fingerprint-submission id'$(touch /tmp/nope)",
-        "--reason",
-        "Reviewed during collector preflight",
-        "--quiet",
-    ]
 
 
 def test_preview_in_dev_server_handles_early_exit(
@@ -1227,67 +1029,6 @@ def test_public_upload_restores_original_when_final_choice_is_stored(
     assert json.loads(canonical.read_bytes()) == stored
     assert json.loads(staging.read_text(encoding="utf-8")) == stored
     assert json.loads(FakeHfApi.objects["foo_bar/task__test__zeroshot.json"]) == stored
-
-
-def test_reviewer_login_actor_and_safe_gh_fallback(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Preflight uses its actor or bounded authenticated gh fallback."""
-    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
-    monkeypatch.setenv("HF_TOKEN", "secret-token")
-    monkeypatch.setenv("GITHUB_ACTOR", "actor")
-    monkeypatch.setattr(
-        collect_evaluation_results,
-        "reviewer_from_environment",
-        lambda: PreflightReviewer(["one"]),
-    )
-    monkeypatch.setattr(
-        collect_evaluation_results, "_stdin_is_interactive", lambda: True
-    )
-    answers = iter(["y", "y"])
-    monkeypatch.setattr("builtins.input", lambda _: next(answers))
-    command = Mock(return_value=0)
-    monkeypatch.setattr(collect_evaluation_results, "run_review_command", command)
-    subprocess_run = Mock(side_effect=AssertionError("gh must not run"))
-    monkeypatch.setattr(collect_evaluation_results.subprocess, "run", subprocess_run)
-
-    assert collect_evaluation_results.preflight_volunteer_review() is True
-    assert command.call_args_list[-1] == call(
-        [
-            "--reviewer",
-            "actor",
-            "approve",
-            "one",
-            "--plan-fingerprint",
-            "fingerprint-one",
-            "--reason",
-            "Reviewed during collector preflight",
-            "--quiet",
-        ]
-    )
-    subprocess_run.assert_not_called()
-
-    monkeypatch.delenv("GITHUB_ACTOR")
-    answers = iter(["y", "y"])
-    subprocess_run.side_effect = None
-    subprocess_run.return_value = Mock(stdout="fallback-login\n")
-    command.reset_mock()
-    assert collect_evaluation_results.preflight_volunteer_review() is True
-    assert subprocess_run.call_args.args[0] == ["gh", "api", "user", "--jq", ".login"]
-    assert subprocess_run.call_args.kwargs["timeout"] == 10
-    assert command.call_args_list[-1] == call(
-        [
-            "--reviewer",
-            "fallback-login",
-            "approve",
-            "one",
-            "--plan-fingerprint",
-            "fingerprint-one",
-            "--reason",
-            "Reviewed during collector preflight",
-            "--quiet",
-        ]
-    )
 
 
 def test_staged_resolved_winner_is_not_reloaded_with_rejected_contender(

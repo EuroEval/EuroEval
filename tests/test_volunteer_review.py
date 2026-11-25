@@ -394,7 +394,6 @@ def _reviewer(
             }
         ],
     }
-    publication_lock = FakePublicationLock()
     reviewer = VolunteerReviewer(
         store=store,
         results_bucket=RESULTS,
@@ -406,39 +405,10 @@ def _reviewer(
         binder=binder,
         scope_policy=scope_policy,
         publisher=CanonicalPublisher(
-            api=t.cast(CanonicalBucketApi, api),
-            token="token",
-            bucket=RESULTS,
-            lock=publication_lock,
+            api=t.cast(CanonicalBucketApi, api), token="token", bucket=RESULTS
         ),
     )
     return api, reviewer, calls
-
-
-class FakePublicationLock:
-    """In-memory publication lock for canonical-publisher tests."""
-
-    bucket = RESULTS
-    endpoint = "memory://publication-lock"
-
-    def __init__(self) -> None:
-        """Initialise the lock request log."""
-        self.requests: list[tuple[str, str]] = []
-
-    def request(self, action: str, owner: str) -> str:
-        """Acknowledge lock operations.
-
-        Args:
-            action:
-                Requested lock operation.
-            owner:
-                Publication session owner.
-
-        Returns:
-            A successful lock status.
-        """
-        self.requests.append((action, owner))
-        return "ok"
 
 
 def _record(dataset: str) -> dict[str, object]:
@@ -737,9 +707,7 @@ def test_completed_acceptance_retry_ignores_later_canonical_results() -> None:
     """A completed retry does not republish after canonical state advances."""
     api, reviewer, broker_calls = _reviewer()
     reviewer.decide(SUBMISSION, "accepted", "maintainer")
-    lock = t.cast(FakePublicationLock, reviewer.publisher.lock)
     initial_uploads = list(api.uploads)
-    initial_lock_requests = list(lock.requests)
 
     canonical_path = next(path for bucket, path in api.files if bucket == RESULTS)
     advanced = json.loads(api.files[(RESULTS, canonical_path)])
@@ -749,7 +717,6 @@ def test_completed_acceptance_retry_ignores_later_canonical_results() -> None:
     reviewer.decide(SUBMISSION, "accepted", "another-reviewer")
 
     assert api.uploads == initial_uploads
-    assert lock.requests == initial_lock_requests
     assert broker_calls == [(12, SUBMISSION, "accepted")]
 
 
@@ -2639,8 +2606,6 @@ def test_status_failure_preserves_unreceipted_decision(
     )
     snapshot = dict(api.files)
     uploads = list(api.uploads)
-    lock = t.cast(FakePublicationLock, reviewer.publisher.lock)
-    lock_requests = list(lock.requests)
     assert [summary[0] for summary in fresh_reviewer.list_pending_submissions()] == [
         SUBMISSION
     ]
@@ -2650,7 +2615,6 @@ def test_status_failure_preserves_unreceipted_decision(
         )
     assert api.files == snapshot
     assert api.uploads == uploads
-    assert lock.requests == lock_requests
 
 
 @pytest.mark.parametrize("corrupt", [False, True])
@@ -2688,8 +2652,6 @@ def test_terminal_recovery_requires_original_predecessor_archives(
     )
     snapshot = dict(api.files)
     uploads = list(api.uploads)
-    lock = t.cast(FakePublicationLock, reviewer.publisher.lock)
-    lock_requests = list(lock.requests)
     assert [summary[0] for summary in reviewer.list_pending_submissions()] == [
         SUBMISSION
     ]
@@ -2697,7 +2659,6 @@ def test_terminal_recovery_requires_original_predecessor_archives(
         reviewer.decide(submission_id=SUBMISSION, outcome="accepted", reviewer="bob")
     assert api.files == snapshot
     assert api.uploads == uploads
-    assert lock.requests == lock_requests
 
 
 @pytest.mark.parametrize("outcome", ["accepted", "rejected"])
@@ -2863,8 +2824,6 @@ def test_terminal_response_loss_recovers_with_durable_digest(
     decision_digest = hashlib.sha256(decision).hexdigest()
     assert bound_digest == decision_digest
     initial_uploads = list(api.uploads)
-    lock = t.cast(FakePublicationLock, template.publisher.lock)
-    initial_lock_requests = list(lock.requests)
     if outcome == "accepted":
         record = inspected.records[0]
         successor = json.loads(record.content)
@@ -2884,7 +2843,6 @@ def test_terminal_response_loss_recovers_with_durable_digest(
     receipt_path = f"volunteer/completions/{SUBMISSION}/{decision_digest}.json"
     assert api.uploads == [*initial_uploads, (STAGING, receipt_path)]
     assert _decision_content(api) == decision
-    assert lock.requests == initial_lock_requests
     assert {
         key: value for key, value in api.files.items() if key[0] == RESULTS
     } == canonical

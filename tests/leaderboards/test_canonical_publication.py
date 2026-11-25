@@ -9,9 +9,6 @@ import sqlite3
 import stat
 import tempfile
 import time
-import typing as t
-import urllib.error
-import urllib.request
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -20,11 +17,7 @@ import hf_xet
 import pytest
 
 from leaderboards.cache import Cache
-from leaderboards.canonical_publication import (
-    CanonicalPublisher,
-    PublicationError,
-    PublicationLock,
-)
+from leaderboards.canonical_publication import CanonicalPublisher, PublicationError
 from leaderboards.constants import TRAINED_FROM_SCRATCH_PATTERNS
 from leaderboards.model_metadata import add_missing_entries
 from leaderboards.result_conflicts import (
@@ -38,7 +31,7 @@ from leaderboards.result_identity import identity_from_eee_record, identity_to_p
 @pytest.mark.parametrize("mode", ["stale", "malformed"])
 def test_bulk_metadata_cannot_seed_false_receipts(tmp_path: Path, mode: str) -> None:
     """Malformed metadata aborts; stale metadata forces exact body comparisons."""
-    api = BulkApi(lock=CountingLock())
+    api = BulkApi()
     records = bulk_records(count=501)
     for raw in records:
         path = identity_to_path(identity_from_eee_record(json.loads(raw))).as_posix()
@@ -109,7 +102,7 @@ def _record(
 
 def test_bulk_precondition_mismatch_never_overwrites(tmp_path: Path) -> None:
     """A body changed between initial comparison and upload cannot be overwritten."""
-    api = BulkApi(lock=CountingLock())
+    api = BulkApi()
     records = bulk_records(count=501)
     path = identity_to_path(identity_from_eee_record(json.loads(records[0]))).as_posix()
     metadata_calls = 0
@@ -133,14 +126,12 @@ def test_bulk_precondition_mismatch_never_overwrites(tmp_path: Path) -> None:
             with publisher.session() as session:
                 session.publish(records=records)
     assert api.upload_calls == 0
-    assert api.lock.owner is None
 
 
 @pytest.mark.parametrize("count", [1, 499, 500, 501, 1000, 10_000])
 def test_bulk_publication_request_budget(tmp_path: Path, count: int) -> None:
     """Remote work is O(batches), including ownership and exact verification."""
-    lock = CountingLock()
-    api = BulkApi(lock=lock)
+    api = BulkApi()
     publisher = bulk_publisher(tmp_path=tmp_path, api=api)
     records = bulk_records(count=count)
     with publisher.session() as session:
@@ -148,24 +139,21 @@ def test_bulk_publication_request_budget(tmp_path: Path, count: int) -> None:
     batches = (count + 499) // 500
     assert api.upload_calls == batches
     assert len(api.events) == 4 * batches
-    assert lock.calls == 3 + 2 * batches
     assert max(len(paths) for _, paths in api.events) <= 500
     assert len(api.objects) == count
     assert api.downloaded_bytes == 0
     assert api.downloaded_files == 0
-    assert (len(api.events) + lock.calls) * 2 < 15 * 60
+    assert (len(api.events)) * 2 < 15 * 60
     with sqlite3.connect(publisher.checkpoint_path) as connection:
         assert connection.execute("SELECT COUNT(*) FROM receipts").fetchone() == (
             count,
         )
     api.events.clear()
-    lock.calls = 0
     # Reconstructed publisher must still fetch fresh metadata, but no bodies.
     with bulk_publisher(tmp_path=tmp_path, api=api).session() as session:
         assert session.publish(records=records) == 0
     assert len(api.events) == batches
     assert all(operation == "metadata" for operation, _ in api.events)
-    assert lock.calls == 3
 
 
 @pytest.mark.parametrize("count", [1, 10_000])
@@ -174,16 +162,14 @@ def test_bulk_sleep_adapter_comparison(
 ) -> None:
     """Measure fakes with request latency; the model is not a wall-time guarantee."""
     delay = 0.001
-    lock = CountingLock(delay=delay)
-    api = BulkApi(lock=lock, delay=delay)
+    api = BulkApi(delay=delay)
     records = bulk_records(count=count)
     started = time.perf_counter()
     with bulk_publisher(tmp_path=tmp_path, api=api).session() as session:
         assert session.publish(records=records) == count
     bulk_seconds = time.perf_counter() - started
-    bulk_requests = len(api.events) + lock.calls
-    serial_lock = CountingLock(delay=delay)
-    serial_api = BulkApi(lock=serial_lock, delay=delay)
+    bulk_requests = len(api.events)
+    serial_api = BulkApi(delay=delay)
     started = time.perf_counter()
     with bulk_publisher(
         tmp_path=tmp_path / "serial", api=serial_api
@@ -194,9 +180,9 @@ def test_bulk_sleep_adapter_comparison(
             ).as_posix()
             session.write_verified(path=path, content=content, expected=None)
     serial_seconds = time.perf_counter() - started
-    serial_requests = len(serial_api.events) + serial_lock.calls
-    assert serial_requests == 4 * count + 2
-    assert bulk_requests == 6 * ((count + 499) // 500) + 3
+    serial_requests = len(serial_api.events)
+    assert serial_requests == 3 * count
+    assert bulk_requests == 4 * ((count + 499) // 500)
     assert api.downloaded_bytes == 0
     assert api.downloaded_files == 0
     assert bulk_requests * 2 < 900
@@ -219,7 +205,7 @@ def test_canary_is_rejected_before_any_write(
 ) -> None:
     """Private canary evidence cannot enter the public object store."""
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    publisher, api, _ = _publisher(tmp_path)
+    publisher, api = _publisher(tmp_path)
     canary = json.loads(_record())
     canary["eval_library"]["additional_details"]["dataset"] = "contamination-canary"
     with publisher.session() as session:
@@ -295,57 +281,16 @@ class MemoryApi:
                 destination.write_bytes(self.objects[name])
 
 
-class MemoryLock:
-    """Deterministic in-memory adapter for the broker lock."""
-
-    def __init__(self) -> None:
-        """Initialise an unlocked in-memory broker."""
-        self.bucket = "EuroEval/results"
-        self.endpoint = "memory://publication-lock"
-        self.owner: str | None = None
-        self.fail_release = False
-
-    def request(self, action: str, owner: str) -> str:
-        """Apply a broker operation atomically.
-
-        Returns:
-            The resulting lock state.
-
-        Raises:
-            PublicationError:
-                If the lock is busy or a release response is unavailable.
-        """
-        if action == "acquire":
-            if self.owner not in {None, owner}:
-                raise PublicationError("busy")
-            self.owner = owner
-            return "owned"
-        if action == "assert":
-            if self.owner != owner:
-                raise PublicationError("busy")
-            return "owned"
-        if action == "release":
-            if self.fail_release:
-                raise PublicationError("lost response")
-            if self.owner not in {None, owner}:
-                raise PublicationError("busy")
-            self.owner = None
-            return "released"
-        return "owned" if self.owner else "unlocked"
-
-
 class BulkApi(MemoryApi):
     """Batch-aware adapter with deterministic failures and request accounting."""
 
-    def __init__(self, lock: MemoryLock, delay: float = 0) -> None:
+    def __init__(self, delay: float = 0) -> None:
         """Initialise an isolated store and optional per-request sleep.
 
         Args:
-            lock: Broker adapter to revoke during a simulated upload.
             delay (optional): Seconds slept per remote request.
         """
         super().__init__()
-        self.lock = lock
         self.delay = delay
         self.events: list[tuple[str, list[str]]] = []
         self.fingerprints: dict[bytes, str] = {}
@@ -394,8 +339,6 @@ class BulkApi(MemoryApi):
             self.objects.pop(path)
         elif self.failure == "corrupt":
             self.objects[path] = b"corrupt output"
-        elif self.failure == "lock-loss":
-            self.lock.owner = "another-owner"
 
     def download_bucket_files(
         self,
@@ -472,34 +415,6 @@ class BulkApi(MemoryApi):
         ]
 
 
-class CountingLock(MemoryLock):
-    """Broker adapter counting remote operations and optional request latency."""
-
-    def __init__(self, delay: float = 0) -> None:
-        """Initialise counters.
-
-        Args:
-            delay (optional): Seconds slept per remote request.
-        """
-        super().__init__()
-        self.calls = 0
-        self.delay = delay
-
-    def request(self, action: str, owner: str) -> str:
-        """Count and perform an owned lock operation.
-
-        Args:
-            action: Broker operation.
-            owner: Session owner.
-
-        Returns:
-            Broker state.
-        """
-        self.calls += 1
-        time.sleep(self.delay)
-        return super().request(action=action, owner=owner)
-
-
 def bulk_publisher(tmp_path: Path, api: BulkApi) -> CanonicalPublisher:
     """Construct a publisher with an isolated durable checkpoint.
 
@@ -508,35 +423,30 @@ def bulk_publisher(tmp_path: Path, api: BulkApi) -> CanonicalPublisher:
         api: Remote adapter.
 
     Returns:
-        Publisher using the adapter's broker lock.
+        Publisher using the in-memory bucket adapter.
     """
     return CanonicalPublisher(
-        api=api,
-        token="test-token",
-        lock=api.lock,
-        checkpoint_path=tmp_path / "publication.sqlite3",
+        api=api, token="test-token", checkpoint_path=tmp_path / "publication.sqlite3"
     )
 
 
-def _publisher(tmp_path: Path) -> tuple[CanonicalPublisher, MemoryApi, MemoryLock]:
+def _publisher(tmp_path: Path) -> tuple[CanonicalPublisher, MemoryApi]:
     """Create an isolated publisher test fixture.
 
     Returns:
-        Publisher, object adapter, and lock adapter.
+        Publisher and object adapter.
     """
     api = MemoryApi()
-    lock = MemoryLock()
-    return CanonicalPublisher(api=api, token="test-token", lock=lock), api, lock
+    return CanonicalPublisher(
+        api=api, token="test-token", checkpoint_path=tmp_path / "publication.sqlite3"
+    ), api
 
 
 def test_checkpoint_filters_unrelated_sources_and_is_private(tmp_path: Path) -> None:
     """Only candidate-bound evidence is stored in private checkpoint files."""
     checkpoint = tmp_path / "private" / "publication.sqlite3"
     publisher = CanonicalPublisher(
-        api=MemoryApi(),
-        token="test-token",
-        lock=MemoryLock(),
-        checkpoint_path=checkpoint,
+        api=MemoryApi(), token="test-token", checkpoint_path=checkpoint
     )
     candidate = _record()
     identity = identity_from_eee_record(json.loads(candidate))
@@ -568,7 +478,6 @@ def test_checkpoint_filters_unrelated_sources_and_is_private(tmp_path: Path) -> 
 def test_checkpoint_sources_are_isolated_by_publisher_scope(tmp_path: Path) -> None:
     """A different publisher credential cannot reuse another scope's source proof."""
     api = MemoryApi()
-    lock = MemoryLock()
     checkpoint = tmp_path / "publication.sqlite3"
     original = _record()
     identity = identity_from_eee_record(json.loads(original))
@@ -578,11 +487,9 @@ def test_checkpoint_sources_are_isolated_by_publisher_scope(tmp_path: Path) -> N
     transformed = json.dumps(transformed_record).encode()
     path = identity_to_path(identity).as_posix()
     api.objects[path] = original
-    first = CanonicalPublisher(
-        api=api, token="first-scope", lock=lock, checkpoint_path=checkpoint
-    )
+    first = CanonicalPublisher(api=api, token="first-scope", checkpoint_path=checkpoint)
     second = CanonicalPublisher(
-        api=api, token="second-scope", lock=lock, checkpoint_path=checkpoint
+        api=api, token="second-scope", checkpoint_path=checkpoint
     )
 
     first.prepare(records=[transformed], sources={identity: original})
@@ -597,13 +504,12 @@ def test_cold_source_fingerprint_proves_formatting_only_candidate(
 ) -> None:
     """Exact source fingerprints avoid bodies without a prior receipt."""
     api = FingerprintApi()
-    lock = MemoryLock()
     checkpoint = tmp_path / "publication.sqlite3"
     original = _record()
     identity = identity_from_eee_record(json.loads(original))
     api.objects[identity_to_path(identity).as_posix()] = original
     publisher = CanonicalPublisher(
-        api=api, token="test-token", lock=lock, checkpoint_path=checkpoint
+        api=api, token="test-token", checkpoint_path=checkpoint
     )
     formatted = json.dumps(json.loads(original), indent=2).encode()
     with publisher.session() as session:
@@ -659,14 +565,13 @@ def test_cold_source_fingerprint_receipt_reuses_formatted_candidate(
 ) -> None:
     """A cold exact source proof seeds a reusable semantic receipt."""
     api = FingerprintApi()
-    lock = MemoryLock()
     checkpoint = tmp_path / "publication.sqlite3"
     original = json.dumps(json.loads(_record()), indent=2).encode()
     identity = identity_from_eee_record(json.loads(original))
     path = identity_to_path(identity).as_posix()
     api.objects[path] = original
     publisher = CanonicalPublisher(
-        api=api, token="test-token", lock=lock, checkpoint_path=checkpoint
+        api=api, token="test-token", checkpoint_path=checkpoint
     )
     candidate = json.dumps(json.loads(original), separators=(",", ":")).encode()
     with publisher.session() as session:
@@ -675,7 +580,7 @@ def test_cold_source_fingerprint_receipt_reuses_formatted_candidate(
     assert api.upload_calls == 0
 
     publisher = CanonicalPublisher(
-        api=api, token="test-token", lock=lock, checkpoint_path=checkpoint
+        api=api, token="test-token", checkpoint_path=checkpoint
     )
     reformatted = json.dumps(json.loads(candidate), indent=4).encode()
     remote_fingerprint = hf_xet.hash_files
@@ -701,7 +606,7 @@ def test_cold_source_fingerprint_receipt_reuses_formatted_candidate(
 
 def test_duplicate_candidates_archive_only_once(tmp_path: Path) -> None:
     """Repeated identical candidates collapse to one archive and canonical write."""
-    api = BulkApi(lock=CountingLock())
+    api = BulkApi()
     original = _record()
     path = identity_to_path(identity_from_eee_record(json.loads(original))).as_posix()
     api.objects[path] = original
@@ -721,7 +626,7 @@ def test_equal_rank_metadata_transform_cannot_change_evaluation_score(
 ) -> None:
     """Exact source bytes do not authorise changing evaluation results."""
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    publisher, api, _ = _publisher(tmp_path)
+    publisher, api = _publisher(tmp_path)
     original = _record()
     changed_record = json.loads(original)
     changed_record["score"] = 0.9
@@ -740,7 +645,7 @@ def test_equal_rank_metadata_transform_requires_original_source(
 ) -> None:
     """Equal-rank replacement is allowed only with exact predecessor evidence."""
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    publisher, api, _ = _publisher(tmp_path)
+    publisher, api = _publisher(tmp_path)
     original = _record()
     transformed_record = json.loads(original)
     transformed_record["model_info"]["additional_details"] = {"open": True}
@@ -765,7 +670,7 @@ def test_equal_rank_numeric_enrichment_cannot_change_existing_value(
 ) -> None:
     """Do not treat a changed valid model value as missing-metadata enrichment."""
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    publisher, _, _ = _publisher(tmp_path)
+    publisher, _ = _publisher(tmp_path)
     original_record = json.loads(_record())
     original_record["model_info"]["additional_details"] = {"num_model_parameters": 1000}
     original = json.dumps(original_record).encode()
@@ -781,7 +686,7 @@ def test_equal_rank_numeric_enrichment_cannot_change_existing_value(
 
 def test_existing_history_is_verified_and_not_uploaded_again(tmp_path: Path) -> None:
     """Content-addressed history is reused, but corrupt history blocks replacement."""
-    api = BulkApi(lock=CountingLock())
+    api = BulkApi()
     original = _record()
     path = identity_to_path(identity_from_eee_record(json.loads(original))).as_posix()
     history = f"_history/{hashlib.sha256(original).hexdigest()}.bin"
@@ -803,12 +708,12 @@ def test_existing_history_is_verified_and_not_uploaded_again(tmp_path: Path) -> 
     )
 
 
-def test_failed_archive_retains_lock_before_canonical_overwrite(
+def test_failed_archive_blocks_canonical_overwrite(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """An unavailable predecessor archive blocks overwrite and retains ownership."""
+    """An unavailable predecessor archive blocks overwrite."""
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    publisher, api, lock = _publisher(tmp_path)
+    publisher, api = _publisher(tmp_path)
     original = _record()
     with publisher.session() as session:
         session.publish(records=[original])
@@ -823,21 +728,19 @@ def test_failed_archive_retains_lock_before_canonical_overwrite(
     finally:
         api.fail_name = None
     assert api.objects[path] == original
-    assert lock.owner is not None
 
 
-def test_interrupt_after_partial_mutation_retains_lock(
+def test_interrupt_after_partial_mutation_preserves_written_bytes(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Cancellation after a remote write keeps the lock for explicit recovery."""
+    """Cancellation after a remote write preserves partial publication for retry."""
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    publisher, api, lock = _publisher(tmp_path)
+    publisher, api = _publisher(tmp_path)
     api.interrupt_after_write = True
     with pytest.raises(KeyboardInterrupt):
         with publisher.session() as session:
             session.write_verified(path="object", content=b"partial", expected=None)
     assert api.objects["object"] == b"partial"
-    assert lock.owner is not None
 
 
 @pytest.mark.parametrize(
@@ -853,7 +756,7 @@ def test_invalid_numeric_metadata_enrichment_is_rejected(
 ) -> None:
     """Reject invalid numeric values in otherwise metadata-only changes."""
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    publisher, api, _ = _publisher(tmp_path)
+    publisher, api = _publisher(tmp_path)
     original = _record()
     enriched_record = json.loads(original)
     enriched_record["model_info"]["additional_details"] = {key: value}
@@ -872,7 +775,7 @@ def test_json_equal_formatting_change_is_a_noop(
 ) -> None:
     """Formatting-only candidate changes do not rewrite canonical bytes."""
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    publisher, api, _ = _publisher(tmp_path)
+    publisher, api = _publisher(tmp_path)
     original = _record()
     formatted = json.dumps(json.loads(original), indent=2).encode()
     with publisher.session() as session:
@@ -885,7 +788,7 @@ def test_json_equal_formatting_change_is_a_noop(
 
 def test_later_metadata_enrichment_only_reads_changed_records(tmp_path: Path) -> None:
     """A later enrichment pass still publishes real changes without rereading peers."""
-    api = BulkApi(lock=CountingLock())
+    api = BulkApi()
     publisher = bulk_publisher(tmp_path=tmp_path, api=api)
     originals = bulk_records(count=501)
     with publisher.session() as session:
@@ -928,7 +831,6 @@ def test_linear_candidate_validation_and_warm_formatted_retry(
     """Large source validation and reconstructed formatting retries stay efficient."""
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
     api = FingerprintApi()
-    lock = MemoryLock()
     checkpoint = tmp_path / "publication.sqlite3"
     records = []
     sources = {}
@@ -941,14 +843,14 @@ def test_linear_candidate_validation_and_warm_formatted_retry(
         records.append(content)
         sources[identity] = content
     publisher = CanonicalPublisher(
-        api=api, token="test-token", lock=lock, checkpoint_path=checkpoint
+        api=api, token="test-token", checkpoint_path=checkpoint
     )
     with publisher.session() as session:
         session.prepare(records=records, sources=sources)
         assert session.publish(records=records, sources=sources) == 1_000
     reads = api.download_calls
     publisher = CanonicalPublisher(
-        api=api, token="test-token", lock=lock, checkpoint_path=checkpoint
+        api=api, token="test-token", checkpoint_path=checkpoint
     )
     formatted = [
         json.dumps(json.loads(record), indent=2).encode() for record in records
@@ -976,7 +878,7 @@ def test_local_hashing_is_bounded_to_comparison_batches(
     """Local candidate hashing never submits an unbounded path list."""
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
     api = FingerprintApi()
-    publisher = CanonicalPublisher(api=api, token="test-token", lock=MemoryLock())
+    publisher = CanonicalPublisher(api=api, token="test-token")
     records = []
     for index in range(1_001):
         record = json.loads(_record())
@@ -1001,56 +903,12 @@ def test_local_hashing_is_bounded_to_comparison_batches(
     assert max(sizes) <= 500
 
 
-def test_lock_retries_lost_acquire_response_with_same_owner(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Broker retries reuse the opaque owner after an ambiguous response."""
-    lock = PublicationLock(
-        endpoint="https://example.test/publication-lock", secret="secret"
-    )
-    bodies: list[bytes] = []
-
-    class Response:
-        """Minimal successful HTTP response."""
-
-        def __enter__(self) -> Response:
-            return self
-
-        def __exit__(self, *_args: object) -> None:
-            return None
-
-        def read(self) -> bytes:
-            return (
-                b'{"bucket":"EuroEval/results","owner":"same-owner","status":"owned"}'
-            )
-
-    def fake_urlopen(request: urllib.request.Request, timeout: int) -> Response:
-        """Lose one response, then confirm an idempotent retry.
-
-        Returns:
-            Successful simulated response.
-
-        Raises:
-            urllib.error.URLError:
-                On the first simulated response loss.
-        """
-        del timeout
-        bodies.append(t.cast(bytes, request.data))
-        if len(bodies) == 1:
-            raise urllib.error.URLError("response lost")
-        return Response()
-
-    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
-    assert lock.request(action="acquire", owner="same-owner") == "owned"
-    assert len(bodies) == 2 and bodies[0] == bodies[1]
-
-
 @pytest.mark.parametrize("mode", ["duplicate", "unexpected-path"])
 def test_malformed_metadata_batch_falls_back_to_exact_bodies(
     tmp_path: Path, mode: str
 ) -> None:
     """Malformed metadata uses exact body checks rather than authorising writes."""
-    api = BulkApi(lock=CountingLock())
+    api = BulkApi()
     records = bulk_records(count=501)
     path = identity_to_path(identity_from_eee_record(json.loads(records[0]))).as_posix()
     entries = [SimpleNamespace(path=path, xet_hash="fingerprint")] * 2
@@ -1067,12 +925,8 @@ def test_malformed_metadata_batch_falls_back_to_exact_bodies(
 def test_manual_decision_cannot_be_reused_for_changed_candidate(tmp_path: Path) -> None:
     """A manual decision remains bound to the exact approved candidate bytes."""
     api = MemoryApi()
-    lock = MemoryLock()
     publisher = CanonicalPublisher(
-        api=api,
-        token="test-token",
-        lock=lock,
-        checkpoint_path=tmp_path / "publication.sqlite3",
+        api=api, token="test-token", checkpoint_path=tmp_path / "publication.sqlite3"
     )
     original = _record(score=0.9)
     candidate = _record(score=0.1)
@@ -1100,12 +954,8 @@ def test_manual_decision_cannot_be_reused_for_changed_candidate(tmp_path: Path) 
 def test_manual_incoming_choice_archives_exact_predecessor(tmp_path: Path) -> None:
     """An explicit incoming choice can replace an older conflicting record."""
     api = MemoryApi()
-    lock = MemoryLock()
     publisher = CanonicalPublisher(
-        api=api,
-        token="test-token",
-        lock=lock,
-        checkpoint_path=tmp_path / "publication.sqlite3",
+        api=api, token="test-token", checkpoint_path=tmp_path / "publication.sqlite3"
     )
     original = _record(score=0.9)
     candidate = _record(score=0.1)
@@ -1140,12 +990,8 @@ def test_manual_incoming_choice_archives_exact_predecessor(tmp_path: Path) -> No
 def test_manual_stored_choice_retains_canonical_bytes(tmp_path: Path) -> None:
     """A stored-side decision cannot turn into an incoming overwrite."""
     api = MemoryApi()
-    lock = MemoryLock()
     publisher = CanonicalPublisher(
-        api=api,
-        token="test-token",
-        lock=lock,
-        checkpoint_path=tmp_path / "publication.sqlite3",
+        api=api, token="test-token", checkpoint_path=tmp_path / "publication.sqlite3"
     )
     original = _record(score=0.9)
     candidate = _record(score=0.1)
@@ -1175,14 +1021,13 @@ def test_metadata_source_race_does_not_cache_false_receipt(
     """A body changed after metadata lookup is read and rejected on retry."""
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
     api = CountingFingerprintApi()
-    lock = MemoryLock()
     checkpoint = tmp_path / "publication.sqlite3"
     original = _record()
     identity = identity_from_eee_record(json.loads(original))
     path = identity_to_path(identity).as_posix()
     api.objects[path] = original
     publisher = CanonicalPublisher(
-        api=api, token="test-token", lock=lock, checkpoint_path=checkpoint
+        api=api, token="test-token", checkpoint_path=checkpoint
     )
     formatted = json.dumps(json.loads(original), indent=2).encode()
     replacement_record = json.loads(original)
@@ -1224,23 +1069,9 @@ class CountingFingerprintApi(FingerprintApi):
         return entries
 
 
-def test_missing_lock_configuration_fails_closed(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Publisher construction cannot silently fall back to a local lock.
-
-    Args:
-        monkeypatch:
-            Isolates missing configuration from the local publishing environment.
-    """
-    monkeypatch.delenv(name="CANONICAL_PUBLICATION_SECRET", raising=False)
-    with pytest.raises(ValueError, match="required"):
-        CanonicalPublisher(api=MemoryApi(), token="token", lock=None)
-
-
 def test_missing_object_after_metadata_is_not_treated_as_new(tmp_path: Path) -> None:
     """A missing predecessor body cannot lead to overwriting without its backup."""
-    api = BulkApi(lock=CountingLock())
+    api = BulkApi()
     original = _record()
     path = identity_to_path(identity_from_eee_record(json.loads(original))).as_posix()
     api.objects[path] = original
@@ -1270,15 +1101,13 @@ def test_missing_object_after_metadata_is_not_treated_as_new(tmp_path: Path) -> 
                     records=[_record(score=0.6, timestamp="2026-01-02T00:00:00Z")]
                 )
     assert api.upload_calls == 0
-    assert api.lock.owner is None
 
 
 def test_mixed_batches_archive_every_predecessor_before_canonical_upload(
     tmp_path: Path,
 ) -> None:
     """Multiple archive batches finish verification before any canonical write."""
-    lock = CountingLock()
-    api = BulkApi(lock=lock)
+    api = BulkApi()
     originals = bulk_records(count=501)
     for content in originals:
         path = identity_to_path(
@@ -1311,12 +1140,8 @@ def test_mixed_batches_archive_every_predecessor_before_canonical_upload(
 def test_non_manual_decision_cannot_authorise_conflict(tmp_path: Path) -> None:
     """Automatic resolver outcomes are not manual authorisation proofs."""
     api = MemoryApi()
-    lock = MemoryLock()
     publisher = CanonicalPublisher(
-        api=api,
-        token="test-token",
-        lock=lock,
-        checkpoint_path=tmp_path / "publication.sqlite3",
+        api=api, token="test-token", checkpoint_path=tmp_path / "publication.sqlite3"
     )
     original = _record(score=0.9)
     candidate = _record(score=0.1)
@@ -1350,7 +1175,7 @@ def test_numeric_enrichment_does_not_authorise_other_changes(
 ) -> None:
     """Numeric enrichment cannot authorise evaluation or arbitrary changes."""
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    publisher, _, _ = _publisher(tmp_path)
+    publisher, _ = _publisher(tmp_path)
     original = _record()
     candidate_record = json.loads(original)
     candidate_record["model_info"]["additional_details"] = {
@@ -1370,7 +1195,7 @@ def test_pipeline_numeric_enrichment_is_publishable(
 ) -> None:
     """Publish numeric metadata produced by the model enrichment pipeline."""
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    publisher, api, _ = _publisher(tmp_path)
+    publisher, api = _publisher(tmp_path)
     original = json.loads(_record())
     original["model_info"]["name"] = "org/model"
     original["model_info"]["additional_details"] = {
@@ -1423,12 +1248,8 @@ def test_pipeline_numeric_enrichment_is_publishable(
 def test_prepare_rejects_changed_remote_for_manual_retry(tmp_path: Path) -> None:
     """An approved decision cannot be prepared against an unrelated remote body."""
     api = MemoryApi()
-    lock = MemoryLock()
     publisher = CanonicalPublisher(
-        api=api,
-        token="test-token",
-        lock=lock,
-        checkpoint_path=tmp_path / "publication.sqlite3",
+        api=api, token="test-token", checkpoint_path=tmp_path / "publication.sqlite3"
     )
     original = _record(score=0.9)
     candidate = _record(score=0.1)
@@ -1455,7 +1276,7 @@ def test_prepare_validates_sources_with_linear_identity_comparisons(
 ) -> None:
     """Public preparation validates N source identities with O(N) comparisons."""
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    publisher, _, _ = _publisher(tmp_path)
+    publisher, _ = _publisher(tmp_path)
     records: list[bytes] = []
     sources: dict[tuple[str, str, bool | None, bool | None], bytes] = {}
     for index in range(600):
@@ -1498,10 +1319,9 @@ def test_prepared_manual_publication_retry_accepts_exact_candidate(
 ) -> None:
     """A durable manual proof permits retry after the candidate was uploaded."""
     api = MemoryApi()
-    lock = MemoryLock()
     checkpoint = tmp_path / "publication.sqlite3"
     publisher = CanonicalPublisher(
-        api=api, token="test-token", lock=lock, checkpoint_path=checkpoint
+        api=api, token="test-token", checkpoint_path=checkpoint
     )
     original = _record(score=0.9)
     candidate = _record(score=0.1)
@@ -1526,7 +1346,7 @@ def test_prepared_manual_publication_retry_accepts_exact_candidate(
     assert api.objects[history] == original
     uploads_after_publication = api.upload_calls
     retry_publisher = CanonicalPublisher(
-        api=api, token="test-token", lock=lock, checkpoint_path=checkpoint
+        api=api, token="test-token", checkpoint_path=checkpoint
     )
     retry_publisher.prepare(
         records=[candidate], sources={identity: original}, decisions=[decision]
@@ -1539,12 +1359,25 @@ def test_prepared_manual_publication_retry_accepts_exact_candidate(
     assert api.upload_calls == uploads_after_publication
 
 
+def test_publication_needs_no_broker_configuration(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Canonical results publish using bucket access alone, without a lock service."""
+    monkeypatch.delenv("CANONICAL_PUBLICATION_SECRET", raising=False)
+    monkeypatch.delenv("CANONICAL_PUBLICATION_URL", raising=False)
+    publisher, api = _publisher(tmp_path)
+    record = _record()
+    with publisher.session() as session:
+        assert session.publish(records=[record]) == 1
+    assert record in api.objects.values()
+
+
 def test_publish_archives_predecessor_and_skips_old(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Newer publication archives the prior content and rejects stale overwrite."""
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    publisher, api, _ = _publisher(tmp_path)
+    publisher, api = _publisher(tmp_path)
     with publisher.session() as session:
         assert session.publish(records=[_record()]) == 1
         assert session.publish(records=[_record()]) == 0
@@ -1562,7 +1395,7 @@ def test_publish_batches_remote_comparison_reads(
 ) -> None:
     """Unchanged records are compared in bounded bulk downloads."""
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    publisher, api, _ = _publisher(tmp_path)
+    publisher, api = _publisher(tmp_path)
     records = []
     for index in range(1_001):
         record = json.loads(_record())
@@ -1589,11 +1422,10 @@ def test_publish_batches_remote_comparison_reads(
 def test_reconstructed_publisher_skips_verified_remote_bodies(tmp_path: Path) -> None:
     """Fresh matching Xet metadata avoids downloading unchanged result bodies."""
     api = FingerprintApi()
-    lock = MemoryLock()
     checkpoint = tmp_path / "publication.sqlite3"
     record = _record()
     publisher = CanonicalPublisher(
-        api=api, token="test-token", lock=lock, checkpoint_path=checkpoint
+        api=api, token="test-token", checkpoint_path=checkpoint
     )
     with publisher.session() as session:
         assert session.publish(records=[record]) == 1
@@ -1601,7 +1433,7 @@ def test_reconstructed_publisher_skips_verified_remote_bodies(tmp_path: Path) ->
     assert initial_reads == 0
 
     publisher = CanonicalPublisher(
-        api=api, token="test-token", lock=lock, checkpoint_path=checkpoint
+        api=api, token="test-token", checkpoint_path=checkpoint
     )
     formatted = json.dumps(json.loads(record), indent=2).encode()
     with publisher.session() as session:
@@ -1616,7 +1448,7 @@ def test_remote_comparison_failure_aborts_before_any_upload(
 ) -> None:
     """A failed batch comparison never treats unknown records as absent."""
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    publisher, api, _ = _publisher(tmp_path)
+    publisher, api = _publisher(tmp_path)
     api.fail_download_batch = fail_batch
     records = []
     for index in range(record_count):
@@ -1638,8 +1470,7 @@ def test_remote_comparison_failure_aborts_before_any_upload(
 @pytest.mark.parametrize("count", [1, 10_000])
 def test_replacement_request_budget(tmp_path: Path, count: int) -> None:
     """All-predecessor replacements also stay below the modelled request budget."""
-    lock = CountingLock()
-    api = BulkApi(lock=lock)
+    api = BulkApi()
     originals = bulk_records(count=count)
     for raw in originals:
         path = identity_to_path(identity_from_eee_record(json.loads(raw))).as_posix()
@@ -1652,9 +1483,8 @@ def test_replacement_request_budget(tmp_path: Path, count: int) -> None:
     batches = (count + 499) // 500
     assert api.upload_calls == 2 * batches
     assert len(api.events) == 9 * batches
-    assert lock.calls == 3 + 4 * batches
     assert max(len(paths) for _, paths in api.events) <= 500
-    assert (len(api.events) + lock.calls) * 2 < 900
+    assert (len(api.events)) * 2 < 900
 
 
 @pytest.mark.parametrize("failure", ["missing", "corrupt", "partial", "interrupt"])
@@ -1662,7 +1492,7 @@ def test_second_archive_batch_failure_blocks_all_canonical_writes(
     tmp_path: Path, failure: str
 ) -> None:
     """No replacement starts while any predecessor backup remains unverified."""
-    api = BulkApi(lock=CountingLock())
+    api = BulkApi()
     originals = bulk_records(count=503)
     original_objects = {
         identity_to_path(identity_from_eee_record(json.loads(raw))).as_posix(): raw
@@ -1686,7 +1516,6 @@ def test_second_archive_batch_failure_blocks_all_canonical_writes(
         for operation, paths in api.events
         if operation == "upload"
     )
-    assert api.lock.owner is not None
     with sqlite3.connect(publisher.checkpoint_path) as connection:
         assert connection.execute("SELECT COUNT(*) FROM receipts").fetchone() == (0,)
 
@@ -1696,7 +1525,7 @@ def test_stale_candidate_cannot_replace_newer_current_record(
 ) -> None:
     """A stale writer that acquires later leaves newer canonical bytes intact."""
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    publisher, api, _ = _publisher(tmp_path)
+    publisher, api = _publisher(tmp_path)
     with publisher.session() as session:
         session.publish(records=[_record(version="3.0.0")])
     path = next(name for name in api.objects if name.endswith(".json"))
@@ -1707,16 +1536,14 @@ def test_stale_candidate_cannot_replace_newer_current_record(
 
 
 @pytest.mark.parametrize(
-    "failure",
-    ["partial", "lost-response", "interrupt", "corrupt", "missing", "lock-loss"],
+    "failure", ["partial", "lost-response", "interrupt", "corrupt", "missing"]
 )
 @pytest.mark.parametrize("replacements", [False, True])
 def test_uncertain_batch_preserves_receipts_evidence_and_converges(
     tmp_path: Path, failure: str, replacements: bool
 ) -> None:
-    """Verified earlier chunks survive; uncertain chunks retain lock and evidence."""
-    lock = CountingLock()
-    api = BulkApi(lock=lock)
+    """Verified earlier chunks survive and interrupted publication can resume."""
+    api = BulkApi()
     originals = bulk_records(count=503)
     sources = {identity_from_eee_record(json.loads(raw)): raw for raw in originals}
     if replacements:
@@ -1746,12 +1573,9 @@ def test_uncertain_batch_preserves_receipts_evidence_and_converges(
     with pytest.raises(exception):
         with publisher.session() as session:
             session.publish(records=records)
-    assert lock.owner is not None
     with sqlite3.connect(publisher.checkpoint_path) as connection:
         assert connection.execute("SELECT COUNT(*) FROM receipts").fetchone() == (500,)
         assert connection.execute("SELECT COUNT(*) FROM sources").fetchone() == (503,)
-    # Simulate explicit operator reconciliation/release, never automatic lock stealing.
-    lock.owner = None
     api.fail_batch = None
     if failure == "corrupt":
         # Corruption must fail closed, not be silently accepted or overwritten.
@@ -1800,7 +1624,7 @@ def test_unknown_numeric_metadata_can_be_published(
         value: Recognised unknown-value placeholder.
     """
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    publisher, api, _ = _publisher(tmp_path)
+    publisher, api = _publisher(tmp_path)
     record = json.loads(_record())
     record["model_info"]["additional_details"] = {key: value}
     content = json.dumps(record).encode()
@@ -1814,18 +1638,16 @@ def test_unknown_numeric_metadata_can_be_published(
     assert api.objects[identity_to_path(identity=identity).as_posix()] == content
 
 
-def test_upload_failure_poison_retains_lock(
+def test_upload_failure_is_reported(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Ambiguous mutation failures retain the durable lock for recovery."""
+    """Ambiguous mutation failures are reported to the caller."""
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    publisher, api, lock = _publisher(tmp_path)
+    publisher, api = _publisher(tmp_path)
     api.fail_upload = True
     with pytest.raises(OSError):
         with publisher.session() as session:
             session.write_verified(path="object", content=b"x", expected=None)
-    assert lock.owner is not None
-    assert list((tmp_path / "euroeval-publication-locks").glob("*.json"))
 
 
 @pytest.mark.parametrize(
@@ -1846,10 +1668,7 @@ def test_vllm_engine_preference_publication(
     """Publish exact preferred-engine source and archive replaced bytes."""
     api = MemoryApi()
     publisher = CanonicalPublisher(
-        api=api,
-        token="test-token",
-        lock=MemoryLock(),
-        checkpoint_path=tmp_path / "publication.sqlite3",
+        api=api, token="test-token", checkpoint_path=tmp_path / "publication.sqlite3"
     )
 
     def encode_record(*, engine: str, score: float, timestamp: str) -> bytes:
@@ -1917,9 +1736,9 @@ def test_vllm_engine_preference_publication(
 def test_write_verified_detects_mutated_expected_bytes(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The lock does not substitute for checking current expected bytes."""
+    """A changed predecessor cannot be overwritten by an expected-byte write."""
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    publisher, api, _ = _publisher(tmp_path)
+    publisher, api = _publisher(tmp_path)
     api.objects["object"] = b"before"
     with publisher.session() as session:
         api.mutate_on_download["object"] = b"changed"
@@ -1932,7 +1751,7 @@ def test_write_verified_rejects_external_remote_deletion(
 ) -> None:
     """A remotely deleted predecessor cannot be silently restored by a writer."""
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
-    publisher, api, _ = _publisher(tmp_path)
+    publisher, api = _publisher(tmp_path)
     api.objects["object"] = b"before"
     with publisher.session() as session:
         del api.objects["object"]

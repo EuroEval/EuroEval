@@ -1136,7 +1136,7 @@ class VolunteerReviewer:
         if publisher is None and self.publisher_factory is not None:
             publisher = self.publisher_factory()
         if publisher is None:
-            raise ReviewError("Canonical publication lock configuration is required")
+            raise ReviewError("Canonical publication configuration is required")
         with publisher.session() as session:
             yield session
 

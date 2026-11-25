@@ -31,7 +31,6 @@ import hashlib
 import json
 import logging
 import os
-import shlex
 import signal
 import socket
 import subprocess
@@ -52,12 +51,10 @@ from review_volunteer_results import (
     show_and_render,
     style_status,
 )
-from review_volunteer_results import main as run_review_command
 from tqdm.auto import tqdm
 
 from euroeval_worker.review import (
     PublicStagingError,
-    ReviewError,
     ReviewReport,
     VolunteerReviewer,
     reviewer_from_environment,
@@ -137,7 +134,8 @@ def main(force: bool = False, no_colour: bool = False) -> None:
     configure_colours(no_colour=no_colour)
     check_required_env_vars()
     try:
-        should_continue = preflight_volunteer_review()
+        accepted_results: dict[ResultIdentity, str] = {}
+        should_continue = preflight_volunteer_review(accepted_results=accepted_results)
     except PublicStagingError:
         sys.exit(1)
     if not should_continue:
@@ -160,7 +158,9 @@ def main(force: bool = False, no_colour: bool = False) -> None:
         logger.info("Forcing leaderboard regeneration despite no new results.")
     else:
         if not upload_results_to_hf(
-            new_results_path=NEW_RESULTS_PATH, pending_lines=all_lines
+            new_results_path=NEW_RESULTS_PATH,
+            pending_lines=all_lines,
+            accepted_results=accepted_results,
         ):
             sys.exit(1)
 
@@ -465,8 +465,13 @@ def deploy_to_vercel() -> bool:
     return True
 
 
-def preflight_volunteer_review() -> bool:
-    """Check private volunteer staging before any leaderboard side effect.
+def preflight_volunteer_review(
+    accepted_results: dict[ResultIdentity, str] | None = None,
+) -> bool:
+    """Review staged results and append accepted records to the collection input.
+
+    Args:
+        accepted_results (optional): In-memory explicit incoming choices for upload.
 
     Returns:
         Whether leaderboard collection should continue. ``False`` means the
@@ -500,7 +505,6 @@ def preflight_volunteer_review() -> bool:
 
     submission_ids = [summary[0] for summary in pending]
     if not _stdin_is_interactive():
-        _log_review_commands(submission_ids=submission_ids)
         logger.warning(
             "Standard input is not interactive; continuing without automatic approval."
         )
@@ -517,11 +521,6 @@ def preflight_volunteer_review() -> bool:
     if answer.strip().lower() not in {"y", "yes"}:
         logger.info("Continuing; no volunteer submission was approved automatically.")
         return True
-
-    reviewer_login = _reviewer_login()
-    if not reviewer_login:
-        logger.error("Cannot review submissions without a verified GitHub login.")
-        return False
 
     review_error = False
     try:
@@ -546,119 +545,57 @@ def preflight_volunteer_review() -> bool:
                 review_error = True
                 continue
             render_model_review(reports=reports)
-            commands = _review_model_commands(
-                reviewer=reviewer, reviewer_login=reviewer_login, reports=reports
+            _review_model(
+                reviewer=reviewer, reports=reports, accepted_results=accepted_results
             )
-            completed = True
-            for command in commands:
-                if run_review_command([*command, "--quiet"]):
-                    logger.error(
-                        "Decision failed; model group may be partly processed. "
-                        "Check state before retrying."
-                    )
-                    review_error = True
-                    completed = False
-                    break
-            if commands and completed:
-                logger.info(
-                    "%s all submitted languages for %s.",
-                    "Approved" if "approve" in commands[0] else "Rejected",
-                    reports[0].model_id,
-                    extra={"review_success": True},
-                )
         except (EOFError, KeyboardInterrupt):
             logger.warning("Review cancelled; collection stopped before side effects.")
             return False
         except Exception:
-            logger.exception("Review failed; model group may be partly processed.")
+            logger.exception("Could not review model; collection stopped.")
             review_error = True
     if review_error:
         logger.error(
-            "Volunteer review had errors; halting collection. Check each decision "
-            "before retrying because a failed approval may have partially completed."
+            "Volunteer review had errors; collection stopped. "
+            "Accepted results remain in new_results.jsonl."
         )
         return False
     return True
 
 
-def _log_review_commands(submission_ids: list[str]) -> None:
-    """Log copy-pasteable, shell-quoted maintainer review commands.
+def _review_model(
+    reviewer: VolunteerReviewer,
+    reports: list[ReviewReport],
+    accepted_results: dict[ResultIdentity, str] | None,
+) -> None:
+    """Record one local choice for all submitted languages of a model.
 
     Args:
-        submission_ids:
-            Volunteer submission ids for which to log review commands.
-    """
-    reviewer = os.environ.get("GITHUB_ACTOR") or "<github-login>"
-    reason = "reviewed submission evidence"
-    commands = [
-        ["uv", "run", "python", "src/scripts/review_volunteer_results.py", "list"]
-    ]
-    for submission_id in submission_ids:
-        commands.extend(
-            (
-                [
-                    "uv",
-                    "run",
-                    "python",
-                    "src/scripts/review_volunteer_results.py",
-                    "show",
-                    submission_id,
-                ],
-                [
-                    "uv",
-                    "run",
-                    "python",
-                    "src/scripts/review_volunteer_results.py",
-                    "--reviewer",
-                    reviewer,
-                    "approve",
-                    submission_id,
-                    "--reason",
-                    reason,
-                ],
-                [
-                    "uv",
-                    "run",
-                    "python",
-                    "src/scripts/review_volunteer_results.py",
-                    "--reviewer",
-                    reviewer,
-                    "reject",
-                    submission_id,
-                    "--reason",
-                    reason,
-                ],
-            )
-        )
-    logger.warning("Review commands (do not run until evidence is inspected):")
-    for command in commands:
-        logger.warning("%s", shlex.join(command))
-
-
-def _review_model_commands(
-    reviewer: VolunteerReviewer, reviewer_login: str, reports: list[ReviewReport]
-) -> list[list[str]]:
-    """Confirm one action for all submitted languages of a model.
-
-    Args:
-        reviewer: Evidence loader; does not perform decisions here.
-        reviewer_login: Verified owner making the decision.
-        reports: Current validated evidence for the model group.
-
-    Returns:
-        Individually fenced terminal commands, or no commands when left pending.
+        reviewer: Evidence loader used only when details are requested.
+        reports: Already validated model submissions.
+        accepted_results: Incoming choices carried to the normal upload phase.
 
     Raises:
-        KeyboardInterrupt: If review stops.
-        ReviewError: If evidence changes before confirmation.
+        KeyboardInterrupt: If the user stops review before collection.
     """
     while True:
+        lines = {
+            record.identity: json.dumps(
+                json.loads(record.content), separators=(",", ":")
+            )
+            for report in reports
+            for record in report.records
+            if not (
+                record.identity[1] == "contamination-canary"
+                or record.identity[1].startswith("contamination-canary-")
+            )
+        }
         action = (
             input(
                 "All languages: "
-                + style_status("[a] Approve submitted / replace existing", success=True)
+                + style_status("[a] Accept submitted / replace existing", success=True)
                 + "  "
-                + style_status("[r] Reject / keep existing", success=False)
+                + style_status("[r] Keep existing", success=False)
                 + "  [d] Details  [s] Skip  [q] Stop: "
             )
             .strip()
@@ -666,8 +603,8 @@ def _review_model_commands(
         )
         if action in {"q", "quit"}:
             raise KeyboardInterrupt
-        if action in {"", "s", "skip", "n", "no"}:
-            return []
+        if action in {"", "s", "skip", "n", "no", "r", "reject"}:
+            return
         if action in {"d", "details"}:
             reports = [
                 show_and_render(
@@ -676,109 +613,26 @@ def _review_model_commands(
                 for r in reports
             ]
             continue
-        if action in {"r", "reject"}:
-            reason = input("Rejection reason (blank cancels): ").strip()
-            if not reason:
-                continue
-            confirm = (
-                input("Reject ALL submitted languages; keep existing results? [y/N]: ")
-                .strip()
-                .lower()
-            )
-            if confirm not in {"y", "yes"}:
-                continue
-            return [
-                [
-                    "--reviewer",
-                    reviewer_login,
-                    "reject",
-                    r.submission_id,
-                    "--reason",
-                    reason,
-                ]
-                for r in reports
-            ]
         if action not in {"a", "approve", "y", "yes"}:
-            logger.info("Choose approve, reject, details, skip, or stop.")
+            logger.info("Choose accept, keep existing, details, skip, or stop.")
             continue
-        selected: list[ReviewReport] = []
-        replace = any(
-            o.conflict or o.replacement
-            for r in reports
-            for o in r.canonical_observations
+        if lines:
+            content = ("\n".join(lines.values()) + "\n").encode("utf-8")
+            with NEW_RESULTS_PATH.open("ab+") as output:
+                if output.tell():
+                    output.seek(-1, os.SEEK_END)
+                    if output.read(1) != b"\n":
+                        content = b"\n" + content
+                output.write(content)
+            if accepted_results is not None:
+                accepted_results.update(lines)
+        logger.info(
+            "Accepted %s dataset results for %s; ready for upload.",
+            len(lines),
+            reports[0].model_id,
+            extra={"review_success": True},
         )
-        for report in reports:
-            current = (
-                reviewer.show(submission_id=report.submission_id, replace_existing=True)
-                if replace
-                else report
-            )
-            if [(r.canonical_path, r.digest) for r in current.records] != [
-                (r.canonical_path, r.digest) for r in report.records
-            ] or [
-                (o.canonical_path, o.predecessor_digest)
-                for o in current.canonical_observations
-            ] != [
-                (o.canonical_path, o.predecessor_digest)
-                for o in report.canonical_observations
-            ]:
-                raise ReviewError("Results changed; inspect model details again")
-            selected.append(current)
-        if any(o.conflict for r in selected for o in r.canonical_observations):
-            logger.error("Stored data needs repair; inspect Details before approval.")
-            continue
-        if replace:
-            count = sum(
-                o.replacement for r in selected for o in r.canonical_observations
-            )
-            confirm = (
-                input(
-                    f"Approve ALL {len(selected)} language submissions, "
-                    f"replacing {count} "
-                    "stored results (originals archived)? [y/N]: "
-                )
-                .strip()
-                .lower()
-            )
-            if confirm not in {"y", "yes"}:
-                continue
-        commands = []
-        for report in selected:
-            command = ["--reviewer", reviewer_login, "approve", report.submission_id]
-            if replace:
-                command.append("--replace-existing")
-            command.extend(
-                [
-                    "--plan-fingerprint",
-                    report.plan_fingerprint,
-                    "--reason",
-                    "Reviewed during collector preflight",
-                ]
-            )
-            commands.append(command)
-        return commands
-
-
-def _reviewer_login() -> str | None:
-    """Resolve the verified reviewer login without exposing credentials.
-
-    Returns:
-        The login or None when no authenticated login is available.
-    """
-    reviewer = os.environ.get("GITHUB_ACTOR", "").strip()
-    if reviewer:
-        return reviewer
-    try:
-        result = subprocess.run(
-            ["gh", "api", "user", "--jq", ".login"],
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return None
-    return result.stdout.strip() or None
+        return
 
 
 def _stdin_is_interactive() -> bool:
@@ -920,7 +774,10 @@ def regenerate_leaderboards(force: bool = False) -> bool:
 
 
 def upload_results_to_hf(
-    new_results_path: Path, *, pending_lines: list[str] | None = None
+    new_results_path: Path,
+    *,
+    pending_lines: list[str] | None = None,
+    accepted_results: dict[ResultIdentity, str] | None = None,
 ) -> bool:
     """Upload results to Hugging Face bucket.
 
@@ -933,6 +790,7 @@ def upload_results_to_hf(
             Path to the newly harvested results file (JSONL format).
         pending_lines (optional): Fully harvested and manually staged lines to resolve
             without rewriting the staging file first.
+        accepted_results (optional): Exact incoming records already accepted in review.
 
     Returns:
         True if upload succeeded, False otherwise.
@@ -952,6 +810,7 @@ def upload_results_to_hf(
             source_bytes=source_bytes,
             decisions=decisions,
             lines=pending_lines,
+            accepted_results=accepted_results,
         )
     except UnresolvedResultConflictError as error:
         logger.error("Result collection aborted: %s", error)
@@ -990,7 +849,17 @@ def upload_results_to_hf(
                 current_bytes=original_bytes,
                 candidate_bytes=final_bytes,
             )
-            if automatic.needs_choice:
+            if accepted_results and accepted_results.get(
+                identity
+            ) == final_bytes.decode("utf-8"):
+                prior = resolve_result_conflict(
+                    current=original_record,
+                    candidate=final_record,
+                    current_bytes=original_bytes,
+                    candidate_bytes=final_bytes,
+                    choice=ConflictChoice.INCOMING,
+                )
+            elif automatic.needs_choice:
                 try:
                     prior = resolve_result_interactively(
                         current=original_record,
@@ -1094,6 +963,7 @@ def upload_results_to_hf(
         written_paths=written_paths,
         source_bytes=source_bytes,
         decisions=decisions,
+        accepted_results=accepted_results,
     )
 
 
@@ -1197,6 +1067,7 @@ def _process_new_results(
     source_bytes: dict[ResultIdentity, bytes] | None = None,
     decisions: list[ConflictDecision] | None = None,
     lines: list[str] | None = None,
+    accepted_results: dict[ResultIdentity, str] | None = None,
 ) -> None:
     """Process new results from JSONL file and merge into existing.
 
@@ -1208,6 +1079,7 @@ def _process_new_results(
         source_bytes (optional): Original source bytes indexed by result identity.
         decisions (optional): Output list for explicit owner choices.
         lines (optional): Already harvested lines replacing the on-disk staging file.
+        accepted_results (optional): Exact incoming records already chosen by the owner.
 
     """
     if lines is None and not new_results_path.exists():
@@ -1234,6 +1106,10 @@ def _process_new_results(
                 logger.debug(f"Skipping line {line_number}: no identity")
                 continue
 
+            candidate_line = json.dumps(record, separators=(",", ":"))
+            accepted = accepted_results.get(identity) if accepted_results else None
+            if accepted is not None and accepted != candidate_line:
+                continue
             if identity in merged:
                 current = merged[identity]
                 current_bytes = json.dumps(current, separators=(",", ":")).encode(
@@ -1247,6 +1123,7 @@ def _process_new_results(
                     candidate=record,
                     current_bytes=current_bytes,
                     candidate_bytes=candidate_bytes,
+                    choice=ConflictChoice.INCOMING if accepted is not None else None,
                 )
                 if decision.needs_choice:
                     decision = resolve_result_interactively(
@@ -1272,6 +1149,7 @@ def _upload_to_bucket(
     written_paths: list[Path],
     source_bytes: dict[ResultIdentity, bytes],
     decisions: list[ConflictDecision] | None = None,
+    accepted_results: dict[ResultIdentity, str] | None = None,
 ) -> bool:
     """Upload changed files to HF bucket using batch operation.
 
@@ -1283,6 +1161,7 @@ def _upload_to_bucket(
         source_bytes:
             Exact original bytes indexed by result identity.
         decisions (optional): Explicit byte-bound owner choices.
+        accepted_results (optional): Exact incoming records accepted during review.
 
     Returns:
         True if upload succeeded, False otherwise.
@@ -1304,7 +1183,13 @@ def _upload_to_bucket(
                 records=candidate_bytes, sources=sources, **decision_options
             )
             session.publish(
-                records=candidate_bytes, sources=sources, **decision_options
+                records=candidate_bytes,
+                sources=sources,
+                **decision_options,
+                accepted_records={
+                    identity: line.encode("utf-8")
+                    for identity, line in (accepted_results or {}).items()
+                },
             )
         logger.info(f"Published {len(candidate_bytes)} file(s) to {HF_RESULTS_BUCKET}.")
         return True

@@ -10,17 +10,6 @@ import pytest
 
 import src.scripts.volunteer_worker_operations as operations
 
-
-def test_publication_routes_and_secret_are_registered() -> None:
-    """Canonical publication is configured and included in safe route probes."""
-    assert "promotion-status" in operations.ROUTES
-    assert "publication-lock" in operations.ROUTES
-    assert "CANONICAL_PUBLICATION_SECRET" in operations.REQUIRED_ENVIRONMENT
-    assert "CANONICAL_PUBLICATION_SECRET" in operations.LOCAL_SECRET_NAMES
-    assert "CANONICAL_PUBLICATION_URL" in operations.PUBLIC_CONFIG
-    assert "CANONICAL_PUBLICATION_URL" not in operations.REQUIRED_ENVIRONMENT
-
-
 REAL_MISSING_BUCKET_STDERR = (
     "Error: Bucket 'EuroEval/volunteer-results-staging' not found.\n"
     "If the bucket is private, make sure you are authenticated and your token has "
@@ -875,9 +864,7 @@ def test_local_secrets_generate_three_independent_values(
         tmp_path:
             Temporary directory for isolated files and subprocess inputs.
     """
-    values = iter(
-        ("marker-value", "coordinator-value", "promotion-value", "publication-value")
-    )
+    values = iter(("marker-value", "coordinator-value", "promotion-value"))
     monkeypatch.setattr(operations.secrets, "token_urlsafe", lambda _: next(values))
     env_file = tmp_path / ".env"
 
@@ -888,7 +875,6 @@ def test_local_secrets_generate_three_independent_values(
         "VOLUNTEER_MARKER_SECRET=marker-value\n"
         "WORKER_COORDINATOR_SECRET=coordinator-value\n"
         "VOLUNTEER_PROMOTION_SECRET=promotion-value\n"
-        "CANONICAL_PUBLICATION_SECRET=publication-value\n"
     )
     assert os.stat(env_file).st_mode & 0o777 == 0o600
 
@@ -1107,10 +1093,10 @@ def test_publication_lock_smoke_uses_only_read_only_method_probes(
 
     monkeypatch.setattr(operations, "request_http", fake_request)
     diagnostics = operations.smoke(
-        base_url="https://euroeval.com", routes=["publication-lock"], environment={}
+        base_url="https://euroeval.com", routes=["promotion-status"], environment={}
     )
 
-    assert [method for route, method in requests if route == "publication-lock"] == [
+    assert [method for route, method in requests if route == "promotion-status"] == [
         "GET",
         "OPTIONS",
     ]

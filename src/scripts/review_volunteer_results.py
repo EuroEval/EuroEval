@@ -8,6 +8,7 @@ import logging
 import os
 import shutil
 import sys
+from collections import Counter
 
 import click
 from dotenv import load_dotenv
@@ -19,7 +20,8 @@ from euroeval_worker.review import (
     reviewer_from_environment,
 )
 from euroeval_worker.review_models import ValidatedRecord
-from leaderboards.record_fields import get_num_failed_instances
+from leaderboards.record_fields import get_num_failed_instances, get_total_scores
+from leaderboards.result_conflicts import resolve_result_conflict
 from leaderboards.score_extraction import get_scored_count
 
 logger = logging.getLogger(__name__)
@@ -123,13 +125,9 @@ def _log_report(report: ReviewReport, *, verbose: bool = False) -> None:
     logger.info("Provenance: %s", report.provenance)
     for record in records:
         logger.info("%s: %s", record.identity[1], dict(record.scores))
-    for item in report.canonical_observations:
-        if not item.conflict and not item.replacement:
-            continue
-        old = json.loads(item.predecessor_content or b"{}")
-        logger.info("Stored %s: %s", item.identity[1], old.get("evaluation_results"))
-        if item.conflict:
-            logger.info("Needs review: %s", item.conflict)
+    _, changes = _describe_changes(reports=[report])
+    for change in changes:
+        logger.info("%s", change)
     for warning in sorted(warnings):
         logger.info("Notice: %s", warning)
     for check in report.checks:
@@ -137,6 +135,118 @@ def _log_report(report: ReviewReport, *, verbose: bool = False) -> None:
     for record in report.records:
         logger.info("Record %s sha256=%s", record.identity, record.digest)
     logger.info("Approval plan fingerprint: %s", report.plan_fingerprint)
+
+
+def _describe_changes(reports: list[ReviewReport]) -> tuple[str, list[str]]:
+    """Summarise version, score and metadata changes against stored results.
+
+    Args:
+        reports: Reviewed submissions with their exact stored predecessor bytes.
+
+    Returns:
+        Compact change summary and dataset-specific old-to-new evidence.
+    """
+    versions: Counter[str] = Counter()
+    score_datasets: set[str] = set()
+    metadata: Counter[str] = Counter()
+    payload_datasets: set[str] = set()
+    version_only = 0
+    largest_delta: float | None = None
+    details: list[str] = []
+    compared = 0
+    invalid = 0
+    for report in reports:
+        records = {r.identity: r for r in report.records}
+        for observation in report.canonical_observations:
+            if observation.predecessor_content is None:
+                continue
+            compared += 1
+            label = f"{report.language}/{observation.identity[1]}"
+            try:
+                old = json.loads(observation.predecessor_content)
+                new = json.loads(records[observation.identity].content)
+                comparison = resolve_result_conflict(current=old, candidate=new)
+                old_scores = get_total_scores(record=old) or {}
+                new_scores = get_total_scores(record=new) or {}
+            except (AttributeError, TypeError, ValueError):
+                invalid += 1
+                details.append(f"{label}: stored record cannot be compared")
+                continue
+            old_version = old.get("eval_library", {}).get("version", "unknown")
+            new_version = new.get("eval_library", {}).get("version", "unknown")
+            if old_version != new_version:
+                versions[f"{old_version}→{new_version}"] += 1
+                details.append(f"{label}: EuroEval {old_version} → {new_version}")
+                if not comparison.differences:
+                    version_only += 1
+            changed_scores = False
+            for metric in sorted(old_scores.keys() | new_scores.keys()):
+                before, after = old_scores.get(metric), new_scores.get(metric)
+                if before == after:
+                    continue
+                changed_scores = True
+                score_datasets.add(label)
+                delta = ""
+                if before is not None and after is not None:
+                    largest_delta = max(largest_delta or 0.0, abs(after - before))
+                    delta = f" (Δ{after - before:+g}, raw metric units)"
+                details.append(f"{label}: {metric} {before} → {after}{delta}")
+            for difference in comparison.differences:
+                if difference.category == "metadata":
+                    operation = (
+                        "added"
+                        if difference.current == "<missing>"
+                        else "removed"
+                        if difference.candidate == "<missing>"
+                        else "changed"
+                    )
+                    metadata[operation] += 1
+                    details.append(
+                        f"{label}: metadata {operation} {difference.field}: "
+                        f"{difference.current} → {difference.candidate}"
+                    )
+                else:
+                    if not changed_scores or "raw_results" in difference.field:
+                        payload_datasets.add(label)
+                    value_change = (
+                        ""
+                        if "raw_results" in difference.field
+                        else f": {difference.current} → {difference.candidate}"
+                    )
+                    details.append(
+                        f"{label}: evaluation data changed: "
+                        f"{difference.field}{value_change}"
+                    )
+    if not compared:
+        return "No stored results to replace", details
+    if invalid == compared:
+        return f"{invalid} stored results cannot be compared", details
+    version_text = (
+        (
+            next(iter(versions))
+            if len(versions) == 1
+            else f"versions {sum(versions.values())} changed"
+        )
+        if versions
+        else "Same EuroEval version"
+    )
+    metadata_text = (
+        f"Metadata: {metadata['added']} added, {metadata['removed']} removed, "
+        f"{metadata['changed']} changed"
+        if metadata
+        else "Metadata unchanged"
+    )
+    summary = (
+        f"{metadata_text}; scores {len(score_datasets)} changed; "
+        f"{version_only} version-only; {version_text}"
+    )
+    if largest_delta is not None:
+        summary += f"; max raw Δ{largest_delta:g}"
+    if payload_datasets:
+        summary += f"; other data {len(payload_datasets)}"
+    if invalid:
+        summary += f"; {invalid} stored results cannot be compared"
+    return summary, details
 
 
 def _is_canary(record: ValidatedRecord) -> bool:
@@ -174,15 +284,7 @@ def render_model_review(reports: list[ReviewReport]) -> None:
                 unknown.add(record.identity[1])
             elif failed / total >= 0.1:
                 flagged.add(record.identity[1])
-    differences = len(
-        {
-            o.canonical_path
-            for report in reports
-            for o in report.canonical_observations
-            if o.conflict or o.replacement
-        }
-    )
-    languages = ", ".join(sorted({r.language for r in reports}))
+    change_summary, _ = _describe_changes(reports=reports)
     contributors = ", ".join(sorted({r.contributor for r in reports}))
     versions = ", ".join(sorted({r.euroeval_version for r in reports}))
     expected = sum(len(report.expected_identities) for report in reports)
@@ -190,17 +292,12 @@ def render_model_review(reports: list[ReviewReport]) -> None:
     failure_text = f"{len(flagged)} datasets with ≥10% failures"
     if unknown:
         failure_text += f" ({len(unknown)} unknown)"
-    existing = (
-        f"Approve replaces {differences} existing results (archived)"
-        if differences
-        else "Approve adds submitted results"
-    )
     lines = [
-        f"{reports[0].model_id} | Languages: {languages}",
-        f"{contributors} | EuroEval {versions} | {dataset_text}",
-        f"{failure_text} | {existing}",
+        f"{reports[0].model_id} | {contributors} | EuroEval {versions}",
+        f"{dataset_text} | {failure_text}",
+        change_summary,
     ]
-    width = max(36, min(120, shutil.get_terminal_size().columns)) - 4
+    width = max(36, min(max(map(len, lines)), shutil.get_terminal_size().columns - 4))
     logger.info("┌%s┐", "─" * (width + 2))
     for line in lines:
         clipped = line if len(line) <= width else line[: width - 1] + "…"
