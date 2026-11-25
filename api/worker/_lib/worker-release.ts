@@ -1,6 +1,15 @@
 import { ConfigurationError, env, optionalEnv } from "./protocol.js";
 
 export const IMAGE_REPOSITORY = "ghcr.io/euroeval/euroeval-worker";
+/** Image digest recorded for workers that present no attested worker image. */
+export const UNATTESTED_IMAGE_DIGEST = "unattested";
+
+/** Describe how a lease's recorded image digest was established, for the manifest. */
+export function imageDigestProvenance(imageDigest: string): string {
+  return imageDigest === UNATTESTED_IMAGE_DIGEST
+    ? "unattested" : "configured-required-not-runtime-attested";
+}
+
 export function normalizeArchitecture(value: string): "amd64" | "arm64" | null {
   if (value === "amd64" || value === "x86_64") return "amd64";
   if (value === "arm64" || value === "aarch64") return "arm64";

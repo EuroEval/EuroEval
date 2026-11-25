@@ -4,6 +4,7 @@ import { assertAssignable, expectedScope, extractModelId, parsePromotionRecords,
 import { validateRecord } from "../../../api/worker/_lib/eee.ts";
 import { fitsGpu, languageGroup, resolveModel, selectedGpu } from "../../../api/worker/_lib/model.ts";
 import { GROUPS } from "../../../api/worker/_lib/protocol.ts";
+import { UNATTESTED_IMAGE_DIGEST, imageDigestProvenance } from "../../../api/worker/_lib/worker-release.ts";
 import { putLease, reclaimExpiredLease, releaseResultReservations, reserveResultIdentity } from "../../../api/worker/_lib/redis.ts";
 import { bindPromotionDecision, completePromotionReservation, promotionIdentityKey, reservePromotionReservation } from "../../../api/worker/_lib/promotion.ts";
 import { withRedisRestBridge } from "./redis-bridge.mjs";
@@ -738,4 +739,11 @@ test("promotion reservation Lua enforces publication ownership through terminal 
       records: [{ ...record, digest: "d".repeat(64) }] };
     assert.equal(await reservePromotionReservation(next), "reserved");
   });
+});
+
+test("manifest provenance distinguishes unattested execution from a configured image", () => {
+  assert.equal(UNATTESTED_IMAGE_DIGEST, "unattested");
+  assert.equal(imageDigestProvenance(UNATTESTED_IMAGE_DIGEST), "unattested");
+  assert.equal(imageDigestProvenance(`sha256:${"a".repeat(64)}`),
+    "configured-required-not-runtime-attested");
 });

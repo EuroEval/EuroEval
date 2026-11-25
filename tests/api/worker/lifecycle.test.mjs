@@ -760,10 +760,11 @@ for (const contention of ["global", "issue-only", "issue-later", "issue-later-ar
   const issueNumbers = contention === "issue-only" ? [12] : [12, 13];
   const architecture = contention.includes("arm") ? "arm64" :
     contention.endsWith("aarch64") ? "aarch64" : "amd64";
-  const expectedImageDigest = architecture === "amd64" || contention.endsWith("fallback")
-    ? "sha256:image" : "sha256:arm-image";
+  // Non-managed workers present no image attestation, so a configured image digest
+  // (including the ARM64 one) must not be recorded as their provenance.
+  const expectedImageDigest = "unattested";
   if (architecture !== "amd64" && !contention.endsWith("fallback")) {
-    process.env.VOLUNTEER_WORKER_IMAGE_DIGEST_ARM64 = expectedImageDigest;
+    process.env.VOLUNTEER_WORKER_IMAGE_DIGEST_ARM64 = "sha256:arm-image";
   }
   const issues = issueNumbers.map((number) => ({ number, title: "[MODEL EVALUATION REQUEST] org/model",
     body: `### Model ID\n\norg/model\n\n- [x] ${language}\n`, state: "open", assignees: [] }));
