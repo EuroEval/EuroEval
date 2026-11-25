@@ -1308,6 +1308,154 @@ test("release resumes after marker removal with retained ownership", async () =>
   }
 });
 
+for (const failure of ["DELETE rejected", "DELETE response lost", "DELETE ignored"]) test(
+  `public release retries cleanup after ${failure} with its marker lease already removed`, async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  Object.assign(process.env, { VOLUNTEER_MARKER_SECRET: "marker-secret",
+    UPSTASH_REDIS_REST_URL: "https://redis.test", UPSTASH_REDIS_REST_TOKEN: "redis-token",
+    GITHUB_TOKEN: "github-token" });
+  const activeLease = { ...lease, ownership_mode: "public",
+    expires_at: new Date(Date.now() + 120_000).toISOString() };
+  const healthy = { lease_id: "healthy", language: "de", worker: "other-worker",
+    contributor: "bob", expires_at: activeLease.expires_at, ownership_mode: "public" };
+  const legacySubmission = { submission_id: "legacy", language: "fr", manifest_path: "manifest",
+    submitted_at: "2026-09-06T10:00:00Z", verified_contributor: "carol", result_count: 1,
+    status: "accepted" };
+  const signed = await signVolunteerMarker(issueNumber, {
+    protocol_version: "volunteer-worker/v1", coordinator: "coordinator", submission: "accepted",
+    leases: [{ lease_id: activeLease.lease_id, language: activeLease.language, worker: activeLease.worker,
+      contributor: activeLease.contributor, expires_at: activeLease.expires_at, ownership_mode: "public" }, healthy],
+    submissions: [legacySubmission], completed_languages: ["fr"],
+    public_assignees: ["alice", "bob", "carol"],
+  });
+  const issue = { number: issueNumber, body: markerBody(signed), state: "closed",
+    assignees: ["alice", "bob", "carol", "manual"].map((login) => ({ login })) };
+  const byId = `euroeval:worker:lease-id:${activeLease.lease_id}`;
+  const byIssue = `euroeval:worker:lease:${issueNumber}:${activeLease.language}`;
+  const values = new Map([
+    [`euroeval:worker:credential:${await sha256("credential")}`, JSON.stringify({ contributor: "alice" })],
+    [byId, JSON.stringify(activeLease)], [byIssue, JSON.stringify(activeLease)],
+  ]);
+  const broker = mockBroker(issue, values);
+  let failCleanup = true;
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input);
+    if (url === "https://redis.test") {
+      const command = JSON.parse(init.body);
+      if (command[0] === "EVAL" && command[1].includes("released=true")) {
+        const current = JSON.parse(values.get(command[3]) || "null");
+        if (current?.lease_id === command[5]) values.delete(command[3]);
+        const stored = JSON.parse(values.get(command[4]) || "null");
+        if (stored?.lease_id === command[5]) values.set(command[4], JSON.stringify({ ...stored, released: true }));
+        return Response.json({ result: 1 });
+      }
+    }
+    if (failCleanup && url.endsWith(`/issues/${issueNumber}/assignees`) && init.method === "DELETE") {
+      if (failure === "DELETE response lost") {
+        await broker(input, init);
+        throw new TypeError("Connection closed after mutation");
+      }
+      if (failure === "DELETE ignored") return Response.json(issue);
+      return Response.json({ message: "Temporary GitHub failure" }, { status: 503 });
+    }
+    return broker(input, init);
+  };
+  const request = () => new Request("https://euroeval.test/api/worker/release", {
+    method: "POST", headers: { authorization: "Bearer credential", "content-type": "application/json" },
+    body: JSON.stringify({ protocol_version: "volunteer-worker/v1", lease_id: activeLease.lease_id }),
+  });
+  try {
+    const first = await release(request());
+    assert.equal(first.status, 503, await first.clone().text());
+    assert.equal((await first.json()).code, "release_cleanup_pending");
+    assert.notEqual(JSON.parse(values.get(byId)).released, true);
+    assert.equal(JSON.parse(values.get(byIssue)).lease_id, activeLease.lease_id);
+    const pending = parseVolunteerMarker(issue.body);
+    assert.deepEqual(pending.leases, [healthy]);
+    assert.ok(pending.public_assignees.includes("alice"));
+    assert.equal(await verifyVolunteerMarker(issueNumber, pending), true);
+
+    failCleanup = false;
+    const retry = await release(request());
+    assert.equal(retry.status, 200, await retry.clone().text());
+    assert.equal((await retry.json()).status, "released");
+    assert.equal(JSON.parse(values.get(byId)).released, true);
+    assert.equal(values.has(byIssue), false);
+    assert.deepEqual(issue.assignees.map(({ login }) => login), ["bob", "carol", "manual"]);
+    const completed = parseVolunteerMarker(issue.body);
+    assert.equal(await verifyVolunteerMarker(issueNumber, completed), true);
+    assert.deepEqual(completed.leases, [healthy]);
+    assert.deepEqual(completed.submissions, [legacySubmission]);
+    assert.deepEqual(completed.completed_languages, ["fr"]);
+    assert.equal(completed.submission, "accepted");
+    assert.equal(issue.state, "closed");
+    assert.deepEqual(completed.public_assignees, ["bob", "carol"]);
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
+
+for (const ownership of ["expired", "renewed", "replacement", "uncertain"]) test(
+  `public release reconciles stale signed ownership with ${ownership} Redis evidence`, async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  Object.assign(process.env, { VOLUNTEER_MARKER_SECRET: "marker-secret",
+    UPSTASH_REDIS_REST_URL: "https://redis.test", UPSTASH_REDIS_REST_TOKEN: "redis-token",
+    GITHUB_TOKEN: "github-token" });
+  const activeLease = { ...lease, ownership_mode: "public",
+    expires_at: new Date(Date.now() + 120_000).toISOString() };
+  const stale = { lease_id: "stale", language: "de", worker: "other-worker", contributor: "bob",
+    expires_at: "2020-01-01T00:00:00Z", ownership_mode: "public" };
+  const redisOwner = { ...activeLease, ...stale,
+    expires_at: ownership === "expired" ? stale.expires_at : activeLease.expires_at,
+    ...(ownership === "replacement" ? { lease_id: "replacement", contributor: "redis-only" } : {}) };
+  const signed = await signVolunteerMarker(issueNumber, {
+    protocol_version: "volunteer-worker/v1", coordinator: "coordinator", submission: "active",
+    leases: [{ lease_id: activeLease.lease_id, language: activeLease.language, worker: activeLease.worker,
+      contributor: activeLease.contributor, expires_at: activeLease.expires_at, ownership_mode: "public" }, stale],
+    public_assignees: ["alice", "bob"],
+  });
+  const issue = { number: issueNumber, body: markerBody(signed), state: "open",
+    assignees: ["alice", "bob", "manual"].map((login) => ({ login })) };
+  const staleKey = `euroeval:worker:lease:${issueNumber}:de`;
+  const values = new Map([
+    [`euroeval:worker:credential:${await sha256("credential")}`, JSON.stringify({ contributor: "alice" })],
+    [`euroeval:worker:lease-id:${activeLease.lease_id}`, JSON.stringify(activeLease)],
+    [staleKey, JSON.stringify(redisOwner)],
+  ]);
+  const broker = mockBroker(issue, values);
+  const assignmentRequests = [];
+  globalThis.fetch = async (input, init = {}) => {
+    if (String(input).endsWith(`/issues/${issueNumber}/assignees`) && init.method === "POST") {
+      assignmentRequests.push(...JSON.parse(init.body).assignees);
+    }
+    if (String(input) === "https://redis.test" && ownership === "uncertain") {
+      const command = JSON.parse(init.body);
+      if (command[0] === "GET" && command[1] === staleKey) return Response.json({ error: "Redis unavailable" });
+    }
+    return broker(input, init);
+  };
+  try {
+    const response = await release(new Request("https://euroeval.test/api/worker/release", {
+      method: "POST", headers: { authorization: "Bearer credential", "content-type": "application/json" },
+      body: JSON.stringify({ protocol_version: "volunteer-worker/v1", lease_id: activeLease.lease_id }),
+    }));
+    assert.equal(response.status, 200, await response.clone().text());
+    assert.deepEqual(issue.assignees.map(({ login }) => login),
+      ownership === "expired" ? ["manual"] : ["bob", "manual"]);
+    const marker = parseVolunteerMarker(issue.body);
+    assert.deepEqual(marker.leases, [stale]);
+    assert.deepEqual(marker.public_assignees, ownership === "expired" ? [] : ["bob"]);
+    assert.deepEqual(assignmentRequests, []);
+    assert.equal(await verifyVolunteerMarker(issueNumber, marker), true);
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
+
 test("claim persists record-revision compatibility from client capabilities", async () => {
   const originalFetch = globalThis.fetch;
   const originalEnv = { ...process.env };

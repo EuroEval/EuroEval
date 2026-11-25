@@ -72,6 +72,12 @@ export default async function handler(req: Request): Promise<Response> {
       if (!marker.leases.some((item) => item.lease_id === lease.lease_id)) {
         // The marker transition committed before Redis cleanup. Preserve any
         // other leases, submissions, or history and only finish our cleanup.
+        if (lease.ownership_mode === "public") {
+          const result = await reconcilePublicAssignments(current, marker, () => mutex.assertOwned());
+          if (result.pendingRemovals.some((login) => login.toLowerCase() === lease.contributor.toLowerCase())) {
+            throw new BrokerError(503, "Public assignment cleanup is pending; retry release.", "release_cleanup_pending");
+          }
+        }
         await deleteLease(lease);
         return json(200, { protocol_version: PROTOCOL_VERSION, status: "released", lease_id: lease.lease_id });
       }
@@ -127,9 +133,10 @@ export default async function handler(req: Request): Promise<Response> {
       if (!assigneesMatch(current.assignees, nextExpected, hasPublicOwnership(marker))) {
         throw new BrokerError(409, "GitHub release assignment changed; retry release.");
       }
+      const finalised = ["accepted", "rejected"].includes(marker.submission);
       const nextMarker = remaining.length || marker.submissions?.length || marker.completed_languages?.length ||
-          marker.public_assignees?.length
-        ? { ...marker, submission: marker.submissions?.length ? "submitted" as const : "active" as const, leases: remaining }
+          marker.public_assignees?.length || finalised
+        ? { ...marker, submission: finalised ? marker.submission : marker.submissions?.length ? "submitted" as const : "active" as const, leases: remaining }
         : null;
       await mutex.assertOwned();
       try {
@@ -151,7 +158,14 @@ export default async function handler(req: Request): Promise<Response> {
       if (!assigneesMatch(current.assignees, finalExpected, marker ? hasPublicOwnership(marker) : false)) {
         throw new BrokerError(409, "GitHub release assignment changed; retry release.");
       }
-      if (marker) await reconcilePublicAssignments(current, marker, () => mutex.assertOwned());
+      if (marker) {
+        const result = await reconcilePublicAssignments(current, marker, () => mutex.assertOwned());
+        if (lease.ownership_mode === "public" && result.pendingRemovals.some(
+          (login) => login.toLowerCase() === contributor,
+        )) {
+          throw new BrokerError(503, "Public assignment cleanup is pending; retry release.", "release_cleanup_pending");
+        }
+      }
       await deleteLease(lease);
     } finally { await mutex.release(); }
     return json(200, { protocol_version: PROTOCOL_VERSION, status: "released", lease_id: lease.lease_id });
