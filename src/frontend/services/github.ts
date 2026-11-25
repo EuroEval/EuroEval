@@ -1,4 +1,4 @@
-import { apiUrl } from "./api";
+import { apiUrl } from "./api.js";
 
 export const REPO = "EuroEval/EuroEval";
 export const LABEL = "model evaluation request";

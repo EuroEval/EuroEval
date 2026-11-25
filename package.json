@@ -29,6 +29,7 @@
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "@types/markdown-it": "^14.1.2",
+    "@types/node": "^26.6.9",
     "@vitejs/plugin-vue": "^6.0.7",
     "ignore": "5.3.2",
     "typescript": "^5.6.0",

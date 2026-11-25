@@ -3,6 +3,9 @@ const configuredOrigin = import.meta.env?.VITE_API_ORIGIN;
 function apiOrigin(): string | undefined {
   if (!configuredOrigin) return undefined;
   const url = new URL(configuredOrigin);
+  if (!['http:', 'https:'].includes(url.protocol)) {
+    throw new Error("VITE_API_ORIGIN must use http or https.");
+  }
   if (
     url.username ||
     url.password ||
