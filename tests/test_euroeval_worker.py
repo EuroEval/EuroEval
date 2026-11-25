@@ -2620,6 +2620,23 @@ def test_state_round_trip_preserves_scope_alternatives_and_canary(
     assert active.release_pending
 
 
+def test_terminal_release_intent_requires_matching_owner_and_lease(
+    tmp_path: Path,
+) -> None:
+    """Mark only the exact unfinished lease for terminal release."""
+    state = StateStore(tmp_path)
+    state.save_active(lease=LEASE, github_login="owner")
+
+    assert not state.mark_release_pending(lease_id=LEASE.lease_id, github_login="other")
+    assert not state.mark_release_pending(lease_id="different", github_login="owner")
+    active = state.load_active()
+    assert active is not None and not active.release_pending
+
+    assert state.mark_release_pending(lease_id=LEASE.lease_id, github_login="owner")
+    active = state.load_active()
+    assert active is not None and active.release_pending
+
+
 def test_worker_caps_vllm_utilisation_to_fresh_free_gpu_memory(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

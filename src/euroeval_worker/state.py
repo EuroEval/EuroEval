@@ -463,6 +463,33 @@ class StateStore:
         temporary.replace(path)
         os.chmod(path, mode)
 
+    def mark_release_pending(self, *, lease_id: str, github_login: str) -> bool:
+        """Mark only the matching authenticated lease for terminal release.
+
+        Args:
+            lease_id:
+                Lease identifier observed by the failing run.
+            github_login:
+                Authenticated owner of that lease.
+
+        Returns:
+            Whether matching active state was marked.
+        """
+        with self._lock:
+            active = self.load_active()
+            if (
+                active is None
+                or active.lease.lease_id != lease_id
+                or active.github_login != github_login
+                or active.finalised_submission_id is not None
+            ):
+                return False
+            self._atomic_write(
+                self.active_path,
+                _active_dict(dataclasses.replace(active, release_pending=True)),
+            )
+            return True
+
     def record_evaluation_failure(
         self, *, lease_id: str, max_failures: int
     ) -> ActiveLease:
