@@ -13,6 +13,9 @@ directly to the public leaderboard.
 
 ## Contributor quick start
 
+This section covers the Docker route. To run without Docker, including on an Apple
+Silicon Mac, see [Direct execution (no Docker)](#direct-execution-no-docker).
+
 You need a Linux x86_64/amd64 or ARM64/aarch64 computer with an NVIDIA GPU, an NVIDIA
 [driver](https://www.nvidia.com/en-us/drivers/) compatible with the image's CUDA 13
 stack, [Docker Engine](https://docs.docker.com/engine/install/),
@@ -157,6 +160,53 @@ uses the managed path.
 
 A pin does not freeze the broker's supported worker version. If the broker requests a
 worker update, pull the newly promoted image and replace the old pin.
+
+## Direct execution (no Docker)
+
+You can also run the worker straight from a checkout of this repository, without
+Docker. This is the only route for Apple Silicon Macs, and it works on a Linux host with
+an NVIDIA GPU where Docker is unavailable. The worker, its broker protocol and its
+evaluation are the same as in the Docker route.
+
+Prerequisites:
+
+- **Apple Silicon Mac**: an arm64 Mac (M1 or newer), the Xcode Command Line Tools
+  (`xcode-select --install`), and enough free unified memory for the queued model.
+  Evaluation runs on the Apple GPU through vLLM's Metal backend. If the GPU cannot be
+  used, the worker stops before claiming work; it never falls back to the CPU.
+- **Linux with an NVIDIA GPU**: an NVIDIA driver and the CUDA Toolkit, with `nvcc` on
+  your `PATH`.
+
+Install once from a clone of this repository:
+
+```sh
+git clone https://github.com/EuroEval/EuroEval.git
+cd EuroEval
+make install
+```
+
+`make install` installs Rust and uv if they are missing and sets up Python 3.12 with
+every dependency. It also asks for a few optional environment variables; press Enter to
+skip each one, because the worker needs none of them.
+
+Then start the worker:
+
+```sh
+uv run euroeval-worker
+```
+
+The first run signs you in with GitHub exactly as described in [Sign in and
+contribute](#3-sign-in-and-contribute). Later runs reuse that sign-in. The worker keeps
+running until you stop it with Ctrl-C, and restarting resumes any unfinished lease.
+
+Worker state, the credential and downloaded models live in
+`~/.cache/euroeval-worker`. Use `--state-dir` to choose another directory. To remove a
+direct-execution worker, stop it, ask the maintainer to revoke its broker credential as
+described under [Data and credential handling](#data-and-credential-handling), and then
+delete that directory.
+
+Runs without Docker are recorded with the image digest `unattested`, because they use
+no attested worker image.
 
 ## How volunteer evaluation works
 
