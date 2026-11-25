@@ -321,16 +321,16 @@ async function modelsInSimplifiedCsv(filePath) {
 }
 
 /** Build the model id -> array of fully-evaluated language groups map. */
-async function buildEvaluatedModelsIndex() {
+export async function buildEvaluatedModelsIndex(csvDir = CSV_DIR) {
   // For each monolingual stem we care about, get the set of evaluated
   // models (union of generative + all_models simplified CSVs).
   const stemModels = {};
   for (const stem of Object.keys(STEM_TO_GROUP)) {
     const gen = await modelsInSimplifiedCsv(
-      path.join(CSV_DIR, `${stem}_generative_simplified.csv`),
+      path.join(csvDir, `${stem}_generative_simplified.csv`),
     );
     const all = await modelsInSimplifiedCsv(
-      path.join(CSV_DIR, `${stem}_all_models_simplified.csv`),
+      path.join(csvDir, `${stem}_all_models_simplified.csv`),
     );
     stemModels[stem] = new Set([...gen, ...all]);
   }
