@@ -1288,7 +1288,7 @@ all = [
     { name = "transformers", extra = ["mistral-common"] },
     { name = "vllm", version = "0.27.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'linux'" },
     { name = "vllm", version = "0.30.0+cpu", source = { git = "https://github.com/vllm-project/vllm.git?tag=v0.30.0#ced6857afa0ea7b2e3f0846a62e1394e90f15607" }, marker = "sys_platform == 'darwin'" },
-    { name = "vllm-metal", marker = "sys_platform == 'darwin'" },
+    { name = "vllm-metal", marker = "python_full_version < '3.13' and sys_platform == 'darwin'" },
 ]
 generative = [
     { name = "bitsandbytes", marker = "sys_platform == 'linux'" },
@@ -1297,7 +1297,7 @@ generative = [
     { name = "transformers", extra = ["mistral-common"] },
     { name = "vllm", version = "0.27.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'linux'" },
     { name = "vllm", version = "0.30.0+cpu", source = { git = "https://github.com/vllm-project/vllm.git?tag=v0.30.0#ced6857afa0ea7b2e3f0846a62e1394e90f15607" }, marker = "sys_platform == 'darwin'" },
-    { name = "vllm-metal", marker = "sys_platform == 'darwin'" },
+    { name = "vllm-metal", marker = "python_full_version < '3.13' and sys_platform == 'darwin'" },
 ]
 gliner = [
     { name = "gliner2", extra = ["local"] },
@@ -1414,8 +1414,8 @@ requires-dist = [
     { name = "vllm", marker = "sys_platform == 'darwin' and extra == 'generative'", git = "https://github.com/vllm-project/vllm.git?tag=v0.30.0" },
     { name = "vllm", marker = "sys_platform == 'linux' and extra == 'all'", specifier = ">=0.27.1" },
     { name = "vllm", marker = "sys_platform == 'linux' and extra == 'generative'", specifier = ">=0.27.1" },
-    { name = "vllm-metal", marker = "sys_platform == 'darwin' and extra == 'all'", git = "https://github.com/vllm-project/vllm-metal.git?tag=v0.30.0" },
-    { name = "vllm-metal", marker = "sys_platform == 'darwin' and extra == 'generative'", git = "https://github.com/vllm-project/vllm-metal.git?tag=v0.30.0" },
+    { name = "vllm-metal", marker = "python_full_version == '3.12.*' and sys_platform == 'darwin' and extra == 'all'", url = "https://github.com/vllm-project/vllm-metal/releases/download/v0.30.0/vllm_metal-0.30.0-cp312-cp312-macosx_15_0_arm64.whl" },
+    { name = "vllm-metal", marker = "python_full_version == '3.12.*' and sys_platform == 'darwin' and extra == 'generative'", url = "https://github.com/vllm-project/vllm-metal/releases/download/v0.30.0/vllm_metal-0.30.0-cp312-cp312-macosx_15_0_arm64.whl" },
 ]
 provides-extras = ["generative", "laya", "all", "leaderboards", "gliner", "kev"]
 
@@ -7251,10 +7251,9 @@ dependencies = [
 [[package]]
 name = "vllm-metal"
 version = "0.30.0"
-source = { git = "https://github.com/vllm-project/vllm-metal.git?tag=v0.30.0#15f0b215c89825928ac796ab8face335f714163f" }
+source = { url = "https://github.com/vllm-project/vllm-metal/releases/download/v0.30.0/vllm_metal-0.30.0-cp312-cp312-macosx_15_0_arm64.whl" }
 dependencies = [
-    { name = "accelerate", version = "1.14.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14'" },
-    { name = "accelerate", version = "1.15.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14'" },
+    { name = "accelerate", version = "1.15.0", source = { registry = "https://pypi.org/simple" } },
     { name = "fastapi", extra = ["standard"] },
     { name = "huggingface-hub", version = "1.33.0", source = { registry = "https://pypi.org/simple" } },
     { name = "llguidance" },
@@ -7268,6 +7267,36 @@ dependencies = [
     { name = "starlette" },
     { name = "transformers", extra = ["mistral-common"] },
 ]
+wheels = [
+    { url = "https://github.com/vllm-project/vllm-metal/releases/download/v0.30.0/vllm_metal-0.30.0-cp312-cp312-macosx_15_0_arm64.whl", hash = "sha256:3955de8b2c75b633ef889b70fa469a4db661a0c5bb2f78e36272d68b16da9353" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "accelerate", specifier = ">=0.26.0" },
+    { name = "fastapi", extras = ["standard"], specifier = ">=0.133.0,<0.137" },
+    { name = "gguf", marker = "extra == 'dev'", specifier = ">=0.17.0" },
+    { name = "gguf", marker = "extra == 'gguf'", specifier = ">=0.17.0" },
+    { name = "huggingface-hub", specifier = ">=1.31.0" },
+    { name = "librosa", marker = "extra == 'stt'", specifier = ">=0.10.2" },
+    { name = "llguidance", marker = "platform_machine == 'aarch64' or platform_machine == 'arm64' or platform_machine == 'ppc64le' or platform_machine == 'x86_64'", specifier = ">=1.7.0,<1.8.0" },
+    { name = "mlx", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'", specifier = "==0.32.1" },
+    { name = "mlx-lm", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'", git = "https://github.com/ml-explore/mlx-lm?rev=9e6acca691e64d6d8bb808c328fcdea459099cca" },
+    { name = "mlx-vlm", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'", specifier = ">=0.6.8,<0.7.0" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.19.1" },
+    { name = "nanobind", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'", specifier = "==2.10.2" },
+    { name = "numba", marker = "extra == 'stt'", specifier = ">=0.59.0" },
+    { name = "numpy", specifier = ">=1.24.0" },
+    { name = "psutil", specifier = ">=5.9.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.2" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.21.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = "==0.16.0" },
+    { name = "safetensors", specifier = ">=0.4.0" },
+    { name = "starlette", specifier = ">=1.0.1" },
+    { name = "transformers", specifier = ">=5.10.4" },
+    { name = "vllm-metal", extras = ["dev", "gguf", "stt"], marker = "extra == 'all'" },
+]
+provides-extras = ["gguf", "stt", "dev", "all"]
 
 [[package]]
 name = "vulture"
