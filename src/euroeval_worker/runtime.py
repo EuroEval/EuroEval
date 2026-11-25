@@ -267,6 +267,7 @@ class Worker:
         except BrokerError as error:
             if error.status == 426 and error.code == "worker_update_required":
                 return 75
+            self._release_terminal_failure()
             logger.exception("Managed worker failed")
             return 1
         except Exception:
@@ -278,7 +279,19 @@ class Worker:
         """Persist and attempt release of the current unfinished lease."""
         try:
             active = self.state.load_active()
-            if active is None or active.github_login != self._login:
+            if (
+                active is None
+                or self._login is None
+                or active.github_login != self._login
+                or (
+                    self._launcher_managed
+                    and (
+                        active.managed_image_digest != self.image_digest
+                        or active.lease.image_digest != self.image_digest
+                    )
+                )
+                or active.finalised_submission_id is not None
+            ):
                 return
             if not self.state.mark_release_pending(
                 lease_id=active.lease.lease_id, github_login=self._login

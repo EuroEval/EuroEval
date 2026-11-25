@@ -2110,6 +2110,37 @@ def test_managed_handoff_resumes_exact_records(
     assert uploads.count(records[0].record_json) == 1
 
 
+def test_managed_image_mismatch_never_releases_active_lease(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Keep another image's checkpoint untouched after managed validation fails."""
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    state = StateStore(directory=tmp_path)
+    state.save_active(
+        lease=LEASE, github_login="login", managed_image_digest="sha256:other"
+    )
+
+    class ReleaseTrackingBroker(Broker):
+        releases = 0
+
+        def release(self, credential: str, lease_id: str, reason: str) -> None:
+            self.releases += 1
+
+    broker = ReleaseTrackingBroker()
+    worker = runtime.Worker(
+        client=broker,
+        state=state,
+        image_digest=LEASE.image_digest,
+        hardware_factory=lambda: HARDWARE,
+    )
+    assert worker.run(launcher_managed=True) == 1
+    assert broker.releases == 0
+    active = state.load_active()
+    assert active is not None and not active.release_pending
+
+
 @pytest.mark.parametrize("finalised", [False, True])
 def test_managed_provenance_survives_all_state_writes(
     tmp_path: Path, finalised: bool
