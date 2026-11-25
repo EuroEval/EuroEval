@@ -1,1 +1,1 @@
-{"compilerOptions":{"target":"ES2022","module":"NodeNext","moduleResolution":"NodeNext","outDir":"dist-api","rootDir":".","strict":true,"skipLibCheck":true,"allowImportingTsExtensions":false,"types":["node"]},"include":["api/**/*.ts","api-server/**/*.ts"]}
+{"compilerOptions":{"target":"ES2022","module":"NodeNext","moduleResolution":"NodeNext","outDir":"dist-api","rootDir":".","strict":true,"skipLibCheck":true,"allowImportingTsExtensions":false,"types":["node"]},"include":["api/**/*.ts","api-server/**/*.ts","src/frontend/services/**/*.ts","src/frontend/vite-env.d.ts"]}

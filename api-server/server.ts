@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises';
 
 export type ApiServerOptions = { allowedOrigins?: string[]; evaluatedModelsPath?: string; evaluatedModels?: Uint8Array };
 const routes = ['/api/issues','/api/submit-evaluation','/api/hall-of-fame', ...['auth/start','auth/poll','auth/revoke','canary-corpus','claim','coordinator-lock','coordinator-release','coordinator-renew','finalise','heartbeat','promote','promotion-lock','promotion-reserve','promotion-status','release-info','release','result'].map(route => `/api/worker/${route}`)];
+const methodsFor = (route: string) => route === '/api/hall-of-fame' || route === '/api/worker/release-info' ? ['GET'] : route === '/api/worker/canary-corpus' || route === '/api/worker/promotion-status' ? ['GET'] : ['POST'];
 const workerRoutes = new Set(routes.filter(route => route.startsWith('/api/worker/')));
 const maxBody = (route: string) => route === '/api/worker/result' ? 2 * 1024 * 1024 : route.startsWith('/api/worker/') ? 64 * 1024 : 128 * 1024;
 function send(res: ServerResponse, status: number, body: string, headers: Record<string,string> = {}) { res.writeHead(status, { 'Content-Type':'application/json; charset=utf-8', ...headers }); res.end(body); }
@@ -16,14 +17,14 @@ export function createApiServer(options: ApiServerOptions = {}): Server {
     const origin = req.headers.origin;
     if (origin && allowed.has(origin)) res.setHeader('Access-Control-Allow-Origin', origin);
     const route = new URL(req.url ?? '/', 'http://localhost').pathname;
-    const methods = workerRoutes.has(route) ? 'GET, POST, OPTIONS' : route === '/api/hall-of-fame' ? 'GET, OPTIONS' : 'GET, POST, OPTIONS';
+    const methods = [...methodsFor(route), 'OPTIONS'].join(', ');
     if (req.method === 'OPTIONS') { res.writeHead(204, { 'Access-Control-Allow-Methods': methods, 'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Worker-Token, X-Protocol-Version' }); res.end(); return; }
     if (!routes.includes(route) && route !== '/api/evaluated-models.json') { send(res,404,'{"error":"Not found"}'); return; }
     if (origin && !allowed.has(origin)) { send(res,403,'{"error":"Origin not allowed"}'); return; }
-    if (route === '/api/evaluated-models.json') {
+    if (route === '/evaluated-models.json') {
       try { const data = options.evaluatedModels ?? (options.evaluatedModelsPath ? await readFile(options.evaluatedModelsPath) : undefined); if (!data) return send(res,404,'{"error":"Not found"}'); res.writeHead(200, {'Content-Type':'application/json; charset=utf-8','Cache-Control':'public, max-age=300'}); res.end(data); } catch { send(res,404,'{"error":"Not found"}'); } return;
     }
-    const permitted = methods.split(', ').filter(method => method !== 'OPTIONS');
+    const permitted = methodsFor(route);
     if (!permitted.includes(req.method ?? '')) { res.setHeader('Allow', methods); send(res,405,'{"error":"Method not allowed"}'); return; }
     const limit = maxBody(route); let size = 0; const chunks: Buffer[] = [];
     try {
@@ -31,7 +32,7 @@ export function createApiServer(options: ApiServerOptions = {}): Server {
       const file = path.resolve('dist-api', route.replace(/^\/api\//,'api/') + '.js');
       const mod = await import(pathToFileURL(file).href); const handler = mod.default ?? mod.fetch;
       if (!handler) return send(res,404,'{"error":"Not found"}');
-      const headers = new Headers(); for (const [key,value] of Object.entries(req.headers)) if (value !== undefined && key !== 'x-forwarded-for' && key !== 'x-real-ip') headers.set(key, Array.isArray(value) ? value.join(', ') : value);
+      const headers = new Headers(); for (const [key,value] of Object.entries(req.headers)) if (value !== undefined && key !== 'x-forwarded-for' && key !== 'x-real-ip' && key !== 'x-vercel-forwarded-for') headers.set(key, Array.isArray(value) ? value.join(', ') : value);
       headers.set('x-forwarded-for', req.socket.remoteAddress ?? '');
       const request = new Request(`http://localhost${req.url}`, { method:req.method, headers, body: chunks.length ? Buffer.concat(chunks) : undefined, duplex:'half' } as RequestInit);
       const response: Response = await handler(request); const output = Buffer.from(await response.arrayBuffer());
