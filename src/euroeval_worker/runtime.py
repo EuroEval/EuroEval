@@ -20,7 +20,7 @@ from euroeval.canary_evidence import CANARY_CORPUS_PATH_ENV
 from .auth import authenticate
 from .broker import BrokerError, BrokerProtocol
 from .evaluator import EuroEvalEvaluator, Evaluator
-from .hardware import NoGpuError, discover_hardware, select_gpu
+from .hardware import METAL_GPU_UUID, NoGpuError, discover_hardware, select_gpu
 from .safety import SafetyError, check_model_safety
 from .state import ActiveLease, PendingRecord, StateStore
 from .types import Claim, EEERecord, Gpu, HardwareReport, Lease
@@ -1259,7 +1259,7 @@ def _pin_canary_corpus(path: Path | None) -> c.Iterator[None]:
 
 @contextlib.contextmanager
 def _pin_gpu(gpu: Gpu) -> c.Iterator[None]:
-    """Expose only ``gpu`` to CUDA for the duration of one evaluation.
+    """Expose only ``gpu`` to CUDA for one evaluation; Metal needs no pinning.
 
     Args:
         gpu:
@@ -1268,6 +1268,9 @@ def _pin_gpu(gpu: Gpu) -> c.Iterator[None]:
     Yields:
         Values produced by this iterator.
     """
+    if gpu.uuid == METAL_GPU_UUID:
+        yield
+        return
     original = os.environ.get("CUDA_VISIBLE_DEVICES")
     os.environ["CUDA_VISIBLE_DEVICES"] = gpu.uuid
     try:

@@ -22,7 +22,13 @@ from euroeval.languages import get_all_languages
 from euroeval_worker import cli, evaluator, hardware, runtime
 from euroeval_worker.auth import authenticate
 from euroeval_worker.broker import BrokerClient, BrokerError
-from euroeval_worker.hardware import NoGpuError, discover_gpus, discover_hardware
+from euroeval_worker.hardware import (
+    METAL_GPU_UUID,
+    NoGpuError,
+    discover_gpus,
+    discover_hardware,
+    unified_free_bytes,
+)
 from euroeval_worker.safety import ModelMetadata, SafetyError, check_model_safety
 from euroeval_worker.state import PendingRecord, StateStore
 from euroeval_worker.types import (
@@ -78,6 +84,96 @@ HARDWARE = HardwareReport(
     selected_gpu_index=GPU.index,
     selected_gpu_uuid=GPU.uuid,
 )
+
+
+class _MetalHostCalls(t.TypedDict):
+    """Commands and subprocess calls recorded by the fake Apple Silicon host."""
+
+    commands: list[list[str]]
+    subprocess: list[tuple[list[str], dict[str, object]]]
+
+
+def _fake_metal_host(
+    monkeypatch: pytest.MonkeyPatch, cap_stdout: str, vm_stat: str
+) -> "_MetalHostCalls":
+    """Simulate an Apple Silicon host for hardware discovery.
+
+    ``os.sysconf`` raises for ``SC_PHYS_PAGES`` as it does on macOS, so the test
+    fails if discovery falls back to the Linux RAM reader.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        cap_stdout:
+            Output of the MLX working-set-limit subprocess.
+        vm_stat:
+            Output of ``vm_stat``.
+
+    Returns:
+        The runner commands and the subprocess calls made during discovery.
+    """
+    calls: _MetalHostCalls = {"commands": [], "subprocess": []}
+    monkeypatch.setattr(hardware.sys, "platform", "darwin")
+    monkeypatch.setattr(hardware.platform, "machine", lambda: "arm64")
+    monkeypatch.setattr(hardware, "_pytorch_version", lambda: "2.13.0")
+
+    def macos_sysconf(name: str) -> int:
+        """Reject the configuration names macOS does not provide.
+
+        Args:
+            name:
+                Requested configuration name.
+
+        Raises:
+            ValueError:
+                Always, as macOS does for ``SC_PHYS_PAGES``.
+        """
+        raise ValueError(f"unrecognized configuration name: {name}")
+
+    monkeypatch.setattr(hardware.os, "sysconf", macos_sysconf)
+
+    def fake_run(command: list[str], **kwargs: object) -> object:
+        """Record the cap subprocess and return its canned output.
+
+        Args:
+            command:
+                Command supplied to the subprocess.
+            **kwargs:
+                Subprocess options supplied by discovery.
+
+        Returns:
+            A completed-process stand-in.
+        """
+        calls["subprocess"].append((command, kwargs))
+        return type("Completed", (), {"stdout": cap_stdout})()
+
+    monkeypatch.setattr(hardware.subprocess, "run", fake_run)
+
+    def runner(command: list[str]) -> str:
+        """Answer the macOS commands used for discovery.
+
+        Args:
+            command:
+                Command supplied to the test.
+
+        Returns:
+            Canned command output.
+
+        Raises:
+            AssertionError:
+                If discovery runs an NVIDIA command on macOS.
+        """
+        calls["commands"].append(command)
+        if command[0] == "nvidia-smi":
+            raise AssertionError("nvidia-smi must not run on macOS")
+        if command[0] == "vm_stat":
+            return vm_stat
+        if command == ["sysctl", "-n", "hw.memsize"]:
+            return f"{64 * 1024**3}\n"
+        return "Apple M3 Max\n"
+
+    monkeypatch.setattr(hardware, "_run", runner)
+    return calls
 
 
 def test_auth_honours_slow_down_retry_after(tmp_path: Path) -> None:
@@ -1548,6 +1644,189 @@ def test_finalise_response_loss_is_idempotently_retried(
     assert state.load_active() is None
 
 
+@pytest.mark.parametrize("evaluation_fails", [False, True])
+def test_metal_gpu_is_not_cuda_pinned_during_evaluation(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, evaluation_fails: bool
+) -> None:
+    """Leave CUDA visibility untouched for the Apple GPU, even when evaluation fails.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+        evaluation_fails:
+            Whether the evaluator raises during the lease.
+    """
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "GPU-preexisting")
+    metal = Gpu(
+        name="Apple M3 Max",
+        uuid=METAL_GPU_UUID,
+        free_memory_bytes=9,
+        total_memory_bytes=10,
+        compute_capability=None,
+        index=0,
+    )
+    hardware = HardwareReport(
+        architecture="arm64",
+        ram_bytes=64,
+        free_disk_bytes=100,
+        driver_version=None,
+        cuda_version=None,
+        pytorch_version="2.13",
+        gpus=(metal,),
+    )
+    observed: dict[str, object] = {}
+
+    class MetalBroker(Broker):
+        """Lease the Apple GPU selected in the claim."""
+
+        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            """Return work pinned to the claimed GPU.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                hardware:
+                    Hardware supplied to the test.
+
+            Returns:
+                The test lease.
+            """
+            return Claim(
+                lease=dataclasses.replace(
+                    LEASE,
+                    selected_gpu_uuid=hardware.selected_gpu_uuid,
+                    selected_gpu_index=hardware.selected_gpu_index,
+                )
+            )
+
+    class CapturingEvaluator:
+        """Capture CUDA visibility during evaluation."""
+
+        def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
+            """Return one result, or fail, after observing the environment.
+
+            Args:
+                lease:
+                    Lease supplied to the test.
+                output_path:
+                    Path where evaluation results would be written.
+
+            Returns:
+                A single deterministic evaluation record.
+
+            Raises:
+                RuntimeError:
+                    When the test asks the evaluation to fail.
+            """
+            observed["cuda"] = os.environ.get("CUDA_VISIBLE_DEVICES")
+            if evaluation_fails:
+                raise RuntimeError("evaluation failed")
+            return [EEERecord(record_json={"id": "one"})]
+
+    worker = runtime.Worker(
+        client=MetalBroker(),
+        state=StateStore(directory=tmp_path),
+        evaluator=CapturingEvaluator(),
+        hardware_factory=lambda: hardware,
+    )
+    if evaluation_fails:
+        with pytest.raises(RuntimeError, match="evaluation failed"):
+            worker.run(once=True)
+    else:
+        worker.run(once=True)
+    assert observed["cuda"] == "GPU-preexisting"
+    assert os.environ["CUDA_VISIBLE_DEVICES"] == "GPU-preexisting"
+
+
+VM_STAT = (
+    "Mach Virtual Memory Statistics: (page size of 16384 bytes)\n"
+    "Pages free:                                  1216055.\n"
+    "Pages inactive:                              1194506.\n"
+    "Pages speculative:                             50000.\n"
+)
+
+
+def test_apple_silicon_reports_metal_gpu_with_unified_memory_budget(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Report one Metal GPU whose free memory is capped by available host memory.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
+    cap = 55_662_788_608
+    calls = _fake_metal_host(
+        monkeypatch=monkeypatch, cap_stdout=json.dumps({"cap": cap}), vm_stat=VM_STAT
+    )
+    report = discover_hardware(state_dir=tmp_path)
+    available = (1216055 + 1194506) * 16384
+    (gpu,) = report.gpus
+    assert gpu.uuid == METAL_GPU_UUID
+    assert gpu.name == "Apple M3 Max"
+    assert gpu.total_memory_bytes == cap
+    assert gpu.free_memory_bytes == available - 1024**3
+    assert report.selected_gpu_uuid == METAL_GPU_UUID
+    assert report.driver_version is None
+    assert report.cuda_version is None
+    assert report.ram_bytes == 64 * 1024**3
+    assert ["sysctl", "-n", "hw.memsize"] in calls["commands"]
+    assert all(command[0] != "nvidia-smi" for command in calls["commands"])
+    ((command, options),) = calls["subprocess"]
+    assert command[:2] == [hardware.sys.executable, "-c"]
+    assert "max_recommended_working_set_size" in command[2]
+    assert options["check"] is True
+    timeout = options["timeout"]
+    assert isinstance(timeout, (int, float))
+    assert timeout > 0
+
+
+def test_apple_silicon_without_host_memory_fails_closed(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Refuse to claim work when available host memory cannot be estimated.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
+    _fake_metal_host(
+        monkeypatch=monkeypatch,
+        cap_stdout=json.dumps({"cap": 55_662_788_608}),
+        vm_stat="unexpected output",
+    )
+    with pytest.raises(NoGpuError, match="unified-memory availability"):
+        discover_hardware(state_dir=tmp_path)
+
+
+def test_apple_silicon_without_metal_cap_fails_closed(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Refuse to claim work when the Metal working-set limit cannot be read.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
+    _fake_metal_host(monkeypatch=monkeypatch, cap_stdout="not json", vm_stat=VM_STAT)
+    with pytest.raises(NoGpuError, match="Metal working-set limit"):
+        discover_hardware(state_dir=tmp_path)
+
+
 def test_gb10_contention_caps_reported_free_memory(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -2618,6 +2897,23 @@ def test_state_round_trip_preserves_scope_alternatives_and_canary(
     assert active.lease == lease
     assert active.evaluation_failures == 2
     assert active.release_pending
+
+
+def test_unified_free_bytes_reserves_headroom_and_never_goes_negative() -> None:
+    """Cap device memory by host availability minus 1 GiB, floored at zero."""
+    gib = 1024**3
+    assert (
+        unified_free_bytes(device_free_bytes=50 * gib, host_available_bytes=10 * gib)
+        == 9 * gib
+    )
+    assert (
+        unified_free_bytes(device_free_bytes=4 * gib, host_available_bytes=10 * gib)
+        == 4 * gib
+    )
+    assert (
+        unified_free_bytes(device_free_bytes=4 * gib, host_available_bytes=gib // 2)
+        == 0
+    )
 
 
 def test_worker_caps_vllm_utilisation_to_fresh_free_gpu_memory(

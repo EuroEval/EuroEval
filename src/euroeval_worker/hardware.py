@@ -1,4 +1,4 @@
-"""NVIDIA and host hardware discovery for worker claims."""
+"""NVIDIA, Apple Metal and host hardware discovery for worker claims."""
 
 import collections.abc as c
 import dataclasses
@@ -16,6 +16,8 @@ from pathlib import Path
 from .types import Gpu, HardwareReport
 
 logger = logging.getLogger(__name__)
+
+METAL_GPU_UUID = "metal-0"
 
 
 def _run(command: list[str]) -> str:
@@ -35,7 +37,7 @@ def _run(command: list[str]) -> str:
 def discover_hardware(
     runner: c.Callable[[list[str]], str] | None = None, *, state_dir: Path | None = None
 ) -> HardwareReport:
-    """Discover host facts and fail clearly when nvidia-smi finds no GPU.
+    """Discover host facts and fail clearly when no supported GPU is found.
 
     Args:
         runner (optional):
@@ -48,6 +50,19 @@ def discover_hardware(
         A hardware report suitable for the broker claim.
     """
     run = runner or _run
+    if _is_apple_silicon():
+        gpu = discover_metal_gpu(runner=run)
+        return HardwareReport(
+            architecture=platform.machine(),
+            ram_bytes=_darwin_ram_bytes(runner=run),
+            free_disk_bytes=shutil.disk_usage(state_dir or Path.cwd()).free,
+            driver_version=None,
+            cuda_version=None,
+            pytorch_version=_pytorch_version(),
+            gpus=(gpu,),
+            selected_gpu_index=gpu.index,
+            selected_gpu_uuid=gpu.uuid,
+        )
     gpus = discover_gpus(runner=run)
     selected = select_gpu(gpus)
     summary = run(["nvidia-smi"])
@@ -64,6 +79,31 @@ def discover_hardware(
         selected_gpu_index=selected.index,
         selected_gpu_uuid=selected.uuid,
     )
+
+
+def _darwin_ram_bytes(runner: c.Callable[[list[str]], str]) -> int:
+    """Read physical RAM on macOS, which does not expose ``SC_PHYS_PAGES``.
+
+    Args:
+        runner:
+            Command runner used to execute ``sysctl``.
+
+    Returns:
+        Physical RAM in bytes, or ``0`` when it cannot be read.
+    """
+    try:
+        return int(runner(["sysctl", "-n", "hw.memsize"]).strip())
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return 0
+
+
+def _is_apple_silicon() -> bool:
+    """Is apple silicon.
+
+    Returns:
+        Whether the worker runs on macOS on an arm64 Apple Silicon chip.
+    """
+    return sys.platform == "darwin" and platform.machine() == "arm64"
 
 
 def _match(text: str, pattern: str) -> str | None:
@@ -203,7 +243,9 @@ def _discover_spark_memory(gpu: Gpu) -> Gpu:
             or host_available is None
         ):
             raise ValueError("Unverified unified-memory measurement")
-        usable_free = min(free, max(0, host_available - 1024**3))
+        usable_free = unified_free_bytes(
+            device_free_bytes=free, host_available_bytes=host_available
+        )
         return dataclasses.replace(
             gpu, free_memory_bytes=usable_free, total_memory_bytes=total
         )
@@ -218,6 +260,8 @@ def _host_available_bytes() -> int | None:
     Returns:
         Available host memory in bytes, or ``None`` when it cannot be read.
     """
+    if sys.platform == "darwin":
+        return _darwin_available_bytes(runner=_run)
     try:
         for line in Path("/proc/meminfo").read_text().splitlines():
             if line.startswith("MemAvailable:"):
@@ -225,6 +269,50 @@ def _host_available_bytes() -> int | None:
     except (OSError, ValueError, IndexError):
         return None
     return None
+
+
+def _darwin_available_bytes(runner: c.Callable[[list[str]], str]) -> int | None:
+    """Estimate available memory on macOS from ``vm_stat``.
+
+    Free pages already include speculative pages, so only free and inactive pages are
+    counted.
+
+    Args:
+        runner:
+            Command runner used to execute ``vm_stat``.
+
+    Returns:
+        Estimated available memory in bytes, or ``None`` when it cannot be read.
+    """
+    try:
+        output = runner(["vm_stat"])
+    except (OSError, subprocess.SubprocessError):
+        return None
+    page = _match(output, r"page size of (\d+) bytes")
+    free = _match(output, r"Pages free:\s+(\d+)")
+    inactive = _match(output, r"Pages inactive:\s+(\d+)")
+    if page is None or free is None or inactive is None:
+        return None
+    return (int(free) + int(inactive)) * int(page)
+
+
+def unified_free_bytes(device_free_bytes: int, host_available_bytes: int) -> int:
+    """Cap a unified-memory device's free memory by what the host can spare.
+
+    The CPU and GPU share the same physical memory on unified-memory devices, so the
+    device's own free figure must not exceed available host memory minus 1 GiB of
+    headroom for the operating system and the evaluation process.
+
+    Args:
+        device_free_bytes:
+            Memory the device reports as usable.
+        host_available_bytes:
+            Memory the host reports as available.
+
+    Returns:
+        The usable inference memory in bytes, never negative.
+    """
+    return min(device_free_bytes, max(0, host_available_bytes - 1024**3))
 
 
 def _needs_spark_memory_fallback(gpu: Gpu) -> bool:
@@ -298,6 +386,69 @@ def _memory_value(value: str) -> int:
     if value.strip().lower() in {"n/a", "na", "[n/a]"}:
         return 0
     return int(float(value) * 1024**2)
+
+
+def discover_metal_gpu(runner: c.Callable[[list[str]], str] | None = None) -> Gpu:
+    """Report the Apple GPU and a conservative unified-memory inference budget.
+
+    The total is MLX's recommended working-set limit, which vllm-metal uses as the
+    denominator for ``gpu_memory_utilization``. The limit is read in a subprocess so
+    that MLX is never initialised inside the worker process.
+
+    Args:
+        runner (optional):
+            Command runner used for ``sysctl`` and ``vm_stat``.
+
+    Returns:
+        A single GPU entry with identifier ``metal-0``.
+
+    Raises:
+        NoGpuError:
+            If the Metal device or a memory measurement cannot be verified.
+    """
+    run = runner or _run
+    script = (
+        "import json, mlx.core as mx; "
+        "print(json.dumps({'cap': int(mx.device_info()"
+        "['max_recommended_working_set_size'])}))"
+    )
+    try:
+        result = subprocess.run(
+            [sys.executable, "-c", script],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        cap = int(json.loads(result.stdout)["cap"])
+    except (
+        OSError,
+        subprocess.SubprocessError,
+        ValueError,
+        KeyError,
+        TypeError,
+    ) as error:
+        raise NoGpuError(
+            "could not read the Apple GPU's Metal working-set limit; run "
+            "`make install` so that vllm-metal and MLX are installed"
+        ) from error
+    available = _darwin_available_bytes(runner=run)
+    if cap <= 0 or available is None:
+        raise NoGpuError("could not verify Apple Silicon unified-memory availability")
+    try:
+        name = run(["sysctl", "-n", "machdep.cpu.brand_string"]).strip() or "Apple GPU"
+    except (OSError, subprocess.SubprocessError):
+        name = "Apple GPU"
+    return Gpu(
+        name=name,
+        uuid=METAL_GPU_UUID,
+        free_memory_bytes=unified_free_bytes(
+            device_free_bytes=cap, host_available_bytes=available
+        ),
+        total_memory_bytes=cap,
+        compute_capability=None,
+        index=0,
+    )
 
 
 def select_gpu(gpus: c.Iterable[Gpu]) -> Gpu:
