@@ -1,5 +1,6 @@
 import { detectGguf } from "../src/frontend/services/huggingface.js";
 import { extractModelId } from "../src/frontend/services/github.js";
+import { recoverQueueOwnership } from "./worker/_lib/ownership.js";
 
 export const config = { runtime: "edge" };
 
@@ -15,6 +16,7 @@ interface IssueLike {
   title?: string;
   body?: string | null;
   labels?: Array<{ name?: string } | string>;
+  assignees?: Array<{ login: string }>;
 }
 
 function labelNames(issue: IssueLike): string[] {
@@ -115,6 +117,17 @@ export default async function handler(req: Request): Promise<Response> {
   if (!r.ok) return json(r.status, await r.text());
 
   const issues = (await r.json()) as IssueLike[];
+  if (state === "open") {
+    await Promise.all(issues.map(async (issue) => {
+      try {
+        const recovered = await recoverQueueOwnership(issue.number);
+        if (recovered) {
+          issue.body = recovered.issue.body;
+          issue.assignees = recovered.issue.assignees;
+        }
+      } catch { /* Queue reads remain available when recovery dependencies fail. */ }
+    }));
+  }
   // Only the open queue is filtered on GGUF status, so only backfill labels
   // there; labelling needs the write-scoped token submit-evaluation also uses.
   if (state === "open" && token) await labelGgufIssues(issues, token);
