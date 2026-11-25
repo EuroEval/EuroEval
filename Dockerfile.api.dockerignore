@@ -1,0 +1,11 @@
+*
+!package.json
+!package-lock.json
+!api/
+!api/**
+!api-server/
+!api-server/**
+!tsconfig.api.json
+!src/
+!src/scripts/
+!src/scripts/build-api.mjs
