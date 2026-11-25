@@ -2,6 +2,7 @@ import { BrokerError, REPO, REQUEST_LABEL, env, type Lease } from "./protocol.js
 import { parseVolunteerMarker, replaceVolunteerMarker } from "./markers.js";
 import { signVolunteerMarker, verifyVolunteerMarker, type VolunteerLeaseMarker } from "./protocol.js";
 import { fetchWithRetry } from "./http.js";
+import { getLeaseForIssue } from "./redis.js";
 
 
 interface GithubIssue { number: number; title: string; body: string | null; state: string; assignees?: Array<{ login: string }>; labels?: Array<{ name?: string }>; pull_request?: unknown; }
@@ -84,6 +85,21 @@ export async function reconcilePublicAssignments(
   }
 
   const tracked = new Map((marker.public_assignees || []).map((login) => [login.toLowerCase(), login]));
+  // A public marker can lag a Redis renewal. Never remove its assignment unless
+  // Redis confirms that the corresponding ownership has expired or disappeared.
+  for (const lease of marker.leases) {
+    if (lease.ownership_mode !== "public" || Date.parse(lease.expires_at) > now) continue;
+    try {
+      const active = await getLeaseForIssue(issue.number, lease.language);
+      if (active && (active.lease_id !== lease.lease_id ||
+          active.contributor.toLowerCase() === lease.contributor.toLowerCase() ||
+          Date.parse(active.expires_at) > now)) {
+        desired.set(active.contributor.toLowerCase(), active.contributor);
+      }
+    } catch {
+      desired.set(lease.contributor.toLowerCase(), lease.contributor);
+    }
+  }
   let current = issue;
   for (const [key, login] of desired) {
     if (hasIssueAssignee(current, login)) continue;
