@@ -170,12 +170,15 @@ evaluation are the same as in the Docker route.
 
 Prerequisites:
 
-- **Apple Silicon Mac**: an arm64 Mac (M1 or newer), the Xcode Command Line Tools
-  (`xcode-select --install`), and enough free unified memory for the queued model.
+- **Apple Silicon Mac**: an arm64 Mac (M1 or newer) on macOS 15 or newer, the Xcode
+  Command Line Tools (`xcode-select --install`), and enough free unified memory for the
+  queued model.
   Evaluation runs on the Apple GPU through vLLM's Metal backend. If the GPU cannot be
   used, the worker stops before claiming work; it never falls back to the CPU.
 - **Linux with an NVIDIA GPU**: an NVIDIA driver and the CUDA Toolkit, with `nvcc` on
   your `PATH`.
+- **Both**: [Node.js](https://nodejs.org/) with `npm`, which `make install` uses for the
+  frontend tooling but does not install.
 
 Install once from a clone of this repository:
 
