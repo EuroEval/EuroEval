@@ -1863,6 +1863,79 @@ def test_metal_gpu_is_not_cuda_pinned_during_evaluation(
     assert os.environ["CUDA_VISIBLE_DEVICES"] == "GPU-preexisting"
 
 
+def test_repeated_unsafe_work_backs_off_until_a_lease_gets_through(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Escalate the backoff when the broker keeps offering the same unsafe work.
+
+    A successful claim resets the shared recovery backoff, so the safety skips must
+    keep their own count. Otherwise the worker would retry every 30 seconds.
+
+    Args:
+        monkeypatch:
+            Fixture replacing network dependencies and sleep.
+        tmp_path:
+            Private worker state directory.
+    """
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(runtime, "check_model_safety", _unsafe_first_lease)
+    second = dataclasses.replace(LEASE, lease_id="lease-2", issue_number=43)
+
+    class RepeatingBroker(Broker):
+        """Offer the unsafe lease six times, a runnable lease, then unsafe once more."""
+
+        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            """Offer the next lease in sequence.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                hardware:
+                    Hardware supplied to the test.
+
+            Returns:
+                The next lease in the sequence, then nothing.
+            """
+            self.claims += 1
+            if self.claims == 7:
+                return Claim(lease=second)
+            return Claim(lease=LEASE if self.claims <= 8 else None)
+
+    broker = RepeatingBroker()
+    delays: list[float] = []
+
+    def record_sleep(delay: float) -> None:
+        """Record each sleep and stop after the skip that follows the runnable lease.
+
+        Args:
+            delay:
+                Requested sleep duration.
+
+        Raises:
+            KeyboardInterrupt:
+                Once a skip after the finalised lease has slept.
+        """
+        delays.append(delay)
+        if broker.finalised and broker.claims >= 8:
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(runtime.time, "sleep", record_sleep)
+    worker = runtime.Worker(
+        client=broker,
+        state=StateStore(directory=tmp_path),
+        evaluator=OneRecordEvaluator(),
+        hardware_factory=lambda: HARDWARE,
+    )
+    with pytest.raises(KeyboardInterrupt):
+        worker.run()
+    backoffs = [delay for delay in delays if delay >= 30]
+    assert backoffs == [30.0, 60.0, 120.0, 240.0, 300.0, 300.0, 30.0]
+    assert broker.releases == ["unsafe_model"] * 7
+    assert broker.finalised
+
+
 def test_resumed_unsafe_lease_does_not_stop_continuous_worker(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

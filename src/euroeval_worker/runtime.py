@@ -226,6 +226,7 @@ class Worker:
         self._login = ""
         self._auth_lock = threading.Lock()
         self._recovery_failures = 0
+        self._safety_skips = 0
         self.image_digest = image_digest
         self._launcher_managed = False
 
@@ -562,6 +563,8 @@ class Worker:
             )
         except SafetyError as error:
             self._recover_safety_failure(error=error, once=once)
+        else:
+            self._safety_skips = 0
 
     def _process_lease(
         self,
@@ -968,6 +971,7 @@ class Worker:
 
         The preflight has already released and archived the lease. Single-operation
         and launcher-managed runs keep raising, so their exit status is unchanged.
+        Consecutive skips back off from 30 s up to 300 s, until a lease gets through.
 
         Args:
             error:
@@ -978,8 +982,16 @@ class Worker:
         """
         if once or self._launcher_managed:
             raise error
-        logger.warning("Skipping work that failed the model safety check: %s", error)
-        self._sleep_recovery_backoff()
+        # A successful claim resets the shared recovery backoff, so count consecutive
+        # skips separately: the broker may keep offering the same unrunnable work.
+        delay = min(300.0, 30.0 * 2 ** min(self._safety_skips, 4))
+        self._safety_skips += 1
+        logger.warning(
+            "Skipping work that failed the model safety check (retrying in %.0f s): %s",
+            delay,
+            error,
+        )
+        time.sleep(delay)
 
     def _recover_evaluation_failure(
         self, *, active: ActiveLease, error: EvaluationFailure, once: bool
@@ -1112,6 +1124,7 @@ class Worker:
                 return False
             raise
         self._recovery_failures = 0
+        self._safety_skips = 0
         return once or self._launcher_managed
 
     def _wait_for_work(self, *, once: bool) -> bool:
