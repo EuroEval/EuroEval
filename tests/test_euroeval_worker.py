@@ -113,6 +113,8 @@ def _fake_metal_host(
         The runner commands and the subprocess calls made during discovery.
     """
     calls: _MetalHostCalls = {"commands": [], "subprocess": []}
+    monkeypatch.delenv("VLLM_TARGET_DEVICE", raising=False)
+    monkeypatch.delenv("VLLM_PLUGINS", raising=False)
     monkeypatch.setattr(hardware.sys, "platform", "darwin")
     monkeypatch.setattr(hardware.platform, "machine", lambda: "arm64")
     monkeypatch.setattr(hardware, "_pytorch_version", lambda: "2.13.0")
@@ -174,6 +176,22 @@ def _fake_metal_host(
 
     monkeypatch.setattr(hardware, "_run", runner)
     return calls
+
+
+def _metal_probe(cap: int, **backends: bool) -> str:
+    """Build the Apple GPU probe output, with every backend available by default.
+
+    Args:
+        cap:
+            MLX's recommended working-set limit in bytes.
+        **backends:
+            Overrides for the ``metal``, ``vllm_metal_plugin`` and ``mps`` flags.
+
+    Returns:
+        The probe's JSON output.
+    """
+    flags = {"metal": True, "vllm_metal_plugin": True, "mps": True, **backends}
+    return json.dumps({"cap": cap, **flags})
 
 
 def _unsafe_first_lease(lease: Lease, **_kwargs: object) -> None:
@@ -2139,6 +2157,50 @@ VM_STAT = (
 )
 
 
+@pytest.mark.parametrize(
+    ("variable", "value", "refused"),
+    [
+        ("VLLM_TARGET_DEVICE", "cpu", True),
+        ("VLLM_TARGET_DEVICE", "CPU", True),
+        ("VLLM_PLUGINS", "", True),
+        ("VLLM_PLUGINS", "gguf_metal", True),
+        ("VLLM_PLUGINS", "metal,gguf_metal", False),
+    ],
+)
+def test_apple_silicon_refuses_when_vllm_is_steered_to_the_cpu(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    variable: str,
+    value: str,
+    refused: bool,
+) -> None:
+    """Refuse to claim when an environment variable makes vLLM select the CPU.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+        variable:
+            The vLLM environment variable to set.
+        value:
+            Its value.
+        refused:
+            Whether discovery must refuse to report the GPU.
+    """
+    _fake_metal_host(
+        monkeypatch=monkeypatch,
+        cap_stdout=_metal_probe(cap=55_662_788_608),
+        vm_stat=VM_STAT,
+    )
+    monkeypatch.setenv(variable, value)
+    if refused:
+        with pytest.raises(NoGpuError, match=f"{variable}"):
+            discover_hardware(state_dir=tmp_path)
+    else:
+        assert discover_hardware(state_dir=tmp_path).selected_gpu_uuid == METAL_GPU_UUID
+
+
 def test_apple_silicon_reports_metal_gpu_with_unified_memory_budget(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -2152,7 +2214,7 @@ def test_apple_silicon_reports_metal_gpu_with_unified_memory_budget(
     """
     cap = 55_662_788_608
     calls = _fake_metal_host(
-        monkeypatch=monkeypatch, cap_stdout=json.dumps({"cap": cap}), vm_stat=VM_STAT
+        monkeypatch=monkeypatch, cap_stdout=_metal_probe(cap=cap), vm_stat=VM_STAT
     )
     report = discover_hardware(state_dir=tmp_path)
     available = (1216055 + 1194506) * 16384
@@ -2170,10 +2232,45 @@ def test_apple_silicon_reports_metal_gpu_with_unified_memory_budget(
     ((command, options),) = calls["subprocess"]
     assert command[:2] == [hardware.sys.executable, "-c"]
     assert "max_recommended_working_set_size" in command[2]
+    assert "mx.metal.is_available()" in command[2]
+    assert "'vllm.platform_plugins'" in command[2]
+    assert "torch.backends.mps.is_available()" in command[2]
     assert options["check"] is True
     timeout = options["timeout"]
     assert isinstance(timeout, (int, float))
     assert timeout > 0
+
+
+@pytest.mark.parametrize(
+    ("missing", "message"),
+    [
+        ("metal", "MLX cannot use the Apple GPU"),
+        ("vllm_metal_plugin", "vllm-metal's platform plugin is not installed"),
+        ("mps", "PyTorch cannot use the Apple GPU"),
+    ],
+)
+def test_apple_silicon_without_a_gpu_backend_refuses_to_claim(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, missing: str, message: str
+) -> None:
+    """Stop before claiming when evaluation would fall back to the CPU.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+        missing:
+            The GPU backend the probe reports as unavailable.
+        message:
+            Expected start of the error message.
+    """
+    _fake_metal_host(
+        monkeypatch=monkeypatch,
+        cap_stdout=_metal_probe(cap=55_662_788_608, **{missing: False}),
+        vm_stat=VM_STAT,
+    )
+    with pytest.raises(NoGpuError, match=message):
+        discover_hardware(state_dir=tmp_path)
 
 
 def test_apple_silicon_without_host_memory_fails_closed(
@@ -2189,7 +2286,7 @@ def test_apple_silicon_without_host_memory_fails_closed(
     """
     _fake_metal_host(
         monkeypatch=monkeypatch,
-        cap_stdout=json.dumps({"cap": 55_662_788_608}),
+        cap_stdout=_metal_probe(cap=55_662_788_608),
         vm_stat="unexpected output",
     )
     with pytest.raises(NoGpuError, match="unified-memory availability"):
@@ -2208,7 +2305,7 @@ def test_apple_silicon_without_metal_cap_fails_closed(
             Temporary directory for files created by the test.
     """
     _fake_metal_host(monkeypatch=monkeypatch, cap_stdout="not json", vm_stat=VM_STAT)
-    with pytest.raises(NoGpuError, match="Metal working-set limit"):
+    with pytest.raises(NoGpuError, match="could not probe the Apple GPU"):
         discover_hardware(state_dir=tmp_path)
 
 

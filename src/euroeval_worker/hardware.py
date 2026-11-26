@@ -393,8 +393,11 @@ def discover_metal_gpu(runner: c.Callable[[list[str]], str] | None = None) -> Gp
     """Report the Apple GPU and a conservative unified-memory inference budget.
 
     The total is MLX's recommended working-set limit, which vllm-metal uses as the
-    denominator for ``gpu_memory_utilization``. The limit is read in a subprocess so
-    that MLX is never initialised inside the worker process.
+    denominator for ``gpu_memory_utilization``. A subprocess also confirms that
+    evaluation would actually use the GPU rather than the CPU: vLLM selects its Metal
+    platform only when vllm-metal's ``metal`` plugin is registered and MLX can use
+    Metal, and Transformers (encoder models) needs PyTorch's MPS backend. The checks
+    run in a subprocess so that MLX and PyTorch are never initialised in the worker.
 
     Args:
         runner (optional):
@@ -405,13 +408,18 @@ def discover_metal_gpu(runner: c.Callable[[list[str]], str] | None = None) -> Gp
 
     Raises:
         NoGpuError:
-            If the Metal device or a memory measurement cannot be verified.
+            If the Metal device, the GPU backends or a memory measurement cannot be
+            verified.
     """
     run = runner or _run
     script = (
-        "import json, mlx.core as mx; "
-        "print(json.dumps({'cap': int(mx.device_info()"
-        "['max_recommended_working_set_size'])}))"
+        "import importlib.metadata as m, json, mlx.core as mx, torch; "
+        "plugins = m.entry_points(group='vllm.platform_plugins'); "
+        "print(json.dumps({"
+        "'cap': int(mx.device_info()['max_recommended_working_set_size']), "
+        "'metal': bool(mx.metal.is_available()), "
+        "'vllm_metal_plugin': any(p.name == 'metal' for p in plugins), "
+        "'mps': bool(torch.backends.mps.is_available())}))"
     )
     try:
         result = subprocess.run(
@@ -419,9 +427,13 @@ def discover_metal_gpu(runner: c.Callable[[list[str]], str] | None = None) -> Gp
             check=True,
             capture_output=True,
             text=True,
-            timeout=30,
+            timeout=60,
         )
-        cap = int(json.loads(result.stdout)["cap"])
+        probe = json.loads(result.stdout)
+        cap = int(probe["cap"])
+        backends = {
+            key: bool(probe[key]) for key in ("metal", "vllm_metal_plugin", "mps")
+        }
     except (
         OSError,
         subprocess.SubprocessError,
@@ -430,9 +442,37 @@ def discover_metal_gpu(runner: c.Callable[[list[str]], str] | None = None) -> Gp
         TypeError,
     ) as error:
         raise NoGpuError(
-            "could not read the Apple GPU's Metal working-set limit; run "
-            "`make install` so that vllm-metal and MLX are installed"
+            "could not probe the Apple GPU's Metal working-set limit and backends; "
+            "run `make install` so that vllm-metal, MLX and PyTorch are installed"
         ) from error
+    if not backends["metal"]:
+        raise NoGpuError(
+            "MLX cannot use the Apple GPU, so evaluation would run on the CPU"
+        )
+    if not backends["vllm_metal_plugin"]:
+        raise NoGpuError(
+            "vllm-metal's platform plugin is not installed, so vLLM would run on the "
+            "CPU; run `make install`, which uses Python 3.12"
+        )
+    # vLLM honours these before probing plugins (vllm/platforms/__init__.py and
+    # vllm/plugins/__init__.py in the pinned version), and evaluation inherits them.
+    if os.environ.get("VLLM_TARGET_DEVICE", "").lower() == "cpu":
+        raise NoGpuError(
+            "VLLM_TARGET_DEVICE is set to cpu, so vLLM would run on the CPU; unset it "
+            "to use the Apple GPU"
+        )
+    if "VLLM_PLUGINS" in os.environ and "metal" not in os.environ["VLLM_PLUGINS"].split(
+        ","
+    ):
+        raise NoGpuError(
+            "VLLM_PLUGINS does not include metal, so vLLM would run on the CPU; unset "
+            "it or add metal"
+        )
+    if not backends["mps"]:
+        raise NoGpuError(
+            "PyTorch cannot use the Apple GPU (MPS), so encoder models would run on "
+            "the CPU"
+        )
     available = _darwin_available_bytes(runner=run)
     if cap <= 0 or available is None:
         raise NoGpuError("could not verify Apple Silicon unified-memory availability")
