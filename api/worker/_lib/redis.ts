@@ -239,9 +239,13 @@ export const DECLINE_REASONS: ReadonlySet<string> = new Set(["unsafe_model", "ev
 /** How long a worker's decline of a model revision suppresses re-leasing it. */
 export const DECLINE_TTL = 7 * 24 * 60 * 60;
 
-/** Key of a worker's decline of one model revision; ``worker`` is the lease's worker id. */
+/**
+ * Key of a worker's decline of one model revision; ``worker`` is the lease's worker id.
+ * Hugging Face model ids are case-insensitive and the resolver keeps the request's
+ * spelling, so the id is lower-cased to make every spelling share one decline.
+ */
 export function declineKey(worker: string, modelId: string, revision: string): string {
-  return `euroeval:worker:declined:${worker}:${modelId}@${revision}`;
+  return `euroeval:worker:declined:${worker}:${modelId.toLowerCase()}@${revision}`;
 }
 export async function recordDecline(lease: Lease, reason: unknown): Promise<void> {
   if (typeof reason !== "string" || !DECLINE_REASONS.has(reason)) return;
