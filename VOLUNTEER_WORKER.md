@@ -166,7 +166,7 @@ worker update, pull the newly promoted image and replace the old pin.
 You can also run the worker straight from a checkout of this repository, without
 Docker. This is the only route for Apple Silicon Macs. It can also be used on a Linux
 host with an NVIDIA GPU where Docker is unavailable, though that route has not been
-re-verified with these instructions. The worker, its broker protocol and its evaluation
+verified with these instructions. The worker, its broker protocol and its evaluation
 are the same as in the Docker route.
 
 Prerequisites:
@@ -179,7 +179,7 @@ Prerequisites:
   installed and not excluded by `VLLM_PLUGINS`, that `VLLM_TARGET_DEVICE` is not `cpu`,
   and that PyTorch can use the GPU (MPS). If any check fails, it stops instead of
   evaluating on the CPU.
-- **Linux with an NVIDIA GPU** (expected, not re-verified): an NVIDIA driver and the
+- **Linux with an NVIDIA GPU** (expected, not verified): an NVIDIA driver and the
   CUDA Toolkit, with `nvcc` on your `PATH`.
 - **Both**: [Node.js](https://nodejs.org/) with `npm`, which `make install` uses for the
   frontend tooling but does not install.
@@ -214,8 +214,9 @@ direct-execution worker, stop it, ask the maintainer to revoke its broker creden
 described under [Data and credential handling](#data-and-credential-handling), and then
 delete that directory. Deleting the directory alone does not revoke server-side access.
 
-Runs without Docker are recorded with the image digest `unattested`, because they use
-no attested worker image.
+Runs that the Docker launcher does not manage, both direct runs and a manual
+`docker run`, are recorded with the image digest `unattested`, because nothing
+attests which worker image they use.
 
 ## How volunteer evaluation works
 

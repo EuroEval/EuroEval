@@ -274,9 +274,9 @@ def _host_available_bytes() -> int | None:
 def _darwin_available_bytes(runner: c.Callable[[list[str]], str]) -> int | None:
     """Estimate available memory on macOS from ``vm_stat``.
 
-    ``vm_stat`` reports free pages without speculative pages, so counting only free
-    and inactive pages slightly underestimates what is available, which is the safe
-    direction.
+    Free plus inactive pages is an estimate. ``vm_stat``'s free count excludes
+    speculative pages, which are also reclaimable, but reclaiming some inactive pages
+    can need compression or swap.
 
     Args:
         runner:
@@ -390,14 +390,15 @@ def _memory_value(value: str) -> int:
 
 
 def discover_metal_gpu(runner: c.Callable[[list[str]], str] | None = None) -> Gpu:
-    """Report the Apple GPU and a conservative unified-memory inference budget.
+    """Report the Apple GPU and its unified-memory inference budget.
 
     The total is MLX's recommended working-set limit, which vllm-metal uses as the
-    denominator for ``gpu_memory_utilization``. A subprocess also confirms that
-    evaluation would actually use the GPU rather than the CPU: vLLM selects its Metal
+    denominator for ``gpu_memory_utilization``. A subprocess also checks the
+    prerequisites for evaluating on the GPU rather than the CPU: vLLM selects its Metal
     platform only when vllm-metal's ``metal`` plugin is registered and MLX can use
-    Metal, and Transformers (encoder models) needs PyTorch's MPS backend. The checks
-    run in a subprocess so that MLX and PyTorch are never initialised in the worker.
+    Metal, and Transformers (encoder models) needs PyTorch's MPS backend. The plugin
+    check reads entry-point metadata and does not load the plugin. The checks run in a
+    subprocess so that MLX and PyTorch are never initialised in the worker.
 
     Args:
         runner (optional):
