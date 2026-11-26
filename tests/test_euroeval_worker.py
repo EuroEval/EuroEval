@@ -1936,6 +1936,102 @@ def test_repeated_unsafe_work_backs_off_until_a_lease_gets_through(
     assert broker.finalised
 
 
+def test_resumed_lease_success_resets_the_safety_skip_backoff(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Restart the skip backoff at 30 seconds after a resumed lease finishes.
+
+    The runnable lease first fails to finalise, so it is finished on the resumed
+    path. The next unsafe lease must then wait 30 seconds again.
+
+    Args:
+        monkeypatch:
+            Fixture replacing network dependencies and sleep.
+        tmp_path:
+            Private worker state directory.
+    """
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(runtime, "check_model_safety", _unsafe_first_lease)
+    second = dataclasses.replace(LEASE, lease_id="lease-2", issue_number=43)
+
+    class ResumingBroker(Broker):
+        """Offer two unsafe leases, a runnable one, then unsafe again."""
+
+        finalise_attempts = 0
+
+        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            """Offer the next lease in sequence.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                hardware:
+                    Hardware supplied to the test.
+
+            Returns:
+                The next lease in the sequence, then nothing.
+            """
+            self.claims += 1
+            if self.claims == 3:
+                return Claim(lease=second)
+            return Claim(lease=LEASE if self.claims <= 4 else None)
+
+        def finalise(self, credential: str, lease_id: str) -> str:
+            """Fail the first finalisation transiently, then accept it.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                lease_id:
+                    Lease being finalised.
+
+            Returns:
+                The stable submission identifier.
+
+            Raises:
+                BrokerError:
+                    On the first attempt.
+            """
+            self.finalise_attempts += 1
+            if self.finalise_attempts == 1:
+                raise BrokerError("temporarily busy", status=503)
+            return super().finalise(credential=credential, lease_id=lease_id)
+
+    broker = ResumingBroker()
+    delays: list[float] = []
+
+    def record_sleep(delay: float) -> None:
+        """Record each sleep and stop after the skip that follows the resume.
+
+        Args:
+            delay:
+                Requested sleep duration.
+
+        Raises:
+            KeyboardInterrupt:
+                Once a skip after the finalised lease has slept.
+        """
+        delays.append(delay)
+        if broker.finalised and broker.claims >= 4:
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(runtime.time, "sleep", record_sleep)
+    with pytest.raises(KeyboardInterrupt):
+        runtime.Worker(
+            client=broker,
+            state=StateStore(directory=tmp_path),
+            evaluator=OneRecordEvaluator(),
+            hardware_factory=lambda: HARDWARE,
+        ).run()
+    assert broker.finalise_attempts == 2
+    assert broker.releases == ["unsafe_model"] * 3
+    backoffs = [delay for delay in delays if delay >= 30]
+    assert backoffs[:2] == [30.0, 60.0]
+    assert backoffs[-1] == 30.0
+
+
 def test_resumed_unsafe_lease_does_not_stop_continuous_worker(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
