@@ -186,8 +186,10 @@ make install
 ```
 
 `make install` installs Rust and uv if they are missing and sets up Python 3.12 with
-every dependency. It also asks for a few optional environment variables; press Enter to
-skip each one, because the worker needs none of them.
+every dependency. It also installs the frontend tooling, which takes a few extra minutes,
+and asks for a few optional environment variables; press Enter to skip each one, because
+the worker needs none of them. On macOS, keep to Python 3.12: the Metal backend is only
+published for 3.12, so other Python versions cannot use the Apple GPU.
 
 Then start the worker:
 
@@ -203,7 +205,7 @@ Worker state, the credential and downloaded models live in
 `~/.cache/euroeval-worker`. Use `--state-dir` to choose another directory. To remove a
 direct-execution worker, stop it, ask the maintainer to revoke its broker credential as
 described under [Data and credential handling](#data-and-credential-handling), and then
-delete that directory.
+delete that directory. Deleting the directory alone does not revoke server-side access.
 
 Runs without Docker are recorded with the image digest `unattested`, because they use
 no attested worker image.
