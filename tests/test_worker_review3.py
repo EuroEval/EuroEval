@@ -451,7 +451,8 @@ def test_pinned_vllm_registry_is_used_when_installed() -> None:
     """Exercise the pinned registry in environments that provide vLLM."""
     vllm = pytest.importorskip("vllm")
     version = getattr(vllm, "__version__", "")
-    assert version.startswith("0.27.1")
+    # macOS pins a newer vLLM to match vllm-metal; see pyproject.toml.
+    assert version.startswith("0.30.0" if sys.platform == "darwin" else "0.27.1")
     assert safety._installed_backend_supports(
         model_type="generative",
         config=object(),

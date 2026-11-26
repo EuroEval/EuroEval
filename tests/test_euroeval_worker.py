@@ -1165,6 +1165,8 @@ def test_discover_hardware_does_not_import_torch_in_worker(
         monkeypatch:
             Pytest fixture for replacing dependencies during the test.
     """
+    # Exercise the NVIDIA path on any runner, including a Mac.
+    monkeypatch.setattr(hardware.sys, "platform", "linux")
     monkeypatch.setattr(
         hardware,
         "_discover_spark_memory",
@@ -1201,6 +1203,8 @@ def test_discover_hardware_uses_supplied_state_filesystem(
     state_dir.mkdir()
     measured: list[Path] = []
     disk_usage = hardware.shutil.disk_usage
+    # Exercise the NVIDIA path on any runner, including a Mac.
+    monkeypatch.setattr(hardware.sys, "platform", "linux")
     monkeypatch.setattr(hardware, "_ram_bytes", lambda: 128 * 1024**3)
     monkeypatch.setattr(hardware, "_pytorch_version", lambda: None)
 
