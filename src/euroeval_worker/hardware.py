@@ -274,8 +274,9 @@ def _host_available_bytes() -> int | None:
 def _darwin_available_bytes(runner: c.Callable[[list[str]], str]) -> int | None:
     """Estimate available memory on macOS from ``vm_stat``.
 
-    Free pages already include speculative pages, so only free and inactive pages are
-    counted.
+    ``vm_stat`` reports free pages without speculative pages, so counting only free
+    and inactive pages slightly underestimates what is available, which is the safe
+    direction.
 
     Args:
         runner:
