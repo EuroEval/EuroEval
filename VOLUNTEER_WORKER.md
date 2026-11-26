@@ -164,19 +164,23 @@ worker update, pull the newly promoted image and replace the old pin.
 ## Direct execution (no Docker)
 
 You can also run the worker straight from a checkout of this repository, without
-Docker. This is the only route for Apple Silicon Macs, and it works on a Linux host with
-an NVIDIA GPU where Docker is unavailable. The worker, its broker protocol and its
-evaluation are the same as in the Docker route.
+Docker. This is the only route for Apple Silicon Macs. It can also be used on a Linux
+host with an NVIDIA GPU where Docker is unavailable, though that route has not been
+re-verified with these instructions. The worker, its broker protocol and its evaluation
+are the same as in the Docker route.
 
 Prerequisites:
 
 - **Apple Silicon Mac**: an arm64 Mac (M1 or newer) on macOS 15 or newer, the Xcode
   Command Line Tools (`xcode-select --install`), and enough free unified memory for the
   queued model.
-  Evaluation runs on the Apple GPU through vLLM's Metal backend. If the GPU cannot be
-  used, the worker stops before claiming work; it never falls back to the CPU.
-- **Linux with an NVIDIA GPU**: an NVIDIA driver and the CUDA Toolkit, with `nvcc` on
-  your `PATH`.
+  Evaluation runs on the Apple GPU through vLLM's Metal backend. Before claiming work,
+  the worker checks that MLX can use the GPU, that vllm-metal's platform plugin is
+  installed and not excluded by `VLLM_PLUGINS`, that `VLLM_TARGET_DEVICE` is not `cpu`,
+  and that PyTorch can use the GPU (MPS). If any check fails, it stops instead of
+  evaluating on the CPU.
+- **Linux with an NVIDIA GPU** (expected, not re-verified): an NVIDIA driver and the
+  CUDA Toolkit, with `nvcc` on your `PATH`.
 - **Both**: [Node.js](https://nodejs.org/) with `npm`, which `make install` uses for the
   frontend tooling but does not install.
 
