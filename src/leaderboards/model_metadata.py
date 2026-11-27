@@ -643,10 +643,10 @@ def is_trained_from_scratch(
             model_info = None
         card_data = getattr(model_info, "card_data", None)
         base_model = getattr(card_data, "base_model", None)
-        if (
-            isinstance(base_model, str)
-            and base_model.strip()
-            and base_model.strip() != model_id
+        bases = [base_model] if isinstance(base_model, str) else base_model
+        if isinstance(bases, list) and any(
+            isinstance(base, str) and base.strip() and base.strip() != model_id
+            for base in bases
         ):
             cache.trained_from_scratch[model_id] = False
             return False

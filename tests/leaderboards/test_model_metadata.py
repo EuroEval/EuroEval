@@ -815,13 +815,14 @@ class TestValSuffixMetadataLookup:
 
         assert result is True
 
+    @pytest.mark.parametrize("base_model", ["Qwen/Qwen3.5-0.8B", ["Qwen/Qwen3.5-0.8B"]])
     @patch("leaderboards.model_metadata.HfApi")
     def test_declared_base_model_infers_fine_tuned_without_prompt(
-        self, mock_hf_api_class: MagicMock
+        self, mock_hf_api_class: MagicMock, base_model: str | list[str]
     ) -> None:
         """Infer fine-tuning from Hugging Face card lineage."""
         api = mock_hf_api_class.return_value
-        api.model_info.return_value.card_data.base_model = "Qwen/Qwen3.5-0.8B"
+        api.model_info.return_value.card_data.base_model = base_model
         cache = Cache()
         record = _record(model_name="kurakurai/Luth-2-0.8B")
 
