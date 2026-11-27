@@ -23,7 +23,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from fastapi import HTTPException
 from upstash_redis.asyncio import Redis
 
-from .dependencies import require_env
+from .dependencies import fetch_with_retry, require_env
 from .state import redis_get_json
 
 _NAMES = (
@@ -261,7 +261,7 @@ class UserGrants:
         body: object | None = None,
         accept: str = "application/vnd.github+json",
     ) -> httpx.Response:
-        """Send one request, never blindly replaying a credential mutation.
+        """Retry safe reads without blindly replaying a credential mutation.
 
         Args:
             url:
@@ -281,8 +281,8 @@ class UserGrants:
         headers = {"accept": accept, "x-github-api-version": "2022-11-28"}
         if authorization:
             headers["authorization"] = authorization
-        return await self.http.request(
-            method=method, url=url, headers=headers, json=body
+        return await fetch_with_retry(
+            http=self.http, method=method, url=url, headers=headers, body=body
         )
 
     async def ensure_volunteer_comment(

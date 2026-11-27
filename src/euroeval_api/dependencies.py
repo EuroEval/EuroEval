@@ -44,12 +44,18 @@ async def fetch_with_retry(
     """
     method = method.upper()
     if method not in {"GET", "HEAD", "OPTIONS"}:
-        return await http.request(method=method, url=url, headers=headers, json=body)
+        return await http.request(
+            method=method, url=url, headers=headers, json=body, follow_redirects=True
+        )
     response = None
     for attempt in range(3):
         try:
             response = await http.request(
-                method=method, url=url, headers=headers, json=body
+                method=method,
+                url=url,
+                headers=headers,
+                json=body,
+                follow_redirects=True,
             )
         except httpx.TransportError:
             if attempt == 2:

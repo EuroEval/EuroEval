@@ -240,7 +240,9 @@ async def _complete_poll(
             json={"access_token": access},
             headers={"accept": "application/vnd.github+json"},
         )
-        revoked = await http.send(request=revoke_request, auth=basic)
+        revoked = await http.send(
+            request=revoke_request, auth=basic, follow_redirects=True
+        )
         if not revoked.is_success:
             raise HTTPException(
                 status_code=503,
