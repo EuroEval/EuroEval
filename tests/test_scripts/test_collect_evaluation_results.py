@@ -11,7 +11,7 @@ from unittest.mock import Mock, call
 import pytest
 
 from euroeval_worker.review import PublicStagingError
-from euroeval_worker.review_models import ReviewReport
+from euroeval_worker.review_models import ReviewReport, ValidatedRecord
 from leaderboards import canonical_publication, constants, result_loading
 from leaderboards.result_conflicts import ConflictDecision
 from leaderboards.result_identity import UnresolvedResultConflictError
@@ -545,6 +545,14 @@ class PreflightReviewer:
         Returns:
             A report-shaped object with a stable approval fingerprint.
         """
+        content = json.dumps(
+            {
+                "eval_library": {"version": "1"},
+                "evaluation_results": [
+                    {"evaluation_name": "test_f1", "score_details": {"score": 1}}
+                ],
+            }
+        ).encode()
         return ReviewReport(
             submission_id=submission_id,
             issue_number=12,
@@ -555,7 +563,17 @@ class PreflightReviewer:
             euroeval_version="1.0",
             provenance={},
             expected_identities=(),
-            records=(),
+            records=(
+                ValidatedRecord(
+                    identity=(f"model-{submission_id}", "task", True, True),
+                    digest="digest",
+                    staged_path="staged",
+                    canonical_path="result.json",
+                    content=content,
+                    scores=(("test_f1", 1.0),),
+                    warnings=(),
+                ),
+            ),
             canonical_observations=(),
             plan_fingerprint=f"fingerprint-{submission_id}",
             warnings=(),
@@ -727,7 +745,7 @@ def test_preflight_interrupt_stops_without_harvesting(
     command = Mock(return_value=0)
     monkeypatch.setattr(collect_evaluation_results, "run_review_command", command)
     assert collect_evaluation_results.preflight_volunteer_review() is False
-    assert command.call_count == (1 if prompt_number == 3 else 0)
+    command.assert_not_called()
 
 
 def test_preflight_missing_staging_configuration_is_non_blocking(
@@ -911,15 +929,17 @@ def test_preflight_with_no_pending_reviews_continues_without_prompt(
 
 
 def test_preflight_yes_reviews_submission(
-    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, tmp_path: Path
 ) -> None:
-    """Opt-in reviews and decides only after a separate approval response.
+    """Opt-in reviews and stages approved records locally.
 
     Args:
         monkeypatch:
             Pytest fixture for replacing dependencies during the test.
         caplog:
             Fixture for capturing log records during the test.
+        tmp_path:
+            Temporary directory for isolated staging.
     """
     monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
     monkeypatch.setenv("HF_TOKEN", "secret-token")
@@ -931,25 +951,17 @@ def test_preflight_yes_reviews_submission(
         lambda: PreflightReviewer(),
     )
     monkeypatch.setattr(
+        collect_evaluation_results, "NEW_RESULTS_PATH", tmp_path / "stage.jsonl"
+    )
+    monkeypatch.setattr(
         collect_evaluation_results, "_stdin_is_interactive", lambda: True
     )
     monkeypatch.setattr("builtins.input", lambda prompt: "y")
-    command = Mock(return_value=0)
+    command = Mock(side_effect=AssertionError("approval is local staging"))
     monkeypatch.setattr(collect_evaluation_results, "run_review_command", command)
 
     assert collect_evaluation_results.preflight_volunteer_review() is True
-    assert command.call_count == 1
-    assert command.call_args_list[0].args[0] == [
-        "--reviewer",
-        "maintainer; echo nope",
-        "approve",
-        "submission id'$(touch /tmp/nope)",
-        "--plan-fingerprint",
-        "fingerprint-submission id'$(touch /tmp/nope)",
-        "--reason",
-        "Reviewed during collector preflight",
-        "--quiet",
-    ]
+    command.assert_not_called()
 
 
 def test_preview_in_dev_server_handles_early_exit(
