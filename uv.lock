@@ -1312,15 +1312,6 @@ leaderboards = [
 ]
 
 [package.dev-dependencies]
-api = [
-    { name = "cryptography" },
-    { name = "fastapi" },
-    { name = "httpx" },
-    { name = "huggingface-hub" },
-    { name = "packaging" },
-    { name = "rfc8785" },
-    { name = "uvicorn" },
-]
 dev = [
     { name = "cffi" },
     { name = "click" },
@@ -1338,7 +1329,6 @@ dev = [
     { name = "pytest-depends" },
     { name = "pytest-socket" },
     { name = "readme-coverage-badger" },
-    { name = "redis" },
     { name = "ruff" },
     { name = "setuptools" },
     { name = "slopo" },
@@ -1426,15 +1416,6 @@ requires-dist = [
 provides-extras = ["generative", "laya", "all", "leaderboards", "gliner", "kev"]
 
 [package.metadata.requires-dev]
-api = [
-    { name = "cryptography", specifier = ">=50.0.0" },
-    { name = "fastapi", specifier = ">=0.136.3" },
-    { name = "httpx", specifier = ">=0.28.1" },
-    { name = "huggingface-hub", specifier = ">=1.28.0" },
-    { name = "packaging", specifier = ">=26.3" },
-    { name = "rfc8785", specifier = ">=0.1.4" },
-    { name = "uvicorn", specifier = ">=0.52.4" },
-]
 dev = [
     { name = "cffi", specifier = ">=1.17.1" },
     { name = "click", specifier = ">=8.1.7" },
@@ -1452,7 +1433,6 @@ dev = [
     { name = "pytest-depends", specifier = ">=1.0.1" },
     { name = "pytest-socket", specifier = ">=0.7.0" },
     { name = "readme-coverage-badger", specifier = ">=0.1.2" },
-    { name = "redis", specifier = ">=8.2.0" },
     { name = "ruff", specifier = ">=0.7.1" },
     { name = "setuptools", specifier = ">=75.6.0" },
     { name = "slopo", specifier = ">=0.5.0" },
@@ -5463,15 +5443,6 @@ wheels = [
 ]
 
 [[package]]
-name = "redis"
-version = "8.2.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/10/8a/408dd829367bb62972bd5d91bd8cc283c24c8344f80a880d4b3901ce43fd/redis-8.2.0.tar.gz", hash = "sha256:58b1493d83ba8f0e3ffe6bd781194ca5c01c91267ae03d29c1087b0b3c7d79c9", size = 5809579, upload-time = "2026-11-23T08:31:56.692Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ea/8f/98458650cca985032598a59caca0641e7889cf4d536dc12dc032bef7df47/redis-8.2.0-py3-none-any.whl", hash = "sha256:4ff649f10fae5e7e97798fb2a84e84a0a66e98310d75cad2b5a572ce0f9f15a7", size = 732892, upload-time = "2026-11-23T08:31:55.011Z" },
-]
-
-[[package]]
 name = "referencing"
 version = "0.37.0"
 source = { registry = "https://pypi.org/simple" }
@@ -5581,15 +5552,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ac/c3/e2a2b89f2d3e2179abd6d00ebd70bff6273f37fb3e0cc209f48b39d00cbf/requests-2.34.2.tar.gz", hash = "sha256:f288924cae4e29463698d6d60bc6a4da69c89185ad1e0bcc4104f584e960b9ed", size = 142856, upload-time = "2026-05-14T19:25:27.735Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a0/f4/c67b0b3f1b9245e8d266f0f112c500d50e5b4e83cb6f3b71b6528104182a/requests-2.34.2-py3-none-any.whl", hash = "sha256:2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0", size = 73075, upload-time = "2026-05-14T19:25:26.443Z" },
-]
-
-[[package]]
-name = "rfc8785"
-version = "0.1.4"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/ef/2f/fa1d2e740c490191b572d33dbca5daa180cb423c24396b856f5886371d8b/rfc8785-0.1.4.tar.gz", hash = "sha256:e545841329fe0eee4f6a3b44e7034343100c12b4ec566dc06ca9735681deb4da", size = 14321, upload-time = "2024-09-27T16:33:31.206Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/4d/78/119878110660b2ad709888c8a1614fce7e2fab39080ab960656dc8605bf6/rfc8785-0.1.4-py3-none-any.whl", hash = "sha256:520d690b448ecf0703691c76e1a34a24ddcd4fc5bc41d589cb7c58ec651bcd48", size = 9240, upload-time = "2024-09-27T16:33:29.683Z" },
 ]
 
 [[package]]
