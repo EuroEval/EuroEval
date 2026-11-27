@@ -1,38 +1,72 @@
-"""Tests for trusted volunteer scope policy behavior."""
+"""Tests for trusted volunteer scope policy behaviour."""
 
 import json
+from pathlib import Path
 
 import pytest
+from fastapi import HTTPException
 
 from euroeval_api.policy import (
-    ScopePolicyError,
     expected_scope,
     language_group,
     validate_scope_policy_version,
 )
 
 
-def test_checked_in_policy_supports_grouped_language_variants() -> None:
-    """Language aliases share a group while scope records remain language-specific."""
-    validate_scope_policy_version("18.4.0.dev")
+@pytest.fixture
+def checked_version(monkeypatch: pytest.MonkeyPatch) -> str:
+    """Select the checked-in release without inheriting a service policy override.
+
+    Args:
+        monkeypatch:
+            Isolated test environment.
+
+    Returns:
+        EuroEval version carried by the checked-in policy.
+    """
+    monkeypatch.delenv("VOLUNTEER_SCOPE_POLICY_JSON", raising=False)
+    policy = json.loads(Path("api/worker/scope-policy.json").read_text())
+    return policy["policies"][0]["euroeval_version"]
+
+
+def test_checked_in_policy_supports_grouped_language_variants(
+    checked_version: str,
+) -> None:
+    """Language aliases share a group while scope records remain language-specific.
+
+    Args:
+        checked_version:
+            Checked-in policy release.
+    """
+    validate_scope_policy_version(checked_version)
     assert language_group("nb") == language_group("nn") == language_group("no")
     assert language_group("pt-br") == language_group("pt-pt") == language_group("pt")
-    with pytest.raises(ScopePolicyError) as error:
-        expected_scope("18.4.0.dev0", "encoder", "nb")
+    with pytest.raises(HTTPException) as error:
+        expected_scope(checked_version, "encoder", "nb")
     assert error.value.status_code == 422
 
 
-def test_expected_scope_returns_independent_lists() -> None:
-    """Returned scope can be mutated without changing subsequent trusted results."""
-    scope = expected_scope("18.4.0.dev", "encoder", "no")
+def test_expected_scope_returns_independent_lists(checked_version: str) -> None:
+    """Returned scope can be mutated without changing subsequent trusted results.
+
+    Args:
+        checked_version:
+            Checked-in policy release.
+    """
+    scope = expected_scope(checked_version, "encoder", "no")
     scope["task_groups"].clear()
-    assert expected_scope("18.4.0.dev0", "encoder", "no")["task_groups"]
+    assert expected_scope(checked_version, "encoder", "no")["task_groups"]
 
 
 def test_override_rejects_duplicate_identity_alternative(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Malformed trusted alternatives fail as configuration errors."""
+    """Malformed trusted alternatives fail as configuration errors.
+
+    Args:
+        monkeypatch:
+            Isolated trusted policy override.
+    """
     policy = {
         "policy_version": "test",
         "policies": [
@@ -51,6 +85,6 @@ def test_override_rejects_duplicate_identity_alternative(
         ],
     }
     monkeypatch.setenv("VOLUNTEER_SCOPE_POLICY_JSON", json.dumps(policy))
-    with pytest.raises(ScopePolicyError) as error:
+    with pytest.raises(HTTPException) as error:
         expected_scope("1", "encoder", "en")
     assert error.value.status_code == 503

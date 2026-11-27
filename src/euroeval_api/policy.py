@@ -5,31 +5,18 @@ from __future__ import annotations
 import json
 import os
 import re
+import typing as t
 from pathlib import Path
-from typing import Literal, TypedDict, cast
 
+from fastapi import HTTPException
 from pydantic_core import from_json
 
 from .markers import GROUPS
 
-ModelType = Literal["encoder", "generative"]
+ModelType = t.Literal["encoder", "generative"]
 
 
-class ScopePolicyError(Exception):
-    """An error with an HTTP status appropriate for scope policy failures."""
-
-    def __init__(self, status_code: int, message: str) -> None:
-        """Initialize the policy error.
-
-        Args:
-            status_code: HTTP status code for the failure.
-            message: Human-readable explanation.
-        """
-        super().__init__(message)
-        self.status_code = status_code
-
-
-class TrustedScope(TypedDict):
+class TrustedScope(t.TypedDict):
     """Validated trusted scope returned to volunteer workflows."""
 
     euroeval_version: str
@@ -57,22 +44,28 @@ def expected_scope(
     """Return an isolated trusted expected scope for a model and language.
 
     Args:
-        euroeval_version: EuroEval version used for the evaluation.
-        model_type: Requested model capability.
-        language: Exact requested language code.
+        euroeval_version:
+            EuroEval version used for the evaluation.
+        model_type:
+            Requested model capability.
+        language:
+            Exact requested language code.
 
     Returns:
         Validated scope with fresh mutable lists.
 
     Raises:
-        ScopePolicyError: Configuration is malformed or the request is unsupported.
+        HTTPException:
+            Configuration is malformed or the request is unsupported.
     """
     group = language_group(language)
     if group is None or model_type not in ("encoder", "generative"):
-        raise ScopePolicyError(422, "The leased language or model type is unsupported.")
+        raise HTTPException(
+            status_code=422, detail="The leased language or model type is unsupported."
+        )
     version = _canonical_version(euroeval_version)
     policy = _load_policy()
-    entries = cast(list[object], policy["policies"])
+    entries = t.cast(list[object], policy["policies"])
     match = next(
         (
             item
@@ -85,34 +78,40 @@ def expected_scope(
         None,
     )
     if match is None:
-        raise ScopePolicyError(
-            422, "This model type and language has no trusted expected scope."
+        raise HTTPException(
+            status_code=422,
+            detail="This model type and language has no trusted expected scope.",
         )
     if "identity_suffixes" in match:
-        raise ScopePolicyError(
-            503, "Trusted expected scope mixes legacy and alternative identities."
+        raise HTTPException(
+            status_code=503,
+            detail="Trusted expected scope mixes legacy and alternative identities.",
         )
     alternatives = match.get("allowed_identity_suffix_sets")
     if not isinstance(alternatives, list) or not alternatives:
-        raise ScopePolicyError(
-            422, "This model type and language has no trusted expected scope."
+        raise HTTPException(
+            status_code=422,
+            detail="This model type and language has no trusted expected scope.",
         )
     clean: list[list[str]] = []
     for alternative in alternatives:
         if not isinstance(alternative, list) or not alternative:
-            raise ScopePolicyError(
-                503, "Trusted expected scope contains an empty identity alternative."
+            raise HTTPException(
+                status_code=503,
+                detail="Trusted expected scope contains an empty identity alternative.",
             )
         suffixes = [_canonical_suffix(suffix) for suffix in alternative]
         if len(set(suffixes)) != len(suffixes):
-            raise ScopePolicyError(
-                503, "Trusted expected scope contains duplicate identities."
+            raise HTTPException(
+                status_code=503,
+                detail="Trusted expected scope contains duplicate identities.",
             )
         clean.append(suffixes)
     keys = [tuple(sorted(item)) for item in clean]
     if len(set(keys)) != len(keys):
-        raise ScopePolicyError(
-            503, "Trusted expected scope contains duplicate identity alternatives."
+        raise HTTPException(
+            status_code=503,
+            detail="Trusted expected scope contains duplicate identity alternatives.",
         )
     tasks = match.get("task_groups")
     if (
@@ -121,23 +120,28 @@ def expected_scope(
         or any(not isinstance(task, str) or not task for task in tasks)
         or len(set(tasks)) != len(tasks)
     ):
-        raise ScopePolicyError(
-            503, "Trusted expected scope contains invalid task groups."
+        raise HTTPException(
+            status_code=503,
+            detail="Trusted expected scope contains invalid task groups.",
         )
     language_group_value = match.get("language_group")
     if not isinstance(language_group_value, str) or not language_group_value:
-        raise ScopePolicyError(503, "Trusted expected scope has no language_group.")
+        raise HTTPException(
+            status_code=503, detail="Trusted expected scope has no language_group."
+        )
     warnings = match.get("warnings", [])
     if not isinstance(warnings, list) or any(
         not isinstance(item, str) for item in warnings
     ):
-        raise ScopePolicyError(503, "Trusted expected scope contains invalid warnings.")
+        raise HTTPException(
+            status_code=503, detail="Trusted expected scope contains invalid warnings."
+        )
     return {
         "euroeval_version": version,
         "model_type": model_type,
         "language": language,
         "language_group": language_group_value,
-        "policy_version": cast(str, policy["policy_version"]),
+        "policy_version": t.cast(str, policy["policy_version"]),
         "allowed_identity_suffix_sets": clean,
         "task_groups": list(tasks),
         "warnings": list(warnings),
@@ -145,16 +149,30 @@ def expected_scope(
 
 
 def _canonical_suffix(value: object) -> str:
-    """Validate the canonical JSON encoding of one identity suffix."""
+    """Validate the canonical JSON encoding of one identity suffix.
+
+    Args:
+        value:
+            Configured suffix.
+
+    Returns:
+        Validated canonical suffix.
+
+    Raises:
+        HTTPException:
+            If trusted configuration contains a malformed suffix.
+    """
     if not isinstance(value, str):
-        raise ScopePolicyError(
-            503, "Trusted expected scope contains a non-canonical identity."
+        raise HTTPException(
+            status_code=503,
+            detail="Trusted expected scope contains a non-canonical identity.",
         )
     try:
         parsed = from_json(value, allow_inf_nan=False)
     except ValueError as error:
-        raise ScopePolicyError(
-            503, "Trusted expected scope contains invalid identity JSON."
+        raise HTTPException(
+            status_code=503,
+            detail="Trusted expected scope contains invalid identity JSON.",
         ) from error
     if (
         not isinstance(parsed, list)
@@ -164,27 +182,44 @@ def _canonical_suffix(value: object) -> str:
         or (parsed[2] is not None and not isinstance(parsed[2], bool))
         or json.dumps(parsed, ensure_ascii=False, separators=(",", ":")) != value
     ):
-        raise ScopePolicyError(
-            503, "Trusted expected scope contains a non-canonical identity."
+        raise HTTPException(
+            status_code=503,
+            detail="Trusted expected scope contains a non-canonical identity.",
         )
     return value
 
 
 def _canonical_version(version: str) -> str:
-    """Normalize development versions to the policy's canonical spelling."""
+    """Normalise development versions to the policy's canonical spelling.
+
+    Args:
+        version:
+            Requested EuroEval version.
+
+    Returns:
+        Version with an explicit development sequence.
+    """
     return re.sub(r"\.dev$", ".dev0", version)
 
 
 def _load_policy() -> dict[str, object]:
-    """Load and minimally validate the trusted policy configuration."""
+    """Load and minimally validate the trusted policy configuration.
+
+    Returns:
+        Configured policy object.
+
+    Raises:
+        HTTPException:
+            If the configuration cannot be read or has an invalid schema.
+    """
     raw = os.environ.get("VOLUNTEER_SCOPE_POLICY_JSON")
     try:
         if not raw:
             raw = _POLICY_PATH.read_text(encoding="utf-8")
         policy = from_json(raw, allow_inf_nan=False)
     except (ValueError, OSError, TypeError) as error:
-        raise ScopePolicyError(
-            503, "VOLUNTEER_SCOPE_POLICY_JSON is invalid JSON."
+        raise HTTPException(
+            status_code=503, detail="VOLUNTEER_SCOPE_POLICY_JSON is invalid JSON."
         ) from error
     if (
         not isinstance(policy, dict)
@@ -192,17 +227,18 @@ def _load_policy() -> dict[str, object]:
         or not policy["policy_version"]
         or not isinstance(policy.get("policies"), list)
     ):
-        raise ScopePolicyError(
-            503, "VOLUNTEER_SCOPE_POLICY_JSON has an invalid schema."
+        raise HTTPException(
+            status_code=503, detail="VOLUNTEER_SCOPE_POLICY_JSON has an invalid schema."
         )
-    return cast(dict[str, object], policy)
+    return t.cast(dict[str, object], policy)
 
 
 def language_group(language: str) -> str | None:
     """Return the checked language group for a language code.
 
     Args:
-        language: Requested language code.
+        language:
+            Requested language code.
 
     Returns:
         Matching group label, or None when unsupported.
@@ -215,18 +251,21 @@ def validate_scope_policy_version(euroeval_version: str) -> None:
     """Ensure trusted configuration contains entries for the EuroEval version.
 
     Args:
-        euroeval_version: Installed or requested EuroEval version.
+        euroeval_version:
+            Installed or requested EuroEval version.
 
     Raises:
-        ScopePolicyError: Configuration is invalid or version is unsupported.
+        HTTPException:
+            Configuration is invalid or version is unsupported.
     """
     policy = _load_policy()
     version = _canonical_version(euroeval_version)
-    entries = cast(list[object], policy["policies"])
+    entries = t.cast(list[object], policy["policies"])
     if not any(
         isinstance(item, dict) and item.get("euroeval_version") == version
         for item in entries
     ):
-        raise ScopePolicyError(
-            503, f"Trusted scope policy has no entries for EuroEval {version}."
+        raise HTTPException(
+            status_code=503,
+            detail=f"Trusted scope policy has no entries for EuroEval {version}.",
         )
