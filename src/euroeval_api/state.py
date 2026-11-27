@@ -17,6 +17,7 @@ from datetime import datetime
 from typing import TypedDict
 
 from fastapi import HTTPException
+from pydantic_core import from_json
 from upstash_redis.asyncio import Redis
 
 LEASE_TTL_MAX = 21600
@@ -383,7 +384,7 @@ async def redis_get_json(redis: Redis, key: str) -> object | None:
     if not isinstance(raw, str):
         return None
     try:
-        return json.loads(raw)
+        return from_json(raw, allow_inf_nan=False)
     except ValueError:
         return None
 

@@ -1317,6 +1317,7 @@ api = [
     { name = "fastapi" },
     { name = "httpx" },
     { name = "huggingface-hub" },
+    { name = "packaging" },
     { name = "rfc8785" },
     { name = "upstash-ratelimit" },
     { name = "upstash-redis" },
@@ -1339,6 +1340,7 @@ dev = [
     { name = "pytest-depends" },
     { name = "pytest-socket" },
     { name = "readme-coverage-badger" },
+    { name = "redis" },
     { name = "ruff" },
     { name = "setuptools" },
     { name = "slopo" },
@@ -1431,6 +1433,7 @@ api = [
     { name = "fastapi", specifier = ">=0.136.3" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "huggingface-hub", specifier = ">=1.28.0" },
+    { name = "packaging", specifier = ">=26.3" },
     { name = "rfc8785", specifier = ">=0.1.4" },
     { name = "upstash-ratelimit", specifier = ">=1.2.0" },
     { name = "upstash-redis", specifier = ">=1.10.0" },
@@ -1453,6 +1456,7 @@ dev = [
     { name = "pytest-depends", specifier = ">=1.0.1" },
     { name = "pytest-socket", specifier = ">=0.7.0" },
     { name = "readme-coverage-badger", specifier = ">=0.1.2" },
+    { name = "redis", specifier = ">=8.2.0" },
     { name = "ruff", specifier = ">=0.7.1" },
     { name = "setuptools", specifier = ">=75.6.0" },
     { name = "slopo", specifier = ">=0.5.0" },
@@ -5460,6 +5464,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/57/d9/c75d93c5d5b901c14532f6d142e04785c95ceb41c3b725659431a5ebdd81/readme_coverage_badger-1.1.0.tar.gz", hash = "sha256:6e9f4f18b84211658e4d30c6b71f6777187851f1007cf7016e74a6c4e8bd4da0", size = 33037, upload-time = "2026-05-23T23:44:39.237Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/70/65/a369f6fbd5ad859470b868fc5a77e720be3fabb78ce4698d6f9a816cf377/readme_coverage_badger-1.1.0-py3-none-any.whl", hash = "sha256:904ce0ae1fad12df7d2da0d8e6c7b8146daf1ed211d5dc59439fcbcc4fd79c24", size = 16791, upload-time = "2026-05-23T23:44:38.137Z" },
+]
+
+[[package]]
+name = "redis"
+version = "8.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/10/8a/408dd829367bb62972bd5d91bd8cc283c24c8344f80a880d4b3901ce43fd/redis-8.2.0.tar.gz", hash = "sha256:58b1493d83ba8f0e3ffe6bd781194ca5c01c91267ae03d29c1087b0b3c7d79c9", size = 5809579, upload-time = "2026-11-23T08:31:56.692Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ea/8f/98458650cca985032598a59caca0641e7889cf4d536dc12dc032bef7df47/redis-8.2.0-py3-none-any.whl", hash = "sha256:4ff649f10fae5e7e97798fb2a84e84a0a66e98310d75cad2b5a572ce0f9f15a7", size = 732892, upload-time = "2026-11-23T08:31:55.011Z" },
 ]
 
 [[package]]
