@@ -928,8 +928,11 @@ def upload_results_to_hf(
     # Capture exact predecessors during the existing load, not a second tree scan.
     source_bytes: dict[ResultIdentity, bytes] = {}
     decisions: list[ConflictDecision] = []
+    model_choices: dict[str, ConflictChoice] = {}
     try:
-        existing = _load_existing_results(sources=source_bytes, decisions=decisions)
+        existing = _load_existing_results(
+            sources=source_bytes, decisions=decisions, model_choices=model_choices
+        )
 
         # Resolve the batch before touching staging, results, or checkpoints.
         _process_new_results(
@@ -938,6 +941,7 @@ def upload_results_to_hf(
             source_bytes=source_bytes,
             decisions=decisions,
             lines=pending_lines,
+            model_choices=model_choices,
         )
     except UnresolvedResultConflictError as error:
         logger.error("Result collection aborted: %s", error)
@@ -983,6 +987,7 @@ def upload_results_to_hf(
                         candidate=final_record,
                         current_bytes=original_bytes,
                         candidate_bytes=final_bytes,
+                        model_choices=model_choices,
                     )
                 except UnresolvedResultConflictError as error:
                     logger.error("Result collection aborted: %s", error)
@@ -1110,12 +1115,14 @@ def _extract_identity_key(result: dict) -> ResultIdentity | None:
 def _load_existing_results(
     sources: dict[ResultIdentity, bytes] | None = None,
     decisions: list[ConflictDecision] | None = None,
+    model_choices: dict[str, ConflictChoice] | None = None,
 ) -> dict[ResultIdentity, dict]:
     """Load existing results and capture exact predecessor bytes in one pass.
 
     Args:
         sources (optional): Output mapping for canonical or winning alias bytes.
         decisions (optional): Collected explicit choices for durable publication.
+        model_choices (optional): Reused explicit choices, keyed by model ID.
 
     Returns:
         Dictionary mapping identity to record.
@@ -1158,6 +1165,7 @@ def _load_existing_results(
                 candidate=record,
                 current_bytes=winning_sources[identity],
                 candidate_bytes=content,
+                model_choices=model_choices,
             )
             if decisions is not None:
                 decisions.append(decision)
@@ -1183,6 +1191,7 @@ def _process_new_results(
     source_bytes: dict[ResultIdentity, bytes] | None = None,
     decisions: list[ConflictDecision] | None = None,
     lines: list[str] | None = None,
+    model_choices: dict[str, ConflictChoice] | None = None,
 ) -> None:
     """Process new results from JSONL file and merge into existing.
 
@@ -1194,6 +1203,7 @@ def _process_new_results(
         source_bytes (optional): Original source bytes indexed by result identity.
         decisions (optional): Output list for explicit owner choices.
         lines (optional): Already harvested lines replacing the on-disk staging file.
+        model_choices (optional): Reused explicit choices, keyed by model ID.
 
     """
     if lines is None and not new_results_path.exists():
@@ -1240,6 +1250,7 @@ def _process_new_results(
                         candidate=record,
                         current_bytes=current_bytes,
                         candidate_bytes=candidate_bytes,
+                        model_choices=model_choices,
                     )
                     if decisions is not None:
                         decisions.append(decision)

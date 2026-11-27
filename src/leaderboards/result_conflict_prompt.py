@@ -18,6 +18,7 @@ def resolve_result_interactively(
     input_fn: c.Callable[[str], str] = input,
     output_fn: c.Callable[[str], None] = click.echo,
     interactive: bool | None = None,
+    model_choices: dict[str, ConflictChoice] | None = None,
 ) -> ConflictDecision:
     """Apply automatic policy, prompting only for unresolved conflicts.
 
@@ -29,6 +30,7 @@ def resolve_result_interactively(
         input_fn (optional): Prompt input function. Defaults to input.
         output_fn (optional): Display function. Defaults to print.
         interactive (optional): Override terminal detection for callers/tests.
+        model_choices (optional): Reuse one explicit choice per model.
 
     Returns:
         The policy decision or explicit human choice.
@@ -44,6 +46,15 @@ def resolve_result_interactively(
     )
     if not decision.needs_choice:
         return decision
+    model_id = str(current.get("model_id", candidate.get("model_id", "unknown")))
+    if model_choices is not None and model_id in model_choices:
+        return resolve_result_conflict(
+            current=current,
+            candidate=candidate,
+            current_bytes=current_bytes,
+            candidate_bytes=candidate_bytes,
+            choice=model_choices[model_id],
+        )
     if interactive is None:
         interactive = sys.stdin.isatty()
     if not interactive:
@@ -51,7 +62,11 @@ def resolve_result_interactively(
             f"Unresolved result conflict for {decision.evidence.identity}"
         )
 
-    output_fn(f"Unresolved result conflict: {decision.evidence.identity}")
+    heading = f" Result conflicts for {model_id} "
+    output_fn(click.style(f"┌{'─' * len(heading)}┐", fg="cyan"))
+    output_fn(click.style(f"│{heading}│", fg="cyan", bold=True))
+    output_fn(click.style(f"└{'─' * len(heading)}┘", fg="cyan"))
+    output_fn(f"Example dataset/identity: {decision.evidence.identity[1:]}")
     output_fn(f"Reason: {decision.reason.value}")
     output_fn(
         "Evaluation timestamps: "
@@ -65,7 +80,9 @@ def resolve_result_interactively(
         )
     while True:
         try:
-            choice = input_fn("Choose [s]tored, [i]ncoming, or [a]bort: ")
+            choice = input_fn(
+                "Choose for this model: [s]tored, [i]ncoming, or [a]bort: "
+            )
         except (EOFError, KeyboardInterrupt) as error:
             raise UnresolvedResultConflictError(
                 "Result conflict resolution aborted"
@@ -80,6 +97,8 @@ def resolve_result_interactively(
         if choice in {"a", "abort"}:
             raise UnresolvedResultConflictError("Result conflict resolution aborted")
         output_fn("Invalid choice. Enter s, i, or a.")
+    if model_choices is not None:
+        model_choices[model_id] = selected
     return resolve_result_conflict(
         current=current,
         candidate=candidate,
