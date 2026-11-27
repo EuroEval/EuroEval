@@ -17,6 +17,7 @@ from pydantic_core import from_json
 from .dependencies import PROTOCOL_VERSION, require_env
 
 TITLE_PREFIX = "[MODEL EVALUATION REQUEST]"
+VM_MARKER_RE = re.compile(r"<!--[\s\S]*?vm-id:\s*([^\s>]+)\s*-->", re.I)
 VOLUNTEER_MARKER_RE = re.compile(
     r"<!--[ \t]*euroeval-volunteer-worker:v1[ \t]+([^<]*?)-->", re.I
 )
