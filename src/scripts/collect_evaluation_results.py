@@ -68,7 +68,10 @@ from leaderboards.constants import (
     RESULTS_DIR,
     RESULTS_READY_LABEL,
 )
-from leaderboards.contamination_canary import is_canary_record
+from leaderboards.contamination_canary import (
+    is_canary_record,
+    process_contamination_canaries,
+)
 from leaderboards.github_api import close_issue, comment_on_issue, gh_request
 from leaderboards.leaderboard_visibility import (
     count_ranked_entries,
@@ -544,6 +547,9 @@ def preflight_volunteer_review(
                 logger.error("Model changed; inspect the submissions again.")
                 review_error = True
                 continue
+            if not _validate_review_canaries(reports=reports):
+                review_error = True
+                continue
             render_model_review(reports=reports)
             _review_model(
                 reviewer=reviewer, reports=reports, accepted_results=accepted_results
@@ -645,6 +651,50 @@ def _stdin_is_interactive() -> bool:
         return sys.stdin.isatty()
     except (AttributeError, OSError):
         return False
+
+
+def _validate_review_canaries(reports: list[ReviewReport]) -> bool:
+    """Require private canary evidence to score cleanly before local acceptance.
+
+    Args:
+        reports: Validated submissions for one model.
+
+    Returns:
+        Whether canary evidence is scoreable and does not flag the model.
+    """
+    canary_records = [
+        json.loads(record.content)
+        for report in reports
+        for record in report.records
+        if is_canary_record(record=json.loads(record.content))
+    ]
+    if not canary_records:
+        return True
+    try:
+        _, _, excluded_models, report = process_contamination_canaries(
+            records=canary_records
+        )
+    except Exception:
+        logger.exception(
+            "Private contamination-canary scoring failed; acceptance stopped."
+        )
+        return False
+    outcomes = report.get("models")
+    if (
+        report.get("status") != "scored"
+        or not isinstance(outcomes, list)
+        or any(
+            not isinstance(item, dict) or item.get("status") != "scored"
+            for item in outcomes
+        )
+        or reports[0].model_id in excluded_models
+    ):
+        logger.error(
+            "Private contamination-canary evidence is invalid or flagged; "
+            "acceptance stopped."
+        )
+        return False
+    return True
 
 
 def preview_in_dev_server() -> bool:
