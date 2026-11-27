@@ -1085,9 +1085,10 @@ class PublicationSession:
                 continue
             current = current_objects[path]
             if current is None:
-                if (
-                    identity in decisions
-                    and accepted_records.get(identity) != candidate
+                if accepted_records.get(
+                    identity
+                ) == candidate and not self._approved_absence(
+                    identity=identity, candidate=candidate, decisions=decisions
                 ):
                     raise PublicationError(
                         f"Conflict decision predecessor is missing at {path}"
@@ -1112,6 +1113,21 @@ class PublicationSession:
                     equivalent.append((path, identity, current, record))
                 continue
             if accepted_records.get(identity) == candidate:
+                proof = decisions.get(identity)
+                if proof is None:
+                    raise PublicationError(
+                        f"Accepted replacement lacks predecessor proof at {path}"
+                    )
+                candidate_sha, current_sha, version, choice = proof
+                if (
+                    candidate_sha != hashlib.sha256(candidate).hexdigest()
+                    or current_sha != hashlib.sha256(current).hexdigest()
+                    or version != POLICY_VERSION
+                    or choice != ConflictChoice.INCOMING.value
+                ):
+                    raise PublicationError(
+                        f"Stored conflict proof no longer matches {path}"
+                    )
                 writes.append((path, candidate, current))
                 continue
             proof = decisions.get(identity)
@@ -1158,6 +1174,31 @@ class PublicationSession:
             ):
                 receipts[path] = (fingerprint, _semantic_digest(record))
         return writes, receipts
+
+    def _approved_absence(
+        self,
+        *,
+        identity: ResultIdentity,
+        candidate: bytes,
+        decisions: t.Mapping[ResultIdentity, tuple[str, str, str, str]],
+    ) -> bool:
+        """Check whether incoming bytes were approved against remote absence.
+
+        Args:
+            identity: Candidate identity.
+            candidate: Candidate bytes.
+            decisions: Stored byte-bound decisions.
+
+        Returns:
+            Whether the stored approval binds these bytes to an absent predecessor.
+        """
+        proof = decisions.get(identity)
+        return proof is not None and proof == (
+            hashlib.sha256(candidate).hexdigest(),
+            hashlib.sha256(b"").hexdigest(),
+            POLICY_VERSION,
+            ConflictChoice.INCOMING.value,
+        )
 
     def _validate_current_record(
         self, current_record: dict[str, object], path: str, identity: ResultIdentity
