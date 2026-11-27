@@ -272,11 +272,23 @@ def _harvest_results(issues: list[dict]) -> list[tuple[int, list[str]]]:
     logger.info(f"Snapshot: {len(snapshot_issue_numbers)} issue(s) to process.")
 
     harvested: list[tuple[int, list[str]]] = []
+    downloaded_models: dict[str, list[str] | None] = {}
     with tempfile.TemporaryDirectory(prefix="euroeval-harvest-") as scratch:
         scratch_dir = Path(scratch)
         for issue in issues:
             number = issue["number"]
-            lines = find_results_for_issue(issue=issue, destination=scratch_dir)
+            model_id = extract_model_id(
+                title=issue.get("title") or "", body=issue.get("body")
+            )
+            cache_key = sanitise_model_dir_name(model_id) if model_id else ""
+            if not cache_key:
+                lines = find_results_for_issue(issue=issue, destination=scratch_dir)
+            else:
+                if cache_key not in downloaded_models:
+                    downloaded_models[cache_key] = find_results_for_issue(
+                        issue=issue, destination=scratch_dir
+                    )
+                lines = downloaded_models[cache_key]
             if not lines:
                 logger.info(f"#{number}: no results in bucket yet -- skipping.")
                 continue
@@ -319,7 +331,9 @@ def find_results_for_issue(
         api = HfApi()
         # List all files in the model's directory
         all_files = list(
-            api.list_bucket_tree(bucket_id=HF_RESULTS_BUCKET, recursive=True)
+            api.list_bucket_tree(
+                bucket_id=HF_RESULTS_BUCKET, prefix=model_dir, recursive=True
+            )
         )
         model_files = [
             f
