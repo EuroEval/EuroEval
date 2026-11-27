@@ -428,9 +428,15 @@ def verify_volunteer_marker(issue_number: int, marker: VolunteerMarker) -> bool:
         Whether the signature matches the deployed format and configured secret.
     """
     signature = marker.get("signature")
-    return bool(signature) and hmac.compare_digest(
-        sign_volunteer_marker(issue_number=issue_number, marker=marker)["signature"],
-        signature,
+    return (
+        bool(signature)
+        and signature.isascii()
+        and hmac.compare_digest(
+            sign_volunteer_marker(issue_number=issue_number, marker=marker)[
+                "signature"
+            ],
+            signature,
+        )
     )
 
 

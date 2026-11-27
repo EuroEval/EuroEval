@@ -63,6 +63,9 @@ def test_persisted_typescript_signature_vector(monkeypatch: pytest.MonkeyPatch) 
     assert verify_volunteer_marker(issue_number=42, marker=signed)
     assert not verify_volunteer_marker(issue_number=43, marker=signed)
     assert not verify_volunteer_marker(
+        issue_number=42, marker={**signed, "signature": "malformed-\u00e9"}
+    )
+    assert not verify_volunteer_marker(
         issue_number=42, marker={**signed, "coordinator": "someone-else"}
     )
 
