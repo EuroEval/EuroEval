@@ -968,16 +968,20 @@ class TestValSuffixMetadataLookup:
 
         assert result is True
 
+    @patch("leaderboards.model_metadata.HfApi")
     @patch("leaderboards.model_metadata.input")
     def test_is_trained_from_scratch_does_not_use_hyphen_prefix_cache(
-        self, mock_input: MagicMock
+        self, mock_input: MagicMock, mock_api: MagicMock
     ) -> None:
         """A sibling model prefix must not suppress the manual prompt.
 
         Args:
             mock_input:
                 Mock input supplied to the test.
+            mock_api:
+                Hub adapter returning a model without declared lineage.
         """
+        mock_api.return_value.model_info.return_value.card_data = None
         cache = Cache()
         cache.open["openeurollm/oellm-9b-128k-theta32m-v3"] = True
         cache.trained_from_scratch["openeurollm/oellm-1b"] = False
