@@ -659,6 +659,33 @@ def test_missing_reviewer_login_stops_opted_in_review(
     command.assert_not_called()
 
 
+def test_pending_lines_accept_mixed_optional_identity_flags(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Staged records with absent and boolean identity flags remain sortable."""
+    staging = tmp_path / "staging.jsonl"
+    first = _ranked_collector_record()
+    second = json.loads(json.dumps(first))
+    second["model_info"]["id"] = "other/model"
+    second["trained_from_scratch"] = True
+    first["trained_from_scratch"] = None
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", tmp_path / "results")
+    monkeypatch.setattr(
+        collect_evaluation_results, "_upload_to_bucket", lambda **_kwargs: True
+    )
+    monkeypatch.setattr(
+        canonical_publication.CanonicalPublisher,
+        "prepare",
+        lambda self, records, sources, **kwargs: None,
+    )
+    monkeypatch.setattr(collect_evaluation_results, "HfApi", FakeHfApi)
+
+    assert collect_evaluation_results.upload_results_to_hf(
+        new_results_path=staging, pending_lines=[json.dumps(first), json.dumps(second)]
+    )
+    assert len(staging.read_text(encoding="utf-8").splitlines()) == 2
+
+
 @pytest.mark.parametrize("answer", ["", "n", "no"])
 def test_preflight_default_or_no_continues_without_approval(
     monkeypatch: pytest.MonkeyPatch, answer: str, caplog: pytest.LogCaptureFixture
