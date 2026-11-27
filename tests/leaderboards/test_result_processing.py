@@ -824,6 +824,123 @@ def test_configure_canary_filter_when_processing_is_skipped() -> None:
     load.cache_clear.assert_called_once_with()
 
 
+@pytest.mark.parametrize("answer", ["current", "incoming"])
+def test_generation_reviews_all_datasets_once_per_model(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, answer: str
+) -> None:
+    """Generation previews three examples but resolves every dataset per model."""
+    records: list[dict] = []
+    for model in ("org/first", "org/second"):
+        for index in range(5):
+            for score in (0.2, 0.8):
+                records.append(
+                    {
+                        "model_info": {"id": model, "name": model},
+                        "eval_library": {
+                            "name": "euroeval",
+                            "version": "1.0.0",
+                            "additional_details": {
+                                "dataset": f"task{index}",
+                                "few_shot": False,
+                                "validation_split": False,
+                            },
+                        },
+                        "evaluation_results": [{"score": score}],
+                    }
+                )
+    answers = iter([answer, "current"])
+    prompts: list[str] = []
+    output: list[str] = []
+
+    def read_answer(prompt: str) -> str:
+        """Return the selected model choice and record its visible prompt."""
+        prompts.append(prompt)
+        return next(answers)
+
+    def terminal(
+        *,
+        current: dict[str, object],
+        candidate: dict[str, object],
+        current_bytes: bytes | None = None,
+        candidate_bytes: bytes | None = None,
+        model_choices: dict[str, ConflictChoice] | None = None,
+        model_conflicts: list[tuple[dict[str, object], dict[str, object]]]
+        | None = None,
+    ) -> ConflictDecision:
+        """Run the real terminal adapter with deterministic owner input.
+
+        Args:
+            current: Stored record.
+            candidate: Incoming record.
+            current_bytes: Exact stored bytes.
+            candidate_bytes: Exact incoming bytes.
+            model_choices: Per-model choices.
+            model_conflicts: Complete preview inventory.
+
+        Returns:
+            The exact-pair owner decision.
+        """
+        return resolve_result_interactively(
+            current=current,
+            candidate=candidate,
+            current_bytes=current_bytes,
+            candidate_bytes=candidate_bytes,
+            model_choices=model_choices,
+            model_conflicts=model_conflicts,
+            input_fn=read_answer,
+            output_fn=output.append,
+            interactive=True,
+        )
+
+    monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
+    monkeypatch.setattr(result_processing, "resolve_result_interactively", terminal)
+    load = MagicMock(return_value=records)
+    with (
+        patch.object(result_processing, "load_raw_results", load),
+        patch.object(
+            result_processing,
+            "process_contamination_canaries",
+            return_value=(records, [], set(), {"status": "scored"}),
+        ),
+        patch.object(Cache, "from_results_dir", return_value=Cache()),
+        patch.object(
+            result_processing,
+            "deduplicate_records",
+            side_effect=lambda records: records,
+        ),
+        patch.object(
+            result_processing, "fix_metadata", side_effect=lambda record: record
+        ),
+        patch.object(result_processing, "record_is_valid", return_value=True),
+        patch.object(
+            result_processing,
+            "add_missing_entries",
+            side_effect=lambda record, **kwargs: record,
+        ),
+    ):
+        winners = result_processing.process_results(
+            min_version="0.0.0",
+            min_number_of_model_records=0,
+            banned_versions=[],
+            banned_model_patterns=[],
+            api_model_patterns=[],
+            trained_from_scratch_patterns=[],
+            conflict_resolver=terminal,
+        )
+    assert len(prompts) == 2
+    assert len(winners) == 10
+    for record in winners:
+        expected = (
+            0.8
+            if record["model_info"]["id"] == "org/first" and answer == "incoming"
+            else 0.2
+        )
+        assert record["evaluation_results"] == [{"score": expected}]
+    rendered = "\n".join(output)
+    assert "5 conflicting identities" in rendered
+    assert "task2" in rendered and "task3" not in rendered and "task4" not in rendered
+
+
 def test_process_results_clears_cache_after_upload(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
