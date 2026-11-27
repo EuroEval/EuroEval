@@ -1217,6 +1217,29 @@ def _process_new_results(
     )
     logger.info(f"Processing {len(new_lines):,} new result lines...")
     merged = existing.copy()
+    unresolved_by_model: dict[
+        str, list[tuple[dict[str, object], dict[str, object]]]
+    ] = {}
+    planned = existing.copy()
+    for raw_line in new_lines:
+        if not raw_line.strip():
+            continue
+        try:
+            candidate = json.loads(raw_line)
+            identity = _extract_identity_key(candidate)
+        except json.JSONDecodeError:
+            continue
+        if identity is None or is_canary_record(candidate):
+            continue
+        current = planned.get(identity)
+        if current is not None:
+            pair = resolve_result_conflict(current=current, candidate=candidate)
+            if pair.needs_choice:
+                model_id = str(candidate.get("model_id", "unknown"))
+                unresolved_by_model.setdefault(model_id, []).append(
+                    (current, candidate)
+                )
+        planned[identity] = candidate
 
     for line_number, line in enumerate(new_lines, start=1):
         if not line.strip():
@@ -1251,6 +1274,9 @@ def _process_new_results(
                         current_bytes=current_bytes,
                         candidate_bytes=candidate_bytes,
                         model_choices=model_choices,
+                        model_conflicts=unresolved_by_model.get(
+                            str(record.get("model_id", "unknown"))
+                        ),
                     )
                     if decisions is not None:
                         decisions.append(decision)

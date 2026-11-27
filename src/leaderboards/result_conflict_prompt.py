@@ -19,6 +19,7 @@ def resolve_result_interactively(
     output_fn: c.Callable[[str], None] = click.echo,
     interactive: bool | None = None,
     model_choices: dict[str, ConflictChoice] | None = None,
+    model_conflicts: list[tuple[dict[str, object], dict[str, object]]] | None = None,
 ) -> ConflictDecision:
     """Apply automatic policy, prompting only for unresolved conflicts.
 
@@ -31,6 +32,7 @@ def resolve_result_interactively(
         output_fn (optional): Display function. Defaults to print.
         interactive (optional): Override terminal detection for callers/tests.
         model_choices (optional): Reuse one explicit choice per model.
+        model_conflicts (optional): All unresolved pairs for this model.
 
     Returns:
         The policy decision or explicit human choice.
@@ -66,17 +68,12 @@ def resolve_result_interactively(
     output_fn(click.style(f"┌{'─' * len(heading)}┐", fg="cyan"))
     output_fn(click.style(f"│{heading}│", fg="cyan", bold=True))
     output_fn(click.style(f"└{'─' * len(heading)}┘", fg="cyan"))
-    output_fn(f"Example dataset/identity: {decision.evidence.identity[1:]}")
-    output_fn(f"Reason: {decision.reason.value}")
-    output_fn(
-        "Evaluation timestamps: "
-        f"stored={_display(_evaluation_timestamp(current))}; "
-        f"incoming={_display(_evaluation_timestamp(candidate))}"
-    )
-    for difference in decision.differences:
+    conflicts = model_conflicts or [(current, candidate)]
+    output_fn(f"Unresolved conflicts for this model: {len(conflicts)}")
+    for stored, incoming in conflicts[:3]:
         output_fn(
-            f"{difference.field}: stored={_display(difference.current)}; "
-            f"incoming={_display(difference.candidate)}"
+            f"{_conflict_identity(stored, incoming)} | "
+            f"current: {_summary(stored)} | incoming: {_summary(incoming)}"
         )
     while True:
         try:
@@ -106,6 +103,26 @@ def resolve_result_interactively(
         candidate_bytes=candidate_bytes,
         choice=selected,
     )
+
+
+def _conflict_identity(current: dict[str, object], candidate: dict[str, object]) -> str:
+    """Return a concise identity label for a conflicting result pair."""
+    return str(candidate.get("dataset", current.get("dataset", "unknown")))
+
+
+def _summary(record: dict[str, object]) -> str:
+    """Summarise comparison fields without exposing the result payload.
+
+    Args:
+        record: Result record to summarise.
+
+    Returns:
+        A concise timestamp, engine and score summary.
+    """
+    timestamp = _display(_evaluation_timestamp(record))
+    engine = _display(record.get("engine", record.get("model_type", "?")))
+    score = _display(record.get("score", "?"))
+    return f"time={timestamp}, engine={engine}, score={score}"
 
 
 def _display(value: object) -> str:
