@@ -547,11 +547,14 @@ def preflight_volunteer_review() -> bool:
                 continue
             render_model_review(reports=reports)
             commands = _review_model_commands(
-                reviewer=reviewer, reviewer_login=reviewer_login, reports=reports
+                reviewer=reviewer,
+                reviewer_login=reviewer_login,
+                reports=reports,
+                new_results_path=NEW_RESULTS_PATH,
             )
             completed = True
             for command in commands:
-                if run_review_command([*command, "--quiet"]):
+                if run_review_command(command):
                     logger.error(
                         "Decision failed; model group may be partly processed. "
                         "Check state before retrying."
@@ -636,7 +639,10 @@ def _log_review_commands(submission_ids: list[str]) -> None:
 
 
 def _review_model_commands(
-    reviewer: VolunteerReviewer, reviewer_login: str, reports: list[ReviewReport]
+    reviewer: VolunteerReviewer,
+    reviewer_login: str,
+    reports: list[ReviewReport],
+    new_results_path: Path,
 ) -> list[list[str]]:
     """Confirm one action for all submitted languages of a model.
 
@@ -644,6 +650,7 @@ def _review_model_commands(
         reviewer: Evidence loader; does not perform decisions here.
         reviewer_login: Verified owner making the decision.
         reports: Current validated evidence for the model group.
+        new_results_path: Configured ordinary-results staging file.
 
     Returns:
         Individually fenced terminal commands, or no commands when left pending.
@@ -742,21 +749,25 @@ def _review_model_commands(
             )
             if confirm not in {"y", "yes"}:
                 continue
-        commands = []
-        for report in selected:
-            command = ["--reviewer", reviewer_login, "approve", report.submission_id]
-            if replace:
-                command.append("--replace-existing")
-            command.extend(
-                [
-                    "--plan-fingerprint",
-                    report.plan_fingerprint,
-                    "--reason",
-                    "Reviewed during collector preflight",
-                ]
-            )
-            commands.append(command)
-        return commands
+        _append_reviewed_records(reports=selected, destination=new_results_path)
+        logger.info("Staged reviewed results for %s.", selected[0].model_id)
+        return []
+
+
+def _append_reviewed_records(reports: list[ReviewReport], destination: Path) -> None:
+    """Append reviewed ordinary records without disturbing existing staging.
+
+    Args:
+        reports: Validated reports selected for approval.
+        destination: Configured JSONL staging file.
+    """
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with destination.open("a", encoding="utf-8") as staged:
+        for report in reports:
+            for record in report.records:
+                if is_canary_record(json.loads(record.content)):
+                    continue
+                staged.write(record.content.decode("utf-8").rstrip("\\r\\n") + "\\n")
 
 
 def _reviewer_login() -> str | None:
