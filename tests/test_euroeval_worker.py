@@ -2,6 +2,7 @@
 
 import dataclasses
 import email.message
+import functools
 import http.client
 import importlib.metadata
 import io
@@ -150,6 +151,10 @@ def _fake_metal_host(
         return type("Completed", (), {"stdout": cap_stdout})()
 
     monkeypatch.setattr(hardware.subprocess, "run", fake_run)
+    # A fresh probe cache per test, restored afterwards.
+    monkeypatch.setattr(
+        hardware, "_probe_metal", functools.cache(hardware._probe_metal.__wrapped__)
+    )
 
     def runner(command: list[str]) -> str:
         """Answer the macOS commands used for discovery.
@@ -2157,6 +2162,28 @@ VM_STAT = (
 )
 
 
+def test_apple_silicon_probes_the_gpu_once_per_process(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Run the GPU probe subprocess once, but re-read available memory each time.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
+    calls = _fake_metal_host(
+        monkeypatch=monkeypatch,
+        cap_stdout=_metal_probe(cap=55_662_788_608),
+        vm_stat=VM_STAT,
+    )
+    discover_hardware(state_dir=tmp_path)
+    discover_hardware(state_dir=tmp_path)
+    assert len(calls["subprocess"]) == 1
+    assert sum(command[0] == "vm_stat" for command in calls["commands"]) == 2
+
+
 @pytest.mark.parametrize(
     ("variable", "value", "refused"),
     [
@@ -2176,6 +2203,9 @@ def test_apple_silicon_refuses_when_vllm_is_steered_to_the_cpu(
 ) -> None:
     """Refuse to claim when an environment variable makes vLLM select the CPU.
 
+    The variable is set after a successful discovery, so the check must not depend on
+    the cached GPU probe.
+
     Args:
         monkeypatch:
             Pytest fixture for replacing dependencies during the test.
@@ -2193,6 +2223,7 @@ def test_apple_silicon_refuses_when_vllm_is_steered_to_the_cpu(
         cap_stdout=_metal_probe(cap=55_662_788_608),
         vm_stat=VM_STAT,
     )
+    assert discover_hardware(state_dir=tmp_path).selected_gpu_uuid == METAL_GPU_UUID
     monkeypatch.setenv(variable, value)
     if refused:
         with pytest.raises(NoGpuError, match=f"{variable}"):
@@ -2239,6 +2270,32 @@ def test_apple_silicon_reports_metal_gpu_with_unified_memory_budget(
     timeout = options["timeout"]
     assert isinstance(timeout, (int, float))
     assert timeout > 0
+
+
+def test_apple_silicon_retries_a_failed_gpu_probe(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Probe again after a failed probe instead of remembering the failure.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
+    cap = 55_662_788_608
+    _fake_metal_host(monkeypatch=monkeypatch, cap_stdout="not json", vm_stat=VM_STAT)
+    with pytest.raises(NoGpuError, match="could not probe the Apple GPU"):
+        discover_hardware(state_dir=tmp_path)
+    monkeypatch.setattr(
+        hardware.subprocess,
+        "run",
+        lambda command, **kwargs: type(
+            "Completed", (), {"stdout": _metal_probe(cap=cap)}
+        )(),
+    )
+    (gpu,) = discover_hardware(state_dir=tmp_path).gpus
+    assert gpu.total_memory_bytes == cap
 
 
 @pytest.mark.parametrize(

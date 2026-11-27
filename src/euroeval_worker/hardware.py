@@ -2,6 +2,7 @@
 
 import collections.abc as c
 import dataclasses
+import functools
 import importlib.metadata
 import json
 import logging
@@ -11,6 +12,7 @@ import re
 import shutil
 import subprocess
 import sys
+import typing as t
 from pathlib import Path
 
 from .types import Gpu, HardwareReport
@@ -398,7 +400,9 @@ def discover_metal_gpu(runner: c.Callable[[list[str]], str] | None = None) -> Gp
     platform only when vllm-metal's ``metal`` plugin is registered and MLX can use
     Metal, and Transformers (encoder models) needs PyTorch's MPS backend. The plugin
     check reads entry-point metadata and does not load the plugin. The checks run in a
-    subprocess so that MLX and PyTorch are never initialised in the worker.
+    subprocess so that MLX and PyTorch are never initialised in the worker. That
+    subprocess runs once per worker process, because its results cannot change while
+    the worker runs; available memory and the vLLM environment are checked every time.
 
     Args:
         runner (optional):
@@ -413,39 +417,13 @@ def discover_metal_gpu(runner: c.Callable[[list[str]], str] | None = None) -> Gp
             verified.
     """
     run = runner or _run
-    script = (
-        "import importlib.metadata as m, json, mlx.core as mx, torch; "
-        "plugins = m.entry_points(group='vllm.platform_plugins'); "
-        "print(json.dumps({"
-        "'cap': int(mx.device_info()['max_recommended_working_set_size']), "
-        "'metal': bool(mx.metal.is_available()), "
-        "'vllm_metal_plugin': any(p.name == 'metal' for p in plugins), "
-        "'mps': bool(torch.backends.mps.is_available())}))"
-    )
-    try:
-        result = subprocess.run(
-            [sys.executable, "-c", script],
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=60,
-        )
-        probe = json.loads(result.stdout)
-        cap = int(probe["cap"])
-        backends = {
-            key: bool(probe[key]) for key in ("metal", "vllm_metal_plugin", "mps")
-        }
-    except (
-        OSError,
-        subprocess.SubprocessError,
-        ValueError,
-        KeyError,
-        TypeError,
-    ) as error:
-        raise NoGpuError(
-            "could not probe the Apple GPU's Metal working-set limit and backends; "
-            "run `make install` so that vllm-metal, MLX and PyTorch are installed"
-        ) from error
+    probe = _probe_metal()
+    cap = probe.cap
+    backends = {
+        "metal": probe.metal,
+        "vllm_metal_plugin": probe.vllm_metal_plugin,
+        "mps": probe.mps,
+    }
     if not backends["metal"]:
         raise NoGpuError(
             "MLX cannot use the Apple GPU, so evaluation would run on the CPU"
@@ -491,6 +469,65 @@ def discover_metal_gpu(runner: c.Callable[[list[str]], str] | None = None) -> Gp
         compute_capability=None,
         index=0,
     )
+
+
+class _MetalProbe(t.NamedTuple):
+    """Static Apple GPU facts read by the probe subprocess."""
+
+    cap: int
+    metal: bool
+    vllm_metal_plugin: bool
+    mps: bool
+
+
+@functools.cache
+def _probe_metal() -> _MetalProbe:
+    """Read MLX's working-set limit and the GPU backends, once per process.
+
+    Only a successful probe is cached; a failed one is retried on the next call.
+
+    Returns:
+        The working-set limit and whether each GPU backend is available.
+
+    Raises:
+        NoGpuError:
+            If the probe subprocess fails or prints unexpected output.
+    """
+    script = (
+        "import importlib.metadata as m, json, mlx.core as mx, torch; "
+        "plugins = m.entry_points(group='vllm.platform_plugins'); "
+        "print(json.dumps({"
+        "'cap': int(mx.device_info()['max_recommended_working_set_size']), "
+        "'metal': bool(mx.metal.is_available()), "
+        "'vllm_metal_plugin': any(p.name == 'metal' for p in plugins), "
+        "'mps': bool(torch.backends.mps.is_available())}))"
+    )
+    try:
+        result = subprocess.run(
+            [sys.executable, "-c", script],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        probe = json.loads(result.stdout)
+        return _MetalProbe(
+            cap=int(probe["cap"]),
+            metal=bool(probe["metal"]),
+            vllm_metal_plugin=bool(probe["vllm_metal_plugin"]),
+            mps=bool(probe["mps"]),
+        )
+    except (
+        OSError,
+        subprocess.SubprocessError,
+        ValueError,
+        KeyError,
+        TypeError,
+    ) as error:
+        raise NoGpuError(
+            "could not probe the Apple GPU's Metal working-set limit and backends; "
+            "run `make install` so that vllm-metal, MLX and PyTorch are installed"
+        ) from error
 
 
 def select_gpu(gpus: c.Iterable[Gpu]) -> Gpu:
