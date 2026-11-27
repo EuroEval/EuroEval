@@ -1,5 +1,6 @@
 """Shared request and client dependencies for the native API."""
 
+import asyncio
 import os
 import typing as t
 
@@ -9,7 +10,65 @@ from pydantic_core import from_json
 from starlette.requests import ClientDisconnect
 from upstash_redis.asyncio import Redis
 
-PROTOCOL_VERSION = "volunteer-worker/v1"
+from euroeval_worker import PROTOCOL_VERSION
+
+
+async def fetch_with_retry(
+    http: httpx.AsyncClient,
+    url: str,
+    method: str = "GET",
+    *,
+    headers: dict[str, str] | None = None,
+    body: object | None = None,
+) -> httpx.Response:
+    """Replay safe reads, but never repeat an ambiguous credential or issue write.
+
+    Args:
+        http:
+            Shared outbound connection pool.
+        url:
+            Provider endpoint.
+        method (optional):
+            HTTP method, defaulting to GET.
+        headers (optional):
+            Provider headers, defaulting to none.
+        body (optional):
+            JSON body, defaulting to none.
+
+    Returns:
+        Final provider response.
+
+    Raises:
+        httpx.TransportError:
+            If the final safe request attempt fails at the transport.
+    """
+    method = method.upper()
+    if method not in {"GET", "HEAD", "OPTIONS"}:
+        return await http.request(method=method, url=url, headers=headers, json=body)
+    response = None
+    for attempt in range(3):
+        try:
+            response = await http.request(
+                method=method, url=url, headers=headers, json=body
+            )
+        except httpx.TransportError:
+            if attempt == 2:
+                raise
+            await asyncio.sleep(0.1 * (attempt + 1))
+            continue
+        if (
+            response.status_code not in {408, 425, 429, 500, 502, 503, 504}
+            or attempt == 2
+        ):
+            return response
+        retry_after = response.headers.get("retry-after", "")
+        seconds = (
+            min(30, float(retry_after))
+            if retry_after.isascii() and retry_after.isdecimal()
+            else 0
+        )
+        await asyncio.sleep(max(0.1 * (attempt + 1), seconds))
+    return t.cast(httpx.Response, response)
 
 
 def get_http(request: Request) -> httpx.AsyncClient:
