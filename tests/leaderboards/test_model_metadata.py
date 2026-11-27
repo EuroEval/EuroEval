@@ -815,6 +815,23 @@ class TestValSuffixMetadataLookup:
 
         assert result is True
 
+    @patch("leaderboards.model_metadata.HfApi")
+    def test_declared_base_model_infers_fine_tuned_without_prompt(
+        self, mock_hf_api_class: MagicMock
+    ) -> None:
+        """Infer fine-tuning from Hugging Face card lineage."""
+        api = mock_hf_api_class.return_value
+        api.model_info.return_value.card_data.base_model = "Qwen/Qwen3.5-0.8B"
+        cache = Cache()
+        record = _record(model_name="kurakurai/Luth-2-0.8B")
+
+        result = is_trained_from_scratch(
+            record=record, trained_from_scratch_patterns=[], cache=cache
+        )
+
+        assert result is False
+        assert cache.trained_from_scratch["kurakurai/Luth-2-0.8B"] is False
+
     def test_is_commercially_licensed_uses_base_model_cache(self) -> None:
         """A model with (val) suffix should use cached metadata from base model.
 
@@ -1026,6 +1043,23 @@ class TestValSuffixMetadataLookup:
         mock_api.model_info.assert_called_once_with(
             repo_id="microsoft/Phi-3-mini-4k-instruct"
         )
+
+    @patch("leaderboards.model_metadata.HfApi")
+    @patch("builtins.input", return_value="n")
+    def test_missing_base_model_still_prompts(
+        self, mock_input: MagicMock, mock_hf_api_class: MagicMock
+    ) -> None:
+        """Keep prompting when the model card declares no lineage."""
+        mock_hf_api_class.return_value.model_info.return_value.card_data.base_model = (
+            None
+        )
+        result = is_trained_from_scratch(
+            record=_record(model_name="org/model"),
+            trained_from_scratch_patterns=[],
+            cache=Cache(),
+        )
+        assert result is False
+        mock_input.assert_called_once()
 
 
 @patch("leaderboards.model_metadata.get_model_release_date")
