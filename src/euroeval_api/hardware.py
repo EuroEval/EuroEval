@@ -110,3 +110,79 @@ def _safe_index(value: object) -> bool:
         and not isinstance(value, bool)
         and 0 <= value <= 2**53 - 1
     )
+
+
+def valid_hardware(value: object) -> bool:
+    """Validate worker hardware before accepting an evaluation claim.
+
+    Args:
+        value:
+            Untrusted hardware value to validate.
+
+    Returns:
+        Whether the value has valid hardware fields and a matching GPU selection.
+    """
+    if not isinstance(value, dict):
+        return False
+
+    utilisation = value.get("gpu_memory_utilisation")
+    architecture = value.get("architecture")
+    free_disk = value.get("free_disk_bytes")
+    selected_index = value.get("selected_gpu_index")
+    selected_uuid = value.get("selected_gpu_uuid")
+    gpus = value.get("gpus")
+    if (
+        not _finite_number(utilisation)
+        or not 0 < utilisation <= 1
+        or not isinstance(architecture, str)
+        or not architecture.strip()
+        or not _safe_claim_integer(free_disk)
+        or not _safe_claim_integer(selected_index)
+        or not isinstance(selected_uuid, str)
+        or not selected_uuid
+        or not isinstance(gpus, list)
+        or not gpus
+    ):
+        return False
+
+    for gpu in gpus:
+        if not isinstance(gpu, dict):
+            return False
+        free_memory = gpu.get("free_memory_bytes")
+        total_memory = gpu.get("total_memory_bytes")
+        if (
+            not isinstance(gpu.get("name"), str)
+            or not isinstance(gpu.get("uuid"), str)
+            or not _safe_claim_integer(free_memory)
+            or not _safe_claim_integer(total_memory, minimum=1)
+            or t.cast(int | float, free_memory) > t.cast(int | float, total_memory)
+            or ("index" in gpu and not _safe_claim_integer(gpu["index"]))
+        ):
+            return False
+
+    return selected_gpu(value) is not None
+
+
+def _safe_claim_integer(value: object, minimum: int = 0) -> bool:
+    """Return whether a value is a safe integral number at least the minimum.
+
+    Args:
+        value:
+            Value to check.
+        minimum:
+            Inclusive lower bound.
+
+    Returns:
+        Whether the value is a JavaScript-safe integer.
+    """
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+        and minimum <= value <= 2**53 - 1
+        and value.is_integer()
+        if isinstance(value, float)
+        else isinstance(value, int)
+        and not isinstance(value, bool)
+        and minimum <= value <= 2**53 - 1
+    )
