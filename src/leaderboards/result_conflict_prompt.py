@@ -1,12 +1,13 @@
 """Terminal adapter for conflicts that require an explicit result owner choice."""
 
 import collections.abc as c
+import os
 import sys
 
 import click
 
 from .result_conflicts import ConflictChoice, ConflictDecision, resolve_result_conflict
-from .result_identity import UnresolvedResultConflictError
+from .result_identity import UnresolvedResultConflictError, identity_from_eee_record
 
 
 def resolve_result_interactively(
@@ -48,7 +49,7 @@ def resolve_result_interactively(
     )
     if not decision.needs_choice:
         return decision
-    model_id = str(current.get("model_id", candidate.get("model_id", "unknown")))
+    model_id = identity_from_eee_record(record=current)[0]
     if model_choices is not None and model_id in model_choices:
         return resolve_result_conflict(
             current=current,
@@ -65,16 +66,20 @@ def resolve_result_interactively(
         )
 
     heading = f" Result conflicts for {model_id} "
-    output_fn(click.style(f"┌{'─' * len(heading)}┐", fg="cyan"))
-    output_fn(click.style(f"│{heading}│", fg="cyan", bold=True))
-    output_fn(click.style(f"└{'─' * len(heading)}┘", fg="cyan"))
     conflicts = model_conflicts or [(current, candidate)]
-    output_fn(f"Unresolved conflicts for this model: {len(conflicts)}")
+    colour = _colour_enabled()
+    lines = [
+        f"┌{'─' * len(heading)}┐",
+        f"│{heading}│",
+        f"└{'─' * len(heading)}┘",
+        f"Unresolved conflicting identities for this model: {len(conflicts)}",
+    ]
     for stored, incoming in conflicts[:3]:
-        output_fn(
-            f"{_conflict_identity(stored, incoming)} | "
-            f"current: {_summary(stored)} | incoming: {_summary(incoming)}"
-        )
+        lines.extend(_preview_box(stored=stored, incoming=incoming))
+    if len(conflicts) > 3:
+        lines.append(f"... and {len(conflicts) - 3} more conflicts")
+    for line in lines:
+        output_fn(click.style(line, fg="cyan") if colour else line)
     while True:
         try:
             choice = input_fn(
@@ -105,9 +110,36 @@ def resolve_result_interactively(
     )
 
 
-def _conflict_identity(current: dict[str, object], candidate: dict[str, object]) -> str:
-    """Return a concise identity label for a conflicting result pair."""
-    return str(candidate.get("dataset", current.get("dataset", "unknown")))
+def _colour_enabled() -> bool:
+    """Return whether terminal colour is enabled by the environment and Click."""
+    if "NO_COLOR" in os.environ:
+        return False
+    context = click.get_current_context(silent=True)
+    return context is None or context.color is not False
+
+
+def _preview_box(
+    *, stored: dict[str, object], incoming: dict[str, object]
+) -> list[str]:
+    """Format one compact comparison box for a conflicting identity.
+
+    Args:
+        stored: Existing result record.
+        incoming: Candidate result record.
+
+    Returns:
+        Lines forming a bounded comparison box.
+    """
+    identity = identity_from_eee_record(record=incoming)
+    label = f"{identity[1]} | validation={identity[2]} | few-shot={identity[3]}"
+    width = min(max(len(label), 48), 100)
+    return [
+        f"┌{'─' * width}┐",
+        f"│ {label[: width - 2]:<{width - 2}} │",
+        f"│ stored:   {_summary(stored)[: width - 13]:<{width - 13}} │",
+        f"│ incoming: {_summary(incoming)[: width - 13]:<{width - 13}} │",
+        f"└{'─' * width}┘",
+    ]
 
 
 def _summary(record: dict[str, object]) -> str:
@@ -119,10 +151,16 @@ def _summary(record: dict[str, object]) -> str:
     Returns:
         A concise timestamp, engine and score summary.
     """
+    model_info = record.get("model_info", {})
+    details = record.get("eval_library", {}).get("additional_details", {})
     timestamp = _display(_evaluation_timestamp(record))
-    engine = _display(record.get("engine", record.get("model_type", "?")))
-    score = _display(record.get("score", "?"))
-    return f"time={timestamp}, engine={engine}, score={score}"
+    name = _display(model_info.get("name", model_info.get("id", "?")))
+    flags = ", ".join(
+        f"{key}={_display(record.get(key, '?'))}"
+        for key in ("open", "commercially_licensed", "trained_from_scratch")
+    )
+    scores = record.get("get_total_scores", details.get("get_total_scores", "?"))
+    return f"{name}; {flags}; time={timestamp}; totals={_display(scores)}"
 
 
 def _display(value: object) -> str:

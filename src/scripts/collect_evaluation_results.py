@@ -1249,10 +1249,13 @@ def _process_new_results(
         if current is not None:
             pair = resolve_result_conflict(current=current, candidate=candidate)
             if pair.needs_choice:
-                model_id = str(candidate.get("model_id", "unknown"))
-                unresolved_by_model.setdefault(model_id, []).append(
-                    (current, candidate)
-                )
+                model_id = identity[0]
+                conflicts = unresolved_by_model.setdefault(model_id, [])
+                if all(
+                    _extract_identity_key(existing_candidate) != identity
+                    for _, existing_candidate in conflicts
+                ):
+                    conflicts.append((current, candidate))
         planned[identity] = candidate
 
     for line_number, line in enumerate(new_lines, start=1):
@@ -1288,9 +1291,7 @@ def _process_new_results(
                         current_bytes=current_bytes,
                         candidate_bytes=candidate_bytes,
                         model_choices=model_choices,
-                        model_conflicts=unresolved_by_model.get(
-                            str(record.get("model_id", "unknown"))
-                        ),
+                        model_conflicts=unresolved_by_model.get(identity[0]),
                     )
                     if decisions is not None:
                         decisions.append(decision)
