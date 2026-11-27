@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import hashlib
 import hmac
 import json
@@ -89,7 +90,7 @@ class Runtime:
         await self.redis("DEL", key)
 
     async def redis(self, command: str, *args: str) -> object:
-        """Execute one authenticated Redis REST command.
+        """Execute a Redis REST command with the existing bounded retries.
 
         Args:
             command:
@@ -98,27 +99,41 @@ class Runtime:
                 Redis command arguments.
 
         Returns:
-            The requested protocol value or operation result.
+            The command result returned by Redis.
 
         Raises:
             BrokerError:
-                If the request fails or its protocol requirements are not met.
+                If Redis rejects the command or remains unavailable.
+            httpx.HTTPError:
+                If transport attempts fail.
+            ValueError:
+                If Redis returns malformed JSON.
         """
-        response = await self.fetch(
-            "POST",
-            self.value("UPSTASH_REDIS_REST_URL"),
-            headers={
-                "authorization": f"Bearer {self.value('UPSTASH_REDIS_REST_TOKEN')}",
-                "content-type": "application/json",
-            },
-            json=[command, *args],
-        )
-        if response.status_code >= 400:
-            raise BrokerError(503, f"Upstash returned HTTP {response.status_code}.")
-        payload = response.json()
-        if payload.get("error"):
-            raise BrokerError(503, f"Upstash error: {payload['error']}")
-        return payload.get("result")
+        for attempt in range(3):
+            try:
+                token = self.value("UPSTASH_REDIS_REST_TOKEN")
+                response = await self.fetch(
+                    "POST",
+                    self.value("UPSTASH_REDIS_REST_URL"),
+                    headers={
+                        "authorization": f"Bearer {token}",
+                        "content-type": "application/json",
+                    },
+                    json=[command, *args],
+                )
+                if response.status_code >= 400:
+                    raise BrokerError(
+                        503, f"Upstash returned HTTP {response.status_code}."
+                    )
+                payload = response.json()
+                if payload.get("error"):
+                    raise BrokerError(503, f"Upstash error: {payload['error']}")
+                return payload.get("result")
+            except (httpx.HTTPError, ValueError, BrokerError):
+                if attempt == 2:
+                    raise
+                await asyncio.sleep(0.1 * (attempt + 1))
+        raise BrokerError(503, "Upstash request failed.")
 
     async def fetch(
         self,
@@ -269,6 +284,20 @@ class ConfigurationError(RuntimeError):
     """Required runtime configuration is unavailable."""
 
 
+def _reject_json_constant(value: str) -> None:
+    """Reject numeric tokens excluded by the JSON protocol.
+
+    Args:
+        value:
+            Non-finite numeric token encountered by the decoder.
+
+    Raises:
+        ValueError:
+            Always, because JavaScript JSON.parse rejects these tokens.
+    """
+    raise ValueError(f"Invalid JSON number: {value}")
+
+
 def canonical_json(value: object) -> str:
     """Serialise protocol evidence with JavaScript-compatible canonical JSON.
 
@@ -307,7 +336,8 @@ def hmac_digest(secret: str, value: str) -> str:
     Returns:
         The requested protocol value or operation result.
     """
-    return hmac.new(secret.encode(), value.encode(), hashlib.sha256).hexdigest()
+    signature = hmac.new(secret.encode(), value.encode(), hashlib.sha256).digest()
+    return base64.b64encode(signature).decode("ascii")
 
 
 def json_response(
@@ -378,7 +408,7 @@ async def read_json(request: Request, limit: int) -> dict[str, object]:
     if len(raw) > limit:
         raise BrokerError(413, "Request body is too large.")
     try:
-        body = json.loads(raw)
+        body = json.loads(raw, parse_constant=_reject_json_constant)
     except (ValueError, UnicodeDecodeError) as error:
         raise BrokerError(400, "Invalid JSON.") from error
     if not isinstance(body, dict):
