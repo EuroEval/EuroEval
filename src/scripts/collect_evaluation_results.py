@@ -1051,7 +1051,7 @@ def upload_results_to_hf(
                 staged_identities.add(identity)
         staged = [
             json.dumps(existing[identity], separators=(",", ":"))
-            for identity in sorted(staged_identities)
+            for identity in sorted(staged_identities, key=repr)
             if identity in existing and not is_canary_record(existing[identity])
         ]
         new_results_path.write_text(
