@@ -23,6 +23,7 @@ from .dependencies import get_redis as get_redis
 from .dependencies import read_json as read_json
 from .dependencies import require_env as require_env
 from .dependencies import require_protocol as require_protocol
+from .release import router as release_router
 
 
 class _Transport:
@@ -285,6 +286,7 @@ def create_app(
     application.add_api_route(
         "/evaluated-models.json", _evaluated_index, methods=["GET"]
     )
+    application.include_router(release_router)
     return application
 
 
