@@ -57,7 +57,6 @@ from tqdm.auto import tqdm
 
 from euroeval_worker.review import (
     PublicStagingError,
-    ReviewError,
     ReviewReport,
     VolunteerReviewer,
     reviewer_from_environment,
@@ -644,20 +643,27 @@ def _review_model_commands(
     reports: list[ReviewReport],
     new_results_path: Path,
 ) -> list[list[str]]:
-    """Confirm one action for all submitted languages of a model.
+    """Confirm an action for all submitted languages of a model.
+
+    Approved records are staged from the already-loaded reports. Rejections return
+    individually fenced commands for explicit, reasoned maintainer decisions.
 
     Args:
-        reviewer: Evidence loader; does not perform decisions here.
-        reviewer_login: Verified owner making the decision.
-        reports: Current validated evidence for the model group.
-        new_results_path: Configured ordinary-results staging file.
+        reviewer:
+            Evidence loader for displaying additional details.
+        reviewer_login:
+            Verified owner making a rejection decision.
+        reports:
+            Validated evidence loaded for the model group.
+        new_results_path:
+            Configured ordinary-results staging file.
 
     Returns:
-        Individually fenced terminal commands, or no commands when left pending.
+        Rejection commands, or no commands when approved, skipped, or pending.
 
     Raises:
-        KeyboardInterrupt: If review stops.
-        ReviewError: If evidence changes before confirmation.
+        KeyboardInterrupt:
+            If the operator stops review.
     """
     while True:
         action = (
@@ -708,49 +714,8 @@ def _review_model_commands(
         if action not in {"a", "approve", "y", "yes"}:
             logger.info("Choose approve, reject, details, skip, or stop.")
             continue
-        selected: list[ReviewReport] = []
-        replace = any(
-            o.conflict or o.replacement
-            for r in reports
-            for o in r.canonical_observations
-        )
-        for report in reports:
-            current = (
-                reviewer.show(submission_id=report.submission_id, replace_existing=True)
-                if replace
-                else report
-            )
-            if [(r.canonical_path, r.digest) for r in current.records] != [
-                (r.canonical_path, r.digest) for r in report.records
-            ] or [
-                (o.canonical_path, o.predecessor_digest)
-                for o in current.canonical_observations
-            ] != [
-                (o.canonical_path, o.predecessor_digest)
-                for o in report.canonical_observations
-            ]:
-                raise ReviewError("Results changed; inspect model details again")
-            selected.append(current)
-        if any(o.conflict for r in selected for o in r.canonical_observations):
-            logger.error("Stored data needs repair; inspect Details before approval.")
-            continue
-        if replace:
-            count = sum(
-                o.replacement for r in selected for o in r.canonical_observations
-            )
-            confirm = (
-                input(
-                    f"Approve ALL {len(selected)} language submissions, "
-                    f"replacing {count} "
-                    "stored results (originals archived)? [y/N]: "
-                )
-                .strip()
-                .lower()
-            )
-            if confirm not in {"y", "yes"}:
-                continue
-        _append_reviewed_records(reports=selected, destination=new_results_path)
-        logger.info("Staged reviewed results for %s.", selected[0].model_id)
+        _append_reviewed_records(reports=reports, destination=new_results_path)
+        logger.info("Staged reviewed results for %s.", reports[0].model_id)
         return []
 
 
@@ -762,12 +727,22 @@ def _append_reviewed_records(reports: list[ReviewReport], destination: Path) -> 
         destination: Configured JSONL staging file.
     """
     destination.parent.mkdir(parents=True, exist_ok=True)
+    if destination.exists() and destination.stat().st_size:
+        with destination.open("rb") as existing:
+            existing.seek(-1, os.SEEK_END)
+            needs_separator = existing.read(1) not in {b"\n", b"\r"}
+    else:
+        needs_separator = False
     with destination.open("a", encoding="utf-8") as staged:
+        if needs_separator:
+            staged.write("\n")
         for report in reports:
             for record in report.records:
                 if is_canary_record(json.loads(record.content)):
                     continue
-                staged.write(record.content.decode("utf-8").rstrip("\\r\\n") + "\\n")
+                staged.write(
+                    json.dumps(json.loads(record.content), separators=(",", ":")) + "\n"
+                )
 
 
 def _reviewer_login() -> str | None:
