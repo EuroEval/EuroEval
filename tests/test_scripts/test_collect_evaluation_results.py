@@ -1133,6 +1133,13 @@ def test_preview_in_dev_server_handles_early_exit(
         caplog:
             Fixture for capturing log records during the test.
     """
+    listener = Mock()
+    listener.__enter__ = Mock(return_value=listener)
+    listener.__exit__ = Mock(return_value=False)
+    listener.getsockname.return_value = ("127.0.0.1", 5174)
+    monkeypatch.setattr(
+        collect_evaluation_results.socket, "socket", Mock(return_value=listener)
+    )
     process = FakeDevProcess(return_code=1)
 
     monkeypatch.setattr(
@@ -1211,6 +1218,13 @@ def test_preview_in_dev_server_starts_and_stops_fixed_port(
         capsys:
             Fixture for capturing output during the test.
     """
+    listener = Mock()
+    listener.__enter__ = Mock(return_value=listener)
+    listener.__exit__ = Mock(return_value=False)
+    listener.getsockname.return_value = ("127.0.0.1", 5174)
+    monkeypatch.setattr(
+        collect_evaluation_results.socket, "socket", Mock(return_value=listener)
+    )
     process = FakeDevProcess()
     popen_calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
 
@@ -1242,24 +1256,14 @@ def test_preview_in_dev_server_starts_and_stops_fixed_port(
 
     assert collect_evaluation_results.preview_in_dev_server() is True
 
-    assert popen_calls == [
-        (
-            (["vercel", "dev", "--yes", "--non-interactive"],),
-            {
-                "cwd": collect_evaluation_results.REPO_ROOT,
-                "stdin": collect_evaluation_results.subprocess.DEVNULL,
-                "stdout": collect_evaluation_results.subprocess.PIPE,
-                "stderr": collect_evaluation_results.subprocess.STDOUT,
-                "text": True,
-            },
-        )
-    ]
-    socket_factory.assert_called_once_with(("localhost", 5173), timeout=1)
+    command = t.cast(list[str], popen_calls[0][0][0])
+    assert command[:3] == ["npm", "run", "dev"]
+    socket_factory.assert_called_once_with(("127.0.0.1", 5174), timeout=1)
     socket_instance.close.assert_called_once_with()
     assert process.signals == [signal.SIGTERM]
     assert process.wait_timeouts == [10]
-    assert "http://localhost:5173" in capsys.readouterr().out
-    assert "http://localhost:5173" in caplog.text
+    assert "http://127.0.0.1:5174" in capsys.readouterr().out
+    assert "http://127.0.0.1:5174" in caplog.text
 
 
 def test_public_upload_accepts_multiple_new_identity_candidates_without_proof(

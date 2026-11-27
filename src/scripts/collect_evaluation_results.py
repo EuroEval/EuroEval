@@ -795,19 +795,33 @@ def _stdin_is_interactive() -> bool:
 def preview_in_dev_server() -> bool:
     """Start Vercel dev server and prompt user to review before deployment.
 
-    Starts `vercel dev` in the background, waits for it to be ready,
+    Starts the frontend dev server on an unused local port, waits for it to be ready,
     prompts the user to check the preview, and waits for confirmation.
 
     Returns:
         True if user confirms deployment, False if they abort.
     """
-    logger.info("Starting Vercel dev server for preview...")
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+        listener.bind(("127.0.0.1", 0))
+        port = listener.getsockname()[1]
+    url = f"http://127.0.0.1:{port}"
+    logger.info("Starting frontend dev server for preview...")
     logger.info("=" * 60)
 
-    # Start vercel dev as a subprocess
+    # Preview only needs the frontend; avoid Vercel setup and remote checks.
     try:
         dev_process = subprocess.Popen(
-            ["vercel", "dev", "--yes", "--non-interactive"],
+            [
+                "npm",
+                "run",
+                "dev",
+                "--",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                str(port),
+                "--strictPort",
+            ],
             cwd=REPO_ROOT,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
@@ -815,7 +829,7 @@ def preview_in_dev_server() -> bool:
             text=True,
         )
     except FileNotFoundError:
-        logger.error("`vercel` CLI not found on PATH. Install with `npm i -g vercel`.")
+        logger.error("`npm` not found on PATH.")
         return False
 
     # Wait for dev server to start (watch for ready message or timeout)
@@ -836,7 +850,7 @@ def preview_in_dev_server() -> bool:
 
         # Resolve localhost so this works with IPv4- or IPv6-only dev servers.
         try:
-            sock = socket.create_connection(("localhost", 5173), timeout=1)
+            sock = socket.create_connection(("127.0.0.1", port), timeout=1)
             sock.close()
             ready = True
             break
@@ -853,12 +867,9 @@ def preview_in_dev_server() -> bool:
         return False
 
     logger.info("=" * 60)
-    logger.info("✓ Dev server is running at http://localhost:5173")
+    logger.info(f"Dev server is running at {url}")
     logger.info("=" * 60)
-    print(
-        "\nPlease open http://localhost:5173 in your browser and check the "
-        "leaderboards.\n"
-    )
+    print(f"\nPlease open {url} in your browser and check the leaderboards.\n")
 
     # Prompt for confirmation
     while True:
