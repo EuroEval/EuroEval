@@ -17,13 +17,19 @@ from starlette.datastructures import Headers, MutableHeaders
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from .auth import router as auth_router
+from .claim import router as claim_router
+from .coordinator import router as coordinator_router
 from .dependencies import PROTOCOL_VERSION
 from .dependencies import get_http as get_http
 from .dependencies import get_redis as get_redis
 from .dependencies import read_json as read_json
 from .dependencies import require_env as require_env
 from .dependencies import require_protocol as require_protocol
+from .heartbeat import router as heartbeat_router
 from .release import router as release_router
+from .release_lease import router as release_lease_router
+from .result import router as result_router
 
 
 class _Transport:
@@ -286,7 +292,16 @@ def create_app(
     application.add_api_route(
         "/evaluated-models.json", _evaluated_index, methods=["GET"]
     )
-    application.include_router(release_router)
+    for router in (
+        release_router,
+        auth_router,
+        coordinator_router,
+        heartbeat_router,
+        claim_router,
+        result_router,
+        release_lease_router,
+    ):
+        application.include_router(router)
     return application
 
 
