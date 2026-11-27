@@ -10,6 +10,7 @@ from pathlib import Path
 from unittest.mock import Mock, call
 
 import pytest
+from huggingface_hub import BucketFile
 
 from euroeval_worker.review import PublicStagingError
 from euroeval_worker.review_models import ReviewReport, ValidatedRecord
@@ -68,7 +69,12 @@ class FakeHfApi:
                 destination.write_bytes(self.objects[name])
 
     def list_bucket_tree(
-        self, bucket_id: str, prefix: str, recursive: bool, token: str
+        self,
+        bucket_id: str,
+        prefix: str | None = None,
+        *,
+        recursive: bool | None = None,
+        token: str | bool | None = None,
     ) -> list[object]:
         """Return no entries for test setups that do not seed a bucket."""
         del bucket_id, prefix, recursive, token
@@ -434,6 +440,48 @@ def test_eof_after_earlier_choice_preserves_original_staging_and_records(
     assert first_path.read_bytes() == first_bytes
     assert second_path.read_bytes() == second_bytes
     assert FakeHfApi.objects == {}
+
+
+def test_find_results_for_issue_lists_and_downloads_only_model_files(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Fetch only the requested model's JSON and retain compact result output."""
+
+    class ScopedHfApi:
+        def download_bucket_files(
+            self,
+            bucket_id: str,
+            files: list[tuple[BucketFile, Path]],
+            *,
+            raise_on_missing_files: bool,
+        ) -> None:
+            assert bucket_id == collect_evaluation_results.HF_RESULTS_BUCKET
+            assert raise_on_missing_files is False
+            assert [file.path for file, _ in files] == ["foo_bar/task.json"]
+            for _, path in files:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('{"model":"foo/bar"}', encoding="utf-8")
+
+        def list_bucket_tree(
+            self,
+            bucket_id: str,
+            prefix: str | None = None,
+            *,
+            recursive: bool | None = None,
+        ) -> list[BucketFile]:
+            assert bucket_id == collect_evaluation_results.HF_RESULTS_BUCKET
+            assert prefix == "foo_bar"
+            assert recursive is True
+            return [
+                BucketFile(path="foo_bar/task.json"),
+                BucketFile(path="other/task.json"),
+            ]
+
+    monkeypatch.setattr(collect_evaluation_results, "HfApi", ScopedHfApi)
+    results = collect_evaluation_results.find_results_for_issue(
+        {"number": 1, "title": "foo/bar", "body": ""}, destination=tmp_path
+    )
+    assert results == ['{"model":"foo/bar"}']
 
 
 def test_harvested_conflict_abort_preserves_canonical_bytes(
