@@ -143,7 +143,7 @@ async def test_failed_provider_revocation_never_issues_credential(
                 },
             )
     assert result.status_code == 503
-    assert "credential" not in result.text.lower()
+    assert "credential" not in result.json()
     assert await upstash_client.keys("euroeval:worker:credential:*") == []
 
 

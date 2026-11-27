@@ -14,7 +14,13 @@ from euroeval_api.markers import (
     sign_volunteer_marker,
     verify_volunteer_marker,
 )
-from euroeval_api.state import issue_lease_key
+from euroeval_api.state import LeaseRecord, put_lease
+
+
+class ContributorLease(LeaseRecord):
+    """Lease fields required by the ownership projection's authoritative lookup."""
+
+    contributor: str
 
 
 def test_lease_ownership_distinguishes_public_and_legacy(
@@ -75,8 +81,9 @@ def test_lease_ownership_distinguishes_public_and_legacy(
 
 
 @pytest.mark.anyio
+@pytest.mark.parametrize("replacement_live", [True, False])
 async def test_reconciliation_protects_replacement_and_manual_assignees(
-    monkeypatch: pytest.MonkeyPatch, upstash_client: Redis
+    monkeypatch: pytest.MonkeyPatch, upstash_client: Redis, replacement_live: bool
 ) -> None:
     """Retain stale ownership when Redis has a different live lease owner.
 
@@ -85,6 +92,8 @@ async def test_reconciliation_protects_replacement_and_manual_assignees(
             Supplies fabricated GitHub and marker credentials.
         upstash_client:
             Real Redis-backed Upstash client fixture.
+        replacement_live:
+            Whether another authoritative lease protects the old assignment.
     """
     redis = upstash_client
     monkeypatch.setenv("VOLUNTEER_MARKER_SECRET", "fabricated-marker-secret")
@@ -97,14 +106,15 @@ async def test_reconciliation_protects_replacement_and_manual_assignees(
         "expires_at": "2000-01-01T00:00:00Z",
         "ownership_mode": "public",
     }
-    replacement: MarkerLease = {
-        **old_lease,
+    replacement: ContributorLease = {
+        "issue_number": 42,
+        "language": "da",
         "lease_id": "new-lease",
-        "worker": "new-worker",
         "contributor": "new-owner",
         "expires_at": "2099-01-01T00:00:00Z",
     }
-    await redis.set(issue_lease_key(issue=42, language="da"), json.dumps(replacement))
+    if replacement_live:
+        assert await put_lease(redis=redis, lease=replacement)
     marker: VolunteerMarker = {
         "protocol_version": "volunteer-worker/v1",
         "coordinator": "broker",
@@ -126,6 +136,15 @@ async def test_reconciliation_protects_replacement_and_manual_assignees(
     requests: list[tuple[str, str]] = []
 
     async def github_handler(request: httpx.Request) -> httpx.Response:
+        """Model failed removal without touching unrelated assignments.
+
+        Args:
+            request:
+                Outbound GitHub operation.
+
+        Returns:
+            Provider response for the observed operation.
+        """
         requests.append((request.method, str(request.url)))
         if request.method == "DELETE":
             return httpx.Response(status_code=500)
@@ -134,15 +153,19 @@ async def test_reconciliation_protects_replacement_and_manual_assignees(
         return httpx.Response(status_code=200, json={})
 
     async def assert_owned() -> None:
+        """Represent a caller whose issue mutex remains held."""
         return None
 
     async with httpx.AsyncClient(
         transport=httpx.MockTransport(github_handler)
     ) as client:
         result = await GitHub(http=client).reconcile_public_assignments(
-            redis=redis, issue=issue, marker=marker, assert_owned=assert_owned
+            redis=redis, issue=issue, marker=signed, assert_owned=assert_owned
         )
-    assert result["pending_removals"] == ["old-owner"]
+    assert result["pending_removals"] == ([] if replacement_live else ["old-owner"])
+    assert [method for method, _ in requests] == (
+        [] if replacement_live else ["DELETE"]
+    )
     assert result["issue"]["assignees"] == [
         {"login": "old-owner"},
         {"login": "manual-reviewer"},

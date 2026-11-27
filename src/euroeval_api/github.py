@@ -249,7 +249,7 @@ class GitHub:
         Returns:
             Observed issue, signed marker and removals still pending.
         """
-        now = time.time()
+        now = time.time() * 1000
         desired = {
             lease["contributor"].lower(): lease["contributor"]
             for lease in marker["leases"]
