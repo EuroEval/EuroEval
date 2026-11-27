@@ -81,7 +81,6 @@ from leaderboards.result_conflict_prompt import resolve_result_interactively
 from leaderboards.result_conflicts import (
     ConflictChoice,
     ConflictDecision,
-    ConflictReason,
     resolve_result_conflict,
 )
 from leaderboards.result_identity import (
@@ -944,18 +943,18 @@ def upload_results_to_hf(
     decisions: list[ConflictDecision] = []
     model_choices: dict[str, ConflictChoice] = {}
     try:
+        incoming_lines = pending_lines
+        if incoming_lines is None:
+            incoming_lines = (
+                new_results_path.read_text(encoding="utf-8").splitlines()
+                if new_results_path.exists()
+                else []
+            )
         existing = _load_existing_results(
-            sources=source_bytes, decisions=decisions, model_choices=model_choices
-        )
-
-        # Resolve the batch before touching staging, results, or checkpoints.
-        _process_new_results(
-            new_results_path,
-            existing,
-            source_bytes=source_bytes,
+            sources=source_bytes,
             decisions=decisions,
-            lines=pending_lines,
             model_choices=model_choices,
+            incoming_lines=incoming_lines,
         )
     except UnresolvedResultConflictError as error:
         logger.error("Result collection aborted: %s", error)
@@ -1130,179 +1129,130 @@ def _load_existing_results(
     sources: dict[ResultIdentity, bytes] | None = None,
     decisions: list[ConflictDecision] | None = None,
     model_choices: dict[str, ConflictChoice] | None = None,
+    incoming_lines: list[str] | None = None,
 ) -> dict[ResultIdentity, dict]:
-    """Load existing results and capture exact predecessor bytes in one pass.
+    """Resolve local and incoming contenders with one complete review per model.
 
     Args:
-        sources (optional): Output mapping for canonical or winning alias bytes.
-        decisions (optional): Collected explicit choices for durable publication.
-        model_choices (optional): Reused explicit choices, keyed by model ID.
+        sources (optional): Exact canonical predecessor bytes for publication.
+        decisions (optional): Byte-bound explicit owner decisions.
+        model_choices (optional): Invocation-local choices indexed by model.
+        incoming_lines (optional): Harvested and staged records to merge.
 
     Returns:
-        Dictionary mapping identity to record.
-
+        Resolved records indexed by their full identity.
     """
-    existing: dict[ResultIdentity, dict] = {}
+    contenders: dict[ResultIdentity, list[tuple[dict, bytes]]] = {}
     canonical_sources: dict[ResultIdentity, bytes] = {}
-    winning_sources: dict[ResultIdentity, bytes] = {}
-    for json_file in sorted(RESULTS_DIR.glob("*/*.json")):
-        if not json_file.is_file():
-            continue
+    local_sources: dict[ResultIdentity, bytes] = {}
+    for path in sorted(RESULTS_DIR.glob("*/*.json")):
         try:
-            content = json_file.read_bytes()
+            content = path.read_bytes()
             record = json.loads(content)
         except (OSError, json.JSONDecodeError):
-            logger.debug(f"Skipping unreadable file {json_file}")
-            continue
-        if is_canary_record(record):
             continue
         identity = _extract_identity_key(record)
-        if not identity:
+        if identity is None or is_canary_record(record):
             continue
-        if json_file == RESULTS_DIR / identity_to_path(identity):
+        local_sources.setdefault(identity, content)
+        items = contenders.setdefault(identity, [])
+        if path == RESULTS_DIR / identity_to_path(identity):
             canonical_sources[identity] = content
-        if identity not in existing:
-            existing[identity] = record
-            winning_sources[identity] = content
-            continue
-
-        current = existing[identity]
-        decision = resolve_result_conflict(
-            current=current,
-            candidate=record,
-            current_bytes=winning_sources[identity],
-            candidate_bytes=content,
-        )
-        if decision.needs_choice:
-            decision = resolve_result_interactively(
-                current=current,
-                candidate=record,
-                current_bytes=winning_sources[identity],
-                candidate_bytes=content,
-                model_choices=model_choices,
-            )
-            if decisions is not None:
-                decisions.append(decision)
-        if decision.selected.value == "incoming":
-            existing[identity] = record
-            winning_sources[identity] = content
-        elif (
-            decision.reason is ConflictReason.IDENTICAL
-            and json_file == RESULTS_DIR / identity_to_path(identity)
-        ):
-            existing[identity] = record
-            winning_sources[identity] = content
-    if sources is not None:
-        sources.update(winning_sources)
-        sources.update(canonical_sources)
-    return existing
-
-
-def _process_new_results(
-    new_results_path: Path,
-    existing: dict[ResultIdentity, dict],
-    *,
-    source_bytes: dict[ResultIdentity, bytes] | None = None,
-    decisions: list[ConflictDecision] | None = None,
-    lines: list[str] | None = None,
-    model_choices: dict[str, ConflictChoice] | None = None,
-) -> None:
-    """Process new results from JSONL file and merge into existing.
-
-    Args:
-        new_results_path:
-            Path to the JSONL file with new results.
-        existing:
-            Existing results dictionary (modified only after successful resolution).
-        source_bytes (optional): Original source bytes indexed by result identity.
-        decisions (optional): Output list for explicit owner choices.
-        lines (optional): Already harvested lines replacing the on-disk staging file.
-        model_choices (optional): Reused explicit choices, keyed by model ID.
-
-    """
-    if lines is None and not new_results_path.exists():
-        logger.warning(f"Results file {new_results_path} does not exist.")
-        return
-
-    new_lines = (
-        lines
-        if lines is not None
-        else new_results_path.read_text(encoding="utf-8").split("\n")
-    )
-    logger.info(f"Processing {len(new_lines):,} new result lines...")
-    merged = existing.copy()
-    unresolved_by_model: dict[
-        str, list[tuple[dict[str, object], dict[str, object]]]
-    ] = {}
-    planned = existing.copy()
-    for raw_line in new_lines:
-        if not raw_line.strip():
-            continue
-        try:
-            candidate = json.loads(raw_line)
-            identity = _extract_identity_key(candidate)
-        except json.JSONDecodeError:
-            continue
-        if identity is None or is_canary_record(candidate):
-            continue
-        current = planned.get(identity)
-        if current is not None:
-            pair = resolve_result_conflict(current=current, candidate=candidate)
-            if pair.needs_choice:
-                model_id = identity[0]
-                conflicts = unresolved_by_model.setdefault(model_id, [])
-                if all(
-                    _extract_identity_key(existing_candidate) != identity
-                    for _, existing_candidate in conflicts
-                ):
-                    conflicts.append((current, candidate))
-        planned[identity] = candidate
-
-    for line_number, line in enumerate(new_lines, start=1):
+            items.insert(0, (record, content))
+        else:
+            items.append((record, content))
+    for line in incoming_lines or []:
         if not line.strip():
             continue
         try:
             record = json.loads(line)
-            if is_canary_record(record):
-                continue
-            identity = _extract_identity_key(record)
-            if not identity:
-                logger.debug(f"Skipping line {line_number}: no identity")
-                continue
+        except json.JSONDecodeError:
+            logger.warning("Skipping invalid JSON result line")
+            continue
+        identity = _extract_identity_key(record)
+        if identity is None or is_canary_record(record):
+            continue
+        content = json.dumps(record, separators=(",", ":")).encode("utf-8")
+        contenders.setdefault(identity, []).append((record, content))
 
-            if identity in merged:
-                current = merged[identity]
-                current_bytes = json.dumps(current, separators=(",", ":")).encode(
-                    "utf-8"
-                )
-                candidate_bytes = json.dumps(record, separators=(",", ":")).encode(
-                    "utf-8"
-                )
+    choices = model_choices if model_choices is not None else {}
+    _choose_model_conflicts(contenders=contenders, choices=choices)
+
+    existing: dict[ResultIdentity, dict] = {}
+    for identity, items in contenders.items():
+        current, current_bytes = items[0]
+        if sources is not None and identity in canonical_sources:
+            sources[identity] = canonical_sources[identity]
+        elif sources is not None and identity in local_sources:
+            sources[identity] = local_sources[identity]
+        for candidate, candidate_bytes in items[1:]:
+            decision = resolve_result_conflict(
+                current=current,
+                candidate=candidate,
+                current_bytes=current_bytes,
+                candidate_bytes=candidate_bytes,
+            )
+            if decision.needs_choice:
                 decision = resolve_result_conflict(
                     current=current,
-                    candidate=record,
+                    candidate=candidate,
+                    current_bytes=current_bytes,
+                    candidate_bytes=candidate_bytes,
+                    choice=choices[identity[0]],
+                )
+                if decisions is not None:
+                    decisions.append(decision)
+            if decision.selected is ConflictChoice.INCOMING:
+                current, current_bytes = candidate, candidate_bytes
+        existing[identity] = current
+    return existing
+
+
+def _choose_model_conflicts(
+    *,
+    contenders: dict[ResultIdentity, list[tuple[dict, bytes]]],
+    choices: dict[str, ConflictChoice],
+) -> None:
+    """Inventory all unresolved identities before asking once per model.
+
+    Args:
+        contenders: Local and incoming records in precedence order.
+        choices: Invocation-local output mapping of explicit owner choices.
+    """
+    # Inventory both possible choices; repeated contenders count as one identity.
+    conflicts: dict[str, list[tuple[dict, dict]]] = {}
+    for identity, items in contenders.items():
+        example = None
+        for choice in (ConflictChoice.STORED, ConflictChoice.INCOMING):
+            current, current_bytes = items[0]
+            for candidate, candidate_bytes in items[1:]:
+                decision = resolve_result_conflict(
+                    current=current,
+                    candidate=candidate,
                     current_bytes=current_bytes,
                     candidate_bytes=candidate_bytes,
                 )
                 if decision.needs_choice:
-                    decision = resolve_result_interactively(
+                    example = (current, candidate)
+                    decision = resolve_result_conflict(
                         current=current,
-                        candidate=record,
+                        candidate=candidate,
                         current_bytes=current_bytes,
                         candidate_bytes=candidate_bytes,
-                        model_choices=model_choices,
-                        model_conflicts=unresolved_by_model.get(identity[0]),
+                        choice=choice,
                     )
-                    if decisions is not None:
-                        decisions.append(decision)
-                if decision.selected == ConflictChoice.INCOMING:
-                    merged[identity] = record
-            else:
-                merged[identity] = record
-        except json.JSONDecodeError:
-            logger.warning(f"Skipping invalid JSON line: {line[:80]}...")
-    existing.clear()
-    existing.update(merged)
+                if decision.selected is ConflictChoice.INCOMING:
+                    current, current_bytes = candidate, candidate_bytes
+        if example is not None:
+            conflicts.setdefault(identity[0], []).append(example)
+    for model_id, pairs in conflicts.items():
+        current, candidate = pairs[0]
+        resolve_result_interactively(
+            current=current,
+            candidate=candidate,
+            model_choices=choices,
+            model_conflicts=pairs,
+        )
 
 
 def _upload_to_bucket(

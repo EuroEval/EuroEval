@@ -486,7 +486,8 @@ def test_find_results_for_issue_lists_and_downloads_only_model_files(
 
     monkeypatch.setattr(collect_evaluation_results, "HfApi", ScopedHfApi)
     results = collect_evaluation_results.find_results_for_issue(
-        {"number": 1, "title": "foo/bar evaluation", "body": ""}, destination=tmp_path
+        {"number": 1, "title": "foo/bar", "body": "### Model ID\n\nfoo/bar"},
+        destination=tmp_path,
     )
     assert results == ['{"model":"foo/bar"}']
 
@@ -714,6 +715,69 @@ def test_missing_reviewer_login_stops_opted_in_review(
     command.assert_not_called()
 
 
+@pytest.mark.parametrize("first_choice", ["current", "incoming"])
+def test_model_choice_covers_unshown_datasets_and_isolates_models(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, first_choice: str
+) -> None:
+    """One choice covers all five datasets without affecting another model."""
+    results_dir = tmp_path / "results"
+    lines: list[str] = []
+    for model in ("foo/bar", "other/model"):
+        directory = results_dir / model.replace("/", "_")
+        directory.mkdir(parents=True)
+        for index in range(5):
+            stored = _ranked_collector_record(score=0.2)
+            t.cast(dict, stored["model_info"])["id"] = model
+            t.cast(dict, t.cast(dict, stored["eval_library"])["additional_details"])[
+                "dataset"
+            ] = f"task{index}"
+            (directory / f"task{index}__test__zeroshot.json").write_text(
+                json.dumps(stored)
+            )
+            incoming = json.loads(json.dumps(stored))
+            incoming["evaluation_results"][0]["score_details"]["score"] = 0.8
+            lines.append(json.dumps(incoming))
+    answers = iter([first_choice, "current"])
+    prompts: list[str] = []
+    output: list[str] = []
+    resolver = collect_evaluation_results.resolve_result_interactively
+
+    def answer(prompt: str) -> str:
+        prompts.append(prompt)
+        return next(answers)
+
+    monkeypatch.setattr(
+        collect_evaluation_results,
+        "resolve_result_interactively",
+        lambda **kwargs: resolver(
+            **kwargs, input_fn=answer, output_fn=output.append, interactive=True
+        ),
+    )
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", results_dir)
+    _enable_real_collector_publisher(monkeypatch=monkeypatch, tmp_path=tmp_path)
+    for path in results_dir.glob("*/*.json"):
+        FakeHfApi.objects[path.relative_to(results_dir).as_posix()] = path.read_bytes()
+    assert collect_evaluation_results.upload_results_to_hf(
+        new_results_path=tmp_path / "staged.jsonl", pending_lines=lines
+    )
+    assert len(prompts) == 2
+    for model in ("foo_bar", "other_model"):
+        expected = 0.8 if model == "foo_bar" and first_choice == "incoming" else 0.2
+        records = [
+            json.loads(path.read_text())
+            for path in (results_dir / model).glob("*.json")
+        ]
+        assert len(records) == 5
+        assert all(
+            record["evaluation_results"][0]["score_details"]["score"] == expected
+            for record in records
+        )
+    rendered = "\n".join(output)
+    assert "5 conflicting identities" in rendered
+    assert "task0" in rendered and "task2" in rendered
+    assert "task3" not in rendered and "task4" not in rendered
+
+
 def test_pending_lines_accept_mixed_optional_identity_flags(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -721,9 +785,10 @@ def test_pending_lines_accept_mixed_optional_identity_flags(
     staging = tmp_path / "staging.jsonl"
     first = _ranked_collector_record()
     second = json.loads(json.dumps(first))
-    second["model_info"]["id"] = "other/model"
-    second["trained_from_scratch"] = True
-    first["trained_from_scratch"] = None
+    t.cast(dict, t.cast(dict, first["eval_library"])["additional_details"])[
+        "few_shot"
+    ] = None
+    second["eval_library"]["additional_details"]["few_shot"] = True
     monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", tmp_path / "results")
     monkeypatch.setattr(
         collect_evaluation_results, "_upload_to_bucket", lambda **_kwargs: True
@@ -1213,10 +1278,10 @@ def test_public_upload_accepts_multiple_new_identity_candidates_without_proof(
     assert len([name for name in FakeHfApi.objects if name.endswith(".json")]) == 2
 
 
-def test_public_upload_reapproves_final_winner_after_multiple_contenders(
+def test_public_upload_applies_model_choice_to_multiple_contenders(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """A later contender cannot displace the approved middle contender."""
+    """One incoming choice selects the final contender and archives the original."""
     results_dir = tmp_path / "results"
     canonical = results_dir / "foo_bar" / "task__test__zeroshot.json"
     canonical.parent.mkdir(parents=True)
@@ -1225,7 +1290,7 @@ def test_public_upload_reapproves_final_winner_after_multiple_contenders(
     canonical.write_bytes(original_bytes)
     contender_b = _ranked_collector_record(score=0.5)
     contender_c = _ranked_collector_record(score=0.8)
-    inputs = iter(["incoming", "stored", "incoming"])
+    inputs = iter(["incoming"])
     prompted_pairs: list[tuple[object, object]] = []
     approved_decisions: list[ConflictDecision] = []
     resolver = collect_evaluation_results.resolve_result_interactively
@@ -1270,20 +1335,13 @@ def test_public_upload_reapproves_final_winner_after_multiple_contenders(
         new_results_path=incoming, pending_lines=lines
     )
 
-    assert json.loads(canonical.read_bytes()) == contender_b
-    assert prompted_pairs[-1] == (
-        stored["evaluation_results"],
-        contender_b["evaluation_results"],
-    )
-    final_bytes = json.dumps(contender_b, separators=(",", ":")).encode()
+    assert json.loads(canonical.read_bytes()) == contender_c
     assert (
-        approved_decisions[-1].evidence.current_sha256
-        == hashlib.sha256(original_bytes).hexdigest()
+        json.loads(FakeHfApi.objects["foo_bar/task__test__zeroshot.json"])
+        == contender_c
     )
-    assert (
-        approved_decisions[-1].evidence.candidate_sha256
-        == hashlib.sha256(final_bytes).hexdigest()
-    )
+    history = f"_history/{hashlib.sha256(original_bytes).hexdigest()}.bin"
+    assert FakeHfApi.objects[history] == original_bytes
 
 
 def test_public_upload_restores_original_when_final_choice_is_stored(
@@ -1298,7 +1356,7 @@ def test_public_upload_restores_original_when_final_choice_is_stored(
     canonical.write_bytes(original_bytes)
     contender_b = _ranked_collector_record(score=0.5)
     contender_c = _ranked_collector_record(score=0.8)
-    answers = iter(["incoming", "stored", "stored"])
+    answers = iter(["stored"])
     resolver = collect_evaluation_results.resolve_result_interactively
     monkeypatch.setattr(
         collect_evaluation_results,
@@ -1989,7 +2047,7 @@ def test_upload_results_to_hf_manual_alias_choice_beats_canonical_path(
     canonical_path = directory / "task__test__zeroshot.json"
     canonical_bytes = json.dumps(canonical).encode("utf-8")
     canonical_path.write_bytes(canonical_bytes)
-    answers = iter(["stored", "incoming"])
+    answers = iter(["incoming"])
     resolver = collect_evaluation_results.resolve_result_interactively
     monkeypatch.setattr(
         collect_evaluation_results,

@@ -72,7 +72,9 @@ def resolve_result_interactively(
         f"┌{'─' * len(heading)}┐",
         f"│{heading}│",
         f"└{'─' * len(heading)}┘",
-        f"Unresolved conflicting identities for this model: {len(conflicts)}",
+        f"{len(conflicts)} conflicting identities; "
+        f"showing {min(3, len(conflicts))} examples.",
+        "Current -> incoming. Your choice applies to ALL conflicts for this model.",
     ]
     for stored, incoming in conflicts[:3]:
         lines.extend(_preview_box(stored=stored, incoming=incoming))
@@ -83,14 +85,14 @@ def resolve_result_interactively(
     while True:
         try:
             choice = input_fn(
-                "Choose for this model: [s]tored, [i]ncoming, or [a]bort: "
+                "Apply to ALL model conflicts: [c]urrent, [i]ncoming, [a]bort: "
             )
         except (EOFError, KeyboardInterrupt) as error:
             raise UnresolvedResultConflictError(
                 "Result conflict resolution aborted"
             ) from error
         choice = choice.strip().lower()
-        if choice in {"s", "stored"}:
+        if choice in {"s", "stored", "c", "current"}:
             selected = ConflictChoice.STORED
             break
         if choice in {"i", "incoming"}:
@@ -132,35 +134,28 @@ def _preview_box(
     """
     identity = identity_from_eee_record(record=incoming)
     label = f"{identity[1]} | validation={identity[2]} | few-shot={identity[3]}"
-    width = min(max(len(label), 48), 100)
+    decision = resolve_result_conflict(current=stored, candidate=incoming)
+    fields = [
+        difference
+        for difference in decision.differences
+        if "raw_results" not in difference.field
+    ][:3]
+    rows = [label]
+    rows.append(
+        f"time: {_evaluation_timestamp(stored)} -> {_evaluation_timestamp(incoming)}"
+    )
+    for difference in fields:
+        rows.append(
+            f"{difference.field}: {_display(difference.current)} -> "
+            f"{_display(difference.candidate)}"
+        )
+    rows = [row[:110] for row in rows]
+    width = max(len(row) for row in rows) + 2
     return [
         f"┌{'─' * width}┐",
-        f"│ {label[: width - 2]:<{width - 2}} │",
-        f"│ stored:   {_summary(stored)[: width - 13]:<{width - 13}} │",
-        f"│ incoming: {_summary(incoming)[: width - 13]:<{width - 13}} │",
+        *[f"│ {row:<{width - 2}} │" for row in rows],
         f"└{'─' * width}┘",
     ]
-
-
-def _summary(record: dict[str, object]) -> str:
-    """Summarise comparison fields without exposing the result payload.
-
-    Args:
-        record: Result record to summarise.
-
-    Returns:
-        A concise timestamp, engine and score summary.
-    """
-    model_info = record.get("model_info", {})
-    details = record.get("eval_library", {}).get("additional_details", {})
-    timestamp = _display(_evaluation_timestamp(record))
-    name = _display(model_info.get("name", model_info.get("id", "?")))
-    flags = ", ".join(
-        f"{key}={_display(record.get(key, '?'))}"
-        for key in ("open", "commercially_licensed", "trained_from_scratch")
-    )
-    scores = record.get("get_total_scores", details.get("get_total_scores", "?"))
-    return f"{name}; {flags}; time={timestamp}; totals={_display(scores)}"
 
 
 def _display(value: object) -> str:
