@@ -94,6 +94,17 @@ kev = [
 ]
 
 [dependency-groups]
+api = [
+    "cryptography>=50.0.0",
+    "fastapi>=0.136.3",
+    "httpx>=0.28.1",
+    "huggingface-hub>=1.28.0",
+    "packaging>=26.3",
+    "rfc8785>=0.1.4",
+    "upstash-ratelimit>=1.2.0",
+    "upstash-redis>=1.10.0",
+    "uvicorn>=0.52.4",
+]
 dev = [
     "pytest>=8.3.3",
     "pytest-cov>=5.0.0",
@@ -128,6 +139,7 @@ dev = [
     "plotly>=6.9.0",
     "slopo>=0.5.0",
     "vulture>=2.16",
+    "redis>=8.2.0",
 ]
 
 [tool.uv.sources]

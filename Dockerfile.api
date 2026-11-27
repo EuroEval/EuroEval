@@ -1,0 +1,22 @@
+FROM node:24-slim AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY api ./api
+COPY api-server ./api-server
+COPY tsconfig.api.json ./
+COPY src/scripts/build-api.mjs ./src/scripts/build-api.mjs
+COPY src/scripts/build-seo-files.mjs ./src/scripts/build-seo-files.mjs
+COPY src/frontend/services ./src/frontend/services
+COPY src/frontend/vite-env.d.ts ./src/frontend/vite-env.d.ts
+COPY src/frontend/csv ./src/frontend/csv
+RUN npm run build:api
+FROM node:24-slim
+ENV NODE_ENV=production HOST=0.0.0.0 PORT=3000
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+COPY --from=build /app/dist-api ./dist-api
+USER node
+EXPOSE 3000
+CMD ["node", "dist-api/api-server/main.js"]

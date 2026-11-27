@@ -244,10 +244,20 @@ class Worker:
         Raises:
             ValueError:
                 If legacy execution receives invalid configuration.
+            KeyboardInterrupt:
+                If the worker is interrupted in legacy mode.
+            SystemExit:
+                If lease processing requests process exit.
         """
         self._launcher_managed = launcher_managed
         if not launcher_managed:
-            return self._run(once=once)
+            try:
+                return self._run(once=once)
+            except (KeyboardInterrupt, SystemExit):
+                raise
+            except Exception:
+                self._release_terminal_failure()
+                raise
         try:
             if not self.image_digest:
                 raise ValueError("managed mode requires --image-digest")
@@ -257,11 +267,44 @@ class Worker:
         except BrokerError as error:
             if error.status == 426 and error.code == "worker_update_required":
                 return 75
+            self._release_terminal_failure()
             logger.exception("Managed worker failed")
             return 1
         except Exception:
+            self._release_terminal_failure()
             logger.exception("Managed worker failed")
             return 1
+
+    def _release_terminal_failure(self) -> None:
+        """Persist and attempt release of the current unfinished lease."""
+        try:
+            active = self.state.load_active()
+            if (
+                active is None
+                or self._login is None
+                or active.github_login != self._login
+                or (
+                    (self._launcher_managed or active.managed_image_digest is not None)
+                    and (
+                        active.managed_image_digest != self.image_digest
+                        or active.lease.image_digest != self.image_digest
+                    )
+                )
+                or active.finalised_submission_id is not None
+            ):
+                return
+            if not self.state.mark_release_pending(
+                lease_id=active.lease.lease_id, github_login=self._login
+            ):
+                return
+            self.client.release(
+                credential=self._credential,
+                lease_id=active.lease.lease_id,
+                reason="worker_failed",
+            )
+            self.state.archive_active()
+        except Exception:  # cleanup must never replace the worker failure
+            logger.warning("Unable to release failed worker lease", exc_info=True)
 
     def _run(  # noqa: PLR0912
         self, once: bool = False, launcher_managed: bool = False
@@ -317,16 +360,18 @@ class Worker:
                 if self._clear_finalised_lease(once=once or launcher_managed):
                     return 0 if launcher_managed else None
                 continue
+            if active is not None and active.release_pending:
+                if self._release_exhausted_evaluation(
+                    active=active, once=once or launcher_managed
+                ):
+                    return 0 if launcher_managed else None
+                continue
             if active is not None and not _lease_is_valid(active.lease):
                 logger.warning(
                     "Discarding expired local lease %s", active.lease.lease_id
                 )
                 self.state.archive_active()
                 active = None
-            if active is not None and active.release_pending:
-                if self._release_exhausted_evaluation(active=active, once=once):
-                    return
-                continue
             discovered = self._discover_hardware()
             if active is not None:
                 if self._run_active_lease(
@@ -1006,6 +1051,9 @@ class Worker:
             TimeoutError:
                 If release transport times out in once mode.
         """
+        if not _lease_is_valid(active.lease):
+            self.state.archive_active()
+            return True
         try:
             self.client.release(
                 credential=self._credential,

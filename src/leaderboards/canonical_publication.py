@@ -1,13 +1,9 @@
-"""Serialize durable writes to canonical EuroEval result records.
-
-A publication session owns the broker's no-TTL lock from before its first remote
-read until all mutations and verification are complete. Callers must pass the
-session explicitly; lock ownership is never inherited by evaluation subprocesses.
-"""
+"""Publish canonical EuroEval result records from a single maintainer host."""
 
 from __future__ import annotations
 
 import copy
+import fcntl
 import hashlib
 import json
 import logging
@@ -16,8 +12,6 @@ import secrets
 import sqlite3
 import tempfile
 import typing as t
-import urllib.error
-import urllib.request
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -106,12 +100,6 @@ def _decode_record(content: bytes, path: str) -> dict[str, object]:
     return record
 
 
-def _receipt_path(owner: str) -> Path:
-    """Return the private recovery receipt path for an owner token."""
-    root = Path(os.environ.get("XDG_CACHE_HOME", tempfile.gettempdir()))
-    return root / "euroeval-publication-locks" / f"{owner}.json"
-
-
 def _semantic_digest(record: dict[str, object]) -> str:
     """Hash canonical JSON semantics independently of formatting.
 
@@ -183,22 +171,6 @@ def _model_additional_details(record: dict[str, object]) -> dict[str, object]:
         return {}
     details = model_info.get("additional_details")
     return details if isinstance(details, dict) else {}
-
-
-def _write_receipt(path: Path, owner: str, endpoint: str, bucket: str) -> None:
-    """Persist lock recovery details with restrictive file permissions.
-
-    Args:
-        path: Receipt file path.
-        owner: Opaque lock owner token.
-        endpoint: Broker lock endpoint.
-        bucket: Canonical bucket identifier.
-    """
-    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-    path.parent.chmod(0o700)
-    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(descriptor, "w") as receipt:
-        json.dump({"owner": owner, "endpoint": endpoint, "bucket": bucket}, receipt)
 
 
 def is_metadata_only_transform(
@@ -281,124 +253,14 @@ def _normalise_raw_results(record: dict[str, object]) -> None:
             return
 
 
-class LockAdapter(t.Protocol):
-    """Explicit broker lock interface for injectable lock adapters."""
-
-    bucket: str
-    endpoint: str
-
-    def request(self, action: str, owner: str) -> str:
-        """Perform one lock operation."""
-
-
-class PublicationLock:
-    """HTTP adapter for the broker's durable canonical-publication lock."""
-
-    def __init__(
-        self, endpoint: str, secret: str, bucket: str = DEFAULT_BUCKET
-    ) -> None:
-        """Configure broker access.
-
-        Args:
-            endpoint: Complete endpoint URL or broker base URL.
-            secret: Broker bearer secret.
-            bucket (optional): Canonical bucket. Defaults to EuroEval/results.
-
-        Raises:
-            ValueError:
-                If the URL or secret is missing.
-        """
-        if not endpoint or not secret:
-            raise ValueError("Publication lock URL and secret are required")
-        if not endpoint.endswith("/publication-lock"):
-            endpoint = f"{endpoint.rstrip('/')}/publication-lock"
-        self.endpoint = endpoint
-        self.secret = secret
-        self.bucket = bucket
-
-    @classmethod
-    def from_environment(cls, bucket: str = DEFAULT_BUCKET) -> PublicationLock:
-        """Create the configured lock adapter, failing closed if unavailable.
-
-        Args:
-            bucket (optional): Canonical bucket. Defaults to EuroEval/results.
-
-        Returns:
-            Configured lock adapter.
-        """
-        endpoint = os.environ.get("CANONICAL_PUBLICATION_URL")
-        if not endpoint:
-            endpoint = os.environ.get(
-                "VOLUNTEER_BROKER_URL", "https://euroeval.com/api/worker"
-            )
-        secret = os.environ.get("CANONICAL_PUBLICATION_SECRET", "")
-        return cls(endpoint=endpoint, secret=secret, bucket=bucket)
-
-    def request(self, action: str, owner: str) -> str:
-        """Send one broker lock operation and validate its complete response.
-
-        Args:
-            action: acquire, assert, release, or status.
-            owner: Opaque session owner token.
-
-        Returns:
-            Broker lock status.
-
-        Raises:
-            ValueError:
-                If the action is unsupported.
-            PublicationError:
-                If the broker request fails or its response is invalid.
-        """
-        if action not in {"acquire", "assert", "release", "status"}:
-            raise ValueError(f"Unsupported publication lock action: {action}")
-        body = json.dumps({"action": action, "bucket": self.bucket, "owner": owner})
-        request = urllib.request.Request(
-            self.endpoint,
-            data=body.encode(),
-            headers={
-                "Authorization": f"Bearer {self.secret}",
-                "Content-Type": "application/json",
-            },
-            method="POST",
-        )
-        for attempt in range(2):
-            try:
-                with urllib.request.urlopen(request, timeout=30) as response:
-                    payload = json.loads(response.read())
-                break
-            except (
-                OSError,
-                urllib.error.URLError,
-                TimeoutError,
-                json.JSONDecodeError,
-            ) as exc:
-                if attempt == 1:
-                    raise PublicationError("Publication lock request failed") from exc
-        expected_status = {"acquire": "owned", "assert": "owned", "release": "released"}
-        if not isinstance(payload, dict) or payload.get("bucket") != self.bucket:
-            raise PublicationError("Invalid publication lock response")
-        status = payload.get("status")
-        if status != expected_status.get(action, status):
-            raise PublicationError("Publication lock operation was not confirmed")
-        if status == "busy":
-            raise PublicationError("Canonical publication lock is held")
-        if action != "status" and payload.get("owner") != owner:
-            raise PublicationError("Publication lock owner response did not match")
-        if action == "status" and status not in {"owned", "unlocked"}:
-            raise PublicationError("Invalid publication lock status")
-        return t.cast(str, status)
-
-
 class CanonicalPublisher:
-    """Publish result records with lock enforcement and durable predecessor history."""
+    """Publish result records with durable predecessor history."""
 
     def __init__(
         self,
         api: BucketApi,
         token: str,
         bucket: str = DEFAULT_BUCKET,
-        lock: LockAdapter | None = None,
         checkpoint_path: Path | None = None,
     ) -> None:
         """Create a publisher over a Hugging Face-compatible adapter.
@@ -407,20 +269,18 @@ class CanonicalPublisher:
             api: Adapter implementing bucket download and mutation methods.
             token: Hugging Face write token.
             bucket (optional): Canonical bucket. Defaults to EuroEval/results.
-            lock (optional): Broker adapter; defaults to environment configuration.
             checkpoint_path (optional): Incremental publication receipt database.
                 Defaults to the EuroEval cache directory.
 
         Raises:
             ValueError:
-                If the token or lock configuration is invalid.
+                If the Hugging Face token is missing.
         """
         if not token:
             raise ValueError("HF token is required")
         self.api = api
         self.token = token
         self.bucket = bucket
-        self.lock = lock or PublicationLock.from_environment(bucket=bucket)
         cache_root = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
         self.checkpoint_path = checkpoint_path or (
             cache_root / "euroeval" / "canonical-publication.sqlite3"
@@ -429,15 +289,12 @@ class CanonicalPublisher:
             "\0".join(
                 (
                     bucket,
-                    self.lock.endpoint,
                     str(getattr(api, "endpoint", "https://huggingface.co")),
                     "canonical-publication-v1",
                     hashlib.sha256(token.encode()).hexdigest(),
                 )
             ).encode()
         ).hexdigest()
-        if self.lock.bucket != bucket:
-            raise ValueError("Publication lock bucket does not match publisher bucket")
 
     def prepare(
         self,
@@ -458,29 +315,47 @@ class CanonicalPublisher:
 
     @contextmanager
     def session(self) -> t.Iterator[PublicationSession]:
-        """Acquire an owned publication session and safely release it.
+        """Open an exclusive local session for canonical bucket operations.
+
+        The lock coordinates publisher processes on this host only. It does not
+        provide cross-host exclusion or an atomic compare-and-swap on Hugging Face.
 
         Yields:
             An explicit publication session.
+
+        Raises:
+            PublicationError:
+                If another local publisher holds the bucket lock.
         """
-        session = PublicationSession(publisher=self)
-        session.acquire()
-        try:
-            yield session
-        except BaseException:
-            if not session.poisoned:
-                session.release()
-            raise
-        else:
-            if not session.poisoned:
-                session.release()
+        lock_identity = hashlib.sha256(
+            "\0".join(
+                (
+                    self.bucket,
+                    str(getattr(self.api, "endpoint", "https://huggingface.co")),
+                )
+            ).encode()
+        ).hexdigest()
+        cache_root = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
+        lock_directory = cache_root / "euroeval" / "publication-locks"
+        lock_directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+        os.chmod(lock_directory, 0o700)
+        lock_path = lock_directory / f"{lock_identity}.lock"
+        with lock_path.open("a") as lock_file:
+            os.chmod(lock_path, 0o600)
+            try:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError as error:
+                raise PublicationError(
+                    f"Canonical publication already active for {self.bucket}"
+                ) from error
+            yield PublicationSession(publisher=self)
 
 
 class PublicationSession:
-    """Explicit, lock-owning interface for canonical bucket operations."""
+    """Canonical bucket operations for the single maintainer publisher."""
 
     def __init__(self, publisher: CanonicalPublisher) -> None:
-        """Initialise session identity and private recovery receipt.
+        """Initialise the publication session identity.
 
         Args:
             publisher: Publisher that owns the bucket adapter and credentials.
@@ -488,9 +363,6 @@ class PublicationSession:
         self.publisher = publisher
         self.owner = secrets.token_urlsafe(32)
         self.bucket = publisher.bucket
-        self.poisoned = False
-        self._receipt = _receipt_path(self.owner)
-        self._receipt.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
 
     def _source_authorises_transform(
         self,
@@ -518,31 +390,18 @@ class PublicationSession:
             and is_metadata_only_transform(current_record, record)
         )
 
-    def acquire(self) -> None:
-        """Persist recovery details before acquiring the no-TTL lock."""
-        _write_receipt(
-            self._receipt, self.owner, self.publisher.lock.endpoint, self.bucket
-        )
-        self.publisher.lock.request(action="acquire", owner=self.owner)
-
     def delete_empty(self, paths: t.Sequence[str]) -> None:
         """Delete only objects that still exist and are currently empty.
 
         Args:
             paths: Bucket-relative object paths to inspect.
         """
-        self.assert_owned()
         for path in paths:
             current = self._download(path)
             if current == b"":
-                self.assert_owned()
-                try:
-                    self.publisher.api.batch_bucket_files(
-                        bucket_id=self.bucket, delete=[path], token=self.publisher.token
-                    )
-                except BaseException:
-                    self.poisoned = True
-                    raise
+                self.publisher.api.batch_bucket_files(
+                    bucket_id=self.bucket, delete=[path], token=self.publisher.token
+                )
 
     def _download(self, path: str) -> bytes | None:
         with tempfile.TemporaryDirectory(prefix="euroeval-publish-") as directory:
@@ -557,10 +416,6 @@ class PublicationSession:
             except FileNotFoundError:
                 return None
             return local.read_bytes() if local.exists() else None
-
-    def assert_owned(self) -> None:
-        """Confirm this session still owns the broker lock."""
-        self.publisher.lock.request(action="assert", owner=self.owner)
 
     def prepare(
         self,
@@ -580,7 +435,6 @@ class PublicationSession:
             PublicationError: If a supplied conflict decision is stale or invalid.
         """
         candidates = _validated_candidates(records=records)
-        self.assert_owned()
         validated = self._validated_sources(candidates=candidates, sources=sources)
         proofs = self._validated_decisions(
             candidates=candidates, sources=validated, decisions=decisions
@@ -813,6 +667,8 @@ class PublicationSession:
         sources: t.Mapping[ResultIdentity, bytes] | None = None,
         *,
         decisions: t.Sequence[ConflictDecision] = (),
+        accepted_records: t.Mapping[ResultIdentity, bytes] | None = None,
+        accepted_predecessors: t.Mapping[ResultIdentity, str | None] | None = None,
     ) -> int:
         """Validate, reconcile, archive predecessors, and publish records.
 
@@ -821,6 +677,8 @@ class PublicationSession:
             sources (optional): Original bytes keyed by identity for sanctioned
                 metadata transformations. Defaults to no source records.
             decisions (optional): Explicit, byte-bound conflict choices.
+            accepted_records (optional): Exact incoming bytes accepted in this review.
+            accepted_predecessors (optional): Review-time canonical digests or absence.
 
         Returns:
             Number of canonical result objects written.
@@ -830,7 +688,6 @@ class PublicationSession:
                 If candidates conflict, are invalid, or cannot be safely written.
         """
         candidates = _validated_candidates(records=records)
-        self.assert_owned()
         validated_sources = self._validated_sources(
             candidates=candidates, sources=sources
         )
@@ -922,6 +779,8 @@ class PublicationSession:
             remote_fingerprints=remote_fingerprints,
             sources=sources,
             decisions=decisions_by_identity,
+            accepted_records=accepted_records or {},
+            accepted_predecessors=accepted_predecessors or {},
         )
 
         if writes:
@@ -1230,6 +1089,8 @@ class PublicationSession:
         remote_fingerprints: dict[str, str] | None,
         sources: t.Mapping[ResultIdentity, bytes] | None,
         decisions: t.Mapping[ResultIdentity, tuple[str, str, str, str]],
+        accepted_records: t.Mapping[ResultIdentity, bytes],
+        accepted_predecessors: t.Mapping[ResultIdentity, str | None],
     ) -> tuple[list[tuple[str, bytes, bytes | None]], dict[str, tuple[str, str]]]:
         """Reconcile untrusted candidates with current remote bytes.
 
@@ -1240,6 +1101,8 @@ class PublicationSession:
             remote_fingerprints: Fresh metadata for existing remote paths.
             sources: Exact predecessor bytes retained for retries.
             decisions: Stored byte-bound manual choices.
+            accepted_records: Exact incoming bytes accepted during this review.
+            accepted_predecessors: Review-time canonical digests or explicit absence.
 
         Returns:
             Pending writes and newly verified semantic receipts.
@@ -1255,8 +1118,20 @@ class PublicationSession:
             if path in trusted:
                 continue
             current = current_objects[path]
+            if identity in accepted_predecessors:
+                current_digest = (
+                    hashlib.sha256(current).hexdigest() if current is not None else None
+                )
+                if current_digest != accepted_predecessors[identity]:
+                    raise PublicationError(f"Reviewed predecessor changed at {path}")
             if current is None:
-                if identity in decisions:
+                if (
+                    accepted_records.get(identity) == candidate
+                    and identity not in accepted_predecessors
+                    and not self._approved_absence(
+                        identity=identity, candidate=candidate, decisions=decisions
+                    )
+                ):
                     raise PublicationError(
                         f"Conflict decision predecessor is missing at {path}"
                     )
@@ -1278,6 +1153,16 @@ class PublicationSession:
                 )
                 if fingerprint is not None:
                     equivalent.append((path, identity, current, record))
+                continue
+            if accepted_records.get(identity) == candidate:
+                self._assert_accepted_predecessor(
+                    identity=identity,
+                    candidate=candidate,
+                    current=current,
+                    decisions=decisions,
+                    accepted_predecessors=accepted_predecessors,
+                )
+                writes.append((path, candidate, current))
                 continue
             proof = decisions.get(identity)
             if proof is not None:
@@ -1323,6 +1208,64 @@ class PublicationSession:
             ):
                 receipts[path] = (fingerprint, _semantic_digest(record))
         return writes, receipts
+
+    def _approved_absence(
+        self,
+        *,
+        identity: ResultIdentity,
+        candidate: bytes,
+        decisions: t.Mapping[ResultIdentity, tuple[str, str, str, str]],
+    ) -> bool:
+        """Check whether incoming bytes were approved against remote absence.
+
+        Args:
+            identity: Candidate identity.
+            candidate: Candidate bytes.
+            decisions: Stored byte-bound decisions.
+
+        Returns:
+            Whether the stored approval binds these bytes to an absent predecessor.
+        """
+        proof = decisions.get(identity)
+        return proof is not None and proof == (
+            hashlib.sha256(candidate).hexdigest(),
+            hashlib.sha256(b"").hexdigest(),
+            POLICY_VERSION,
+            ConflictChoice.INCOMING.value,
+        )
+
+    def _assert_accepted_predecessor(
+        self,
+        identity: ResultIdentity,
+        candidate: bytes,
+        current: bytes,
+        decisions: t.Mapping[ResultIdentity, tuple[str, str, str, str]],
+        accepted_predecessors: t.Mapping[ResultIdentity, str | None],
+    ) -> None:
+        """Require an approved digest pair before replacing canonical bytes.
+
+        Args:
+            identity: Reviewed logical result identity.
+            candidate: Approved incoming bytes.
+            current: Current remote canonical bytes.
+            decisions: Existing digest-bound conflict proofs.
+            accepted_predecessors: Explicit review-time predecessor digests.
+
+        Raises:
+            PublicationError: If no matching reviewed predecessor is available.
+        """
+        expected = hashlib.sha256(current).hexdigest()
+        if identity in accepted_predecessors:
+            if accepted_predecessors[identity] == expected:
+                return
+        elif decisions.get(identity) == (
+            hashlib.sha256(candidate).hexdigest(),
+            expected,
+            POLICY_VERSION,
+            ConflictChoice.INCOMING.value,
+        ):
+            return
+        raise PublicationError("Accepted replacement lacks matching predecessor proof")
 
     def _validate_current_record(
         self, current_record: dict[str, object], path: str, identity: ResultIdentity
@@ -1457,40 +1400,27 @@ class PublicationSession:
                     local = Path(directory) / str(index)
                     local.write_bytes(content)
                     uploads.append((local, path))
-                self.assert_owned()
-                # The bucket has no CAS or transaction: any uncertain mutation
-                # retains the no-TTL broker lock for explicit operator recovery.
-                try:
-                    self.publisher.api.batch_bucket_files(
-                        bucket_id=self.bucket, add=uploads, token=self.publisher.token
-                    )
-                    verified = self._bucket_fingerprints(paths=paths)
-                    if verified is None:
-                        actual = self._download_many(paths=paths)
-                        if any(actual[path] != content for path, content, _ in batch):
-                            raise PublicationError(
-                                "Uploaded object verification failed"
-                            )
-                    elif any(
-                        verified.get(path) != intended_fingerprints[path]
+                self.publisher.api.batch_bucket_files(
+                    bucket_id=self.bucket, add=uploads, token=self.publisher.token
+                )
+                verified = self._bucket_fingerprints(paths=paths)
+                if verified is None:
+                    actual = self._download_many(paths=paths)
+                    if any(actual[path] != content for path, content, _ in batch):
+                        raise PublicationError("Uploaded object verification failed")
+                elif any(
+                    verified.get(path) != intended_fingerprints[path] for path in paths
+                ):
+                    actual = self._download_many(paths=paths)
+                    if any(actual[path] != content for path, content, _ in batch):
+                        raise PublicationError("Uploaded object verification failed")
+                self._store_receipts(
+                    receipts={
+                        path: (intended_fingerprints[path], receipts[path][1])
                         for path in paths
-                    ):
-                        actual = self._download_many(paths=paths)
-                        if any(actual[path] != content for path, content, _ in batch):
-                            raise PublicationError(
-                                "Uploaded object verification failed"
-                            )
-                    self.assert_owned()
-                    self._store_receipts(
-                        receipts={
-                            path: (intended_fingerprints[path], receipts[path][1])
-                            for path in paths
-                            if path in receipts
-                        }
-                    )
-                except BaseException:
-                    self.poisoned = True
-                    raise
+                        if path in receipts
+                    }
+                )
             logger.info(
                 "Verified %s of %s uploaded files.", start + len(batch), len(writes)
             )
@@ -1506,11 +1436,6 @@ class PublicationSession:
         """
         return self._download(path)
 
-    def release(self) -> None:
-        """Release only this owner's lock and remove its recovery receipt."""
-        self.publisher.lock.request(action="release", owner=self.owner)
-        self._receipt.unlink(missing_ok=True)
-
     def write_verified(self, path: str, content: bytes, expected: bytes | None) -> None:
         """Write only if the actual current object equals expected, then verify.
 
@@ -1521,34 +1446,21 @@ class PublicationSession:
 
         Raises:
             PublicationError:
-                If ownership is lost, current bytes differ, or verification fails.
+                If current bytes differ or upload verification fails.
         """
-        self.assert_owned()
         if _contains_canary(content):
             raise PublicationError("Canary records cannot be written canonically")
         current = self._download(path)
         if current != expected:
             raise PublicationError(f"Concurrent change detected for {path}")
         self._upload(path=path, content=content)
-        try:
-            if self._download(path) != content:
-                raise PublicationError(
-                    f"Uploaded object verification failed for {path}"
-                )
-        except BaseException:
-            self.poisoned = True
-            raise
+        if self._download(path) != content:
+            raise PublicationError(f"Uploaded object verification failed for {path}")
 
     def _upload(self, path: str, content: bytes) -> None:
         with tempfile.TemporaryDirectory(prefix="euroeval-publish-") as directory:
             local = Path(directory) / "object"
             local.write_bytes(content)
-            try:
-                self.publisher.api.batch_bucket_files(
-                    bucket_id=self.bucket,
-                    add=[(local, path)],
-                    token=self.publisher.token,
-                )
-            except BaseException:
-                self.poisoned = True
-                raise
+            self.publisher.api.batch_bucket_files(
+                bucket_id=self.bucket, add=[(local, path)], token=self.publisher.token
+            )

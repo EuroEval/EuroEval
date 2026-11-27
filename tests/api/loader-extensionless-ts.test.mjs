@@ -20,7 +20,7 @@ test("loader does not mask unrelated, outside, or missing imports", async () => 
   const probes = [
     "./scope-policy.json",
     "./does-not-exist.js",
-    "../../src/frontend/services/github.js",
+    "../../src/frontend/main.js",
     "node:fs",
     pathToFileURL(path.join(apiRoot, "worker", "claim.ts")).href,
   ];
@@ -28,4 +28,15 @@ test("loader does not mask unrelated, outside, or missing imports", async () => 
     const result = await resolve(specifier, { parentURL: parent }, nextResolve);
     assert.equal(result.url, specifier, `loader rewrote ${specifier}`);
   }
+});
+
+
+test("loader bridges shared frontend service imports from API and frontend modules", async () => {
+  const frontend = path.resolve("src/frontend/services");
+  const fromApi = await resolve("../../src/frontend/services/github.js", { parentURL: parent }, nextResolve);
+  assert.equal(fromApi.url, pathToFileURL(path.join(frontend, "github.ts")).href);
+  const fromFrontend = await resolve("./api.js", {
+    parentURL: pathToFileURL(path.join(frontend, "github.ts")).href,
+  }, nextResolve);
+  assert.equal(fromFrontend.url, pathToFileURL(path.join(frontend, "api.ts")).href);
 });

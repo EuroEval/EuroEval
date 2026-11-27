@@ -2,6 +2,7 @@ import { BrokerError, REPO, REQUEST_LABEL, env, type Lease } from "./protocol.js
 import { parseVolunteerMarker, replaceVolunteerMarker } from "./markers.js";
 import { signVolunteerMarker, verifyVolunteerMarker, type VolunteerLeaseMarker } from "./protocol.js";
 import { fetchWithRetry } from "./http.js";
+import { getLeaseForIssue } from "./redis.js";
 
 
 interface GithubIssue { number: number; title: string; body: string | null; state: string; assignees?: Array<{ login: string }>; labels?: Array<{ name?: string }>; pull_request?: unknown; }
@@ -74,7 +75,7 @@ export async function reconcilePublicAssignments(
   issue: GithubIssue,
   marker: VolunteerLeaseMarker,
   assertOwned: () => Promise<void>,
-): Promise<{ issue: GithubIssue; marker: VolunteerLeaseMarker }> {
+): Promise<{ issue: GithubIssue; marker: VolunteerLeaseMarker; pendingRemovals: string[] }> {
   const desired = new Map<string, string>();
   const now = Date.now();
   for (const lease of marker.leases) {
@@ -83,7 +84,40 @@ export async function reconcilePublicAssignments(
     }
   }
 
+  // Legacy ownership is authoritative too: public projection cleanup must not
+  // remove an assignee still required by a lease or a valid legacy submission.
+  const protectedLogins = new Set(marker.leases.filter((lease) => lease.ownership_mode !== "public")
+    .map((lease) => lease.contributor.toLowerCase()));
+  for (const submission of marker.submissions || []) {
+    if (submission.ownership_mode !== "public" && ["submitted", "accepted"].includes(submission.status)) {
+      protectedLogins.add(submission.verified_contributor.toLowerCase());
+    }
+  }
+  const pendingRemovals: string[] = [];
   const tracked = new Map((marker.public_assignees || []).map((login) => [login.toLowerCase(), login]));
+  // A public marker can lag a Redis renewal. Never remove its assignment unless
+  // Redis confirms that the corresponding ownership has expired or disappeared.
+  for (const lease of marker.leases) {
+    if (lease.ownership_mode !== "public" || Date.parse(lease.expires_at) > now) continue;
+    try {
+      const active = await getLeaseForIssue(issue.number, lease.language);
+      if (!active || active.released) continue;
+      const expiry = Date.parse(active.expires_at);
+      if (!Number.isFinite(expiry)) {
+        protectedLogins.add(lease.contributor.toLowerCase());
+      } else if (expiry > now) {
+        // A renewal or replacement protects the signed owner. Redis alone is
+        // never proof that a different contributor should be assigned publicly.
+        protectedLogins.add(lease.contributor.toLowerCase());
+        if (active.lease_id === lease.lease_id &&
+            active.contributor.toLowerCase() === lease.contributor.toLowerCase()) {
+          desired.set(lease.contributor.toLowerCase(), lease.contributor);
+        }
+      }
+    } catch {
+      protectedLogins.add(lease.contributor.toLowerCase());
+    }
+  }
   let current = issue;
   for (const [key, login] of desired) {
     if (hasIssueAssignee(current, login)) continue;
@@ -101,7 +135,7 @@ export async function reconcilePublicAssignments(
     }
   }
   for (const [key, login] of tracked) {
-    if (desired.has(key)) continue;
+    if (desired.has(key) || protectedLogins.has(key)) continue;
     if (!hasIssueAssignee(current, login)) {
       tracked.delete(key);
       continue;
@@ -111,9 +145,11 @@ export async function reconcilePublicAssignments(
       await unassignIssue(issue.number, login);
       const observed = await fetchIssue(issue.number);
       if (!hasIssueAssignee(observed, login)) tracked.delete(key);
+      else pendingRemovals.push(login);
       current = observed;
     } catch {
-      // Retain the signed provenance so a later heartbeat/claim can retry cleanup.
+      pendingRemovals.push(login);
+      // Retain the signed provenance so a later heartbeat/claim/release can retry cleanup.
     }
   }
 
@@ -126,7 +162,7 @@ export async function reconcilePublicAssignments(
     const fresh = await fetchIssue(issue.number);
     const freshMarker = parseVolunteerMarker(fresh.body);
     if (!freshMarker || !(await verifyVolunteerMarker(issue.number, freshMarker))) {
-      return { issue: fresh, marker };
+      return { issue: fresh, marker, pendingRemovals };
     }
     const signed = await signVolunteerMarker(issue.number, {
       ...freshMarker,
@@ -136,10 +172,10 @@ export async function reconcilePublicAssignments(
     current = await fetchIssue(issue.number);
     const patched = parseVolunteerMarker(current.body);
     if (patched && await verifyVolunteerMarker(issue.number, patched)) {
-      return { issue: current, marker: patched };
+      return { issue: current, marker: patched, pendingRemovals };
     }
   }
-  return { issue: current, marker };
+  return { issue: current, marker, pendingRemovals };
 }
 export async function unassignIssue(number: number, login: string): Promise<void> {
   await github(`/repos/${REPO}/issues/${number}/assignees`, { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ assignees: [login] }) });

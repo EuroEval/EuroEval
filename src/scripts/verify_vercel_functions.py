@@ -49,7 +49,6 @@ EXPECTED_RUNTIMES = {
     "api/worker/promotion-lock": "edge",
     "api/worker/promotion-reserve": "edge",
     "api/worker/promotion-status": "edge",
-    "api/worker/publication-lock": "edge",
     "api/worker/release": "edge",
     "api/worker/release-info": "edge",
     "api/worker/finalise": "nodejs",

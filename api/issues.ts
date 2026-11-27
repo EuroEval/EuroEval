@@ -1,5 +1,8 @@
 import { detectGguf } from "../src/frontend/services/huggingface.js";
 import { extractModelId } from "../src/frontend/services/github.js";
+import { recoverQueueOwnership } from "./worker/_lib/ownership.js";
+import { parseVolunteerMarker } from "./worker/_lib/markers.js";
+import { verifyVolunteerMarker } from "./worker/_lib/protocol.js";
 
 export const config = { runtime: "edge" };
 
@@ -15,6 +18,8 @@ interface IssueLike {
   title?: string;
   body?: string | null;
   labels?: Array<{ name?: string } | string>;
+  assignees?: Array<{ login: string }>;
+  assignee?: { login: string } | null;
 }
 
 function labelNames(issue: IssueLike): string[] {
@@ -83,7 +88,11 @@ function json(status: number, body: unknown, extra?: HeadersInit): Response {
 }
 
 export default async function handler(req: Request): Promise<Response> {
-  if (req.method === "OPTIONS") return json(204, "");
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: {
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "GET, OPTIONS",
+    "access-control-allow-headers": "content-type",
+  } });
   if (req.method !== "GET") return json(405, { error: "Method not allowed" });
 
   const url = new URL(req.url);
@@ -111,6 +120,24 @@ export default async function handler(req: Request): Promise<Response> {
   if (!r.ok) return json(r.status, await r.text());
 
   const issues = (await r.json()) as IssueLike[];
+  if (state === "open" && token) {
+    await Promise.all(issues.map(async (issue) => {
+      const marker = parseVolunteerMarker(issue.body ?? null);
+      if (!marker || !(marker.leases.some((lease) => Date.parse(lease.expires_at) <= Date.now()) ||
+          marker.public_assignees?.some((login) => !marker.leases.some((lease) =>
+            lease.ownership_mode === "public" && lease.contributor.toLowerCase() === login.toLowerCase() &&
+            Date.parse(lease.expires_at) > Date.now())))) return;
+      try {
+        if (!(await verifyVolunteerMarker(issue.number, marker))) return;
+        const recovered = await recoverQueueOwnership(issue.number);
+        if (recovered) {
+          issue.body = recovered.issue.body;
+          issue.assignees = recovered.issue.assignees;
+          issue.assignee = recovered.issue.assignees?.[0] ?? null;
+        }
+      } catch { /* Queue reads remain available when recovery dependencies fail. */ }
+    }));
+  }
   // Only the open queue is filtered on GGUF status, so only backfill labels
   // there; labelling needs the write-scoped token submit-evaluation also uses.
   if (state === "open" && token) await labelGgufIssues(issues, token);

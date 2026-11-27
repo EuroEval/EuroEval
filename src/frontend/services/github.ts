@@ -1,3 +1,5 @@
+import { apiUrl } from "./api.js";
+
 export const REPO = "EuroEval/EuroEval";
 export const LABEL = "model evaluation request";
 export const FAILED_LABEL = "evaluation-failed";
@@ -190,7 +192,7 @@ export async function listOpenEvalIssues(
   const raw: RawIssue[] = [];
   const maxPages = 10;
   for (let page = 1; page <= maxPages; page++) {
-    const r = await fetch(`/api/issues?state=open&page=${page}${buster}`, init);
+    const r = await fetch(apiUrl(`/api/issues?state=open&page=${page}${buster}`), init);
     if (!r.ok) {
       throw new Error(`Failed to load queue (${r.status}).`);
     }
@@ -222,7 +224,7 @@ export interface EvaluatorCount {
 }
 
 export async function listEvaluators(): Promise<EvaluatorCount[]> {
-  const r = await fetch("/api/hall-of-fame");
+  const r = await fetch(apiUrl("/api/hall-of-fame"));
   if (!r.ok) {
     throw new Error(`Failed to load hall of fame (${r.status}).`);
   }
@@ -241,7 +243,7 @@ export async function submitEvalRequest(
   modelId: string,
   languageGroups: string[],
 ): Promise<SubmitResult> {
-  const r = await fetch("/api/submit-evaluation", {
+  const r = await fetch(apiUrl("/api/submit-evaluation"), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ model_id: modelId, language_groups: languageGroups }),

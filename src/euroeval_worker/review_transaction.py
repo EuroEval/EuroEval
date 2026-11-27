@@ -191,6 +191,7 @@ class VolunteerReviewer:
         reviewer: str,
         reasons: list[str] | None = None,
         plan_fingerprint: str | None = None,
+        replace_existing: bool = False,
     ) -> ReviewReport:
         """Apply a confirmed decision, fencing accepted publication.
 
@@ -205,6 +206,8 @@ class VolunteerReviewer:
                 Reasons recorded with the decision.
             plan_fingerprint (optional):
                 Confirmed canonical publication plan fingerprint.
+            replace_existing (optional):
+                Explicitly select submitted results over differing stored results.
 
         Returns:
             The review report for the decided submission.
@@ -213,7 +216,9 @@ class VolunteerReviewer:
             ReviewError:
                 If the decision or its publication cannot be completed safely.
         """
-        inspected = self.show(submission_id=submission_id)
+        inspected = self.show(
+            submission_id=submission_id, replace_existing=replace_existing
+        )
         existing = _existing_decisions(
             store=self.store, report=inspected, outcome=outcome
         )
@@ -255,6 +260,7 @@ class VolunteerReviewer:
                 reasons=reasons,
                 plan_fingerprint=plan_fingerprint,
                 publication=None,
+                replace_existing=False,
             )
         if (
             not existing
@@ -272,6 +278,7 @@ class VolunteerReviewer:
                 reasons=reasons,
                 plan_fingerprint=plan_fingerprint,
                 publication=publication,
+                replace_existing=replace_existing,
             )
 
     def _decide(
@@ -282,6 +289,7 @@ class VolunteerReviewer:
         reasons: list[str] | None,
         plan_fingerprint: str | None,
         publication: PublicationSession | None,
+        replace_existing: bool = False,
     ) -> ReviewReport:
         """Persist one immutable decision and complete its broker transition.
 
@@ -298,6 +306,8 @@ class VolunteerReviewer:
                         Fingerprint displayed to and confirmed by the reviewer.
                     publication (optional):
                         Active canonical publication session.
+                    replace_existing (optional):
+                        Explicit selection of submitted results.
 
         Returns:
                     The independently validated submission report.
@@ -306,7 +316,9 @@ class VolunteerReviewer:
                     ReviewError:
                         If durable decision state or broker fencing is inconsistent.
         """
-        report = self.show(submission_id=submission_id)
+        report = self.show(
+            submission_id=submission_id, replace_existing=replace_existing
+        )
         reasons = reasons or []
         existing = _existing_decisions(store=self.store, report=report, outcome=outcome)
         if outcome == "accepted" and existing:
@@ -907,25 +919,35 @@ class VolunteerReviewer:
             bucket=self.store.staging_bucket, path=path, content=content
         )
 
-    def show(self, submission_id: str) -> ReviewReport:
+    def show(
+        self, submission_id: str, *, replace_existing: bool = False
+    ) -> ReviewReport:
         """Independently load and validate a staged submission.
 
         Args:
             submission_id: Submission ID.
+            replace_existing (optional):
+                Preview explicitly selecting submitted results for valid collisions.
 
         Returns:
             The validated submission report.
         """
-        return self._show(submission_id=submission_id)
+        return self._show(
+            submission_id=submission_id, replace_existing=replace_existing
+        )
 
     def _show(
-        self, submission_id: str, decision_paths: list[str] | None = None
+        self,
+        submission_id: str,
+        decision_paths: list[str] | None = None,
+        replace_existing: bool = False,
     ) -> ReviewReport:
         """Independently load and validate a staged submission.
 
         Args:
             submission_id: Submission ID.
             decision_paths (optional): Decision paths already listed for this call.
+            replace_existing (optional): Explicitly select submitted results.
 
         Returns:
                     The validated submission report.
@@ -943,7 +965,9 @@ class VolunteerReviewer:
         report = _validate_manifest(
             manifest=manifest, store=self.store, scope_policy=self.scope_policy
         )
-        observations = self._canonical_plan(report=report)
+        observations = self._canonical_plan(
+            report=report, replace_existing=replace_existing
+        )
         fingerprint = _plan_fingerprint(report=report, observations=observations)
         report = dataclasses.replace(
             report, canonical_observations=observations, plan_fingerprint=fingerprint
@@ -977,11 +1001,15 @@ class VolunteerReviewer:
             return report
         return report
 
-    def _canonical_plan(self, report: ReviewReport) -> tuple[CanonicalObservation, ...]:
+    def _canonical_plan(
+        self, report: ReviewReport, *, replace_existing: bool = False
+    ) -> tuple[CanonicalObservation, ...]:
         """Inspect destinations and permit only strict newer same-identity records.
 
         Args:
             report: Validated staged result report.
+            replace_existing (optional):
+                Explicitly select incoming bytes for valid same-identity collisions.
 
         Returns:
             Immutable destination observations for reviewer confirmation.
@@ -991,12 +1019,18 @@ class VolunteerReviewer:
         """
         observations: list[CanonicalObservation] = []
         _raise_on_identity_collisions(record.identity for record in report.records)
+        current_by_path = self.store.read_optional_many(
+            bucket=self.results_bucket,
+            paths=[
+                r.canonical_path
+                for r in report.records
+                if not _is_canary_identity(r.identity)
+            ],
+        )
         for record in report.records:
             if _is_canary_identity(record.identity):
                 continue
-            current = self.store.read_optional(
-                self.results_bucket, record.canonical_path
-            )
+            current = current_by_path[record.canonical_path]
             replace = False
             if current is not None and current != record.content:
                 try:
@@ -1012,7 +1046,7 @@ class VolunteerReviewer:
                         raise ValueError(
                             "staged record identity does not match its path"
                         )
-                    selected = dedup_newer_record(old, new)
+                    selected = new if replace_existing else dedup_newer_record(old, new)
                     if selected is old:
                         if not _records_semantically_identical(old=old, new=new):
                             raise ValueError(
@@ -1102,9 +1136,37 @@ class VolunteerReviewer:
         if publisher is None and self.publisher_factory is not None:
             publisher = self.publisher_factory()
         if publisher is None:
-            raise ReviewError("Canonical publication lock configuration is required")
+            raise ReviewError("Canonical publication configuration is required")
         with publisher.session() as session:
             yield session
+
+    def group_submissions_by_model(self, submission_ids: list[str]) -> list[list[str]]:
+        """Group submission IDs using manifest headers, without loading result evidence.
+
+        Args:
+            submission_ids: Pending submissions to organise for interactive review.
+
+        Returns:
+            Groups in first-seen model order, preserving submission order.
+
+        Raises:
+            ReviewError: If a manifest header has an invalid identity or model.
+        """
+        paths = [f"{_MANIFEST_PREFIX}/{sid}.json" for sid in submission_ids]
+        contents = self.store.read_many(bucket=self.store.staging_bucket, paths=paths)
+        groups: dict[str, list[str]] = {}
+        for submission_id, path in zip(submission_ids, paths, strict=True):
+            manifest = _load_object(content=contents[path], context=path)
+            model = manifest.get("model")
+            model_id = model.get("id") if isinstance(model, dict) else None
+            if (
+                manifest.get("submission_id") != submission_id
+                or not isinstance(model_id, str)
+                or not model_id.strip()
+            ):
+                raise ReviewError("Manifest header has an invalid submission or model")
+            groups.setdefault(model_id, []).append(submission_id)
+        return list(groups.values())
 
     def list_pending_submissions(self) -> list[tuple[str, int, str, str]]:
         """Return durable manifests without one terminal decision artifact.
@@ -1116,7 +1178,7 @@ class VolunteerReviewer:
         Returns:
             Submission ID, issue, contributor, and language summaries.
         """
-        summaries = self._list_submission_summaries()
+        paths = self.store.list_manifests()
         decision_paths = self.store.list_all_decisions()
         decisions_by_submission: dict[str, list[str]] = {}
         prefix = "volunteer/decisions/"
@@ -1127,15 +1189,28 @@ class VolunteerReviewer:
                 decisions_by_submission.setdefault(submission_id, []).append(path)
         pending: list[tuple[str, int, str, str]] = []
         with tqdm(
-            summaries, desc="Checking volunteer submissions", unit="submission"
+            total=len(paths),
+            desc="Verifying volunteer submissions",
+            unit="submission",
+            miniters=1,
         ) as progress:
-            for summary in progress:
-                if not self._has_terminal_decision(
-                    submission_id=summary[0],
-                    issue_number=summary[1],
-                    decision_paths=decisions_by_submission.get(summary[0], []),
-                ):
-                    pending.append(summary)
+            for start in range(0, len(paths), 10):
+                batch = paths[start : start + 10]
+                contents = self.store.read_many(
+                    bucket=self.store.staging_bucket, paths=batch
+                )
+                for path in batch:
+                    summary = _manifest_summary(
+                        _load_object(content=contents[path], context=path)
+                    )
+                    if not self._has_terminal_decision(
+                        submission_id=summary[0],
+                        issue_number=summary[1],
+                        decision_paths=decisions_by_submission.get(summary[0], []),
+                    ):
+                        pending.append(summary)
+                progress.update(len(batch))
+                progress.refresh()
         return pending
 
     def _has_terminal_decision(
@@ -1222,6 +1297,15 @@ class VolunteerReviewer:
             )
             return False
 
+    def list_submissions(self) -> list[tuple[str, int, str, str]]:
+        """Return all durable manifest summaries, including historical ones.
+
+        Returns:
+            Manifest summaries as ``(submission_id, issue_number, contributor,
+            language)`` tuples.
+        """
+        return self._list_submission_summaries()
+
     def _list_submission_summaries(self) -> list[tuple[str, int, str, str]]:
         """Load summaries for every durable manifest.
 
@@ -1231,22 +1315,10 @@ class VolunteerReviewer:
         paths = self.store.list_manifests()
         contents = self.store.read_many(self.store.staging_bucket, paths)
         summaries: list[tuple[str, int, str, str]] = []
-        with tqdm(
-            paths, desc="Loading volunteer manifests", unit="manifest"
-        ) as progress:
-            for path in progress:
-                manifest = _load_object(content=contents[path], context=path)
-                summaries.append(_manifest_summary(manifest))
+        for path in paths:
+            manifest = _load_object(content=contents[path], context=path)
+            summaries.append(_manifest_summary(manifest))
         return summaries
-
-    def list_submissions(self) -> list[tuple[str, int, str, str]]:
-        """Return all durable manifest summaries, including historical ones.
-
-        Returns:
-            Manifest summaries as ``(submission_id, issue_number, contributor,
-            language)`` tuples.
-        """
-        return self._list_submission_summaries()
 
 
 def _completion_bytes(submission_id: str, outcome: str, decision_digest: str) -> bytes:

@@ -53,15 +53,15 @@ function buildIssueBody(modelId: string, groups: string[]): string {
 async function fetchEvaluatedGroups(
   reqUrl: string,
   modelId: string,
-): Promise<string[]> {
+): Promise<string[] | null> {
   const url = new URL("/evaluated-models.json", reqUrl).toString();
   try {
     const r = await fetch(url);
-    if (!r.ok) return [];
+    if (!r.ok) return null;
     const data = (await r.json()) as Record<string, string[]>;
     return data[modelId] ?? [];
   } catch {
-    return [];
+    return null;
   }
 }
 
@@ -127,30 +127,21 @@ async function createIssue(
 }
 
 export default async function handler(req: Request): Promise<Response> {
-  if (req.method === "OPTIONS") return json(204, "");
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: {
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "POST, OPTIONS",
+    "access-control-allow-headers": "content-type",
+  } });
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
 
   const token = process.env.GITHUB_TOKEN;
   if (!token) return json(500, { error: "Server is missing GITHUB_TOKEN" });
 
-  const origin = req.headers.get("origin") ?? req.headers.get("referer") ?? "";
-  const isDev = /^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(origin);
-
-  if (!isDev) {
-    const ip =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      req.headers.get("x-real-ip") ||
-      "unknown";
-
-    const { success, reset } = await ratelimit.limit(ip);
-    if (!success) {
-      const retryAfter = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
-      return json(
-        429,
-        { error: "Too many submissions. Try again later." },
-        { "retry-after": String(retryAfter) },
-      );
-    }
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const { success, reset } = await ratelimit.limit(ip);
+  if (!success) {
+    const retryAfter = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
+    return json(429, { error: "Too many submissions. Try again later." }, { "retry-after": String(retryAfter) });
   }
 
   let payload: { model_id?: unknown; language_groups?: unknown };
@@ -200,6 +191,7 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   const alreadyEvaluated = await fetchEvaluatedGroups(req.url, baseModelId);
+  if (alreadyEvaluated === null) return json(503, { error: "The evaluated-model index is unavailable. Try again later." });
   const remaining = (groups as string[]).filter(
     (g) => !alreadyEvaluated.includes(g),
   );

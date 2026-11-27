@@ -659,12 +659,7 @@ class TestUploadResultsToBucket:
             *, api: object, token: str, bucket: str
         ) -> CanonicalPublisher:
             del api
-            return CanonicalPublisher(
-                api=remote_adapter,
-                token=token,
-                bucket=bucket,
-                lock=_TestPublicationLock(bucket=bucket),
-            )
+            return CanonicalPublisher(api=remote_adapter, token=token, bucket=bucket)
 
         original_batch = api.batch_bucket_files
 
@@ -725,12 +720,7 @@ class TestUploadResultsToBucket:
             *, api: object, token: str, bucket: str
         ) -> CanonicalPublisher:
             del api
-            return CanonicalPublisher(
-                api=remote_adapter,
-                token=token,
-                bucket=bucket,
-                lock=_TestPublicationLock(bucket=bucket),
-            )
+            return CanonicalPublisher(api=remote_adapter, token=token, bucket=bucket)
 
         remote_adapter = api
         monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
@@ -1090,28 +1080,6 @@ class _TestBucketApi:
                 local_path.write_bytes(self.objects[remote_path])
 
 
-class _TestPublicationLock:
-    """In-memory publication lock scoped to the patched bucket."""
-
-    def __init__(self, bucket: str) -> None:
-        """Initialise the lock adapter.
-
-        Args:
-            bucket: Bucket that the lock protects.
-        """
-        self.bucket = bucket
-        self.endpoint = "memory://publication-lock"
-
-    def request(self, action: str, owner: str) -> str:
-        """Acknowledge lock operations without remote access.
-
-        Returns:
-            The simulated lock status.
-        """
-        del owner
-        return "released" if action == "release" else "owned"
-
-
 def _upload_record(*, dataset: str) -> dict[str, object]:
     """Build an EEE result record for a bucket upload test.
 
@@ -1151,10 +1119,7 @@ def _use_test_publisher(
     ) -> CanonicalPublisher:
         del api
         return CanonicalPublisher(
-            api=_TestBucketApi(upload_error=upload_error),
-            token=token,
-            bucket=bucket,
-            lock=_TestPublicationLock(bucket=bucket),
+            api=_TestBucketApi(upload_error=upload_error), token=token, bucket=bucket
         )
 
     monkeypatch.setattr(bucket_sync, "CanonicalPublisher", publisher_factory)

@@ -1130,163 +1130,6 @@ def test_encoder_canary_uses_ordinary_result_path_without_corpus(
     assert broker.finalised
 
 
-def test_evaluation_failure_keeps_active_lease_for_once(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """Preserve the lease and propagate evaluation errors in once mode.
-
-    Args:
-        monkeypatch:
-            Pytest fixture for replacing dependencies during the test.
-        tmp_path:
-            Temporary directory for files created by the test.
-    """
-    monkeypatch.setattr(
-        runtime, "authenticate", lambda client, state: ("cred", "login")
-    )
-    monkeypatch.setattr(
-        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
-    )
-    broker = Broker()
-
-    class FailingEvaluator:
-        """Evaluator that fails before producing a record."""
-
-        def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
-            """Raise a representative evaluation failure.
-
-            Args:
-                lease:
-                    Lease supplied to the test.
-                output_path:
-                    Path where evaluation results would be written.
-
-            Raises:
-                RuntimeError: Always, to exercise release handling.
-            """
-            raise RuntimeError("evaluation failed")
-
-    worker = runtime.Worker(
-        client=broker,
-        state=StateStore(tmp_path),
-        evaluator=FailingEvaluator(),
-        hardware_factory=lambda: HARDWARE,
-    )
-    with pytest.raises(RuntimeError, match="evaluation failed"):
-        worker.run(once=True)
-    assert broker.releases == []
-    active = StateStore(tmp_path).load_active()
-    assert active is not None
-    assert active.evaluation_failures == 0
-    assert not active.release_pending
-
-
-class Broker:
-    """Broker fake covering claim, lease, and result lifecycle."""
-
-    def __init__(self) -> None:
-        """Initialise broker state."""
-        self.claims = 0
-        self.submissions = 0
-        self.releases: list[str] = []
-        self.finalised = False
-
-    def claim(self, credential: str, hardware: HardwareReport) -> Claim:
-        """Return the test lease.
-
-        Args:
-            credential:
-                Credential supplied to the test.
-            hardware:
-                Hardware report used to request work.
-
-        Returns:
-            A claim containing the module-level test lease.
-        """
-        self.claims += 1
-        return Claim(LEASE)
-
-    def finalise(self, credential: str, lease_id: str) -> str:
-        """Accept finalisation and return its stable identifier.
-
-        Args:
-            credential:
-                Credential supplied to the test.
-            lease_id:
-                Lease id supplied to the test.
-
-        Returns:
-            The stable submission identifier.
-        """
-        self.finalised = True
-        return "submission-1"
-
-    def heartbeat(self, credential: str, lease_id: str) -> str:
-        """Accept a test heartbeat.
-
-        Args:
-            credential:
-                Credential supplied to the test.
-            lease_id:
-                Lease id supplied to the test.
-
-        Returns:
-            The current lease expiry.
-        """
-        return LEASE.expires_at
-
-    def poll_auth(self, session_id: str) -> AuthPoll:
-        """Return approved test auth.
-
-        Args:
-            session_id:
-                Identifier of the device-flow session to poll.
-
-        Returns:
-            An approved authentication response for the test account.
-        """
-        return AuthPoll(False, "cred", "login")
-
-    def release(self, credential: str, lease_id: str, reason: str) -> None:
-        """Record lease release.
-
-        Args:
-            credential:
-                Credential supplied to the test.
-            lease_id:
-                Lease id supplied to the test.
-            reason:
-                Reason supplied to the test.
-        """
-        self.releases.append(reason)
-
-    def start_auth(self) -> AuthStart:
-        """Return test auth details.
-
-        Returns:
-            Device-flow session, user code, verification URL and polling intervals.
-        """
-        return AuthStart("session", "CODE", "https://example.test", 60, 1)
-
-    def submit_result(self, credential: str, lease: Lease, result: EEERecord) -> None:
-        """Fail once to verify digest-stable retry.
-
-        Args:
-            credential:
-                Credential supplied to the test.
-            lease:
-                Lease supplied to the test.
-            result:
-                Result supplied to the test.
-
-        Raises:
-            RuntimeError: On the first submission.
-        """
-        self.submissions += 1
-        if self.submissions == 1:
-            raise RuntimeError("temporary broker error")
-
-
 def test_evaluator_runs_only_missing_scope_identities(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -1465,6 +1308,164 @@ def test_expired_active_lease_is_archived_before_new_claim(
     assert state.load_active() is None
 
 
+class Broker:
+    """Broker fake covering claim, lease, and result lifecycle."""
+
+    def __init__(self) -> None:
+        """Initialise broker state."""
+        self.claims = 0
+        self.submissions = 0
+        self.releases: list[str] = []
+        self.finalised = False
+
+    def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+        """Return the test lease.
+
+        Args:
+            credential:
+                Credential supplied to the test.
+            hardware:
+                Hardware report used to request work.
+
+        Returns:
+            A claim containing the module-level test lease.
+        """
+        self.claims += 1
+        return Claim(LEASE)
+
+    def finalise(self, credential: str, lease_id: str) -> str:
+        """Accept finalisation and return its stable identifier.
+
+        Args:
+            credential:
+                Credential supplied to the test.
+            lease_id:
+                Lease id supplied to the test.
+
+        Returns:
+            The stable submission identifier.
+        """
+        self.finalised = True
+        return "submission-1"
+
+    def heartbeat(self, credential: str, lease_id: str) -> str:
+        """Accept a test heartbeat.
+
+        Args:
+            credential:
+                Credential supplied to the test.
+            lease_id:
+                Lease id supplied to the test.
+
+        Returns:
+            The current lease expiry.
+        """
+        return LEASE.expires_at
+
+    def poll_auth(self, session_id: str) -> AuthPoll:
+        """Return approved test auth.
+
+        Args:
+            session_id:
+                Identifier of the device-flow session to poll.
+
+        Returns:
+            An approved authentication response for the test account.
+        """
+        return AuthPoll(False, "cred", "login")
+
+    def release(self, credential: str, lease_id: str, reason: str) -> None:
+        """Record lease release.
+
+        Args:
+            credential:
+                Credential supplied to the test.
+            lease_id:
+                Lease id supplied to the test.
+            reason:
+                Reason supplied to the test.
+        """
+        self.releases.append(reason)
+
+    def start_auth(self) -> AuthStart:
+        """Return test auth details.
+
+        Returns:
+            Device-flow session, user code, verification URL and polling intervals.
+        """
+        return AuthStart("session", "CODE", "https://example.test", 60, 1)
+
+    def submit_result(self, credential: str, lease: Lease, result: EEERecord) -> None:
+        """Fail once to verify digest-stable retry.
+
+        Args:
+            credential:
+                Credential supplied to the test.
+            lease:
+                Lease supplied to the test.
+            result:
+                Result supplied to the test.
+
+        Raises:
+            RuntimeError: On the first submission.
+        """
+        self.submissions += 1
+        if self.submissions == 1:
+            raise RuntimeError("temporary broker error")
+
+
+def test_expired_pending_cleanup_exits_without_claiming(tmp_path: Path) -> None:
+    """Retain abandoned output without claiming new work after cleanup expiry.
+
+    Args:
+        tmp_path:
+            Private worker state directory.
+    """
+    state = StateStore(directory=tmp_path)
+    state.save_auth(credential="cred", github_login="login")
+    state.save_active(
+        lease=dataclasses.replace(LEASE, expires_at="2000-01-01T00:00:00Z"),
+        records=(PendingRecord.from_record(EEERecord({"timestamp": "original"})),),
+        github_login="login",
+        managed_image_digest=LEASE.image_digest,
+        release_pending=True,
+    )
+
+    def reject_request(
+        method: str,
+        url: str,
+        headers: dict[str, str],
+        payload: dict[str, object] | None,
+    ) -> dict[str, object]:
+        """Reject new work after the abandoned lease has expired.
+
+        Args:
+            method:
+                HTTP method.
+            url:
+                Broker endpoint.
+            headers:
+                Request headers.
+            payload:
+                Protocol payload.
+
+        Raises:
+            AssertionError:
+                If cleanup starts a new broker operation.
+        """
+        raise AssertionError(f"expired pending cleanup requested {url}")
+
+    worker = runtime.Worker(
+        client=BrokerClient(server="https://example.test", request=reject_request),
+        state=state,
+        hardware_factory=lambda: HARDWARE,
+        image_digest=LEASE.image_digest,
+    )
+    assert worker.run(launcher_managed=True) == 0
+    assert state.load_active() is None
+    assert list(state.archive_dir.glob("*.json"))
+
+
 def test_failure_recording_preserves_latest_renewal_and_acknowledgements(
     tmp_path: Path,
 ) -> None:
@@ -1533,6 +1534,7 @@ def test_finalise_response_loss_is_idempotently_retried(
             self.finalised = True
             raise BrokerError("response lost", status=None)
 
+    monkeypatch.setattr(runtime.time, "sleep", lambda seconds: None)
     broker = LostFinalise()
     state = StateStore(tmp_path)
     worker = runtime.Worker(
@@ -1540,11 +1542,11 @@ def test_finalise_response_loss_is_idempotently_retried(
         state=state,
         evaluator=OneRecordEvaluator(),
         hardware_factory=lambda: HARDWARE,
+        image_digest=LEASE.image_digest,
     )
-    with pytest.raises(BrokerError):
-        worker.run(once=True)
-    assert state.load_active() is not None
-    worker.run(once=True)
+    assert worker.run(launcher_managed=True) == 0
+    assert broker.finalised
+    assert broker.claims == 1
     assert state.load_active() is None
 
 
@@ -2110,6 +2112,31 @@ def test_managed_handoff_resumes_exact_records(
     assert uploads.count(records[0].record_json) == 1
 
 
+def test_managed_image_mismatch_never_releases_active_lease(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Keep another image's checkpoint untouched after managed validation fails."""
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    state = StateStore(directory=tmp_path)
+    state.save_active(
+        lease=LEASE, github_login="login", managed_image_digest="sha256:other"
+    )
+
+    broker = Broker()
+    worker = runtime.Worker(
+        client=broker,
+        state=state,
+        image_digest=LEASE.image_digest,
+        hardware_factory=lambda: HARDWARE,
+    )
+    assert worker.run(launcher_managed=True) == 1
+    assert broker.releases == []
+    active = state.load_active()
+    assert active is not None and not active.release_pending
+
+
 @pytest.mark.parametrize("finalised", [False, True])
 def test_managed_provenance_survives_all_state_writes(
     tmp_path: Path, finalised: bool
@@ -2157,6 +2184,110 @@ def test_managed_provenance_survives_all_state_writes(
     assert state.active_path.read_bytes() == before
 
 
+@pytest.mark.parametrize("release_fails", [False, True])
+def test_managed_terminal_payment_failure_releases_without_resubmitting(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+    release_fails: bool,
+) -> None:
+    """Release broken runs, retaining exact output until release is confirmed.
+
+    Args:
+        monkeypatch:
+            Dependency replacement fixture.
+        tmp_path:
+            Private durable worker directory.
+        caplog:
+            Capture the original managed failure.
+        release_fails:
+            Whether the broker initially rejects cleanup too.
+    """
+    monkeypatch.setattr(runtime.time, "sleep", lambda seconds: None)
+    state = StateStore(directory=tmp_path)
+    state.save_auth(credential="cred", github_login="login")
+    records = (PendingRecord.from_record(EEERecord({"timestamp": "original"})),)
+    state.save_active(
+        lease=LEASE,
+        records=records,
+        github_login="login",
+        managed_image_digest=LEASE.image_digest,
+    )
+    releases: list[str] = []
+    uploads: list[str] = []
+    cleanup_available = not release_fails
+
+    def request(
+        method: str,
+        url: str,
+        headers: dict[str, str],
+        payload: dict[str, object] | None,
+    ) -> dict[str, object]:
+        """Model a broker outage on upload and optionally release.
+
+        Args:
+            method:
+                HTTP method supplied by the client.
+            url:
+                Requested broker endpoint.
+            headers:
+                Authenticated request headers.
+            payload:
+                Broker protocol payload.
+
+        Returns:
+            A successful heartbeat or release response.
+
+        Raises:
+            BrokerError:
+                For the failed upload or unavailable release.
+            AssertionError:
+                If abandoned work is claimed or finalised.
+        """
+        assert payload is not None
+        if url.endswith("heartbeat"):
+            return {
+                "protocol_version": "volunteer-worker/v1",
+                "expires_at": LEASE.expires_at,
+            }
+        if url.endswith("result"):
+            uploads.append(str(payload["record_json"]))
+            raise BrokerError("payment required", status=402)
+        if url.endswith("release"):
+            releases.append(str(payload["lease_id"]))
+            if not cleanup_available:
+                raise BrokerError("cleanup unavailable", status=503)
+            return {"protocol_version": "volunteer-worker/v1", "status": "released"}
+        raise AssertionError(f"abandoned work reached {url}")
+
+    worker = runtime.Worker(
+        client=BrokerClient(server="https://example.test", request=request),
+        state=state,
+        hardware_factory=lambda: HARDWARE,
+        image_digest=LEASE.image_digest,
+    )
+    assert worker.run(launcher_managed=True) == 1
+    assert releases == [LEASE.lease_id]
+    assert uploads == [records[0].record_json]
+    assert any(
+        entry.exc_info is not None
+        and isinstance(entry.exc_info[1], BrokerError)
+        and entry.exc_info[1].status == 402
+        for entry in caplog.records
+    )
+    if release_fails:
+        active = state.load_active()
+        assert active is not None and active.release_pending
+        assert tuple(item.record_json for item in active.records) == tuple(
+            item.record_json for item in records
+        )
+        cleanup_available = True
+        assert worker.run(launcher_managed=True) == 0
+        assert releases == [LEASE.lease_id, LEASE.lease_id]
+        assert uploads == [records[0].record_json]
+    assert state.load_active() is None
+
+
 def test_no_gpu_exits_before_claim(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -2196,7 +2327,7 @@ def test_nvidia_csv_parser_handles_compute_capability_and_fails_without_gpu() ->
 def test_partial_acknowledgements_survive_restart(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Retry only unacknowledged records after a failed submission.
+    """Resume only unacknowledged records after an intentional interruption.
 
     Args:
         monkeypatch:
@@ -2229,7 +2360,7 @@ def test_partial_acknowledgements_survive_restart(
             return [EEERecord({"id": "one"}), EEERecord({"id": "two"})]
 
     class FailSecond(Broker):
-        """Broker that loses the connection on the second record."""
+        """Broker interrupted while submitting the second record."""
 
         def __init__(self) -> None:
             """Initialise broker state and the second-record failure counter."""
@@ -2239,7 +2370,7 @@ def test_partial_acknowledgements_survive_restart(
         def submit_result(
             self, credential: str, lease: Lease, result: EEERecord
         ) -> None:
-            """Fail all retries for the second record on the first run.
+            """Interrupt the second record once on the first run.
 
             Args:
                 credential:
@@ -2250,12 +2381,12 @@ def test_partial_acknowledgements_survive_restart(
                     Result supplied to the test.
 
             Raises:
-                BrokerError:
-                    When the second record is first submitted.
+                KeyboardInterrupt:
+                    When the second record is interrupted.
             """
-            if result.record["id"] == "two" and self.failures < 3:
+            if result.record["id"] == "two" and self.failures < 1:
                 self.failures += 1
-                raise BrokerError("temporary", status=503, retry_after=1)
+                raise KeyboardInterrupt
             super().submit_result(credential, lease, result)
 
     broker = FailSecond()
@@ -2265,7 +2396,7 @@ def test_partial_acknowledgements_survive_restart(
         evaluator=TwoRecords(),
         hardware_factory=lambda: HARDWARE,
     )
-    with pytest.raises(BrokerError):
+    with pytest.raises(KeyboardInterrupt):
         worker.run(once=True)
     active = StateStore(tmp_path).load_active()
     assert active is not None
@@ -2618,6 +2749,72 @@ def test_state_round_trip_preserves_scope_alternatives_and_canary(
     assert active.lease == lease
     assert active.evaluation_failures == 2
     assert active.release_pending
+
+
+def test_terminal_evaluation_failure_releases_lease_for_once(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Release ownership and propagate terminal evaluation errors in once mode.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
+    broker = Broker()
+
+    class FailingEvaluator:
+        """Evaluator that fails before producing a record."""
+
+        def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
+            """Raise a representative evaluation failure.
+
+            Args:
+                lease:
+                    Lease supplied to the test.
+                output_path:
+                    Path where evaluation results would be written.
+
+            Raises:
+                RuntimeError: Always, to exercise release handling.
+            """
+            raise RuntimeError("evaluation failed")
+
+    worker = runtime.Worker(
+        client=broker,
+        state=StateStore(tmp_path),
+        evaluator=FailingEvaluator(),
+        hardware_factory=lambda: HARDWARE,
+    )
+    with pytest.raises(RuntimeError, match="evaluation failed"):
+        worker.run(once=True)
+    assert broker.releases == ["worker_failed"]
+    assert StateStore(tmp_path).load_active() is None
+    assert list(StateStore(tmp_path).archive_dir.glob("*.json"))
+
+
+def test_terminal_release_intent_requires_matching_owner_and_lease(
+    tmp_path: Path,
+) -> None:
+    """Mark only the exact unfinished lease for terminal release."""
+    state = StateStore(tmp_path)
+    state.save_active(lease=LEASE, github_login="owner")
+
+    assert not state.mark_release_pending(lease_id=LEASE.lease_id, github_login="other")
+    assert not state.mark_release_pending(lease_id="different", github_login="owner")
+    active = state.load_active()
+    assert active is not None and not active.release_pending
+
+    assert state.mark_release_pending(lease_id=LEASE.lease_id, github_login="owner")
+    active = state.load_active()
+    assert active is not None and active.release_pending
 
 
 def test_worker_caps_vllm_utilisation_to_fresh_free_gpu_memory(

@@ -31,7 +31,6 @@ import hashlib
 import json
 import logging
 import os
-import shlex
 import signal
 import socket
 import subprocess
@@ -46,10 +45,20 @@ import click
 from dotenv import load_dotenv
 from huggingface_hub import BucketFile, HfApi
 from huggingface_hub.errors import HfHubHTTPError
-from review_volunteer_results import main as run_review_command
-from review_volunteer_results import show_and_render
+from review_volunteer_results import (
+    configure_colours,
+    render_model_review,
+    show_and_render,
+    style_status,
+)
+from tqdm.auto import tqdm
 
-from euroeval_worker.review import PublicStagingError, reviewer_from_environment
+from euroeval_worker.review import (
+    PublicStagingError,
+    ReviewReport,
+    VolunteerReviewer,
+    reviewer_from_environment,
+)
 from leaderboards.backup import backup_results
 from leaderboards.canonical_publication import BucketApi, CanonicalPublisher
 from leaderboards.constants import (
@@ -59,7 +68,10 @@ from leaderboards.constants import (
     RESULTS_DIR,
     RESULTS_READY_LABEL,
 )
-from leaderboards.contamination_canary import is_canary_record
+from leaderboards.contamination_canary import (
+    is_canary_record,
+    process_contamination_canaries,
+)
 from leaderboards.github_api import close_issue, comment_on_issue, gh_request
 from leaderboards.leaderboard_visibility import (
     count_ranked_entries,
@@ -107,7 +119,8 @@ HF_LEADERBOARD_SPACE = "EuroEval/euroeval_leaderboard"
     show_default=True,
     help="Always regenerate leaderboards, even if no new results are found.",
 )
-def main(force: bool = False) -> None:
+@click.option("--no-colour", is_flag=True, help="Disable coloured terminal output.")
+def main(force: bool = False, no_colour: bool = False) -> None:
     """Harvest finished evaluations and regenerate leaderboards.
 
     Only issues with successfully harvested results are closed. Issues
@@ -118,10 +131,18 @@ def main(force: bool = False) -> None:
         force (optional):
             Whether to always regenerate leaderboards, even if no new results
             are found. Defaults to False.
+        no_colour (optional):
+            Disable colours throughout the review and child processes.
     """
+    configure_colours(no_colour=no_colour)
     check_required_env_vars()
     try:
-        should_continue = preflight_volunteer_review()
+        accepted_results: dict[ResultIdentity, str] = {}
+        accepted_predecessors: dict[ResultIdentity, str | None] = {}
+        should_continue = preflight_volunteer_review(
+            accepted_results=accepted_results,
+            accepted_predecessors=accepted_predecessors,
+        )
     except PublicStagingError:
         sys.exit(1)
     if not should_continue:
@@ -144,7 +165,10 @@ def main(force: bool = False) -> None:
         logger.info("Forcing leaderboard regeneration despite no new results.")
     else:
         if not upload_results_to_hf(
-            new_results_path=NEW_RESULTS_PATH, pending_lines=all_lines
+            new_results_path=NEW_RESULTS_PATH,
+            pending_lines=all_lines,
+            accepted_results=accepted_results,
+            accepted_predecessors=accepted_predecessors,
         ):
             sys.exit(1)
 
@@ -449,8 +473,16 @@ def deploy_to_vercel() -> bool:
     return True
 
 
-def preflight_volunteer_review() -> bool:
-    """Check private volunteer staging before any leaderboard side effect.
+def preflight_volunteer_review(
+    accepted_results: dict[ResultIdentity, str] | None = None,
+    accepted_predecessors: dict[ResultIdentity, str | None] | None = None,
+) -> bool:
+    """Review staged results and append accepted records to the collection input.
+
+    Args:
+        accepted_predecessors (optional): Canonical digests observed before approval,
+            with None recording reviewed absence.
+        accepted_results (optional): In-memory explicit incoming choices for upload.
 
     Returns:
         Whether leaderboard collection should continue. ``False`` means the
@@ -484,7 +516,6 @@ def preflight_volunteer_review() -> bool:
 
     submission_ids = [summary[0] for summary in pending]
     if not _stdin_is_interactive():
-        _log_review_commands(submission_ids=submission_ids)
         logger.warning(
             "Standard input is not interactive; continuing without automatic approval."
         )
@@ -502,143 +533,133 @@ def preflight_volunteer_review() -> bool:
         logger.info("Continuing; no volunteer submission was approved automatically.")
         return True
 
-    reviewer_login = _reviewer_login()
-    if not reviewer_login:
-        logger.error("Cannot review submissions without a verified GitHub login.")
-        return False
-
     review_error = False
-    for submission_id in submission_ids:
+    try:
+        groups = reviewer.group_submissions_by_model(submission_ids=submission_ids)
+    except (EOFError, KeyboardInterrupt):
+        logger.warning("Review cancelled; nothing collected.")
+        return False
+    except Exception:
+        logger.exception("Could not group pending submissions; collection stopped.")
+        return False
+    for group in groups:
         try:
-            displayed_report = show_and_render(
-                submission_id=submission_id, reviewer=reviewer
-            )
-        except Exception:
-            logger.exception(
-                "Could not display submission %s; skipping it.", submission_id
-            )
-            review_error = True
-            continue
-        blockers = [
-            observation
-            for observation in displayed_report.canonical_observations
-            if observation.conflict
-        ]
-        if blockers:
-            logger.warning(
-                "BLOCKED submission %s: canonical conflicts prevent approval. "
-                "It remains pending; skipping it.",
-                submission_id,
-            )
-            continue
-        try:
-            decision = (
-                input(f"Approve submission {submission_id}? [y/N]: ").strip().lower()
+            reports: list[ReviewReport] = []
+            with tqdm(
+                total=len(group), desc="Loading model", unit="language", mininterval=0
+            ) as progress:
+                for submission_id in group:
+                    reports.append(reviewer.show(submission_id=submission_id))
+                    progress.update(1)
+            if len({r.model_id for r in reports}) != 1:
+                logger.error("Model changed; inspect the submissions again.")
+                review_error = True
+                continue
+            if not _validate_review_canaries(reports=reports):
+                review_error = True
+                continue
+            render_model_review(reports=reports)
+            _review_model(
+                reviewer=reviewer,
+                reports=reports,
+                accepted_results=accepted_results,
+                accepted_predecessors=accepted_predecessors,
             )
         except (EOFError, KeyboardInterrupt):
             logger.warning("Review cancelled; collection stopped before side effects.")
             return False
-        if decision not in {"y", "yes"}:
-            logger.info("Skipped submission %s; it remains pending.", submission_id)
-            continue
-        try:
-            command = ["--reviewer", reviewer_login, "approve", submission_id]
-            command.extend(["--plan-fingerprint", displayed_report.plan_fingerprint])
-            command.extend(["--reason", "Reviewed during collector preflight"])
-            status = run_review_command(command)
         except Exception:
-            logger.exception("Approval failed for submission %s.", submission_id)
-            review_error = True
-            continue
-        if status:
-            logger.error(
-                "Approval failed for submission %s; it was not reported as approved.",
-                submission_id,
-            )
+            logger.exception("Could not review model; collection stopped.")
             review_error = True
     if review_error:
         logger.error(
-            "Volunteer review had errors; halting collection. Check each decision "
-            "before retrying because a failed approval may have partially completed."
+            "Volunteer review had errors; collection stopped. "
+            "Accepted results remain in new_results.jsonl."
         )
         return False
     return True
 
 
-def _log_review_commands(submission_ids: list[str]) -> None:
-    """Log copy-pasteable, shell-quoted maintainer review commands.
+def _review_model(
+    reviewer: VolunteerReviewer,
+    reports: list[ReviewReport],
+    accepted_results: dict[ResultIdentity, str] | None,
+    accepted_predecessors: dict[ResultIdentity, str | None] | None = None,
+) -> None:
+    """Record one local choice for all submitted languages of a model.
 
     Args:
-        submission_ids:
-            Volunteer submission ids for which to log review commands.
+        reviewer: Evidence loader used only when details are requested.
+        reports: Already validated model submissions.
+        accepted_results: Incoming choices carried to the normal upload phase.
+        accepted_predecessors: Optional review-time canonical digest evidence.
+
+    Raises:
+        KeyboardInterrupt: If the user stops review before collection.
     """
-    reviewer = os.environ.get("GITHUB_ACTOR") or "<github-login>"
-    reason = "reviewed submission evidence"
-    commands = [
-        ["uv", "run", "python", "src/scripts/review_volunteer_results.py", "list"]
-    ]
-    for submission_id in submission_ids:
-        commands.extend(
-            (
-                [
-                    "uv",
-                    "run",
-                    "python",
-                    "src/scripts/review_volunteer_results.py",
-                    "show",
-                    submission_id,
-                ],
-                [
-                    "uv",
-                    "run",
-                    "python",
-                    "src/scripts/review_volunteer_results.py",
-                    "--reviewer",
-                    reviewer,
-                    "approve",
-                    submission_id,
-                    "--reason",
-                    reason,
-                ],
-                [
-                    "uv",
-                    "run",
-                    "python",
-                    "src/scripts/review_volunteer_results.py",
-                    "--reviewer",
-                    reviewer,
-                    "reject",
-                    submission_id,
-                    "--reason",
-                    reason,
-                ],
+    while True:
+        lines = {
+            record.identity: json.dumps(
+                json.loads(record.content), separators=(",", ":")
             )
+            for report in reports
+            for record in report.records
+            if not (
+                record.identity[1] == "contamination-canary"
+                or record.identity[1].startswith("contamination-canary-")
+            )
+        }
+        predecessors: dict[ResultIdentity, str | None] = {}
+        for identity in lines:
+            path = RESULTS_DIR / identity_to_path(identity)
+            predecessors[identity] = (
+                hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else None
+            )
+        action = (
+            input(
+                "All languages: "
+                + style_status("[a] Accept submitted / replace existing", success=True)
+                + "  "
+                + style_status("[r] Keep existing", success=False)
+                + "  [d] Details  [s] Skip  [q] Stop: "
+            )
+            .strip()
+            .lower()
         )
-    logger.warning("Review commands (do not run until evidence is inspected):")
-    for command in commands:
-        logger.warning("%s", shlex.join(command))
-
-
-def _reviewer_login() -> str | None:
-    """Resolve the verified reviewer login without exposing credentials.
-
-    Returns:
-        The login or None when no authenticated login is available.
-    """
-    reviewer = os.environ.get("GITHUB_ACTOR", "").strip()
-    if reviewer:
-        return reviewer
-    try:
-        result = subprocess.run(
-            ["gh", "api", "user", "--jq", ".login"],
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=10,
+        if action in {"q", "quit"}:
+            raise KeyboardInterrupt
+        if action in {"", "s", "skip", "n", "no", "r", "reject"}:
+            return
+        if action in {"d", "details"}:
+            reports = [
+                show_and_render(
+                    submission_id=r.submission_id, reviewer=reviewer, verbose=True
+                )
+                for r in reports
+            ]
+            continue
+        if action not in {"a", "approve", "y", "yes"}:
+            logger.info("Choose accept, keep existing, details, skip, or stop.")
+            continue
+        if lines:
+            content = ("\n".join(lines.values()) + "\n").encode("utf-8")
+            with NEW_RESULTS_PATH.open("ab+") as output:
+                if output.tell():
+                    output.seek(-1, os.SEEK_END)
+                    if output.read(1) != b"\n":
+                        content = b"\n" + content
+                output.write(content)
+            if accepted_results is not None:
+                accepted_results.update(lines)
+            if accepted_predecessors is not None:
+                accepted_predecessors.update(predecessors)
+        logger.info(
+            "Accepted %s dataset results for %s; ready for upload.",
+            len(lines),
+            reports[0].model_id,
+            extra={"review_success": True},
         )
-    except (OSError, subprocess.SubprocessError):
-        return None
-    return result.stdout.strip() or None
+        return
 
 
 def _stdin_is_interactive() -> bool:
@@ -651,6 +672,58 @@ def _stdin_is_interactive() -> bool:
         return sys.stdin.isatty()
     except (AttributeError, OSError):
         return False
+
+
+def _validate_review_canaries(reports: list[ReviewReport]) -> bool:
+    """Require private canary evidence to score cleanly before local acceptance.
+
+    Args:
+        reports: Validated submissions for one model.
+
+    Returns:
+        Whether canary evidence is scoreable and does not flag the model.
+    """
+    canary_records = [
+        json.loads(record.content)
+        for report in reports
+        for record in report.records
+        if is_canary_record(record=json.loads(record.content))
+    ]
+    collected = False
+    for record in canary_records:
+        details = record.get("eval_library", {}).get("additional_details", {})
+        evidence = details.get("contamination_canary_evidence")
+        if isinstance(evidence, str):
+            evidence = json.loads(evidence)
+        if isinstance(evidence, dict) and evidence.get("status") == "collected":
+            collected = True
+    if not collected:
+        return True
+    try:
+        _, _, excluded_models, report = process_contamination_canaries(
+            records=canary_records
+        )
+    except Exception:
+        logger.exception(
+            "Private contamination-canary scoring failed; acceptance stopped."
+        )
+        return False
+    outcomes = report.get("models")
+    if (
+        report.get("status") != "scored"
+        or not isinstance(outcomes, list)
+        or any(
+            not isinstance(item, dict) or item.get("status") != "scored"
+            for item in outcomes
+        )
+        or reports[0].model_id in excluded_models
+    ):
+        logger.error(
+            "Private contamination-canary evidence is invalid or flagged; "
+            "acceptance stopped."
+        )
+        return False
+    return True
 
 
 def preview_in_dev_server() -> bool:
@@ -780,7 +853,11 @@ def regenerate_leaderboards(force: bool = False) -> bool:
 
 
 def upload_results_to_hf(
-    new_results_path: Path, *, pending_lines: list[str] | None = None
+    new_results_path: Path,
+    *,
+    pending_lines: list[str] | None = None,
+    accepted_results: dict[ResultIdentity, str] | None = None,
+    accepted_predecessors: dict[ResultIdentity, str | None] | None = None,
 ) -> bool:
     """Upload results to Hugging Face bucket.
 
@@ -793,6 +870,9 @@ def upload_results_to_hf(
             Path to the newly harvested results file (JSONL format).
         pending_lines (optional): Fully harvested and manually staged lines to resolve
             without rewriting the staging file first.
+        accepted_predecessors (optional): Canonical digests observed before approval,
+            with None recording reviewed absence.
+        accepted_results (optional): Exact incoming records already accepted in review.
 
     Returns:
         True if upload succeeded, False otherwise.
@@ -805,6 +885,12 @@ def upload_results_to_hf(
     try:
         existing = _load_existing_results(sources=source_bytes, decisions=decisions)
 
+        _assert_review_predecessors(
+            accepted_results=accepted_results or {},
+            accepted_predecessors=accepted_predecessors,
+            sources=source_bytes,
+        )
+
         # Resolve the batch before touching staging, results, or checkpoints.
         _process_new_results(
             new_results_path,
@@ -812,8 +898,9 @@ def upload_results_to_hf(
             source_bytes=source_bytes,
             decisions=decisions,
             lines=pending_lines,
+            accepted_results=accepted_results,
         )
-    except UnresolvedResultConflictError as error:
+    except (UnresolvedResultConflictError, ValueError) as error:
         logger.error("Result collection aborted: %s", error)
         return False
 
@@ -850,7 +937,17 @@ def upload_results_to_hf(
                 current_bytes=original_bytes,
                 candidate_bytes=final_bytes,
             )
-            if automatic.needs_choice:
+            if accepted_results and accepted_results.get(
+                identity
+            ) == final_bytes.decode("utf-8"):
+                prior = resolve_result_conflict(
+                    current=original_record,
+                    candidate=final_record,
+                    current_bytes=original_bytes,
+                    candidate_bytes=final_bytes,
+                    choice=ConflictChoice.INCOMING,
+                )
+            elif automatic.needs_choice:
                 try:
                     prior = resolve_result_interactively(
                         current=original_record,
@@ -954,7 +1051,33 @@ def upload_results_to_hf(
         written_paths=written_paths,
         source_bytes=source_bytes,
         decisions=decisions,
+        accepted_results=accepted_results,
+        accepted_predecessors=accepted_predecessors,
     )
+
+
+def _assert_review_predecessors(
+    accepted_results: dict[ResultIdentity, str],
+    accepted_predecessors: dict[ResultIdentity, str | None] | None,
+    sources: dict[ResultIdentity, bytes],
+) -> None:
+    """Check approval snapshots before local or remote publication changes.
+
+    Args:
+        accepted_results: Explicitly approved incoming records.
+        accepted_predecessors: Review-time canonical digests or absence.
+        sources: Current canonical bytes loaded from local storage.
+
+    Raises:
+        ValueError: If a canonical predecessor changed or was not inspected.
+    """
+    for identity in accepted_results:
+        if accepted_predecessors is None or identity not in accepted_predecessors:
+            raise ValueError("Canonical predecessor was not inspected; review again")
+        content = sources.get(identity)
+        observed = hashlib.sha256(content).hexdigest() if content is not None else None
+        if observed != accepted_predecessors[identity]:
+            raise ValueError("Canonical result changed since review; inspect again")
 
 
 def _cleanup_stale_artefacts() -> None:
@@ -1057,6 +1180,7 @@ def _process_new_results(
     source_bytes: dict[ResultIdentity, bytes] | None = None,
     decisions: list[ConflictDecision] | None = None,
     lines: list[str] | None = None,
+    accepted_results: dict[ResultIdentity, str] | None = None,
 ) -> None:
     """Process new results from JSONL file and merge into existing.
 
@@ -1068,6 +1192,7 @@ def _process_new_results(
         source_bytes (optional): Original source bytes indexed by result identity.
         decisions (optional): Output list for explicit owner choices.
         lines (optional): Already harvested lines replacing the on-disk staging file.
+        accepted_results (optional): Exact incoming records already chosen by the owner.
 
     """
     if lines is None and not new_results_path.exists():
@@ -1094,6 +1219,10 @@ def _process_new_results(
                 logger.debug(f"Skipping line {line_number}: no identity")
                 continue
 
+            candidate_line = json.dumps(record, separators=(",", ":"))
+            accepted = accepted_results.get(identity) if accepted_results else None
+            if accepted is not None and accepted != candidate_line:
+                continue
             if identity in merged:
                 current = merged[identity]
                 current_bytes = json.dumps(current, separators=(",", ":")).encode(
@@ -1107,6 +1236,7 @@ def _process_new_results(
                     candidate=record,
                     current_bytes=current_bytes,
                     candidate_bytes=candidate_bytes,
+                    choice=ConflictChoice.INCOMING if accepted is not None else None,
                 )
                 if decision.needs_choice:
                     decision = resolve_result_interactively(
@@ -1132,6 +1262,8 @@ def _upload_to_bucket(
     written_paths: list[Path],
     source_bytes: dict[ResultIdentity, bytes],
     decisions: list[ConflictDecision] | None = None,
+    accepted_results: dict[ResultIdentity, str] | None = None,
+    accepted_predecessors: dict[ResultIdentity, str | None] | None = None,
 ) -> bool:
     """Upload changed files to HF bucket using batch operation.
 
@@ -1143,6 +1275,9 @@ def _upload_to_bucket(
         source_bytes:
             Exact original bytes indexed by result identity.
         decisions (optional): Explicit byte-bound owner choices.
+        accepted_predecessors (optional): Canonical digests observed before approval,
+            with None recording reviewed absence.
+        accepted_results (optional): Exact incoming records accepted during review.
 
     Returns:
         True if upload succeeded, False otherwise.
@@ -1164,7 +1299,14 @@ def _upload_to_bucket(
                 records=candidate_bytes, sources=sources, **decision_options
             )
             session.publish(
-                records=candidate_bytes, sources=sources, **decision_options
+                records=candidate_bytes,
+                sources=sources,
+                **decision_options,
+                accepted_predecessors=accepted_predecessors,
+                accepted_records={
+                    identity: line.encode("utf-8")
+                    for identity, line in (accepted_results or {}).items()
+                },
             )
         logger.info(f"Published {len(candidate_bytes)} file(s) to {HF_RESULTS_BUCKET}.")
         return True

@@ -176,3 +176,5 @@ data/
 
 # Backups
 *.bak
+
+dist-api/
