@@ -249,6 +249,8 @@ async def _lifespan(app: FastAPI) -> t.AsyncIterator[None]:
     try:
         yield
     finally:
+        if app.state.redis is not None:
+            await app.state.redis.close()
         if owned:
             await app.state.http.aclose()
 

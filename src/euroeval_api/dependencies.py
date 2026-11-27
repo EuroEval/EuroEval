@@ -43,6 +43,8 @@ async def get_redis(request: Request) -> Redis:
         request.app.state.redis = Redis(
             url=require_env(name="UPSTASH_REDIS_REST_URL"),
             token=require_env(name="UPSTASH_REDIS_REST_TOKEN"),
+            rest_retries=2,
+            rest_retry_interval=0.1,
         )
     return request.app.state.redis
 
