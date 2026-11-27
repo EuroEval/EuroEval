@@ -1472,6 +1472,20 @@ def test_inventory_batches_manifests_and_lists_decisions_once() -> None:
     assert api.tree_prefixes.count("volunteer/decisions") == 1
 
 
+def test_inventory_receipt_skips_result_payload_reads() -> None:
+    """A completed durable decision avoids reloading staged result payloads."""
+    api, reviewer, _ = _reviewer()
+    reviewer.decide(SUBMISSION, "rejected", "maintainer")
+    api.download_batches.clear()
+
+    assert reviewer.list_pending_submissions() == []
+    assert not any(
+        bucket == STAGING and "/results/" in path
+        for batch in api.download_batches
+        for bucket, path in batch
+    )
+
+
 def test_inventory_verifies_in_batches_of_at_most_ten() -> None:
     """Large inventories use bounded downloads and preserve every pending submission."""
     api, reviewer, _ = _reviewer()

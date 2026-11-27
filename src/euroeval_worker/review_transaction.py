@@ -1231,12 +1231,46 @@ class VolunteerReviewer:
             exists; ``False`` for missing or invalid terminal state.
         """
         try:
-            if not (
+            paths = (
                 decision_paths
                 if decision_paths is not None
                 else self.store.list_decisions(submission_id)
-            ):
+            )
+            if not paths:
                 return False
+            # A completion receipt is written only after the terminal transaction
+            # finishes. Validate its durable decision binding before loading result
+            # payloads; anything that cannot be established here uses full review.
+            fast_decisions: list[tuple[t.Literal["accepted", "rejected"], str]] = []
+            for path in paths:
+                content = self.store.read(self.store.staging_bucket, path)
+                decision = _load_object(content=content, context=path)
+                digest = _digest(content)
+                outcome = decision.get("outcome")
+                if (
+                    decision.get("artifact") != _DECISION_ARTIFACT
+                    or decision.get("submission_id") != submission_id
+                    or decision.get("issue_number") != issue_number
+                    or decision.get("protocol_version") != PROTOCOL_VERSION
+                    or decision.get("immutable") is not True
+                    or outcome not in {"accepted", "rejected"}
+                    or path != _decision_path(submission_id, digest)
+                ):
+                    fast_decisions = []
+                    break
+                fast_decisions.append(
+                    (t.cast(t.Literal["accepted", "rejected"], outcome), digest)
+                )
+            if (
+                fast_decisions
+                and len({item[0] for item in fast_decisions}) == 1
+                and len({item[1] for item in fast_decisions}) == 1
+            ):
+                outcome, digest = fast_decisions[0]
+                if self._has_valid_completion_receipt(
+                    submission_id=submission_id, outcome=outcome, decision_digest=digest
+                ):
+                    return True
             report = self._show(
                 submission_id=submission_id, decision_paths=decision_paths
             )
