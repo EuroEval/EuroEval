@@ -480,8 +480,12 @@ def test_find_results_for_issue_lists_and_downloads_only_model_files(
             assert prefix == "foo_bar"
             assert recursive is True
             return [
-                BucketFile(path="foo_bar/task.json"),
-                BucketFile(path="other/task.json"),
+                BucketFile(
+                    type="file", path="foo_bar/task.json", size=19, xetHash="a" * 64
+                ),
+                BucketFile(
+                    type="file", path="other/task.json", size=19, xetHash="b" * 64
+                ),
             ]
 
     monkeypatch.setattr(collect_evaluation_results, "HfApi", ScopedHfApi)
