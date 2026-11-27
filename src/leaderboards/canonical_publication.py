@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import fcntl
 import hashlib
 import json
 import logging
@@ -314,12 +315,40 @@ class CanonicalPublisher:
 
     @contextmanager
     def session(self) -> t.Iterator[PublicationSession]:
-        """Open a publication session for canonical bucket operations.
+        """Open an exclusive local session for canonical bucket operations.
+
+        The lock coordinates publisher processes on this host only. It does not
+        provide cross-host exclusion or an atomic compare-and-swap on Hugging Face.
 
         Yields:
             An explicit publication session.
+
+        Raises:
+            PublicationError:
+                If another local publisher holds the bucket lock.
         """
-        yield PublicationSession(publisher=self)
+        lock_identity = hashlib.sha256(
+            "\0".join(
+                (
+                    self.bucket,
+                    str(getattr(self.api, "endpoint", "https://huggingface.co")),
+                )
+            ).encode()
+        ).hexdigest()
+        cache_root = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
+        lock_directory = cache_root / "euroeval" / "publication-locks"
+        lock_directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+        os.chmod(lock_directory, 0o700)
+        lock_path = lock_directory / f"{lock_identity}.lock"
+        with lock_path.open("a") as lock_file:
+            os.chmod(lock_path, 0o600)
+            try:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError as error:
+                raise PublicationError(
+                    f"Canonical publication already active for {self.bucket}"
+                ) from error
+            yield PublicationSession(publisher=self)
 
 
 class PublicationSession:
