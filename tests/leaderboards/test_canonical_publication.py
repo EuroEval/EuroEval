@@ -28,190 +28,35 @@ from leaderboards.result_conflicts import (
 from leaderboards.result_identity import identity_from_eee_record, identity_to_path
 
 
-@pytest.mark.parametrize("mode", ["stale", "malformed"])
-def test_bulk_metadata_cannot_seed_false_receipts(tmp_path: Path, mode: str) -> None:
-    """Malformed metadata aborts; stale metadata forces exact body comparisons."""
-    api = BulkApi()
-    records = bulk_records(count=501)
-    for raw in records:
-        path = identity_to_path(identity_from_eee_record(json.loads(raw))).as_posix()
-        api.objects[path] = raw
-    api.metadata_mode = mode
-    publisher = bulk_publisher(tmp_path=tmp_path, api=api)
-    with publisher.session() as session:
-        assert session.publish(records=records) == 0
-    with sqlite3.connect(publisher.checkpoint_path) as connection:
-        assert connection.execute("SELECT COUNT(*) FROM receipts").fetchone() == (0,)
-    assert api.upload_calls == 0
-    assert api.downloaded_bytes > 0
-
-
-def bulk_records(
-    count: int, version: str = "1.0.0", *, later_evaluation: bool = False
-) -> list[bytes]:
-    """Build distinct result identities for bulk publication tests.
-
-    Args:
-        count: Number of records.
-        version (optional): Evaluation version.
-        later_evaluation (optional): Whether to record a later evaluation score.
-
-    Returns:
-        Encoded public result records.
-    """
-    records = []
-    for index in range(count):
-        record = json.loads(_record(version=version))
-        record["model_info"]["id"] = f"org/bulk-{index}"
-        if later_evaluation:
-            record["eval_timestamp"] = "2026-01-02T00:00:00Z"
-            record["evaluation_results"] = {"score": 0.6}
-        records.append(json.dumps(record).encode())
-    return records
-
-
-def _record(
-    *,
-    version: str = "1.0.0",
-    score: float = 0.5,
-    timestamp: str = "2026-01-01T00:00:00Z",
-) -> bytes:
-    """Build a minimal public result record.
-
-    Returns:
-        JSON encoded result record.
-    """
-    return json.dumps(
-        {
-            "model_info": {"id": "org/model"},
-            "eval_library": {
-                "version": version,
-                "additional_details": {
-                    "dataset": "task",
-                    "few_shot": False,
-                    "validation_split": False,
-                },
-            },
-            "retrieved_timestamp": timestamp,
-            "eval_timestamp": timestamp,
-            "evaluation_results": {"score": score},
-            "score": score,
-        }
-    ).encode()
-
-
-def test_bulk_precondition_mismatch_never_overwrites(tmp_path: Path) -> None:
-    """A body changed between initial comparison and upload cannot be overwritten."""
-    api = BulkApi()
-    records = bulk_records(count=501)
-    path = identity_to_path(identity_from_eee_record(json.loads(records[0]))).as_posix()
-    metadata_calls = 0
-    metadata = api.get_bucket_paths_info
-
-    def race_metadata(bucket_id: str, paths: list[str], *, token: str) -> list[object]:
-        """Change a predecessor before the upload precondition lookup.
-
-        Returns:
-            The fresh metadata response after the mutation.
-        """
-        nonlocal metadata_calls
-        metadata_calls += 1
-        if metadata_calls == 3:
-            api.objects[path] = _record(version="9.0.0")
-        return metadata(bucket_id=bucket_id, paths=paths, token=token)
-
-    publisher = bulk_publisher(tmp_path=tmp_path, api=api)
-    with patch.object(api, "get_bucket_paths_info", side_effect=race_metadata):
-        with pytest.raises(PublicationError, match="Concurrent change"):
-            with publisher.session() as session:
-                session.publish(records=records)
-    assert api.upload_calls == 0
-
-
-@pytest.mark.parametrize("count", [1, 499, 500, 501, 1000, 10_000])
-def test_bulk_publication_request_budget(tmp_path: Path, count: int) -> None:
-    """Remote work is O(batches), including ownership and exact verification."""
-    api = BulkApi()
-    publisher = bulk_publisher(tmp_path=tmp_path, api=api)
-    records = bulk_records(count=count)
-    with publisher.session() as session:
-        assert session.publish(records=records) == count
-    batches = (count + 499) // 500
-    assert api.upload_calls == batches
-    assert len(api.events) == 4 * batches
-    assert max(len(paths) for _, paths in api.events) <= 500
-    assert len(api.objects) == count
-    assert api.downloaded_bytes == 0
-    assert api.downloaded_files == 0
-    assert (len(api.events)) * 2 < 15 * 60
-    with sqlite3.connect(publisher.checkpoint_path) as connection:
-        assert connection.execute("SELECT COUNT(*) FROM receipts").fetchone() == (
-            count,
-        )
-    api.events.clear()
-    # Reconstructed publisher must still fetch fresh metadata, but no bodies.
-    with bulk_publisher(tmp_path=tmp_path, api=api).session() as session:
-        assert session.publish(records=records) == 0
-    assert len(api.events) == batches
-    assert all(operation == "metadata" for operation, _ in api.events)
-
-
-@pytest.mark.parametrize("count", [1, 10_000])
-def test_bulk_sleep_adapter_comparison(
-    tmp_path: Path, count: int, caplog: pytest.LogCaptureFixture
+@pytest.mark.parametrize("remote_change", ["replacement", "deletion"])
+def test_accepted_record_cannot_replace_unreviewed_predecessor(
+    tmp_path: Path, remote_change: str
 ) -> None:
-    """Measure fakes with request latency; the model is not a wall-time guarantee."""
-    delay = 0.001
-    api = BulkApi(delay=delay)
-    records = bulk_records(count=count)
-    started = time.perf_counter()
-    with bulk_publisher(tmp_path=tmp_path, api=api).session() as session:
-        assert session.publish(records=records) == count
-    bulk_seconds = time.perf_counter() - started
-    bulk_requests = len(api.events)
-    serial_api = BulkApi(delay=delay)
-    started = time.perf_counter()
-    with bulk_publisher(
-        tmp_path=tmp_path / "serial", api=serial_api
-    ).session() as session:
-        for content in records:
-            path = identity_to_path(
-                identity_from_eee_record(json.loads(content))
-            ).as_posix()
-            session.write_verified(path=path, content=content, expected=None)
-    serial_seconds = time.perf_counter() - started
-    serial_requests = len(serial_api.events)
-    assert serial_requests == 3 * count
-    assert bulk_requests == 4 * ((count + 499) // 500)
-    assert api.downloaded_bytes == 0
-    assert api.downloaded_files == 0
-    assert bulk_requests * 2 < 900
-    caplog.set_level(logging.INFO)
-    logging.getLogger(__name__).info(
-        "Sleep adapter %s records: bulk %s requests %.3fs; serial %s requests %.3fs; "
-        "2s/request model: bulk %ss, serial %ss (not a live timing guarantee)",
-        count,
-        bulk_requests,
-        bulk_seconds,
-        serial_requests,
-        serial_seconds,
-        bulk_requests * 2,
-        serial_requests * 2,
-    )
-
-
-def test_canary_is_rejected_before_any_write(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Private canary evidence cannot enter the public object store."""
-    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    """Accepted candidate bytes cannot authorise a changed reviewed predecessor."""
     publisher, api = _publisher(tmp_path)
-    canary = json.loads(_record())
-    canary["eval_library"]["additional_details"]["dataset"] = "contamination-canary"
-    with publisher.session() as session:
-        with pytest.raises(PublicationError, match="Canary"):
-            session.publish(records=[json.dumps(canary).encode()])
-    assert api.objects == {}
+    original = _record(score=0.9)
+    candidate = _record(score=0.1)
+    identity = identity_from_eee_record(json.loads(original))
+    path = identity_to_path(identity).as_posix()
+    api.objects[path] = original
+    decision = resolve_result_conflict(
+        current=json.loads(original),
+        candidate=json.loads(candidate),
+        current_bytes=original,
+        candidate_bytes=candidate,
+        choice=ConflictChoice.INCOMING,
+    )
+    publisher.prepare(
+        records=[candidate], sources={identity: original}, decisions=[decision]
+    )
+    if remote_change == "replacement":
+        api.objects[path] = _record(score=0.8)
+    else:
+        api.objects.pop(path)
+    with publisher.session() as session, pytest.raises(PublicationError):
+        session.publish(records=[candidate], accepted_records={identity: candidate})
+
+    assert api.objects.get(path) != candidate
 
 
 class MemoryApi:
@@ -279,6 +124,98 @@ class MemoryApi:
                 self.objects[name] = self.mutate_on_download.pop(name)
             if name in self.objects:
                 destination.write_bytes(self.objects[name])
+
+
+def _publisher(tmp_path: Path) -> tuple[CanonicalPublisher, MemoryApi]:
+    """Create an isolated publisher test fixture.
+
+    Returns:
+        Publisher and object adapter.
+    """
+    api = MemoryApi()
+    return CanonicalPublisher(
+        api=api, token="test-token", checkpoint_path=tmp_path / "publication.sqlite3"
+    ), api
+
+
+def _record(
+    *,
+    version: str = "1.0.0",
+    score: float = 0.5,
+    timestamp: str = "2026-01-01T00:00:00Z",
+) -> bytes:
+    """Build a minimal public result record.
+
+    Returns:
+        JSON encoded result record.
+    """
+    return json.dumps(
+        {
+            "model_info": {"id": "org/model"},
+            "eval_library": {
+                "version": version,
+                "additional_details": {
+                    "dataset": "task",
+                    "few_shot": False,
+                    "validation_split": False,
+                },
+            },
+            "retrieved_timestamp": timestamp,
+            "eval_timestamp": timestamp,
+            "evaluation_results": {"score": score},
+            "score": score,
+        }
+    ).encode()
+
+
+def test_accepted_record_replaces_unchanged_reviewed_predecessor(
+    tmp_path: Path,
+) -> None:
+    """An unchanged reviewed predecessor is archived before accepted replacement."""
+    publisher, api = _publisher(tmp_path)
+    original = _record(score=0.9)
+    candidate = _record(score=0.1)
+    identity = identity_from_eee_record(json.loads(original))
+    path = identity_to_path(identity).as_posix()
+    api.objects[path] = original
+    decision = resolve_result_conflict(
+        current=json.loads(original),
+        candidate=json.loads(candidate),
+        current_bytes=original,
+        candidate_bytes=candidate,
+        choice=ConflictChoice.INCOMING,
+    )
+    publisher.prepare(
+        records=[candidate], sources={identity: original}, decisions=[decision]
+    )
+    with publisher.session() as session:
+        assert (
+            session.publish(records=[candidate], accepted_records={identity: candidate})
+            == 1
+        )
+
+    assert api.objects[path] == candidate
+    assert (
+        api.objects[f"_history/{hashlib.sha256(original).hexdigest()}.bin"] == original
+    )
+
+
+@pytest.mark.parametrize("mode", ["stale", "malformed"])
+def test_bulk_metadata_cannot_seed_false_receipts(tmp_path: Path, mode: str) -> None:
+    """Malformed metadata aborts; stale metadata forces exact body comparisons."""
+    api = BulkApi()
+    records = bulk_records(count=501)
+    for raw in records:
+        path = identity_to_path(identity_from_eee_record(json.loads(raw))).as_posix()
+        api.objects[path] = raw
+    api.metadata_mode = mode
+    publisher = bulk_publisher(tmp_path=tmp_path, api=api)
+    with publisher.session() as session:
+        assert session.publish(records=records) == 0
+    with sqlite3.connect(publisher.checkpoint_path) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM receipts").fetchone() == (0,)
+    assert api.upload_calls == 0
+    assert api.downloaded_bytes > 0
 
 
 class BulkApi(MemoryApi):
@@ -430,16 +367,142 @@ def bulk_publisher(tmp_path: Path, api: BulkApi) -> CanonicalPublisher:
     )
 
 
-def _publisher(tmp_path: Path) -> tuple[CanonicalPublisher, MemoryApi]:
-    """Create an isolated publisher test fixture.
+def bulk_records(
+    count: int, version: str = "1.0.0", *, later_evaluation: bool = False
+) -> list[bytes]:
+    """Build distinct result identities for bulk publication tests.
+
+    Args:
+        count: Number of records.
+        version (optional): Evaluation version.
+        later_evaluation (optional): Whether to record a later evaluation score.
 
     Returns:
-        Publisher and object adapter.
+        Encoded public result records.
     """
-    api = MemoryApi()
-    return CanonicalPublisher(
-        api=api, token="test-token", checkpoint_path=tmp_path / "publication.sqlite3"
-    ), api
+    records = []
+    for index in range(count):
+        record = json.loads(_record(version=version))
+        record["model_info"]["id"] = f"org/bulk-{index}"
+        if later_evaluation:
+            record["eval_timestamp"] = "2026-01-02T00:00:00Z"
+            record["evaluation_results"] = {"score": 0.6}
+        records.append(json.dumps(record).encode())
+    return records
+
+
+def test_bulk_precondition_mismatch_never_overwrites(tmp_path: Path) -> None:
+    """A body changed between initial comparison and upload cannot be overwritten."""
+    api = BulkApi()
+    records = bulk_records(count=501)
+    path = identity_to_path(identity_from_eee_record(json.loads(records[0]))).as_posix()
+    metadata_calls = 0
+    metadata = api.get_bucket_paths_info
+
+    def race_metadata(bucket_id: str, paths: list[str], *, token: str) -> list[object]:
+        """Change a predecessor before the upload precondition lookup.
+
+        Returns:
+            The fresh metadata response after the mutation.
+        """
+        nonlocal metadata_calls
+        metadata_calls += 1
+        if metadata_calls == 3:
+            api.objects[path] = _record(version="9.0.0")
+        return metadata(bucket_id=bucket_id, paths=paths, token=token)
+
+    publisher = bulk_publisher(tmp_path=tmp_path, api=api)
+    with patch.object(api, "get_bucket_paths_info", side_effect=race_metadata):
+        with pytest.raises(PublicationError, match="Concurrent change"):
+            with publisher.session() as session:
+                session.publish(records=records)
+    assert api.upload_calls == 0
+
+
+@pytest.mark.parametrize("count", [1, 499, 500, 501, 1000, 10_000])
+def test_bulk_publication_request_budget(tmp_path: Path, count: int) -> None:
+    """Remote work is O(batches), including ownership and exact verification."""
+    api = BulkApi()
+    publisher = bulk_publisher(tmp_path=tmp_path, api=api)
+    records = bulk_records(count=count)
+    with publisher.session() as session:
+        assert session.publish(records=records) == count
+    batches = (count + 499) // 500
+    assert api.upload_calls == batches
+    assert len(api.events) == 4 * batches
+    assert max(len(paths) for _, paths in api.events) <= 500
+    assert len(api.objects) == count
+    assert api.downloaded_bytes == 0
+    assert api.downloaded_files == 0
+    assert (len(api.events)) * 2 < 15 * 60
+    with sqlite3.connect(publisher.checkpoint_path) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM receipts").fetchone() == (
+            count,
+        )
+    api.events.clear()
+    # Reconstructed publisher must still fetch fresh metadata, but no bodies.
+    with bulk_publisher(tmp_path=tmp_path, api=api).session() as session:
+        assert session.publish(records=records) == 0
+    assert len(api.events) == batches
+    assert all(operation == "metadata" for operation, _ in api.events)
+
+
+@pytest.mark.parametrize("count", [1, 10_000])
+def test_bulk_sleep_adapter_comparison(
+    tmp_path: Path, count: int, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Measure fakes with request latency; the model is not a wall-time guarantee."""
+    delay = 0.001
+    api = BulkApi(delay=delay)
+    records = bulk_records(count=count)
+    started = time.perf_counter()
+    with bulk_publisher(tmp_path=tmp_path, api=api).session() as session:
+        assert session.publish(records=records) == count
+    bulk_seconds = time.perf_counter() - started
+    bulk_requests = len(api.events)
+    serial_api = BulkApi(delay=delay)
+    started = time.perf_counter()
+    with bulk_publisher(
+        tmp_path=tmp_path / "serial", api=serial_api
+    ).session() as session:
+        for content in records:
+            path = identity_to_path(
+                identity_from_eee_record(json.loads(content))
+            ).as_posix()
+            session.write_verified(path=path, content=content, expected=None)
+    serial_seconds = time.perf_counter() - started
+    serial_requests = len(serial_api.events)
+    assert serial_requests == 3 * count
+    assert bulk_requests == 4 * ((count + 499) // 500)
+    assert api.downloaded_bytes == 0
+    assert api.downloaded_files == 0
+    assert bulk_requests * 2 < 900
+    caplog.set_level(logging.INFO)
+    logging.getLogger(__name__).info(
+        "Sleep adapter %s records: bulk %s requests %.3fs; serial %s requests %.3fs; "
+        "2s/request model: bulk %ss, serial %ss (not a live timing guarantee)",
+        count,
+        bulk_requests,
+        bulk_seconds,
+        serial_requests,
+        serial_seconds,
+        bulk_requests * 2,
+        serial_requests * 2,
+    )
+
+
+def test_canary_is_rejected_before_any_write(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Private canary evidence cannot enter the public object store."""
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+    publisher, api = _publisher(tmp_path)
+    canary = json.loads(_record())
+    canary["eval_library"]["additional_details"]["dataset"] = "contamination-canary"
+    with publisher.session() as session:
+        with pytest.raises(PublicationError, match="Canary"):
+            session.publish(records=[json.dumps(canary).encode()])
+    assert api.objects == {}
 
 
 def test_checkpoint_filters_unrelated_sources_and_is_private(tmp_path: Path) -> None:
