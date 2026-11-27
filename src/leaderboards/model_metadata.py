@@ -24,6 +24,7 @@ from huggingface_hub.errors import (
 )
 from huggingface_hub.hf_api import RepositoryNotFoundError
 from requests.exceptions import RequestException
+from tqdm.auto import tqdm
 
 from euroeval.benchmark_modules.hf import get_model_release_date
 from euroeval.benchmark_modules.litellm import (
@@ -178,7 +179,7 @@ def _generate_model_url_with_cache(model_id: str, cache: Cache) -> str | None:
         The model URL, or None if no URL could be generated.
     """
     model_id = split_model_id(model_id=plain_model_id(model_id)).model_id
-    if model_id in cache.model_url and cache.model_url[model_id] is not None:
+    if model_id in cache.model_url:
         return cache.model_url[model_id]
 
     model_url = generate_model_url(model_id=model_id)
@@ -244,7 +245,8 @@ def _get_generative_type(record: dict, cache: Cache) -> str | None:
         if "/" in model_id:
             msg += f" (https://hf.co/{model_id})"
         msg += " [0=null, 1=base, 2=instruction_tuned, 3=reasoning] "
-        user_input = input(msg)
+        with tqdm.external_write_mode():
+            user_input = input(msg)
         parsed = _parse_generative_type_input(user_input)
         if parsed == "EXPLICIT_NULL":
             cache.generative_type[model_id] = None
@@ -442,7 +444,8 @@ def is_commercially_licensed(record: dict, cache: Cache) -> bool:
         if "/" in model_id:
             msg += f" (https://hf.co/{model_id})"
         msg += " [y/n] "
-        user_input = input(msg)
+        with tqdm.external_write_mode():
+            user_input = input(msg)
         if user_input.lower() in {"y", "yes"}:
             cache.commercially_licensed[model_id] = True
             return True
@@ -624,13 +627,38 @@ def is_trained_from_scratch(
     ):
         return True
 
+    # A declared upstream model is evidence this model was fine-tuned.
+    if "/" in model_id:
+        try:
+            model_info = HfApi().model_info(repo_id=model_id)
+        except (
+            GatedRepoError,
+            LocalTokenNotFoundError,
+            RepositoryNotFoundError,
+            HFValidationError,
+            RequestException,
+            OSError,
+            httpx.HTTPError,
+        ):
+            model_info = None
+        card_data = getattr(model_info, "card_data", None)
+        base_model = getattr(card_data, "base_model", None)
+        if (
+            isinstance(base_model, str)
+            and base_model.strip()
+            and base_model.strip() != model_id
+        ):
+            cache.trained_from_scratch[model_id] = False
+            return False
+
     # For open models, prompt user
     while True:
         msg = f"Was {model_id!r} trained from scratch? "
         if "/" in model_id:
             msg += f" (https://hf.co/{model_id})"
         msg += " [y/n] "
-        user_input = input(msg)
+        with tqdm.external_write_mode():
+            user_input = input(msg)
         if user_input.lower() in {"y", "yes"}:
             cache.trained_from_scratch[model_id] = True
             return True
