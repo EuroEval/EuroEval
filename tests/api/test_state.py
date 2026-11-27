@@ -53,6 +53,16 @@ async def test_expired_reclaim_preserves_replacements(upstash_client: Redis) -> 
         )
         == "reserved"
     )
+    assert await complete_result_identity(
+        redis=upstash_client,
+        key=identity_key(identity=first),
+        reservation=json.dumps(
+            {"status": "uploaded", "lease_id": "expired", "digest": digest}
+        ),
+        digest=digest,
+        lease_id="expired",
+        ttl=300,
+    )
     await abort_result_identity(
         redis=upstash_client,
         key=identity_key(identity=second),
@@ -67,6 +77,15 @@ async def test_expired_reclaim_preserves_replacements(upstash_client: Redis) -> 
     )
     assert await reclaim_expired_lease(redis=upstash_client, lease=owner)
     assert await upstash_client.get(identity_key(identity=first)) is None
+    assert (
+        await reserve(
+            client=upstash_client,
+            identity=first,
+            owner="replacement",
+            digest=hashlib.sha256(b"replacement bytes").hexdigest(),
+        )
+        == "reserved"
+    )
     assert await upstash_client.get(identity_key(identity=second)) is not None
     assert await get_lease_by_id(redis=upstash_client, lease_id="expired") is None
     replacement = lease(lease_id="live")

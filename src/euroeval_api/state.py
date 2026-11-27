@@ -533,8 +533,8 @@ async def reclaim_expired_lease(redis: Redis, lease: LeaseRecord) -> bool:
         "records=cjson.decode(ARGV[4]); for i=4,#KEYS do local "
         "value=redis.call('GET',KEYS[i]); if value then local "
         "owned=cjson.decode(value); local record=records[i-3]; if "
-        "owned.lease_id == ARGV[1] and owned.digest == record.digest and "
-        "owned.identity == record.identity then redis.call('DEL',KEYS[i]) "
+        "owned.lease_id == ARGV[1] and owned.digest == record.digest "
+        "then redis.call('DEL',KEYS[i]) "
         "end end end; redis.call('DEL',KEYS[3]); "
         "redis.call('DEL',KEYS[1]); redis.call('DEL',KEYS[2]); return 1"
     )

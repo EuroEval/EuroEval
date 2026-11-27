@@ -76,6 +76,15 @@ def validate_record(
     version = library.get("version")
 
     def strip(value: str) -> str:
+        """Strip a trailing development serial for library-version comparison.
+
+        Args:
+            value:
+                Library version.
+
+        Returns:
+            Version without its development serial.
+        """
         return re.sub(r"\.dev\d+$", "", value)
 
     if (
@@ -122,31 +131,7 @@ def validate_record(
             and evidence.get("reason") == "encoder"
         ):
             _fail("generative canary evidence cannot use the encoder status.")
-    raw = _json(
-        details.get("raw_results"), "additional_details.raw_results is not valid JSON."
-    )
-    if not isinstance(raw, list):
-        _fail("additional_details.raw_results is not valid JSON.")
-    has_raw, raw_count = _failures(raw)
-    claims = [
-        record.get(key, ...) for key in ("num_failed_instances", "failed_instances")
-    ] + [details.get(key, ...) for key in ("num_failed_instances", "failed_instances")]
-    claims += [
-        r.get("score_details", {}).get("details", {}).get("num_failed_instances", ...)
-        if _object(r)
-        and _object(r.get("score_details"))
-        and _object(_object(r.get("score_details")).get("details"))
-        else ...
-        for r in results
-    ]
-    claims = [claim for claim in claims if claim is not ...]
-    failed = (
-        raw_count
-        if has_raw
-        else _count(details.get("num_failed_instances", claims[0] if claims else 0))
-    )
-    if any(_count(claim) != failed for claim in claims):
-        _fail("failed instance count is inconsistent with raw results.")
+    failed = _failure_count(record=record, details=details, results=results)
     warnings = [f"{failed} failed instances"] if failed else []
     if missing:
         warnings.append("Legacy record is missing model_info.revision")
@@ -172,6 +157,15 @@ def validate_record(
         _fail("record language is inconsistent with languages.")
 
     def flag(value: object) -> bool | None | t.Literal["invalid"]:
+        """Normalise nullable EEE split and shot flags.
+
+        Args:
+            value:
+                Submitted flag.
+
+        Returns:
+            Boolean or null, or an invalid sentinel.
+        """
         if value is None or isinstance(value, bool):
             return value
         if value == "true":
@@ -188,41 +182,128 @@ def validate_record(
     if not results:
         _fail("record contains no results.")
     return {
-        "identity": json.dumps([model_id, dataset, split, shot], separators=(",", ":")),
+        "identity": json.dumps(
+            [model_id, dataset, split, shot], ensure_ascii=False, separators=(",", ":")
+        ),
         "failed": failed,
         "warnings": warnings,
     }
 
 
-def _count(value: object) -> int:
-    if isinstance(value, bool):
-        _fail("failed instance count is invalid.")
-    if isinstance(value, str):
-        try:
-            value = json.loads(
-                value,
-                parse_constant=lambda _: _fail("failed instance count is invalid."),
-            )
-        except (ValueError, TypeError):
-            try:
-                value = int(value)
-            except ValueError:
-                _fail("failed instance count is invalid.")
-    if isinstance(value, list):
-        value = len(value)
-    if not isinstance(value, int) or value < 0 or value > 2**53 - 1:
-        _fail("failed instance count is invalid.")
-    return value
-
-
 def _fail(message: str) -> t.NoReturn:
+    """Reject invalid submitted evidence.
+
+    Args:
+        message:
+            Public validation error.
+
+    Raises:
+        HTTPException:
+            Always, with status 422.
+    """
     raise HTTPException(status_code=422, detail=message)
 
 
+def _failure_count(
+    record: dict[str, object], details: dict[str, object], results: list[object]
+) -> int:
+    """Reconcile declared failure counts against raw per-iteration evidence.
+
+    Args:
+        record:
+            Submitted record.
+        details:
+            Library metadata containing raw iterations.
+        results:
+            Metric results with optional declared failure counts.
+
+    Returns:
+        Consistent total failure count.
+    """
+    raw = _json(
+        details.get("raw_results"), "additional_details.raw_results is not valid JSON."
+    )
+    if not isinstance(raw, list):
+        _fail("additional_details.raw_results is not valid JSON.")
+    has_raw, raw_count = _failures(raw)
+    claims = [
+        record.get(key, ...) for key in ("num_failed_instances", "failed_instances")
+    ] + [details.get(key, ...) for key in ("num_failed_instances", "failed_instances")]
+    for result in results:
+        if not _object(result):
+            continue
+        score_details = result.get("score_details")
+        if not _object(score_details):
+            continue
+        metric_details = score_details.get("details")
+        if _object(metric_details):
+            claims.append(metric_details.get("num_failed_instances", ...))
+    claims = [claim for claim in claims if claim is not ...]
+    failed = (
+        raw_count
+        if has_raw
+        else _count(details.get("num_failed_instances", claims[0] if claims else 0))
+    )
+    if any(_count(claim) != failed for claim in claims):
+        _fail("failed instance count is inconsistent with raw results.")
+    return failed
+
+
+def _count(value: object) -> int:
+    """Normalise JavaScript-safe counts without accepting booleans or JSON arrays.
+
+    Args:
+        value:
+            Numeric count, numeric string or an actual failure array.
+
+    Returns:
+        Nonnegative safe integer count.
+    """
+    if isinstance(value, str):
+        text = value.strip()
+        if re.fullmatch(r"0(?:[xX][0-9a-fA-F]+|[bB][01]+|[oO][0-7]+)", text):
+            value = int(text, base=0)
+        elif re.fullmatch(
+            r"[+-]?(?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?", text
+        ):
+            value = float(text)
+        else:
+            _fail("failed instance count is invalid.")
+    if isinstance(value, list):
+        value = len(value)
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, int | float)
+        or value < 0
+        or value > 2**53 - 1
+        or not math.isfinite(value)
+        or int(value) != value
+    ):
+        _fail("failed instance count is invalid.")
+    return int(value)
+
+
 def _failures(raw: list[object]) -> tuple[bool, int]:
+    """Count per-iteration failures without double counting repeated metrics.
+
+    Args:
+        raw:
+            Iteration results.
+
+    Returns:
+        Whether explicit failures exist and their total count.
+    """
     entries: list[int] = []
 
     def visit(value: object, found: list[int]) -> None:
+        """Collect failure counts nested in one iteration.
+
+        Args:
+            value:
+                Nested result value.
+            found:
+                Accumulator for this iteration.
+        """
         if isinstance(value, list):
             for child in value:
                 visit(child, found)
@@ -243,6 +324,17 @@ def _failures(raw: list[object]) -> tuple[bool, int]:
 
 
 def _json(value: object, message: str) -> object:
+    """Decode JSON-encoded metadata while rejecting nonfinite JSON constants.
+
+    Args:
+        value:
+            Structured or encoded metadata.
+        message:
+            Public error if decoding fails.
+
+    Returns:
+        Decoded value.
+    """
     if not isinstance(value, str):
         return value
     try:
@@ -252,10 +344,29 @@ def _json(value: object, message: str) -> object:
 
 
 def _object(value: object) -> t.TypeGuard[dict[str, object]]:
+    """Narrow a JSON object with string keys.
+
+    Args:
+        value:
+            Candidate value.
+
+    Returns:
+        Whether the value is an object.
+    """
     return isinstance(value, dict) and all(isinstance(key, str) for key in value)
 
 
 def _metric(result: object, dataset: str, warnings: list[str]) -> None:
+    """Validate a metric and collect out-of-bounds score warnings.
+
+    Args:
+        result:
+            Submitted metric result.
+        dataset:
+            Record dataset identity.
+        warnings:
+            Accumulator for validation findings.
+    """
     if not _object(result):
         _fail("evaluation_results contains an invalid item.")
     name = result.get("evaluation_name", result.get("metric_name", result.get("name")))
