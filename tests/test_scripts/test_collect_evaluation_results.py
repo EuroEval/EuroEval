@@ -462,10 +462,10 @@ def test_harvested_conflict_abort_preserves_canonical_bytes(
     assert canonical.read_bytes() == original_bytes
 
 
-def test_initial_yes_does_not_approve_without_item_confirmation(
+def test_initial_yes_approves_without_cli_decision(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Overview consent alone cannot approve the pending submission."""
+    """Overview consent leads to a per-model approval prompt."""
     monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
     monkeypatch.setenv("HF_TOKEN", "secret-token")
     monkeypatch.setenv("GITHUB_ACTOR", "maintainer")
@@ -477,9 +477,11 @@ def test_initial_yes_does_not_approve_without_item_confirmation(
     monkeypatch.setattr(
         collect_evaluation_results, "_stdin_is_interactive", lambda: True
     )
-    answers = iter(["y", "n"])
+    staging = Path("new_results.jsonl")
+    monkeypatch.setattr(collect_evaluation_results, "NEW_RESULTS_PATH", staging)
+    answers = iter(["y", "a"])
     monkeypatch.setattr("builtins.input", lambda _: next(answers))
-    command = Mock(return_value=0)
+    command = Mock(side_effect=AssertionError("approval must not invoke CLI"))
     monkeypatch.setattr(collect_evaluation_results, "run_review_command", command)
 
     assert collect_evaluation_results.preflight_volunteer_review() is True
@@ -767,21 +769,7 @@ def test_preflight_mixed_decisions_review_in_order(
     monkeypatch.setattr(collect_evaluation_results, "run_review_command", command)
 
     assert collect_evaluation_results.preflight_volunteer_review() is True
-    assert command.call_args_list == [
-        call(
-            [
-                "--reviewer",
-                "maintainer",
-                "approve",
-                "submission-one",
-                "--plan-fingerprint",
-                "fingerprint-submission-one",
-                "--reason",
-                "Reviewed during collector preflight",
-                "--quiet",
-            ]
-        )
-    ]
+    assert command.call_args_list == []
     assert len(prompts) == 4
 
 
