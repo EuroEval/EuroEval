@@ -77,7 +77,10 @@ from leaderboards.leaderboard_visibility import (
     leaderboard_should_be_shown,
 )
 from leaderboards.queue_parsing import extract_model_id
-from leaderboards.result_conflict_prompt import resolve_result_interactively
+from leaderboards.result_conflict_prompt import (
+    collect_model_conflicts,
+    resolve_result_interactively,
+)
 from leaderboards.result_conflicts import (
     ConflictChoice,
     ConflictDecision,
@@ -1230,32 +1233,12 @@ def _choose_model_conflicts(
         contenders: Local and incoming records in precedence order.
         choices: Invocation-local output mapping of explicit owner choices.
     """
-    # Inventory both possible choices; repeated contenders count as one identity.
-    conflicts: dict[str, list[tuple[dict, dict]]] = {}
-    for identity, items in contenders.items():
-        example = None
-        for choice in (ConflictChoice.STORED, ConflictChoice.INCOMING):
-            current, current_bytes = items[0]
-            for candidate, candidate_bytes in items[1:]:
-                decision = resolve_result_conflict(
-                    current=current,
-                    candidate=candidate,
-                    current_bytes=current_bytes,
-                    candidate_bytes=candidate_bytes,
-                )
-                if decision.needs_choice:
-                    example = (current, candidate)
-                    decision = resolve_result_conflict(
-                        current=current,
-                        candidate=candidate,
-                        current_bytes=current_bytes,
-                        candidate_bytes=candidate_bytes,
-                        choice=choice,
-                    )
-                if decision.selected is ConflictChoice.INCOMING:
-                    current, current_bytes = candidate, candidate_bytes
-        if example is not None:
-            conflicts.setdefault(identity[0], []).append(example)
+    conflicts = collect_model_conflicts(
+        contenders={
+            identity: [record for record, _ in items]
+            for identity, items in contenders.items()
+        }
+    )
     for model_id, pairs in conflicts.items():
         current, candidate = pairs[0]
         resolve_result_interactively(

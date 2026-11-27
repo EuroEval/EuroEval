@@ -7,7 +7,41 @@ import sys
 import click
 
 from .result_conflicts import ConflictChoice, ConflictDecision, resolve_result_conflict
-from .result_identity import UnresolvedResultConflictError, identity_from_eee_record
+from .result_identity import (
+    ResultIdentity,
+    UnresolvedResultConflictError,
+    identity_from_eee_record,
+)
+
+
+def collect_model_conflicts(
+    *, contenders: dict[ResultIdentity, list[dict]]
+) -> dict[str, list[tuple[dict, dict]]]:
+    """Inventory conflicting identities under either model-wide choice.
+
+    Args:
+        contenders: Ordered records for each identity, starting with current.
+
+    Returns:
+        One preview per unresolved identity, grouped by model.
+    """
+    conflicts: dict[str, list[tuple[dict, dict]]] = {}
+    for identity, records in contenders.items():
+        example = None
+        for choice in (ConflictChoice.STORED, ConflictChoice.INCOMING):
+            current = records[0]
+            for candidate in records[1:]:
+                decision = resolve_result_conflict(current=current, candidate=candidate)
+                if decision.needs_choice:
+                    example = (current, candidate)
+                    decision = resolve_result_conflict(
+                        current=current, candidate=candidate, choice=choice
+                    )
+                if decision.selected is ConflictChoice.INCOMING:
+                    current = candidate
+        if example is not None:
+            conflicts.setdefault(identity[0], []).append(example)
+    return conflicts
 
 
 def resolve_result_interactively(

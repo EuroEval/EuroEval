@@ -27,7 +27,10 @@ from .evaluation_common import resolve_hf_token
 from .model_metadata import add_missing_entries, fix_metadata, record_is_valid
 from .record_fields import deduplicate_records
 from .records import get_model_name
-from .result_conflict_prompt import resolve_result_interactively
+from .result_conflict_prompt import (
+    collect_model_conflicts,
+    resolve_result_interactively,
+)
 from .result_conflicts import ConflictChoice, ConflictDecision, resolve_result_conflict
 from .result_identity import (
     ResultIdentity,
@@ -231,35 +234,46 @@ def _upload_per_model_files(
             "Run 'hf auth login' or set the HF_TOKEN environment variable."
         )
 
-    # The generation entry point uses the terminal adapter directly. Give it one
-    # choice cache for this processing run so a model decision is reused.
-    if conflict_resolver is not None:
-        if conflict_resolver is resolve_result_interactively:
-            model_choices: dict[str, ConflictChoice] = {}
-
-            def batched_resolver(
-                *,
-                current: dict[str, t.Any],
-                candidate: dict[str, t.Any],
-                current_bytes: bytes | None = None,
-                candidate_bytes: bytes | None = None,
-            ) -> ConflictDecision:
-                return resolve_result_interactively(
-                    current=current,
-                    candidate=candidate,
-                    current_bytes=current_bytes,
-                    candidate_bytes=candidate_bytes,
-                    model_choices=model_choices,
-                )
-
-            conflict_resolver = batched_resolver
-
     # Capture canonical predecessors before deciding collisions or writing files.
     source_bytes = (
         _capture_local_sources(records=processed_records, results_dir=RESULTS_DIR)
         if upload_to_bucket
         else {}
     )
+
+    # The generation entry point uses the terminal adapter directly. Give it one
+    # choice cache for this processing run so a model decision is reused.
+    if conflict_resolver is resolve_result_interactively:
+        contenders: dict[ResultIdentity, list[dict]] = {
+            identity: [json.loads(content)]
+            for identity, content in source_bytes.items()
+        }
+        for record in processed_records:
+            try:
+                identity = identity_from_eee_record(record)
+            except ValueError:
+                continue
+            contenders.setdefault(identity, []).append(record)
+        previews = collect_model_conflicts(contenders=contenders)
+        model_choices: dict[str, ConflictChoice] = {}
+
+        def batched_resolver(
+            *,
+            current: dict[str, t.Any],
+            candidate: dict[str, t.Any],
+            current_bytes: bytes | None = None,
+            candidate_bytes: bytes | None = None,
+        ) -> ConflictDecision:
+            return resolve_result_interactively(
+                current=current,
+                candidate=candidate,
+                current_bytes=current_bytes,
+                candidate_bytes=candidate_bytes,
+                model_choices=model_choices,
+                model_conflicts=previews.get(identity_from_eee_record(current)[0]),
+            )
+
+        conflict_resolver = batched_resolver
 
     # Resolve input contenders first; canonical predecessor reconciliation happens
     # only after each identity has one final payload.
