@@ -138,7 +138,11 @@ def main(force: bool = False, no_colour: bool = False) -> None:
     check_required_env_vars()
     try:
         accepted_results: dict[ResultIdentity, str] = {}
-        should_continue = preflight_volunteer_review(accepted_results=accepted_results)
+        accepted_predecessors: dict[ResultIdentity, str | None] = {}
+        should_continue = preflight_volunteer_review(
+            accepted_results=accepted_results,
+            accepted_predecessors=accepted_predecessors,
+        )
     except PublicStagingError:
         sys.exit(1)
     if not should_continue:
@@ -164,6 +168,7 @@ def main(force: bool = False, no_colour: bool = False) -> None:
             new_results_path=NEW_RESULTS_PATH,
             pending_lines=all_lines,
             accepted_results=accepted_results,
+            accepted_predecessors=accepted_predecessors,
         ):
             sys.exit(1)
 
@@ -470,10 +475,13 @@ def deploy_to_vercel() -> bool:
 
 def preflight_volunteer_review(
     accepted_results: dict[ResultIdentity, str] | None = None,
+    accepted_predecessors: dict[ResultIdentity, str | None] | None = None,
 ) -> bool:
     """Review staged results and append accepted records to the collection input.
 
     Args:
+        accepted_predecessors (optional): Canonical digests observed before approval,
+            with None recording reviewed absence.
         accepted_results (optional): In-memory explicit incoming choices for upload.
 
     Returns:
@@ -552,7 +560,10 @@ def preflight_volunteer_review(
                 continue
             render_model_review(reports=reports)
             _review_model(
-                reviewer=reviewer, reports=reports, accepted_results=accepted_results
+                reviewer=reviewer,
+                reports=reports,
+                accepted_results=accepted_results,
+                accepted_predecessors=accepted_predecessors,
             )
         except (EOFError, KeyboardInterrupt):
             logger.warning("Review cancelled; collection stopped before side effects.")
@@ -573,6 +584,7 @@ def _review_model(
     reviewer: VolunteerReviewer,
     reports: list[ReviewReport],
     accepted_results: dict[ResultIdentity, str] | None,
+    accepted_predecessors: dict[ResultIdentity, str | None] | None = None,
 ) -> None:
     """Record one local choice for all submitted languages of a model.
 
@@ -580,6 +592,7 @@ def _review_model(
         reviewer: Evidence loader used only when details are requested.
         reports: Already validated model submissions.
         accepted_results: Incoming choices carried to the normal upload phase.
+        accepted_predecessors: Optional review-time canonical digest evidence.
 
     Raises:
         KeyboardInterrupt: If the user stops review before collection.
@@ -596,6 +609,12 @@ def _review_model(
                 or record.identity[1].startswith("contamination-canary-")
             )
         }
+        predecessors: dict[ResultIdentity, str | None] = {}
+        for identity in lines:
+            path = RESULTS_DIR / identity_to_path(identity)
+            predecessors[identity] = (
+                hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else None
+            )
         action = (
             input(
                 "All languages: "
@@ -632,6 +651,8 @@ def _review_model(
                 output.write(content)
             if accepted_results is not None:
                 accepted_results.update(lines)
+            if accepted_predecessors is not None:
+                accepted_predecessors.update(predecessors)
         logger.info(
             "Accepted %s dataset results for %s; ready for upload.",
             len(lines),
@@ -668,7 +689,15 @@ def _validate_review_canaries(reports: list[ReviewReport]) -> bool:
         for record in report.records
         if is_canary_record(record=json.loads(record.content))
     ]
-    if not canary_records:
+    collected = False
+    for record in canary_records:
+        details = record.get("eval_library", {}).get("additional_details", {})
+        evidence = details.get("contamination_canary_evidence")
+        if isinstance(evidence, str):
+            evidence = json.loads(evidence)
+        if isinstance(evidence, dict) and evidence.get("status") == "collected":
+            collected = True
+    if not collected:
         return True
     try:
         _, _, excluded_models, report = process_contamination_canaries(
@@ -828,6 +857,7 @@ def upload_results_to_hf(
     *,
     pending_lines: list[str] | None = None,
     accepted_results: dict[ResultIdentity, str] | None = None,
+    accepted_predecessors: dict[ResultIdentity, str | None] | None = None,
 ) -> bool:
     """Upload results to Hugging Face bucket.
 
@@ -840,6 +870,8 @@ def upload_results_to_hf(
             Path to the newly harvested results file (JSONL format).
         pending_lines (optional): Fully harvested and manually staged lines to resolve
             without rewriting the staging file first.
+        accepted_predecessors (optional): Canonical digests observed before approval,
+            with None recording reviewed absence.
         accepted_results (optional): Exact incoming records already accepted in review.
 
     Returns:
@@ -853,6 +885,12 @@ def upload_results_to_hf(
     try:
         existing = _load_existing_results(sources=source_bytes, decisions=decisions)
 
+        _assert_review_predecessors(
+            accepted_results=accepted_results or {},
+            accepted_predecessors=accepted_predecessors,
+            sources=source_bytes,
+        )
+
         # Resolve the batch before touching staging, results, or checkpoints.
         _process_new_results(
             new_results_path,
@@ -862,7 +900,7 @@ def upload_results_to_hf(
             lines=pending_lines,
             accepted_results=accepted_results,
         )
-    except UnresolvedResultConflictError as error:
+    except (UnresolvedResultConflictError, ValueError) as error:
         logger.error("Result collection aborted: %s", error)
         return False
 
@@ -1014,7 +1052,32 @@ def upload_results_to_hf(
         source_bytes=source_bytes,
         decisions=decisions,
         accepted_results=accepted_results,
+        accepted_predecessors=accepted_predecessors,
     )
+
+
+def _assert_review_predecessors(
+    accepted_results: dict[ResultIdentity, str],
+    accepted_predecessors: dict[ResultIdentity, str | None] | None,
+    sources: dict[ResultIdentity, bytes],
+) -> None:
+    """Check approval snapshots before local or remote publication changes.
+
+    Args:
+        accepted_results: Explicitly approved incoming records.
+        accepted_predecessors: Review-time canonical digests or absence.
+        sources: Current canonical bytes loaded from local storage.
+
+    Raises:
+        ValueError: If a canonical predecessor changed or was not inspected.
+    """
+    for identity in accepted_results:
+        if accepted_predecessors is None or identity not in accepted_predecessors:
+            raise ValueError("Canonical predecessor was not inspected; review again")
+        content = sources.get(identity)
+        observed = hashlib.sha256(content).hexdigest() if content is not None else None
+        if observed != accepted_predecessors[identity]:
+            raise ValueError("Canonical result changed since review; inspect again")
 
 
 def _cleanup_stale_artefacts() -> None:
@@ -1200,6 +1263,7 @@ def _upload_to_bucket(
     source_bytes: dict[ResultIdentity, bytes],
     decisions: list[ConflictDecision] | None = None,
     accepted_results: dict[ResultIdentity, str] | None = None,
+    accepted_predecessors: dict[ResultIdentity, str | None] | None = None,
 ) -> bool:
     """Upload changed files to HF bucket using batch operation.
 
@@ -1211,6 +1275,8 @@ def _upload_to_bucket(
         source_bytes:
             Exact original bytes indexed by result identity.
         decisions (optional): Explicit byte-bound owner choices.
+        accepted_predecessors (optional): Canonical digests observed before approval,
+            with None recording reviewed absence.
         accepted_results (optional): Exact incoming records accepted during review.
 
     Returns:
@@ -1236,6 +1302,7 @@ def _upload_to_bucket(
                 records=candidate_bytes,
                 sources=sources,
                 **decision_options,
+                accepted_predecessors=accepted_predecessors,
                 accepted_records={
                     identity: line.encode("utf-8")
                     for identity, line in (accepted_results or {}).items()

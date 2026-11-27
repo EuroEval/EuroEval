@@ -1,4 +1,4 @@
-"""Publish canonical EuroEval result records from a single maintainer process."""
+"""Publish canonical EuroEval result records from a single maintainer host."""
 
 from __future__ import annotations
 
@@ -668,6 +668,7 @@ class PublicationSession:
         *,
         decisions: t.Sequence[ConflictDecision] = (),
         accepted_records: t.Mapping[ResultIdentity, bytes] | None = None,
+        accepted_predecessors: t.Mapping[ResultIdentity, str | None] | None = None,
     ) -> int:
         """Validate, reconcile, archive predecessors, and publish records.
 
@@ -677,6 +678,7 @@ class PublicationSession:
                 metadata transformations. Defaults to no source records.
             decisions (optional): Explicit, byte-bound conflict choices.
             accepted_records (optional): Exact incoming bytes accepted in this review.
+            accepted_predecessors (optional): Review-time canonical digests or absence.
 
         Returns:
             Number of canonical result objects written.
@@ -778,6 +780,7 @@ class PublicationSession:
             sources=sources,
             decisions=decisions_by_identity,
             accepted_records=accepted_records or {},
+            accepted_predecessors=accepted_predecessors or {},
         )
 
         if writes:
@@ -1087,6 +1090,7 @@ class PublicationSession:
         sources: t.Mapping[ResultIdentity, bytes] | None,
         decisions: t.Mapping[ResultIdentity, tuple[str, str, str, str]],
         accepted_records: t.Mapping[ResultIdentity, bytes],
+        accepted_predecessors: t.Mapping[ResultIdentity, str | None],
     ) -> tuple[list[tuple[str, bytes, bytes | None]], dict[str, tuple[str, str]]]:
         """Reconcile untrusted candidates with current remote bytes.
 
@@ -1098,6 +1102,7 @@ class PublicationSession:
             sources: Exact predecessor bytes retained for retries.
             decisions: Stored byte-bound manual choices.
             accepted_records: Exact incoming bytes accepted during this review.
+            accepted_predecessors: Review-time canonical digests or explicit absence.
 
         Returns:
             Pending writes and newly verified semantic receipts.
@@ -1113,11 +1118,19 @@ class PublicationSession:
             if path in trusted:
                 continue
             current = current_objects[path]
+            if identity in accepted_predecessors:
+                current_digest = (
+                    hashlib.sha256(current).hexdigest() if current is not None else None
+                )
+                if current_digest != accepted_predecessors[identity]:
+                    raise PublicationError(f"Reviewed predecessor changed at {path}")
             if current is None:
-                if accepted_records.get(
-                    identity
-                ) == candidate and not self._approved_absence(
-                    identity=identity, candidate=candidate, decisions=decisions
+                if (
+                    accepted_records.get(identity) == candidate
+                    and identity not in accepted_predecessors
+                    and not self._approved_absence(
+                        identity=identity, candidate=candidate, decisions=decisions
+                    )
                 ):
                     raise PublicationError(
                         f"Conflict decision predecessor is missing at {path}"
@@ -1142,21 +1155,13 @@ class PublicationSession:
                     equivalent.append((path, identity, current, record))
                 continue
             if accepted_records.get(identity) == candidate:
-                proof = decisions.get(identity)
-                if proof is None:
-                    raise PublicationError(
-                        f"Accepted replacement lacks predecessor proof at {path}"
-                    )
-                candidate_sha, current_sha, version, choice = proof
-                if (
-                    candidate_sha != hashlib.sha256(candidate).hexdigest()
-                    or current_sha != hashlib.sha256(current).hexdigest()
-                    or version != POLICY_VERSION
-                    or choice != ConflictChoice.INCOMING.value
-                ):
-                    raise PublicationError(
-                        f"Stored conflict proof no longer matches {path}"
-                    )
+                self._assert_accepted_predecessor(
+                    identity=identity,
+                    candidate=candidate,
+                    current=current,
+                    decisions=decisions,
+                    accepted_predecessors=accepted_predecessors,
+                )
                 writes.append((path, candidate, current))
                 continue
             proof = decisions.get(identity)
@@ -1228,6 +1233,39 @@ class PublicationSession:
             POLICY_VERSION,
             ConflictChoice.INCOMING.value,
         )
+
+    def _assert_accepted_predecessor(
+        self,
+        identity: ResultIdentity,
+        candidate: bytes,
+        current: bytes,
+        decisions: t.Mapping[ResultIdentity, tuple[str, str, str, str]],
+        accepted_predecessors: t.Mapping[ResultIdentity, str | None],
+    ) -> None:
+        """Require an approved digest pair before replacing canonical bytes.
+
+        Args:
+            identity: Reviewed logical result identity.
+            candidate: Approved incoming bytes.
+            current: Current remote canonical bytes.
+            decisions: Existing digest-bound conflict proofs.
+            accepted_predecessors: Explicit review-time predecessor digests.
+
+        Raises:
+            PublicationError: If no matching reviewed predecessor is available.
+        """
+        expected = hashlib.sha256(current).hexdigest()
+        if identity in accepted_predecessors:
+            if accepted_predecessors[identity] == expected:
+                return
+        elif decisions.get(identity) == (
+            hashlib.sha256(candidate).hexdigest(),
+            expected,
+            POLICY_VERSION,
+            ConflictChoice.INCOMING.value,
+        ):
+            return
+        raise PublicationError("Accepted replacement lacks matching predecessor proof")
 
     def _validate_current_record(
         self, current_record: dict[str, object], path: str, identity: ResultIdentity

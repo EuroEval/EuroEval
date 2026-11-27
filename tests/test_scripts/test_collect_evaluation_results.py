@@ -107,7 +107,9 @@ def clear_bucket_adapter() -> None:
     FakeHfApi.objects.clear()
 
 
-@pytest.mark.parametrize("local_state", ["present", "missing", "outdated"])
+@pytest.mark.parametrize(
+    "local_state", ["present", "new", "missing", "outdated", "local-changed"]
+)
 def test_accepted_incoming_result_is_published_without_another_prompt(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, local_state: str
 ) -> None:
@@ -121,11 +123,10 @@ def test_accepted_incoming_result_is_published_without_another_prompt(
     old = json.dumps(record).encode()
     destination = results / path
     destination.parent.mkdir(parents=True)
-    if local_state != "missing":
+    if local_state not in {"missing", "new"}:
         destination.write_bytes(old)
-    if local_state == "outdated":
-        old = json.dumps(_ranked_collector_record(score=81.0, version="2.0.0")).encode()
-    FakeHfApi.objects[path] = old
+    if local_state != "new":
+        FakeHfApi.objects[path] = old
     selected = _ranked_collector_record(score=40.0)
     accepted_line = json.dumps(selected, separators=(",", ":"))
     other = json.dumps(_ranked_collector_record(score=90.0))
@@ -170,22 +171,54 @@ def test_accepted_incoming_result_is_published_without_another_prompt(
     monkeypatch.setattr(
         collect_evaluation_results, "_stdin_is_interactive", lambda: True
     )
-    monkeypatch.setattr("builtins.input", Mock(side_effect=["y", "a"]))
+    answers = iter(["y", "a"])
+
+    def choose(prompt: str) -> str:
+        """Approve while a concurrent local writer changes the reviewed bytes.
+
+        Args:
+            prompt:
+                Interactive review prompt.
+
+        Returns:
+            The selected review action.
+        """
+        del prompt
+        answer = next(answers)
+        if answer == "a" and local_state == "local-changed":
+            destination.write_text(json.dumps(_ranked_collector_record(score=81.0)))
+        return answer
+
+    monkeypatch.setattr("builtins.input", choose)
     accepted = {}
+    predecessors = {}
     assert collect_evaluation_results.preflight_volunteer_review(
-        accepted_results=accepted
+        accepted_results=accepted, accepted_predecessors=predecessors
     )
+    if local_state == "outdated":
+        old = json.dumps(_ranked_collector_record(score=81.0, version="2.0.0")).encode()
+        FakeHfApi.objects[path] = old
     assert source.read_text() == accepted_line + "\n"
     reviewer.decide.assert_not_called()
     prompt = Mock(side_effect=AssertionError("accepted results must not prompt again"))
     monkeypatch.setattr("builtins.input", prompt)
-    assert collect_evaluation_results.upload_results_to_hf(
+    succeeded = collect_evaluation_results.upload_results_to_hf(
         new_results_path=source,
         pending_lines=[other, accepted_line],
         accepted_results=accepted,
+        accepted_predecessors=predecessors,
     )
-    assert json.loads(FakeHfApi.objects[path]) == selected
-    assert FakeHfApi.objects[f"_history/{hashlib.sha256(old).hexdigest()}.bin"] == old
+    assert succeeded is (local_state in {"present", "new"})
+    if succeeded:
+        assert json.loads(FakeHfApi.objects[path]) == selected
+        if local_state == "present":
+            assert (
+                FakeHfApi.objects[f"_history/{hashlib.sha256(old).hexdigest()}.bin"]
+                == old
+            )
+    else:
+        assert FakeHfApi.objects[path] == old
+        assert not any(name.startswith("_history/") for name in FakeHfApi.objects)
 
 
 def _enable_real_collector_publisher(
@@ -551,7 +584,7 @@ def test_main_does_not_harvest_after_review_error(
     monkeypatch.setattr(
         collect_evaluation_results,
         "preflight_volunteer_review",
-        lambda accepted_results=None: False,
+        lambda accepted_results=None, accepted_predecessors=None: False,
     )
     fetch = Mock(side_effect=AssertionError("harvest started"))
     monkeypatch.setattr(collect_evaluation_results, "_fetch_issues", fetch)
@@ -574,7 +607,7 @@ def test_main_pauses_before_harvesting(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         collect_evaluation_results,
         "preflight_volunteer_review",
-        lambda accepted_results=None: False,
+        lambda accepted_results=None, accepted_predecessors=None: False,
     )
     monkeypatch.setattr(
         collect_evaluation_results,
@@ -730,7 +763,7 @@ def test_preflight_non_tty_and_api_failure_do_not_hang(
     monkeypatch.setattr(
         collect_evaluation_results,
         "_stdin_is_interactive",
-        lambda accepted_results=None: False,
+        lambda accepted_results=None, accepted_predecessors=None: False,
     )
 
     assert collect_evaluation_results.preflight_volunteer_review() is True

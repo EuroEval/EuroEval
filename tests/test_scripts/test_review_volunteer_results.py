@@ -120,11 +120,80 @@ def test_collector_accepts_no_colour_flag(monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setattr(
         collect_evaluation_results,
         "preflight_volunteer_review",
-        lambda accepted_results=None: False,
+        lambda accepted_results=None, accepted_predecessors=None: False,
     )
     result = CliRunner().invoke(collect_evaluation_results.main, ["--no-colour"])
     assert result.exit_code == 0
     assert "\x1b[" not in result.output
+
+
+@pytest.mark.parametrize("outcome", ["unavailable", "invalid", "excluded", "clean"])
+def test_collector_validates_collected_private_canaries_before_acceptance(
+    report: ReviewReport, monkeypatch: pytest.MonkeyPatch, outcome: str
+) -> None:
+    """Keep unvalidated private canaries from authorising ordinary publication.
+
+    Args:
+        report: Byte-backed staged submission.
+        monkeypatch: Isolate the private scoring and staging dependencies.
+        outcome: Public private-scoring outcome.
+    """
+    ordinary = report.records[0]
+    canary_data = json.loads(ordinary.content)
+    details = canary_data["eval_library"]["additional_details"]
+    details["dataset"] = "contamination-canary-da"
+    details["contamination_canary_evidence"] = {"status": "collected"}
+    canary = dataclasses.replace(
+        report.records[1], content=json.dumps(canary_data).encode()
+    )
+    submission = dataclasses.replace(report, records=(ordinary, canary))
+    reviewer = Mock(spec=VolunteerReviewer)
+    reviewer.list_pending_submissions.return_value = [
+        (report.submission_id, 12, "alice", "da")
+    ]
+    reviewer.group_submissions_by_model.return_value = [[report.submission_id]]
+    reviewer.show.return_value = submission
+    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
+    monkeypatch.setenv("HF_TOKEN", "test-token")
+    monkeypatch.setattr(
+        collect_evaluation_results, "reviewer_from_environment", lambda: reviewer
+    )
+    monkeypatch.setattr(
+        collect_evaluation_results, "_stdin_is_interactive", lambda: True
+    )
+    monkeypatch.setattr("builtins.input", Mock(side_effect=["y", "a"]))
+    scoring_report = {
+        "status": "unavailable" if outcome == "unavailable" else "scored",
+        "models": [
+            {
+                "model_id": "model",
+                "status": "invalid" if outcome == "invalid" else "scored",
+            }
+        ],
+    }
+    monkeypatch.setattr(
+        collect_evaluation_results,
+        "process_contamination_canaries",
+        lambda records: (
+            [],
+            records,
+            {"model"} if outcome == "excluded" else set(),
+            scoring_report,
+        ),
+    )
+    accepted = {}
+    assert collect_evaluation_results.preflight_volunteer_review(
+        accepted_results=accepted
+    ) is (outcome == "clean")
+    path = collect_evaluation_results.NEW_RESULTS_PATH
+    if outcome == "clean":
+        assert [json.loads(line) for line in path.read_text().splitlines()] == [
+            json.loads(ordinary.content)
+        ]
+        assert set(accepted) == {ordinary.identity}
+    else:
+        assert not accepted
+        assert not path.exists()
 
 
 def test_conflicting_preflight_can_be_left_pending(
