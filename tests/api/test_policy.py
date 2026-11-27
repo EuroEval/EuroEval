@@ -29,23 +29,6 @@ def checked_version(monkeypatch: pytest.MonkeyPatch) -> str:
     return policy["policies"][0]["euroeval_version"]
 
 
-def test_checked_in_policy_supports_grouped_language_variants(
-    checked_version: str,
-) -> None:
-    """Language aliases share a group while scope records remain language-specific.
-
-    Args:
-        checked_version:
-            Checked-in policy release.
-    """
-    validate_scope_policy_version(checked_version)
-    assert language_group("nb") == language_group("nn") == language_group("no")
-    assert language_group("pt-br") == language_group("pt-pt") == language_group("pt")
-    with pytest.raises(HTTPException) as error:
-        expected_scope(checked_version, "encoder", "nb")
-    assert error.value.status_code == 422
-
-
 def test_expected_scope_returns_independent_lists(checked_version: str) -> None:
     """Returned scope can be mutated without changing subsequent trusted results.
 
@@ -56,6 +39,49 @@ def test_expected_scope_returns_independent_lists(checked_version: str) -> None:
     scope = expected_scope(checked_version, "encoder", "no")
     scope["task_groups"].clear()
     assert expected_scope(checked_version, "encoder", "no")["task_groups"]
+
+
+def test_grouped_variants_require_an_exact_trusted_scope(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Language aliases share a group but cannot inherit another language's scope.
+
+    Args:
+        monkeypatch:
+            Isolated trusted policy override.
+    """
+    suffix = '["norec",true,false]'
+    policy = {
+        "policy_version": "test",
+        "policies": [
+            {
+                "euroeval_version": "1",
+                "model_type": "encoder",
+                "language": "no",
+                "language_group": language_group(language="no"),
+                "allowed_identity_suffix_sets": [[suffix]],
+                "task_groups": ["classification"],
+                "warnings": [],
+            }
+        ],
+    }
+    monkeypatch.setenv("VOLUNTEER_SCOPE_POLICY_JSON", json.dumps(policy))
+    validate_scope_policy_version(euroeval_version="1")
+    assert (
+        language_group(language="nb")
+        == language_group(language="nn")
+        == language_group(language="no")
+    )
+    assert (
+        language_group(language="pt-br")
+        == language_group(language="pt-pt")
+        == language_group(language="pt")
+    )
+    scope = expected_scope(euroeval_version="1", model_type="encoder", language="no")
+    assert scope["allowed_identity_suffix_sets"] == [[suffix]]
+    with pytest.raises(HTTPException) as error:
+        expected_scope(euroeval_version="1", model_type="encoder", language="nb")
+    assert error.value.status_code == 422
 
 
 def test_override_rejects_duplicate_identity_alternative(
