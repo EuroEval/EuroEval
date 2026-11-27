@@ -15,7 +15,7 @@ from huggingface_hub import BucketFile
 from euroeval_worker.review import PublicStagingError
 from euroeval_worker.review_models import ReviewReport, ValidatedRecord
 from leaderboards import canonical_publication, constants, result_loading
-from leaderboards.result_conflicts import ConflictDecision
+from leaderboards.result_conflicts import ConflictChoice, ConflictDecision
 from leaderboards.result_identity import UnresolvedResultConflictError
 from src.scripts import collect_evaluation_results
 from tests.leaderboards.test_canonical_publication import MemoryLock
@@ -388,6 +388,8 @@ def test_eof_after_earlier_choice_preserves_original_staging_and_records(
     first_path.parent.mkdir(parents=True)
     first = _ranked_collector_record(score=0.2)
     second = _ranked_collector_record(score=0.3)
+    second_model_info = t.cast(dict[str, object], second["model_info"])
+    second_model_info["id"] = "another/model"
     second_library = t.cast(dict[str, object], second["eval_library"])
     second_details = t.cast(dict[str, object], second_library["additional_details"])
     second_details["dataset"] = "another"
@@ -416,12 +418,17 @@ def test_eof_after_earlier_choice_preserves_original_staging_and_records(
         candidate: dict[str, object],
         current_bytes: bytes | None = None,
         candidate_bytes: bytes | None = None,
+        model_choices: dict[str, ConflictChoice] | None = None,
+        model_conflicts: list[tuple[dict[str, object], dict[str, object]]]
+        | None = None,
     ) -> ConflictDecision:
         return resolver(
             current=current,
             candidate=candidate,
             current_bytes=current_bytes,
             candidate_bytes=candidate_bytes,
+            model_choices=model_choices,
+            model_conflicts=model_conflicts,
             input_fn=read_answer,
             interactive=True,
         )
@@ -479,7 +486,7 @@ def test_find_results_for_issue_lists_and_downloads_only_model_files(
 
     monkeypatch.setattr(collect_evaluation_results, "HfApi", ScopedHfApi)
     results = collect_evaluation_results.find_results_for_issue(
-        {"number": 1, "title": "foo/bar", "body": ""}, destination=tmp_path
+        {"number": 1, "title": "foo/bar evaluation", "body": ""}, destination=tmp_path
     )
     assert results == ['{"model":"foo/bar"}']
 
@@ -1229,6 +1236,9 @@ def test_public_upload_reapproves_final_winner_after_multiple_contenders(
         candidate: dict[str, object],
         current_bytes: bytes | None = None,
         candidate_bytes: bytes | None = None,
+        model_choices: dict[str, ConflictChoice] | None = None,
+        model_conflicts: list[tuple[dict[str, object], dict[str, object]]]
+        | None = None,
     ) -> ConflictDecision:
         prompted_pairs.append(
             (current["evaluation_results"], candidate["evaluation_results"])
@@ -1238,6 +1248,8 @@ def test_public_upload_reapproves_final_winner_after_multiple_contenders(
             candidate=candidate,
             current_bytes=current_bytes,
             candidate_bytes=candidate_bytes,
+            model_choices=model_choices,
+            model_conflicts=model_conflicts,
             input_fn=lambda _prompt: next(inputs),
             interactive=True,
         )
