@@ -3,7 +3,7 @@ import {
   brokerErrorBody, deleteLease, enforceRateLimit, fetchIssue, getLeaseById, json, method,
   parseVolunteerMarker, patchIssue, readJson, replaceVolunteerMarker, VOLUNTEER_MARKER_RE,
   requireProtocol, signVolunteerMarker, unassignIssue, verifyVolunteerMarker,
-  reconcilePublicAssignments,
+  reconcilePublicAssignments, recordDecline,
 } from "./_lib.js";
 import type { VolunteerLeaseMarker } from "./_lib.js";
 
@@ -49,6 +49,8 @@ export default async function handler(req: Request): Promise<Response> {
         Date.parse(lease.expires_at) <= Date.now()) {
       throw new BrokerError(409, "Lease is absent, expired, or belongs to another contributor.");
     }
+    // Remember a worker's decline before any GitHub step, so a retried release keeps it.
+    await recordDecline(lease, body.reason);
     const mutex = await acquireRenewableIssueMutex(lease.issue_number);
     if (!mutex) throw new BrokerError(503, "Issue is busy; retry release.", "ISSUE_BUSY");
     try {

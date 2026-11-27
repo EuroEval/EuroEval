@@ -4,7 +4,8 @@ import { assertAssignable, expectedScope, extractModelId, parsePromotionRecords,
 import { validateRecord } from "../../../api/worker/_lib/eee.ts";
 import { fitsGpu, languageGroup, resolveModel, selectedGpu } from "../../../api/worker/_lib/model.ts";
 import { GROUPS } from "../../../api/worker/_lib/protocol.ts";
-import { putLease, reclaimExpiredLease, releaseResultReservations, reserveResultIdentity } from "../../../api/worker/_lib/redis.ts";
+import { UNATTESTED_IMAGE_DIGEST, imageDigestProvenance } from "../../../api/worker/_lib/worker-release.ts";
+import { declineKey, putLease, reclaimExpiredLease, releaseResultReservations, reserveResultIdentity } from "../../../api/worker/_lib/redis.ts";
 import { bindPromotionDecision, completePromotionReservation, promotionIdentityKey, reservePromotionReservation } from "../../../api/worker/_lib/promotion.ts";
 import { withRedisRestBridge } from "./redis-bridge.mjs";
 import generatedScopePolicy from "../../../api/worker/_lib/scope-policy.generated.ts";
@@ -738,4 +739,18 @@ test("promotion reservation Lua enforces publication ownership through terminal 
       records: [{ ...record, digest: "d".repeat(64) }] };
     assert.equal(await reservePromotionReservation(next), "reserved");
   });
+});
+
+test("manifest provenance distinguishes unattested execution from a configured image", () => {
+  assert.equal(UNATTESTED_IMAGE_DIGEST, "unattested");
+  assert.equal(imageDigestProvenance(UNATTESTED_IMAGE_DIGEST), "unattested");
+  assert.equal(imageDigestProvenance(`sha256:${"a".repeat(64)}`),
+    "configured-required-not-runtime-attested");
+});
+
+test("a decline covers every spelling of the same model id", () => {
+  const revision = "a".repeat(40);
+  assert.equal(declineKey("worker", "Org/Model", revision), declineKey("worker", "org/model", revision));
+  assert.equal(declineKey("worker", "Org/Model", revision), `euroeval:worker:declined:worker:org/model@${revision}`);
+  assert.notEqual(declineKey("worker", "org/model", revision), declineKey("other", "org/model", revision));
 });

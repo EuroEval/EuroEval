@@ -2,6 +2,7 @@
 
 import dataclasses
 import email.message
+import functools
 import http.client
 import importlib.metadata
 import io
@@ -22,7 +23,13 @@ from euroeval.languages import get_all_languages
 from euroeval_worker import cli, evaluator, hardware, runtime
 from euroeval_worker.auth import authenticate
 from euroeval_worker.broker import BrokerClient, BrokerError
-from euroeval_worker.hardware import NoGpuError, discover_gpus, discover_hardware
+from euroeval_worker.hardware import (
+    METAL_GPU_UUID,
+    NoGpuError,
+    discover_gpus,
+    discover_hardware,
+    unified_free_bytes,
+)
 from euroeval_worker.safety import ModelMetadata, SafetyError, check_model_safety
 from euroeval_worker.state import PendingRecord, StateStore
 from euroeval_worker.types import (
@@ -78,6 +85,135 @@ HARDWARE = HardwareReport(
     selected_gpu_index=GPU.index,
     selected_gpu_uuid=GPU.uuid,
 )
+
+
+class _MetalHostCalls(t.TypedDict):
+    """Commands and subprocess calls recorded by the fake Apple Silicon host."""
+
+    commands: list[list[str]]
+    subprocess: list[tuple[list[str], dict[str, object]]]
+
+
+def _fake_metal_host(
+    monkeypatch: pytest.MonkeyPatch, cap_stdout: str, vm_stat: str
+) -> "_MetalHostCalls":
+    """Simulate an Apple Silicon host for hardware discovery.
+
+    ``os.sysconf`` raises for ``SC_PHYS_PAGES`` as it does on macOS, so the test
+    fails if discovery falls back to the Linux RAM reader.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        cap_stdout:
+            Output of the MLX working-set-limit subprocess.
+        vm_stat:
+            Output of ``vm_stat``.
+
+    Returns:
+        The runner commands and the subprocess calls made during discovery.
+    """
+    calls: _MetalHostCalls = {"commands": [], "subprocess": []}
+    monkeypatch.delenv("VLLM_TARGET_DEVICE", raising=False)
+    monkeypatch.delenv("VLLM_PLUGINS", raising=False)
+    monkeypatch.setattr(hardware.sys, "platform", "darwin")
+    monkeypatch.setattr(hardware.platform, "machine", lambda: "arm64")
+    monkeypatch.setattr(hardware, "_pytorch_version", lambda: "2.13.0")
+
+    def macos_sysconf(name: str) -> int:
+        """Reject the configuration names macOS does not provide.
+
+        Args:
+            name:
+                Requested configuration name.
+
+        Raises:
+            ValueError:
+                Always, as macOS does for ``SC_PHYS_PAGES``.
+        """
+        raise ValueError(f"unrecognized configuration name: {name}")
+
+    monkeypatch.setattr(hardware.os, "sysconf", macos_sysconf)
+
+    def fake_run(command: list[str], **kwargs: object) -> object:
+        """Record the cap subprocess and return its canned output.
+
+        Args:
+            command:
+                Command supplied to the subprocess.
+            **kwargs:
+                Subprocess options supplied by discovery.
+
+        Returns:
+            A completed-process stand-in.
+        """
+        calls["subprocess"].append((command, kwargs))
+        return type("Completed", (), {"stdout": cap_stdout})()
+
+    monkeypatch.setattr(hardware.subprocess, "run", fake_run)
+    # A fresh probe cache per test, restored afterwards.
+    monkeypatch.setattr(
+        hardware, "_probe_metal", functools.cache(hardware._probe_metal.__wrapped__)
+    )
+
+    def runner(command: list[str]) -> str:
+        """Answer the macOS commands used for discovery.
+
+        Args:
+            command:
+                Command supplied to the test.
+
+        Returns:
+            Canned command output.
+
+        Raises:
+            AssertionError:
+                If discovery runs an NVIDIA command on macOS.
+        """
+        calls["commands"].append(command)
+        if command[0] == "nvidia-smi":
+            raise AssertionError("nvidia-smi must not run on macOS")
+        if command[0] == "vm_stat":
+            return vm_stat
+        if command == ["sysctl", "-n", "hw.memsize"]:
+            return f"{64 * 1024**3}\n"
+        return "Apple M3 Max\n"
+
+    monkeypatch.setattr(hardware, "_run", runner)
+    return calls
+
+
+def _metal_probe(cap: int, **backends: bool) -> str:
+    """Build the Apple GPU probe output, with every backend available by default.
+
+    Args:
+        cap:
+            MLX's recommended working-set limit in bytes.
+        **backends:
+            Overrides for the ``metal``, ``vllm_metal_plugin`` and ``mps`` flags.
+
+    Returns:
+        The probe's JSON output.
+    """
+    flags = {"metal": True, "vllm_metal_plugin": True, "mps": True, **backends}
+    return json.dumps({"cap": cap, **flags})
+
+
+def _unsafe_first_lease(lease: Lease, **_kwargs: object) -> None:
+    """Reject the first test lease as unsafe and accept any other lease.
+
+    Args:
+        lease:
+            Lease under the safety check.
+        **_kwargs:
+            Ignored safety-check arguments.
+
+    Raises:
+        SafetyError:
+            For the first test lease.
+    """
+    if lease.lease_id == LEASE.lease_id:
+        raise SafetyError("model backend compatibility was not verified")
 
 
 def test_auth_honours_slow_down_retry_after(tmp_path: Path) -> None:
@@ -943,6 +1079,106 @@ def test_continuous_worker_retries_exhausted_release_and_claims_new_work(
     assert json.loads(archived[0].read_text())["evaluation_failures"] == 3
 
 
+def test_continuous_worker_skips_unsafe_model_and_claims_new_work(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Release a lease that fails the safety check, then evaluate the next lease.
+
+    Args:
+        monkeypatch:
+            Fixture replacing network dependencies and sleep.
+        tmp_path:
+            Private worker state directory.
+    """
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(runtime, "check_model_safety", _unsafe_first_lease)
+    broker = _second_lease_broker()
+    evaluated: list[str] = []
+
+    class RecordingEvaluator:
+        """Record which leases reach evaluation."""
+
+        def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
+            """Record the lease and return one result.
+
+            Args:
+                lease:
+                    Lease supplied to the test.
+                output_path:
+                    Path where evaluation results would be written.
+
+            Returns:
+                A single deterministic evaluation record.
+            """
+            evaluated.append(lease.lease_id)
+            return [EEERecord(record_json={"id": lease.lease_id})]
+
+    def stop_after_finalisation(delay: float) -> None:
+        """Stop the continuous loop once the second lease is finalised.
+
+        Args:
+            delay:
+                Requested sleep duration.
+
+        Raises:
+            KeyboardInterrupt:
+                Once the broker has finalised work.
+        """
+        if broker.finalised:
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(runtime.time, "sleep", stop_after_finalisation)
+    state = StateStore(directory=tmp_path)
+    with pytest.raises(KeyboardInterrupt):
+        runtime.Worker(
+            client=broker,
+            state=state,
+            evaluator=RecordingEvaluator(),
+            hardware_factory=lambda: HARDWARE,
+        ).run()
+    assert broker.releases == ["unsafe_model"]
+    assert evaluated == ["lease-2"]
+    assert broker.finalised
+    assert state.load_active() is None
+
+
+def _second_lease_broker() -> "Broker":
+    """Build a broker offering the first lease, a distinct second lease, then nothing.
+
+    Returns:
+        The broker fake.
+    """
+    second = dataclasses.replace(LEASE, lease_id="lease-2", issue_number=43)
+
+    class SecondLeaseBroker(Broker):
+        """Offer two distinct leases in sequence."""
+
+        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            """Offer the next lease in sequence.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                hardware:
+                    Hardware supplied to the test.
+
+            Returns:
+                The next lease, or no lease once both were offered.
+            """
+            self.claims += 1
+            return Claim(
+                lease=LEASE
+                if self.claims == 1
+                else second
+                if self.claims == 2
+                else None
+            )
+
+    return SecondLeaseBroker()
+
+
 def test_discover_hardware_does_not_import_torch_in_worker(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -952,6 +1188,8 @@ def test_discover_hardware_does_not_import_torch_in_worker(
         monkeypatch:
             Pytest fixture for replacing dependencies during the test.
     """
+    # Exercise the NVIDIA path on any runner, including a Mac.
+    monkeypatch.setattr(hardware.sys, "platform", "linux")
     monkeypatch.setattr(
         hardware,
         "_discover_spark_memory",
@@ -988,6 +1226,8 @@ def test_discover_hardware_uses_supplied_state_filesystem(
     state_dir.mkdir()
     measured: list[Path] = []
     disk_usage = hardware.shutil.disk_usage
+    # Exercise the NVIDIA path on any runner, including a Mac.
+    monkeypatch.setattr(hardware.sys, "platform", "linux")
     monkeypatch.setattr(hardware, "_ram_bytes", lambda: 128 * 1024**3)
     monkeypatch.setattr(hardware, "_pytorch_version", lambda: None)
 
@@ -1546,6 +1786,584 @@ def test_finalise_response_loss_is_idempotently_retried(
     assert state.load_active() is not None
     worker.run(once=True)
     assert state.load_active() is None
+
+
+@pytest.mark.parametrize("evaluation_fails", [False, True])
+def test_metal_gpu_is_not_cuda_pinned_during_evaluation(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, evaluation_fails: bool
+) -> None:
+    """Leave CUDA visibility untouched for the Apple GPU, even when evaluation fails.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+        evaluation_fails:
+            Whether the evaluator raises during the lease.
+    """
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "GPU-preexisting")
+    metal = Gpu(
+        name="Apple M3 Max",
+        uuid=METAL_GPU_UUID,
+        free_memory_bytes=9,
+        total_memory_bytes=10,
+        compute_capability=None,
+        index=0,
+    )
+    hardware = HardwareReport(
+        architecture="arm64",
+        ram_bytes=64,
+        free_disk_bytes=100,
+        driver_version=None,
+        cuda_version=None,
+        pytorch_version="2.13",
+        gpus=(metal,),
+    )
+    observed: dict[str, object] = {}
+
+    class MetalBroker(Broker):
+        """Lease the Apple GPU selected in the claim."""
+
+        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            """Return work pinned to the claimed GPU.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                hardware:
+                    Hardware supplied to the test.
+
+            Returns:
+                The test lease.
+            """
+            return Claim(
+                lease=dataclasses.replace(
+                    LEASE,
+                    selected_gpu_uuid=hardware.selected_gpu_uuid,
+                    selected_gpu_index=hardware.selected_gpu_index,
+                )
+            )
+
+    class CapturingEvaluator:
+        """Capture CUDA visibility during evaluation."""
+
+        def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
+            """Return one result, or fail, after observing the environment.
+
+            Args:
+                lease:
+                    Lease supplied to the test.
+                output_path:
+                    Path where evaluation results would be written.
+
+            Returns:
+                A single deterministic evaluation record.
+
+            Raises:
+                RuntimeError:
+                    When the test asks the evaluation to fail.
+            """
+            observed["cuda"] = os.environ.get("CUDA_VISIBLE_DEVICES")
+            if evaluation_fails:
+                raise RuntimeError("evaluation failed")
+            return [EEERecord(record_json={"id": "one"})]
+
+    worker = runtime.Worker(
+        client=MetalBroker(),
+        state=StateStore(directory=tmp_path),
+        evaluator=CapturingEvaluator(),
+        hardware_factory=lambda: hardware,
+    )
+    if evaluation_fails:
+        with pytest.raises(RuntimeError, match="evaluation failed"):
+            worker.run(once=True)
+    else:
+        worker.run(once=True)
+    assert observed["cuda"] == "GPU-preexisting"
+    assert os.environ["CUDA_VISIBLE_DEVICES"] == "GPU-preexisting"
+
+
+def test_repeated_unsafe_work_backs_off_until_a_lease_gets_through(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Escalate the backoff when the broker keeps offering the same unsafe work.
+
+    A successful claim resets the shared recovery backoff, so the safety skips must
+    keep their own count. Otherwise the worker would retry every 30 seconds.
+
+    Args:
+        monkeypatch:
+            Fixture replacing network dependencies and sleep.
+        tmp_path:
+            Private worker state directory.
+    """
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(runtime, "check_model_safety", _unsafe_first_lease)
+    second = dataclasses.replace(LEASE, lease_id="lease-2", issue_number=43)
+
+    class RepeatingBroker(Broker):
+        """Offer the unsafe lease six times, a runnable lease, then unsafe once more."""
+
+        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            """Offer the next lease in sequence.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                hardware:
+                    Hardware supplied to the test.
+
+            Returns:
+                The next lease in the sequence, then nothing.
+            """
+            self.claims += 1
+            if self.claims == 7:
+                return Claim(lease=second)
+            return Claim(lease=LEASE if self.claims <= 8 else None)
+
+    broker = RepeatingBroker()
+    delays: list[float] = []
+
+    def record_sleep(delay: float) -> None:
+        """Record each sleep and stop after the skip that follows the runnable lease.
+
+        Args:
+            delay:
+                Requested sleep duration.
+
+        Raises:
+            KeyboardInterrupt:
+                Once a skip after the finalised lease has slept.
+        """
+        delays.append(delay)
+        if broker.finalised and broker.claims >= 8:
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(runtime.time, "sleep", record_sleep)
+    worker = runtime.Worker(
+        client=broker,
+        state=StateStore(directory=tmp_path),
+        evaluator=OneRecordEvaluator(),
+        hardware_factory=lambda: HARDWARE,
+    )
+    with pytest.raises(KeyboardInterrupt):
+        worker.run()
+    backoffs = [delay for delay in delays if delay >= 30]
+    assert backoffs == [30.0, 60.0, 120.0, 240.0, 300.0, 300.0, 30.0]
+    assert broker.releases == ["unsafe_model"] * 7
+    assert broker.finalised
+
+
+def test_resumed_lease_success_resets_the_safety_skip_backoff(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Restart the skip backoff at 30 seconds after a resumed lease finishes.
+
+    The runnable lease first fails to finalise, so it is finished on the resumed
+    path. The next unsafe lease must then wait 30 seconds again.
+
+    Args:
+        monkeypatch:
+            Fixture replacing network dependencies and sleep.
+        tmp_path:
+            Private worker state directory.
+    """
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(runtime, "check_model_safety", _unsafe_first_lease)
+    second = dataclasses.replace(LEASE, lease_id="lease-2", issue_number=43)
+
+    class ResumingBroker(Broker):
+        """Offer two unsafe leases, a runnable one, then unsafe again."""
+
+        finalise_attempts = 0
+
+        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            """Offer the next lease in sequence.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                hardware:
+                    Hardware supplied to the test.
+
+            Returns:
+                The next lease in the sequence, then nothing.
+            """
+            self.claims += 1
+            if self.claims == 3:
+                return Claim(lease=second)
+            return Claim(lease=LEASE if self.claims <= 4 else None)
+
+        def finalise(self, credential: str, lease_id: str) -> str:
+            """Fail the first finalisation transiently, then accept it.
+
+            Args:
+                credential:
+                    Credential supplied to the test.
+                lease_id:
+                    Lease being finalised.
+
+            Returns:
+                The stable submission identifier.
+
+            Raises:
+                BrokerError:
+                    On the first attempt.
+            """
+            self.finalise_attempts += 1
+            if self.finalise_attempts == 1:
+                raise BrokerError("temporarily busy", status=503)
+            return super().finalise(credential=credential, lease_id=lease_id)
+
+    broker = ResumingBroker()
+    delays: list[float] = []
+
+    def record_sleep(delay: float) -> None:
+        """Record each sleep and stop after the skip that follows the resume.
+
+        Args:
+            delay:
+                Requested sleep duration.
+
+        Raises:
+            KeyboardInterrupt:
+                Once a skip after the finalised lease has slept.
+        """
+        delays.append(delay)
+        if broker.finalised and broker.claims >= 4:
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(runtime.time, "sleep", record_sleep)
+    with pytest.raises(KeyboardInterrupt):
+        runtime.Worker(
+            client=broker,
+            state=StateStore(directory=tmp_path),
+            evaluator=OneRecordEvaluator(),
+            hardware_factory=lambda: HARDWARE,
+        ).run()
+    assert broker.finalise_attempts == 2
+    assert broker.releases == ["unsafe_model"] * 3
+    backoffs = [delay for delay in delays if delay >= 30]
+    assert backoffs[:2] == [30.0, 60.0]
+    assert backoffs[-1] == 30.0
+
+
+def test_resumed_unsafe_lease_does_not_stop_continuous_worker(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Keep a continuous worker running when a resumed lease fails the safety check.
+
+    Args:
+        monkeypatch:
+            Fixture replacing network dependencies and sleep.
+        tmp_path:
+            Private worker state directory.
+    """
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(runtime, "check_model_safety", _unsafe_first_lease)
+    state = StateStore(directory=tmp_path)
+    state.save_active(lease=LEASE, github_login="login")
+    broker = _second_lease_broker()
+    broker.claims = 1
+
+    def stop_after_finalisation(delay: float) -> None:
+        """Stop the continuous loop once the next lease is finalised.
+
+        Args:
+            delay:
+                Requested sleep duration.
+
+        Raises:
+            KeyboardInterrupt:
+                Once the broker has finalised work.
+        """
+        if broker.finalised:
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(runtime.time, "sleep", stop_after_finalisation)
+    with pytest.raises(KeyboardInterrupt):
+        runtime.Worker(
+            client=broker,
+            state=state,
+            evaluator=OneRecordEvaluator(),
+            hardware_factory=lambda: HARDWARE,
+        ).run()
+    assert broker.releases == ["unsafe_model"]
+    assert broker.finalised
+    assert state.load_active() is None
+
+
+@pytest.mark.parametrize("resumed", [False, True])
+@pytest.mark.parametrize("launcher_managed", [False, True])
+def test_unsafe_model_still_stops_once_and_launcher_managed_workers(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    launcher_managed: bool,
+    resumed: bool,
+) -> None:
+    """Preserve the existing exit behaviour outside plain continuous mode.
+
+    Args:
+        monkeypatch:
+            Fixture replacing network dependencies.
+        tmp_path:
+            Private worker state directory.
+        launcher_managed:
+            Whether the worker runs under the Docker launcher.
+        resumed:
+            Whether the unsafe lease is resumed from saved state.
+    """
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(runtime, "check_model_safety", _unsafe_first_lease)
+    state = StateStore(directory=tmp_path)
+    if resumed:
+        state.save_active(
+            lease=LEASE,
+            github_login="login",
+            managed_image_digest=LEASE.image_digest if launcher_managed else None,
+        )
+    broker = _second_lease_broker()
+    worker = runtime.Worker(
+        client=broker,
+        state=state,
+        evaluator=OneRecordEvaluator(),
+        hardware_factory=lambda: HARDWARE,
+        image_digest=LEASE.image_digest if launcher_managed else None,
+    )
+    if launcher_managed:
+        assert worker.run(launcher_managed=True) == 1
+    else:
+        with pytest.raises(SafetyError):
+            worker.run(once=True)
+    assert broker.releases == ["unsafe_model"]
+    assert broker.claims == (0 if resumed else 1)
+
+
+VM_STAT = (
+    "Mach Virtual Memory Statistics: (page size of 16384 bytes)\n"
+    "Pages free:                                  1216055.\n"
+    "Pages inactive:                              1194506.\n"
+    "Pages speculative:                             50000.\n"
+)
+
+
+def test_apple_silicon_probes_the_gpu_once_per_process(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Run the GPU probe subprocess once, but re-read available memory each time.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
+    calls = _fake_metal_host(
+        monkeypatch=monkeypatch,
+        cap_stdout=_metal_probe(cap=55_662_788_608),
+        vm_stat=VM_STAT,
+    )
+    discover_hardware(state_dir=tmp_path)
+    discover_hardware(state_dir=tmp_path)
+    assert len(calls["subprocess"]) == 1
+    assert sum(command[0] == "vm_stat" for command in calls["commands"]) == 2
+
+
+@pytest.mark.parametrize(
+    ("variable", "value", "refused"),
+    [
+        ("VLLM_TARGET_DEVICE", "cpu", True),
+        ("VLLM_TARGET_DEVICE", "CPU", True),
+        ("VLLM_PLUGINS", "", True),
+        ("VLLM_PLUGINS", "gguf_metal", True),
+        ("VLLM_PLUGINS", "metal,gguf_metal", False),
+    ],
+)
+def test_apple_silicon_refuses_when_vllm_is_steered_to_the_cpu(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    variable: str,
+    value: str,
+    refused: bool,
+) -> None:
+    """Refuse to claim when an environment variable makes vLLM select the CPU.
+
+    The variable is set after a successful discovery, so the check must not depend on
+    the cached GPU probe.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+        variable:
+            The vLLM environment variable to set.
+        value:
+            Its value.
+        refused:
+            Whether discovery must refuse to report the GPU.
+    """
+    _fake_metal_host(
+        monkeypatch=monkeypatch,
+        cap_stdout=_metal_probe(cap=55_662_788_608),
+        vm_stat=VM_STAT,
+    )
+    assert discover_hardware(state_dir=tmp_path).selected_gpu_uuid == METAL_GPU_UUID
+    monkeypatch.setenv(variable, value)
+    if refused:
+        with pytest.raises(NoGpuError, match=f"{variable}"):
+            discover_hardware(state_dir=tmp_path)
+    else:
+        assert discover_hardware(state_dir=tmp_path).selected_gpu_uuid == METAL_GPU_UUID
+
+
+def test_apple_silicon_reports_metal_gpu_with_unified_memory_budget(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Report one Metal GPU whose free memory is capped by available host memory.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
+    cap = 55_662_788_608
+    calls = _fake_metal_host(
+        monkeypatch=monkeypatch, cap_stdout=_metal_probe(cap=cap), vm_stat=VM_STAT
+    )
+    report = discover_hardware(state_dir=tmp_path)
+    available = (1216055 + 1194506) * 16384
+    (gpu,) = report.gpus
+    assert gpu.uuid == METAL_GPU_UUID
+    assert gpu.name == "Apple M3 Max"
+    assert gpu.total_memory_bytes == cap
+    assert gpu.free_memory_bytes == available - 1024**3
+    assert report.selected_gpu_uuid == METAL_GPU_UUID
+    assert report.driver_version is None
+    assert report.cuda_version is None
+    assert report.ram_bytes == 64 * 1024**3
+    assert ["sysctl", "-n", "hw.memsize"] in calls["commands"]
+    assert all(command[0] != "nvidia-smi" for command in calls["commands"])
+    ((command, options),) = calls["subprocess"]
+    assert command[:2] == [hardware.sys.executable, "-c"]
+    assert "max_recommended_working_set_size" in command[2]
+    assert "mx.metal.is_available()" in command[2]
+    assert "'vllm.platform_plugins'" in command[2]
+    assert "torch.backends.mps.is_available()" in command[2]
+    assert options["check"] is True
+    timeout = options["timeout"]
+    assert isinstance(timeout, (int, float))
+    assert timeout > 0
+
+
+def test_apple_silicon_retries_a_failed_gpu_probe(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Probe again after a failed probe instead of remembering the failure.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
+    cap = 55_662_788_608
+    _fake_metal_host(monkeypatch=monkeypatch, cap_stdout="not json", vm_stat=VM_STAT)
+    with pytest.raises(NoGpuError, match="could not probe the Apple GPU"):
+        discover_hardware(state_dir=tmp_path)
+    monkeypatch.setattr(
+        hardware.subprocess,
+        "run",
+        lambda command, **kwargs: type(
+            "Completed", (), {"stdout": _metal_probe(cap=cap)}
+        )(),
+    )
+    (gpu,) = discover_hardware(state_dir=tmp_path).gpus
+    assert gpu.total_memory_bytes == cap
+
+
+@pytest.mark.parametrize(
+    ("missing", "message"),
+    [
+        ("metal", "MLX cannot use the Apple GPU"),
+        ("vllm_metal_plugin", "vllm-metal's platform plugin is not installed"),
+        ("mps", "PyTorch cannot use the Apple GPU"),
+    ],
+)
+def test_apple_silicon_without_a_gpu_backend_refuses_to_claim(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, missing: str, message: str
+) -> None:
+    """Stop before claiming when evaluation would fall back to the CPU.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+        missing:
+            The GPU backend the probe reports as unavailable.
+        message:
+            Expected start of the error message.
+    """
+    _fake_metal_host(
+        monkeypatch=monkeypatch,
+        cap_stdout=_metal_probe(cap=55_662_788_608, **{missing: False}),
+        vm_stat=VM_STAT,
+    )
+    with pytest.raises(NoGpuError, match=message):
+        discover_hardware(state_dir=tmp_path)
+
+
+def test_apple_silicon_without_host_memory_fails_closed(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Refuse to claim work when available host memory cannot be estimated.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
+    _fake_metal_host(
+        monkeypatch=monkeypatch,
+        cap_stdout=_metal_probe(cap=55_662_788_608),
+        vm_stat="unexpected output",
+    )
+    with pytest.raises(NoGpuError, match="unified-memory availability"):
+        discover_hardware(state_dir=tmp_path)
+
+
+def test_apple_silicon_without_metal_cap_fails_closed(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Refuse to claim work when the Metal working-set limit cannot be read.
+
+    Args:
+        monkeypatch:
+            Pytest fixture for replacing dependencies during the test.
+        tmp_path:
+            Temporary directory for files created by the test.
+    """
+    _fake_metal_host(monkeypatch=monkeypatch, cap_stdout="not json", vm_stat=VM_STAT)
+    with pytest.raises(NoGpuError, match="could not probe the Apple GPU"):
+        discover_hardware(state_dir=tmp_path)
 
 
 def test_gb10_contention_caps_reported_free_memory(
@@ -2618,6 +3436,23 @@ def test_state_round_trip_preserves_scope_alternatives_and_canary(
     assert active.lease == lease
     assert active.evaluation_failures == 2
     assert active.release_pending
+
+
+def test_unified_free_bytes_reserves_headroom_and_never_goes_negative() -> None:
+    """Cap device memory by host availability minus 1 GiB, floored at zero."""
+    gib = 1024**3
+    assert (
+        unified_free_bytes(device_free_bytes=50 * gib, host_available_bytes=10 * gib)
+        == 9 * gib
+    )
+    assert (
+        unified_free_bytes(device_free_bytes=4 * gib, host_available_bytes=10 * gib)
+        == 4 * gib
+    )
+    assert (
+        unified_free_bytes(device_free_bytes=4 * gib, host_available_bytes=gib // 2)
+        == 0
+    )
 
 
 def test_worker_caps_vllm_utilisation_to_fresh_free_gpu_memory(

@@ -57,7 +57,8 @@ generative = [
     "transformers[mistral-common]>=5.14.0,<5.15.0",
     # vLLM setup for MacOS (versions specified below in sources)
     "vllm; platform_system == 'Darwin'",
-    "vllm-metal; platform_system == 'Darwin'",
+    # vllm-metal only publishes a cp312 wheel; `make install` uses Python 3.12.
+    "vllm-metal; platform_system == 'Darwin' and python_version == '3.12'",
     # vLLM setup for Linux (assuming CUDA is available here)
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
     "vllm>=0.27.1; platform_system == 'Linux'",
@@ -71,7 +72,8 @@ all = [
     "transformers[mistral-common]>=5.14.0,<5.15.0",
     # vLLM setup for MacOS (versions specified below in sources)
     "vllm; platform_system == 'Darwin'",
-    "vllm-metal; platform_system == 'Darwin'",
+    # vllm-metal only publishes a cp312 wheel; `make install` uses Python 3.12.
+    "vllm-metal; platform_system == 'Darwin' and python_version == '3.12'",
     # vLLM setup for Linux (assuming CUDA is available here)
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
     "vllm>=0.27.1; platform_system == 'Linux'",
@@ -132,14 +134,22 @@ dev = [
 
 [tool.uv.sources]
 # PyPi releases seem to be lagging behind, so we use git sources directly
-vllm-metal = { git = "https://github.com/vllm-project/vllm-metal.git", tag = "v0.2.0-20260531-071330", marker = "platform_system == 'Darwin'" }
+# vllm-metal and vLLM are released in matching pairs (vllm-metal's .github/vllm-release-tag.commit).
+# v0.30.0 is the first vllm-metal release that sizes its KV cache from vLLM's
+# `gpu_memory_utilization` instead of its own VLLM_METAL_MEMORY_FRACTION variable. Newer
+# pairs require Transformers >= 5.16.1, which conflicts with the override below.
+# Use the release wheel, not the Git tag: only the wheel ships the prebuilt Metal
+# extension (`_paged_ops.cpython-312-darwin.so`). A Git install lacks it, and vllm-metal
+# then refuses to start unless VLLM_METAL_BUILD_FROM_SOURCE=1 is set. The wheel is cp312,
+# which matches `make install`. vllm-metal is not published to PyPI at this version.
+vllm-metal = { url = "https://github.com/vllm-project/vllm-metal/releases/download/v0.30.0/vllm_metal-0.30.0-cp312-cp312-macosx_15_0_arm64.whl", marker = "platform_system == 'Darwin' and python_version == '3.12'" }
 # vLLM has no official wheels for macos arm64 and flashinfer is a default dep from 0.12.0 (which seems to only be x86_64 + cuda)
 # NOTE: vLLM's `setup.py` picks its target device from the *resolving* machine, not from
 # the environment being resolved for, so re-locking on a CUDA host builds this git source
 # as `+cu128` and pulls CUDA-only deps (PyNvVideoCodec, flashinfer, ...) into the macOS
 # split, which then fails to resolve. Set `VLLM_TARGET_DEVICE=cpu` when re-locking off
 # macOS, so that the metadata matches the `+cpu` build a Mac would produce.
-vllm = { git = "https://github.com/vllm-project/vllm.git", tag = "v0.27.1", marker = "platform_system == 'Darwin'" }
+vllm = { git = "https://github.com/vllm-project/vllm.git", tag = "v0.30.0", marker = "platform_system == 'Darwin'" }
 kev = { git = "https://github.com/jaredpalmer/kev.git", rev = "5e42a7a03f28134853dd3ff77461457e921e5ec1" }
 
 [tool.uv]

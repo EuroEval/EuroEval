@@ -1,7 +1,7 @@
 import {
   BrokerError, ConfigurationError, GROUPS, PROTOCOL_VERSION, VM_MARKER_RE, VOLUNTEER_MARKER_RE,
   acquireRenewableIssueMutex, authenticate, brokerErrorBody,
-  claimableLanguages, env, optionalEnv, expectedScope, validateScopePolicyVersion,
+  claimableLanguages, env, expectedScope, validateScopePolicyVersion,
   extractModelId, enforceRateLimit, fitsGpu, fetchIssue, json, languageGroup, leaseTtl, selectedGpu,
   listOpenIssues, method,
   patchIssue, putLease, randomToken, readJson, deleteLease, unassignIssue, hasIssueAssignee,
@@ -9,11 +9,13 @@ import {
   getLeaseForIssue, reclaimExpiredLease,
   modelMayFit, parseVolunteerMarker, resolveModel, selectedLanguages, volunteerAssigneesMatch,
   requireProtocol, signVolunteerMarker, verifyVolunteerMarker, markerSecret, replaceVolunteerMarker,
-  reserveCanary,
+  reserveCanary, isDeclined,
 } from "./_lib.js";
 import type { Lease, VolunteerLeaseMarker } from "./_lib.js";
 import { narrowCoverage } from "./_lib/coverage.js";
-import { approvedWorkerRelease, canonicalWorkerVersion, normalizeArchitecture } from "./_lib/worker-release.js";
+import {
+  UNATTESTED_IMAGE_DIGEST, approvedWorkerRelease, canonicalWorkerVersion, normalizeArchitecture,
+} from "./_lib/worker-release.js";
 
 // Reserved only as a Redis mutex key; never used for a GitHub API request.
 const GLOBAL_CLAIM_MUTEX = Number.MAX_SAFE_INTEGER;
@@ -183,11 +185,10 @@ export default async function handler(req: Request): Promise<Response> {
         throw new BrokerError(426, "Worker update required; refresh the approved worker image and retry.", "worker_update_required");
       }
     } else {
-      // Legacy workers have no image attestation. Preserve their original digest
-      // selection (including the default for unknown architectures) and version checks.
-      const armDigest = normalizeArchitecture(architecture) === "arm64"
-        ? optionalEnv("VOLUNTEER_WORKER_IMAGE_DIGEST_ARM64", "") : "";
-      imageDigest = armDigest || env("VOLUNTEER_WORKER_IMAGE_DIGEST");
+      // Non-managed workers present no image attestation: they run directly from a
+      // checkout (Apple Silicon, or CUDA without Docker) or from an unverified manual
+      // `docker run`. Record that honestly instead of a configured image digest.
+      imageDigest = UNATTESTED_IMAGE_DIGEST;
       euroevalVersion = env("EUROEVAL_VERSION").replace(/\.dev$/, ".dev0");
       validateScopePolicyVersion(euroevalVersion);
       if (body.worker_version !== env("VOLUNTEER_WORKER_VERSION")) throw new BrokerError(422, "Unsupported worker version.");
@@ -196,6 +197,7 @@ export default async function handler(req: Request): Promise<Response> {
     const requestedLanguage = typeof body.language === "string" ? body.language : null;
     const issues = await listOpenIssues(signal);
     const selectedHardwareGpu = selectedGpu(body.hardware);
+    const workerId = identity.hash.slice(0, 24);
     const candidates = issues.flatMap((listed) => {
       const modelId = extractModelId(listed.title, listed.body);
       const languages = selectedLanguages(listed.body);
@@ -269,6 +271,8 @@ export default async function handler(req: Request): Promise<Response> {
       checkDiscoveryDeadline();
       const model = resolved.get(modelId);
       if (!model || !fitsGpu(model, body.hardware, selectedHardwareGpu)) continue;
+      // A worker that declined this model revision as unrunnable is not offered it again.
+      if (await isDeclined(workerId, model.id, model.revision, signal)) continue;
       // Serialize final fresh metadata, cross-issue scan, and claim transaction.
       const globalMutex = await acquireRenewableIssueMutex(GLOBAL_CLAIM_MUTEX);
       if (!globalMutex) { claimMutexBusy = true; continue; }
@@ -351,7 +355,7 @@ export default async function handler(req: Request): Promise<Response> {
           model.id, model.revision, model.model_type, leaseId,
         );
         const lease: Lease = {
-          issue_number: snapshot.number, language, worker: identity.hash.slice(0, 24), contributor: identity.contributor,
+          issue_number: snapshot.number, language, worker: workerId, contributor: identity.contributor,
           model_id: model.id, model_revision: model.revision, euroeval_version: euroevalVersion,
           image_digest: imageDigest,
           worker_version: body.worker_version as string,

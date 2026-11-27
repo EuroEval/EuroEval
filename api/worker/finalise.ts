@@ -6,7 +6,7 @@ import {
   fetchIssue, getLeaseById, isReadyForReview, json, method, patchIssue, parseVolunteerMarker,
   readJson, redis, redisGet, requireLeaseOwnership, requireAssignee, requireProtocol,
   selectedLanguages, replaceVolunteerMarker, reconcilePublicAssignments,
-  signVolunteerMarker, verifyVolunteerMarker,
+  signVolunteerMarker, verifyVolunteerMarker, imageDigestProvenance,
 } from "./_lib.js";
 import { uploadStaging } from "./_lib/eee.js";
 import type { Lease, LeaseScope, VolunteerLeaseMarker } from "./_lib.js";
@@ -184,7 +184,8 @@ export async function fetch(req: Request): Promise<Response> {
         verified_contributor: identity.contributor, model: { id: lease.model_id, revision: lease.model_revision },
         language: lease.language, model_type: lease.model_type, language_group: lease.expected_scope.language_group,
         euroeval_version: lease.euroeval_version, worker_version: lease.worker_version, image_digest: lease.image_digest,
-        image_digest_provenance: "configured-required-not-runtime-attested", gpu_memory_utilisation: lease.gpu_memory_utilisation,
+        image_digest_provenance: imageDigestProvenance(lease.image_digest),
+        gpu_memory_utilisation: lease.gpu_memory_utilisation,
         selected_gpu_index: lease.selected_gpu_index, selected_gpu_uuid: lease.selected_gpu_uuid,
         expected_scope: lease.expected_scope, matched_identity_suffixes: receipt.matched_identity_suffixes,
         contamination_canary: lease.contamination_canary || null, results: entries,

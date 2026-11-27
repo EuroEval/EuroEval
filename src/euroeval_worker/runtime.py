@@ -20,7 +20,7 @@ from euroeval.canary_evidence import CANARY_CORPUS_PATH_ENV
 from .auth import authenticate
 from .broker import BrokerError, BrokerProtocol
 from .evaluator import EuroEvalEvaluator, Evaluator
-from .hardware import NoGpuError, discover_hardware, select_gpu
+from .hardware import METAL_GPU_UUID, NoGpuError, discover_hardware, select_gpu
 from .safety import SafetyError, check_model_safety
 from .state import ActiveLease, PendingRecord, StateStore
 from .types import Claim, EEERecord, Gpu, HardwareReport, Lease
@@ -226,6 +226,7 @@ class Worker:
         self._login = ""
         self._auth_lock = threading.Lock()
         self._recovery_failures = 0
+        self._safety_skips = 0
         self.image_digest = image_digest
         self._launcher_managed = False
 
@@ -351,12 +352,7 @@ class Worker:
             selected = select_gpu(hardware.gpus)
             lease = _lease_for_gpu(response.lease, selected)
             try:
-                self._process_lease(
-                    credential=self._credential,
-                    lease=lease,
-                    hardware=hardware,
-                    active=None,
-                )
+                self._process_fresh_lease(lease=lease, hardware=hardware, once=once)
             except EvaluationFailure as error:
                 if once:
                     raise error.__cause__ or error
@@ -546,6 +542,29 @@ class Worker:
             selected_gpu_index=selected.index,
             selected_gpu_uuid=selected.uuid,
         )
+
+    def _process_fresh_lease(
+        self, *, lease: Lease, hardware: HardwareReport, once: bool
+    ) -> None:
+        """Process a newly claimed lease, moving on if its model is unsafe.
+
+        Args:
+            lease:
+                Newly claimed lease.
+            hardware:
+                Prepared hardware report for the claim.
+            once:
+                Whether the caller requested single-operation behaviour.
+
+        """
+        try:
+            self._process_lease(
+                credential=self._credential, lease=lease, hardware=hardware, active=None
+            )
+        except SafetyError as error:
+            self._recover_safety_failure(error=error, once=once)
+        else:
+            self._safety_skips = 0
 
     def _process_lease(
         self,
@@ -947,6 +966,33 @@ class Worker:
             logger.warning("Result submission failed; retrying idempotently")
             time.sleep(_retry_delay(attempt, retry_after, self._max_retry_delay))
 
+    def _recover_safety_failure(self, *, error: SafetyError, once: bool) -> None:
+        """Move on after a model fails its safety preflight in continuous mode.
+
+        The preflight has already released and archived the lease. Single-operation
+        and launcher-managed runs keep raising, so their exit status is unchanged.
+        Consecutive skips back off from 30 s up to 300 s, until a lease gets through.
+
+        Args:
+            error:
+                The preflight failure.
+            once:
+                Whether the caller requested single-operation behaviour.
+
+        """
+        if once or self._launcher_managed:
+            raise error
+        # A successful claim resets the shared recovery backoff, so count consecutive
+        # skips separately: the broker may keep offering the same unrunnable work.
+        delay = min(300.0, 30.0 * 2 ** min(self._safety_skips, 4))
+        self._safety_skips += 1
+        logger.warning(
+            "Skipping work that failed the model safety check (retrying in %.0f s): %s",
+            delay,
+            error,
+        )
+        time.sleep(delay)
+
     def _recover_evaluation_failure(
         self, *, active: ActiveLease, error: EvaluationFailure, once: bool
     ) -> None:
@@ -1063,6 +1109,9 @@ class Worker:
         except EvaluationFailure as error:
             self._recover_evaluation_failure(active=active, error=error, once=once)
             return False
+        except SafetyError as error:
+            self._recover_safety_failure(error=error, once=once)
+            return False
         except (BrokerError, LeaseLost, OSError, TimeoutError) as error:
             if _lease_lost(error):
                 self.state.archive_active()
@@ -1075,6 +1124,7 @@ class Worker:
                 return False
             raise
         self._recovery_failures = 0
+        self._safety_skips = 0
         return once or self._launcher_managed
 
     def _wait_for_work(self, *, once: bool) -> bool:
@@ -1259,7 +1309,7 @@ def _pin_canary_corpus(path: Path | None) -> c.Iterator[None]:
 
 @contextlib.contextmanager
 def _pin_gpu(gpu: Gpu) -> c.Iterator[None]:
-    """Expose only ``gpu`` to CUDA for the duration of one evaluation.
+    """Expose only ``gpu`` to CUDA for one evaluation; Metal needs no pinning.
 
     Args:
         gpu:
@@ -1268,6 +1318,9 @@ def _pin_gpu(gpu: Gpu) -> c.Iterator[None]:
     Yields:
         Values produced by this iterator.
     """
+    if gpu.uuid == METAL_GPU_UUID:
+        yield
+        return
     original = os.environ.get("CUDA_VISIBLE_DEVICES")
     os.environ["CUDA_VISIBLE_DEVICES"] = gpu.uuid
     try:
