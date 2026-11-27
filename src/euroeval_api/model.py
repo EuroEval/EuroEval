@@ -37,6 +37,136 @@ class ResolvedModel(t.TypedDict):
     model_metadata: ModelMetadataEvidence
 
 
+async def model_may_fit(
+    http: httpx.AsyncClient,
+    model_id: str,
+    hardware: dict[str, object],
+    selected: dict[str, object] | None = None,
+) -> bool:
+    """Estimate whether a model fits available hardware without resolving its config.
+
+    Args:
+        http:
+            Shared asynchronous HTTP client.
+        model_id:
+            Requested Hugging Face model identifier.
+        hardware:
+            Hardware record containing disk capacity and GPU utilisation.
+        selected (optional):
+            Selected GPU record, if any. Defaults to None.
+
+    Returns:
+        Whether the model appears safe and small enough for the hardware.
+
+    Raises:
+        HTTPException:
+            If Hugging Face cannot supply complete metadata or file sizes.
+    """
+    encoded = "/".join(quote(part, safe="") for part in model_id.split("/"))
+    info = await _get_json(
+        http=http,
+        url=f"https://huggingface.co/api/models/{encoded}?blobs=true",
+        failure=f"Hugging Face model {model_id} could not be inspected.",
+    )
+    returned_id, private, gated = info.get("id"), info.get("private"), info.get("gated")
+    siblings = info.get("siblings")
+    if (
+        not isinstance(returned_id, str)
+        or returned_id.lower() != model_id.lower()
+        or not isinstance(private, bool)
+        or not (isinstance(gated, bool) or gated == "false")
+        or not isinstance(siblings, list)
+        or not siblings
+    ):
+        raise HTTPException(status_code=422, detail="Incomplete model metadata.")
+    if private or gated is True:
+        return False
+
+    files: list[tuple[str, int]] = []
+    for item in siblings:
+        if not isinstance(item, dict):
+            raise HTTPException(
+                status_code=422, detail="Incomplete model file metadata."
+            )
+        name, size = item.get("rfilename"), item.get("size")
+        if not isinstance(name, str) or not name.strip():
+            raise HTTPException(
+                status_code=422, detail="Incomplete model file metadata."
+            )
+        lower = name.lower()
+        if lower.endswith(".py") or re.search(
+            r"\.(bin|pt|pth|ckpt|gguf|onnx|h5|msgpack)$", lower
+        ):
+            return False
+        if (
+            isinstance(size, bool)
+            or not isinstance(size, (int, float))
+            or not math.isfinite(size)
+            or (isinstance(size, float) and not size.is_integer())
+        ):
+            raise HTTPException(status_code=422, detail="Incomplete model file sizes.")
+        if size < 0 or size > 9_007_199_254_740_991:
+            raise HTTPException(status_code=422, detail="Incomplete model file sizes.")
+        files.append((name, int(size)))
+
+    weights = [size for name, size in files if name.lower().endswith(".safetensors")]
+    weight_bytes, repo_bytes = sum(weights), sum(size for _, size in files)
+    if not weights or not weight_bytes or not repo_bytes:
+        return False
+    free_disk, utilisation = (
+        hardware.get("free_disk_bytes"),
+        hardware.get("gpu_memory_utilisation"),
+    )
+    free_memory = selected.get("free_memory_bytes") if selected else 0
+    return (
+        isinstance(free_disk, (int, float))
+        and not isinstance(free_disk, bool)
+        and free_disk >= repo_bytes
+        and isinstance(utilisation, (int, float))
+        and not isinstance(utilisation, bool)
+        and isinstance(free_memory, (int, float))
+        and not isinstance(free_memory, bool)
+        and weight_bytes * 1.35 <= free_memory * utilisation
+    )
+
+
+async def _get_json(
+    *, http: httpx.AsyncClient, url: str, failure: str
+) -> dict[str, object]:
+    """Fetch and decode a metadata object within a total request deadline.
+
+    Args:
+        http:
+            Shared asynchronous HTTP client.
+        url:
+            Fully encoded Hugging Face metadata URL.
+        failure:
+            Description for an unsuccessful HTTP status.
+
+    Returns:
+        Decoded JSON object.
+
+    Raises:
+        ValueError:
+            If the response is not a JSON object.
+        HTTPException:
+            If Hugging Face returns an unsuccessful status.
+    """
+    response = await asyncio.wait_for(fetch_with_retry(http=http, url=url), timeout=2.5)
+    if response.status_code >= 400:
+        status = (
+            503 if response.status_code >= 500 or response.status_code == 429 else 422
+        )
+        raise HTTPException(status_code=status, detail=failure)
+    try:
+        value = response.json()
+    except (json.JSONDecodeError, UnicodeDecodeError) as error:
+        raise ValueError("Hugging Face returned invalid JSON metadata.") from error
+    if not isinstance(value, dict):
+        raise ValueError("Hugging Face returned incomplete metadata.")
+    return value
+
+
 async def resolve_model(http: httpx.AsyncClient, model_id: str) -> ResolvedModel:
     """Resolve a public, safe model at an immutable revision.
 
@@ -121,43 +251,6 @@ async def resolve_model(http: httpx.AsyncClient, model_id: str) -> ResolvedModel
         "model_type": model_type,
         "model_metadata": evidence,
     }
-
-
-async def _get_json(
-    *, http: httpx.AsyncClient, url: str, failure: str
-) -> dict[str, object]:
-    """Fetch and decode a metadata object within a total request deadline.
-
-    Args:
-        http:
-            Shared asynchronous HTTP client.
-        url:
-            Fully encoded Hugging Face metadata URL.
-        failure:
-            Description for an unsuccessful HTTP status.
-
-    Returns:
-        Decoded JSON object.
-
-    Raises:
-        ValueError:
-            If the response is not a JSON object.
-        HTTPException:
-            If Hugging Face returns an unsuccessful status.
-    """
-    response = await asyncio.wait_for(fetch_with_retry(http=http, url=url), timeout=2.5)
-    if response.status_code >= 400:
-        status = (
-            503 if response.status_code >= 500 or response.status_code == 429 else 422
-        )
-        raise HTTPException(status_code=status, detail=failure)
-    try:
-        value = response.json()
-    except (json.JSONDecodeError, UnicodeDecodeError) as error:
-        raise ValueError("Hugging Face returned invalid JSON metadata.") from error
-    if not isinstance(value, dict):
-        raise ValueError("Hugging Face returned incomplete metadata.")
-    return value
 
 
 def _js_truthy(value: object) -> bool:
