@@ -1,5 +1,6 @@
 """Tests for the collect_evaluation_results script, focusing on upload_results_to_hf."""
 
+import dataclasses
 import hashlib
 import json
 import signal
@@ -99,9 +100,12 @@ class FakeHfApi:
 
 
 @pytest.fixture(autouse=True)
-def clear_bucket_adapter() -> None:
+def clear_bucket_adapter(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Keep each test's in-memory bucket isolated."""
     FakeHfApi.objects.clear()
+    monkeypatch.setattr(
+        collect_evaluation_results, "NEW_RESULTS_PATH", tmp_path / "new_results.jsonl"
+    )
 
 
 def test_collector_abort_preserves_staging_and_local_results(
@@ -848,7 +852,7 @@ def test_preflight_public_staging_fails_closed(monkeypatch: pytest.MonkeyPatch) 
 
 
 @pytest.mark.parametrize("failure", ["status", "exception"])
-@pytest.mark.parametrize("command_kind", ["show", "approve"])
+@pytest.mark.parametrize("command_kind", ["show", "reject"])
 def test_preflight_review_error_halts_after_inspecting_remaining_ids(
     monkeypatch: pytest.MonkeyPatch,
     failure: str,
@@ -868,7 +872,10 @@ def test_preflight_review_error_halts_after_inspecting_remaining_ids(
     monkeypatch.setattr(
         collect_evaluation_results, "_stdin_is_interactive", lambda: True
     )
-    prompt = Mock(return_value="y")
+    answers = (
+        ["y", "y", "y"] if command_kind == "show" else ["y", *["r", "reason", "y"] * 3]
+    )
+    prompt = Mock(side_effect=answers)
     monkeypatch.setattr("builtins.input", prompt)
     calls: list[list[str]] = []
     shown: list[str] = []
@@ -893,7 +900,7 @@ def test_preflight_review_error_halts_after_inspecting_remaining_ids(
     monkeypatch.setattr(collect_evaluation_results, "run_review_command", run)
     assert collect_evaluation_results.preflight_volunteer_review() is False
     assert shown == ids
-    assert prompt.call_count == (3 if command_kind == "show" else 4)
+    assert prompt.call_count == (3 if command_kind == "show" else 10)
     assert "halting collection" in caplog.text
 
 
@@ -1229,6 +1236,116 @@ def test_public_upload_restores_original_when_final_choice_is_stored(
     assert json.loads(FakeHfApi.objects["foo_bar/task__test__zeroshot.json"]) == stored
 
 
+@pytest.mark.parametrize("cancel", [False, True])
+def test_reviewed_records_stage_locally_then_publish(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, cancel: bool
+) -> None:
+    """Approval advances locally, survives cancellation, and feeds normal upload.
+
+    Args:
+        monkeypatch: Dependency overrides.
+        tmp_path: Isolated staging and canonical files.
+        cancel: Whether to stop after approving the first model.
+    """
+    staging = tmp_path / "new_results.jsonl"
+    original = _ranked_collector_record()
+    staging.write_text(json.dumps(original), encoding="utf-8")
+    reports: dict[str, ReviewReport] = {}
+    expected = [original]
+    for submission_id, model, dataset in [
+        ("first-da", "first/model", "task-da"),
+        ("first-ro", "first/model", "task-ro"),
+        ("second", "second/model", "task"),
+    ]:
+        record = _ranked_collector_record()
+        record["model_info"] = {"id": model}
+        library = t.cast(dict[str, object], record["eval_library"])
+        details = t.cast(dict[str, object], library["additional_details"])
+        details["dataset"] = dataset
+        base = t.cast(ReviewReport, PreflightReviewer().show(submission_id))
+        validated = dataclasses.replace(
+            base.records[0],
+            identity=(model, dataset, False, False),
+            content=json.dumps(record, indent=2).encode(),
+        )
+        canary = dataclasses.replace(
+            validated,
+            identity=(model, "contamination-canary-da", False, False),
+            content=json.dumps(
+                {
+                    "eval_library": {
+                        "additional_details": {"dataset": "contamination-canary-da"}
+                    }
+                }
+            ).encode(),
+        )
+        reports[submission_id] = dataclasses.replace(
+            base, model_id=model, records=(validated, canary)
+        )
+        if submission_id != "second" or not cancel:
+            expected.append(record)
+    reviewer = Mock(spec=collect_evaluation_results.VolunteerReviewer)
+    reviewer.list_pending_submissions.return_value = [
+        (sid, 12, "alice", "da") for sid in reports
+    ]
+    reviewer.group_submissions_by_model.return_value = [
+        ["first-da", "first-ro"],
+        ["second"],
+    ]
+    remaining = dict(reports)
+
+    def load_once(submission_id: str) -> ReviewReport:
+        """Return initial evidence, failing if approval tries to reload it.
+
+        Args:
+            submission_id: Submission whose evidence is requested.
+
+        Returns:
+            The already validated report.
+        """
+        return remaining.pop(submission_id)
+
+    reviewer.show.side_effect = load_once
+    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
+    monkeypatch.setenv("HF_TOKEN", "test-token")
+    monkeypatch.setenv("GITHUB_ACTOR", "maintainer")
+    monkeypatch.setattr(collect_evaluation_results, "NEW_RESULTS_PATH", staging)
+    monkeypatch.setattr(
+        collect_evaluation_results, "reviewer_from_environment", lambda: reviewer
+    )
+    monkeypatch.setattr(
+        collect_evaluation_results, "_stdin_is_interactive", lambda: True
+    )
+    monkeypatch.setattr(
+        "builtins.input", Mock(side_effect=["y", "a", "q" if cancel else "a"])
+    )
+    decision = Mock(side_effect=AssertionError("no remote decision during approval"))
+    monkeypatch.setattr(collect_evaluation_results, "run_review_command", decision)
+
+    assert collect_evaluation_results.preflight_volunteer_review() is (not cancel)
+    assert [json.loads(line) for line in staging.read_text().splitlines()] == expected
+    decision.assert_not_called()
+    reviewer.decide.assert_not_called()
+    assert not (tmp_path / "results").exists()
+    assert FakeHfApi.objects == {}
+
+    monkeypatch.setattr(collect_evaluation_results, "RESULTS_DIR", tmp_path / "results")
+    _enable_real_collector_publisher(monkeypatch=monkeypatch, tmp_path=tmp_path)
+    assert collect_evaluation_results.upload_results_to_hf(new_results_path=staging)
+    published = [
+        json.loads(body)
+        for name, body in FakeHfApi.objects.items()
+        if name.endswith(".json")
+    ]
+    assert len(published) == len(expected)
+    assert all(record in published for record in expected)
+    local = [
+        json.loads(path.read_bytes()) for path in (tmp_path / "results").rglob("*.json")
+    ]
+    assert len(local) == len(expected)
+    assert all(record in local for record in expected)
+
+
 def test_reviewer_login_actor_and_safe_gh_fallback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1244,7 +1361,7 @@ def test_reviewer_login_actor_and_safe_gh_fallback(
     monkeypatch.setattr(
         collect_evaluation_results, "_stdin_is_interactive", lambda: True
     )
-    answers = iter(["y", "y"])
+    answers = iter(["y", "r", "reason", "y"])
     monkeypatch.setattr("builtins.input", lambda _: next(answers))
     command = Mock(return_value=0)
     monkeypatch.setattr(collect_evaluation_results, "run_review_command", command)
@@ -1253,22 +1370,12 @@ def test_reviewer_login_actor_and_safe_gh_fallback(
 
     assert collect_evaluation_results.preflight_volunteer_review() is True
     assert command.call_args_list[-1] == call(
-        [
-            "--reviewer",
-            "actor",
-            "approve",
-            "one",
-            "--plan-fingerprint",
-            "fingerprint-one",
-            "--reason",
-            "Reviewed during collector preflight",
-            "--quiet",
-        ]
+        ["--reviewer", "actor", "reject", "one", "--reason", "reason"]
     )
     subprocess_run.assert_not_called()
 
     monkeypatch.delenv("GITHUB_ACTOR")
-    answers = iter(["y", "y"])
+    answers = iter(["y", "r", "reason", "y"])
     subprocess_run.side_effect = None
     subprocess_run.return_value = Mock(stdout="fallback-login\n")
     command.reset_mock()
@@ -1276,17 +1383,7 @@ def test_reviewer_login_actor_and_safe_gh_fallback(
     assert subprocess_run.call_args.args[0] == ["gh", "api", "user", "--jq", ".login"]
     assert subprocess_run.call_args.kwargs["timeout"] == 10
     assert command.call_args_list[-1] == call(
-        [
-            "--reviewer",
-            "fallback-login",
-            "approve",
-            "one",
-            "--plan-fingerprint",
-            "fingerprint-one",
-            "--reason",
-            "Reviewed during collector preflight",
-            "--quiet",
-        ]
+        ["--reviewer", "fallback-login", "reject", "one", "--reason", "reason"]
     )
 
 

@@ -4,6 +4,7 @@ import dataclasses
 import io
 import json
 import logging
+from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
@@ -18,6 +19,14 @@ from euroeval_worker.review_models import (
 )
 from leaderboards import score_extraction
 from src.scripts import collect_evaluation_results, review_volunteer_results
+
+
+@pytest.fixture(autouse=True)
+def isolate_staging(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Keep review approvals out of the working copy's staging file."""
+    monkeypatch.setattr(
+        collect_evaluation_results, "NEW_RESULTS_PATH", tmp_path / "new_results.jsonl"
+    )
 
 
 @pytest.fixture
@@ -53,7 +62,7 @@ def report() -> ReviewReport:
                 digest="submitted-digest",
                 staged_path="staged",
                 canonical_path=path,
-                content=b"{}",
+                content=json.dumps({"model": "model", "dataset": "task"}).encode(),
                 scores=(("test_f1", 50.0),),
                 warnings=("Missing metadata",),
             ),
@@ -62,7 +71,13 @@ def report() -> ReviewReport:
                 digest="canary-digest",
                 staged_path="canary",
                 canonical_path="canary",
-                content=b"{}",
+                content=json.dumps(
+                    {
+                        "eval_library": {
+                            "additional_details": {"dataset": "contamination-canary-da"}
+                        }
+                    }
+                ).encode(),
                 scores=(("test_collection_success", 0.0),),
                 warnings=("Missing metadata",),
             ),
@@ -194,8 +209,16 @@ def test_model_actions_cover_all_languages(
     caplog.set_level("INFO")
     assert collect_evaluation_results.preflight_volunteer_review()
     commands = [c.args[0] for c in decision.call_args_list]
-    assert {c[3] for c in commands} == set(reports)
-    assert all(("approve" if action == "a" else "reject") in c for c in commands)
+    if action == "a":
+        assert commands == []
+        staged = collect_evaluation_results.NEW_RESULTS_PATH.read_text().splitlines()
+        assert [json.loads(line) for line in staged] == [
+            json.loads(first.records[0].content),
+            json.loads(second.records[0].content),
+        ]
+    else:
+        assert {c[3] for c in commands} == set(reports)
+        assert all("reject" in c and "--quiet" not in c for c in commands)
     lines = [
         r.getMessage()
         for r in caplog.records
@@ -243,10 +266,9 @@ def test_muted_status_colours_and_opt_out(monkeypatch: pytest.MonkeyPatch) -> No
 @pytest.mark.parametrize(
     ("actions", "expected"),
     [
-        (["a", "y"], "approve"),
+        (["a"], "approve"),
         (["r", "keep existing", "y"], "reject"),
         (["d", "s"], None),
-        (["a", "n", "s"], None),
         (["r", "", "s"], None),
         (["r", "reason", "n", "s"], None),
         (["q"], "stop"),
@@ -293,17 +315,21 @@ def test_review_actions(
     assert collect_evaluation_results.preflight_volunteer_review() is (
         expected != "stop"
     )
-    if expected in {"approve", "reject"}:
+    if expected == "approve":
+        decision.assert_not_called()
+        staged = collect_evaluation_results.NEW_RESULTS_PATH.read_text().splitlines()
+        assert [json.loads(line) for line in staged] == [
+            json.loads(report.records[0].content)
+        ]
+    elif expected == "reject":
         command = decision.call_args.args[0]
-        assert expected in command
+        assert "reject" in command
         assert report.submission_id in command
-        if expected == "approve":
-            assert "--replace-existing" in command
-            assert selected.plan_fingerprint in command
-        else:
-            assert "keep existing" in command
+        assert "keep existing" in command
+        assert "--quiet" not in command
     else:
         decision.assert_not_called()
+        assert not collect_evaluation_results.NEW_RESULTS_PATH.exists()
 
 
 @pytest.mark.parametrize("no_colour", [False, True])
