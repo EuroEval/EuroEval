@@ -27,6 +27,7 @@ from .evaluation_common import resolve_hf_token
 from .model_metadata import add_missing_entries, fix_metadata, record_is_valid
 from .record_fields import deduplicate_records
 from .records import get_model_name
+from .result_conflict_prompt import resolve_result_interactively
 from .result_conflicts import ConflictChoice, ConflictDecision, resolve_result_conflict
 from .result_identity import (
     ResultIdentity,
@@ -229,6 +230,29 @@ def _upload_per_model_files(
             "HF_TOKEN not set. Cannot upload results to Hugging Face bucket. "
             "Run 'hf auth login' or set the HF_TOKEN environment variable."
         )
+
+    # The generation entry point uses the terminal adapter directly. Give it one
+    # choice cache for this processing run so a model decision is reused.
+    if conflict_resolver is not None:
+        if conflict_resolver is resolve_result_interactively:
+            model_choices: dict[str, ConflictChoice] = {}
+
+            def batched_resolver(
+                *,
+                current: dict[str, t.Any],
+                candidate: dict[str, t.Any],
+                current_bytes: bytes | None = None,
+                candidate_bytes: bytes | None = None,
+            ) -> ConflictDecision:
+                return resolve_result_interactively(
+                    current=current,
+                    candidate=candidate,
+                    current_bytes=current_bytes,
+                    candidate_bytes=candidate_bytes,
+                    model_choices=model_choices,
+                )
+
+            conflict_resolver = batched_resolver
 
     # Capture canonical predecessors before deciding collisions or writing files.
     source_bytes = (
